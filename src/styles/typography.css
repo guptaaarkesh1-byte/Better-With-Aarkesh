@@ -1,0 +1,16 @@
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .heading-luxury {
+    @apply font-serif text-heading font-thin tracking-tight text-balance;
+    font-size: clamp(3.5rem, 8vw, 7rem);
+    line-height: 1.1;
+  }
+  .nav-link {
+    @apply font-sans text-xs uppercase tracking-widest text-heading/80 hover:text-heading transition-colors duration-300;
+  }
+  .eyebrow-text {
+    @apply font-sans text-[0.65rem] uppercase tracking-[0.3em] text-accent-gold;
+  }
+}

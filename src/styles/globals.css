@@ -1,0 +1,12 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import './typography.css';
+@import './animations.css';
+
+@layer base {
+  body {
+    @apply bg-background text-paragraph font-sans antialiased overflow-x-hidden;
+  }
+}
