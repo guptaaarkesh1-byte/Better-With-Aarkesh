@@ -6,7 +6,7 @@ import TransitionIntro from './TransitionIntro';
 
 export default function ProblemSection() {
   return (
-    <section className="relative w-full bg-[#0a0a0a] h-screen flex flex-col overflow-hidden snap-start">
+    <section className="relative w-full bg-[#0a0a0a] h-screen flex flex-col overflow-hidden snap-section">
       
       {/* Top half: Split content and word cloud */}
       <div className="relative flex-grow flex items-center justify-center min-h-0 pt-12 lg:pt-16 pb-0">

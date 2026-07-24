@@ -48,8 +48,8 @@ export default function Navbar() {
     >
       <Container className="flex items-center justify-between">
         <div className="flex-shrink-0">
-          <a href="#" className="font-serif text-2xl tracking-normal text-heading relative z-10 flex items-center">
-            Better<span className="font-sans font-light tracking-wide ml-[2px]">With</span>Aarkesh
+          <a href="#" className="font-serif text-2xl text-white tracking-tight relative z-10 flex items-center">
+            BetterWith<span className="text-white/60">Aarkesh</span>
           </a>
         </div>
 

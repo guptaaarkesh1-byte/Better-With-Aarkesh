@@ -22,7 +22,7 @@ export default function PrincipleSection({
   imagePosition = 'object-[80%_center]' // Shifting it slightly left from pure 'object-right'
 }) {
   return (
-    <section id={id} className="principle-panel relative w-full h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
+    <section id={id} className="principle-panel relative w-full h-screen flex flex-col overflow-hidden bg-black snap-section">
       
       {/* Main Content Area */}
       <div className={`relative flex-grow flex items-center justify-center pb-48 ${contentClassName}`}>

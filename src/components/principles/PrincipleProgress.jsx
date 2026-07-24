@@ -4,6 +4,7 @@ export default function PrincipleProgress({ activeStep }) {
     { num: '02', text: 'FEEL', active: activeStep === 2 },
     { num: '03', text: 'DECIDE', active: activeStep === 3 },
     { num: '04', text: 'COACHING', active: activeStep === 4 },
+    { num: '05', text: 'STORIES', active: activeStep === 5 },
   ];
 
   return (

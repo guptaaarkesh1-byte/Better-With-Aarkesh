@@ -79,7 +79,7 @@ export default function MeetAarkesh() {
   }, { scope: container });
 
   return (
-    <section ref={container} id="meet-aarkesh" className="relative w-full h-screen flex flex-col bg-black overflow-hidden snap-start pt-20">
+    <section ref={container} id="meet-aarkesh" className="relative w-full h-screen flex flex-col bg-black overflow-hidden snap-section pt-20">
       
       {/* Grid Panes (Images fill from just below navbar to the bottom banner) */}
       <div className="w-full flex-grow flex flex-col md:flex-row border-y border-white/10 min-h-0 relative">

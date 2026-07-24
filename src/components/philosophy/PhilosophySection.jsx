@@ -6,7 +6,7 @@ import bgImg from '../../assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.pn
 
 export default function PhilosophySection() {
   return (
-    <section className="relative w-full h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
+    <section className="relative w-full h-screen flex flex-col overflow-hidden bg-black snap-section">
       
 
 
