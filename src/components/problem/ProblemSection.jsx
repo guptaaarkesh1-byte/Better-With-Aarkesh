@@ -1,7 +1,6 @@
 import Container from '../ui/Container';
 import ProblemContent from './ProblemContent';
 import WordCloud from './WordCloud';
-import DynamicBanner from './DynamicBanner';
 import TransitionIntro from './TransitionIntro';
 
 export default function ProblemSection() {
@@ -22,11 +21,6 @@ export default function ProblemSection() {
           </div>
 
         </Container>
-      </div>
-
-      {/* Dynamic Banner */}
-      <div className="relative z-20 border-y border-white/5 bg-black/40 backdrop-blur-sm shrink-0">
-        <DynamicBanner />
       </div>
 
       {/* Transition Intro */}

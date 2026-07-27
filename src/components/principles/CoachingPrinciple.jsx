@@ -181,19 +181,7 @@ export default function CoachingPrinciple() {
         <div className="border-t border-white/5 bg-[#0a0a0a]">
           <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
             
-            <div className="flex items-center gap-6">
-              <div className="w-10 h-10 rounded-full border border-accent-gold/40 flex items-center justify-center">
-                <Play className="text-accent-gold text-lg ml-1" weight="fill" />
-              </div>
-              <div>
-                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-accent-gold font-medium block mb-1">
-                  Curious how this looks in real life?
-                </span>
-                <p className="text-paragraph text-xs text-white/70">
-                  Explore real stories from people who've walked this path.
-                </p>
-              </div>
-            </div>
+            
 
             <div className="flex items-center gap-4 cursor-pointer group">
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-accent-gold font-semibold transition-colors group-hover:text-white">

@@ -1,7 +1,6 @@
 import Container from '../ui/Container';
 import PhilosophyContent from './PhilosophyContent';
 import PhilosophyProgress from './PhilosophyProgress';
-import PhilosophyBanners from './PhilosophyBanners';
 import bgImg from '../../assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.png';
 
 export default function PhilosophySection() {
@@ -39,8 +38,6 @@ export default function PhilosophySection() {
         </Container>
       </div>
 
-      {/* Bottom Annotations / Banners */}
-      <PhilosophyBanners />
 
     </section>
   );

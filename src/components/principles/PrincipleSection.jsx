@@ -1,8 +1,6 @@
 import Container from '../ui/Container';
 import PrincipleContent from './PrincipleContent';
 import PrincipleProgress from './PrincipleProgress';
-import PrincipleBanners from './PrincipleBanners';
-
 export default function PrincipleSection({
   id,
   bgImg,
@@ -63,18 +61,6 @@ export default function PrincipleSection({
           </div>
 
         </Container>
-      </div>
-
-      {/* Bottom Annotations / Banners */}
-      <div className="absolute bottom-0 left-0 w-full z-40">
-        <PrincipleBanners 
-          bannerTitle={bannerTitle}
-          bannerIcon={bannerIcon}
-          bannerSteps={bannerSteps}
-          transitionText={transitionText}
-          activeStep={activeStep}
-          customTransitionFlow={customTransitionFlow}
-        />
       </div>
 
     </section>
