@@ -215,13 +215,7 @@ export default function MeetAarkesh() {
         </div>
       </div>
 
-      {/* Very Bottom Hover Hint */}
-      <div className="w-full bg-[#0a0a0a] py-2 flex items-center justify-center gap-2 border-t border-white/5 meet-footer shrink-0">
-        <MouseScroll className="text-white/40 text-sm" weight="light" />
-        <p className="font-sans text-[0.6rem] font-light text-white/60">
-          <span className="text-accent-gold">Hover</span> over a role to see more. <span className="text-accent-gold">Click</span> to dive deeper.
-        </p>
-      </div>
+
 
     </section>
   );

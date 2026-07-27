@@ -32,19 +32,6 @@ export default function WordCloud() {
   useGSAP(() => {
     const words = gsap.utils.toArray('.floating-word');
     
-    // Fade in all words when they scroll into view
-    gsap.from(words, {
-      opacity: 0,
-      scale: 0.8,
-      duration: 1.2,
-      stagger: 0.03,
-      ease: 'power3.out',
-      scrollTrigger: {
-        trigger: container.current,
-        start: 'top 75%',
-      }
-    });
-
     // Parallax floating effect for the words
     words.forEach((word) => {
       // Randomize movement per word for a visible medium-paced floating effect

@@ -96,23 +96,27 @@ export default function CoachingPrinciple() {
               A clear path from where you are, to where you want to be.
             </p>
 
-            {/* Grid Stepper */}
-            <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 lg:gap-x-8 lg:gap-y-6 mt-4">
+            {/* Grid Stepper (Converted to Flex for centering the last row) */}
+            <div className="relative flex flex-wrap justify-center gap-x-6 gap-y-4 lg:gap-x-8 lg:gap-y-6 mt-4">
               {steps.map((step, i) => {
                 const Icon = step.icon;
                 return (
-                  <div key={i} className="coaching-step relative z-10 flex gap-3 items-start group bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-xl p-3 transition-all hover:bg-white/[0.08] hover:border-accent-gold/30">
-                    <div className="w-10 h-10 rounded-full border border-accent-gold/30 bg-[#0a0a0a] flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10 mt-1">
-                      <Icon className="text-accent-gold text-lg" weight="regular" />
+                  <div key={i} className="coaching-step w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1.35rem)] relative z-50 flex gap-3 items-start group bg-[#0a0a0a] border border-white/10 rounded-xl p-4 transition-all duration-500 hover:bg-[#111111] hover:border-accent-gold/30 cursor-pointer">
+                    <div className="w-10 h-10 rounded-full border border-accent-gold/30 bg-black flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
+                      <Icon className="text-accent-gold text-lg transition-transform duration-500 group-hover:scale-110" weight="regular" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-col justify-center min-h-[40px]">
+                      <div className="flex items-center gap-2">
                         <span className="font-sans text-[0.65rem] tracking-widest text-accent-gold">{step.num}</span>
                         <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-white">{step.title}</span>
                       </div>
-                      <p className="text-paragraph text-xs font-light leading-relaxed opacity-80">
-                        {step.text}
-                      </p>
+                      <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
+                        <div className="overflow-hidden">
+                          <p className="text-paragraph text-xs font-light leading-relaxed opacity-0 group-hover:opacity-80 transition-opacity duration-500 delay-100 pt-2">
+                            {step.text}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -127,10 +131,10 @@ export default function CoachingPrinciple() {
       </div>
 
       {/* Bottom Banners */}
-      <div className="absolute bottom-0 left-0 w-full z-40 coaching-bottom">
+      <div className="absolute bottom-0 left-0 w-full z-40 coaching-bottom pointer-events-none">
         
         {/* Stats Row */}
-        <div className="border-t border-white/5 bg-[#0a0a0a]/90 backdrop-blur-md">
+        <div className="border-t border-white/5 bg-[#0a0a0a]/90 backdrop-blur-md pointer-events-auto">
           <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 flex flex-col lg:flex-row items-center justify-between gap-8 w-full">
             
             {/* Quote */}
@@ -178,11 +182,9 @@ export default function CoachingPrinciple() {
         </div>
 
         {/* Transition Row */}
-        <div className="border-t border-white/5 bg-[#0a0a0a]">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="border-t border-white/5 bg-[#0a0a0a] pointer-events-auto">
+          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4 flex items-center justify-center">
             
-            
-
             <div className="flex items-center gap-4 cursor-pointer group">
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-accent-gold font-semibold transition-colors group-hover:text-white">
                 Scroll to view THE COACHING JOURNEY

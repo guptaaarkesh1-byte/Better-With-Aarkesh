@@ -2,11 +2,13 @@ import { useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
+import SplitType from 'split-type';
 import { ArrowDown } from '@phosphor-icons/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function PrincipleContent({ 
+  id,
   eyebrow, 
   headlineWhite, 
   headlineGold, 
@@ -17,37 +19,63 @@ export default function PrincipleContent({
   const container = useRef(null);
 
   useGSAP(() => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container.current,
-        start: 'top 75%',
-      }
-    });
+    const isThinkPage = id === 'think-principle';
 
-    tl.fromTo('.phil-eyebrow',
-      { opacity: 0, x: -20 },
-      { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' }
-    )
-    .fromTo('.phil-line',
-      { scaleX: 0 },
-      { scaleX: 1, duration: 0.8, ease: 'power3.out' },
-      "<"
-    )
-    .fromTo('.phil-heading-word',
-      { opacity: 0, x: -20 },
-      { opacity: 1, x: 0, duration: 1, ease: 'power3.out', stagger: 0.2 },
-      "-=0.4"
-    )
-    .fromTo('.phil-paragraph',
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.2 },
-      "-=0.6"
-    )
-    .fromTo('.phil-button',
-      { opacity: 0, scale: 0.8 },
-      { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.5)' },
-      "-=0.4"
-    );
+    if (isThinkPage) {
+      // THINK CLEARLY PAGE: Cinematic specific text reveal
+      const split = new SplitType('.phil-heading-word', { types: 'words' });
+      gsap.set('.phil-heading-word .word', { opacity: 0, y: 40, filter: 'blur(12px)' });
+      // ensure other elements are visible since they aren't animated here
+      gsap.set(['.phil-eyebrow', '.phil-line', '.phil-paragraph', '.phil-button'], { opacity: 1 });
+
+      gsap.to('.phil-heading-word .word', {
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 75%',
+        },
+        opacity: 1,
+        y: 0,
+        filter: 'blur(0px)',
+        duration: 1,
+        stagger: 0.12,
+        ease: 'power3.out'
+      });
+
+      return () => split.revert();
+    } else {
+      // DEFAULT ANIMATION FOR OTHER PAGES
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 75%',
+        }
+      });
+
+      tl.fromTo('.phil-eyebrow',
+        { opacity: 0, x: -20 },
+        { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' }
+      )
+      .fromTo('.phil-line',
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.8, ease: 'power3.out' },
+        "<"
+      )
+      .fromTo('.phil-heading-word',
+        { opacity: 0, x: -20 },
+        { opacity: 1, x: 0, duration: 1, ease: 'power3.out', stagger: 0.2 },
+        "-=0.4"
+      )
+      .fromTo('.phil-paragraph',
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.2 },
+        "-=0.6"
+      )
+      .fromTo('.phil-button',
+        { opacity: 0, scale: 0.8 },
+        { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.5)' },
+        "-=0.4"
+      );
+    }
   }, { scope: container });
 
   return (

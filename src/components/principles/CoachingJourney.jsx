@@ -108,17 +108,21 @@ export default function CoachingJourney() {
                 {leftSteps.slice(0, 2).map((step, i) => {
                   const Icon = step.icon;
                   return (
-                    <div key={i} className="flex gap-4 items-start group">
+                    <div key={i} className="flex gap-4 items-start group cursor-pointer p-3 rounded-xl transition-all duration-500 hover:bg-white/[0.03] border border-transparent hover:border-white/5">
                       <div className="w-10 h-10 rounded-full border border-accent-gold/40 bg-black/40 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                        <Icon className="text-accent-gold text-lg" weight="light" />
+                        <Icon className="text-accent-gold text-lg transition-transform duration-500 group-hover:scale-110" weight="light" />
                       </div>
-                      <div>
-                        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-1">
+                      <div className="flex flex-col justify-center min-h-[40px]">
+                        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block">
                           {step.title}
                         </span>
-                        <p className="text-paragraph text-xs font-light leading-relaxed opacity-90 whitespace-pre-line">
-                          {step.text}
-                        </p>
+                        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
+                          <div className="overflow-hidden">
+                            <p className="text-paragraph text-xs font-light leading-relaxed opacity-0 group-hover:opacity-90 transition-opacity duration-500 delay-100 whitespace-pre-line pt-2">
+                              {step.text}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -130,17 +134,21 @@ export default function CoachingJourney() {
                 {leftSteps.slice(2, 4).map((step, i) => {
                   const Icon = step.icon;
                   return (
-                    <div key={i} className="flex gap-4 items-start group">
+                    <div key={i} className="flex gap-4 items-start group cursor-pointer p-3 rounded-xl transition-all duration-500 hover:bg-white/[0.03] border border-transparent hover:border-white/5">
                       <div className="w-10 h-10 rounded-full border border-accent-gold/40 bg-black/40 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                        <Icon className="text-accent-gold text-lg" weight="light" />
+                        <Icon className="text-accent-gold text-lg transition-transform duration-500 group-hover:scale-110" weight="light" />
                       </div>
-                      <div>
-                        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-1">
+                      <div className="flex flex-col justify-center min-h-[40px]">
+                        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block">
                           {step.title}
                         </span>
-                        <p className="text-paragraph text-xs font-light leading-relaxed opacity-90 whitespace-pre-line">
-                          {step.text}
-                        </p>
+                        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
+                          <div className="overflow-hidden">
+                            <p className="text-paragraph text-xs font-light leading-relaxed opacity-0 group-hover:opacity-90 transition-opacity duration-500 delay-100 whitespace-pre-line pt-2">
+                              {step.text}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );

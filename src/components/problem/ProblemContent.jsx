@@ -9,11 +9,11 @@ export default function ProblemContent() {
   const container = useRef(null);
 
   useGSAP(() => {
-    // Basic reveal animation for the text
+    // Basic reveal animation for the text when section enters
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: container.current,
-        start: 'top 70%',
+        start: 'top 80%',
       }
     });
 
@@ -45,7 +45,7 @@ export default function ProblemContent() {
   }, { scope: container });
 
   return (
-    <div ref={container} className="max-w-md pt-0">
+    <div ref={container} className="max-w-md pt-0 relative z-50">
       
       <div className="flex items-center gap-4 mb-4">
         <div className="prob-line h-[1px] w-8 bg-accent-gold origin-left" />
