@@ -4,13 +4,14 @@ import Button from '../ui/Button';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { cn } from '../../utils/cn';
+import { Link } from 'react-router-dom';
 
 const NAV_LINKS = [
-  { label: 'About', href: '#about' },
-  { label: 'Coaching', href: '#coaching' },
-  { label: 'Perspectives', href: '#perspectives' },
-  { label: 'Testimonials', href: '#testimonials' },
-  { label: 'FAQ', href: '#faq' },
+  { label: 'About', href: '/#meet-aarkesh' },
+  { label: 'Coaching', href: '/#coaching' },
+  { label: 'Perspectives', href: '/perspectives' },
+  { label: 'Testimonials', href: '/stories' },
+  { label: 'FAQ', href: '/#faq' },
 ];
 
 export default function Navbar() {
@@ -48,21 +49,35 @@ export default function Navbar() {
     >
       <Container className="flex items-center justify-between">
         <div className="flex-shrink-0">
-          <a href="#" className="font-serif text-2xl text-white tracking-tight relative z-10 flex items-center">
+          <Link to="/" className="font-serif text-2xl text-white tracking-tight relative z-10 flex items-center">
             BetterWith<span className="text-white/60">Aarkesh</span>
-          </a>
+          </Link>
         </div>
 
         <nav className="hidden lg:flex items-center justify-center gap-10 absolute left-1/2 -translate-x-1/2">
-          {NAV_LINKS.map((link) => (
-            <a key={link.label} href={link.href} className="nav-link">
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) => 
+            !link.href.includes('#') ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="nav-link"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="nav-link"
+              >
+                {link.label}
+              </a>
+            )
+          )}
         </nav>
 
         <div className="hidden md:flex flex-shrink-0 items-center justify-end">
-          <Button variant="outline" className="text-[0.65rem] px-5 py-[0.65rem]">
+          <Button variant="outline" className="text-[0.65rem] px-5 py-[0.65rem]" to="/book">
             Book a Session
           </Button>
         </div>

@@ -56,7 +56,7 @@ export default function CoachingPrinciple() {
   }, { scope: container });
 
   return (
-    <section ref={container} id="coaching-principle" className="principle-panel relative w-full h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
+    <section ref={container} id="coaching" className="principle-panel relative w-full h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
       
       {/* Background Image */}
       <div className="absolute inset-0 z-0 pointer-events-none">

@@ -48,12 +48,12 @@ export default function HeroContent() {
       </div>
 
       <h1 className="heading-luxury mb-4">
-        <AnimatedText text="Clarity changes" tag="span" className="inline-flex mr-4 md:mr-6" delay={1} />
+        <AnimatedText text="Clarity changes" tag="span" className="inline-flex mr-4 md:mr-6" delay={0.8} stagger={0.3} />
         <AnimatedText 
           text="everything." 
           tag="span" 
           className="inline-flex text-accent-gold italic pr-4" 
-          delay={1.2} 
+          delay={1.4} 
         />
       </h1>
 
@@ -62,7 +62,7 @@ export default function HeroContent() {
       </p>
 
       <div className="hero-buttons flex flex-wrap items-center gap-6">
-        <Button variant="primary" icon>
+        <Button variant="primary" icon to="/book">
           Book a Session
         </Button>
         <Button variant="secondary" icon>

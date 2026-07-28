@@ -1,9 +1,12 @@
 import { cn } from '../../utils/cn';
 import { FiArrowRight } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 
-export default function Button({ variant = 'primary', children, className, icon, ...props }) {
+export default function Button({ variant = 'primary', children, className, icon, to, ...props }) {
+  const Component = to ? Link : 'button';
   return (
-    <button
+    <Component
+      to={to}
       className={cn(
         'group relative inline-flex items-center justify-center transition-all duration-300 font-sans tracking-[0.15em] text-[0.7rem] uppercase',
         {
@@ -22,6 +25,6 @@ export default function Button({ variant = 'primary', children, className, icon,
       {icon && variant === 'secondary' && (
         <FiArrowRight className="ml-3 transition-transform duration-300 group-hover:translate-x-2" />
       )}
-    </button>
+    </Component>
   );
 }

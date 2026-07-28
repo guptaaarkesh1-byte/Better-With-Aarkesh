@@ -1,35 +1,24 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
-import Hero from './components/hero/Hero';
-import ProblemSection from './components/problem/ProblemSection';
-import PrinciplesContainer from './components/principles/PrinciplesContainer';
-import ThinkPrinciple from './components/principles/ThinkPrinciple';
-import FeelPrinciple from './components/principles/FeelPrinciple';
-import DecidePrinciple from './components/principles/DecidePrinciple';
-import CoachingPrinciple from './components/principles/CoachingPrinciple';
-import CoachingJourney from './components/principles/CoachingJourney';
-
-import MeetAarkesh from './components/about/MeetAarkesh';
-import TestimonialsSection from './components/testimonials/TestimonialsSection';
-import FinalCtaSection from './components/cta/FinalCtaSection';
+import Home from './pages/Home';
+import Booking from './pages/Booking';
+import Perspectives from './pages/perspectives/Perspectives';
+import Stories from './pages/Stories';
 import Footer from './components/layout/Footer';
 
 function App() {
   return (
-    <MainLayout>
-      <Hero />
-      <ProblemSection />
-      <PrinciplesContainer>
-        <ThinkPrinciple />
-        <FeelPrinciple />
-        <DecidePrinciple />
-        <CoachingPrinciple />
-        <CoachingJourney />
-      </PrinciplesContainer>
-      <MeetAarkesh />
-      <TestimonialsSection />
-      <FinalCtaSection />
-      <Footer />
-    </MainLayout>
+    <Router>
+      <MainLayout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/book" element={<Booking />} />
+          <Route path="/perspectives" element={<Perspectives />} />
+          <Route path="/stories" element={<Stories />} />
+        </Routes>
+        <Footer />
+      </MainLayout>
+    </Router>
   )
 }
 

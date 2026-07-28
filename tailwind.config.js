@@ -27,6 +27,19 @@ export default {
       },
       letterSpacing: {
         widest: '.2em',
+      },
+      animation: {
+        'float-slow': 'float 12s ease-in-out infinite',
+        'float-medium': 'float 8s ease-in-out infinite',
+        'float-fast': 'float 6s ease-in-out infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0) translateX(0)', opacity: '0' },
+          '10%, 90%': { opacity: '0.8' },
+          '33%': { transform: 'translateY(-20px) translateX(15px)' },
+          '66%': { transform: 'translateY(10px) translateX(-15px)' },
+        }
       }
     },
   },

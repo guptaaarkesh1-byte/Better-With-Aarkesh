@@ -12,6 +12,7 @@ import {
   Handshake, 
   Heart 
 } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
 
 export default function TestimonialsSection() {
   const testimonials = [
@@ -60,7 +61,7 @@ export default function TestimonialsSection() {
   ];
 
   return (
-    <section id="testimonials" className="relative w-full h-screen bg-black overflow-hidden flex flex-col snap-section">
+    <section id="testimonials" className="relative w-full min-h-screen bg-black overflow-hidden flex flex-col snap-section">
       
       {/* Background Image & Gradient Overlays */}
       <div className="absolute inset-0 z-0">
@@ -129,6 +130,26 @@ export default function TestimonialsSection() {
                 ))}
               </div>
 
+              {/* Left Column CTA */}
+              <div className="mt-4 border border-white/5 bg-[#0f0f0f]/60 rounded-2xl p-5 md:p-6 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm">
+                <div className="flex items-center gap-5">
+                  <div className="w-12 h-12 rounded-full border border-accent-gold flex items-center justify-center shrink-0">
+                    <ChatCenteredText className="text-accent-gold text-xl" weight="light" />
+                  </div>
+                  <div className="flex flex-col text-center md:text-left">
+                    <h3 className="font-serif text-xl md:text-2xl text-white mb-1">Your story could be next.</h3>
+                    <p className="font-sans text-white/60 font-light text-xs md:text-sm">Let's work together to create your transformation.</p>
+                  </div>
+                </div>
+                
+                <Link to="/book" className="flex items-center justify-center gap-3 border border-accent-gold rounded-md px-6 py-3 transition-colors hover:bg-accent-gold/10 shrink-0 w-full md:w-auto">
+                  <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold">
+                    BOOK YOUR SESSION
+                  </span>
+                  <ArrowRight className="text-accent-gold text-sm" />
+                </Link>
+              </div>
+
             </div>
 
             {/* Right Side Progress Bar */}
@@ -147,29 +168,6 @@ export default function TestimonialsSection() {
 
         </Container>
       </div>
-
-      {/* Bottom CTA Banner */}
-      <div className="relative z-10 w-full border-y border-white/10 bg-black/80 backdrop-blur-md">
-        <Container className="py-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="w-14 h-14 rounded-full border border-accent-gold/40 flex items-center justify-center">
-              <ChatCenteredText className="text-accent-gold text-2xl" weight="light" />
-            </div>
-            <div className="flex flex-col text-center md:text-left">
-              <h3 className="font-serif text-2xl text-white mb-1">Your story could be next.</h3>
-              <p className="font-sans text-white/60 font-light text-sm">Let's work together to create your transformation.</p>
-            </div>
-          </div>
-          
-          <button className="flex items-center gap-3 border border-accent-gold rounded-sm px-6 py-3 transition-colors hover:bg-accent-gold/10">
-            <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-accent-gold">
-              BOOK YOUR SESSION
-            </span>
-            <ArrowRight className="text-accent-gold text-sm" />
-          </button>
-        </Container>
-      </div>
-
       {/* Very Bottom Features Banner */}
       <div className="relative z-10 w-full bg-black py-6 pb-10">
         <Container className="flex flex-wrap items-center justify-center md:justify-between gap-6 opacity-70">

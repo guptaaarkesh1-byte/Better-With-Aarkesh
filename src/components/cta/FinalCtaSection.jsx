@@ -8,6 +8,7 @@ import {
   User,
   Target
 } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
 
 export default function FinalCtaSection() {
   return (
@@ -55,12 +56,12 @@ export default function FinalCtaSection() {
 
             {/* CTA Button & Lock */}
             <div className="flex flex-col items-start gap-3 mt-1">
-              <button className="flex items-center gap-3 bg-[#a37946] rounded-sm px-6 py-3 transition-colors hover:bg-[#c29158] shadow-[0_0_15px_rgba(163,121,70,0.3)]">
+              <Link to="/book" className="flex items-center gap-3 bg-[#a37946] rounded-sm px-6 py-3 transition-colors hover:bg-[#c29158] shadow-[0_0_15px_rgba(163,121,70,0.3)]">
                 <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-white">
                   BOOK YOUR SESSION
                 </span>
                 <ArrowRight className="text-white text-sm" />
-              </button>
+              </Link>
               
               <div className="flex items-center gap-2 opacity-60">
                 <LockKey className="text-white text-sm" weight="light" />

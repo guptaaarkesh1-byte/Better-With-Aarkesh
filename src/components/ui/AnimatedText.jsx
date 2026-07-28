@@ -5,18 +5,18 @@ import { cn } from '../../utils/cn';
 
 gsap.registerPlugin(useGSAP);
 
-export default function AnimatedText({ text, className, tag: Tag = 'p', delay = 0 }) {
+export default function AnimatedText({ text, className, tag: Tag = 'p', delay = 0, stagger = 0.15 }) {
   const container = useRef(null);
 
   useGSAP(() => {
     gsap.fromTo('.word', 
-      { y: '100%', opacity: 0 },
+      { x: -30, opacity: 0 },
       {
-        y: '0%',
+        x: 0,
         opacity: 1,
         duration: 1,
         ease: 'power4.out',
-        stagger: 0.05,
+        stagger: stagger,
         delay: delay,
       }
     );
