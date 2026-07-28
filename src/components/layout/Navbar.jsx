@@ -4,7 +4,8 @@ import Button from '../ui/Button';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { cn } from '../../utils/cn';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { BookmarkSimple } from '@phosphor-icons/react';
 
 const NAV_LINKS = [
   { label: 'About', href: '/#meet-aarkesh' },
@@ -17,6 +18,8 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const navRef = useRef(null);
+  const location = useLocation();
+  const isPerspectives = location.pathname === '/perspectives';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,7 +46,7 @@ export default function Navbar() {
     <header
       ref={navRef}
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-500 py-6',
+        'fixed top-0 left-0 right-0 z-[100] transition-all duration-500 py-6',
         scrolled ? 'glass-nav py-4 shadow-lg shadow-black/10' : 'bg-transparent'
       )}
     >
@@ -76,9 +79,22 @@ export default function Navbar() {
           )}
         </nav>
 
-        <div className="hidden md:flex flex-shrink-0 items-center justify-end">
-          <Button variant="outline" className="text-[0.65rem] px-5 py-[0.65rem]" to="/book">
-            Book a Session
+        <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-4">
+          {isPerspectives && (
+            <Button 
+              variant="outline" 
+              className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
+              onClick={() => document.getElementById('saved-library')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              <BookmarkSimple size={14} weight="light" /> MY LIBRARY
+            </Button>
+          )}
+          <Button 
+            variant="outline" 
+            className="text-[0.65rem] px-5 py-[0.65rem] border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]" 
+            to="/book"
+          >
+            BOOK A SESSION
           </Button>
         </div>
       </Container>

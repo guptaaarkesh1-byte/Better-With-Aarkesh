@@ -4,8 +4,14 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import bgImage from '../../assets/PerspectivePage/Page1.png';
+import continuousBg from '../../assets/PerspectivePage/BG/bg.png';
 import QuestionsSection from '../../components/perspectives/QuestionsSection';
+import RecognitionSection from '../../components/perspectives/RecognitionSection';
 import LibrarySection from '../../components/perspectives/LibrarySection';
+import FeaturedSection from '../../components/perspectives/FeaturedSection';
+import SavedLibrarySection from '../../components/perspectives/SavedLibrarySection';
+import SocialSection from '../../components/perspectives/SocialSection';
+import InvitationSection from '../../components/perspectives/InvitationSection';
 import AnimatedText from '../../components/ui/AnimatedText';
 
 export default function Perspectives() {
@@ -230,11 +236,32 @@ export default function Perspectives() {
 
       </section>
 
-      {/* SECTION 2: Questions Grid */}
+      {/* CONTINUOUS BACKGROUND WRAPPER */}
+      <div 
+        className="relative w-full bg-cover bg-center bg-no-repeat bg-fixed bg-black/70 bg-blend-multiply"
+        style={{ backgroundImage: `url(${continuousBg})` }}
+      >
+        {/* SECTION 2: Questions Grid */}
       <QuestionsSection />
 
-      {/* SECTION 3: The Library */}
+      {/* SECTION 3: Recognition */}
+      <RecognitionSection />
+
+      {/* SECTION 4: The Library */}
       <LibrarySection />
+
+      {/* SECTION 5: Featured Perspective */}
+      <FeaturedSection />
+
+      {/* SECTION 6: Saved Library Preview (Make It Yours) */}
+      <SavedLibrarySection />
+
+      {/* SECTION 7: Beyond the Website (Social) */}
+      <SocialSection />
+
+      {/* SECTION 8: The Invitation Back to You */}
+      <InvitationSection />
+      </div>
 
     </div>
   );

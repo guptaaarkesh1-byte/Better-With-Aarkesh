@@ -84,7 +84,18 @@ export default function QuestionsSection() {
   const containerRef = useRef(null);
 
   useGSAP(() => {
-    gsap.fromTo('.question-card', 
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: containerRef.current,
+        start: 'top 75%',
+      }
+    });
+
+    tl.fromTo('.section-header', 
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }
+    )
+    .fromTo('.question-card', 
       { opacity: 0, y: 40, filter: 'blur(5px)' },
       { 
         opacity: 1, 
@@ -93,11 +104,8 @@ export default function QuestionsSection() {
         duration: 1.2, 
         stagger: 0.15,
         ease: 'power3.out',
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top 75%',
-        }
-      }
+      },
+      "+=0.6"
     );
   }, { scope: containerRef });
 
@@ -105,7 +113,7 @@ export default function QuestionsSection() {
     <section ref={containerRef} className="relative w-full min-h-screen bg-transparent pt-24 pb-12 flex flex-col items-center">
       
       {/* Header */}
-      <div className="text-center mb-16 flex flex-col items-center z-10 px-6">
+      <div className="section-header text-center mb-16 flex flex-col items-center z-10 px-6 opacity-0">
         <h2 className="font-serif text-3xl md:text-4xl text-white font-light tracking-wide mb-4">
           Every perspective<br/>
           begins with<br/>
@@ -117,7 +125,7 @@ export default function QuestionsSection() {
       </div>
 
       {/* Grid */}
-      <div className="w-full max-w-4xl mx-auto px-6 md:px-12 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 z-10">
+      <div className="relative w-full max-w-4xl mx-auto px-6 md:px-12 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 z-50">
         {questions.map((q) => {
           const isDimmed = hoveredCard !== null && hoveredCard !== q.id;
           
@@ -129,6 +137,7 @@ export default function QuestionsSection() {
                 border border-white/10 rounded-md bg-black/40 backdrop-blur-sm 
                 transition-all duration-700 ease-out cursor-pointer
                 hover:scale-[1.05] hover:shadow-2xl hover:border-[#c79c6e]/50 hover:bg-[#0f0f0f]/80
+                ${hoveredCard === q.id ? 'z-[60]' : 'z-10'}
                 ${isDimmed ? '!opacity-30 !scale-95 !blur-[2px]' : ''}
               `}
               onMouseEnter={() => setHoveredCard(q.id)}
@@ -173,8 +182,57 @@ export default function QuestionsSection() {
         })}
       </div>
 
+      {/* Bottom Footer Info Bar */}
+      <div className="w-full max-w-[90rem] mx-auto px-6 md:px-12 mt-16 mb-8 z-10">
+        <div className="w-full border border-white/10 rounded-lg bg-[#0a0a0a]/50 backdrop-blur-sm p-8 flex flex-col md:flex-row items-start justify-between gap-8 md:gap-4">
+          
+          <div className="flex items-start gap-4 flex-1">
+            <BookmarkSimple size={24} className="text-[#c79c6e] shrink-0" weight="light" />
+            <p className="font-sans text-[0.65rem] text-white/70 font-light leading-relaxed">
+              These aren't just questions.<br/>
+              They're doorways.<br/>
+              Choose one.<br/>
+              Step in.
+            </p>
+          </div>
+
+          <div className="flex items-start gap-4 flex-1">
+            <Eye size={24} className="text-[#c79c6e] shrink-0" weight="light" />
+            <div className="flex flex-col gap-1">
+              <span className="font-sans text-[0.6rem] text-[#c79c6e] font-semibold uppercase tracking-widest">SEE DIFFERENTLY</span>
+              <p className="font-sans text-[0.65rem] text-white/70 font-light leading-relaxed">Shift your viewpoint. See what you've been missing.</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 flex-1">
+            <Heart size={24} className="text-[#c79c6e] shrink-0" weight="light" />
+            <div className="flex flex-col gap-1">
+              <span className="font-sans text-[0.6rem] text-[#c79c6e] font-semibold uppercase tracking-widest">FEEL HONESTLY</span>
+              <p className="font-sans text-[0.65rem] text-white/70 font-light leading-relaxed">Get in touch with what's real, not what's easy to admit.</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 flex-1">
+            <Leaf size={24} className="text-[#c79c6e] shrink-0" weight="light" />
+            <div className="flex flex-col gap-1">
+              <span className="font-sans text-[0.6rem] text-[#c79c6e] font-semibold uppercase tracking-widest">DECIDE INTENTIONALLY</span>
+              <p className="font-sans text-[0.65rem] text-white/70 font-light leading-relaxed">Make choices that align with who you're becoming.</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 flex-1">
+            <BookmarkSimple size={24} className="text-[#c79c6e] shrink-0" weight="light" />
+            <div className="flex flex-col gap-1">
+              <span className="font-sans text-[0.6rem] text-[#c79c6e] font-semibold uppercase tracking-widest">SAVE & RETURN</span>
+              <p className="font-sans text-[0.65rem] text-white/70 font-light leading-relaxed">Save what speaks to you. Build your personal library.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       {/* Scroll to continue */}
-      <div className="mt-24 mb-16 flex flex-col items-center gap-3 z-10 opacity-70">
+      <div className="mt-8 mb-16 flex flex-col items-center gap-3 z-10 opacity-70">
         <div className="w-5 h-8 border border-[#c79c6e]/50 rounded-full flex justify-center p-1">
           <div className="w-1 h-1 bg-[#c79c6e] rounded-full" />
         </div>
