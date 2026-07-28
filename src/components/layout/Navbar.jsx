@@ -11,7 +11,7 @@ const NAV_LINKS = [
   { label: 'About', href: '/#meet-aarkesh' },
   { label: 'Coaching', href: '/#coaching' },
   { label: 'Perspectives', href: '/perspectives' },
-  { label: 'Testimonials', href: '/stories' },
+  { label: 'Testimonials', href: '/#testimonials' },
   { label: 'FAQ', href: '/#faq' },
 ];
 
