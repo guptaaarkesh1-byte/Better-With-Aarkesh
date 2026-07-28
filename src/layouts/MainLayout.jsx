@@ -26,20 +26,8 @@ export default function MainLayout({ children }) {
       infinite: false,
     });
 
-    let scrollTimeout;
-    // Sync Lenis scroll with GSAP ScrollTrigger and fix hover state on scroll
-    lenisRef.current.on('scroll', () => {
-      ScrollTrigger.update();
-      
-      if (document.body.style.pointerEvents !== 'none') {
-        document.body.style.pointerEvents = 'none';
-      }
-      
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        document.body.style.pointerEvents = '';
-      }, 150);
-    });
+    // Sync Lenis scroll with GSAP ScrollTrigger
+    lenisRef.current.on('scroll', ScrollTrigger.update);
 
     gsap.ticker.add((time) => {
       lenisRef.current?.raf(time * 1000);
