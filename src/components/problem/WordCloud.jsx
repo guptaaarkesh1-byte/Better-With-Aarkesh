@@ -70,31 +70,34 @@ export default function WordCloud() {
       {/* Background Gradient / Haze */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/[0.03] via-transparent to-transparent opacity-50 z-0 pointer-events-none" />
 
-      {/* Background Floating Words (Blurred for depth of field) */}
-      {WORDS.map((word, i) => (
-        <span 
-          key={`bg-${i}`}
-          className={`floating-word absolute font-serif text-heading ${word.size} opacity-20 whitespace-nowrap z-0 blur-sm scale-75`}
-          style={{ 
-            // Shift positions so they don't perfectly align with the foreground ones
-            top: `${(parseFloat(word.top) + (i % 2 === 0 ? 15 : -10) + 100) % 95}%`, 
-            left: `${(parseFloat(word.left) + (i % 3 === 0 ? -20 : 25) + 100) % 95}%` 
-          }}
-        >
-          {word.text}
-        </span>
-      ))}
+      {/* Words Container - shifted left on mobile to prevent right edge clipping */}
+      <div className="absolute inset-0 -translate-x-20 md:translate-x-0 pointer-events-none">
+        {/* Background Floating Words (Blurred for depth of field) */}
+        {WORDS.map((word, i) => (
+          <span 
+            key={`bg-${i}`}
+            className={`floating-word absolute font-serif text-heading ${word.size} opacity-20 whitespace-nowrap z-0 blur-sm scale-75`}
+            style={{ 
+              // Shift positions so they don't perfectly align with the foreground ones
+              top: `${(parseFloat(word.top) + (i % 2 === 0 ? 15 : -10) + 100) % 95}%`, 
+              left: `${(parseFloat(word.left) + (i % 3 === 0 ? -20 : 25) + 100) % 95}%` 
+            }}
+          >
+            {word.text}
+          </span>
+        ))}
 
-      {/* Foreground Floating Words */}
-      {WORDS.map((word, i) => (
-        <span 
-          key={`fg-${i}`}
-          className={`floating-word absolute font-serif text-heading ${word.size} ${word.opacity} whitespace-nowrap z-10`}
-          style={{ top: word.top, left: word.left }}
-        >
-          {word.text}
-        </span>
-      ))}
+        {/* Foreground Floating Words */}
+        {WORDS.map((word, i) => (
+          <span 
+            key={`fg-${i}`}
+            className={`floating-word absolute font-serif text-heading ${word.size} ${word.opacity} whitespace-nowrap z-10`}
+            style={{ top: word.top, left: word.left }}
+          >
+            {word.text}
+          </span>
+        ))}
+      </div>
 
 
 
