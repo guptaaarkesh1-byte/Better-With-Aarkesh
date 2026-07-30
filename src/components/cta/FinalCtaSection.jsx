@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 
 export default function FinalCtaSection() {
   return (
-    <section id="book-session" className="relative w-full h-screen bg-[#050505] overflow-hidden flex flex-col snap-section">
+    <section id="book-session" className="relative w-full min-h-screen h-auto bg-[#050505] overflow-hidden flex flex-col snap-section">
       
       {/* Background Image & Gradient Overlays */}
       <div className="absolute inset-0 z-0">
