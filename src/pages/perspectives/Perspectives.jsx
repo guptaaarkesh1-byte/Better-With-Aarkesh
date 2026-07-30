@@ -16,6 +16,22 @@ import AnimatedText from '../../components/ui/AnimatedText';
 
 export default function Perspectives() {
   const [isHovered, setIsHovered] = useState(false);
+  const hotspotRef = useRef(null);
+
+  // Handle click outside to close on mobile
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (hotspotRef.current && !hotspotRef.current.contains(event.target)) {
+        setIsHovered(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   // Always start at the top
   useEffect(() => {
@@ -183,11 +199,11 @@ export default function Perspectives() {
 
       {/* Interactive Book on Table (Hotspot) */}
       <div 
-        className="absolute bottom-[10%] right-[80%] md:bottom-[15%] md:right-[35%] z-30 cursor-pointer flex items-center justify-center group"
+        ref={hotspotRef}
+        className="absolute bottom-[25%] right-[20%] md:bottom-[15%] md:right-[35%] z-30 cursor-pointer flex items-center justify-center group"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onTouchStart={() => setIsHovered(true)}
-        onTouchEnd={() => setIsHovered(false)}
+        onClick={() => setIsHovered(!isHovered)}
       >
         {/* The small book icon glowing */}
         <div className={`relative flex items-center justify-center w-12 h-12 transition-all duration-700 ${isHovered ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>

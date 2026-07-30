@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { 
@@ -65,6 +66,7 @@ const footerPoints = [
 ];
 
 export default function InvitationSection() {
+  const [hoveredCard, setHoveredCard] = useState(null);
   const containerRef = useRef(null);
 
   useGSAP(() => {
@@ -118,23 +120,28 @@ export default function InvitationSection() {
         <div className="w-full border border-white/10 rounded-xl bg-[#0a0a0a]/80 backdrop-blur-md p-8 md:p-12 flex flex-col items-center">
           
           {/* 3 Columns Grid */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 mb-16 group/grid">
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 mb-16">
             {coachingPillars.map((pillar, index) => {
               const isFirst = index === 0;
               const isLast = index === 2;
+              const isDimmed = hoveredCard !== null && hoveredCard !== pillar.id;
               
               return (
               <div 
                 key={pillar.id}
-                className="
-                  relative group flex flex-col items-center text-center p-4 
+                className={`
+                  relative flex flex-col items-center text-center p-4 
                   transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer
-                  group-hover/grid:opacity-30 group-hover/grid:scale-95 group-hover/grid:blur-[2px]
-                  hover:!opacity-100 hover:!scale-[1.05] hover:!blur-none hover:!z-[60]
-                "
+                  hover:scale-[1.05] hover:z-[60]
+                  ${hoveredCard === pillar.id ? 'z-[60]' : ''}
+                  ${isDimmed ? 'opacity-30 scale-95 blur-[2px]' : ''}
+                `}
+                onMouseEnter={() => setHoveredCard(pillar.id)}
+                onMouseLeave={() => setHoveredCard(null)}
+                onClick={() => setHoveredCard(pillar.id)}
               >
                 <div className="w-16 h-16 mb-6 flex items-center justify-center">
-                  <pillar.icon size={40} className="text-[#c79c6e] opacity-80 group-hover:opacity-100 transition-opacity" weight="light" />
+                  <pillar.icon size={40} className={`text-[#c79c6e] transition-opacity ${hoveredCard === pillar.id ? 'opacity-100' : 'opacity-80'}`} weight="light" />
                 </div>
                 <h4 className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold text-[#c79c6e] mb-4">
                   {pillar.title}
@@ -148,22 +155,27 @@ export default function InvitationSection() {
                   className={`
                     absolute top-1/2 -translate-y-1/2 w-[280px]
                     bg-[#080808] border border-[#c79c6e]/40 rounded-xl p-8 shadow-2xl z-50
-                    flex flex-col text-left transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] pointer-events-none
-                    opacity-0 scale-90
-                    group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto
-                    left-1/2 -translate-x-1/2 group-hover:-translate-x-1/2
-                    ${isFirst 
-                      ? "md:left-full md:-translate-x-8 md:group-hover:translate-x-0" 
-                      : isLast 
-                        ? "md:left-auto md:right-full md:translate-x-8 md:group-hover:translate-x-0"
-                        : "md:left-1/2 md:-translate-x-1/2"}
+                    flex flex-col text-left transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]
+                    left-1/2
+                    ${isFirst ? "md:left-full" : isLast ? "md:left-auto md:right-full" : "md:left-1/2"}
+                    ${hoveredCard === pillar.id 
+                      ? "opacity-100 scale-100 pointer-events-auto -translate-x-1/2 " + (isFirst ? "md:translate-x-0" : isLast ? "md:translate-x-0" : "md:-translate-x-1/2")
+                      : "opacity-0 scale-90 pointer-events-none -translate-x-1/2 " + (isFirst ? "md:-translate-x-8" : isLast ? "md:translate-x-8" : "md:-translate-x-1/2")}
                   `}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold text-[#c79c6e]">
                       {pillar.title}
                     </span>
-                    <X size={14} className="text-white/50 hover:text-white cursor-pointer" />
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHoveredCard(null);
+                      }}
+                      className="p-1 -mr-1 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <X size={14} className="text-white/50 hover:text-white" />
+                    </button>
                   </div>
 
                   <p className="font-sans text-white/90 text-sm leading-relaxed whitespace-pre-line mb-6">
@@ -193,9 +205,9 @@ export default function InvitationSection() {
 
           {/* Big Action Button */}
           <div className="w-full max-w-md mx-auto flex flex-col items-center">
-            <button className="w-full py-4 border border-[#c79c6e]/50 text-[#c79c6e] font-sans text-[0.7rem] uppercase tracking-[0.2em] font-semibold rounded-md hover:bg-[#c79c6e] hover:text-[#050505] transition-colors duration-500 mb-4">
+            <Link to="/book" className="w-full block text-center py-4 border border-[#c79c6e]/50 text-[#c79c6e] font-sans text-[0.7rem] uppercase tracking-[0.2em] font-semibold rounded-md hover:bg-[#c79c6e] hover:text-[#050505] transition-colors duration-500 mb-4 cursor-pointer">
               BOOK A DISCOVERY SESSION
-            </button>
+            </Link>
             <span className="font-sans text-white/40 text-xs font-light">
               No pressure. Just a conversation.
             </span>

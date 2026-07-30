@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -25,6 +25,7 @@ const footerPoints = [
 ];
 
 export default function FeaturedSection() {
+  const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef(null);
 
   useGSAP(() => {
@@ -71,7 +72,12 @@ export default function FeaturedSection() {
       </div>
 
       {/* Featured Card */}
-      <div className="featured-card relative w-full max-w-4xl mx-auto px-6 mb-20 z-10 group/card">
+      <div 
+        className="featured-card relative w-full max-w-4xl mx-auto px-6 mb-20 z-10"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={() => setIsHovered(true)}
+      >
         <div className="w-full flex flex-col md:flex-row border border-white/10 rounded-lg bg-[#0a0a0a] backdrop-blur-sm overflow-hidden cursor-pointer transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:border-[#c79c6e]/50 hover:shadow-2xl hover:shadow-[#c79c6e]/5">
           
           {/* Image Half */}
@@ -79,7 +85,7 @@ export default function FeaturedSection() {
             <img 
               src={featuredImg} 
               alt="Featured Perspective" 
-              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-105"
+              className={`w-full h-full object-cover transition-transform duration-700 ease-out ${isHovered ? 'scale-105' : 'scale-100'}`}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0a0a0a] hidden md:block" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] to-transparent md:hidden" />
@@ -97,7 +103,7 @@ export default function FeaturedSection() {
             </div>
 
             {/* Default State Content */}
-            <div className="flex-1 flex flex-col justify-center transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover/card:opacity-0 group-hover/card:-translate-y-4">
+            <div className={`flex-1 flex flex-col justify-center transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isHovered ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0 pointer-events-auto'}`}>
               <h3 className="font-serif text-2xl md:text-3xl text-white font-light mb-4">
                 The gap between<br/>
                 knowing and living.
@@ -119,10 +125,18 @@ export default function FeaturedSection() {
             </div>
 
             {/* Hover Pop-up Content (Inside the right half) */}
-            <div className="absolute inset-0 p-8 md:p-12 bg-[#080808] border-l border-[#c79c6e]/20 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] opacity-0 translate-y-4 pointer-events-none group-hover/card:opacity-100 group-hover/card:translate-y-0 group-hover/card:pointer-events-auto">
+            <div className={`absolute inset-0 p-8 md:p-12 bg-[#080808] border-l border-[#c79c6e]/20 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isHovered ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
               <div className="flex items-center justify-between mb-6 text-[#c79c6e]">
                 <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold">A PEEK INSIDE</span>
-                <X size={16} />
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsHovered(false);
+                  }}
+                  className="p-1 -mr-1 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
               </div>
 
               <p className="font-sans text-white/90 text-sm leading-relaxed mb-6">

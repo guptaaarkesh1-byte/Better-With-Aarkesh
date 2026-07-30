@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { 
@@ -55,6 +55,7 @@ const footerPoints = [
 ];
 
 export default function SavedLibrarySection() {
+  const [hoveredCard, setHoveredCard] = useState(null);
   const containerRef = useRef(null);
 
   useGSAP(() => {
@@ -114,19 +115,24 @@ export default function SavedLibrarySection() {
         </div>
 
         {/* Grid of Saved Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 group/grid">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {savedItems.map((item, index) => {
             const isLastInRow = (index + 1) % 3 === 0;
+            const isDimmed = hoveredCard !== null && hoveredCard !== item.id;
             return (
             <div 
               key={item.id}
-              className="
-                saved-card relative group flex flex-col p-4 
+              className={`
+                saved-card relative flex flex-col p-4 
                 border border-white/10 rounded-lg bg-[#0a0a0a] backdrop-blur-sm z-10
                 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer
-                group-hover/grid:opacity-30 group-hover/grid:scale-95 group-hover/grid:blur-[2px]
-                hover:!opacity-100 hover:!scale-[1.05] hover:!blur-none hover:!shadow-2xl hover:!border-[#c79c6e]/50 hover:!bg-[#0f0f0f]/80 hover:!z-[60]
-              "
+                hover:scale-[1.05] hover:shadow-2xl hover:border-[#c79c6e]/50 hover:bg-[#0f0f0f]/80
+                ${hoveredCard === item.id ? 'z-[60]' : ''}
+                ${isDimmed ? 'opacity-30 scale-95 blur-[2px]' : ''}
+              `}
+              onMouseEnter={() => setHoveredCard(item.id)}
+              onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => setHoveredCard(item.id)}
             >
               {/* Image */}
               <div className="w-full aspect-video rounded-md overflow-hidden relative mb-4">
@@ -157,20 +163,27 @@ export default function SavedLibrarySection() {
                 className={`
                   absolute top-1/2 -translate-y-1/2 w-[240px]
                   bg-[#080808] border border-[#c79c6e]/20 rounded-lg p-6 shadow-2xl z-50
-                  flex flex-col text-left transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] pointer-events-none
-                  opacity-0 scale-90
-                  group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto
-                  left-1/2 -translate-x-1/2 group-hover:-translate-x-1/2
-                  ${isLastInRow 
-                    ? "md:left-auto md:right-[70%] md:-translate-x-4 md:group-hover:translate-x-0" 
-                    : "md:left-[70%] md:-translate-x-[-1rem] md:group-hover:translate-x-0"}
+                  flex flex-col text-left transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]
+                  left-1/2
+                  ${isLastInRow ? "md:left-auto md:right-[70%]" : "md:left-[70%]"}
+                  ${hoveredCard === item.id 
+                    ? "opacity-100 scale-100 pointer-events-auto -translate-x-1/2 md:translate-x-0"
+                    : "opacity-0 scale-90 pointer-events-none -translate-x-1/2 " + (isLastInRow ? "md:-translate-x-4" : "md:translate-x-4")}
                 `}
               >
                 <div className="flex items-start justify-between mb-6">
                   <h4 className="font-serif text-sm text-white font-light whitespace-pre-line">
                     {item.title}
                   </h4>
-                  <X size={14} className="text-white/50 hover:text-white cursor-pointer mt-1" />
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHoveredCard(null);
+                    }}
+                    className="p-1 -mr-1 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <X size={14} className="text-white/50 hover:text-white" />
+                  </button>
                 </div>
 
                 <ul className="flex flex-col gap-4 mb-6">

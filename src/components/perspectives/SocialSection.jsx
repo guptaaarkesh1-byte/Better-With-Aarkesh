@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { 
@@ -56,6 +56,7 @@ const footerPoints = [
 ];
 
 export default function SocialSection() {
+  const [hoveredCard, setHoveredCard] = useState(null);
   const containerRef = useRef(null);
 
   useGSAP(() => {
@@ -106,22 +107,24 @@ export default function SocialSection() {
       {/* Cards Container */}
       <div className="w-full max-w-3xl mx-auto px-6 mb-16 z-10">
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 group/grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {socialItems.map((item, index) => {
             const isFirst = index === 0;
+            const isDimmed = hoveredCard !== null && hoveredCard !== item.id;
             return (
-            <a 
-              href={item.link}
-              target="_blank"
-              rel="noopener noreferrer"
+            <div 
               key={item.id}
-              className="
-                social-card relative group flex flex-col p-8 
+              className={`
+                social-card relative flex flex-col p-8 
                 border border-white/10 rounded-xl bg-[#0a0a0a]/40 backdrop-blur-md z-10
                 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer min-h-[400px]
-                group-hover/grid:opacity-30 group-hover/grid:scale-95 group-hover/grid:blur-[2px]
-                hover:!opacity-100 hover:!scale-[1.05] hover:!blur-none hover:!shadow-2xl hover:!border-[#c79c6e]/50 hover:!bg-[#0a0a0a]/70 hover:!z-[60]
-              "
+                hover:scale-[1.05] hover:shadow-2xl hover:border-[#c79c6e]/50 hover:bg-[#0a0a0a]/70
+                ${hoveredCard === item.id ? 'z-[60]' : ''}
+                ${isDimmed ? 'opacity-30 scale-95 blur-[2px]' : ''}
+              `}
+              onMouseEnter={() => setHoveredCard(item.id)}
+              onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => setHoveredCard(item.id)}
             >
               {/* Top Icon */}
               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-10 ${item.iconBg}`}>
@@ -146,18 +149,27 @@ export default function SocialSection() {
                 className={`
                   absolute top-1/2 -translate-y-1/2 w-[280px]
                   bg-[#080808] border border-[#c79c6e]/20 rounded-xl p-8 shadow-2xl z-50
-                  flex flex-col text-left transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] pointer-events-none
-                  opacity-0 scale-90
-                  group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto
-                  left-1/2 -translate-x-1/2 group-hover:-translate-x-1/2
-                  md:left-[80%] md:-translate-x-[-1rem] md:group-hover:translate-x-0
+                  flex flex-col text-left transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]
+                  left-1/2
+                  md:left-[80%]
+                  ${hoveredCard === item.id 
+                    ? "opacity-100 scale-100 pointer-events-auto -translate-x-1/2 md:translate-x-0"
+                    : "opacity-0 scale-90 pointer-events-none -translate-x-1/2 md:translate-x-4"}
                 `}
               >
                 <div className="flex items-start justify-between mb-6">
                   <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold text-[#c79c6e]">
                     {item.platform}
                   </span>
-                  <X size={14} className="text-white/50 hover:text-white cursor-pointer" />
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHoveredCard(null);
+                    }}
+                    className="p-1 -mr-1 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <X size={14} className="text-white/50 hover:text-white" />
+                  </button>
                 </div>
 
                 <p className="font-sans text-white/90 text-xs leading-relaxed mb-6">
@@ -175,13 +187,18 @@ export default function SocialSection() {
                   ))}
                 </ul>
 
-                <div className="mt-auto flex items-center justify-between text-[#c79c6e]">
+                <a 
+                  href={item.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="mt-auto flex items-center justify-between text-[#c79c6e] hover:text-white transition-colors"
+                >
                   <span className="font-sans text-xs font-medium tracking-wider">Visit {item.platform === 'INSTAGRAM' ? 'Instagram' : 'YouTube'}</span>
                   <ArrowRight size={14} weight="bold" />
-                </div>
+                </a>
               </div>
 
-            </a>
+            </div>
             )})}
         </div>
       </div>

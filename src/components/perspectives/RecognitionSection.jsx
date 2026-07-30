@@ -160,6 +160,7 @@ export default function RecognitionSection() {
               `}
               onMouseEnter={() => setHoveredCard(item.id)}
               onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => setHoveredCard(item.id)}
             >
               <div className="w-full h-1/2 overflow-hidden relative">
                 <img 
@@ -185,15 +186,23 @@ export default function RecognitionSection() {
               {/* Hover Pop-up */}
               <div 
                 className={`
-                  absolute top-0 left-0 w-full md:w-[110%] md:-left-[5%] md:-top-[5%] h-auto min-h-full
-                  bg-[#080808] border border-[#c79c6e]/80 rounded-md p-8 shadow-[0_0_30px_rgba(199,156,110,0.15)] z-50
+                  absolute -top-[2%] -left-[2%] w-[104%] h-auto min-h-[104%] md:w-[110%] md:-left-[5%] md:-top-[5%] md:min-h-[110%]
+                  bg-[#080808] border border-[#c79c6e]/80 rounded-md p-5 md:p-8 shadow-[0_0_30px_rgba(199,156,110,0.15)] z-50
                   flex flex-col text-left transition-all duration-500 ease-out
                   ${hoveredCard === item.id ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-2 pointer-events-none'}
                 `}
               >
                 <div className="flex items-center justify-between mb-3 text-[#c79c6e]">
                   <span className="font-sans text-xs uppercase tracking-widest font-bold">{item.title.toUpperCase()}</span>
-                  <X size={16} />
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHoveredCard(null);
+                    }}
+                    className="p-1 -mr-1 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
                 <span className="font-serif italic text-xs text-[#c79c6e] mb-6 block">
                   (Shared human emotion)

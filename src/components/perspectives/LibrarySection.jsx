@@ -50,6 +50,7 @@ const bottomPoints = [
 ];
 
 export default function LibrarySection() {
+  const [hoveredCard, setHoveredCard] = useState(null);
   const containerRef = useRef(null);
 
   useGSAP(() => {
@@ -97,19 +98,25 @@ export default function LibrarySection() {
       </div>
 
       {/* Grid */}
-      <div className="relative w-full max-w-[90rem] mx-auto px-6 md:px-12 grid grid-cols-2 md:grid-cols-6 gap-4 md:gap-6 z-50 group/grid">
-        {categories.map((cat) => {
+      <div className="relative w-full max-w-[90rem] mx-auto px-6 md:px-12 grid grid-cols-2 md:grid-cols-6 gap-4 md:gap-6 z-50">
+        {categories.map((cat, index) => {
+          const isLeftCol = index % 2 === 0;
+          const isDimmed = hoveredCard !== null && hoveredCard !== cat.id;
           
           return (
             <div 
               key={cat.id}
-              className="
-                library-card relative group aspect-square flex flex-col items-center justify-center text-center p-6 
+              className={`
+                library-card relative aspect-square flex flex-col items-center justify-center text-center p-6 
                 border border-white/10 rounded-lg bg-black/40 backdrop-blur-sm z-10
                 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer
-                group-hover/grid:opacity-30 group-hover/grid:scale-95 group-hover/grid:blur-[2px]
-                hover:!opacity-100 hover:!scale-[1.05] hover:!blur-none hover:!shadow-2xl hover:!border-[#c79c6e]/50 hover:!bg-[#0f0f0f]/80 hover:!z-[60]
-              "
+                hover:scale-[1.05] hover:shadow-2xl hover:border-[#c79c6e]/50 hover:bg-[#0f0f0f]/80
+                ${hoveredCard === cat.id ? 'z-[60]' : ''}
+                ${isDimmed ? '!opacity-30 !scale-95 !blur-[2px]' : ''}
+              `}
+              onMouseEnter={() => setHoveredCard(cat.id)}
+              onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => setHoveredCard(cat.id)}
             >
               {/* Subtle Bookmark indicator for explored categories */}
               {cat.hasBookmark && (
@@ -121,25 +128,35 @@ export default function LibrarySection() {
               <cat.icon 
                 size={32} 
                 weight="light" 
-                className="mb-4 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] text-[#c79c6e]/70 scale-100 translate-y-0 opacity-100 group-hover:text-[#c79c6e] group-hover:scale-110 group-hover:-translate-y-2 group-hover:opacity-0" 
+                className={`mb-4 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${hoveredCard === cat.id ? 'text-[#c79c6e] scale-110 -translate-y-2 opacity-0' : 'text-[#c79c6e]/70 scale-100 translate-y-0 opacity-100'}`} 
               />
-              <p className="font-sans text-xs md:text-sm text-white/70 font-light tracking-widest transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] opacity-100 translate-y-0 group-hover:opacity-0 group-hover:translate-y-4">
+              <p className={`font-sans text-xs md:text-sm text-white/70 font-light tracking-widest transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${hoveredCard === cat.id ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
                 {cat.title}
               </p>
 
               {/* Hover Pop-up */}
               <div 
-                className="
-                  absolute top-0 left-0 w-full h-auto min-h-full md:w-[130%] md:-left-[15%] md:-top-[15%] md:min-h-[130%]
+                className={`
+                  absolute -top-[2%] h-auto min-h-[104%]
+                  w-[calc(200%+16px)] md:w-[130%] 
+                  ${isLeftCol ? 'left-0' : 'left-[calc(-100%-16px)]'} 
+                  md:-left-[15%] md:-top-[15%] md:min-h-[130%]
                   bg-[#0f0f0f]/95 backdrop-blur-md border border-[#c79c6e]/40 rounded-lg p-6 md:p-8 shadow-[0_0_40px_rgba(199,156,110,0.15)] z-50
-                  flex flex-col text-left transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] pointer-events-none
-                  opacity-0 scale-90 translate-y-4
-                  group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 group-hover:pointer-events-auto
-                "
+                  flex flex-col text-left transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]
+                  ${hoveredCard === cat.id ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-90 translate-y-4 pointer-events-none'}
+                `}
               >
                 <div className="flex items-center justify-between mb-4 text-[#c79c6e]">
                   <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold">{cat.title}</span>
-                  <X size={14} />
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHoveredCard(null);
+                    }}
+                    className="p-1 -mr-1 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
                 
                 <div className="flex-1 flex flex-col justify-start mt-2">

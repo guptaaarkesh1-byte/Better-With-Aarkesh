@@ -142,6 +142,7 @@ export default function QuestionsSection() {
               `}
               onMouseEnter={() => setHoveredCard(q.id)}
               onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => setHoveredCard(q.id)}
             >
               <q.icon 
                 size={32} 
@@ -155,15 +156,23 @@ export default function QuestionsSection() {
             {/* Hover Pop-up */}
             <div 
               className={`
-                absolute top-0 left-0 w-full h-full md:w-[110%] md:-left-[5%] md:-top-[5%] md:h-[110%]
-                bg-[#0f0f0f]/95 backdrop-blur-md border border-[#c79c6e]/40 rounded-lg p-6 shadow-[0_0_40px_rgba(199,156,110,0.15)] z-50
-                flex flex-col text-left transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none
-                ${hoveredCard === q.id ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-4 pointer-events-none'}
+                absolute -top-[2%] -left-[2%] w-[104%] h-auto min-h-[104%] md:w-[110%] md:-left-[5%] md:-top-[5%] md:min-h-[110%]
+                bg-[#0f0f0f]/95 backdrop-blur-md border border-[#c79c6e]/40 rounded-lg p-5 md:p-6 shadow-[0_0_40px_rgba(199,156,110,0.15)] z-50
+                flex flex-col text-left transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]
+                ${hoveredCard === q.id ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-90 translate-y-4 pointer-events-none'}
               `}
             >
               <div className="flex items-center justify-between mb-4 text-[#c79c6e]">
                 <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold">{q.title}</span>
-                <X size={14} />
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHoveredCard(null);
+                  }}
+                  className="p-1 -mr-1 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
               </div>
               
               <div className="flex-1 flex flex-col justify-center">
