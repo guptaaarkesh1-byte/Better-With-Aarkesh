@@ -56,28 +56,28 @@ export default function CoachingPrinciple() {
   }, { scope: container });
 
   return (
-    <section ref={container} id="coaching" className="principle-panel relative w-full h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
+    <section ref={container} id="coaching" className="principle-panel relative w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
       
       {/* Background Image */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
+      <div className="absolute inset-0 z-0 pointer-events-none block">
         <img 
           src={bgImg} 
           alt="Coaching Process"
-          className="w-full h-full object-contain opacity-100 object-[80%_center]"
+          className="w-full h-full object-cover lg:object-contain opacity-30 lg:opacity-100 object-center lg:object-[80%_center]"
           style={{
             maskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 75%, transparent 95%)',
             WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 75%, transparent 95%)'
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 lg:via-black/40 to-black/40 lg:to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 lg:from-transparent via-transparent to-black" />
       </div>
 
       {/* Main Content Area */}
-      <div className="relative flex-grow flex items-start pt-20 pb-48">
+      <div className="relative flex-grow flex items-start pt-20 pb-12 lg:pb-48">
         <Container className="relative z-10 w-full flex items-start">
           
-          <div className="w-full lg:w-[85%] xl:w-[80%] shrink-0 pr-8">
+          <div className="w-full lg:w-[85%] xl:w-[80%] shrink-0 lg:pr-8">
             {/* Header */}
             <div className="flex items-center gap-4 mb-4 coaching-fade">
               <div className="h-[1px] w-8 bg-accent-gold origin-left" />
@@ -122,6 +122,7 @@ export default function CoachingPrinciple() {
                 );
               })}
             </div>
+
           </div>
 
           {/* Right space for sticky progress bar */}
@@ -131,7 +132,7 @@ export default function CoachingPrinciple() {
       </div>
 
       {/* Bottom Banners */}
-      <div className="absolute bottom-0 left-0 w-full z-40 coaching-bottom pointer-events-none">
+      <div className="relative mt-8 lg:mt-0 lg:absolute lg:bottom-0 left-0 w-full z-40 coaching-bottom pointer-events-none">
         
         {/* Stats Row */}
         <div className="border-t border-white/5 bg-[#0a0a0a]/90 backdrop-blur-md pointer-events-auto">
@@ -147,33 +148,33 @@ export default function CoachingPrinciple() {
             </div>
 
             {/* Stats */}
-            <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-6 lg:w-2/3">
-              <div className="flex items-center gap-4 border-l border-white/10 pl-6">
-                <UsersThree className="text-accent-gold text-3xl" weight="light" />
+            <div className="grid grid-cols-2 lg:flex lg:flex-nowrap items-start lg:items-center justify-between gap-y-8 gap-x-4 lg:gap-6 lg:w-2/3 mt-6 lg:mt-0 w-full">
+              <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
+                <UsersThree className="text-accent-gold text-3xl shrink-0" weight="light" />
                 <div>
                   <div className="text-white text-lg font-medium">1000+</div>
                   <div className="text-white/50 text-xs uppercase tracking-wider">Sessions<br/>Conducted</div>
                 </div>
               </div>
-              <div className="flex items-center gap-4 border-l border-white/10 pl-6">
-                <Star className="text-accent-gold text-3xl" weight="light" />
+              <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
+                <Star className="text-accent-gold text-3xl shrink-0" weight="light" />
                 <div>
                   <div className="text-white text-lg font-medium">5.0</div>
                   <div className="text-white/50 text-xs uppercase tracking-wider">Client<br/>Rating</div>
                 </div>
               </div>
-              <div className="flex items-center gap-4 border-l border-white/10 pl-6">
-                <Clock className="text-accent-gold text-3xl" weight="light" />
+              <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
+                <Clock className="text-accent-gold text-3xl shrink-0" weight="light" />
                 <div>
                   <div className="text-white text-lg font-medium">2000+</div>
                   <div className="text-white/50 text-xs uppercase tracking-wider">Hours of<br/>Coaching</div>
                 </div>
               </div>
-              <div className="flex items-center gap-4 border-l border-white/10 pl-6">
-                <ShieldCheck className="text-accent-gold text-3xl" weight="light" />
+              <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
+                <ShieldCheck className="text-accent-gold text-3xl shrink-0" weight="light" />
                 <div>
                   <div className="text-white text-lg font-medium">100%</div>
-                  <div className="text-white/50 text-xs uppercase tracking-wider">Confidential<br/>& Safe Space</div>
+                  <div className="text-white/50 text-xs uppercase tracking-wider">Confidential<br/>& Safe</div>
                 </div>
               </div>
             </div>

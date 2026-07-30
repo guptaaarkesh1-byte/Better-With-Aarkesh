@@ -37,6 +37,7 @@ export default function DecidePrinciple() {
       transitionText="As you scroll past the illuminated path, the scene moves you forward on your journey."
       customTransitionFlow={customFlow}
       contentClassName="pt-20"
+      imagePosition="object-center"
     />
   );
 }

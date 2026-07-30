@@ -133,10 +133,10 @@ export default function Step2Details({ data, updateData, onNext, onBack }) {
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="mt-12 pt-8 border-t border-white/10 flex flex-col-reverse md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
         <button
           onClick={onBack}
-          className="flex items-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all w-full md:w-auto justify-center"
+          className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all w-full md:w-auto"
         >
           <ArrowLeft className="text-lg" />
           BACK TO TIME

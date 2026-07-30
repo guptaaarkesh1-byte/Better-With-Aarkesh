@@ -20,6 +20,7 @@ export default {
       fontFamily: {
         serif: ['"Playfair Display"', 'serif'],
         sans: ['Inter', 'sans-serif'],
+        libertinus: ['"Libertinus Serif"', 'serif'],
       },
       spacing: {
         '18': '4.5rem',

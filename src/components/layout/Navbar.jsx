@@ -5,7 +5,7 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { cn } from '../../utils/cn';
 import { Link, useLocation } from 'react-router-dom';
-import { BookmarkSimple } from '@phosphor-icons/react';
+import { BookmarkSimple, List, X } from '@phosphor-icons/react';
 
 const NAV_LINKS = [
   { label: 'About', href: '/#meet-aarkesh' },
@@ -17,6 +17,7 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navRef = useRef(null);
   const location = useLocation();
   const isPerspectives = location.pathname === '/perspectives';
@@ -79,25 +80,95 @@ export default function Navbar() {
           )}
         </nav>
 
-        <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-4">
-          {isPerspectives && (
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-4">
+            {isPerspectives && (
+              <Button 
+                variant="outline" 
+                className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
+                onClick={() => document.getElementById('saved-library')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <BookmarkSimple size={14} weight="light" /> MY LIBRARY
+              </Button>
+            )}
             <Button 
               variant="outline" 
-              className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
-              onClick={() => document.getElementById('saved-library')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-[0.65rem] px-5 py-[0.65rem] border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]" 
+              to="/book"
             >
-              <BookmarkSimple size={14} weight="light" /> MY LIBRARY
+              BOOK A SESSION
             </Button>
-          )}
-          <Button 
-            variant="outline" 
-            className="text-[0.65rem] px-5 py-[0.65rem] border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]" 
-            to="/book"
-          >
-            BOOK A SESSION
-          </Button>
+          </div>
+
+          {/* Mobile Hamburger Icon */}
+          <div className="lg:hidden flex items-center">
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="text-white focus:outline-none p-1 transition-transform active:scale-95"
+              aria-label="Toggle Menu"
+            >
+              {mobileMenuOpen ? <X size={28} weight="light" /> : <List size={28} weight="light" />}
+            </button>
+          </div>
         </div>
       </Container>
+
+      {/* Mobile Menu Overlay */}
+      <div 
+        className={cn(
+          "fixed inset-0 z-[-1] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center lg:hidden w-full h-[100dvh] px-6 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] origin-top",
+          mobileMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-[10vh] scale-95 pointer-events-none"
+        )}
+      >
+        <nav className="flex flex-col items-center gap-8 w-full mt-12 overflow-y-auto pb-10">
+          {NAV_LINKS.map((link) => 
+            !link.href.includes('#') ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-3xl font-serif text-white hover:text-accent-gold transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-3xl font-serif text-white hover:text-accent-gold transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.label}
+              </a>
+            )
+          )}
+          
+          <div className="w-12 h-[1px] bg-accent-gold/30 my-4" />
+
+          <div className="flex flex-col items-center gap-4 w-full max-w-xs">
+            {isPerspectives && (
+              <Button 
+                variant="outline" 
+                className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center items-center gap-2"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  document.getElementById('saved-library')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                <BookmarkSimple size={16} weight="light" /> MY LIBRARY
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center" 
+              to="/book"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              BOOK A SESSION
+            </Button>
+          </div>
+        </nav>
+      </div>
     </header>
   );
 }

@@ -125,36 +125,28 @@ export default function Step3Confirm({ data, onNext, onBack }) {
       </div>
 
       {/* Checkbox and Submit */}
-      <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         
-        <div className="flex flex-col gap-6 w-full md:w-auto">
+        <div className="flex w-full md:w-auto">
           <div 
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-start gap-3 cursor-pointer group"
             onClick={() => setAgreed(!agreed)}
           >
             {agreed ? (
-              <CheckSquare className="text-accent-gold text-2xl" weight="fill" />
+              <CheckSquare className="text-accent-gold text-2xl shrink-0" weight="fill" />
             ) : (
-              <Square className="text-white/30 text-2xl group-hover:text-white/60 transition-colors" weight="regular" />
+              <Square className="text-white/30 text-2xl shrink-0 group-hover:text-white/60 transition-colors" weight="regular" />
             )}
-            <p className="text-white/80 text-sm font-light">
+            <p className="text-white/80 text-sm font-light leading-snug">
               I have read and agree to the <a href="#" className="text-accent-gold hover:underline" onClick={(e) => e.stopPropagation()}>Terms & Conditions</a> and <a href="#" className="text-accent-gold hover:underline" onClick={(e) => e.stopPropagation()}>Privacy Policy</a>.
             </p>
           </div>
-
-          <button
-            onClick={onBack}
-            className="flex items-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all w-max md:hidden"
-          >
-            <ArrowLeft className="text-lg" />
-            BACK
-          </button>
         </div>
 
-        <div className="flex items-center gap-6 w-full md:w-auto">
+        <div className="flex flex-col-reverse md:flex-row items-stretch md:items-center gap-4 md:gap-6 w-full md:w-auto mt-2 md:mt-0">
           <button
             onClick={onBack}
-            className="hidden md:flex items-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all"
+            className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all"
           >
             <ArrowLeft className="text-lg" />
             BACK
@@ -163,14 +155,14 @@ export default function Step3Confirm({ data, onNext, onBack }) {
           <button
             onClick={onNext}
             disabled={!agreed}
-            className={`flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-sans text-sm font-semibold tracking-wide transition-all w-full md:w-auto
+            className={`flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-sans text-sm font-semibold tracking-wide transition-all
               ${!agreed 
                 ? 'bg-white/5 text-white/20 cursor-not-allowed' 
                 : 'bg-accent-gold text-black hover:bg-white hover:text-black hover:-translate-y-1'
               }
             `}
           >
-            CONFIRM & BOOK SESSION
+            CONFIRM & BOOK
             <LockKey className="text-lg" weight="bold" />
           </button>
         </div>

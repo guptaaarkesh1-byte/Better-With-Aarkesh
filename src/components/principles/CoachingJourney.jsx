@@ -29,11 +29,32 @@ export default function CoachingJourney() {
     { title: 'COMMIT', icon: Mountains, text: "We turn insight into action.\nYou build momentum and become the person you choose to be." },
   ];
 
+  // ==========================================
+  // 🛠️ FLOATING NODES CONFIGURATION
+  // Use `top` and `left` to move the nodes on DESKTOP
+  // Use `mobTop` and `mobLeft` to move the nodes on MOBILE
+  // ==========================================
   const floatingNodes = [
-    { num: '01', title: 'CLARIFY', icon: Compass, text: 'Root cause clarity.\nReal understanding.', top: '60%', left: '58%' },
-    { num: '02', title: 'CONNECT', icon: Heart, text: 'Emotional honesty.\nValues alignment.', top: '44%', left: '51%', flip: true },
-    { num: '03', title: 'CREATE', icon: GitFork, text: 'Aligned decisions.\nIntentional life.', top: '30%', left: '57%', flip: true },
-    { num: '04', title: 'COMMIT', icon: Mountains, text: 'Sustained action.\nLasting change.', top: '24%', left: '71%' },
+    { 
+      num: '01', title: 'CLARIFY', icon: Compass, text: 'Root cause clarity.\nReal understanding.', 
+      top: '60%', left: '58%', 
+      mobTop: '70%', mobLeft: '50%' 
+    },
+    { 
+      num: '02', title: 'CONNECT', icon: Heart, text: 'Emotional honesty.\nValues alignment.', 
+      top: '44%', left: '51%', flip: true,
+      mobTop: '44%', mobLeft: '23%'
+    },
+    { 
+      num: '03', title: 'CREATE', icon: GitFork, text: 'Aligned decisions.\nIntentional life.', 
+      top: '30%', left: '57%', flip: true,
+      mobTop: '30%', mobLeft: '27%'
+    },
+    { 
+      num: '04', title: 'COMMIT', icon: Mountains, text: 'Sustained action.\nLasting change.', 
+      top: '24%', left: '71%', 
+      mobTop: '18%', mobLeft: '78%'
+    },
   ];
 
   useGSAP(() => {
@@ -66,10 +87,10 @@ export default function CoachingJourney() {
   }, { scope: container });
 
   return (
-    <section ref={container} id="coaching-journey" className="principle-panel relative w-full h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
+    <section ref={container} id="coaching-journey" className="principle-panel relative w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
       
-      {/* Background Image */}
-      <div className="absolute inset-0 z-0 pointer-events-none pt-8">
+      {/* Background Image (Desktop Only) */}
+      <div className="absolute inset-0 z-0 pointer-events-none pt-8 hidden lg:block">
         <img 
           src={bgImg} 
           alt="The Coaching Journey"
@@ -80,7 +101,7 @@ export default function CoachingJourney() {
       </div>
 
       {/* Main Content Area */}
-      <div className="relative flex-grow flex items-start pt-24 pb-48">
+      <div className="relative flex-grow flex items-start pt-24 pb-12 lg:pb-48">
         <Container className="relative z-10 w-full h-full">
           
           <div className="w-full lg:w-[55%] shrink-0 h-full flex flex-col">
@@ -154,6 +175,57 @@ export default function CoachingJourney() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Mobile Image (Visible below points on mobile) */}
+            <div className="block lg:hidden w-[calc(100%+2rem)] -ml-4 mt-12 relative flex justify-center pointer-events-auto">
+              <img 
+                src={bgImg} 
+                alt="The Coaching Journey"
+                className="w-full min-h-[85vh] object-cover opacity-90 object-[75%_top]"
+                style={{
+                  maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)'
+                }}
+              />
+              
+              {/* Floating Nodes for Mobile */}
+              {floatingNodes.map((node, i) => {
+                const Icon = node.icon;
+                return (
+                  <div 
+                    key={`mob-${i}`} 
+                    className={`absolute flex items-center gap-2 z-20 group cursor-pointer ${node.flip ? 'flex-row-reverse' : ''} scale-[0.65] sm:scale-90 origin-center`}
+                    style={{ 
+                      top: node.mobTop, 
+                      left: node.mobLeft,
+                      transform: 'translate(-50%, -50%)' // Center the node on its coordinate on mobile
+                    }}
+                  >
+                    <div className="w-10 h-10 rounded-full border border-accent-gold/40 bg-black/60 backdrop-blur-md flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(185,138,86,0.3)]">
+                      <Icon className="text-accent-gold text-lg" weight="light" />
+                    </div>
+                    <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-lg p-2 w-max">
+                      <div className={`flex items-center gap-2 mb-0.5 ${node.flip ? 'justify-end' : ''}`}>
+                        {node.flip ? (
+                          <>
+                            <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white">{node.title}</span>
+                            <span className="font-sans text-[0.6rem] tracking-widest text-accent-gold">{node.num}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-sans text-[0.6rem] tracking-widest text-accent-gold">{node.num}</span>
+                            <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white">{node.title}</span>
+                          </>
+                        )}
+                      </div>
+                      <p className={`text-paragraph text-[0.65rem] font-light leading-tight whitespace-pre-line text-white/80 ${node.flip ? 'text-right' : ''}`}>
+                        {node.text}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

@@ -18,7 +18,7 @@ export default function ProblemSection() {
     // We create a master timeline that scrubs with scroll
     const tl = gsap.timeline({
       scrollTrigger: {
-        trigger: sectionRef.current,
+        trigger: containerRef.current,
         start: 'top top',
         end: '+=4000', // Pin for 4000px of scrolling
         pin: true,
@@ -101,12 +101,19 @@ export default function ProblemSection() {
   }, { scope: sectionRef });
 
   return (
-    <section ref={sectionRef} className="relative w-full bg-[#0a0a0a] h-screen flex flex-col overflow-hidden snap-section">
+    <section ref={sectionRef} className="relative w-full bg-[#0a0a0a] h-auto lg:h-screen flex flex-col overflow-hidden snap-section">
       
-      <div ref={containerRef} className="relative flex-grow flex items-center justify-center min-h-0 pt-12 lg:pt-16 pb-0 h-full w-full">
+      {/* MOBILE HEADING & PARA */}
+      <div className="block lg:hidden relative z-30 w-full px-6 pt-28 pb-4 bg-[#0a0a0a]">
+        <ProblemContent />
+      </div>
+
+      {/* THE PINNED CONTAINER */}
+      <div ref={containerRef} className="relative w-full h-[100dvh] lg:h-full lg:flex-grow lg:flex lg:flex-col lg:items-center lg:justify-center">
         
-        <Container className="relative z-30 w-full grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-center h-full pointer-events-none">
-          <div className="lg:col-span-5 relative z-40">
+        {/* DESKTOP HEADING & PARA */}
+        <Container className="hidden lg:grid relative z-30 w-full grid-cols-1 lg:grid-cols-12 gap-8 lg:items-center h-full pointer-events-none lg:absolute lg:inset-0">
+          <div className="lg:col-span-5 relative z-40 mt-4 lg:mt-0">
             <ProblemContent />
           </div>
         </Container>
@@ -137,14 +144,14 @@ export default function ProblemSection() {
         </div>
 
         {/* Word Cloud stretches across full width to act as background */}
-        <div className="absolute inset-0 z-10 h-full w-full pointer-events-none">
+        <div className="absolute inset-0 z-10 w-full h-full pointer-events-none">
           <WordCloud />
         </div>
 
       </div>
 
       {/* Transition Intro */}
-      <div className="relative z-40 shrink-0">
+      <div className="relative z-40 shrink-0 bg-[#0a0a0a]">
         <TransitionIntro />
       </div>
 

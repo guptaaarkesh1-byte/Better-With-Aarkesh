@@ -39,7 +39,7 @@ export default function TransitionIntro() {
   }, { scope: container });
 
   return (
-    <div ref={container} className="relative flex flex-col items-center justify-center text-center px-4 py-8 lg:py-10 overflow-hidden">
+    <div ref={container} className="relative flex flex-col items-center justify-center text-center px-4 py-4 lg:py-6 overflow-hidden">
       
       {/* Background Image */}
       <div className="absolute inset-0 z-0 pointer-events-none">

@@ -79,8 +79,27 @@ export default function MeetAarkesh() {
   }, { scope: container });
 
   return (
-    <section ref={container} id="meet-aarkesh" className="relative w-full h-screen flex flex-col bg-black overflow-hidden snap-section pt-20">
+    <section ref={container} id="meet-aarkesh" className="relative w-full h-auto lg:h-screen min-h-screen flex flex-col bg-black overflow-hidden snap-section pt-12 md:pt-20">
       
+      {/* Mobile Header (Hidden on Desktop) */}
+      <div className="flex md:hidden flex-col items-center justify-center text-center z-20 px-6 pb-8 meet-header">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="h-[1px] w-6 bg-accent-gold" />
+          <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-bold text-accent-gold">
+            MEET AARKESH
+          </span>
+          <div className="h-[1px] w-6 bg-accent-gold" />
+        </div>
+
+        <h2 className="font-serif text-4xl font-medium tracking-tight mb-2 text-white">
+          Three roles. One purpose.
+        </h2>
+        
+        <p className="text-paragraph text-sm font-light tracking-wide text-white/70">
+          Different lenses. Same mission—your growth.
+        </p>
+      </div>
+
       {/* Grid Panes (Images fill from just below navbar to the bottom banner) */}
       <div className="w-full flex-grow flex flex-col md:flex-row border-y border-white/10 min-h-0 relative">
         
@@ -89,7 +108,7 @@ export default function MeetAarkesh() {
           return (
             <div 
               key={i} 
-              className="role-pane relative flex-1 min-h-0 flex flex-col items-center justify-end pb-16 p-6 group overflow-hidden border-b md:border-b-0 md:border-r border-white/10 last:border-none"
+              className="role-pane relative h-[45vh] md:h-auto md:flex-1 min-h-0 flex flex-col items-center justify-end pb-12 md:pb-16 p-6 group overflow-hidden border-b md:border-b-0 md:border-r border-white/10 last:border-none"
             >
               {/* Background Image */}
               <div className="absolute inset-0 z-0 overflow-hidden">
@@ -103,9 +122,9 @@ export default function MeetAarkesh() {
               {/* Gradient Overlay for Text Readability */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent opacity-90 z-0 transition-opacity duration-700 group-hover:opacity-70" />
               
-              {/* Conditional Top Header (Only in the Middle Column) */}
+              {/* Conditional Top Header (Only in the Middle Column on Desktop) */}
               {i === 1 && (
-                <div className="absolute top-12 inset-x-0 flex flex-col items-center justify-center text-center z-20 px-6 transition-opacity duration-500 ease-out group-hover:opacity-0 meet-header pointer-events-none">
+                <div className="hidden md:flex absolute top-12 inset-x-0 flex-col items-center justify-center text-center z-20 px-6 transition-opacity duration-500 ease-out group-hover:opacity-0 meet-header pointer-events-none">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="h-[1px] w-6 bg-accent-gold" />
                     <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-bold text-accent-gold">

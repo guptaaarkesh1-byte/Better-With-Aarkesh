@@ -61,7 +61,7 @@ export default function WordCloud() {
         <img 
           src={silhouetteImg} 
           alt="Silhouette"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-top lg:object-center"
         />
         {/* Dark overlay to ensure text readability if needed */}
         <div className="absolute inset-0 bg-black/30" />

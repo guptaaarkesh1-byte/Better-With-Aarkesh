@@ -105,7 +105,7 @@ export default function PrincipleSection({
           <img 
             src={bgImg} 
             alt="Principle Background"
-            className={`w-full h-full object-contain opacity-100 ${imagePosition}`}
+            className={`w-full h-full object-cover lg:object-contain opacity-100 ${imagePosition}`}
             style={{
               maskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 75%, transparent 95%)',
               WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 75%, transparent 95%)'
@@ -175,7 +175,7 @@ export default function PrincipleSection({
 
           return (
             <div 
-              className="absolute inset-0 z-[100] pointer-events-none overflow-hidden"
+              className="absolute inset-0 z-[100] pointer-events-none overflow-hidden hidden lg:block"
               style={{ 
                 transform: `rotate(${PATH_BEND_ANGLE}deg)`,
                 transformOrigin: `${PATH_OFFSET_X}% 100%` // Anchor the rotation to the bottom of the column

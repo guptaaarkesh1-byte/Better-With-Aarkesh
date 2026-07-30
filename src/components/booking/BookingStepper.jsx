@@ -18,7 +18,7 @@ export default function BookingStepper({ currentStep }) {
           <React.Fragment key={step.num}>
             
             {/* Step Item */}
-            <div className={`flex items-center gap-3 transition-colors duration-500 ${isActive || isCompleted ? 'opacity-100' : 'opacity-40'}`}>
+            <div className={`flex items-center gap-2 md:gap-3 transition-colors duration-500 ${isActive || isCompleted ? 'opacity-100' : 'opacity-40'}`}>
               <div 
                 className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border transition-colors duration-500
                   ${isCompleted ? 'bg-transparent border-accent-gold' : 
@@ -32,14 +32,14 @@ export default function BookingStepper({ currentStep }) {
                   </span>
                 )}
               </div>
-              <span className={`font-sans text-[0.65rem] font-bold tracking-widest ${isActive || isCompleted ? 'text-white' : 'text-white'}`}>
+              <span className={`hidden md:block font-sans text-[0.65rem] font-bold tracking-widest ${isActive || isCompleted ? 'text-white' : 'text-white'}`}>
                 {step.label}
               </span>
             </div>
 
             {/* Line Connector */}
             {index < steps.length - 1 && (
-              <div className="w-12 md:w-24 h-[1px] mx-4 transition-colors duration-500">
+              <div className="w-8 md:w-24 h-[1px] mx-2 md:mx-4 transition-colors duration-500">
                 <div className={`h-full w-full ${isCompleted ? 'bg-accent-gold' : 'bg-white/10'}`} />
               </div>
             )}

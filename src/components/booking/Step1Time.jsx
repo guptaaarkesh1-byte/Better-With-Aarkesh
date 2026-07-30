@@ -127,18 +127,17 @@ export default function Step1Time({ data, updateData, onNext }) {
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="mt-8 pt-6 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="mt-8 pt-6 border-t border-white/10 flex flex-col-reverse md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
         
-
-        <div className="hidden lg:flex items-center gap-3 text-white/40 order-2">
-          <CalendarBlank className="text-2xl" weight="light" />
-          <span className="font-sans text-[0.7rem] font-light">All sessions are 1-on-1 and last 60 minutes.</span>
+        <div className="flex items-center justify-center md:justify-start gap-3 text-white/40">
+          <CalendarBlank className="text-2xl shrink-0" weight="light" />
+          <span className="font-sans text-[0.7rem] font-light text-center md:text-left">All sessions are 1-on-1 and last 60 minutes.</span>
         </div>
         
         <button
           onClick={handleContinue}
           disabled={!selectedDay || !selectedTime}
-          className={`flex items-center justify-center gap-3 px-6 py-3 rounded-xl font-sans text-[0.8rem] font-semibold tracking-wide transition-all w-full md:w-auto order-1 md:order-3
+          className={`flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-sans text-[0.8rem] font-semibold tracking-wide transition-all w-full md:w-auto
             ${(!selectedDay || !selectedTime) 
               ? 'bg-white/5 text-white/20 cursor-not-allowed' 
               : 'bg-accent-gold text-black hover:bg-white hover:text-black hover:-translate-y-1'
