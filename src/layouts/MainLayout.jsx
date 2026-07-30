@@ -3,15 +3,13 @@ import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Navbar from '../components/layout/Navbar';
-import { useSectionSnap } from '../hooks/useSectionSnap';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function MainLayout({ children }) {
   const lenisRef = useRef();
 
-  // Initialize the premium GSAP section snap
-  useSectionSnap();
+  // Removed useSectionSnap to prevent scrolling glitches when used with Lenis smooth scroll
 
   useEffect(() => {
     lenisRef.current = new Lenis({

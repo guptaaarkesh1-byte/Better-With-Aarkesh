@@ -5,7 +5,7 @@ import ScrollIndicator from '../ui/ScrollIndicator';
 
 export default function Hero() {
   return (
-    <section className="relative h-screen pt-32 pb-12 flex flex-col justify-center overflow-hidden bg-background snap-section">
+    <section className="relative h-screen pt-16 md:pt-32 pb-12 flex flex-col justify-center overflow-hidden bg-background snap-section">
       <div className="absolute inset-0 z-0">
         <HeroImage />
       </div>

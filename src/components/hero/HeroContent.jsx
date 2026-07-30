@@ -38,7 +38,7 @@ export default function HeroContent() {
   }, { scope: container });
 
   return (
-    <div ref={container} className="max-w-5xl pt-12 lg:pt-0">
+    <div ref={container} className="max-w-5xl -mt-12 md:mt-0">
       
       <div className="flex items-center gap-6 mb-4 lg:mb-7">
         <div className="hero-line h-[1px] w-12 bg-accent-gold origin-left" />
@@ -64,9 +64,6 @@ export default function HeroContent() {
       <div className="hero-buttons flex flex-wrap items-center gap-6">
         <Button variant="primary" icon to="/book">
           Book a Session
-        </Button>
-        <Button variant="secondary" icon>
-          Learn More
         </Button>
       </div>
 
