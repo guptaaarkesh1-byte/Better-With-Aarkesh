@@ -140,7 +140,7 @@ export default function Perspectives() {
         {particles.map((p) => (
           <div 
             key={p.id}
-            className={`absolute rounded-full bg-[#c79c6e] ${p.size} blur-[1px]`}
+            className={`absolute rounded-full bg-[#c79c6e] ${p.size}`}
             style={{ 
               top: p.top, 
               left: p.left
@@ -162,7 +162,7 @@ export default function Perspectives() {
         {windowParticles.map((p) => (
           <div 
             key={p.id}
-            className={`absolute rounded-full bg-[#c79c6e] ${p.size} blur-[1px]`}
+            className={`absolute rounded-full bg-[#c79c6e] ${p.size}`}
             style={{ 
               top: p.top, 
               left: p.left

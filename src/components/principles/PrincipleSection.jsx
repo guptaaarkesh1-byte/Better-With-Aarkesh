@@ -45,8 +45,8 @@ export default function PrincipleSection({
 
     // 3. DUST PARTICLE ANIMATION
     const dustParticles = gsap.utils.toArray('.phil-dust');
-    dustParticles.forEach((particle) => {
-      gsap.fromTo(particle, 
+    const particleTweens = dustParticles.map((particle) => {
+      return gsap.fromTo(particle, 
         {
           opacity: gsap.utils.random(0.2, 0.5),
           scale: gsap.utils.random(0.8, 1)
@@ -62,16 +62,27 @@ export default function PrincipleSection({
           ease: 'sine.inOut',
           delay: gsap.utils.random(0, 2),
           force3D: true, // Hardware acceleration
+          paused: true
         }
       );
+    });
+
+    ScrollTrigger.create({
+      trigger: sectionRef.current,
+      start: 'top bottom',
+      end: 'bottom top',
+      onEnter: () => particleTweens.forEach(t => t.play()),
+      onLeave: () => particleTweens.forEach(t => t.pause()),
+      onEnterBack: () => particleTweens.forEach(t => t.play()),
+      onLeaveBack: () => particleTweens.forEach(t => t.pause()),
     });
     }
 
     // === DECIDE PAGE ANIMATIONS ===
     if (isDecidePage) {
       const decideParticles = gsap.utils.toArray('.decide-dust');
-      decideParticles.forEach((particle) => {
-        gsap.fromTo(particle, 
+      const decideTweens = decideParticles.map((particle) => {
+        return gsap.fromTo(particle, 
           {
             opacity: gsap.utils.random(0.1, 0.4),
             scale: gsap.utils.random(0.5, 1)
@@ -87,8 +98,19 @@ export default function PrincipleSection({
             ease: 'sine.inOut',
             delay: gsap.utils.random(0, 2),
             force3D: true,
+            paused: true
           }
         );
+      });
+
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top bottom',
+        end: 'bottom top',
+        onEnter: () => decideTweens.forEach(t => t.play()),
+        onLeave: () => decideTweens.forEach(t => t.pause()),
+        onEnterBack: () => decideTweens.forEach(t => t.play()),
+        onLeaveBack: () => decideTweens.forEach(t => t.pause()),
       });
     }
 
@@ -139,7 +161,7 @@ export default function PrincipleSection({
           const DUST_SPREAD_Y = 70; // How tall the dust spreads out (height in %)
 
           return (
-            <div className="absolute inset-0 z-[100] pointer-events-none overflow-hidden">
+            <div className="absolute inset-0 z-[100] pointer-events-none">
               {[...Array(25)].map((_, i) => ( // Reduced to 25 for better performance
                 <div
                   key={i}
@@ -148,7 +170,7 @@ export default function PrincipleSection({
                     width: `${Math.random() * 2 + 1.5}px`,
                     height: `${Math.random() * 2 + 1.5}px`,
                     backgroundColor: '#FFDF99',
-                    boxShadow: '0 0 3px 1px rgba(255, 223, 153, 0.3)', // Reduced glow expense
+                    // boxShadow: '0 0 3px 1px rgba(255, 223, 153, 0.3)', // Removed glow for performance
                     top: `${Math.random() * DUST_SPREAD_Y + DUST_OFFSET_Y}%`,
                     left: `${Math.random() * DUST_SPREAD_X + DUST_OFFSET_X}%`,
                     opacity: 0.5,
@@ -166,16 +188,16 @@ export default function PrincipleSection({
           // 🛠️ GLOWING PATH PARTICLE CONTROLS
           // Adjust these values to align the particles exactly over the glowing path!
           // ==========================================
-          const PATH_OFFSET_X = 46; // Move left/right (in %)
+          const PATH_OFFSET_X = 40; // Move left/right (in %)
           const PATH_OFFSET_Y = 10; // Move up/down (in %)
           const PATH_SPREAD_X = 13;  // How wide the path particles spread out (NARROW COLUMN)
           const PATH_SPREAD_Y = 80; // How tall the path particles spread out (TALL COLUMN)
-          const PATH_PARTICLE_COUNT = 75; // Number of particles
+          const PATH_PARTICLE_COUNT = 30; // Reduced from 75 for performance
           const PATH_BEND_ANGLE = 29; // Degrees to bend the column to the right (bottom stays fixed)
 
           return (
             <div 
-              className="absolute inset-0 z-[100] pointer-events-none overflow-hidden hidden lg:block"
+              className="absolute inset-0 z-[100] pointer-events-none hidden lg:block"
               style={{ 
                 transform: `rotate(${PATH_BEND_ANGLE}deg)`,
                 transformOrigin: `${PATH_OFFSET_X}% 100%` // Anchor the rotation to the bottom of the column
@@ -189,7 +211,7 @@ export default function PrincipleSection({
                     width: `${Math.random() * 2 + 1.5}px`,
                     height: `${Math.random() * 2 + 1.5}px`,
                     backgroundColor: '#FFFFFF', // Bright white/gold for the path
-                    boxShadow: '0 0 6px 2px rgba(255, 230, 180, 0.6)', // Bright warm glow
+                    // boxShadow: '0 0 6px 2px rgba(255, 230, 180, 0.6)', // Removed for performance
                     top: `${Math.random() * PATH_SPREAD_Y + PATH_OFFSET_Y}%`,
                     left: `${Math.random() * PATH_SPREAD_X + PATH_OFFSET_X}%`,
                     opacity: 0,

@@ -38,7 +38,7 @@ export default function HeroContent() {
   }, { scope: container });
 
   return (
-    <div ref={container} className="max-w-5xl -mt-12 md:mt-0">
+    <div ref={container} className="max-w-5xl mt-0">
       
       <div className="flex items-center gap-6 mb-4 lg:mb-7">
         <div className="hero-line h-[1px] w-12 bg-accent-gold origin-left" />

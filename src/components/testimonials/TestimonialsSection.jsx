@@ -169,8 +169,8 @@ export default function TestimonialsSection() {
         </Container>
       </div>
       {/* Very Bottom Features Banner */}
-      <div className="relative z-10 w-full bg-black py-6 pb-10">
-        <Container className="flex flex-wrap items-center justify-center md:justify-between gap-6 opacity-70">
+      <div className="relative z-10 w-full bg-black py-8 pb-12">
+        <Container className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-start lg:justify-between gap-6 lg:gap-4 opacity-70 px-8 lg:px-4">
           
           <div className="flex items-center gap-3 group">
             <ShieldCheck className="text-accent-gold text-2xl group-hover:scale-110 transition-transform" weight="light" />

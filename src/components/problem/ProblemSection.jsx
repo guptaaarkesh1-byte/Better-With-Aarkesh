@@ -85,8 +85,8 @@ export default function ProblemSection() {
 
     // Independent Dust Animation (Looping infinitely, not tied to scroll)
     const dustParticles = gsap.utils.toArray('.dust-particle');
-    dustParticles.forEach((particle) => {
-      gsap.to(particle, {
+    const dustTweens = dustParticles.map((particle) => {
+      return gsap.to(particle, {
         y: `-=${gsap.utils.random(50, 150)}`,
         x: `+=${gsap.utils.random(-50, 50)}`,
         opacity: gsap.utils.random(0.2, 0.8),
@@ -94,8 +94,19 @@ export default function ProblemSection() {
         repeat: -1,
         yoyo: true,
         ease: 'sine.inOut',
-        delay: gsap.utils.random(0, 5)
+        delay: gsap.utils.random(0, 5),
+        paused: true
       });
+    });
+
+    ScrollTrigger.create({
+      trigger: sectionRef.current,
+      start: 'top bottom',
+      end: 'bottom top',
+      onEnter: () => dustTweens.forEach(t => t.play()),
+      onLeave: () => dustTweens.forEach(t => t.pause()),
+      onEnterBack: () => dustTweens.forEach(t => t.play()),
+      onLeaveBack: () => dustTweens.forEach(t => t.pause()),
     });
 
   }, { scope: sectionRef });
