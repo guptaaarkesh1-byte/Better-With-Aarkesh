@@ -95,9 +95,9 @@ export default function Book3D({ onBookClick }) {
       {/* This loader automatically hooks into Suspense and shows a progress bar while the model downloads */}
       <Loader 
         containerStyles={{ background: 'transparent' }} 
-        innerStyles={{ width: '200px', backgroundColor: '#e8f5e9', height: '10px', borderRadius: '5px' }} 
-        barStyles={{ backgroundColor: '#1b5e20', height: '10px', borderRadius: '5px' }} 
-        dataStyles={{ color: '#1b5e20', fontWeight: '600', fontSize: '14px', marginTop: '10px' }}
+        innerStyles={{ width: '200px', backgroundColor: '#111111', height: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)' }} 
+        barStyles={{ backgroundColor: '#B98A56', height: '10px', borderRadius: '5px' }} 
+        dataStyles={{ color: '#F5F2EB', fontWeight: '500', fontSize: '14px', marginTop: '10px', fontFamily: '"Playfair Display", serif' }}
         dataInterpolation={(p) => `Loading 3D Book... ${p.toFixed(0)}%`} 
       />
     </>
