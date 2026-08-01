@@ -13,6 +13,7 @@ import SavedLibrarySection from '../../components/perspectives/SavedLibrarySecti
 import SocialSection from '../../components/perspectives/SocialSection';
 import InvitationSection from '../../components/perspectives/InvitationSection';
 import AnimatedText from '../../components/ui/AnimatedText';
+import Book3D from '../../components/perspectives/Book3D';
 
 export default function Perspectives() {
   const [isHovered, setIsHovered] = useState(false);
@@ -200,25 +201,23 @@ export default function Perspectives() {
       {/* Interactive Book on Table (Hotspot) */}
       <div 
         ref={hotspotRef}
-        className="absolute bottom-[25%] right-[20%] md:bottom-[15%] md:right-[35%] z-30 cursor-pointer flex items-center justify-center group"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={() => setIsHovered(!isHovered)}
+        className="absolute bottom-[25%] right-[20%] md:bottom-[15%] md:right-[35%] z-30 cursor-pointer flex flex-col items-center justify-center group"
       >
-        {/* The small book icon glowing */}
-        <div className={`relative flex items-center justify-center w-12 h-12 transition-all duration-700 ${isHovered ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>
-          <div className="absolute inset-0 bg-[#c79c6e] rounded-full blur-xl opacity-20 animate-pulse" />
-          <BookOpen className="text-white/60 text-2xl relative z-10 animate-bounce" weight="light" />
+        {/* The 3D Book Model replacing the static image/icon */}
+        <div className="w-[300px] h-[300px] md:w-[400px] md:h-[400px] relative">
+          <Book3D onBookClick={() => setIsHovered(!isHovered)} />
+          {/* Subtle glow effect behind the book when open */}
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#c79c6e] rounded-full blur-[60px] transition-all duration-700 pointer-events-none ${isHovered ? 'opacity-40' : 'opacity-0'}`} />
         </div>
 
         {/* The Card expanding from the book */}
         <div 
           className={`
-            absolute bottom-0 right-0 origin-bottom-right
-            w-[280px] border border-[#c79c6e]/30 rounded-lg p-8 
-            bg-[#0f0f0f]/80 backdrop-blur-md shadow-2xl transition-all duration-700 ease-out
+            absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 origin-center z-40
+            w-[280px] md:w-[320px] border border-[#c79c6e]/40 rounded-xl p-8 
+            bg-[#0f0f0f]/90 backdrop-blur-xl shadow-2xl transition-all duration-700 ease-out
             flex flex-col gap-6
-            ${isHovered ? 'opacity-100 scale-100 translate-y-0 translate-x-0' : 'opacity-0 scale-0 translate-y-8 translate-x-8 pointer-events-none'}
+            ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}
           `}
         >
           <div className="flex items-start justify-between w-full text-[#c79c6e]">
