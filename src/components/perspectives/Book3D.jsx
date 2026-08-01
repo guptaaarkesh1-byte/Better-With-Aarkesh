@@ -1,6 +1,6 @@
 import React, { Suspense, useRef, useEffect, useLayoutEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useGLTF, Environment, ContactShadows, OrbitControls, Center, Bounds, Float } from '@react-three/drei';
+import { useGLTF, Environment, ContactShadows, OrbitControls, Center, Bounds, Float, Loader } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 
@@ -58,38 +58,48 @@ export default function Book3D({ onBookClick }) {
   }, []);
 
   return (
-    <div className="w-full h-full relative">
-      {/* We use transparent background by default in Canvas */}
-      <Canvas shadows camera={{ position: [0, 4, 10], fov: 40 }} gl={{ alpha: true }}>
-        <ambientLight intensity={1.5} />
-        <directionalLight position={[5, 10, 7]} intensity={2} castShadow />
-        <spotLight position={[-5, 5, 5]} intensity={1.5} angle={0.5} penumbra={1} castShadow />
-        
-        <Suspense fallback={null}>
-          <Float speed={2} rotationIntensity={0.2} floatIntensity={1} floatingRange={[-0.1, 0.1]}>
-            {/* The animated group is now OUTSIDE of Bounds. This lets Bounds calculate the 100% size perfectly! */}
-            <group ref={bookGroupRef}>
-              <Bounds fit clip margin={1.2}>
-                <Center>
-                  <Model url="/models/book.glb" onClick={onBookClick} />
-                </Center>
-              </Bounds>
-            </group>
-          </Float>
-          <Environment preset="city" />
-          {/* Shadows on the table */}
-          <ContactShadows position={[0, -1.5, 0]} opacity={0.6} scale={15} blur={2.5} far={4} color="#000000" />
-        </Suspense>
-        
-        <OrbitControls 
-          enableZoom={false} 
-          enablePan={false}
-          makeDefault
-          minPolarAngle={Math.PI / 4}
-          maxPolarAngle={Math.PI / 1.5}
-        />
-      </Canvas>
-    </div>
+    <>
+      <div className="w-full h-full relative">
+        {/* We use transparent background by default in Canvas */}
+        <Canvas shadows camera={{ position: [0, 4, 10], fov: 40 }} gl={{ alpha: true }}>
+          <ambientLight intensity={1.5} />
+          <directionalLight position={[5, 10, 7]} intensity={2} castShadow />
+          <spotLight position={[-5, 5, 5]} intensity={1.5} angle={0.5} penumbra={1} castShadow />
+          
+          <Suspense fallback={null}>
+            <Float speed={2} rotationIntensity={0.2} floatIntensity={1} floatingRange={[-0.1, 0.1]}>
+              {/* The animated group is now OUTSIDE of Bounds. This lets Bounds calculate the 100% size perfectly! */}
+              <group ref={bookGroupRef}>
+                <Bounds fit clip margin={1.2}>
+                  <Center>
+                    <Model url="/models/book.glb" onClick={onBookClick} />
+                  </Center>
+                </Bounds>
+              </group>
+            </Float>
+            <Environment preset="city" />
+            {/* Shadows on the table */}
+            <ContactShadows position={[0, -1.5, 0]} opacity={0.6} scale={15} blur={2.5} far={4} color="#000000" />
+          </Suspense>
+          
+          <OrbitControls 
+            enableZoom={false} 
+            enablePan={false}
+            makeDefault
+            minPolarAngle={Math.PI / 4}
+            maxPolarAngle={Math.PI / 1.5}
+          />
+        </Canvas>
+      </div>
+      
+      {/* This loader automatically hooks into Suspense and shows a progress bar while the model downloads */}
+      <Loader 
+        containerStyles={{ background: 'transparent' }} 
+        innerStyles={{ width: '200px', backgroundColor: '#e2e8f0', height: '10px', borderRadius: '5px' }} 
+        barStyles={{ backgroundColor: '#10b981', height: '10px', borderRadius: '5px' }} 
+        dataInterpolation={(p) => `Loading Book... ${p.toFixed(0)}%`} 
+      />
+    </>
   );
 }
 
