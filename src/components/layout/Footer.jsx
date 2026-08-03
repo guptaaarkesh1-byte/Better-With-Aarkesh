@@ -23,13 +23,19 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div className="flex flex-wrap justify-center gap-6 md:gap-8">
-            {['About', 'Coaching', 'Perspectives', 'Testimonials', 'FAQ'].map((link) => (
+            {[
+              { label: 'About', href: '/#meet-aarkesh' },
+              { label: 'Coaching', href: '/#coaching' },
+              { label: 'Library', href: '/library' },
+              { label: 'Testimonials', href: '/#testimonials' },
+              { label: 'FAQ', href: '/#faq' }
+            ].map((link) => (
               <a 
-                key={link} 
-                href={`#${link.toLowerCase()}`}
+                key={link.label} 
+                href={link.href}
                 className="font-sans text-xs uppercase tracking-widest text-white/60 hover:text-accent-gold transition-colors"
               >
-                {link}
+                {link.label}
               </a>
             ))}
           </div>

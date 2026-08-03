@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowDown, BookmarkSimple, Sparkle, BookOpen } from '@phosphor-icons/react';
+import { ArrowDown, BookmarkSimple, Sparkle, BookOpen, ArrowRight } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import bgImage from '../../assets/PerspectivePage/Page1.png';
 import continuousBg from '../../assets/PerspectivePage/BG/bg.png';
-import QuestionsSection from '../../components/perspectives/QuestionsSection';
-import RecognitionSection from '../../components/perspectives/RecognitionSection';
-import LibrarySection from '../../components/perspectives/LibrarySection';
-import FeaturedSection from '../../components/perspectives/FeaturedSection';
-import SavedLibrarySection from '../../components/perspectives/SavedLibrarySection';
-import SocialSection from '../../components/perspectives/SocialSection';
-import InvitationSection from '../../components/perspectives/InvitationSection';
+import QuestionsSection from '../../components/library/QuestionsSection';
+import FeaturedSection from '../../components/library/FeaturedSection';
+import FormatExploreSection from '../../components/library/FormatExploreSection';
+import SituationExploreSection from '../../components/library/SituationExploreSection';
+import LatestPerspectivesSection from '../../components/library/LatestPerspectivesSection';
+import ToolsReflectionSection from '../../components/library/ToolsReflectionSection';
+import LibraryInvitationSection from '../../components/library/LibraryInvitationSection';
+import PerspectiveToConversationSection from '../../components/library/PerspectiveToConversationSection';
 import AnimatedText from '../../components/ui/AnimatedText';
-import Book3D from '../../components/perspectives/Book3D';
 
-export default function Perspectives() {
+export default function Library() {
   const [isHovered, setIsHovered] = useState(false);
   const hotspotRef = useRef(null);
 
@@ -71,6 +71,7 @@ export default function Perspectives() {
   const particlesRef = useRef(null);
   const windowParticlesRef = useRef(null);
   const bgOverlayRef = useRef(null);
+  const heroRef = useRef(null);
 
   useGSAP(() => {
     // Initial page load brightening effect
@@ -108,7 +109,31 @@ export default function Perspectives() {
 
     animateParticles(particlesRef);
     animateParticles(windowParticlesRef);
-  }, { scope: particlesRef });
+  });
+
+  useGSAP(() => {
+    if (!heroRef.current) return;
+    const tl = gsap.timeline({ delay: 2 });
+    
+    tl.to('.library-text', {
+      opacity: 1,
+      duration: 0.8,
+      ease: 'power2.out'
+    })
+    .to('.heading-word', {
+      x: 0,
+      opacity: 1,
+      duration: 0.8,
+      stagger: 0.4,
+      ease: 'power3.out'
+    }, "-=0.4")
+    .to('.hero-content', {
+      opacity: 1,
+      y: 0,
+      duration: 1,
+      ease: 'power3.out'
+    }, "-=0.2");
+  }, { scope: heroRef });
 
   return (
     <div className="w-full min-h-screen bg-[#050505] overflow-x-hidden text-white select-none">
@@ -174,78 +199,69 @@ export default function Perspectives() {
 
       {/* Main Content Overlay */}
       <div 
-        className="relative z-10 w-full h-full flex flex-col justify-center px-6 md:px-12 lg:px-16"
+        ref={heroRef}
+        className="relative z-10 w-full h-full flex flex-col justify-center px-4 md:px-8 pt-16 pb-12"
       >
-        <div className="flex w-full items-center justify-between">
+        <div className="w-full md:w-[75%] lg:w-[65%] flex flex-col items-start justify-center">
           
-          {/* Left Side: Typography */}
-          <div className="w-full md:w-1/2 flex flex-col items-start justify-center pointer-events-none">
-            <h1 className={`font-serif text-4xl md:text-5xl lg:text-6xl text-white font-light tracking-tight leading-[1.2] transition-opacity duration-700 ${isHovered ? 'opacity-30' : 'opacity-100'}`}>
-              <AnimatedText text="Sometimes" delay={0.8} stagger={0.3} className="block" />
-              <AnimatedText text="the answer" delay={1.1} stagger={0.3} className="block" />
-              <AnimatedText text="isn't missing." delay={1.7} stagger={0.3} className="block" />
-              <AnimatedText 
-                text="The perspective is." 
-                delay={2.3} 
-                stagger={0.3} 
-                className="text-[#c79c6e] italic mt-2 block" 
-              />
-            </h1>
-            
-            <div className={`mt-8 w-12 h-[1px] bg-[#c79c6e]/50 transition-opacity duration-700 ${isHovered ? 'opacity-30' : 'opacity-100'}`} />
+          <span className="library-text opacity-0 font-sans text-[0.7rem] md:text-[0.75rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e] mb-6 block">
+            The Library
+          </span>
+
+          <h1 className="font-serif text-5xl md:text-[4.5rem] lg:text-[5rem] text-white tracking-tight leading-[1.05] mb-6">
+            <span className="heading-word inline-block opacity-0 -translate-x-4 mr-[0.25em]">What</span>
+            <span className="heading-word inline-block opacity-0 -translate-x-4 mr-[0.25em]">are</span>
+            <span className="heading-word inline-block opacity-0 -translate-x-4 mr-[0.25em]">you</span>
+            <span className="heading-word inline-block opacity-0 -translate-x-4 mr-[0.25em]">trying</span>
+            <br className="hidden md:block"/>
+            <span className="heading-word inline-block opacity-0 -translate-x-4 mr-[0.25em]">to</span>
+            <span className="heading-word inline-block opacity-0 -translate-x-4">understand?</span>
+          </h1>
+
+          <div className="hero-content opacity-0 translate-y-4 w-full">
+            <p className="font-sans text-white/60 text-lg md:text-xl font-light leading-relaxed mb-12 max-w-lg">
+              Articles, videos and reflective tools for the parts of life that are difficult to see clearly while you are living through them.
+            </p>
+
+            <div className="w-fit max-w-full">
+              <div className="w-full relative mb-6 group">
+                <input 
+                  type="text" 
+                  placeholder="Describe what you're facing..."
+                  className="w-full bg-[#050505]/60 border border-[#c79c6e]/30 rounded-lg px-6 py-5 text-white placeholder-white/40 font-light text-lg focus:outline-none focus:border-[#c79c6e]/70 transition-all duration-300 backdrop-blur-sm pr-16"
+                />
+                <button className="absolute right-4 top-1/2 -translate-y-1/2 text-[#c79c6e] hover:text-white transition-colors p-2">
+                  <ArrowRight size={24} weight="light" />
+                </button>
+              </div>
+
+              <div className="w-full">
+                <span className="font-sans text-[0.65rem] md:text-[0.7rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-5 block">
+                  Not sure where to begin?
+                </span>
+                <div className="flex gap-3 md:gap-4 w-full overflow-x-auto no-scrollbar pb-2">
+                  {['I feel stuck', 'A relationship is confusing me', 'I have a decision to make'].map((topic, i) => (
+                    <button 
+                      key={i}
+                      className="px-5 py-3 md:px-6 border border-[#c79c6e]/30 rounded-md bg-[#050505]/40 hover:bg-[#c79c6e]/10 text-white/80 hover:text-white text-sm font-light transition-all duration-300 backdrop-blur-sm whitespace-nowrap shrink-0"
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
           
-        </div>
-      </div>
-
-      {/* Interactive Book on Table (Hotspot) */}
-      <div 
-        ref={hotspotRef}
-        className="absolute bottom-[25%] right-[20%] md:bottom-[15%] md:right-[35%] z-30 cursor-pointer flex flex-col items-center justify-center group"
-      >
-        {/* The 3D Book Model replacing the static image/icon */}
-        <div className="w-[300px] h-[300px] md:w-[400px] md:h-[400px] relative">
-          <Book3D onBookClick={() => setIsHovered(!isHovered)} />
-          {/* Subtle glow effect behind the book when open */}
-          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#c79c6e] rounded-full blur-[60px] transition-all duration-700 pointer-events-none ${isHovered ? 'opacity-40' : 'opacity-0'}`} />
-        </div>
-
-        {/* The Card expanding from the book */}
-        <div 
-          className={`
-            absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 origin-center z-40
-            w-[280px] md:w-[320px] border border-[#c79c6e]/40 rounded-xl p-8 
-            bg-[#0f0f0f]/90 backdrop-blur-xl shadow-2xl transition-all duration-700 ease-out
-            flex flex-col gap-6
-            ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}
-          `}
-        >
-          <div className="flex items-start justify-between w-full text-[#c79c6e]">
-            <Sparkle size={28} weight="light" className="opacity-80" />
-            <BookmarkSimple size={24} weight="light" className="opacity-60" />
-          </div>
-          
-          <p className="font-sans text-white/90 font-light text-sm leading-relaxed">
-            Explore ideas designed to help you think more <span className="text-[#c79c6e] font-medium">clearly</span>, feel more <span className="text-[#c79c6e] font-medium">honestly</span>, and decide more intentionally.
-          </p>
-          
-          <div className="w-full h-[1px] bg-white/10" />
-          
-          <p className="font-sans text-white/60 font-light text-[0.65rem] leading-relaxed uppercase tracking-wider">
-            A growing library of reflections, conversations and perspectives.
-          </p>
         </div>
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-3">
-        <div className="w-5 h-8 border border-white/30 rounded-full flex justify-center p-1">
-          <div className="w-1 h-1.5 bg-white/50 rounded-full animate-bounce" />
-        </div>
-        <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e]">
-          SCROLL TO EXPLORE
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-4">
+        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e]/80">
+          Or explore what others often carry
         </span>
-        <ArrowDown size={14} className="text-[#c79c6e] animate-pulse" weight="bold" />
+        <ArrowDown size={18} className="text-[#c79c6e]/80 animate-bounce" weight="light" />
       </div>
 
 
@@ -259,23 +275,26 @@ export default function Perspectives() {
         {/* SECTION 2: Questions Grid */}
       <QuestionsSection />
 
-      {/* SECTION 3: Recognition */}
-      <RecognitionSection />
-
-      {/* SECTION 4: The Library */}
-      <LibrarySection />
-
-      {/* SECTION 5: Featured Perspective */}
+      {/* SECTION 3: Featured Perspective */}
       <FeaturedSection />
 
-      {/* SECTION 6: Saved Library Preview (Make It Yours) */}
-      <SavedLibrarySection />
+      {/* SECTION 4: Explore By Format */}
+      <FormatExploreSection />
 
-      {/* SECTION 7: Beyond the Website (Social) */}
-      <SocialSection />
+      {/* SECTION 5: Explore By Situation */}
+      <SituationExploreSection />
 
-      {/* SECTION 8: The Invitation Back to You */}
-      <InvitationSection />
+      {/* SECTION 6: Latest Perspectives */}
+      <LatestPerspectivesSection />
+
+      {/* SECTION 7: Tools for Reflection */}
+      <ToolsReflectionSection />
+
+      {/* SECTION 8: Library Invitation */}
+      <LibraryInvitationSection />
+      
+      {/* SECTION 9: Perspective To Conversation */}
+      <PerspectiveToConversationSection />
       </div>
 
     </div>

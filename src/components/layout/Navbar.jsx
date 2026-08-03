@@ -6,11 +6,12 @@ import { useGSAP } from '@gsap/react';
 import { cn } from '../../utils/cn';
 import { Link, useLocation } from 'react-router-dom';
 import { BookmarkSimple, List, X } from '@phosphor-icons/react';
+import { useBooking } from '../../context/BookingContext';
 
 const NAV_LINKS = [
   { label: 'About', href: '/#meet-aarkesh' },
   { label: 'Coaching', href: '/#coaching' },
-  { label: 'Perspectives', href: '/perspectives' },
+  { label: 'LIBRARY', href: '/library' },
   { label: 'Testimonials', href: '/#testimonials' },
   { label: 'FAQ', href: '/#faq' },
 ];
@@ -20,7 +21,8 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navRef = useRef(null);
   const location = useLocation();
-  const isPerspectives = location.pathname === '/perspectives';
+  const { openBookingModal } = useBooking();
+  const isPerspectives = location.pathname === '/library';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -94,7 +96,7 @@ export default function Navbar() {
             <Button 
               variant="outline" 
               className="text-[0.65rem] px-5 py-[0.65rem] border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]" 
-              to="/book"
+              onClick={openBookingModal}
             >
               BOOK A SESSION
             </Button>
@@ -161,8 +163,10 @@ export default function Navbar() {
             <Button 
               variant="outline" 
               className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center" 
-              to="/book"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                openBookingModal();
+              }}
             >
               BOOK A SESSION
             </Button>
