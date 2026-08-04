@@ -4,8 +4,8 @@ import Button from '../ui/Button';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { cn } from '../../utils/cn';
-import { Link, useLocation } from 'react-router-dom';
-import { BookmarkSimple, List, X } from '@phosphor-icons/react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { BookmarkSimple, List, X, User, LockKey, SignOut } from '@phosphor-icons/react';
 import { useBooking } from '../../context/BookingContext';
 
 const NAV_LINKS = [
@@ -21,8 +21,9 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const { openBookingModal } = useBooking();
-  const isPerspectives = location.pathname === '/library';
+  const showMyJourney = location.pathname === '/' || location.pathname === '/library' || location.pathname === '/my-journey';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,58 +62,95 @@ export default function Navbar() {
         </div>
 
         <nav className="hidden lg:flex items-center justify-center gap-10 absolute left-1/2 -translate-x-1/2">
-          {NAV_LINKS.map((link) => 
-            !link.href.includes('#') ? (
+          {NAV_LINKS.map((link) => {
+            let active = false;
+            if (link.href.includes('#')) {
+              active = location.pathname === '/' && location.hash === link.href.replace('/', '');
+            } else {
+              active = location.pathname === link.href;
+            }
+
+            return (
               <Link
                 key={link.label}
                 to={link.href}
-                className="nav-link"
+                className={`font-sans text-xs uppercase tracking-widest relative pb-1 group transition-colors duration-300 ${
+                  active ? 'text-[#c79c6e]' : 'text-white/80 hover:text-white'
+                }`}
               >
                 {link.label}
+                <span 
+                  className={`absolute left-0 bottom-0 w-full h-[1px] bg-[#c79c6e] origin-left transition-transform duration-300 ease-out ${
+                    active ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                  }`} 
+                />
               </Link>
-            ) : (
-              <a
-                key={link.label}
-                href={link.href}
-                className="nav-link"
-              >
-                {link.label}
-              </a>
-            )
-          )}
+            );
+          })}
         </nav>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-4">
-            {isPerspectives && (
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-4">
+              {showMyJourney && (
+                <div className="relative group">
+                  <Button 
+                    variant="outline" 
+                    className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
+                    onClick={() => {
+                      navigate('/my-journey');
+                    }}
+                  >
+                    <BookmarkSimple size={14} weight="light" /> MY JOURNEY
+                  </Button>
+                  
+                  {/* Account Menu Dropdown */}
+                  <div className="absolute top-full right-0 mt-4 w-56 rounded-lg border border-[#c79c6e]/30 bg-[#0a0a0a]/95 backdrop-blur-xl p-2 shadow-[0_0_40px_rgba(199,156,110,0.15)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0 flex flex-col pointer-events-none group-hover:pointer-events-auto z-[200]">
+                    <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white/50 mb-2 mt-2 px-3">
+                      AARKESH
+                    </span>
+                    
+                    <button 
+                      onClick={() => navigate('/my-journey/settings')}
+                      className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/70 hover:text-white hover:bg-white/5 transition-colors w-full text-left px-3 py-3 rounded"
+                    >
+                      <User size={16} /> PROFILE & SETTINGS
+                    </button>
+                    
+                    <button 
+                      onClick={() => navigate('/my-journey/settings?tab=SECURITY')}
+                      className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/70 hover:text-white hover:bg-white/5 transition-colors w-full text-left px-3 py-3 rounded mb-2"
+                    >
+                      <LockKey size={16} /> PRIVACY
+                    </button>
+                    
+                    <div className="w-full h-[1px] bg-white/10 my-1"></div>
+                    
+                    <button className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] hover:text-white hover:bg-[#c79c6e]/10 transition-colors w-full text-left px-3 py-3 rounded mt-1">
+                      <SignOut size={16} weight="bold" /> LOG OUT
+                    </button>
+                  </div>
+                </div>
+              )}
               <Button 
                 variant="outline" 
-                className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
-                onClick={() => document.getElementById('saved-library')?.scrollIntoView({ behavior: 'smooth' })}
+                className="text-[0.65rem] px-5 py-[0.65rem] border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]" 
+                onClick={() => navigate('/book')}
               >
-                <BookmarkSimple size={14} weight="light" /> MY LIBRARY
+                BOOK A SESSION
               </Button>
-            )}
-            <Button 
-              variant="outline" 
-              className="text-[0.65rem] px-5 py-[0.65rem] border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]" 
-              onClick={openBookingModal}
-            >
-              BOOK A SESSION
-            </Button>
-          </div>
+            </div>
 
-          {/* Mobile Hamburger Icon */}
-          <div className="lg:hidden flex items-center">
-            <button 
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-white focus:outline-none p-1 transition-transform active:scale-95"
-              aria-label="Toggle Menu"
-            >
-              {mobileMenuOpen ? <X size={28} weight="light" /> : <List size={28} weight="light" />}
-            </button>
+            {/* Mobile Hamburger Icon */}
+            <div className="lg:hidden flex items-center">
+              <button 
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="text-white focus:outline-none p-1 transition-transform active:scale-95"
+                aria-label="Toggle Menu"
+              >
+                {mobileMenuOpen ? <X size={28} weight="light" /> : <List size={28} weight="light" />}
+              </button>
+            </div>
           </div>
-        </div>
       </Container>
 
       {/* Mobile Menu Overlay */}
@@ -123,41 +161,30 @@ export default function Navbar() {
         )}
       >
         <nav className="flex flex-col items-center gap-8 w-full mt-12 overflow-y-auto pb-10">
-          {NAV_LINKS.map((link) => 
-            !link.href.includes('#') ? (
-              <Link
-                key={link.label}
-                to={link.href}
-                className="text-3xl font-serif text-white hover:text-accent-gold transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ) : (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-3xl font-serif text-white hover:text-accent-gold transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {link.label}
-              </a>
-            )
-          )}
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.label}
+              to={link.href}
+              className="text-3xl font-serif text-white hover:text-accent-gold transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
           
           <div className="w-12 h-[1px] bg-accent-gold/30 my-4" />
 
           <div className="flex flex-col items-center gap-4 w-full max-w-xs">
-            {isPerspectives && (
+            {showMyJourney && (
               <Button 
                 variant="outline" 
                 className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center items-center gap-2"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  document.getElementById('saved-library')?.scrollIntoView({ behavior: 'smooth' });
+                  navigate('/my-journey');
                 }}
               >
-                <BookmarkSimple size={16} weight="light" /> MY LIBRARY
+                <BookmarkSimple size={16} weight="light" /> MY JOURNEY
               </Button>
             )}
             <Button 
@@ -165,7 +192,7 @@ export default function Navbar() {
               className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center" 
               onClick={() => {
                 setMobileMenuOpen(false);
-                openBookingModal();
+                navigate('/book');
               }}
             >
               BOOK A SESSION

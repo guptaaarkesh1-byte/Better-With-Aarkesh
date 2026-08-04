@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -8,8 +9,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function MainLayout({ children }) {
   const lenisRef = useRef();
-
-  // Removed useSectionSnap to prevent scrolling glitches when used with Lenis smooth scroll
+  const location = useLocation();
 
   useEffect(() => {
     lenisRef.current = new Lenis({
@@ -39,6 +39,19 @@ export default function MainLayout({ children }) {
       lenisRef.current?.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    if (location.hash && lenisRef.current) {
+      setTimeout(() => {
+        const element = document.querySelector(location.hash);
+        if (element) {
+          lenisRef.current.scrollTo(element, { offset: 0, duration: 1.5 });
+        }
+      }, 100);
+    } else if (!location.hash && lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    }
+  }, [location.pathname, location.hash]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-paragraph relative selection:bg-accent-gold selection:text-black">

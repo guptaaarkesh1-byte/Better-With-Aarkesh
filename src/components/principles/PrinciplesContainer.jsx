@@ -35,7 +35,7 @@ export default function PrinciplesContainer({ children }) {
       <div className="absolute inset-0 pointer-events-none z-50">
         <div className="sticky top-0 h-screen w-full">
           <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-full flex items-center justify-end">
-            <div className={`hidden lg:flex w-full justify-end pr-8 -translate-y-16 transition-opacity duration-700 ${activeStep === 5 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`hidden lg:flex w-full justify-end pr-8 transition-opacity duration-700 ${activeStep === 5 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
               <div className="pointer-events-auto">
                 <PrincipleProgress activeStep={activeStep} />
               </div>
