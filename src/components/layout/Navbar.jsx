@@ -104,30 +104,32 @@ export default function Navbar() {
                   </Button>
                   
                   {/* Account Menu Dropdown */}
-                  <div className="absolute top-full right-0 mt-4 w-56 rounded-lg border border-[#c79c6e]/30 bg-[#0a0a0a]/95 backdrop-blur-xl p-2 shadow-[0_0_40px_rgba(199,156,110,0.15)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0 flex flex-col pointer-events-none group-hover:pointer-events-auto z-[200]">
-                    <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white/50 mb-2 mt-2 px-3">
-                      AARKESH
-                    </span>
-                    
-                    <button 
-                      onClick={() => navigate('/my-journey/settings')}
-                      className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/70 hover:text-white hover:bg-white/5 transition-colors w-full text-left px-3 py-3 rounded"
-                    >
-                      <User size={16} /> PROFILE & SETTINGS
-                    </button>
-                    
-                    <button 
-                      onClick={() => navigate('/my-journey/settings?tab=SECURITY')}
-                      className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/70 hover:text-white hover:bg-white/5 transition-colors w-full text-left px-3 py-3 rounded mb-2"
-                    >
-                      <LockKey size={16} /> PRIVACY
-                    </button>
-                    
-                    <div className="w-full h-[1px] bg-white/10 my-1"></div>
-                    
-                    <button className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] hover:text-white hover:bg-[#c79c6e]/10 transition-colors w-full text-left px-3 py-3 rounded mt-1">
-                      <SignOut size={16} weight="bold" /> LOG OUT
-                    </button>
+                  <div className="absolute top-full right-0 pt-4 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0 flex flex-col pointer-events-none group-hover:pointer-events-auto z-[200]">
+                    <div className="rounded-lg border border-[#c79c6e]/30 bg-[#0a0a0a]/95 backdrop-blur-xl p-2 shadow-[0_0_40px_rgba(199,156,110,0.15)] flex flex-col">
+                      <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white/50 mb-2 mt-2 px-3">
+                        AARKESH
+                      </span>
+                      
+                      <button 
+                        onClick={() => navigate('/my-journey/settings')}
+                        className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/70 hover:text-white hover:bg-white/5 transition-colors w-full text-left px-3 py-3 rounded"
+                      >
+                        <User size={16} /> PROFILE & SETTINGS
+                      </button>
+                      
+                      <button 
+                        onClick={() => navigate('/my-journey/settings?tab=SECURITY')}
+                        className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/70 hover:text-white hover:bg-white/5 transition-colors w-full text-left px-3 py-3 rounded mb-2"
+                      >
+                        <LockKey size={16} /> PRIVACY
+                      </button>
+                      
+                      <div className="w-full h-[1px] bg-white/10 my-1"></div>
+                      
+                      <button className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] hover:text-white hover:bg-[#c79c6e]/10 transition-colors w-full text-left px-3 py-3 rounded mt-1">
+                        <SignOut size={16} weight="bold" /> LOG OUT
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

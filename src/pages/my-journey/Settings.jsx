@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { User, Bell, LockKey, UserCircle } from '@phosphor-icons/react';
+import { User, Bell, LockKey, CaretLeft } from '@phosphor-icons/react';
 import bgImage from '../../assets/images/my-journey-bg.png';
 
 import ProfileTab from './components/settings/ProfileTab';
@@ -45,6 +45,12 @@ export default function Settings() {
         {/* Sidebar */}
         <div className="w-full md:w-64 shrink-0 flex flex-col">
           <div className="mb-12">
+            <button 
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 text-white/60 hover:text-white font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors mb-8"
+            >
+              <CaretLeft size={14} weight="bold" /> BACK TO HOMEPAGE
+            </button>
             <div className="flex items-center gap-2 text-white/50 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium mb-4">
               <span className="text-[#c79c6e]">MY JOURNEY</span>
               <span>/</span>
@@ -90,11 +96,6 @@ export default function Settings() {
               }`}
             >
               <LockKey size={16} weight={activeTab === 'SECURITY' ? 'regular' : 'light'} /> SECURITY & PRIVACY
-            </button>
-            <button 
-              className={`flex items-center gap-4 px-6 py-4 rounded-lg font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-all border border-transparent text-white/50 hover:text-white hover:bg-white/5`}
-            >
-              <UserCircle size={16} weight="light" /> ACCOUNT
             </button>
           </div>
         </div>
