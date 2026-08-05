@@ -154,8 +154,8 @@ export default function LatestPerspectivesSection() {
         </div>
 
         {/* Main Content Area */}
-        <div className="w-full flex-1 relative min-h-[450px]">
-          <div ref={gridContainerRef} className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 absolute inset-0">
+        <div className="w-full flex-1 relative md:min-h-[450px]">
+          <div ref={gridContainerRef} className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 md:absolute md:inset-0">
             {displayItems.map((item) => (
               <div 
                 key={item.id}

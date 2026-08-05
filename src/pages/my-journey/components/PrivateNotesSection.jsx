@@ -1,11 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { LockKey, Plus, MagnifyingGlass, CaretDown, ArrowRight, ArrowLeft } from '@phosphor-icons/react';
 
 export default function PrivateNotesSection() {
   const [activeNoteId, setActiveNoteId] = useState(null);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      setTimeout(() => {
+        const yOffset = -80; 
+        const y = containerRef.current.getBoundingClientRect().top + window.scrollY + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }, 100);
+    }
+  }, [activeNoteId]);
 
   return (
-    <section className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto border-t border-white/5 bg-[#050505]">
+    <section ref={containerRef} className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto border-t border-white/5 bg-[#050505]">
       <div className="w-full max-w-7xl mx-auto flex flex-col h-full flex-1">
         
         {!activeNoteId ? (

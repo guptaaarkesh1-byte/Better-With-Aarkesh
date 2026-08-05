@@ -24,7 +24,10 @@ export default function ClosingNavigation() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-16">
             
             {/* Card 1: EXPLORE THE LIBRARY */}
-            <div className="border border-[#c79c6e]/20 hover:border-[#c79c6e] rounded-xl p-8 bg-transparent flex flex-col items-start justify-start transition-all duration-300 cursor-pointer hover:bg-[#c79c6e]/5 hover:shadow-[0_0_30px_rgba(199,156,110,0.05)] min-h-[320px] group">
+            <div 
+              onClick={() => navigate('/library')}
+              className="border border-[#c79c6e]/20 hover:border-[#c79c6e] rounded-xl p-8 bg-transparent flex flex-col items-start justify-start transition-all duration-300 cursor-pointer hover:bg-[#c79c6e]/5 hover:shadow-[0_0_30px_rgba(199,156,110,0.05)] min-h-[320px] group"
+            >
               <BookOpen size={24} weight="light" className="text-[#c79c6e] mb-6" />
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-4 block">
                 EXPLORE THE LIBRARY

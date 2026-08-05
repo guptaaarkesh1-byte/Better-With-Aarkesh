@@ -23,24 +23,24 @@ export default function MyLibrarySection() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="w-full flex items-center border-b border-white/10 mb-8">
+        <div className="w-full flex items-center border-b border-white/10 mb-8 overflow-x-auto no-scrollbar whitespace-nowrap">
           <button 
             onClick={() => setLibraryTab('CONTINUE')}
-            className={`px-8 py-4 font-sans text-xs uppercase tracking-widest font-medium transition-colors relative ${libraryTab === 'CONTINUE' ? 'text-[#c79c6e]' : 'text-white/50 hover:text-white'}`}
+            className={`px-6 md:px-8 py-3 md:py-4 font-sans text-xs uppercase tracking-widest font-medium transition-colors relative ${libraryTab === 'CONTINUE' ? 'text-[#c79c6e]' : 'text-white/50 hover:text-white'}`}
           >
             CONTINUE
             {libraryTab === 'CONTINUE' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#c79c6e]" />}
           </button>
           <button 
             onClick={() => setLibraryTab('BOOKMARKED')}
-            className={`px-8 py-4 font-sans text-xs uppercase tracking-widest font-medium transition-colors relative ${libraryTab === 'BOOKMARKED' ? 'text-[#c79c6e]' : 'text-white/50 hover:text-white'}`}
+            className={`px-6 md:px-8 py-3 md:py-4 font-sans text-xs uppercase tracking-widest font-medium transition-colors relative ${libraryTab === 'BOOKMARKED' ? 'text-[#c79c6e]' : 'text-white/50 hover:text-white'}`}
           >
             BOOKMARKED
             {libraryTab === 'BOOKMARKED' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#c79c6e]" />}
           </button>
           <button 
             onClick={() => setLibraryTab('COMPLETED')}
-            className={`px-8 py-4 font-sans text-xs uppercase tracking-widest font-medium transition-colors relative ${libraryTab === 'COMPLETED' ? 'text-[#c79c6e]' : 'text-white/50 hover:text-white'}`}
+            className={`px-6 md:px-8 py-3 md:py-4 font-sans text-xs uppercase tracking-widest font-medium transition-colors relative ${libraryTab === 'COMPLETED' ? 'text-[#c79c6e]' : 'text-white/50 hover:text-white'}`}
           >
             COMPLETED
             {libraryTab === 'COMPLETED' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#c79c6e]" />}
@@ -49,7 +49,7 @@ export default function MyLibrarySection() {
 
         {/* Filters & Sort */}
         <div className="flex flex-col md:flex-row md:items-center justify-between w-full mb-10 gap-6">
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-4 md:gap-6">
             {['ALL', 'PERSPECTIVES', 'VIDEOS', 'TOOLS'].map((filter) => (
               <button
                 key={filter}

@@ -133,6 +133,11 @@ export default function ToolsReflectionSection() {
   }, { scope: containerRef });
 
   const handleSelect = (tool) => {
+    if (window.innerWidth < 768) {
+      setSelectedTool(selectedTool === tool.id ? null : tool.id);
+      return;
+    }
+
     if (selectedTool === tool.id) return;
 
     if (!selectedTool) {
@@ -188,12 +193,11 @@ export default function ToolsReflectionSection() {
         <div className="w-full flex-1 relative min-h-[550px]">
           
           {/* OVERVIEW (The 3 Cards) */}
-          {!selectedTool && (
-            <div ref={gridContainerRef} className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 absolute inset-0">
-              {tools.map((tool) => (
-                <div 
-                  key={tool.id}
-                  className={`tool-card relative w-full h-[500px] rounded-md bg-[#050505]/60 backdrop-blur-md border flex flex-col items-center p-8 text-center transition-all duration-500 ease-out cursor-pointer z-10
+          <div ref={gridContainerRef} className={`w-full grid grid-cols-1 md:grid-cols-3 gap-6 md:absolute md:inset-0 ${selectedTool ? 'md:hidden' : ''}`}>
+            {tools.map((tool) => (
+              <div 
+                key={tool.id}
+                className={`tool-card relative w-full h-auto min-h-[500px] md:h-[500px] rounded-md bg-[#050505]/60 backdrop-blur-md border flex flex-col items-center p-8 text-center transition-all duration-500 ease-out cursor-pointer z-10
                     ${hoveredTool === tool.id 
                       ? 'border-[#c79c6e]/80 shadow-[0_0_30px_rgba(199,156,110,0.15)] bg-black scale-[1.02]' 
                       : 'border-white/10 hover:border-white/20'
@@ -215,7 +219,7 @@ export default function ToolsReflectionSection() {
                   </p>
 
                   {/* Bottom Link (Changes on Hover) */}
-                  <div className="w-full h-[60px] flex flex-col justify-end items-center gap-3 shrink-0 mt-4">
+                  <div className="hidden md:flex w-full h-[60px] flex-col justify-end items-center gap-3 shrink-0 mt-4">
                     <div className={`overflow-hidden transition-all duration-500 ${hoveredTool === tool.id ? 'max-h-10 opacity-100' : 'max-h-0 opacity-0'}`}>
                       <span className="font-sans text-[0.55rem] uppercase tracking-widest font-semibold text-[#c79c6e]">
                         REFLECTION TOOL &nbsp;•&nbsp; {tool.duration}
@@ -227,14 +231,50 @@ export default function ToolsReflectionSection() {
                       <ArrowRight size={14} weight="light" />
                     </div>
                   </div>
+
+                  {/* Mobile Accordion Content */}
+                  <div 
+                    className={`md:hidden grid transition-[grid-template-rows,opacity,margin] duration-500 w-full mt-4 ${
+                      selectedTool === tool.id 
+                        ? 'grid-rows-[1fr] opacity-100 mb-8' 
+                        : 'grid-rows-[0fr] opacity-0 mb-0'
+                    }`}
+                    onClick={(e) => e.stopPropagation()} 
+                  >
+                    <div className="overflow-hidden flex flex-col w-full border-t border-white/10 pt-6 mt-2">
+                      <span className="font-sans text-[0.55rem] uppercase tracking-[0.2em] font-semibold text-[#c79c6e] mb-4 block">
+                        {tool.title}
+                      </span>
+                      
+                      <h4 className="font-serif text-[1.35rem] text-white/90 font-light leading-[1.25] whitespace-pre-line mb-6">
+                        {tool.previewTitle}
+                      </h4>
+                      
+                      <p className="font-sans text-[0.65rem] font-light leading-relaxed whitespace-pre-line text-white/60 mb-8">
+                        {tool.previewDesc}
+                      </p>
+
+                      <div className="flex flex-col gap-4 w-full">
+                        <button className="flex items-center justify-center gap-3 px-6 py-4 bg-transparent border border-[#c79c6e] rounded-sm hover:bg-[#c79c6e]/10 transition-colors w-full group">
+                          <span className="font-sans text-[0.65rem] uppercase tracking-widest font-semibold text-[#c79c6e]">BEGIN REFLECTION</span>
+                          <ArrowRight size={14} weight="bold" className="text-[#c79c6e]" />
+                        </button>
+                        
+                        <button className="flex items-center justify-center gap-3 px-6 py-4 bg-transparent border border-white/10 rounded-sm w-full">
+                          <BookmarkSimple size={14} weight="light" className="text-white/50" />
+                          <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium text-white/50">SAVE TO MY LIBRARY</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               ))}
             </div>
-          )}
 
-          {/* DETAILED VIEW (Preview Card) */}
+          {/* DETAILED VIEW (Preview Card - DESKTOP ONLY) */}
           {selectedTool && (
-            <div ref={previewContainerRef} className="w-full absolute inset-0 pt-4 flex flex-col opacity-0">
+            <div ref={previewContainerRef} className="hidden md:flex w-full md:absolute md:inset-0 pt-4 flex-col opacity-0">
               
               {/* The Big Preview Card */}
               <div className="w-full bg-[#050505]/80 backdrop-blur-md border border-[#c79c6e]/30 rounded-md p-12 flex flex-col md:flex-row relative overflow-hidden min-h-[450px]">
@@ -275,7 +315,7 @@ export default function ToolsReflectionSection() {
               </div>
 
               {/* Bottom Tabs for switching tools */}
-              <div className="w-full flex items-center justify-center gap-4 mt-8">
+              <div className="w-full flex flex-wrap items-center justify-center gap-4 mt-8">
                 {tools.map(tool => (
                   <button 
                     key={tool.id}

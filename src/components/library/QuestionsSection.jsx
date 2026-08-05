@@ -169,6 +169,7 @@ export default function QuestionsSection() {
   const hoverTimeoutRef = useRef(null);
 
   const handleMouseEnter = (topicId) => {
+    if (window.innerWidth < 768) return;
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
@@ -179,6 +180,7 @@ export default function QuestionsSection() {
   };
 
   const handleMouseLeave = () => {
+    if (window.innerWidth < 768) return;
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
@@ -186,6 +188,25 @@ export default function QuestionsSection() {
       setActiveTopic(null);
       setActiveSubTopic(null);
     }, 150); // 150ms bridge gap
+  };
+
+  const handleClick = (topicId) => {
+    if (window.innerWidth < 768) {
+      if (activeTopic === topicId) {
+        setActiveTopic(null);
+        setActiveSubTopic(null);
+      } else {
+        setActiveTopic(topicId);
+        setActiveSubTopic(null);
+      }
+    }
+  };
+
+  const handleSubItemClick = (idx, e) => {
+    if (window.innerWidth < 768) {
+      e.stopPropagation();
+      setActiveSubTopic(activeSubTopic === idx ? null : idx);
+    }
   };
 
   useGSAP(() => {
@@ -250,14 +271,15 @@ export default function QuestionsSection() {
           return (
             <div 
               key={topic.id}
-              className={`topic-card relative border rounded-lg px-6 py-10 flex flex-col items-center text-center gap-5 cursor-pointer transition-all duration-300 min-h-[220px] justify-center
+              className={`topic-card relative border rounded-lg px-6 py-8 md:py-10 flex flex-col items-center text-center gap-5 cursor-pointer transition-all duration-300 md:min-h-[220px] justify-center
                 ${isActive 
-                  ? 'border-[#c79c6e]/60 bg-black shadow-[0_0_30px_rgba(199,156,110,0.1)] z-50 scale-[1.02]' 
+                  ? 'border-[#c79c6e]/60 bg-black shadow-[0_0_30px_rgba(199,156,110,0.1)] z-50 md:scale-[1.02]' 
                   : 'border-white/10 bg-[#050505]/40 hover:border-white/30 hover:bg-[#050505]/60 z-10'
                 }
               `}
               onMouseEnter={() => handleMouseEnter(topic.id)}
               onMouseLeave={handleMouseLeave}
+              onClick={() => handleClick(topic.id)}
             >
               <topic.icon 
                 size={36} 
@@ -273,10 +295,10 @@ export default function QuestionsSection() {
                  </p>
               </div>
               
-              {/* Popup Submenu */}
+              {/* Desktop Popup Submenu */}
               {isActive && (
                 <div 
-                  className={`absolute top-0 w-full min-h-full flex flex-col border border-[#c79c6e]/40 rounded-lg p-5 bg-[#050505]/95 backdrop-blur-md shadow-2xl transition-all duration-300 animate-in fade-in zoom-in-95 ${popup1Class}`}
+                  className={`hidden md:flex absolute top-0 w-full min-h-full flex-col border border-[#c79c6e]/40 rounded-lg p-5 bg-[#050505]/95 backdrop-blur-md shadow-2xl transition-all duration-300 animate-in fade-in zoom-in-95 ${popup1Class}`}
                   onMouseEnter={() => handleMouseEnter(topic.id)}
                   onMouseLeave={handleMouseLeave}
                 >
@@ -331,6 +353,56 @@ export default function QuestionsSection() {
                   )}
                 </div>
               )}
+
+              {/* Mobile Accordion Content */}
+              <div 
+                className={`md:hidden grid transition-[grid-template-rows,opacity,margin] duration-500 w-full ${
+                  isActive 
+                    ? 'grid-rows-[1fr] opacity-100 mt-2' 
+                    : 'grid-rows-[0fr] opacity-0 mt-0'
+                }`}
+                onClick={(e) => e.stopPropagation()} 
+              >
+                <div className="overflow-hidden flex flex-col w-full border-t border-white/10 pt-4 text-left">
+                  <p className="font-sans text-xs text-white/80 font-light mb-2 leading-relaxed">
+                    Not every difficult {topic.id.toLowerCase().replace(/s$/, '')} needs the same question.
+                  </p>
+                  
+                  {topic.subItems.map((sub, idx) => (
+                    <div key={idx} className="flex flex-col border-b border-[#c79c6e]/10 last:border-0 py-1">
+                      <button 
+                        onClick={(e) => handleSubItemClick(idx, e)}
+                        className="w-full text-left font-sans text-[0.7rem] text-white/90 hover:text-[#c79c6e] font-light py-2 flex justify-between items-center transition-colors"
+                      >
+                        {sub.title}
+                        <ArrowDown size={14} className={`transition-transform duration-300 ${activeSubTopic === idx ? 'rotate-180 text-[#c79c6e]' : 'text-white/30'}`} weight="light" />
+                      </button>
+                      
+                      {/* Nested Pathways Accordion */}
+                      <div 
+                        className={`grid transition-[grid-template-rows,opacity] duration-300 ${
+                          activeSubTopic === idx ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                        }`}
+                      >
+                        <div className="overflow-hidden flex flex-col gap-2 pt-1 pb-3">
+                          {sub.pathways.map((pathway, pIdx) => (
+                            <a 
+                              key={pIdx} 
+                              href={`/library/${topic.id}/${sub.title.toLowerCase().replace(/ /g, '-')}#${pathway.toLowerCase().replace(/ /g, '-')}`} 
+                              className="font-sans text-[0.65rem] text-white/80 hover:text-white font-light border border-[#c79c6e]/20 bg-[#c79c6e]/5 rounded-md p-3 group hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/10"
+                            >
+                              {pathway}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <a href={`/library/${topic.id}`} className="mt-4 text-center font-sans text-[0.7rem] text-[#c79c6e] hover:text-white transition-colors flex items-center justify-center gap-2 group border border-[#c79c6e]/30 rounded-lg py-3">
+                    EXPLORE ALL <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" weight="bold" />
+                  </a>
+                </div>
+              </div>
             </div>
           )
         })}

@@ -105,6 +105,11 @@ export default function SituationExploreSection() {
   }, { scope: containerRef });
 
   const handleSelect = (sit) => {
+    if (window.innerWidth < 768) {
+      setSelectedSituation(selectedSituation?.id === sit.id ? null : sit);
+      return;
+    }
+
     gsap.to(gridContainerRef.current, {
       opacity: 0,
       y: 20,
@@ -172,15 +177,14 @@ export default function SituationExploreSection() {
         </div>
 
         {/* Main Content Area */}
-        <div className="w-full flex-1 relative min-h-[500px]">
+        <div className="w-full flex-1 relative md:min-h-[500px]">
           
           {/* OVERVIEW (The 6 Cards) */}
-          {!selectedSituation && (
-            <div ref={gridContainerRef} className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 absolute inset-0">
-              {situations.map((sit) => (
+          <div ref={gridContainerRef} className={`w-full grid grid-cols-1 md:grid-cols-2 gap-4 md:absolute md:inset-0 ${selectedSituation ? 'md:hidden' : ''}`}>
+            {situations.map((sit) => (
                 <div 
                   key={sit.id}
-                  className={`situation-card relative w-full p-8 md:p-10 rounded-md bg-[#050505]/60 backdrop-blur-md border flex flex-col items-center justify-center text-center transition-all duration-500 ease-out cursor-pointer z-10
+                  className={`situation-card relative w-full px-8 py-8 pb-14 md:px-10 md:py-10 md:pb-16 rounded-md bg-[#050505]/60 backdrop-blur-md border flex flex-col items-center justify-center text-center transition-all duration-500 ease-out cursor-pointer z-10
                     ${hoveredSituation === sit.id 
                       ? 'border-[#c79c6e]/80 shadow-[0_0_30px_rgba(199,156,110,0.15)] bg-black scale-[1.01]' 
                       : 'border-white/10 hover:border-white/20'
@@ -195,20 +199,60 @@ export default function SituationExploreSection() {
                   </p>
 
                   {/* Bottom Link (Appears on Hover) */}
-                  <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 overflow-hidden transition-all duration-500 ${hoveredSituation === sit.id ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                  <div className={`hidden md:block absolute bottom-6 left-1/2 -translate-x-1/2 overflow-hidden transition-all duration-500 ${hoveredSituation === sit.id ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                     <div className="flex items-center gap-2 text-[#c79c6e] whitespace-nowrap mt-4">
                       <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">EXPLORE THIS</span>
                       <ArrowRight size={14} weight="bold" />
                     </div>
                   </div>
+
+                  {/* Mobile Accordion Content */}
+                  <div 
+                    className={`md:hidden grid transition-[grid-template-rows,opacity,margin] duration-500 w-full mt-4 ${
+                      selectedSituation?.id === sit.id 
+                        ? 'grid-rows-[1fr] opacity-100 mb-8' 
+                        : 'grid-rows-[0fr] opacity-0 mb-0'
+                    }`}
+                    onClick={(e) => e.stopPropagation()} 
+                  >
+                    <div className="overflow-hidden flex flex-col w-full border-t border-white/10 pt-6 mt-2">
+                      <div className="flex flex-col gap-6 w-full text-left">
+                        {curatedContent.map((content) => (
+                          <div key={content.id} className="group cursor-pointer">
+                            <div className="w-full aspect-[4/3] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-3">
+                              <img src={content.image} alt={content.title} className="w-full h-full object-cover opacity-60" />
+                              <div className="absolute inset-0 bg-black/40" />
+                              {content.hasPlay && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <PlayCircle size={32} weight="light" className="text-white/80" />
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-sans text-[0.55rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-1 block">
+                              {content.type} &nbsp;•&nbsp; {content.duration}
+                            </span>
+                            <h4 className="font-serif text-lg text-white/90 font-light leading-snug pr-2">
+                              {content.title}
+                            </h4>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="w-full flex justify-center mt-6">
+                        <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
+                          <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW FULL COLLECTION</span>
+                          <ArrowRight size={14} weight="bold" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               ))}
             </div>
-          )}
 
-          {/* DETAILED VIEW (Curated Collection) */}
+          {/* DETAILED VIEW (Curated Collection - DESKTOP ONLY) */}
           {selectedSituation && (
-            <div ref={detailContainerRef} className="w-full absolute inset-0 pt-4 flex flex-col">
+            <div ref={detailContainerRef} className="hidden md:flex w-full md:absolute md:inset-0 pt-4 flex-col">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 {curatedContent.map((content) => (
                   <div key={content.id} className="group cursor-pointer">

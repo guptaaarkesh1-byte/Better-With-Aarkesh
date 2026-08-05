@@ -69,6 +69,42 @@ const videos = [
   }
 ];
 
+const articles = [
+  {
+    id: 1,
+    duration: '5 MIN',
+    title: 'The hidden cost of holding it all together'
+  },
+  {
+    id: 2,
+    duration: '7 MIN',
+    title: 'Why we apologize when we are not wrong'
+  },
+  {
+    id: 3,
+    duration: '4 MIN',
+    title: 'Rest as a necessary boundary'
+  }
+];
+
+const reflectionTools = [
+  {
+    id: 1,
+    duration: '15 MIN',
+    title: 'Mapping your current capacity'
+  },
+  {
+    id: 2,
+    duration: '10 MIN',
+    title: 'The "What If" scenario planner'
+  },
+  {
+    id: 3,
+    duration: '20 MIN',
+    title: 'Core values audit'
+  }
+];
+
 export default function FormatExploreSection() {
   const [hoveredFormat, setHoveredFormat] = useState(null);
   const [selectedFormat, setSelectedFormat] = useState(null);
@@ -175,15 +211,15 @@ export default function FormatExploreSection() {
       </div>
 
       {/* Main Content Area */}
-      <div className="w-full flex-1 relative min-h-[70vh]">
+      <div className="w-full flex-1 relative md:min-h-[70vh]">
         
         {/* OVERVIEW (The 3 Cards) */}
         {!selectedFormat && (
-          <div ref={cardsContainerRef} className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 absolute inset-0">
+          <div ref={cardsContainerRef} className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 md:absolute md:inset-0">
             {formats.map((format) => (
               <div 
                 key={format.id}
-                className={`format-card relative w-full aspect-[4/5] p-8 rounded-md bg-[#050505]/60 backdrop-blur-md border flex flex-col items-center justify-center text-center transition-all duration-500 ease-out cursor-pointer z-10
+                className={`format-card relative w-full aspect-[4/5] px-8 py-8 pb-14 md:px-8 md:py-8 md:pb-16 rounded-md bg-[#050505]/60 backdrop-blur-md border flex flex-col items-center justify-center text-center transition-all duration-500 ease-out cursor-pointer z-10
                   ${hoveredFormat === format.id 
                     ? 'border-[#c79c6e]/80 shadow-[0_0_30px_rgba(199,156,110,0.15)] bg-black scale-[1.02]' 
                     : 'border-white/10 hover:border-white/20'
@@ -219,15 +255,16 @@ export default function FormatExploreSection() {
           </div>
         )}
 
-        {/* DETAILED VIEW (The Videos/Articles) */}
+        {/* DETAILED VIEW (The Videos/Articles/Tools) */}
         {selectedFormat && (
-          <div ref={contentContainerRef} className="w-full absolute inset-0 pt-4">
-            {selectedFormat === 'watch' ? (
-              <div className="flex flex-col h-full">
+          <div ref={contentContainerRef} className="w-full md:absolute md:inset-0 pt-4">
+            
+            {/* WATCH TAB */}
+            {selectedFormat === 'watch' && (
+              <div className="flex flex-col h-full animate-in fade-in duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
                   {videos.map((video) => (
                     <div key={video.id} className="group cursor-pointer">
-                      {/* Video Thumbnail */}
                       <div className="w-full aspect-[16/10] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
                         <img 
                           src={video.image} 
@@ -239,8 +276,6 @@ export default function FormatExploreSection() {
                           <PlayCircle size={40} weight="light" className="text-white/80 group-hover:text-[#c79c6e] group-hover:scale-110 transition-all duration-500" />
                         </div>
                       </div>
-                      
-                      {/* Video Info */}
                       <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-2 block">
                         VIDEO &nbsp;•&nbsp; {video.duration}
                       </span>
@@ -250,7 +285,6 @@ export default function FormatExploreSection() {
                     </div>
                   ))}
                 </div>
-
                 <div className="mt-8">
                   <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
                     <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL 10 VIDEOS</span>
@@ -258,11 +292,63 @@ export default function FormatExploreSection() {
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="w-full h-[300px] flex items-center justify-center border border-white/5 bg-[#050505]/30 rounded-md">
-                <span className="font-sans text-xs uppercase tracking-widest text-white/30">
-                  {selectedFormat} content coming soon
-                </span>
+            )}
+
+            {/* READ TAB */}
+            {selectedFormat === 'read' && (
+              <div className="flex flex-col h-full animate-in fade-in duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
+                  {articles.map((item) => (
+                    <div key={item.id} className="group cursor-pointer">
+                      <div className="w-full aspect-[16/10] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
+                        <div className="absolute inset-0 bg-[#050505] flex items-center justify-center p-6 text-white/20 group-hover:text-[#c79c6e]/20 transition-colors">
+                           <BookOpen size={48} weight="thin" />
+                        </div>
+                      </div>
+                      <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-2 block">
+                        ARTICLE &nbsp;•&nbsp; {item.duration}
+                      </span>
+                      <h4 className="font-serif text-[1.35rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 pr-4">
+                        {item.title}
+                      </h4>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-8">
+                  <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
+                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL 12 ARTICLES</span>
+                    <ArrowRight size={14} weight="bold" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TOOL TAB */}
+            {selectedFormat === 'tool' && (
+              <div className="flex flex-col h-full animate-in fade-in duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
+                  {reflectionTools.map((item) => (
+                    <div key={item.id} className="group cursor-pointer">
+                      <div className="w-full aspect-[16/10] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
+                        <div className="absolute inset-0 bg-[#050505] flex items-center justify-center p-6 text-white/20 group-hover:text-[#c79c6e]/20 transition-colors">
+                           <Key size={48} weight="thin" />
+                        </div>
+                      </div>
+                      <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-2 block">
+                        REFLECTION TOOL &nbsp;•&nbsp; {item.duration}
+                      </span>
+                      <h4 className="font-serif text-[1.35rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 pr-4">
+                        {item.title}
+                      </h4>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-8">
+                  <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
+                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL 3 TOOLS</span>
+                    <ArrowRight size={14} weight="bold" />
+                  </button>
+                </div>
               </div>
             )}
           </div>

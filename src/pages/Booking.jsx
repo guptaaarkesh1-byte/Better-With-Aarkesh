@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from '@phosphor-icons/react';
 import BookingStepper from '../components/booking/BookingStepper';
 import Step1Time from '../components/booking/Step1Time';
@@ -9,6 +9,7 @@ import BookingSuccess from '../components/booking/BookingSuccess';
 import bookingBg from '../assets/images/booking_bg_lamp.png';
 
 export default function Booking() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [bookingData, setBookingData] = useState({
     date: null,
@@ -56,14 +57,14 @@ export default function Booking() {
         
         {/* Top Left Back Button */}
         {step === 1 && (
-          <div className="flex w-full mb-4">
-            <Link 
-              to="/" 
+          <div className="flex w-full mt-6 md:mt-8 mb-4">
+            <button 
+              onClick={() => navigate(-1)}
               className="flex items-center gap-2 font-sans text-[0.65rem] uppercase tracking-widest text-white/60 hover:text-white hover:text-accent-gold transition-colors"
             >
               <ArrowLeft className="text-base" />
-              RETURN TO HOME
-            </Link>
+              BACK
+            </button>
           </div>
         )}
 

@@ -1,11 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, LockKey } from '@phosphor-icons/react';
 
 export default function CompletedSessionsSection() {
   const [activeSessionId, setActiveSessionId] = useState(null);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      setTimeout(() => {
+        const yOffset = -80; 
+        const y = containerRef.current.getBoundingClientRect().top + window.scrollY + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }, 100);
+    }
+  }, [activeSessionId]);
 
   return (
-    <section className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto border-t border-white/5">
+    <section ref={containerRef} className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto border-t border-white/5">
       <div className="w-full max-w-7xl mx-auto flex flex-col h-full flex-1">
         
         {!activeSessionId ? (
