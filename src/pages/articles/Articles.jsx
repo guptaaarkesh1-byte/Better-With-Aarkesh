@@ -6,6 +6,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { topics } from '../../components/library/QuestionsSection';
+import savedDecisionsImg from '../../assets/PerspectivePage/saved_decisions.png';
 
 const ExpandedArticle = ({ isExpanded }) => {
   const contentRef = useRef(null);
@@ -176,10 +177,24 @@ export default function Articles() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col font-sans text-white">
-      <Navbar />
+    <div className="min-h-screen bg-[#050505] flex flex-col font-sans text-white relative">
       
-      <main className="flex-1 flex flex-col items-center justify-center pt-24 pb-12 px-6" ref={containerRef}>
+      {/* Dynamic Background Image for specific categories */}
+      {(step === 1 || step === 2) && activeCategory?.id === 'relationships' && (
+        <div className="fixed inset-0 z-0 pointer-events-none animate-in fade-in duration-1000">
+          <img 
+            src={savedDecisionsImg} 
+            alt="Relationships Background" 
+            className="w-full h-full object-cover object-center opacity-40"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-[#050505]/40" />
+        </div>
+      )}
+
+      <div className="relative z-10 flex flex-col w-full h-full flex-1">
+        <Navbar />
+        
+        <main className="flex-1 flex flex-col items-center justify-center pt-24 pb-12 px-6" ref={containerRef}>
         
         <div className="w-full md:w-[80%] max-w-6xl relative min-h-[400px] flex items-center justify-center">
           
@@ -323,7 +338,7 @@ export default function Articles() {
                     <div 
                       key={idx} 
                       id={`pathway-${idx}`} 
-                      className={`flex flex-col rounded-md transition-all duration-500 overflow-hidden ${isExpanded ? 'bg-white/5' : 'bg-transparent border-b border-white/5'}`}
+                      className={`flex flex-col rounded-md transition-all duration-500 overflow-hidden ${isExpanded ? 'bg-[#0a0a0a] shadow-2xl border border-white/10' : 'bg-transparent border-b border-white/5'}`}
                     >
                       <button 
                         onClick={() => setExpandedPathway(isExpanded ? null : idx)}
@@ -349,6 +364,7 @@ export default function Articles() {
 
         </div>
       </main>
+      </div>
 
       {/* Fixed bottom gradient to fade text as it approaches the bottom of the screen */}
       <div className="fixed bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent pointer-events-none z-40" />
