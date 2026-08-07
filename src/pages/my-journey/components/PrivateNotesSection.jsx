@@ -16,12 +16,14 @@ export default function PrivateNotesSection() {
   }, [activeNoteId]);
 
   return (
-    <section ref={containerRef} className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto border-t border-white/5 bg-[#050505]">
+    <section ref={containerRef} className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto border-t border-white/5">
       <div className="w-full max-w-7xl mx-auto flex flex-col h-full flex-1">
         
         {!activeNoteId ? (
           // Frame A & B: Private Notes List
-          <div className="flex flex-col w-full flex-1">
+          <div className="flex flex-col w-full flex-1 relative">
+            {/* Soft backdrop blur behind the section for readability */}
+            <div className="absolute -inset-6 md:-inset-12 bg-black/30 backdrop-blur-sm rounded-3xl -z-10" />
             
             {/* Header & Create Note Button */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -193,7 +195,7 @@ export default function PrivateNotesSection() {
             </h2>
 
             {/* Editor Box */}
-            <div className="w-full max-w-5xl rounded-xl border border-[#c79c6e]/40 bg-[#0a0a0a]/60 backdrop-blur-md p-8 md:p-12 mb-6 flex flex-col shadow-[0_0_20px_rgba(199,156,110,0.05)]">
+            <div className="w-full max-w-5xl rounded-xl border border-[#c79c6e]/40 bg-[#0a0a0a]/60 backdrop-blur-sm p-8 md:p-12 mb-6 flex flex-col shadow-[0_0_20px_rgba(199,156,110,0.05)]">
               
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-4 block">
                 HEADING

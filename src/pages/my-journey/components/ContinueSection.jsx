@@ -24,7 +24,7 @@ export default function ContinueSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-auto mb-auto">
           
           {/* Card 1: PERSPECTIVE */}
-          <div className="group border border-white/10 hover:border-[#c79c6e] rounded-xl p-8 bg-[#0a0a0a]/80 backdrop-blur-md flex flex-col items-start justify-start transition-all duration-500 ease-out cursor-pointer hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(199,156,110,0.15)] min-h-[360px] relative overflow-hidden">
+          <div className="group border border-white/10 hover:border-[#c79c6e] rounded-xl p-8 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col items-start justify-start transition-all duration-500 ease-out cursor-pointer hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(199,156,110,0.15)] min-h-[360px] relative overflow-hidden">
             
             {/* Header */}
             <div className="w-full flex justify-between items-center mb-6 text-[#c79c6e]">
@@ -69,7 +69,7 @@ export default function ContinueSection() {
           </div>
 
           {/* Card 2: VIDEO */}
-          <div className="border border-white/10 hover:border-white/30 rounded-xl p-8 bg-[#0a0a0a]/80 backdrop-blur-md flex flex-col items-start justify-start transition-all duration-300 cursor-pointer min-h-[360px]">
+          <div className="border border-white/10 hover:border-white/30 rounded-xl p-8 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col items-start justify-start transition-all duration-300 cursor-pointer min-h-[360px]">
             <div className="w-full flex justify-between items-center mb-6 text-[#c79c6e]">
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">VIDEO</span>
               <PlayCircle size={24} weight="light" />
@@ -83,7 +83,7 @@ export default function ContinueSection() {
           </div>
 
           {/* Card 3: REFLECTION TOOL */}
-          <div className="border border-white/10 hover:border-white/30 rounded-xl p-8 bg-[#0a0a0a]/80 backdrop-blur-md flex flex-col items-start justify-start transition-all duration-300 cursor-pointer min-h-[360px]">
+          <div className="border border-white/10 hover:border-white/30 rounded-xl p-8 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col items-start justify-start transition-all duration-300 cursor-pointer min-h-[360px]">
             <div className="w-full flex justify-between items-center mb-6 text-[#c79c6e]">
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">REFLECTION TOOL</span>
               <Faders size={24} weight="light" /> 

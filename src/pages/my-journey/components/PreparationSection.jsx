@@ -22,7 +22,7 @@ export default function PreparationSection() {
   };
 
   return (
-    <section ref={containerRef} className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto bg-[#050505]/40 backdrop-blur-md">
+    <section ref={containerRef} className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto bg-[#050505]/40 backdrop-blur-sm">
       
       <div className="w-full max-w-7xl mx-auto flex flex-col h-full flex-1">
         
@@ -47,7 +47,7 @@ export default function PreparationSection() {
               <div className="flex flex-col gap-6 w-full md:w-[400px] shrink-0">
                 
                 {/* Appointment Card */}
-                <div className="w-full rounded-xl border border-[#c79c6e]/60 bg-[#0a0a0a]/80 backdrop-blur-xl p-8 relative overflow-hidden shadow-[0_0_20px_rgba(199,156,110,0.1)]">
+                <div className="w-full rounded-xl border border-[#c79c6e]/60 bg-[#0a0a0a]/80 backdrop-blur-sm p-8 relative overflow-hidden shadow-[0_0_20px_rgba(199,156,110,0.1)]">
                   <div className="absolute top-0 right-0 w-48 h-48 bg-[#c79c6e]/10 rounded-full blur-[80px] pointer-events-none" />
                   
                   <div className="flex items-center gap-2 text-[#c79c6e] mb-6">

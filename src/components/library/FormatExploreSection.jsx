@@ -315,10 +315,10 @@ export default function FormatExploreSection() {
                   ))}
                 </div>
                 <div className="mt-8">
-                  <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
-                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL 12 ARTICLES</span>
+                  <a href="/articles?view=all" className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
+                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL 24 ARTICLES</span>
                     <ArrowRight size={14} weight="bold" />
-                  </button>
+                  </a>
                 </div>
               </div>
             )}

@@ -7,6 +7,7 @@ import Stories from './pages/Stories';
 import MyJourney from './pages/my-journey/MyJourney';
 import Settings from './pages/my-journey/Settings';
 import Prepare from './pages/prepare/Prepare';
+import Articles from './pages/articles/Articles';
 import Footer from './components/layout/Footer';
 
 import { BookingProvider } from './context/BookingContext';
@@ -25,6 +26,7 @@ function App() {
             <Route path="/my-journey" element={<MyJourney />} />
             <Route path="/my-journey/settings" element={<Settings />} />
             <Route path="/prepare" element={<Prepare />} />
+            <Route path="/articles" element={<Articles />} />
           </Routes>
           <Footer />
         </MainLayout>

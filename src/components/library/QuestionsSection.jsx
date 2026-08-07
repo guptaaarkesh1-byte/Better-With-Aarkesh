@@ -199,6 +199,8 @@ export default function QuestionsSection() {
         setActiveTopic(topicId);
         setActiveSubTopic(null);
       }
+    } else {
+      window.location.href = `/articles?category=${topicId}`;
     }
   };
 
@@ -346,7 +348,7 @@ export default function QuestionsSection() {
                         ))}
                       </div>
                       
-                      <a href={`/library/${topic.id}`} className="mt-auto pt-4 text-left font-sans text-[0.65rem] md:text-[0.7rem] text-[#c79c6e] hover:text-white transition-colors flex items-center gap-2 group">
+                      <a href={`/articles?category=${topic.id}`} className="mt-auto pt-4 text-left font-sans text-[0.65rem] md:text-[0.7rem] text-[#c79c6e] hover:text-white transition-colors flex items-center gap-2 group">
                         EXPLORE PERSPECTIVES <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" weight="bold" />
                       </a>
                     </div>
@@ -398,7 +400,7 @@ export default function QuestionsSection() {
                       </div>
                     </div>
                   ))}
-                  <a href={`/library/${topic.id}`} className="mt-4 text-center font-sans text-[0.7rem] text-[#c79c6e] hover:text-white transition-colors flex items-center justify-center gap-2 group border border-[#c79c6e]/30 rounded-lg py-3">
+                  <a href={`/articles?category=${topic.id}`} className="mt-4 text-center font-sans text-[0.7rem] text-[#c79c6e] hover:text-white transition-colors flex items-center justify-center gap-2 group border border-[#c79c6e]/30 rounded-lg py-3">
                     EXPLORE ALL <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" weight="bold" />
                   </a>
                 </div>

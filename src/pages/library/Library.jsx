@@ -269,7 +269,7 @@ export default function Library() {
 
       {/* CONTINUOUS BACKGROUND WRAPPER */}
       <div 
-        className="relative w-full bg-cover bg-center bg-no-repeat bg-fixed bg-black/70 bg-blend-multiply"
+        className="relative w-full bg-cover bg-center bg-no-repeat bg-fixed bg-black/30 bg-blend-multiply"
         style={{ backgroundImage: `url(${continuousBg})` }}
       >
         {/* SECTION 2: Questions Grid */}

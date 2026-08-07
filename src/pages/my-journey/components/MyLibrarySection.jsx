@@ -6,7 +6,7 @@ export default function MyLibrarySection() {
   const [libraryFilter, setLibraryFilter] = useState('ALL');
 
   return (
-    <section className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto border-t border-white/5 bg-[#050505]/40 backdrop-blur-md">
+    <section className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 py-24 mx-auto border-t border-white/5 bg-[#050505]/40 backdrop-blur-sm">
       <div className="w-full max-w-7xl mx-auto flex flex-col h-full flex-1">
         
         {/* Header */}

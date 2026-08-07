@@ -75,7 +75,7 @@ export default function OverviewSection() {
         {/* Main Content Area */}
         <div className="flex-1 w-full">
           {activeTab === 'COACHING' && (
-            <div className="w-full rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-xl p-6 md:p-10 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_40px_rgba(199,156,110,0.1)]">
+            <div className="w-full rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-6 md:p-10 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_40px_rgba(199,156,110,0.1)]">
               
               {/* Subtle Glow inside the card */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-[#c79c6e]/5 rounded-full blur-[100px] pointer-events-none" />
@@ -118,7 +118,7 @@ export default function OverviewSection() {
           )}
           
           {activeTab !== 'COACHING' && (
-            <div className="w-full h-full min-h-[400px] rounded-2xl border border-white/10 bg-[#0a0a0a]/40 backdrop-blur-md p-12 flex flex-col items-center justify-center text-center">
+            <div className="w-full h-full min-h-[400px] rounded-2xl border border-white/10 bg-[#0a0a0a]/40 backdrop-blur-sm p-12 flex flex-col items-center justify-center text-center">
               <span className="font-serif text-2xl text-white/60 mb-2">Coming Soon</span>
               <p className="font-sans font-light text-white/40">Details for {activeTab} will appear here.</p>
             </div>

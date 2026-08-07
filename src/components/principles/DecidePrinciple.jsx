@@ -24,7 +24,7 @@ export default function DecidePrinciple() {
         "We help you align your values, <br className='hidden lg:block' /> weigh what matters, and choose <br className='hidden lg:block' /> the path you're willing to walk.",
         "<span class='text-accent-gold'>Then we help you walk it.</span>"
       ]}
-      buttonText="SCROLL TO CONTINUE"
+      buttonText=""
       activeStep={3}
       bannerTitle="DYNAMIC<br/>EXPERIENCE"
       bannerIcon={Sparkle}

@@ -152,7 +152,7 @@ export default function CoachingPrinciple() {
               <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
                 <UsersThree className="text-accent-gold text-3xl shrink-0" weight="light" />
                 <div>
-                  <div className="text-white text-lg font-medium">1000+</div>
+                  <div className="text-white text-lg font-medium">100+</div>
                   <div className="text-white/50 text-xs uppercase tracking-wider">Sessions<br/>Conducted</div>
                 </div>
               </div>
@@ -166,7 +166,7 @@ export default function CoachingPrinciple() {
               <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
                 <Clock className="text-accent-gold text-3xl shrink-0" weight="light" />
                 <div>
-                  <div className="text-white text-lg font-medium">2000+</div>
+                  <div className="text-white text-lg font-medium">200+</div>
                   <div className="text-white/50 text-xs uppercase tracking-wider">Hours of<br/>Coaching</div>
                 </div>
               </div>
@@ -188,7 +188,7 @@ export default function CoachingPrinciple() {
             
             <div className="flex items-center gap-4 cursor-pointer group">
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-accent-gold font-semibold transition-colors group-hover:text-white">
-                Scroll to view THE COACHING JOURNEY
+              
               </span>
               <div className="w-8 h-8 rounded-full border border-accent-gold/40 flex items-center justify-center transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/10">
                 <ArrowDown className="text-accent-gold text-sm transition-transform group-hover:translate-y-1" />

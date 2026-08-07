@@ -341,7 +341,7 @@ export default function CoachingJourney() {
 
             <div className="flex items-center gap-4 cursor-pointer group">
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-accent-gold font-semibold transition-colors group-hover:text-white">
-                SCROLL TO know about aarkesh
+               
               </span>
               <div className="w-8 h-8 rounded-full border border-accent-gold/40 flex items-center justify-center transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/10">
                 <ArrowDown className="text-accent-gold text-sm transition-transform group-hover:translate-y-1" />

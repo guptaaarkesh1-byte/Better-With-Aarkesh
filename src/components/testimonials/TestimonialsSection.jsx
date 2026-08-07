@@ -142,11 +142,11 @@ export default function TestimonialsSection() {
                   </div>
                 </div>
                 
-                <Link to="/book" className="flex items-center justify-center gap-3 border border-accent-gold rounded-md px-6 py-3 transition-colors hover:bg-accent-gold/10 shrink-0 w-full md:w-auto">
-                  <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold">
+                <Link to="/book" className="flex items-center justify-center gap-3 bg-accent-gold rounded-md px-6 py-3 transition-colors hover:bg-accent-gold/90 shrink-0 w-full md:w-auto">
+                  <span className="font-sans text-[0.65rem]  uppercase tracking-[0.2em] font-medium text-white">
                     BOOK YOUR SESSION
                   </span>
-                  <ArrowRight className="text-accent-gold text-sm" />
+                  <ArrowRight className="text-white text-sm" />
                 </Link>
               </div>
 

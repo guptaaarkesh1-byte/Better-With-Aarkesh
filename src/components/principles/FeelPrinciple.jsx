@@ -15,7 +15,7 @@ export default function FeelPrinciple() {
         "You can't move forward <br className='hidden lg:block' /> while running from what you feel.",
         "We create a safe space to feel it all—<br className='hidden lg:block' /> without judgment."
       ]}
-      buttonText="SCROLL FOR NEXT PRINCIPLE"
+      buttonText=""
       activeStep={2}
       bannerTitle="DYNAMIC<br/>EXPERIENCE"
       bannerIcon={Sparkle}

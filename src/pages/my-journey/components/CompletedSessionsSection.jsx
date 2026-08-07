@@ -21,7 +21,10 @@ export default function CompletedSessionsSection() {
         
         {!activeSessionId ? (
           // Frame A & B: Completed Sessions List
-          <div className="flex flex-col w-full">
+          <div className="flex flex-col w-full relative">
+            {/* Soft backdrop blur behind the section for readability */}
+            <div className="absolute -inset-6 md:-inset-12 bg-black/30 backdrop-blur-sm rounded-3xl -z-10" />
+            
             {/* Header */}
             <div className="mb-12">
               <span className="font-sans text-[0.7rem] md:text-[0.8rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e] mb-4 block">
@@ -166,7 +169,7 @@ export default function CompletedSessionsSection() {
             <div className="flex flex-col gap-6 w-full max-w-3xl">
               
               {/* SHARED SUMMARY Card */}
-              <div className="w-full rounded-xl border border-white/10 bg-[#0a0a0a]/60 backdrop-blur-md p-6 md:p-8">
+              <div className="w-full rounded-xl border border-white/10 bg-[#0a0a0a]/60 backdrop-blur-sm p-6 md:p-8">
                 <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-3 block">
                   SHARED SUMMARY
                 </span>
@@ -176,7 +179,7 @@ export default function CompletedSessionsSection() {
               </div>
 
               {/* COACH-SHARED NOTES Card */}
-              <div className="w-full rounded-xl border border-white/10 bg-[#0a0a0a]/60 backdrop-blur-md p-6 md:p-8 mb-6">
+              <div className="w-full rounded-xl border border-white/10 bg-[#0a0a0a]/60 backdrop-blur-sm p-6 md:p-8 mb-6">
                 <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-4 block">
                   COACH-SHARED NOTES
                 </span>

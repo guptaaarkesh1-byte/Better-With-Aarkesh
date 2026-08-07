@@ -3,7 +3,7 @@ import { Info } from '@phosphor-icons/react';
 
 export default function ProfileTab() {
   return (
-    <div className="w-full max-w-2xl border border-white/10 rounded-xl p-8 md:p-10 bg-[#0a0a0a]/80 backdrop-blur-md flex flex-col animate-in fade-in duration-500">
+    <div className="w-full max-w-2xl border border-white/10 rounded-xl p-8 md:p-10 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col animate-in fade-in duration-500">
       <h2 className="font-serif text-3xl text-white mb-2">Profile</h2>
       <p className="font-sans text-white/70 text-sm mb-10">
         Your contact details and personal information.

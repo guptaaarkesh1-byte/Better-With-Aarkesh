@@ -51,7 +51,7 @@ export default function Navbar() {
       ref={navRef}
       className={cn(
         'fixed top-0 left-0 right-0 z-[100] transition-all duration-500 py-6',
-        scrolled ? 'glass-nav py-4 shadow-lg shadow-black/10' : 'bg-transparent'
+        scrolled ? 'bg-gradient-to-b from-[#090909]/90 to-transparent backdrop-blur-[12px] py-4 shadow-lg shadow-black/10' : 'bg-transparent'
       )}
     >
       <Container className="flex items-center justify-between">
