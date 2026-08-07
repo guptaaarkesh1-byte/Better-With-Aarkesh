@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import bgImage from '../../assets/PerspectivePage/Page1.png';
-import continuousBg from '../../assets/PerspectivePage/BG/bg.png';
+import continuousBg from '../../assets/PerspectivePage/BG/library_day_bg.png';
 import QuestionsSection from '../../components/library/QuestionsSection';
 import FeaturedSection from '../../components/library/FeaturedSection';
 import FormatExploreSection from '../../components/library/FormatExploreSection';
@@ -269,7 +269,7 @@ export default function Library() {
 
       {/* CONTINUOUS BACKGROUND WRAPPER */}
       <div 
-        className="relative w-full bg-cover bg-center bg-no-repeat bg-fixed bg-black/30 bg-blend-multiply"
+        className="relative w-full bg-cover bg-center bg-no-repeat bg-fixed bg-black/40 bg-blend-overlay"
         style={{ backgroundImage: `url(${continuousBg})` }}
       >
         {/* SECTION 2: Questions Grid */}
