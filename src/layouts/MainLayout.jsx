@@ -24,6 +24,9 @@ export default function MainLayout({ children }) {
       infinite: false,
     });
 
+    // Expose lenis globally for scroll locking in modals
+    window.lenis = lenisRef.current;
+
     // Sync Lenis scroll with GSAP ScrollTrigger
     lenisRef.current.on('scroll', ScrollTrigger.update);
 
@@ -37,6 +40,7 @@ export default function MainLayout({ children }) {
         lenisRef.current?.raf(time * 1000);
       });
       lenisRef.current?.destroy();
+      window.lenis = undefined;
     };
   }, []);
 

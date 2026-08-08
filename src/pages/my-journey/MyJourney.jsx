@@ -26,10 +26,6 @@ export default function MyJourney() {
 
       <OverviewSection />
       <ContinueSection />
-      <PreparationSection />
-      <CompletedSessionsSection />
-      <MyLibrarySection />
-      <PrivateNotesSection />
       <ClosingNavigation />
 
     </div>

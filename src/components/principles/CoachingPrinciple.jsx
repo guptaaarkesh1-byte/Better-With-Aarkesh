@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -22,6 +22,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function CoachingPrinciple() {
   const container = useRef(null);
+  const [activeStep, setActiveStep] = useState(null);
 
   const steps = [
     { num: '01', title: 'CONNECT', icon: ChatTeardropText, text: 'We start with a meaningful conversation to understand what matters to you.' },
@@ -91,28 +92,34 @@ export default function CoachingPrinciple() {
               <span className="text-accent-gold italic font-light pb-1">built around you.</span>
             </h2>
 
-            <p className="text-paragraph text-sm lg:text-base font-light tracking-wide leading-relaxed mb-4 coaching-fade max-w-md">
-              We keep it simple. Effective. <br className="hidden lg:block" />
-              A clear path from where you are, to where you want to be.
+            <p className="text-white text-base lg:text-lg font-serif font-light tracking-wide leading-relaxed mb-4 coaching-fade max-w-md">
+              <span className="italic text-2xl">A clear path from where you are, to where you want to be.</span><br />
+              <br />
+              Simple. Effective.
             </p>
 
             {/* Grid Stepper (Converted to Flex for centering the last row) */}
             <div className="relative flex flex-wrap justify-center gap-x-6 gap-y-4 lg:gap-x-8 lg:gap-y-6 mt-4">
               {steps.map((step, i) => {
                 const Icon = step.icon;
+                const isActive = activeStep === i;
                 return (
-                  <div key={i} className="coaching-step w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1.35rem)] relative z-50 flex gap-3 items-start group bg-[#0a0a0a] border border-white/10 rounded-xl p-4 transition-all duration-500 hover:bg-[#111111] hover:border-accent-gold/30 cursor-pointer">
-                    <div className="w-10 h-10 rounded-full border border-accent-gold/30 bg-black flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                      <Icon className="text-accent-gold text-lg transition-transform duration-500 group-hover:scale-110" weight="regular" />
+                  <div 
+                    key={i} 
+                    onClick={() => setActiveStep(isActive ? null : i)}
+                    className={`coaching-step w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1.35rem)] relative z-50 flex gap-3 items-start group rounded-xl p-4 transition-all duration-500 cursor-pointer ${isActive ? 'bg-[#111111] border border-accent-gold/30' : 'bg-[#0a0a0a] border border-white/10 hover:bg-[#111111] hover:border-accent-gold/30'}`}
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-500 bg-black ${isActive ? 'border border-accent-gold bg-accent-gold/10' : 'border border-accent-gold/30 group-hover:border-accent-gold group-hover:bg-accent-gold/10'}`}>
+                      <Icon className={`text-accent-gold text-lg transition-transform duration-500 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} weight="regular" />
                     </div>
                     <div className="flex flex-col justify-center min-h-[40px]">
                       <div className="flex items-center gap-2">
                         <span className="font-sans text-[0.65rem] tracking-widest text-accent-gold">{step.num}</span>
                         <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-white">{step.title}</span>
                       </div>
-                      <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
+                      <div className={`grid transition-[grid-template-rows] duration-500 ease-out ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] group-hover:grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
-                          <p className="text-paragraph text-xs font-light leading-relaxed opacity-0 group-hover:opacity-80 transition-opacity duration-500 delay-100 pt-2">
+                          <p className={`text-paragraph text-xs font-light leading-relaxed transition-opacity duration-500 delay-100 pt-2 ${isActive ? 'opacity-80' : 'opacity-0 group-hover:opacity-80'}`}>
                             {step.text}
                           </p>
                         </div>

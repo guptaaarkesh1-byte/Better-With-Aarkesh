@@ -21,96 +21,99 @@ export default function ClosingNavigation() {
           </p>
 
           {/* 3 Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-16 items-start">
             
             {/* Card 1: EXPLORE THE LIBRARY */}
             <div 
               onClick={() => navigate('/library')}
-              className="border border-[#c79c6e]/20 hover:border-[#c79c6e] rounded-xl p-8 bg-transparent flex flex-col items-start justify-start transition-all duration-300 cursor-pointer hover:bg-[#c79c6e]/5 hover:shadow-[0_0_30px_rgba(199,156,110,0.05)] min-h-[320px] group"
+              className="group border border-[#c79c6e]/20 hover:border-[#c79c6e] rounded-xl p-8 bg-transparent flex flex-col transition-all duration-500 cursor-pointer hover:bg-[#c79c6e]/5 hover:shadow-[0_0_30px_rgba(199,156,110,0.05)] relative overflow-hidden"
             >
-              <BookOpen size={24} weight="light" className="text-[#c79c6e] mb-6" />
-              <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-4 block">
-                EXPLORE THE LIBRARY
-              </span>
-              <p className="font-serif text-white/80 text-sm leading-relaxed mb-8 pr-4">
-                Perspectives, videos and tools for what you are facing.
-              </p>
-              <div className="mt-auto font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-2">
-                OPEN LIBRARY <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              {/* Header & Title */}
+              <div className="w-full flex flex-col h-[80px] shrink-0">
+                <BookOpen size={24} weight="light" className="text-[#c79c6e] mb-6" />
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e]">
+                  EXPLORE THE LIBRARY
+                </span>
+              </div>
+              
+              {/* Expandable Details */}
+              <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover:grid-rows-[1fr] group-hover:opacity-100 transition-all duration-500 ease-in-out">
+                <div className="overflow-hidden flex flex-col pt-6 mt-6 border-t border-white/5">
+                  <p className="font-serif text-white/80 text-sm leading-relaxed mb-8 pr-4">
+                    Perspectives, videos and tools for what you are facing.
+                  </p>
+                  <div className="mt-auto font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-2">
+                    OPEN LIBRARY <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Card 2: BOOK A CONVERSATION */}
             <div 
               onClick={() => navigate('/book')}
-              className="border border-[#c79c6e]/20 hover:border-[#c79c6e] rounded-xl p-8 bg-transparent flex flex-col items-start justify-start transition-all duration-300 cursor-pointer hover:bg-[#c79c6e]/5 hover:shadow-[0_0_30px_rgba(199,156,110,0.05)] min-h-[320px] group"
+              className="group border border-[#c79c6e]/20 hover:border-[#c79c6e] rounded-xl p-8 bg-transparent flex flex-col transition-all duration-500 cursor-pointer hover:bg-[#c79c6e]/5 hover:shadow-[0_0_30px_rgba(199,156,110,0.05)] relative overflow-hidden"
             >
-              <CalendarBlank size={24} weight="light" className="text-[#c79c6e] mb-6" />
-              <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-4 block">
-                BOOK A CONVERSATION
-              </span>
-              <p className="font-serif text-white/80 text-sm leading-relaxed mb-8 pr-4">
-                Make space for a focused, honest conversation.
-              </p>
-              <div className="mt-auto font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-2">
-                VIEW AVAILABILITY <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              {/* Header & Title */}
+              <div className="w-full flex flex-col h-[80px] shrink-0">
+                <CalendarBlank size={24} weight="light" className="text-[#c79c6e] mb-6" />
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e]">
+                  BOOK A CONVERSATION
+                </span>
+              </div>
+              
+              {/* Expandable Details */}
+              <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover:grid-rows-[1fr] group-hover:opacity-100 transition-all duration-500 ease-in-out">
+                <div className="overflow-hidden flex flex-col pt-6 mt-6 border-t border-white/5">
+                  <p className="font-serif text-white/80 text-sm leading-relaxed mb-8 pr-4">
+                    Make space for a focused, honest conversation.
+                  </p>
+                  <div className="mt-auto font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-2">
+                    VIEW AVAILABILITY <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Card 3: ACCOUNT & PRIVACY */}
-            <div className="border border-[#c79c6e]/20 hover:border-[#c79c6e] rounded-xl p-8 bg-transparent flex flex-col items-start justify-start transition-all duration-500 cursor-pointer hover:bg-[#c79c6e]/5 hover:shadow-[0_0_30px_rgba(199,156,110,0.1)] min-h-[320px] group relative overflow-hidden">
-              <div className="z-10 relative flex flex-col h-full w-full">
-                
-                {/* Header (Always Visible) */}
+            <div className="group border border-[#c79c6e]/20 hover:border-[#c79c6e] rounded-xl p-8 bg-transparent flex flex-col transition-all duration-500 cursor-pointer hover:bg-[#c79c6e]/5 hover:shadow-[0_0_30px_rgba(199,156,110,0.1)] relative overflow-hidden">
+              
+              {/* Header & Title */}
+              <div className="w-full flex flex-col h-[80px] shrink-0 relative z-10">
                 <User size={24} weight="light" className="text-[#c79c6e] mb-6 shrink-0" />
-                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-4 block shrink-0">
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] shrink-0">
                   ACCOUNT & PRIVACY
                 </span>
-                
-                {/* Content Stack Container */}
-                <div className="w-full grid [grid-template-areas:'stack'] flex-1">
+              </div>
+              
+              {/* Expandable Details */}
+              <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover:grid-rows-[1fr] group-hover:opacity-100 transition-all duration-500 ease-in-out relative z-10">
+                <div className="overflow-hidden flex flex-col pt-6 mt-6 border-t border-white/5">
+                  <p className="font-serif text-white/80 text-sm leading-relaxed mb-6 pr-4">
+                    Manage your details, preferences and privacy controls.
+                  </p>
                   
-                  {/* Default State */}
-                  <div className="[grid-area:stack] flex flex-col transition-opacity duration-300 group-hover:opacity-0 group-hover:invisible pointer-events-auto group-hover:pointer-events-none h-full w-full">
-                    <p className="font-serif text-white/80 text-sm leading-relaxed mb-4 pr-4">
-                      Manage your details, preferences and privacy controls.
-                    </p>
-                    <div className="mt-auto font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-2">
-                      VIEW SETTINGS <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-
-                  {/* Hover State */}
-                  <div className="[grid-area:stack] flex flex-col opacity-0 group-hover:opacity-100 group-hover:visible transition-opacity duration-500 pointer-events-none group-hover:pointer-events-auto h-full w-full">
-                    <p className="font-serif text-white/80 text-sm leading-relaxed mb-6 pr-4">
-                      Manage your details, preferences and privacy controls.
-                    </p>
-                    
-                    <div className="w-full h-[1px] bg-white/10 mb-4"></div>
-                    
-                    <div className="flex flex-col gap-3">
-                      <button 
-                        onClick={() => navigate('/my-journey/settings?tab=PROFILE')}
-                        className="flex items-center gap-4 font-sans text-[0.6rem] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors w-full text-left font-medium"
-                      >
-                        <User size={16} /> PROFILE & SETTINGS
-                      </button>
-                      <button 
-                        onClick={() => navigate('/my-journey/settings?tab=SECURITY')}
-                        className="flex items-center gap-4 font-sans text-[0.6rem] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors w-full text-left font-medium"
-                      >
-                        <LockKey size={16} /> PRIVACY CONTROLS
-                      </button>
-                    </div>
-
+                  <div className="flex flex-col gap-3 mb-6">
                     <button 
-                      onClick={() => navigate('/my-journey/settings')}
-                      className="mt-auto font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-2 pt-4"
+                      onClick={(e) => { e.stopPropagation(); navigate('/my-journey/settings?tab=PROFILE'); }}
+                      className="flex items-center gap-4 font-sans text-[0.6rem] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors w-full text-left font-medium"
                     >
-                      OPEN ACCOUNT <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      <User size={16} /> PROFILE & SETTINGS
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); navigate('/my-journey/settings?tab=SECURITY'); }}
+                      className="flex items-center gap-4 font-sans text-[0.6rem] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors w-full text-left font-medium"
+                    >
+                      <LockKey size={16} /> PRIVACY CONTROLS
                     </button>
                   </div>
 
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); navigate('/my-journey/settings'); }}
+                    className="mt-auto font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-2 pt-4 border-t border-white/5 w-full"
+                  >
+                    OPEN ACCOUNT <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  </button>
                 </div>
               </div>
 

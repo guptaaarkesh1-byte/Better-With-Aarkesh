@@ -303,9 +303,7 @@ export default function SituationExploreSection() {
         {/* Footer Text */}
         <div className="w-full flex justify-center mt-auto pt-16 opacity-70 z-10">
           <div className="flex flex-col items-center gap-3">
-            <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e]">
-              OR SEE WHAT'S NEW
-            </span>
+          
             <ArrowDown size={14} className="text-[#c79c6e] animate-bounce" weight="light" />
           </div>
         </div>

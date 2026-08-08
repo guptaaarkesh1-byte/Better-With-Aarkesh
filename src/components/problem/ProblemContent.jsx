@@ -60,8 +60,10 @@ export default function ProblemContent() {
 
       <div className="prob-divider h-[1px] w-8 bg-white/20 origin-left mb-6" />
 
-      <p className="prob-paragraph text-paragraph text-base lg:text-lg font-light tracking-wide leading-snug">
-        We all carry things that cloud our perspective. Until we learn to see clearly, nothing really changes.
+      <p className="prob-paragraph text-paragraph text-base lg:text-lg font-serif font-light  tracking-wide leading-snug">
+      <span className="italic text-white text-2xl">Things you carry, cloud your perspective.</span><br />
+        <br />
+        ....Until you learn to see clearly
       </p>
 
     </div>

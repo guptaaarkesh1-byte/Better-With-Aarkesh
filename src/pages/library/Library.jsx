@@ -272,23 +272,17 @@ export default function Library() {
         className="relative w-full bg-cover bg-center bg-no-repeat bg-fixed bg-black/40 bg-blend-overlay"
         style={{ backgroundImage: `url(${continuousBg})` }}
       >
-        {/* SECTION 2: Questions Grid */}
-      <QuestionsSection />
-
-      {/* SECTION 3: Featured Perspective */}
+        {/* SECTION 2: Featured Perspective */}
       <FeaturedSection />
 
-      {/* SECTION 4: Explore By Format */}
-      <FormatExploreSection />
-
-      {/* SECTION 5: Explore By Situation */}
+      {/* SECTION 3: Explore By Situation */}
       <SituationExploreSection />
 
-      {/* SECTION 6: Latest Perspectives */}
-      <LatestPerspectivesSection />
+      {/* SECTION 4: Questions Grid */}
+      <QuestionsSection />
 
-      {/* SECTION 7: Tools for Reflection */}
-      <ToolsReflectionSection />
+      {/* SECTION 5: Explore By Format */}
+      <FormatExploreSection />
 
       {/* SECTION 8: Library Invitation */}
       <LibraryInvitationSection />

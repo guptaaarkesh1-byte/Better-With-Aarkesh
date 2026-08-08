@@ -5,7 +5,7 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { cn } from '../../utils/cn';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BookmarkSimple, List, X, User, LockKey, SignOut } from '@phosphor-icons/react';
+import { BookmarkSimple, List, X, User, LockKey, SignOut, ArrowRight } from '@phosphor-icons/react';
 import { useBooking } from '../../context/BookingContext';
 
 const NAV_LINKS = [
@@ -27,7 +27,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setScrolled(window.scrollY > window.innerHeight - 100);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -135,10 +135,15 @@ export default function Navbar() {
               )}
               <Button 
                 variant="outline" 
-                className="text-[0.65rem] px-5 py-[0.65rem] border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]" 
+                className={cn(
+                  "text-[0.65rem] transition-all flex items-center gap-2",
+                  scrolled 
+                    ? "bg-[#c79c6e] text-black border-transparent px-6 py-[0.7rem] hover:bg-[#b0885e]" 
+                    : "border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black bg-transparent px-5 py-[0.65rem]"
+                )}
                 onClick={() => navigate('/book')}
               >
-                BOOK A SESSION
+                BOOK A SESSION {scrolled && <ArrowRight size={14} weight="bold" />}
               </Button>
             </div>
 

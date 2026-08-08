@@ -8,7 +8,12 @@ import {
   Key, 
   ArrowRight,
   ArrowDown,
-  PlayCircle
+  PlayCircle,
+  Sparkle,
+  Target,
+  Stack,
+  ArrowsClockwise,
+  Recycle
 } from '@phosphor-icons/react';
 
 // Placeholders for video thumbnails
@@ -21,7 +26,58 @@ import { topics } from './QuestionsSection';
 
 gsap.registerPlugin(ScrollTrigger);
 
+const RadarIcon = ({ size }) => (
+  <div style={{ width: size, height: size }} className="relative flex items-center justify-center scale-[1.3] opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="0.5" className="w-[70%] h-[70%]">
+      <line x1="50" y1="50" x2="50" y2="10" />
+      <line x1="50" y1="50" x2="85" y2="25" />
+      <line x1="50" y1="50" x2="95" y2="60" />
+      <line x1="50" y1="50" x2="75" y2="90" />
+      <line x1="50" y1="50" x2="25" y2="90" />
+      <line x1="50" y1="50" x2="5" y2="60" />
+      <line x1="50" y1="50" x2="15" y2="25" />
+      <polygon points="50,10 85,25 95,60 75,90 25,90 5,60 15,25" opacity="0.3" />
+      <polygon points="50,15 75,30 70,60 50,75 40,75 30,50 35,35" fill="rgba(199,156,110,0.1)" stroke="#c79c6e" strokeWidth="1" />
+    </svg>
+    <span className="absolute -top-1 text-[0.25rem] tracking-[0.2em] uppercase opacity-40 text-[#c79c6e]">Personal Growth</span>
+    <span className="absolute top-[20%] right-[-10%] text-[0.25rem] tracking-[0.2em] uppercase opacity-40 text-right w-12 text-[#c79c6e]">Relationships</span>
+    <span className="absolute top-[50%] right-[-15%] text-[0.25rem] tracking-[0.2em] uppercase opacity-40 text-right w-12 text-[#c79c6e]">Health<br/>& Energy</span>
+    <span className="absolute bottom-[10%] right-[-5%] text-[0.25rem] tracking-[0.2em] uppercase opacity-40 text-right w-12 text-[#c79c6e]">Finances</span>
+    <span className="absolute -bottom-1 text-[0.25rem] tracking-[0.2em] uppercase opacity-40 text-[#c79c6e]">Work & Purpose</span>
+    <span className="absolute bottom-[15%] left-[-15%] text-[0.25rem] tracking-[0.2em] uppercase opacity-40 text-left w-12 text-[#c79c6e]">Environment</span>
+    <span className="absolute top-[50%] left-[-15%] text-[0.25rem] tracking-[0.2em] uppercase opacity-40 text-left w-12 text-[#c79c6e]">Fun &<br/>Recreation</span>
+    <span className="absolute top-[20%] left-[-10%] text-[0.25rem] tracking-[0.2em] uppercase opacity-40 text-left w-12 text-[#c79c6e]">Spirituality</span>
+  </div>
+);
+
+const StackIcon = ({ size }) => (
+  <div style={{ width: size, height: size }} className="relative flex items-center justify-center scale-110 opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="0.5" className="w-[60%] h-[60%] text-[#c79c6e]">
+      <ellipse cx="50" cy="30" rx="30" ry="10" strokeOpacity="0.8" />
+      <ellipse cx="50" cy="50" rx="30" ry="10" strokeOpacity="0.5" />
+      <ellipse cx="50" cy="70" rx="30" ry="10" strokeOpacity="0.2" />
+    </svg>
+  </div>
+);
+
+const CBTIcon = ({ size }) => (
+  <div style={{ width: size, height: size }} className="relative flex items-center justify-center scale-110 opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+    <Recycle className="w-[60%] h-[60%] text-[#c79c6e]" weight="regular" />
+    <span className="absolute top-[5%] text-[0.3rem] tracking-[0.2em] uppercase opacity-40 text-[#c79c6e]">Thoughts</span>
+    <span className="absolute bottom-[10%] left-[5%] text-[0.3rem] tracking-[0.2em] uppercase opacity-40 text-[#c79c6e]">Feelings</span>
+    <span className="absolute bottom-[10%] right-[5%] text-[0.3rem] tracking-[0.2em] uppercase opacity-40 text-[#c79c6e]">Actions</span>
+  </div>
+);
+
 const formats = [
+  {
+    id: 'latest',
+    icon: Sparkle,
+    title: 'LATEST',
+    count: 'NEW ARRIVALS',
+    desc: 'The most recent\nperspectives and tools.',
+    action: 'EXPLORE LATEST'
+  },
   {
     id: 'read',
     icon: BookOpen,
@@ -91,17 +147,23 @@ const reflectionTools = [
   {
     id: 1,
     duration: '15 MIN',
-    title: 'Mapping your current capacity'
+    title: 'Wheel of Life',
+    desc: 'Map the areas of life that\nshape your overall well-being.',
+    icon: RadarIcon
   },
   {
     id: 2,
     duration: '10 MIN',
-    title: 'The "What If" scenario planner'
+    title: 'Mindset Reflection',
+    desc: 'Explore the patterns shaping\nyour thoughts and choices.',
+    icon: StackIcon
   },
   {
     id: 3,
     duration: '20 MIN',
-    title: 'Core values audit'
+    title: 'CBT-Inspired Tools',
+    desc: 'Practical frameworks to understand\nand shift unhelpful cycles.',
+    icon: CBTIcon
   }
 ];
 
@@ -213,9 +275,9 @@ export default function FormatExploreSection() {
       {/* Main Content Area */}
       <div className="w-full flex-1 relative md:min-h-[70vh]">
         
-        {/* OVERVIEW (The 3 Cards) */}
+        {/* OVERVIEW (The 4 Cards) */}
         {!selectedFormat && (
-          <div ref={cardsContainerRef} className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 md:absolute md:inset-0">
+          <div ref={cardsContainerRef} className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:absolute md:inset-0">
             {formats.map((format) => (
               <div 
                 key={format.id}
@@ -259,6 +321,45 @@ export default function FormatExploreSection() {
         {selectedFormat && (
           <div ref={contentContainerRef} className="w-full md:absolute md:inset-0 pt-4">
             
+            {/* LATEST TAB */}
+            {selectedFormat === 'latest' && (
+              <div className="flex flex-col h-full animate-in fade-in duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
+                  {[articles[0], videos[0], reflectionTools[0]].map((item, idx) => (
+                    <div key={`latest-${idx}`} className="group cursor-pointer">
+                      <div className="w-full aspect-[16/10] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
+                        {item.image ? (
+                           <>
+                             <img src={item.image} alt={item.title} className="w-full h-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-80" />
+                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
+                             <div className="absolute inset-0 flex items-center justify-center">
+                               <PlayCircle size={40} weight="light" className="text-white/80 group-hover:text-[#c79c6e] group-hover:scale-110 transition-all duration-500" />
+                             </div>
+                           </>
+                        ) : (
+                           <div className="absolute inset-0 bg-[#050505] flex items-center justify-center p-6 text-white/20 group-hover:text-[#c79c6e]/20 transition-colors">
+                             <Sparkle size={48} weight="thin" />
+                           </div>
+                        )}
+                      </div>
+                      <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-2 block">
+                        LATEST &nbsp;•&nbsp; {item.duration}
+                      </span>
+                      <h4 className="font-serif text-[1.35rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 pr-4">
+                        {item.title}
+                      </h4>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-8">
+                  <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
+                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL LATEST</span>
+                    <ArrowRight size={14} weight="bold" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* WATCH TAB */}
             {selectedFormat === 'watch' && (
               <div className="flex flex-col h-full animate-in fade-in duration-500">
@@ -329,17 +430,17 @@ export default function FormatExploreSection() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
                   {reflectionTools.map((item) => (
                     <div key={item.id} className="group cursor-pointer">
-                      <div className="w-full aspect-[16/10] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
-                        <div className="absolute inset-0 bg-[#050505] flex items-center justify-center p-6 text-white/20 group-hover:text-[#c79c6e]/20 transition-colors">
-                           <Key size={48} weight="thin" />
+                      <div className="w-full aspect-[4/5] bg-[#050505]/60 backdrop-blur-md rounded-md border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/80 group-hover:shadow-[0_0_30px_rgba(199,156,110,0.15)] group-hover:bg-black group-hover:scale-[1.02] flex flex-col items-center justify-center p-8 text-center">
+                        <div className="text-white/40 group-hover:text-[#c79c6e] transition-colors duration-500 mb-8 w-full flex justify-center">
+                           {item.icon ? <item.icon size={160} weight="thin" /> : <Key size={80} weight="thin" />}
                         </div>
+                        <h4 className="font-serif text-[1.5rem] md:text-[1.75rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 mb-4">
+                          {item.title}
+                        </h4>
+                        <p className="font-sans text-[0.75rem] text-white/40 leading-relaxed whitespace-pre-line group-hover:text-white/70 transition-colors duration-300">
+                          {item.desc}
+                        </p>
                       </div>
-                      <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-2 block">
-                        REFLECTION TOOL &nbsp;•&nbsp; {item.duration}
-                      </span>
-                      <h4 className="font-serif text-[1.35rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 pr-4">
-                        {item.title}
-                      </h4>
                     </div>
                   ))}
                 </div>

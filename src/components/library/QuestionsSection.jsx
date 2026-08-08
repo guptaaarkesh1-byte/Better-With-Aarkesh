@@ -273,9 +273,9 @@ export default function QuestionsSection() {
           return (
             <div 
               key={topic.id}
-              className={`topic-card relative border rounded-lg px-6 py-8 md:py-10 flex flex-col items-center text-center gap-5 cursor-pointer transition-all duration-300 md:min-h-[220px] justify-center
+              className={`topic-card relative border rounded-lg px-6 py-8 md:py-10 flex flex-col items-center text-center gap-5 cursor-pointer transition-all duration-300 md:min-h-[220px] justify-center backdrop-blur-md
                 ${isActive 
-                  ? 'border-[#c79c6e]/60 bg-black shadow-[0_0_30px_rgba(199,156,110,0.1)] z-50 md:scale-[1.02]' 
+                  ? 'border-[#c79c6e]/60 bg-black/90 shadow-[0_0_30px_rgba(199,156,110,0.1)] z-50 md:scale-[1.02]' 
                   : 'border-white/10 bg-[#050505]/40 hover:border-white/30 hover:bg-[#050505]/60 z-10'
                 }
               `}
@@ -412,9 +412,7 @@ export default function QuestionsSection() {
 
       {/* Scroll to continue */}
       <div className="mt-20 flex flex-col items-center gap-3 z-10 opacity-70">
-        <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e]">
-          OR BEGIN WITH A FEATURED PERSPECTIVE
-        </span>
+       
         <ArrowDown size={14} className="text-[#c79c6e]" weight="light" />
       </div>
     </section>

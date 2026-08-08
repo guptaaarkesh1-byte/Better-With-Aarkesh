@@ -113,9 +113,7 @@ export default function FeaturedSection() {
 
       {/* Footer Text */}
       <div className="mt-16 flex flex-col items-center gap-3 z-10 opacity-70">
-        <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e]">
-          OR EXPLORE BY FORMAT
-        </span>
+      
         <ArrowDown size={14} className="text-[#c79c6e] animate-bounce" weight="light" />
       </div>
 

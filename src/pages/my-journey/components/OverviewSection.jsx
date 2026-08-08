@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { BookmarkSimple, ChatCircleText, Notebook, CheckCircle, FileText } from '@phosphor-icons/react';
 import Button from '../../../components/ui/Button';
+import MyLibraryTab from './MyLibraryTab';
+import CoachingTab from './CoachingTab';
+import MyNotesTab from './MyNotesTab';
 
 export default function OverviewSection() {
   const [activeTab, setActiveTab] = useState('COACHING'); // Pre-select coaching for Frame C
@@ -36,7 +39,7 @@ export default function OverviewSection() {
               onClick={() => setActiveTab('MY LIBRARY')}
               className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-300 border ${
                 activeTab === 'MY LIBRARY' 
-                  ? 'border-[#c79c6e] bg-[#c79c6e]/10 text-[#c79c6e]' 
+                  ? 'border-[#c79c6e] bg-[#0a0a0a]/70 backdrop-blur-sm text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
                   : 'border-transparent text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -49,7 +52,7 @@ export default function OverviewSection() {
               onClick={() => setActiveTab('COACHING')}
               className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-300 border ${
                 activeTab === 'COACHING' 
-                  ? 'border-[#c79c6e] bg-[#0a0a0a]/80 text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
+                  ? 'border-[#c79c6e] bg-[#0a0a0a]/70 backdrop-blur-sm text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
                   : 'border-transparent text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -62,7 +65,7 @@ export default function OverviewSection() {
               onClick={() => setActiveTab('MY NOTES')}
               className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-300 border ${
                 activeTab === 'MY NOTES' 
-                  ? 'border-[#c79c6e] bg-[#c79c6e]/10 text-[#c79c6e]' 
+                  ? 'border-[#c79c6e] bg-[#0a0a0a]/70 backdrop-blur-sm text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
                   : 'border-transparent text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -75,53 +78,15 @@ export default function OverviewSection() {
         {/* Main Content Area */}
         <div className="flex-1 w-full">
           {activeTab === 'COACHING' && (
-            <div className="w-full rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-6 md:p-10 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_40px_rgba(199,156,110,0.1)]">
-              
-              {/* Subtle Glow inside the card */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#c79c6e]/5 rounded-full blur-[100px] pointer-events-none" />
-
-              <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] block mb-3">
-                UPCOMING CONVERSATION
-              </span>
-              
-              <h2 className="font-serif text-3xl md:text-4xl text-white mb-2">
-                Tuesday, 12 August
-              </h2>
-              
-              <p className="font-sans text-white/70 text-base mb-8">
-                6:30 PM - Online
-              </p>
-
-              <div className="flex flex-wrap items-center gap-6 mb-8">
-                <Button variant="outline" className="border-[#c79c6e] text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black py-3 px-8 text-xs tracking-[0.15em]">
-                  VIEW COACHING
-                </Button>
-                <button className="font-sans text-xs uppercase tracking-[0.15em] font-medium text-[#c79c6e] hover:text-white transition-colors">
-                  ADD TO CALENDAR
-                </button>
-              </div>
-
-              <div className="w-full h-[1px] bg-white/10 mb-8" />
-
-              <div className="flex flex-col gap-5">
-                <div className="flex items-center gap-4 text-white/70 hover:text-white transition-colors">
-                  <CheckCircle size={22} className="text-[#c79c6e]" weight="light" />
-                  <span className="font-sans text-sm font-light">3 completed sessions</span>
-                </div>
-                <div className="flex items-center gap-4 text-white/70 hover:text-white transition-colors">
-                  <FileText size={22} className="text-[#c79c6e]" weight="light" />
-                  <span className="font-sans text-sm font-light">Latest shared note - 24 July</span>
-                </div>
-              </div>
-
-            </div>
+            <CoachingTab />
           )}
           
-          {activeTab !== 'COACHING' && (
-            <div className="w-full h-full min-h-[400px] rounded-2xl border border-white/10 bg-[#0a0a0a]/40 backdrop-blur-sm p-12 flex flex-col items-center justify-center text-center">
-              <span className="font-serif text-2xl text-white/60 mb-2">Coming Soon</span>
-              <p className="font-sans font-light text-white/40">Details for {activeTab} will appear here.</p>
-            </div>
+          {activeTab === 'MY LIBRARY' && (
+            <MyLibraryTab />
+          )}
+
+          {activeTab === 'MY NOTES' && (
+            <MyNotesTab />
           )}
         </div>
 

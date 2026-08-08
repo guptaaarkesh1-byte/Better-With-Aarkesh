@@ -21,36 +21,26 @@ export default function ContinueSection() {
         </div>
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-auto mb-auto">
+        {/* Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-auto mb-auto items-start">
           
           {/* Card 1: PERSPECTIVE */}
-          <div className="group border border-white/10 hover:border-[#c79c6e] rounded-xl p-8 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col items-start justify-start transition-all duration-500 ease-out cursor-pointer hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(199,156,110,0.15)] min-h-[360px] relative overflow-hidden">
+          <div className="group border border-white/5 hover:border-[#c79c6e] rounded-xl p-8 bg-[#050505] flex flex-col transition-all duration-500 ease-in-out cursor-pointer hover:shadow-[0_0_30px_rgba(199,156,110,0.15)] relative overflow-hidden">
             
-            {/* Header */}
-            <div className="w-full flex justify-between items-center mb-6 text-[#c79c6e]">
-              <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
-              <BookmarkSimple size={24} weight="light" />
+            {/* Header & Title */}
+            <div className="w-full flex flex-col h-[180px] shrink-0">
+              <div className="w-full flex justify-between items-center mb-6 text-[#c79c6e]">
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
+                <BookmarkSimple size={24} weight="light" />
+              </div>
+              <h3 className="font-serif text-3xl text-white pr-4 leading-tight line-clamp-3">
+                When you understand the pattern but still repeat it
+              </h3>
             </div>
             
-            <h3 className="font-serif text-3xl text-white mb-6 pr-4 leading-tight">
-              When you understand the pattern but still repeat it
-            </h3>
-            
-            {/* Content Stack Container */}
-            <div className="mt-auto w-full grid [grid-template-areas:'stack']">
-              
-              {/* Default State */}
-              <div className="[grid-area:stack] flex flex-col justify-end transition-opacity duration-300 group-hover:opacity-0 pointer-events-auto group-hover:pointer-events-none">
-                <p className="text-white/50 font-light text-sm">
-                  Last read - Why insight alone doesn't create change
-                </p>
-                <button className="w-full mt-6 py-4 border border-[#c79c6e]/40 rounded-lg text-xs uppercase tracking-widest font-medium text-[#c79c6e]">
-                  CONTINUE READING
-                </button>
-              </div>
-
-              {/* Hover State */}
-              <div className="[grid-area:stack] flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none group-hover:pointer-events-auto">
+            {/* Expandable Details */}
+            <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover:grid-rows-[1fr] group-hover:opacity-100 transition-all duration-500 ease-in-out">
+              <div className="overflow-hidden flex flex-col pt-6 mt-6 border-t border-white/5">
                 <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-2">
                   PATTERNS · BEHAVIOURAL PATTERNS
                 </span>
@@ -64,36 +54,61 @@ export default function ContinueSection() {
                   CONTINUE READING <span className="text-lg leading-none group-hover:translate-x-1 transition-transform">→</span>
                 </button>
               </div>
-
             </div>
           </div>
 
           {/* Card 2: VIDEO */}
-          <div className="border border-white/10 hover:border-white/30 rounded-xl p-8 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col items-start justify-start transition-all duration-300 cursor-pointer min-h-[360px]">
-            <div className="w-full flex justify-between items-center mb-6 text-[#c79c6e]">
-              <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">VIDEO</span>
-              <PlayCircle size={24} weight="light" />
+          <div className="group border border-white/5 hover:border-white/30 rounded-xl p-8 bg-[#050505] flex flex-col transition-all duration-500 ease-in-out cursor-pointer hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] relative overflow-hidden">
+            
+            {/* Header & Title */}
+            <div className="w-full flex flex-col h-[180px] shrink-0">
+              <div className="w-full flex justify-between items-center mb-6 text-[#c79c6e]">
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">VIDEO</span>
+                <PlayCircle size={24} weight="light" />
+              </div>
+              <h3 className="font-serif text-3xl text-white pr-4 leading-tight line-clamp-3">
+                Change without an audience
+              </h3>
             </div>
-            <h3 className="font-serif text-3xl text-white mb-6 pr-4 leading-tight">
-              Change without an audience
-            </h3>
-            <p className="text-white/50 font-light text-sm mt-auto">
-              04:18 remaining
-            </p>
+
+            {/* Expandable Details */}
+            <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover:grid-rows-[1fr] group-hover:opacity-100 transition-all duration-500 ease-in-out">
+              <div className="overflow-hidden flex flex-col pt-6 mt-6 border-t border-white/5">
+                <p className="text-white/50 font-light text-sm mb-6">
+                  04:18 remaining
+                </p>
+                <button className="w-full py-4 border border-white/20 hover:border-white/50 rounded-lg text-xs uppercase tracking-widest font-medium text-white/80 hover:text-white transition-colors flex items-center justify-center gap-3">
+                  CONTINUE WATCHING <span className="text-lg leading-none group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Card 3: REFLECTION TOOL */}
-          <div className="border border-white/10 hover:border-white/30 rounded-xl p-8 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col items-start justify-start transition-all duration-300 cursor-pointer min-h-[360px]">
-            <div className="w-full flex justify-between items-center mb-6 text-[#c79c6e]">
-              <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">REFLECTION TOOL</span>
-              <Faders size={24} weight="light" /> 
+          <div className="group border border-white/5 hover:border-white/30 rounded-xl p-8 bg-[#050505] flex flex-col transition-all duration-500 ease-in-out cursor-pointer hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] relative overflow-hidden">
+            
+            {/* Header & Title */}
+            <div className="w-full flex flex-col h-[180px] shrink-0">
+              <div className="w-full flex justify-between items-center mb-6 text-[#c79c6e]">
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">REFLECTION TOOL</span>
+                <Faders size={24} weight="light" /> 
+              </div>
+              <h3 className="font-serif text-3xl text-white pr-4 leading-tight line-clamp-3">
+                Wheel of Life
+              </h3>
             </div>
-            <h3 className="font-serif text-3xl text-white mb-6 pr-4 leading-tight">
-              Wheel of Life
-            </h3>
-            <p className="text-white/50 font-light text-sm mt-auto">
-              Step 3 of 8
-            </p>
+
+            {/* Expandable Details */}
+            <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover:grid-rows-[1fr] group-hover:opacity-100 transition-all duration-500 ease-in-out">
+              <div className="overflow-hidden flex flex-col pt-6 mt-6 border-t border-white/5">
+                <p className="text-white/50 font-light text-sm mb-6">
+                  Step 3 of 8
+                </p>
+                <button className="w-full py-4 border border-white/20 hover:border-white/50 rounded-lg text-xs uppercase tracking-widest font-medium text-white/80 hover:text-white transition-colors flex items-center justify-center gap-3">
+                  RESUME EXERCISE <span className="text-lg leading-none group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+              </div>
+            </div>
           </div>
 
         </div>
