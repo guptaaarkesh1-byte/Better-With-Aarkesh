@@ -61,9 +61,9 @@ export default function ProblemContent() {
       <div className="prob-divider h-[1px] w-8 bg-white/20 origin-left mb-6" />
 
       <p className="prob-paragraph text-paragraph text-base lg:text-lg font-serif font-light  tracking-wide leading-snug">
-      <span className="italic text-white text-2xl">Things you carry, cloud your perspective.</span><br />
+      <span className="italic text-white">Things you carry, cloud your perspective.</span><br />
         <br />
-        ....Until you learn to see clearly
+        <span className="text-2xl">....Until you learn to see clearly</span>
       </p>
 
     </div>

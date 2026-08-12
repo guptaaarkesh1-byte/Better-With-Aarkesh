@@ -167,6 +167,7 @@ export default function QuestionsSection() {
   const [activeSubTopic, setActiveSubTopic] = useState(null);
   const containerRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
+  const subTopicTimeoutRef = useRef(null);
 
   const handleMouseEnter = (topicId) => {
     if (window.innerWidth < 768) return;
@@ -184,10 +185,23 @@ export default function QuestionsSection() {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
+    if (subTopicTimeoutRef.current) {
+      clearTimeout(subTopicTimeoutRef.current);
+    }
     hoverTimeoutRef.current = setTimeout(() => {
       setActiveTopic(null);
       setActiveSubTopic(null);
-    }, 150); // 150ms bridge gap
+    }, 300); // Increased bridge gap to 300ms
+  };
+
+  const handleSubTopicEnter = (idx) => {
+    if (window.innerWidth < 768) return;
+    if (subTopicTimeoutRef.current) {
+      clearTimeout(subTopicTimeoutRef.current);
+    }
+    subTopicTimeoutRef.current = setTimeout(() => {
+      setActiveSubTopic(idx);
+    }, 150); // Small delay to prevent accidental triggers when moving diagonally
   };
 
   const handleClick = (topicId) => {
@@ -315,7 +329,7 @@ export default function QuestionsSection() {
                     <div 
                       key={idx} 
                       className="border-b border-[#c79c6e]/10 last:border-0"
-                      onMouseEnter={() => setActiveSubTopic(idx)}
+                      onMouseEnter={() => handleSubTopicEnter(idx)}
                     >
                       <button className="w-full text-left font-sans text-[0.65rem] md:text-[0.7rem] text-white/90 hover:text-[#c79c6e] font-light py-3 flex gap-3 items-center transition-colors group">
                         <ArrowRight size={14} className={`transition-colors ${activeSubTopic === idx ? 'text-[#c79c6e]' : 'text-white/30 group-hover:text-[#c79c6e]'}`} weight="light" />

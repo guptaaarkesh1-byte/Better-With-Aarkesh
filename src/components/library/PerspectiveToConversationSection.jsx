@@ -66,7 +66,7 @@ export default function PerspectiveToConversationSection() {
             </button>
             
             <button 
-              className="w-full sm:w-auto px-8 py-3 rounded-sm border border-[#c79c6e]/30 text-[#c79c6e]/80 bg-transparent hover:border-[#c79c6e] hover:text-[#c79c6e] transition-all duration-300 font-sans text-[0.65rem] uppercase tracking-widest font-semibold"
+              className="w-full sm:w-auto px-8 py-3 rounded-sm border transition-all duration-500 font-sans text-[0.65rem] uppercase tracking-widest font-semibold border-[#c79c6e] text-[#c79c6e] bg-transparent hover:border-transparent hover:text-black hover:bg-gradient-to-r hover:from-[#c79c6e] hover:via-[#e6c49a] hover:to-[#c79c6e] hover:shadow-[0_0_20px_rgba(199,156,110,0.3)]"
               onClick={openBookingModal}
             >
               BOOK A CONVERSATION

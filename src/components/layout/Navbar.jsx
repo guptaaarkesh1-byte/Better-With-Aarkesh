@@ -9,6 +9,7 @@ import { BookmarkSimple, List, X, User, LockKey, SignOut, ArrowRight } from '@ph
 import { useBooking } from '../../context/BookingContext';
 
 const NAV_LINKS = [
+  { label: 'Home', href: '/' },
   { label: 'About', href: '/#meet-aarkesh' },
   { label: 'Coaching', href: '/#coaching' },
   { label: 'LIBRARY', href: '/library' },
@@ -64,7 +65,10 @@ export default function Navbar() {
         <nav className="hidden lg:flex items-center justify-center gap-10 absolute left-1/2 -translate-x-1/2">
           {NAV_LINKS.map((link) => {
             let active = false;
-            if (link.href.includes('#')) {
+            if (link.href === '/') {
+              // Home should only be active if there is no hash
+              active = location.pathname === '/' && (!location.hash || location.hash === '');
+            } else if (link.href.includes('#')) {
               active = location.pathname === '/' && location.hash === link.href.replace('/', '');
             } else {
               active = location.pathname === link.href;
