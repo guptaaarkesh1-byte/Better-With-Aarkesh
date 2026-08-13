@@ -34,7 +34,7 @@ export default function CoachingTab() {
           setLoading(false);
           return;
         }
-        const res = await fetch('https://meet-with-aarkesh.onrender.com/api/appointments', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {

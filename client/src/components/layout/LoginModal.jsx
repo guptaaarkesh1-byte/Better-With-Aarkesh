@@ -58,23 +58,24 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
 
     setIsLoading(true);
     try {
-      let endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/login';
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      let endpoint = `${API_URL}/api/auth/login`;
       let body = { email, password };
 
       if (isForgotPassword) {
         if (!isForgotOtpStep) {
-          endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/forgot-password-init';
+          endpoint = `${API_URL}/api/auth/forgot-password-init`;
           body = { email };
         } else {
-          endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/forgot-password-reset';
+          endpoint = `${API_URL}/api/auth/forgot-password-reset`;
           body = { email, otp: otpValues.join(''), newPassword: password };
         }
       } else if (!isLogin) {
         if (!isOtpStep) {
-          endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/register-init';
+          endpoint = `${API_URL}/api/auth/register-init`;
           body = { fullName, email, password, countryCode, phoneNumber };
         } else {
-          endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/register-verify';
+          endpoint = `${API_URL}/api/auth/register-verify`;
           body = { email, otp: otpValues.join('') };
         }
       }
