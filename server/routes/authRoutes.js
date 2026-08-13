@@ -15,6 +15,9 @@ const generateToken = (id) => {
 // In-memory store for pending registrations (OTP mock)
 const pendingRegistrations = new Map();
 
+// In-memory store for pending password resets (OTP mock)
+const pendingPasswordResets = new Map();
+
 // @route   POST /api/auth/register-init
 // @desc    Initiate registration and send OTP
 // @access  Public
@@ -159,5 +162,68 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+// @route   POST /api/auth/forgot-password-init
+// @desc    Initiate forgot password and send OTP
+// @access  Public
+router.post('/forgot-password-init', async (req, res) => {
+  try {
+    const { email } = req.body;
 
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User account does not exist' });
+    }
+
+    const otp = '1234'; // hardcoded for testing
+    
+    pendingPasswordResets.set(email, {
+      otp,
+      expires: Date.now() + 10 * 60 * 1000
+    });
+
+    console.log(`\n==========================================`);
+    console.log(`MOCK PASSWORD RESET EMAIL SENT TO: ${email}`);
+    console.log(`YOUR PASSWORD RESET OTP IS: ${otp}`);
+    console.log(`==========================================\n`);
+
+    res.status(200).json({ message: 'OTP sent successfully' });
+  } catch (error) {
+    console.error('Forgot Password Init Error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/auth/forgot-password-reset
+// @desc    Verify OTP and reset password
+// @access  Public
+router.post('/forgot-password-reset', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    const pendingData = pendingPasswordResets.get(email);
+    if (!pendingData) {
+      return res.status(400).json({ message: 'Session expired or invalid. Please try again.' });
+    }
+
+    if (pendingData.expires < Date.now()) {
+      pendingPasswordResets.delete(email);
+      return res.status(400).json({ message: 'OTP expired. Please try again.' });
+    }
+
+    if (pendingData.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await User.findOneAndUpdate({ email }, { password: hashedPassword });
+    pendingPasswordResets.delete(email);
+
+    res.status(200).json({ message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('Forgot Password Reset Error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 export default router;

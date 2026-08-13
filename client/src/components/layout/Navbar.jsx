@@ -199,6 +199,7 @@ export default function Navbar() {
                               localStorage.removeItem('token');
                               localStorage.removeItem('userInfo');
                               setIsLoggedIn(false);
+                              navigate('/');
                             }}
                             className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] hover:text-white hover:bg-[#c79c6e]/10 transition-colors w-full text-left px-3 py-3 rounded mt-1"
                           >

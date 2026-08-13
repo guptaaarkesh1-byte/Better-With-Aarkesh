@@ -50,7 +50,7 @@ export default function Booking() {
         return;
       }
 
-      const res = await fetch('/api/appointments', {
+      const res = await fetch('https://meet-with-aarkesh.onrender.com/api/appointments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

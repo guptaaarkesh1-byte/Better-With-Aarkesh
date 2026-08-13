@@ -17,6 +17,8 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOtpStep, setIsOtpStep] = useState(false);
   const [otpValues, setOtpValues] = useState(['', '', '', '']);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isForgotOtpStep, setIsForgotOtpStep] = useState(false);
   
   const otpRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
@@ -26,7 +28,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
     e.preventDefault();
     setError('');
 
-    if (!isLogin) {
+    if (!isLogin && !isForgotPassword) {
       if (password.length < 8) {
         setError('Password must be at least 8 characters long');
         return;
@@ -43,19 +45,36 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
         setError('Passwords do not match');
         return;
       }
+    } else if (isForgotPassword && isForgotOtpStep) {
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters long');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
     }
 
     setIsLoading(true);
     try {
-      let endpoint = '/api/auth/login';
+      let endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/login';
       let body = { email, password };
 
-      if (!isLogin) {
+      if (isForgotPassword) {
+        if (!isForgotOtpStep) {
+          endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/forgot-password-init';
+          body = { email };
+        } else {
+          endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/forgot-password-reset';
+          body = { email, otp: otpValues.join(''), newPassword: password };
+        }
+      } else if (!isLogin) {
         if (!isOtpStep) {
-          endpoint = '/api/auth/register-init';
+          endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/register-init';
           body = { fullName, email, password, countryCode, phoneNumber };
         } else {
-          endpoint = '/api/auth/register-verify';
+          endpoint = 'https://meet-with-aarkesh.onrender.com/api/auth/register-verify';
           body = { email, otp: otpValues.join('') };
         }
       }
@@ -69,7 +88,20 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
       const data = await res.json();
 
       if (res.ok) {
-        if (!isLogin && !isOtpStep) {
+        if (isForgotPassword) {
+          if (!isForgotOtpStep) {
+            setIsForgotOtpStep(true);
+            setError('');
+          } else {
+            setIsForgotPassword(false);
+            setIsForgotOtpStep(false);
+            setIsLogin(true);
+            setOtpValues(['', '', '', '']);
+            setPassword('');
+            setConfirmPassword('');
+            setError('');
+          }
+        } else if (!isLogin && !isOtpStep) {
           // Move to OTP step
           setIsOtpStep(true);
           setError('');
@@ -117,6 +149,8 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
   const handleToggleMode = () => {
     setIsLogin(!isLogin);
     setIsOtpStep(false);
+    setIsForgotPassword(false);
+    setIsForgotOtpStep(false);
     setOtpValues(['', '', '', '']);
     setError('');
     setPassword('');
@@ -155,19 +189,23 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
         </button>
 
         <h2 className="font-serif text-3xl font-light text-white mb-2">
-          {!isOtpStep ? (isLogin ? 'Welcome Back' : 'Begin Your Journey') : 'Verify Email'}
+          {isForgotPassword 
+            ? (isForgotOtpStep ? 'Reset Password' : 'Forgot Password')
+            : (!isOtpStep ? (isLogin ? 'Welcome Back' : 'Begin Your Journey') : 'Verify Email')}
         </h2>
         <p className="text-white/60 font-sans text-xs tracking-wider mb-8">
-          {!isOtpStep 
-            ? (isLogin ? 'Enter your details to continue' : 'Create an account to access exclusive content')
-            : `Enter the 4-digit OTP sent to ${email}`
+          {isForgotPassword
+            ? (isForgotOtpStep ? `Enter the 4-digit OTP sent to ${email} and your new password` : 'Enter your email address to reset your password')
+            : (!isOtpStep 
+              ? (isLogin ? 'Enter your details to continue' : 'Create an account to access exclusive content')
+              : `Enter the 4-digit OTP sent to ${email}`)
           }
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isOtpStep ? (
+          {!isOtpStep && !isForgotOtpStep ? (
             <>
-              {!isLogin && (
+              {(!isLogin && !isForgotPassword) && (
                 <div>
               <label className="block font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] mb-2">
                 Full Name
@@ -197,7 +235,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
             />
           </div>
 
-          {!isLogin && (
+          {(!isLogin && !isForgotPassword) && (
             <div>
               <label className="block font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] mb-2">
                 Phone Number
@@ -227,6 +265,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
             </div>
           )}
 
+          {!isForgotPassword && (
           <div>
             <label className="block font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] mb-2">
               Password
@@ -249,8 +288,9 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
               </button>
             </div>
           </div>
+          )}
 
-          {!isLogin && (
+          {(!isLogin && !isForgotPassword) && (
             <div>
               <label className="block font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] mb-2">
                 Confirm Password
@@ -276,19 +316,71 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
           )}
           </>
           ) : (
-            <div className="flex justify-center gap-4 py-4">
-              {otpValues.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={otpRefs[index]}
-                  type="text"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                  className="w-14 h-14 text-center bg-transparent border border-white/20 text-white font-sans text-2xl focus:outline-none focus:border-[#c79c6e] transition-colors"
-                />
-              ))}
+            <div className="flex flex-col gap-6 py-4">
+              <div className="flex justify-center gap-4">
+                {otpValues.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={otpRefs[index]}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    className="w-14 h-14 text-center bg-transparent border border-white/20 text-white font-sans text-2xl focus:outline-none focus:border-[#c79c6e] transition-colors"
+                  />
+                ))}
+              </div>
+
+              {isForgotPassword && (
+                <>
+                  <div>
+                    <label className="block font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] mb-2">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-transparent border-b border-white/20 pb-2 text-white font-sans focus:outline-none focus:border-[#c79c6e] transition-colors placeholder:text-white/20 pr-8"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-0 bottom-2 text-white/50 hover:text-white transition-colors"
+                      >
+                        {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] mb-2">
+                      Re-enter New Password
+                    </label>
+                    <div className="relative">
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full bg-transparent border-b border-white/20 pb-2 text-white font-sans focus:outline-none focus:border-[#c79c6e] transition-colors placeholder:text-white/20 pr-8"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-0 bottom-2 text-white/50 hover:text-white transition-colors"
+                      >
+                        {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -300,12 +392,27 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
 
           <div className="pt-2">
             <Button type="submit" variant="primary" className="w-full justify-center" disabled={isLoading}>
-              {isLoading ? 'PLEASE WAIT...' : (isOtpStep ? 'VERIFY OTP' : (isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'))}
+              {isLoading ? 'PLEASE WAIT...' : (isForgotPassword ? (isForgotOtpStep ? 'RESET PASSWORD' : 'SEND OTP') : (isOtpStep ? 'VERIFY OTP' : (isLogin ? 'SIGN IN' : 'CREATE ACCOUNT')))}
             </Button>
           </div>
         </form>
 
-        {!isOtpStep && (
+        {isLogin && !isForgotPassword && (
+          <div className="mt-4 text-center">
+            <button 
+              type="button"
+              onClick={() => {
+                setIsForgotPassword(true);
+                setError('');
+              }}
+              className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] hover:text-white transition-colors"
+            >
+              Forgot Password?
+            </button>
+          </div>
+        )}
+
+        {(!isOtpStep && !isForgotOtpStep) && (
           <div className="mt-6 text-center">
             <button 
               type="button"
