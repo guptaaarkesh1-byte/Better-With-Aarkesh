@@ -12,8 +12,8 @@ export default function FeelPrinciple() {
       headlineGold="Heal deeply."
       headlineGoldItalic={true}
       paragraphs={[
-        "<span class='italic text-white text-base'>You can't move forward, running from what you feel.</span>",
-        "<span class='text-2xl'>....We create the safe space to feel it all - without judgement</span>"
+        "<span class='italic text-lg'>You can't move forward, running from what you feel.</span>",
+        "<span class='text-white text-lg'>....We create the safe space to feel it all - without judgement</span>"
       ]}
       buttonText=""
       activeStep={2}

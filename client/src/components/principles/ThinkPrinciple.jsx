@@ -12,8 +12,8 @@ export default function ThinkPrinciple() {
       headlineGold="CLEARLY."
       headlineGoldItalic={false}
       paragraphs={[
-        "<span class='italic text-white text-base'>Slow down the noise. Stop believing every thought you think.</span>",
-        "<span class='text-2xl'>....See what truly matters</span>"
+        "<span class='italic text-lg'>Slow down the noise. Stop believing every thought you think.</span>",
+        "<span class='text-white text-lg'>....See what truly matters</span>"
       ]}
       buttonText="SCROLL FOR NEXT PRINCIPLE"
       activeStep={1}

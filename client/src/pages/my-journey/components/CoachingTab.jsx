@@ -22,66 +22,45 @@ export default function CoachingTab() {
   }, [selectedSession, prepareSession]);
 
   const tabs = ['UPCOMING', 'COMPLETED', 'DRAFTS'];
+  
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const allAppointments = [
-    {
-      id: 1,
-      status: 'UPCOMING',
-      badge: 'CONFIRMED',
-      date: 'WEDNESDAY, 12 AUGUST',
-      time: '6:00 PM - 7:30 PM IST',
-      durationStr: '90-MINUTE CONVERSATION',
-      person: 'AARKESH GUPTA',
-      primaryAction: 'VIEW APPOINTMENT'
-    },
-    {
-      id: 2,
-      status: 'UPCOMING',
-      badge: 'PENDING',
-      date: 'THURSDAY, 28 AUGUST',
-      time: '5:00 PM - 5:45 PM IST',
-      durationStr: '45-MINUTE CONVERSATION',
-      person: 'AARKESH GUPTA',
-      primaryAction: 'VIEW APPOINTMENT'
-    },
-    {
-      id: 3,
-      status: 'COMPLETED',
-      badge: 'NOTES SHARED',
-      date: '28 JULY 2026',
-      durationStr: '90-MINUTE CONVERSATION',
-      title: 'Making a decision without waiting for certainty',
-      primaryAction: 'VIEW SESSION',
-      secondaryAction: 'OPEN SHARED NOTES',
-      noteTitle: 'SHARED AFTER THIS CONVERSATION',
-      noteDescription: 'You do not need perfect certainty to make an honest decision.',
-      sharedSummary: 'We explored the difference between wanting certainty and having enough clarity to choose. The aim was not to remove doubt, but to decide which trade-offs you are willing to own.',
-      coachNotes: [
-        'Revisit the values you identified before making the final choice.',
-        'Notice when anxiety is being treated as evidence.'
-      ]
-    },
-    {
-      id: 4,
-      status: 'COMPLETED',
-      badge: 'NOTES SHARED',
-      date: '14 JULY 2026',
-      durationStr: '90-MINUTE CONVERSATION',
-      title: 'Recognising the pattern beneath the conflict',
-      primaryAction: 'VIEW SESSION'
-    },
-    {
-      id: 5,
-      status: 'COMPLETED',
-      badge: 'COMPLETED',
-      date: '30 JUNE 2026',
-      durationStr: 'INTRODUCTORY CONVERSATION',
-      title: 'What feels important right now',
-      primaryAction: 'VIEW SESSION'
-    }
-  ];
-
-  const filteredAppointments = allAppointments.filter(app => app.status === activeTab);
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+        const res = await fetch('/api/appointments', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const formatted = data.map(app => ({
+            id: app._id,
+            status: app.status,
+            badge: app.status === 'UPCOMING' ? 'CONFIRMED' : 'COMPLETED',
+            date: app.date,
+            time: app.time,
+            durationStr: '60-MINUTE CONVERSATION',
+            person: app.name,
+            primaryAction: 'VIEW APPOINTMENT',
+            ...app
+          }));
+          setAppointments(formatted);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAppointments();
+  }, []);
+  const filteredAppointments = appointments.filter(app => app.status === activeTab);
 
   return (
     <div className="w-full h-full min-h-[500px] rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-8 md:p-12 flex flex-col animate-in fade-in duration-700 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_50px_rgba(199,156,110,0.15)]">
@@ -120,7 +99,11 @@ export default function CoachingTab() {
 
       {/* List */}
       <div className="flex flex-col gap-8 relative z-10">
-        {filteredAppointments.length === 0 ? (
+        {loading ? (
+          <div className="py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]/40 backdrop-blur-sm">
+            <span className="font-sans text-white/40 text-sm tracking-wide">Loading...</span>
+          </div>
+        ) : filteredAppointments.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]/40 backdrop-blur-sm">
             <CalendarBlank size={32} className="text-white/20 mb-4" />
             <span className="font-sans text-white/40 text-sm tracking-wide">No {activeTab.toLowerCase()} appointments found.</span>

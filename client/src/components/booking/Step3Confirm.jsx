@@ -4,7 +4,7 @@ import {
   EnvelopeSimple, Lock, ArrowLeft, LockKey, CheckSquare, Square, ClockCounterClockwise 
 } from '@phosphor-icons/react';
 
-export default function Step3Confirm({ data, onNext, onBack }) {
+export default function Step3Confirm({ data, onNext, onBack, isLoading, error }) {
   const [agreed, setAgreed] = useState(false);
 
   return (
@@ -152,19 +152,22 @@ export default function Step3Confirm({ data, onNext, onBack }) {
             BACK
           </button>
           
-          <button
-            onClick={onNext}
-            disabled={!agreed}
-            className={`flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-sans text-sm font-semibold tracking-wide transition-all
-              ${!agreed 
-                ? 'bg-white/5 text-white/20 cursor-not-allowed' 
-                : 'bg-accent-gold text-black hover:bg-white hover:text-black hover:-translate-y-1'
-              }
-            `}
-          >
-            CONFIRM & BOOK
-            <LockKey className="text-lg" weight="bold" />
-          </button>
+          <div className="flex flex-col gap-2 w-full md:w-auto">
+            <button
+              onClick={onNext}
+              disabled={!agreed || isLoading}
+              className={`flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-sans text-sm font-semibold tracking-wide transition-all
+                ${(!agreed || isLoading)
+                  ? 'bg-white/5 text-white/20 cursor-not-allowed' 
+                  : 'bg-accent-gold text-black hover:bg-white hover:text-black hover:-translate-y-1'
+                }
+              `}
+            >
+              {isLoading ? 'BOOKING...' : 'CONFIRM & BOOK'}
+              {!isLoading && <LockKey className="text-lg" weight="bold" />}
+            </button>
+            {error && <p className="text-red-400 font-sans text-xs text-center">{error}</p>}
+          </div>
         </div>
 
       </div>

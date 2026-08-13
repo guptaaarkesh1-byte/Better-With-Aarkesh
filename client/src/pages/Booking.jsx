@@ -11,15 +11,21 @@ import bookingBg from '../assets/images/booking_bg_lamp.png';
 export default function Booking() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [bookingData, setBookingData] = useState({
-    date: null,
-    time: null,
-    name: '',
-    email: '',
-    source: '',
-    reason: '',
-    extra: '',
+  const [bookingData, setBookingData] = useState(() => {
+    const saved = localStorage.getItem('userInfo');
+    const userInfo = saved ? JSON.parse(saved) : {};
+    return {
+      date: null,
+      time: null,
+      name: userInfo.fullName || '',
+      email: userInfo.email || '',
+      source: '',
+      reason: '',
+      extra: '',
+    };
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Always scroll to top when landing on the booking page
   useEffect(() => {
@@ -31,6 +37,40 @@ export default function Booking() {
   
   const updateData = (newData) => {
     setBookingData((prev) => ({ ...prev, ...newData }));
+  };
+
+  const submitBooking = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please log in to book an appointment.');
+        setIsLoading(false);
+        return;
+      }
+
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(bookingData),
+      });
+
+      if (res.ok) {
+        nextStep();
+      } else {
+        const data = await res.json();
+        setError(data.message || 'Failed to book appointment');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Network error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Step 4 is the success screen
@@ -132,8 +172,10 @@ export default function Booking() {
               {step === 3 && (
                 <Step3Confirm 
                   data={bookingData} 
-                  onNext={nextStep} 
+                  onNext={submitBooking} 
                   onBack={prevStep} 
+                  isLoading={isLoading}
+                  error={error}
                 />
               )}
             </div>

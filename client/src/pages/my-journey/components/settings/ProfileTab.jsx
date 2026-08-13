@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Info } from '@phosphor-icons/react';
 
 export default function ProfileTab() {
+  const [userInfo, setUserInfo] = useState(() => {
+    const saved = localStorage.getItem('userInfo');
+    return saved ? JSON.parse(saved) : {};
+  });
+
   return (
     <div className="w-full max-w-2xl border border-white/10 rounded-xl p-8 md:p-10 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col animate-in fade-in duration-500">
       <h2 className="font-serif text-3xl text-white mb-2">Profile</h2>
@@ -15,7 +20,7 @@ export default function ProfileTab() {
           <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-white/60 font-medium">Display name</label>
           <input 
             type="text" 
-            defaultValue="Aarkesh Gupta"
+            defaultValue={userInfo.fullName || ''}
             className="w-full bg-transparent border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]/60 transition-colors"
           />
         </div>
@@ -25,7 +30,7 @@ export default function ProfileTab() {
           <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-white/60 font-medium">Email address</label>
           <input 
             type="email" 
-            defaultValue="aarkesh@example.com"
+            defaultValue={userInfo.email || ''}
             className="w-full bg-transparent border border-white/10 rounded-lg px-4 py-3 text-sm text-white/50 focus:outline-none focus:border-[#c79c6e]/60 transition-colors"
             readOnly
           />
@@ -36,7 +41,7 @@ export default function ProfileTab() {
           <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-white/60 font-medium">Mobile / WhatsApp</label>
           <input 
             type="text" 
-            defaultValue="+91 98*** **210"
+            defaultValue={userInfo.phoneNumber ? `${userInfo.countryCode || '+91'} ${userInfo.phoneNumber}` : ''}
             className="w-full bg-transparent border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]/60 transition-colors"
           />
         </div>
@@ -49,7 +54,8 @@ export default function ProfileTab() {
           </label>
           <input 
             type="text" 
-            defaultValue="12 August 1990"
+            defaultValue={userInfo.dob || ''}
+            placeholder="DD / MM / YYYY"
             className="w-full bg-transparent border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]/60 transition-colors"
           />
         </div>
@@ -60,7 +66,10 @@ export default function ProfileTab() {
             <span>Gender</span>
             <span className="text-white/30">Optional</span>
           </label>
-          <select className="w-full bg-transparent border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]/60 transition-colors appearance-none cursor-pointer">
+          <select 
+            defaultValue={userInfo.gender || 'Prefer not to say'}
+            className="w-full bg-transparent border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]/60 transition-colors appearance-none cursor-pointer"
+          >
             <option className="bg-[#050505] text-white">Prefer not to say</option>
             <option className="bg-[#050505] text-white">Male</option>
             <option className="bg-[#050505] text-white">Female</option>
