@@ -47,7 +47,7 @@ export default function CoachingTab() {
             time: app.time,
             durationStr: '60-MINUTE CONVERSATION',
             person: app.name,
-            primaryAction: 'VIEW APPOINTMENT',
+            primaryAction: app.status === 'COMPLETED' ? 'VIEW SHARED NOTES' : 'VIEW APPOINTMENT',
             ...app
           }));
           setAppointments(formatted);
@@ -98,7 +98,7 @@ export default function CoachingTab() {
       </div>
 
       {/* List */}
-      <div className="flex flex-col gap-8 relative z-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
         {loading ? (
           <div className="py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]/40 backdrop-blur-sm">
             <span className="font-sans text-white/40 text-sm tracking-wide">Loading...</span>
@@ -110,17 +110,17 @@ export default function CoachingTab() {
           </div>
         ) : (
           filteredAppointments.map(app => (
-            app.status === 'UPCOMING' || app.status === 'DRAFTS' ? (
-              <div key={app.id} className="group/card w-full flex flex-col items-center">
+            <div key={app.id} className="group/card w-full flex flex-col items-center">
                 {/* Main Card */}
-                <div className="w-full rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a]/90 backdrop-blur-md p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 md:gap-10 hover:border-[#c79c6e]/60 transition-colors duration-500 shadow-xl relative z-10">
+                <div className="w-full rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a]/90 backdrop-blur-md p-6 md:p-8 flex flex-col justify-between gap-6 hover:border-[#c79c6e]/60 transition-colors duration-500 shadow-xl relative z-10 h-full">
                   
-                  {/* Left Side: Status & Details */}
+                  {/* Top: Status & Details */}
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2 text-[#c79c6e] font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">
+                    <div className={`flex items-center gap-2 ${app.status === 'COMPLETED' ? 'text-green-500' : 'text-[#c79c6e]'} font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium`}>
                       <span>{app.badge}</span>
                       {app.badge === 'CONFIRMED' && <CheckCircle weight="fill" size={16} />}
                       {app.badge === 'PENDING' && <Clock weight="fill" size={16} />}
+                      {app.badge === 'COMPLETED' && <CheckCircle weight="fill" size={16} />}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -140,9 +140,9 @@ export default function CoachingTab() {
                     </div>
                   </div>
 
-                  {/* Right Side: Main Action Button */}
-                  <div className="w-full lg:w-auto shrink-0 flex items-center">
-                    <button className="w-full lg:min-w-[240px] py-4 md:py-5 px-6 rounded border border-white/20 text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors">
+                  {/* Bottom: Main Action Button */}
+                  <div className="w-full shrink-0 flex items-center mt-2">
+                    <button className="w-full py-4 px-6 rounded border border-white/20 text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors">
                       {app.primaryAction}
                     </button>
                   </div>
@@ -152,7 +152,7 @@ export default function CoachingTab() {
                 {app.status === 'UPCOMING' && (
                   <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover/card:grid-rows-[1fr] group-hover/card:opacity-100 transition-all duration-500 ease-in-out">
                     <div className="overflow-hidden">
-                      <div className="w-full flex flex-col md:flex-row items-center gap-4 pt-6 mt-4 border-t border-white/5">
+                      <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-4 pt-6 mt-2 border-t border-white/5">
                         <button 
                           onClick={() => setPrepareSession({ session: app, step: 1, noteVisible: true })}
                           className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e]/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
@@ -177,57 +177,6 @@ export default function CoachingTab() {
                   </div>
                 )}
               </div>
-            ) : (
-              <div key={app.id} className="group/completed relative w-full border-b border-white/10 last:border-0 py-6 hover:p-6 md:hover:p-8 hover:-mx-8 md:hover:-mx-8 hover:w-[calc(100%+4rem)] hover:bg-[#0a0a0a]/90 hover:backdrop-blur-md hover:border hover:border-[#c79c6e]/30 hover:rounded-xl hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-300">
-                
-                {/* Top Row: Details & Badge */}
-                <div className="flex justify-between items-end mb-1">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 font-sans text-[0.65rem] md:text-[0.7rem] uppercase tracking-[0.2em] font-medium text-white/60">
-                      <span>{app.date}</span>
-                      <span>·</span>
-                      <span>{app.durationStr}</span>
-                    </div>
-                    <h3 className="font-serif text-xl md:text-2xl text-white">
-                      {app.title}
-                    </h3>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className="font-sans text-[0.65rem] md:text-[0.7rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e]">
-                      {app.badge}
-                    </span>
-                    <button onClick={() => setSelectedSession(app)} className="flex items-center gap-2 font-sans text-[0.65rem] md:text-[0.7rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] group-hover/completed:text-white transition-colors">
-                      <span>{app.primaryAction}</span>
-                      <span>&rarr;</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Expandable Hover Section */}
-                {app.noteTitle && (
-                  <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover/completed:grid-rows-[1fr] group-hover/completed:opacity-100 transition-all duration-500 ease-in-out">
-                    <div className="overflow-hidden">
-                      <div className="pt-6">
-                        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] block mb-2">
-                          {app.noteTitle}
-                        </span>
-                        <p className="font-sans text-sm md:text-base text-white/70 font-light mb-8 max-w-2xl">
-                          {app.noteDescription}
-                        </p>
-                        <div className="flex items-center gap-4">
-                          <button onClick={() => setSelectedSession(app)} className="px-6 py-4 rounded border border-[#c79c6e]/40 text-white bg-white/5 hover:bg-white/10 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors">
-                            {app.primaryAction}
-                          </button>
-                          <button onClick={() => setSelectedSession(app)} className="px-6 py-4 rounded border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e]/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors">
-                            {app.secondaryAction}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
           ))
         )}
       </div>

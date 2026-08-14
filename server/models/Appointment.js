@@ -36,6 +36,15 @@ const appointmentSchema = new mongoose.Schema({
     enum: ['UPCOMING', 'COMPLETED', 'DRAFTS'],
     default: 'UPCOMING',
   },
+  paymentId: {
+    type: String,
+  },
+  orderId: {
+    type: String,
+  },
+  signature: {
+    type: String,
+  }
 }, { timestamps: true });
 
 const Appointment = mongoose.model('Appointment', appointmentSchema);

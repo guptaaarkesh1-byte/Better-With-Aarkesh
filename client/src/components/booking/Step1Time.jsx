@@ -1,10 +1,28 @@
 import React, { useState } from 'react';
-import { CaretLeft, CaretRight, CalendarBlank, CheckCircle, ArrowRight, ArrowLeft } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { CaretLeft, CaretRight, CalendarBlank, CheckCircle, ArrowRight, CaretDown } from '@phosphor-icons/react';
 
 export default function Step1Time({ data, updateData, onNext }) {
-  // Using fixed fake dates for the demo since we don't have a backend yet
-  const [selectedDay, setSelectedDay] = useState(data.date || 4);
+  // Initialize date parsing
+  const initialDate = data.date ? new Date(data.date) : new Date();
+  const isDateValid = !isNaN(initialDate.getTime());
+  
+  const today = new Date();
+  
+  const [currentMonth, setCurrentMonth] = useState(isDateValid ? initialDate.getMonth() : today.getMonth());
+  const [currentYear, setCurrentYear] = useState(isDateValid ? initialDate.getFullYear() : today.getFullYear());
+  
+  // Dropdown states
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  
+  // If we have a saved date, and it matches the current calendar view, select it.
+  const [selectedDay, setSelectedDay] = useState(() => {
+    if (isDateValid && data.date) {
+      return initialDate.getDate();
+    }
+    // Default to today if it's the current month, otherwise null
+    return (currentMonth === today.getMonth() && currentYear === today.getFullYear()) ? today.getDate() : null;
+  });
+
   const [selectedTime, setSelectedTime] = useState(data.time || null);
 
   const times = [
@@ -15,38 +33,152 @@ export default function Step1Time({ data, updateData, onNext }) {
     '04:00 PM'
   ];
 
-  // Calendar rendering (fixed to October 2024 to match design, but dynamic logic is easy to add)
-  const daysInMonth = 31;
-  const startingDayOfWeek = 2; // Oct 1, 2024 is a Tuesday
+  // Dynamic Calendar logic
+  const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
+  const getStartingDayOfWeek = (month, year) => new Date(year, month, 1).getDay();
+
+  const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+  const startingDayOfWeek = getStartingDayOfWeek(currentMonth, currentYear);
   
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const years = Array.from({ length: 5 }, (_, i) => today.getFullYear() + i);
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+    setSelectedDay(null); // Require user to pick a new day in the new month
+  };
+
+  const handlePrevMonth = () => {
+    // Prevent going to past months
+    if (currentYear === today.getFullYear() && currentMonth === today.getMonth()) return;
+
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+    setSelectedDay(null);
+  };
+
   const handleContinue = () => {
     if (selectedDay && selectedTime) {
+      const dateObj = new Date(currentYear, currentMonth, selectedDay);
+      const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+      const monthName = monthNames[currentMonth];
+
       updateData({ 
-        date: `Friday, October ${selectedDay}, 2024`, // Formatted for step 3
+        date: `${dayOfWeek}, ${monthName} ${selectedDay}, ${currentYear}`, 
         time: selectedTime 
       });
       onNext();
     }
   };
 
+  // Close dropdowns if clicking outside (simplified for now, user can click dropdown to close)
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" onClick={() => activeDropdown && setActiveDropdown(null)}>
       
       <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
         
         {/* Left Column - Calendar */}
-        <div className="flex-1">
+        <div className="flex-1" onClick={(e) => e.stopPropagation()}>
           <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-3">
             CHOOSE A DATE
           </h3>
           
           <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-5">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-white text-base font-medium">October 2024</span>
+            <div className="flex items-center justify-between mb-4 relative z-20">
+              
+              <div className="flex items-center gap-2">
+                {/* Month Dropdown */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setActiveDropdown(activeDropdown === 'month' ? null : 'month')}
+                    className="flex items-center gap-1 text-white hover:text-accent-gold transition-colors text-base font-medium focus:outline-none"
+                  >
+                    {monthNames[currentMonth]}
+                    <CaretDown size={14} className={`transition-transform ${activeDropdown === 'month' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'month' && (
+                    <div className="absolute top-full left-0 mt-2 w-32 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 z-30 max-h-48 overflow-y-auto overscroll-contain">
+                      {monthNames.map((m, idx) => {
+                        const isPast = currentYear === today.getFullYear() && idx < today.getMonth();
+                        return (
+                          <button 
+                            key={m} 
+                            onClick={() => {
+                              if (!isPast) {
+                                setCurrentMonth(idx);
+                                setSelectedDay(null);
+                                setActiveDropdown(null);
+                              }
+                            }}
+                            disabled={isPast}
+                            className={`px-4 py-2 text-left text-sm transition-colors ${
+                              isPast ? 'text-white/20 cursor-not-allowed' : 
+                              currentMonth === idx ? 'text-accent-gold bg-white/5' : 'text-white/70 hover:text-white hover:bg-white/5'
+                            }`}
+                          >
+                            {m}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Year Dropdown */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setActiveDropdown(activeDropdown === 'year' ? null : 'year')}
+                    className="flex items-center gap-1 text-white hover:text-accent-gold transition-colors text-base font-medium focus:outline-none"
+                  >
+                    {currentYear}
+                    <CaretDown size={14} className={`transition-transform ${activeDropdown === 'year' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'year' && (
+                    <div className="absolute top-full left-0 mt-2 w-24 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 z-30 max-h-48 overflow-y-auto overscroll-contain">
+                      {years.map(y => (
+                        <button 
+                          key={y} 
+                          onClick={() => {
+                            setCurrentYear(y);
+                            if (y === today.getFullYear() && currentMonth < today.getMonth()) {
+                              setCurrentMonth(today.getMonth());
+                            }
+                            setSelectedDay(null);
+                            setActiveDropdown(null);
+                          }}
+                          className={`px-4 py-2 text-left text-sm transition-colors ${
+                            currentYear === y ? 'text-accent-gold bg-white/5' : 'text-white/70 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          {y}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex items-center gap-4 text-accent-gold">
-                <CaretLeft className="cursor-pointer hover:text-white transition-colors" />
-                <CaretRight className="cursor-pointer hover:text-white transition-colors" />
+                <CaretLeft 
+                  className={`transition-colors ${currentYear === today.getFullYear() && currentMonth === today.getMonth() ? 'text-white/20 cursor-not-allowed' : 'cursor-pointer hover:text-white'}`} 
+                  onClick={handlePrevMonth} 
+                />
+                <CaretRight 
+                  className="cursor-pointer hover:text-white transition-colors" 
+                  onClick={handleNextMonth} 
+                />
               </div>
             </div>
 
@@ -59,22 +191,30 @@ export default function Step1Time({ data, updateData, onNext }) {
               ))}
 
               {/* Empty slots before month starts */}
-              {[...Array(startingDayOfWeek)].map((_, i) => (
-                <div key={`empty-${i}`} className="text-center text-white/10 font-light text-sm">
-                  {30 - startingDayOfWeek + i + 1}
-                </div>
-              ))}
+              {[...Array(startingDayOfWeek)].map((_, i) => {
+                const prevMonthDays = getDaysInMonth(currentMonth === 0 ? 11 : currentMonth - 1, currentMonth === 0 ? currentYear - 1 : currentYear);
+                return (
+                  <div key={`empty-${i}`} className="text-center text-white/10 font-light text-sm">
+                    {prevMonthDays - startingDayOfWeek + i + 1}
+                  </div>
+                );
+              })}
 
               {/* Actual Days */}
               {[...Array(daysInMonth)].map((_, i) => {
                 const day = i + 1;
                 const isSelected = selectedDay === day;
+                const isPast = currentYear === today.getFullYear() && currentMonth === today.getMonth() && day < today.getDate();
+                
                 return (
                   <div key={day} className="flex items-center justify-center">
                     <button
-                      onClick={() => setSelectedDay(day)}
+                      onClick={() => !isPast && setSelectedDay(day)}
+                      disabled={isPast}
                       className={`w-8 h-8 rounded-md flex items-center justify-center font-light text-sm transition-all
-                        ${isSelected ? 'bg-transparent border border-accent-gold text-accent-gold' : 'text-white hover:bg-white/5'}
+                        ${isPast ? 'text-white/10 cursor-not-allowed' : ''}
+                        ${!isPast && isSelected ? 'bg-transparent border border-accent-gold text-accent-gold' : ''}
+                        ${!isPast && !isSelected ? 'text-white hover:bg-white/5' : ''}
                       `}
                     >
                       {day}

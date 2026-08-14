@@ -29,4 +29,17 @@ const protect = async (req, res, next) => {
   }
 };
 
-export { protect };
+const admin = (req, res, next) => {
+  // Temporary handling for the hardcoded admin token
+  if (req.headers.authorization && req.headers.authorization === 'Bearer temp-admin-token') {
+    return next();
+  }
+  
+  if (req.user && req.user.isAdmin) {
+    return next();
+  }
+  
+  res.status(401).json({ message: 'Not authorized as an admin' });
+};
+
+export { protect, admin };

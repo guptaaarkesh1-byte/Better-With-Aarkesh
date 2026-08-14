@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { BookmarkSimple, ChatCircleText, Notebook, CheckCircle, FileText } from '@phosphor-icons/react';
 import Button from '../../../components/ui/Button';
 import MyLibraryTab from './MyLibraryTab';
@@ -6,7 +7,15 @@ import CoachingTab from './CoachingTab';
 import MyNotesTab from './MyNotesTab';
 
 export default function OverviewSection() {
-  const [activeTab, setActiveTab] = useState('COACHING'); // Pre-select coaching for Frame C
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'COACHING'); // Pre-select coaching for Frame C
+
+  // Listen to changes in location state (e.g. going forward/back)
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   return (
     <section className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 md:px-8 pt-24 pb-6 mx-auto border-b border-white/5">
@@ -24,20 +33,17 @@ export default function OverviewSection() {
         </p>
       </div>
 
-      {/* Frame C Layout: Sidebar + Main Content */}
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 w-full max-w-7xl flex-1 min-h-0">
+      {/* Frame C Layout: Top Tabs + Main Content */}
+      <div className="flex flex-col gap-8 w-full flex-1 min-h-0">
         
-        {/* Sidebar Menu */}
-        <div className="w-full lg:w-72 shrink-0">
-          <span className="font-sans text-[0.6rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e]/80 block mb-6 px-4">
-            OVERVIEW
-          </span>
-          
-          <div className="flex flex-col gap-2">
+        {/* Top Tabs Menu */}
+        <div className="w-full rounded-2xl border border-white/30 shrink-0 sticky top-[71px] z-50 bg-[#050505]/80 backdrop-blur-md py-5 px-10">
+         
+          <div className="flex flex-row overflow-x-auto custom-scrollbar gap-3 pb-2 w-full">
             {/* Tab 1: MY LIBRARY */}
             <button 
               onClick={() => setActiveTab('MY LIBRARY')}
-              className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-300 border ${
+              className={`flex-1 min-w-max flex justify-center items-center gap-3 px-6 py-4 rounded-lg transition-all duration-300 border ${
                 activeTab === 'MY LIBRARY' 
                   ? 'border-[#c79c6e] bg-[#0a0a0a]/70 backdrop-blur-sm text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
                   : 'border-transparent text-white/60 hover:text-white hover:bg-white/5'
@@ -50,7 +56,7 @@ export default function OverviewSection() {
             {/* Tab 2: COACHING */}
             <button 
               onClick={() => setActiveTab('COACHING')}
-              className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-300 border ${
+              className={`flex-1 min-w-max flex justify-center items-center gap-3 px-6 py-4 rounded-lg transition-all duration-300 border ${
                 activeTab === 'COACHING' 
                   ? 'border-[#c79c6e] bg-[#0a0a0a]/70 backdrop-blur-sm text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
                   : 'border-transparent text-white/60 hover:text-white hover:bg-white/5'
@@ -63,7 +69,7 @@ export default function OverviewSection() {
             {/* Tab 3: MY NOTES */}
             <button 
               onClick={() => setActiveTab('MY NOTES')}
-              className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-300 border ${
+              className={`flex-1 min-w-max flex justify-center items-center gap-3 px-6 py-4 rounded-lg transition-all duration-300 border ${
                 activeTab === 'MY NOTES' 
                   ? 'border-[#c79c6e] bg-[#0a0a0a]/70 backdrop-blur-sm text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
                   : 'border-transparent text-white/60 hover:text-white hover:bg-white/5'

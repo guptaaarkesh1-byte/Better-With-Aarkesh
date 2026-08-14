@@ -6,6 +6,7 @@ import Library from './pages/library/Library';
 import Stories from './pages/Stories';
 import MyJourney from './pages/my-journey/MyJourney';
 import Settings from './pages/my-journey/Settings';
+import Notes from './pages/my-journey/Notes';
 import Prepare from './pages/prepare/Prepare';
 import Articles from './pages/articles/Articles';
 import Footer from './components/layout/Footer';
@@ -25,6 +26,7 @@ function App() {
             <Route path="/stories" element={<Stories />} />
             <Route path="/my-journey" element={<MyJourney />} />
             <Route path="/my-journey/settings" element={<Settings />} />
+            <Route path="/my-journey/notes" element={<Notes />} />
             <Route path="/prepare" element={<Prepare />} />
             <Route path="/articles" element={<Articles />} />
           </Routes>

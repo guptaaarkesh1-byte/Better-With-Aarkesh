@@ -46,10 +46,10 @@ export default function Settings() {
         <div className="w-full md:w-64 shrink-0 flex flex-col">
           <div className="mb-12">
             <button 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/my-journey')}
               className="flex items-center gap-2 text-white/60 hover:text-white font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors mb-8"
             >
-              <CaretLeft size={14} weight="bold" /> BACK TO HOMEPAGE
+              <CaretLeft size={14} weight="bold" /> BACK
             </button>
             <div className="flex items-center gap-2 text-white/50 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium mb-4">
               <span className="text-[#c79c6e]">MY JOURNEY</span>

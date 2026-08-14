@@ -11,7 +11,7 @@ import ClosingNavigation from './components/ClosingNavigation';
 
 export default function MyJourney() {
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white select-none relative font-sans overflow-x-hidden">
+    <div className="w-full min-h-screen bg-[#050505] text-white select-none relative font-sans">
       
       {/* Background - Fixed while scrolling */}
       <div className="fixed inset-0 z-0 pointer-events-none">

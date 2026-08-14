@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Eye, EyeSlash } from '@phosphor-icons/react';
 import Button from '../ui/Button';
@@ -21,6 +21,25 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
   const [isForgotOtpStep, setIsForgotOtpStep] = useState(false);
   
   const otpRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(true);
+      setShowPassword(false);
+      setPassword('');
+      setConfirmPassword('');
+      setFullName('');
+      setEmail('');
+      setCountryCode('+91');
+      setPhoneNumber('');
+      setError('');
+      setIsLoading(false);
+      setIsOtpStep(false);
+      setOtpValues(['', '', '', '']);
+      setIsForgotPassword(false);
+      setIsForgotOtpStep(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -162,7 +181,12 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={onClose}>
+    <div 
+      className="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" 
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <style>{`
         input:-webkit-autofill,
         input:-webkit-autofill:hover, 
@@ -174,7 +198,6 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
       `}</style>
       <div 
         className="relative w-full max-w-md bg-[#0a0a0a] border border-[#c79c6e]/30 p-8 shadow-[0_0_40px_rgba(199,156,110,0.15)] rounded-none"
-        onClick={(e) => e.stopPropagation()}
       >
         <button 
           onClick={() => {

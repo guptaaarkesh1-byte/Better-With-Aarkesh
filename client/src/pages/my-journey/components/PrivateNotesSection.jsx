@@ -32,7 +32,7 @@ export default function PrivateNotesSection() {
                   MY JOURNEY
                 </span>
                 <h2 className="font-serif text-4xl md:text-5xl text-white tracking-tight leading-[1.1] mb-4">
-                  Your Private Notes
+                  Notes
                 </h2>
                 <p className="font-sans text-white/70 text-base md:text-lg font-light leading-relaxed max-w-lg mb-6">
                   A place for the thoughts you want to keep entirely your own.

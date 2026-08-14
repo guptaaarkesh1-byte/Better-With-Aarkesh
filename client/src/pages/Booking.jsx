@@ -27,10 +27,10 @@ export default function Booking() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Always scroll to top when landing on the booking page
+  // Always scroll to top when landing on the booking page or changing steps
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -50,25 +50,99 @@ export default function Booking() {
         return;
       }
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
+      // 1. Load Razorpay script dynamically
+      const scriptLoaded = await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+      });
+
+      if (!scriptLoaded) {
+        throw new Error('Razorpay SDK failed to load. Are you online?');
+      }
+
+      // 2. Fetch Razorpay public key
+      const keyRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/public-key`);
+      const keyData = await keyRes.json();
+      if (!keyRes.ok || !keyData.keyId) {
+        throw new Error('Payment gateway not configured.');
+      }
+
+      // 3. Create an order
+      const amount = 5000; // Hardcoded amount (e.g., INR 5000)
+      const orderRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/create-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(bookingData),
+        body: JSON.stringify({ amount, currency: 'INR' })
       });
-
-      if (res.ok) {
-        nextStep();
-      } else {
-        const data = await res.json();
-        setError(data.message || 'Failed to book appointment');
+      const orderData = await orderRes.json();
+      
+      if (!orderRes.ok) {
+        throw new Error(orderData.message || 'Failed to create order');
       }
+
+      // 4. Initialize Razorpay popup
+      const options = {
+        key: keyData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'Better With Aarkesh',
+        description: 'Life Coaching Session',
+        order_id: orderData.id,
+        handler: async function (response) {
+          // 5. On success, create the appointment in the backend
+          try {
+            const finalRes = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                ...bookingData,
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                signature: response.razorpay_signature
+              }),
+            });
+
+            if (finalRes.ok) {
+              nextStep();
+            } else {
+              const data = await finalRes.json();
+              setError(data.message || 'Failed to finalize appointment booking');
+            }
+          } catch (err) {
+            console.error('Finalization error:', err);
+            setError('Error confirming appointment.');
+          } finally {
+            setIsLoading(false);
+          }
+        },
+        prefill: {
+          name: bookingData.name,
+          email: bookingData.email,
+        },
+        theme: {
+          color: '#c79c6e'
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response){
+        setError('Payment failed or was cancelled.');
+        setIsLoading(false);
+      });
+      rzp.open();
+
     } catch (err) {
       console.error(err);
-      setError('Network error');
-    } finally {
+      setError(err.message || 'Network error');
       setIsLoading(false);
     }
   };

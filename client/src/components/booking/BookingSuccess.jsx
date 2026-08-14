@@ -152,20 +152,29 @@ export default function BookingSuccess({ data }) {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-          <button className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/80 hover:text-white hover:border-white/30 transition-all w-full sm:w-auto">
-            <CalendarBlank className="text-lg text-accent-gold" />
-            ADD TO CALENDAR
-          </button>
-          
-          <Link to="/" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-accent-gold text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all w-full sm:w-auto">
-            RETURN HOME
-            <House className="text-lg" />
-          </Link>
+          {localStorage.getItem('token') ? (
+            <>
+              <button className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/80 hover:text-white hover:border-white/30 transition-all w-full sm:w-auto">
+                <CalendarBlank className="text-lg text-accent-gold" />
+                ADD TO CALENDAR
+              </button>
+              
+              <Link to="/my-journey" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-accent-gold text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all w-full sm:w-auto">
+                MY JOURNEY
+                <User className="text-lg" />
+              </Link>
 
-          <button className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/80 hover:text-white hover:border-white/30 transition-all w-full sm:w-auto">
-            <BookOpen className="text-lg text-accent-gold" />
-            EXPLORE PERSPECTIVES
-          </button>
+              <Link to="/library" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/80 hover:text-white hover:border-white/30 transition-all w-full sm:w-auto">
+                <BookOpen className="text-lg text-accent-gold" />
+                EXPLORE LIBRARY
+              </Link>
+            </>
+          ) : (
+            <Link to="/" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-accent-gold text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all w-full sm:w-auto">
+              RETURN HOME
+              <House className="text-lg" />
+            </Link>
+          )}
         </div>
 
         {/* Quote Banner */}

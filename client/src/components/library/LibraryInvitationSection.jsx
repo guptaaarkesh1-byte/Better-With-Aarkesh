@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -9,9 +10,15 @@ gsap.registerPlugin(ScrollTrigger);
 export default function LibraryInvitationSection() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
   
   const containerRef = useRef(null);
   const contentRef = useRef(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+  }, []);
 
   useGSAP(() => {
     const tl = gsap.timeline({
@@ -26,21 +33,6 @@ export default function LibraryInvitationSection() {
       { opacity: 1, y: 0, duration: 1, stagger: 0.2, ease: 'power3.out' }
     );
   }, { scope: containerRef });
-
-  const handleLogin = () => {
-    gsap.to(contentRef.current, {
-      opacity: 0,
-      y: -20,
-      duration: 0.4,
-      onComplete: () => {
-        setIsLoggedIn(true);
-        gsap.fromTo(contentRef.current,
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', delay: 0.1 }
-        );
-      }
-    });
-  };
 
   return (
     <section ref={containerRef} className="relative w-full min-h-screen bg-transparent pt-32 pb-32 flex flex-col items-center px-6 md:px-16 lg:px-24 border-t border-white/5">
@@ -100,7 +92,7 @@ export default function LibraryInvitationSection() {
 
                 {/* Buttons */}
                 <button 
-                  onClick={handleLogin}
+                  onClick={() => navigate('/register')}
                   className={`w-full py-4 rounded-sm border transition-all duration-500 mb-4 font-sans text-[0.65rem] uppercase tracking-widest font-semibold
                     ${isHovered 
                       ? 'border-transparent text-black bg-gradient-to-r from-[#c79c6e] via-[#e6c49a] to-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.3)]' 
@@ -111,7 +103,10 @@ export default function LibraryInvitationSection() {
                   CREATE MY LIBRARY
                 </button>
                 
-                <button className="w-full py-2 font-sans text-[0.65rem] uppercase tracking-widest font-medium text-[#c79c6e] hover:text-white transition-colors">
+                <button 
+                  onClick={() => navigate('/login')}
+                  className="w-full py-2 font-sans text-[0.65rem] uppercase tracking-widest font-medium text-[#c79c6e] hover:text-white transition-colors"
+                >
                   SIGN IN
                 </button>
               </div>
@@ -169,7 +164,10 @@ export default function LibraryInvitationSection() {
 
                 </div>
                 
-                <button className="flex items-center justify-center gap-3 px-8 py-4 mt-2 bg-transparent border border-[#c79c6e] rounded-sm hover:bg-[#c79c6e]/10 transition-colors w-fit group">
+                <button 
+                  onClick={() => navigate('/my-journey')}
+                  className="flex items-center justify-center gap-3 px-8 py-4 mt-2 bg-transparent border border-[#c79c6e] rounded-sm hover:bg-[#c79c6e]/10 transition-colors w-fit group"
+                >
                   <span className="font-sans text-[0.65rem] uppercase tracking-widest font-semibold text-[#c79c6e]">VIEW MY LIBRARY</span>
                   <ArrowRight size={14} weight="bold" className="text-[#c79c6e] group-hover:translate-x-1 transition-transform" />
                 </button>

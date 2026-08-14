@@ -60,6 +60,14 @@ export default function Step3Confirm({ data, onNext, onBack, isLoading, error })
               </div>
             </div>
 
+            <div className="flex items-start gap-4">
+              <div className="w-6 flex justify-center text-accent-gold text-2xl shrink-0">₹</div>
+              <div>
+                <p className="font-sans text-xs text-white/50 mb-1">Total Amount</p>
+                <p className="text-white text-lg font-medium text-accent-gold">₹5,000</p>
+              </div>
+            </div>
+
           </div>
         </div>
 

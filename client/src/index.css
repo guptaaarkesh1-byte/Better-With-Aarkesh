@@ -109,3 +109,88 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* React Quill Dark Theme Overrides */
+.ql-toolbar.ql-snow {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-radius: 8px 8px 0 0;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.ql-container.ql-snow {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-top: none !important;
+  border-radius: 0 0 8px 8px;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ql-editor {
+  padding: 1.5rem !important;
+  flex: 1;
+  overflow-y: auto;
+}
+body .ql-snow .ql-stroke {
+  stroke: rgba(255, 255, 255, 0.8) !important;
+}
+
+body .ql-snow .ql-fill, 
+body .ql-snow .ql-stroke.ql-fill {
+  fill: rgba(255, 255, 255, 0.8) !important;
+}
+
+body .ql-snow .ql-picker, 
+body .ql-snow .ql-picker-label, 
+body .ql-snow .ql-picker-label::before {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body .ql-toolbar.ql-snow button:hover .ql-stroke,
+body .ql-toolbar.ql-snow button.ql-active .ql-stroke,
+body .ql-toolbar.ql-snow .ql-picker-label:hover .ql-stroke,
+body .ql-toolbar.ql-snow .ql-picker-label.ql-active .ql-stroke {
+  stroke: #c79c6e !important;
+}
+
+body .ql-toolbar.ql-snow button:hover .ql-fill,
+body .ql-toolbar.ql-snow button.ql-active .ql-fill,
+body .ql-toolbar.ql-snow .ql-picker-label:hover .ql-fill,
+body .ql-toolbar.ql-snow .ql-picker-label.ql-active .ql-fill {
+  fill: #c79c6e !important;
+}
+
+body .ql-toolbar.ql-snow .ql-picker-label:hover,
+body .ql-toolbar.ql-snow .ql-picker-label.ql-active,
+body .ql-toolbar.ql-snow .ql-picker-item:hover,
+body .ql-toolbar.ql-snow .ql-picker-item.ql-selected {
+  color: #c79c6e !important;
+}
+
+.ql-snow .ql-picker-options {
+  background-color: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px;
+}
+
+body .ql-editor.ql-blank::before {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-style: italic !important;
+}
+
+/* Fix dropdown contrast */
+.ql-snow .ql-picker.ql-expanded .ql-picker-label {
+  color: #fff !important;
+}
+.ql-snow .ql-picker.ql-expanded .ql-picker-options {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+.ql-snow .ql-picker-item:hover {
+  color: #c79c6e !important;
+}
