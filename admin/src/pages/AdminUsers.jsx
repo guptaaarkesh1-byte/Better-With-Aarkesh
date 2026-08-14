@@ -221,12 +221,23 @@ export default function AdminUsers() {
             }
             
             // Format appointment
+            const appDateObj = new Date(app.date);
+            const today = new Date();
+            const isToday = appDateObj.getDate() === today.getDate() &&
+                            appDateObj.getMonth() === today.getMonth() &&
+                            appDateObj.getFullYear() === today.getFullYear();
+            
+            let calculatedStatus = app.status || 'Upcoming';
+            if (calculatedStatus.toLowerCase() !== 'completed' && isToday) {
+              calculatedStatus = 'Today';
+            }
+
             userMap[uId].history.push({
               id: app._id,
               date: app.date,
               time: app.time,
               type: app.type || 'Life Coaching Session',
-              status: app.status || 'Upcoming',
+              status: calculatedStatus,
               txnId: app.orderId || 'TXN-PENDING',
               payment: app.paymentId ? 'Paid' : 'Failed',
               beforeWeSpeak: app.reason || ''
@@ -307,8 +318,8 @@ export default function AdminUsers() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="font-serif text-3xl text-white">Client Management</h1>
-          <p className="font-sans text-sm text-white/50">View all registered users and their booking status in one place.</p>
+          <h1 className="font-serif text-3xl text-white">Appointments</h1>
+          <p className="font-sans text-sm text-white/50">View all appointments and client statuses in one place.</p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2.5 rounded border border-white/10 hover:border-[#c79c6e]/50 text-white hover:text-[#c79c6e] font-sans text-xs uppercase tracking-widest transition-colors bg-[#0a0a0a]">
           <Plus size={16} />
@@ -536,16 +547,31 @@ export default function AdminUsers() {
                 {/* Expanded History Row (Animated) */}
                 <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${expandedUser === user.id ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                   <div className="overflow-hidden">
-                    {user.history.length > 0 ? (
-                      <div className="bg-[#0a0a0a] border-b border-white/5 px-6 py-6 flex flex-col">
-                        <div className="flex items-center gap-2 mb-4 px-2">
-                          <span className="text-white/40 text-[0.65rem] uppercase tracking-widest font-semibold">Appointment History</span>
-                          <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                          <span className="text-white/60 text-[0.65rem] font-medium">{user.history.length}</span>
-                        </div>
-                        
-                        <div className="flex flex-col gap-2 pl-4 border-l border-white/10 ml-2">
-                          {user.history.map((session) => (
+                    {(() => {
+                      const filteredHistory = user.history.filter(h => {
+                        const matchesPayment = paymentFilter === 'All' || h.payment.toLowerCase() === paymentFilter.toLowerCase();
+                        const matchesStatus = statusFilter === 'All' || h.status.toLowerCase() === statusFilter.toLowerCase();
+                        return matchesPayment && matchesStatus;
+                      });
+
+                      if (filteredHistory.length === 0) {
+                        return (
+                          <div className="bg-[#0a0a0a] border-b border-white/5 px-6 py-6 flex flex-col items-center justify-center text-white/30 text-sm">
+                            No appointments match your filters.
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="bg-[#0a0a0a] border-b border-white/5 px-6 py-6 flex flex-col">
+                          <div className="flex items-center gap-2 mb-4 px-2">
+                            <span className="text-white/40 text-[0.65rem] uppercase tracking-widest font-semibold">Appointment History</span>
+                            <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                            <span className="text-white/60 text-[0.65rem] font-medium">{filteredHistory.length}</span>
+                          </div>
+                          
+                          <div className="flex flex-col gap-2 pl-4 border-l border-white/10 ml-2">
+                            {filteredHistory.map((session) => (
                             <div key={session.id} className="grid grid-cols-[1fr_2fr_1fr_1.5fr_1fr_100px] gap-4 items-center px-4 py-3 bg-[#111] border border-white/5 rounded-lg hover:border-white/10 transition-colors">
                               
                               <div className="flex items-start gap-3">
@@ -626,11 +652,8 @@ export default function AdminUsers() {
                           ))}
                         </div>
                       </div>
-                    ) : (
-                      <div className="bg-[#0a0a0a] border-b border-white/5 px-6 py-8 flex items-center justify-center text-white/30 text-sm">
-                        No appointment history found for this client.
-                      </div>
-                    )}
+                    );
+                    })()}
                   </div>
                 </div>
               </React.Fragment>

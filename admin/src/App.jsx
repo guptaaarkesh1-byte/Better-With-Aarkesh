@@ -80,12 +80,69 @@ function AdminLogin({ onLogin }) {
 
 // --- Dashboard Component ---
 function AdminDashboard() {
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/appointments/admin`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          const today = new Date();
+          const formattedData = data.map(app => {
+            const appDateObj = new Date(app.date);
+            const isToday = appDateObj.getDate() === today.getDate() &&
+                            appDateObj.getMonth() === today.getMonth() &&
+                            appDateObj.getFullYear() === today.getFullYear();
+            
+            let calculatedStatus = app.status || 'Upcoming';
+            if (calculatedStatus.toLowerCase() !== 'completed' && isToday) {
+              calculatedStatus = 'Today';
+            }
+            return { ...app, status: calculatedStatus };
+          });
+          setAppointments(formattedData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
+  }, []);
+
   const stats = [
     { label: 'Total Clients', value: '124', icon: <Users size={24} />, trend: '+12% this month' },
     { label: 'Active Articles', value: '45', icon: <FileText size={24} />, trend: '+3 this week' },
-    { label: 'Upcoming Sessions', value: '8', icon: <CalendarBlank size={24} />, trend: 'Next: Today 2:00 PM' },
+    { label: 'Upcoming Sessions', value: appointments.filter(a => a.status !== 'Completed').length || '0', icon: <CalendarBlank size={24} />, trend: 'Based on bookings' },
     { label: 'Revenue (MTD)', value: '₹3,50,000', icon: <CurrencyInr size={24} />, trend: '+8% vs last month' },
   ];
+
+  // Get upcoming appointments, sorted by closest date and time
+  const now = new Date();
+  
+  const upcomingAppointments = appointments
+    .filter(a => {
+      if (a.status === 'Completed') return false;
+      const appDate = new Date(`${a.date} ${a.time}`);
+      // Only include if appointment is today or in the future
+      // We compare with 'now' - optionally zeroing out hours if we want to show missed ones from earlier today
+      return appDate >= new Date(now.setHours(0, 0, 0, 0)); 
+    })
+    .sort((a, b) => {
+      const dateA = new Date(`${a.date} ${a.time}`);
+      const dateB = new Date(`${b.date} ${b.time}`);
+      return dateA - dateB;
+    })
+    .slice(0, 4);
 
   return (
     <div className="p-8 md:p-12 w-full max-w-6xl mx-auto flex flex-col gap-8 animate-in fade-in duration-500">
@@ -121,9 +178,40 @@ function AdminDashboard() {
           </div>
         </div>
         <div className="bg-[#111] border border-white/5 rounded-xl p-6 flex flex-col gap-6">
-          <h2 className="font-serif text-xl text-white">Today's Schedule</h2>
-          <div className="flex-1 border border-dashed border-white/10 rounded-lg flex items-center justify-center min-h-[200px]">
-            <span className="text-white/30 font-sans text-sm">Appointments will appear here</span>
+          <h2 className="font-serif text-xl text-white">Upcoming Schedule</h2>
+          <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
+            {loading ? (
+              <div className="flex-1 border border-dashed border-white/10 rounded-lg flex items-center justify-center min-h-[200px]">
+                <span className="text-white/30 font-sans text-sm">Loading...</span>
+              </div>
+            ) : upcomingAppointments.length > 0 ? (
+              upcomingAppointments.map((app, idx) => {
+                const statusColor = app.status === 'Today' 
+                  ? 'text-blue-400 border-blue-400/40' 
+                  : 'text-[#c79c6e] border-[#c79c6e]/30';
+                  
+                return (
+                  <div key={idx} className="bg-[#050505] border border-white/10 rounded-lg p-4 flex flex-col gap-2">
+                    <div className="flex justify-between items-start">
+                      <span className="text-white/90 text-sm font-medium">{app.name || (app.userId && app.userId.name) || 'Unknown Client'}</span>
+                      <span className={`${statusColor} text-[0.65rem] uppercase tracking-wider border px-2 py-0.5 rounded-full`}>
+                        {app.status || 'Upcoming'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-white/50 text-xs">
+                        <CalendarBlank size={12} />
+                        <span>{app.date} at {app.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="flex-1 border border-dashed border-white/10 rounded-lg flex items-center justify-center min-h-[200px]">
+                <span className="text-white/30 font-sans text-sm">No upcoming appointments</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -137,10 +225,8 @@ function AdminLayout({ children, onLogout }) {
 
   const navItems = [
     { path: '/', label: 'Overview', icon: <SquaresFour size={20} /> },
-    { path: '/users', label: 'Users', icon: <Users size={20} /> },
-    { path: '/content', label: 'Content', icon: <FileText size={20} /> },
     { path: '/appointments', label: 'Appointments', icon: <CalendarBlank size={20} /> },
-    { path: '/transactions', label: 'Transactions', icon: <CurrencyDollar size={20} /> },
+    { path: '/content', label: 'Content', icon: <FileText size={20} /> },
     { path: '/settings', label: 'Settings', icon: <Gear size={20} /> },
   ];
 
@@ -240,7 +326,7 @@ function App() {
               <AdminLayout onLogout={handleLogout}>
                 <Routes>
                   <Route path="/" element={<AdminDashboard />} />
-                  <Route path="/users" element={<AdminUsers />} />
+                  <Route path="/appointments" element={<AdminUsers />} />
                   <Route path="/settings" element={<AdminSettings />} />
                   {/* More admin routes will go here */}
                 </Routes>
