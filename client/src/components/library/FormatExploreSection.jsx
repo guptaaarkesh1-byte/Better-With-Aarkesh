@@ -184,15 +184,15 @@ export default function FormatExploreSection() {
 
     tl.fromTo('.format-header', 
       { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }
+      { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }
     )
     .fromTo('.format-card', 
       { opacity: 0, y: 40 },
       { 
         opacity: 1, 
         y: 0, 
-        duration: 1, 
-        stagger: 0.15,
+        duration: 0.3, 
+        stagger: 0.1,
         ease: 'power3.out',
       },
       "-=0.5"
@@ -207,14 +207,14 @@ export default function FormatExploreSection() {
     tl.to(cardsContainerRef.current, {
       opacity: 0,
       y: 20,
-      duration: 0.4,
+      duration: 0.3,
       ease: 'power2.in',
       onComplete: () => {
         setSelectedFormat(formatId);
         // Fade in new content
         gsap.fromTo(contentContainerRef.current,
           { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', delay: 0.1 }
+          { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out', delay: 0.1 }
         );
       }
     });
@@ -231,7 +231,7 @@ export default function FormatExploreSection() {
         setSelectedFormat(formatId);
         gsap.fromTo(contentContainerRef.current,
           { opacity: 0, y: 10 },
-          { opacity: 1, y: 0, duration: 0.4, delay: 0.1 }
+          { opacity: 1, y: 0, duration: 0.3, delay: 0.1 }
         );
       }
     });

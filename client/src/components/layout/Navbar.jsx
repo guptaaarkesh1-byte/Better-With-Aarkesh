@@ -297,6 +297,7 @@ export default function Navbar() {
             setToastMessage('Logged in successfully');
           }
           setTimeout(() => setToastMessage(''), 4000);
+          navigate('/my-journey');
         }} 
       />
 

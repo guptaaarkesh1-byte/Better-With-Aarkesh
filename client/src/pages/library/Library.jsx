@@ -77,7 +77,7 @@ export default function Library() {
     // Initial page load brightening effect
     gsap.to(bgOverlayRef.current, {
       opacity: 0,
-      duration: 5,
+      duration: 1,
       ease: 'power2.out',
     });
 
@@ -113,24 +113,24 @@ export default function Library() {
 
   useGSAP(() => {
     if (!heroRef.current) return;
-    const tl = gsap.timeline({ delay: 2 });
+    const tl = gsap.timeline({ delay: 0.2 });
     
     tl.to('.library-text', {
       opacity: 1,
-      duration: 0.8,
+      duration: 0.4,
       ease: 'power2.out'
     })
     .to('.heading-word', {
       x: 0,
       opacity: 1,
-      duration: 0.8,
-      stagger: 0.4,
+      duration: 0.4,
+      stagger: 0.05,
       ease: 'power3.out'
-    }, "-=0.4")
+    }, "-=0.2")
     .to('.hero-content', {
       opacity: 1,
       y: 0,
-      duration: 1,
+      duration: 0.5,
       ease: 'power3.out'
     }, "-=0.2");
   }, { scope: heroRef });

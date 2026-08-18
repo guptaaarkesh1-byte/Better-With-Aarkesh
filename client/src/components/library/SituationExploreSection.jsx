@@ -89,14 +89,14 @@ export default function SituationExploreSection() {
 
     tl.fromTo('.situation-header', 
       { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }
+      { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }
     )
     .fromTo('.situation-card', 
       { opacity: 0, y: 40 },
       { 
         opacity: 1, 
         y: 0, 
-        duration: 1, 
+        duration: 0.3, 
         stagger: 0.1,
         ease: 'power3.out',
       },
@@ -113,13 +113,13 @@ export default function SituationExploreSection() {
     gsap.to(gridContainerRef.current, {
       opacity: 0,
       y: 20,
-      duration: 0.4,
+      duration: 0.3,
       ease: 'power2.in',
       onComplete: () => {
         setSelectedSituation(sit);
         gsap.fromTo(detailContainerRef.current,
           { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', delay: 0.1 }
+          { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out', delay: 0.1 }
         );
       }
     });
@@ -129,13 +129,13 @@ export default function SituationExploreSection() {
     gsap.to(detailContainerRef.current, {
       opacity: 0,
       y: 20,
-      duration: 0.4,
+      duration: 0.3,
       ease: 'power2.in',
       onComplete: () => {
         setSelectedSituation(null);
         gsap.fromTo(gridContainerRef.current,
           { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', delay: 0.1 }
+          { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out', delay: 0.1 }
         );
       }
     });

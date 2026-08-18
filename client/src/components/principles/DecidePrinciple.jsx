@@ -20,7 +20,7 @@ export default function DecidePrinciple() {
       headlineGold="INTENTIONALLY."
       headlineGoldItalic={false}
       paragraphs={[
-        "<span class='italic text-lg'>Clarity without decision is just <br className='hidden lg:block' /> an expensive loop.</span>",
+        "<span class='italic text-1xl'>Clarity without decision is just <br className='hidden lg:block' /> an expensive loop.</span>",
         "<span>We help you align your values, <br className='hidden lg:block' /> weigh what matters, and choose <br className='hidden lg:block' /> the path you're willing to walk.</span>",
         "<span class='text-accent-gold text-xl'>....Then we help you walk it.</span>"
       ]}

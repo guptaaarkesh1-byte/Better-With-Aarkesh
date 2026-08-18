@@ -25,14 +25,14 @@ export default function FeaturedSection() {
 
     tl.fromTo('.featured-header', 
       { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }
+      { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }
     )
     .fromTo('.featured-card', 
       { opacity: 0, y: 40 },
       { 
         opacity: 1, 
         y: 0, 
-        duration: 1.2, 
+        duration: 0.3, 
         ease: 'power3.out',
       },
       "+=0.2"

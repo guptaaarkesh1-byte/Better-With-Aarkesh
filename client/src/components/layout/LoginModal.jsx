@@ -48,16 +48,12 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
     setError('');
 
     if (!isLogin && !isForgotPassword) {
-      if (password.length < 8) {
-        setError('Password must be at least 8 characters long');
+      if (phoneNumber.length !== 10) {
+        setError('Phone number must be exactly 10 digits');
         return;
       }
-      if (!/[A-Z]/.test(password)) {
-        setError('Password must contain at least one uppercase letter');
-        return;
-      }
-      if (!/[0-9]/.test(password)) {
-        setError('Password must contain at least one number');
+      if (password.length < 4) {
+        setError('Password must be at least 4 characters long');
         return;
       }
       if (password !== confirmPassword) {
@@ -65,8 +61,8 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
         return;
       }
     } else if (isForgotPassword && isForgotOtpStep) {
-      if (password.length < 8) {
-        setError('Password must be at least 8 characters long');
+      if (password.length < 4) {
+        setError('Password must be at least 4 characters long');
         return;
       }
       if (password !== confirmPassword) {
@@ -183,9 +179,6 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
   return createPortal(
     <div 
       className="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" 
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
       <style>{`
         input:-webkit-autofill,
@@ -281,9 +274,10 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
                   type="tel" 
                   required
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                  maxLength={10}
                   className="w-full bg-transparent text-white font-sans focus:outline-none placeholder:text-white/20"
-                  placeholder="(555) 000-0000"
+                  placeholder="0000000000"
                 />
               </div>
             </div>

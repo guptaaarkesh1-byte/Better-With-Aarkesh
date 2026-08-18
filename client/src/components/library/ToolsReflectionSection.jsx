@@ -117,15 +117,15 @@ export default function ToolsReflectionSection() {
 
     tl.fromTo('.tools-header', 
       { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }
+      { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }
     )
     .fromTo('.tool-card', 
       { opacity: 0, y: 40 },
       { 
         opacity: 1, 
         y: 0, 
-        duration: 1, 
-        stagger: 0.15,
+        duration: 0.3, 
+        stagger: 0.1,
         ease: 'power3.out',
       },
       "-=0.5"
@@ -145,13 +145,13 @@ export default function ToolsReflectionSection() {
       gsap.to(gridContainerRef.current, {
         opacity: 0,
         y: 20,
-        duration: 0.4,
+        duration: 0.3,
         ease: 'power2.in',
         onComplete: () => {
           setSelectedTool(tool.id);
           gsap.fromTo(previewContainerRef.current,
             { opacity: 0, y: 20 },
-            { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', delay: 0.1 }
+            { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out', delay: 0.1 }
           );
         }
       });
@@ -165,7 +165,7 @@ export default function ToolsReflectionSection() {
           setSelectedTool(tool.id);
           gsap.fromTo('.preview-content',
             { opacity: 0, y: 10 },
-            { opacity: 1, y: 0, duration: 0.4, delay: 0.1 }
+            { opacity: 1, y: 0, duration: 0.3, delay: 0.1 }
           );
         }
       });

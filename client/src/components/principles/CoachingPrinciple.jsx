@@ -93,7 +93,7 @@ export default function CoachingPrinciple() {
             </h2>
 
             <p className="text-white text-base lg:text-lg font-serif font-light tracking-wide leading-relaxed mb-4 coaching-fade max-w-md">
-              <span className="italic text-2xl">A clear path from where you are, to where you want to be.</span><br />
+              <span className="italic text-lg">A clear path from where you are, to where you want to be.</span><br />
               <br />
               Simple. Effective.
             </p>

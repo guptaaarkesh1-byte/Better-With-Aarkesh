@@ -47,7 +47,7 @@ export default function FinalCtaSection() {
                 <span className="text-accent-gold italic">starts here.</span>
               </h2>
               
-              <p className="font-libertinus text-white/80 font-light text-sm md:text-base max-w-md mt-1 leading-relaxed">
+              <p className="font-libertinus text-white text-lg font-light max-w-md mt-1 leading-relaxed">
                 This is your space to be heard,<br/>
                 understood, and guided forward.<br/>
                 Let's create real change—together.

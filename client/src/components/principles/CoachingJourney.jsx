@@ -118,7 +118,7 @@ export default function CoachingJourney() {
               <span className="text-accent-gold italic font-light pb-1">Real transformation.</span>
             </h2>
 
-            <p className="text-paragraph text-sm lg:text-base font-light tracking-wide leading-relaxed mb-10 journey-fade max-w-md">
+            <p className="text-white text-lg font-serif font-light tracking-wide leading-relaxed mb-10 journey-fade max-w-md">
               We don't do hacks. We follow a proven, human-first process designed to create deep, lasting change.
             </p>
 

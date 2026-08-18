@@ -80,14 +80,14 @@ export default function LatestPerspectivesSection() {
 
     tl.fromTo('.latest-header', 
       { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }
+      { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }
     )
     .fromTo('.latest-card', 
       { opacity: 0, y: 40 },
       { 
         opacity: 1, 
         y: 0, 
-        duration: 1, 
+        duration: 0.3, 
         stagger: 0.1,
         ease: 'power3.out',
       },
@@ -106,7 +106,7 @@ export default function LatestPerspectivesSection() {
         setActiveTab(tab);
         gsap.fromTo(gridContainerRef.current,
           { opacity: 0, y: 10 },
-          { opacity: 1, y: 0, duration: 0.4, delay: 0.1 }
+          { opacity: 1, y: 0, duration: 0.3, delay: 0.1 }
         );
       }
     });

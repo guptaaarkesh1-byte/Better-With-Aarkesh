@@ -97,7 +97,7 @@ export default function TestimonialsSection() {
                   <span className="text-accent-gold italic">Their transformation.</span>
                 </h2>
                 
-                <p className="text-white/70 font-light text-xs md:text-sm max-w-md mt-1">
+                <p className="text-white text-lg font-serif font-light tracking-wide leading-relaxed max-w-md mt-1">
                   People from different walks of life.<br/>
                   Different challenges. Same results that matter.
                 </p>

@@ -24,7 +24,7 @@ export default function PerspectiveToConversationSection() {
 
     tl.fromTo('.ptc-elem', 
       { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 1, stagger: 0.2, ease: 'power3.out' }
+      { opacity: 1, y: 0, duration: 0.3, stagger: 0.1, ease: 'power3.out' }
     );
   }, { scope: containerRef });
 
