@@ -219,9 +219,12 @@ function AdminDashboard() {
   );
 }
 
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+
 // --- Layout Component ---
 function AdminLayout({ children, onLogout }) {
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const navItems = [
     { path: '/', label: 'Overview', icon: <SquaresFour size={20} /> },
@@ -233,12 +236,26 @@ function AdminLayout({ children, onLogout }) {
   return (
     <div className="w-full min-h-screen bg-[#050505] text-white font-sans flex">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-white/5 bg-[#0a0a0a] flex flex-col shrink-0 relative z-20 h-screen sticky top-0">
-        <div className="p-8 border-b border-white/5">
-          <h2 className="font-serif text-2xl text-[#c79c6e]">BWA Admin</h2>
-          <span className="text-white/40 text-[0.65rem] uppercase tracking-widest mt-1 block">Dashboard</span>
+      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} border-r border-white/5 bg-[#0a0a0a] flex flex-col shrink-0 relative z-20 h-screen sticky top-0 transition-all duration-300`}>
+        <div className={`p-8 border-b border-white/5 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} relative h-[88px]`}>
+          {isSidebarOpen ? (
+            <div>
+              <h2 className="font-serif text-2xl text-[#c79c6e] whitespace-nowrap">BWA Admin</h2>
+              <span className="text-white/40 text-[0.65rem] uppercase tracking-widest mt-1 block">Dashboard</span>
+            </div>
+          ) : (
+            <h2 className="font-serif text-2xl text-[#c79c6e]">B</h2>
+          )}
+          
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`absolute ${isSidebarOpen ? 'right-4' : 'right-[-12px] bg-[#111] border border-white/10 rounded-full w-6 h-6 flex items-center justify-center z-50'} text-white/40 hover:text-white transition-colors`}
+          >
+            {isSidebarOpen ? <CaretLeft size={20} /> : <CaretRight size={14} />}
+          </button>
         </div>
-        <nav className="flex-1 py-8 px-4 flex flex-col gap-2">
+        
+        <nav className="flex-1 py-8 px-4 flex flex-col gap-2 overflow-hidden">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || 
                              (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -250,21 +267,28 @@ function AdminLayout({ children, onLogout }) {
                   isActive 
                     ? 'bg-[#c79c6e]/10 text-[#c79c6e] font-medium' 
                     : 'text-white/50 hover:text-white hover:bg-white/5'
-                }`}
+                } ${!isSidebarOpen && 'justify-center px-0'}`}
+                title={!isSidebarOpen ? item.label : undefined}
               >
-                {item.icon}
-                <span className="text-sm tracking-wide">{item.label}</span>
+                <div className="shrink-0">{item.icon}</div>
+                <span className={`text-sm tracking-wide whitespace-nowrap transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>
+                  {item.label}
+                </span>
               </Link>
             );
           })}
         </nav>
+        
         <div className="p-6 border-t border-white/5 flex flex-col gap-2">
           <button 
             onClick={onLogout}
-            className="flex items-center w-full gap-4 px-4 py-3 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
+            className={`flex items-center gap-4 px-4 py-3 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors ${!isSidebarOpen && 'justify-center px-0'}`}
+            title={!isSidebarOpen ? 'Logout' : undefined}
           >
-            <SignOut size={20} />
-            <span className="text-sm tracking-wide">Logout</span>
+            <div className="shrink-0"><SignOut size={20} /></div>
+            <span className={`text-sm tracking-wide whitespace-nowrap transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>
+              Logout
+            </span>
           </button>
         </div>
       </aside>
@@ -287,6 +311,7 @@ function ProtectedRoute({ isAuthenticated, children }) {
 
 import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
+import AdminContent from './pages/AdminContent';
 
 // --- Main App Route Setup ---
 function App() {
@@ -328,6 +353,7 @@ function App() {
                   <Route path="/" element={<AdminDashboard />} />
                   <Route path="/appointments" element={<AdminUsers />} />
                   <Route path="/settings" element={<AdminSettings />} />
+                  <Route path="/content" element={<AdminContent />} />
                   {/* More admin routes will go here */}
                 </Routes>
               </AdminLayout>

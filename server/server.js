@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import articleRoutes from './routes/articleRoutes.js';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ import noteRoutes from './routes/noteRoutes.js';
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/articles', articleRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
