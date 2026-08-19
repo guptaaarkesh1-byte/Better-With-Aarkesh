@@ -38,6 +38,10 @@ export default function Navbar() {
     const handleScroll = () => {
       // Trigger the blurred navbar much earlier, e.g., after 50px of scroll
       setScrolled(window.scrollY > 50);
+      
+      if (window.scrollY < 200) {
+        setActiveSection('');
+      }
     };
     window.addEventListener('scroll', handleScroll);
     // Call once on mount to handle initial load
@@ -52,16 +56,25 @@ export default function Navbar() {
       .filter(link => link.href.startsWith('/#'))
       .map(link => link.href.replace('/#', ''));
 
+    const PREV_SECTION = {
+      'coaching': '',
+      'meet-aarkesh': 'coaching',
+      'testimonials': 'meet-aarkesh',
+      'faq': 'testimonials'
+    };
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           setActiveSection(entry.target.id);
+        } else {
+          // If the element leaves the intersection line downwards (scrolling up)
+          // The intersection line is at 30% from the top (rootMargin: '-30%...')
+          if (entry.boundingClientRect.top > (window.innerHeight * 0.3) - 10) {
+            setActiveSection(prev => prev === entry.target.id ? (PREV_SECTION[entry.target.id] || '') : prev);
+          }
         }
       });
-      // If we scroll back to the very top, set Home as active
-      if (window.scrollY < 200) {
-        setActiveSection('');
-      }
     }, {
       rootMargin: '-30% 0px -70% 0px'
     });
