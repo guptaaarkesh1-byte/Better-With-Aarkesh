@@ -12,6 +12,9 @@ export default function MainLayout({ children }) {
   const location = useLocation();
 
   useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
     lenisRef.current = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -45,15 +48,21 @@ export default function MainLayout({ children }) {
   }, []);
 
   useEffect(() => {
-    if (location.hash && lenisRef.current) {
+    if (!location.hash && lenisRef.current) {
+      // Snap to top immediately on route change if no hash
+      lenisRef.current.scrollTo(0, { immediate: true });
+      // Still refresh GSAP after a short delay to ensure correct layout
+      setTimeout(() => ScrollTrigger.refresh(), 100);
+    } else if (location.hash && lenisRef.current) {
+      // For hash navigation, wait for GSAP to finish pinning and padding
+      // otherwise it calculates the wrong scroll destination.
       setTimeout(() => {
+        ScrollTrigger.refresh();
         const element = document.querySelector(location.hash);
         if (element) {
           lenisRef.current.scrollTo(element, { offset: 0, duration: 1.5 });
         }
-      }, 100);
-    } else if (!location.hash && lenisRef.current) {
-      lenisRef.current.scrollTo(0, { immediate: true });
+      }, 500);
     }
   }, [location.pathname, location.hash]);
 

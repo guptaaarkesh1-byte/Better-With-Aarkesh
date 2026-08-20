@@ -28,6 +28,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'Prefer not to say',
   },
+  savedArticles: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Article'
+  }],
+  completedArticles: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Article'
+  }],
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);

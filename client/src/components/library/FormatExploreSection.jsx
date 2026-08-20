@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -15,6 +15,9 @@ import {
   ArrowsClockwise,
   Recycle
 } from '@phosphor-icons/react';
+import { useNavigate } from 'react-router-dom';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Placeholders for video thumbnails
 import videoThumb1 from '../../assets/PerspectivePage/recognition/emotional_exhaustion.png';
@@ -168,11 +171,23 @@ const reflectionTools = [
 ];
 
 export default function FormatExploreSection() {
+  const navigate = useNavigate();
   const [hoveredFormat, setHoveredFormat] = useState(null);
   const [selectedFormat, setSelectedFormat] = useState(null);
+  const [dbVideos, setDbVideos] = useState([]);
+  
   const containerRef = useRef(null);
   const cardsContainerRef = useRef(null);
   const contentContainerRef = useRef(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/videos/published`)
+      .then(res => res.json())
+      .then(data => setDbVideos(data))
+      .catch(err => console.error('Error fetching videos:', err));
+  }, []);
+
+  const displayVideos = dbVideos.length > 0 ? dbVideos : videos;
 
   useGSAP(() => {
     const tl = gsap.timeline({
@@ -298,7 +313,7 @@ export default function FormatExploreSection() {
                 />
                 <h3 className="font-serif text-2xl text-white font-light tracking-wide mb-2">{format.title}</h3>
                 <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-6">
-                  {format.count}
+                  {format.id === 'watch' ? `${displayVideos.length} VIDEO${displayVideos.length !== 1 ? 'S' : ''}` : format.count}
                 </span>
                 
                 <p className={`font-sans text-[0.7rem] font-light leading-relaxed whitespace-pre-line transition-colors duration-500 ${hoveredFormat === format.id ? 'text-white/90' : 'text-white/20'}`}>
@@ -325,7 +340,7 @@ export default function FormatExploreSection() {
             {selectedFormat === 'latest' && (
               <div className="flex flex-col h-full animate-in fade-in duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
-                  {[articles[0], videos[0], reflectionTools[0]].map((item, idx) => (
+                  {[articles[0], displayVideos[0], reflectionTools[0]].map((item, idx) => (
                     <div key={`latest-${idx}`} className="group cursor-pointer">
                       <div className="w-full aspect-[16/10] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
                         {item.image ? (
@@ -364,11 +379,15 @@ export default function FormatExploreSection() {
             {selectedFormat === 'watch' && (
               <div className="flex flex-col h-full animate-in fade-in duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
-                  {videos.map((video) => (
-                    <div key={video.id} className="group cursor-pointer">
+                  {displayVideos.slice(0, 3).map((video) => (
+                    <div 
+                      key={video.id || video._id} 
+                      className="group cursor-pointer"
+                      onClick={() => navigate('/videos')}
+                    >
                       <div className="w-full aspect-[16/10] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
                         <img 
-                          src={video.image} 
+                          src={video.image || video.thumbnailUrl} 
                           alt={video.title} 
                           className="w-full h-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-80"
                         />
@@ -387,8 +406,11 @@ export default function FormatExploreSection() {
                   ))}
                 </div>
                 <div className="mt-8">
-                  <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
-                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL 10 VIDEOS</span>
+                  <button 
+                    onClick={() => navigate('/videos')}
+                    className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300"
+                  >
+                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL VIDEOS</span>
                     <ArrowRight size={14} weight="bold" />
                   </button>
                 </div>

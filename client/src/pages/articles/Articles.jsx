@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ArrowLeft } from '@phosphor-icons/react';
+import { ArrowRight, ArrowLeft, BookmarkSimple, X } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Footer from '../../components/layout/Footer';
@@ -17,6 +17,7 @@ const ExpandedArticle = ({ article, isExpanded }) => {
       return undefined;
     }
 
+    let timeoutId;
     const handleScroll = () => {
       if (!contentRef.current) {
         return;
@@ -27,12 +28,54 @@ const ExpandedArticle = ({ article, isExpanded }) => {
       const scrolled = startTrigger - top;
       const nextProgress = Math.max(0, Math.min(100, (scrolled / Math.max(height, 1)) * 100));
       setProgress(nextProgress);
+
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (nextProgress > 2 && window.scrollY > 200) {
+          localStorage.setItem(`article_progress_${article._id}`, JSON.stringify({
+            scrollY: window.scrollY,
+            percentage: Math.round(nextProgress)
+          }));
+        }
+      }, 500);
     };
 
     window.addEventListener('scroll', handleScroll);
     handleScroll();
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Restore scroll position if it exists
+    const savedScroll = localStorage.getItem(`article_progress_${article._id}`);
+    if (savedScroll) {
+      try {
+        const parsed = JSON.parse(savedScroll);
+        if (parsed.scrollY && parsed.scrollY > 200) {
+          setTimeout(() => {
+            if (window.lenis) {
+              window.lenis.scrollTo(parsed.scrollY, { duration: 1.5 });
+            } else {
+              window.scrollTo({ top: parsed.scrollY, behavior: 'smooth' });
+            }
+            window.dispatchEvent(new CustomEvent('article-restored'));
+          }, 1000); // Wait for the transition to finish expanding
+        }
+      } catch (e) {
+        if (parseInt(savedScroll) > 200) {
+          setTimeout(() => {
+            if (window.lenis) {
+              window.lenis.scrollTo(parseInt(savedScroll), { duration: 1.5 });
+            } else {
+              window.scrollTo({ top: parseInt(savedScroll), behavior: 'smooth' });
+            }
+            window.dispatchEvent(new CustomEvent('article-restored'));
+          }, 1000);
+        }
+      }
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(timeoutId);
+    };
   }, [article, isExpanded]);
 
   return (
@@ -42,7 +85,13 @@ const ExpandedArticle = ({ article, isExpanded }) => {
         <div
           className="absolute left-0 top-0 w-[2px] bg-[#c79c6e] shadow-[0_0_10px_rgba(199,156,110,0.8)]"
           style={{ height: `${progress}%`, transition: 'none' }}
-        />
+        >
+          {progress > 2 && (
+            <div className="absolute left-3 bottom-0 translate-y-1/2 text-[#c79c6e] font-sans text-[0.65rem] font-medium tracking-widest select-none pointer-events-none bg-[#0a0a0a] px-1 opacity-80">
+              {Math.round(progress)}%
+            </div>
+          )}
+        </div>
 
         {article.featuredImage && (
           <img
@@ -87,8 +136,74 @@ export default function Articles() {
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [hoveredSubPoint, setHoveredSubPoint] = useState(null);
   const [expandedArticleId, setExpandedArticleId] = useState(null);
+  const [savedArticleIds, setSavedArticleIds] = useState([]);
+  const [showSavePrompt, setShowSavePrompt] = useState(null);
+  const [resumeToast, setResumeToast] = useState(false);
   const containerRef = useRef(null);
   const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleRestore = () => {
+      setResumeToast(true);
+      setTimeout(() => setResumeToast(false), 4000);
+    };
+    window.addEventListener('article-restored', handleRestore);
+    return () => window.removeEventListener('article-restored', handleRestore);
+  }, []);
+
+  useEffect(() => {
+    const fetchSaved = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_URL}/api/users/saved-articles`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSavedArticleIds(data.map(a => typeof a === 'object' ? a._id : a));
+        }
+      } catch (err) {
+        console.error('Failed to fetch saved articles', err);
+      }
+    };
+    fetchSaved();
+  }, []);
+
+  const handleToggleSave = async (articleId, e) => {
+    e?.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Please log in to save articles to your library.");
+      return;
+    }
+
+    const isCurrentlySaved = savedArticleIds.includes(articleId);
+    setSavedArticleIds(prev => 
+      isCurrentlySaved ? prev.filter(id => id !== articleId) : [...prev, articleId]
+    );
+
+    try {
+      const res = await fetch(`${API_URL}/api/users/save-article`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ articleId }),
+      });
+      if (!res.ok) {
+        setSavedArticleIds(prev => 
+          isCurrentlySaved ? [...prev, articleId] : prev.filter(id => id !== articleId)
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      setSavedArticleIds(prev => 
+        isCurrentlySaved ? [...prev, articleId] : prev.filter(id => id !== articleId)
+      );
+    }
+  };
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -122,8 +237,22 @@ export default function Articles() {
     }
 
     const nextCategory = topics.find((topic) => topic.id === searchParams.get('category'));
+    const subCategoryParam = searchParams.get('subCategory');
+    const articleParam = searchParams.get('article');
+
     if (nextCategory) {
       setActiveCategory(nextCategory);
+      
+      if (subCategoryParam && articleParam) {
+        const nextSubCategory = nextCategory.subItems.find(si => si.id === subCategoryParam);
+        if (nextSubCategory) {
+          setSelectedSubCategory(nextSubCategory);
+          setExpandedArticleId(articleParam);
+          setStep(2);
+          return;
+        }
+      }
+
       setSelectedSubCategory(null);
       setExpandedArticleId(null);
       setStep(1);
@@ -176,7 +305,7 @@ export default function Articles() {
     });
   };
 
-  const handleBack = () => {
+  const executeBack = () => {
     if (step === 0 || step === 1) {
       navigate('/library');
       return;
@@ -192,7 +321,11 @@ export default function Articles() {
         setStep(searchParams.get('view') === 'all' ? 0 : 1);
 
         setTimeout(() => {
-          window.scrollTo({ top: lastScrollY.current, behavior: 'instant' });
+          if (window.lenis) {
+            window.lenis.scrollTo(lastScrollY.current, { immediate: true });
+          } else {
+            window.scrollTo({ top: lastScrollY.current, behavior: 'instant' });
+          }
         }, 10);
 
         gsap.fromTo(
@@ -202,6 +335,34 @@ export default function Articles() {
         );
       },
     });
+  };
+
+  const handleBack = () => {
+    if (expandedArticleId && step === 2) {
+      const isSaved = savedArticleIds.includes(expandedArticleId);
+      if (!isSaved) {
+        const article = publishedArticles.find(a => a._id === expandedArticleId);
+        if (article && localStorage.getItem('token')) {
+          setShowSavePrompt({ ...article, isCollapseOnly: false });
+          return;
+        }
+      }
+    }
+    executeBack();
+  };
+
+  const handleCollapseArticle = () => {
+    if (expandedArticleId) {
+      const isSaved = savedArticleIds.includes(expandedArticleId);
+      if (!isSaved) {
+        const article = publishedArticles.find(a => a._id === expandedArticleId);
+        if (article && localStorage.getItem('token')) {
+          setShowSavePrompt({ ...article, isCollapseOnly: true });
+          return;
+        }
+      }
+    }
+    setExpandedArticleId(null);
   };
 
   const selectedArticles = selectedSubCategory
@@ -357,7 +518,7 @@ export default function Articles() {
 
             {step === 2 && selectedSubCategory && (
               <div className="step-content w-full max-w-5xl mx-auto flex flex-col">
-                <div className="mb-8 w-full flex items-center gap-4 pb-4 border-b border-white/10">
+                <div className={`mb-8 w-full items-center gap-4 pb-4 border-b border-white/10 ${expandedArticle ? 'hidden' : 'flex'}`}>
                   <button
                     onClick={handleBack}
                     className="flex items-center justify-center p-2 rounded-full hover:bg-white/5 transition-colors text-white/60 hover:text-white"
@@ -404,8 +565,16 @@ export default function Articles() {
                                 <div className="bg-white/10 border border-white/5 px-3 py-1.5 rounded-sm text-[0.65rem] font-bold tracking-widest text-white/80 shadow-sm uppercase">
                                   {article.readTime || 'Article'}
                                 </div>
-                                <div className="text-[0.7rem] font-bold text-[#c79c6e] uppercase tracking-wider">
-                                  Read
+                                <div className="flex items-center gap-4">
+                                  <button 
+                                    onClick={(e) => handleToggleSave(article._id, e)}
+                                    className="text-[#c79c6e] hover:text-white transition-colors p-1"
+                                  >
+                                    <BookmarkSimple size={18} weight={savedArticleIds.includes(article._id) ? "fill" : "regular"} />
+                                  </button>
+                                  <div className="text-[0.7rem] font-bold text-[#c79c6e] uppercase tracking-wider">
+                                    Read
+                                  </div>
                                 </div>
                               </div>
                               <h3 className="font-serif text-2xl md:text-3xl font-bold uppercase leading-[1.1] mb-4 text-white/90">
@@ -445,7 +614,7 @@ export default function Articles() {
                         <div className="mb-12 flex flex-col md:flex-row md:items-start justify-between gap-6 border-b border-white/10 pb-8">
                           <div className="flex flex-col gap-4">
                             <button
-                              onClick={() => setExpandedArticleId(null)}
+                              onClick={handleCollapseArticle}
                               className="flex items-center gap-2 text-white/50 hover:text-white text-sm font-sans tracking-widest uppercase transition-colors w-fit group"
                             >
                               <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
@@ -462,6 +631,14 @@ export default function Articles() {
                                     <span>{expandedArticle.readTime}</span>
                                   </>
                                 )}
+                                <span className="opacity-50">/</span>
+                                <button 
+                                  onClick={() => handleToggleSave(expandedArticle._id)}
+                                  className="hover:text-white transition-colors ml-2"
+                                  title={savedArticleIds.includes(expandedArticle._id) ? "Remove from Library" : "Save to Library"}
+                                >
+                                  <BookmarkSimple size={18} weight={savedArticleIds.includes(expandedArticle._id) ? "fill" : "regular"} />
+                                </button>
                               </div>
                               <h2 className="font-serif text-4xl md:text-5xl text-white font-light">
                                 {expandedArticle.title}
@@ -484,6 +661,61 @@ export default function Articles() {
 
       <div className="relative z-50">
         <Footer />
+      </div>
+
+      {showSavePrompt && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="relative w-full max-w-md bg-[#0a0a0a] border border-[#c79c6e]/30 p-8 shadow-[0_0_40px_rgba(199,156,110,0.15)] flex flex-col items-center text-center">
+            <button 
+              onClick={() => setShowSavePrompt(null)}
+              className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <div className="w-12 h-12 rounded-full bg-[#c79c6e]/10 flex items-center justify-center mb-6 border border-[#c79c6e]/30">
+              <BookmarkSimple size={24} className="text-[#c79c6e]" weight="regular" />
+            </div>
+            <h3 className="font-serif text-2xl text-white mb-2">Are you leaving?</h3>
+            <p className="font-sans text-sm text-white/60 mb-8 font-light leading-relaxed">
+              You can effortlessly continue from your My Library page right where you left off. Would you like to save "{showSavePrompt.title}" to your library before you go?
+            </p>
+            <div className="flex flex-col gap-3 w-full">
+              <button 
+                onClick={() => {
+                  handleToggleSave(showSavePrompt._id);
+                  const collapseOnly = showSavePrompt.isCollapseOnly;
+                  setShowSavePrompt(null);
+                  if (collapseOnly) setExpandedArticleId(null);
+                  else executeBack();
+                }}
+                className="w-full py-3 bg-[#c79c6e] text-black font-sans text-xs uppercase tracking-widest font-bold transition-all hover:bg-white"
+              >
+                Save to Library
+              </button>
+              <button 
+                onClick={() => {
+                  const collapseOnly = showSavePrompt.isCollapseOnly;
+                  setShowSavePrompt(null);
+                  if (collapseOnly) setExpandedArticleId(null);
+                  else executeBack();
+                }}
+                className="w-full py-3 border border-white/10 text-white/60 font-sans text-xs uppercase tracking-widest font-medium transition-all hover:text-white hover:border-white/30"
+              >
+                No Thanks, Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resume Toast */}
+      <div 
+        className={`fixed bottom-8 right-8 z-[300] bg-[#0a0a0a]/95 backdrop-blur-xl border border-[#c79c6e]/30 px-6 py-4 shadow-[0_0_40px_rgba(199,156,110,0.15)] transition-all duration-500 ease-out transform ${resumeToast ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}
+      >
+        <p className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] flex items-center gap-3">
+          <BookmarkSimple size={16} weight="regular" />
+          Resumed where you left off
+        </p>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -165,9 +165,26 @@ export const topics = [
 export default function QuestionsSection() {
   const [activeTopic, setActiveTopic] = useState(null);
   const [activeSubTopic, setActiveSubTopic] = useState(null);
+  const [publishedArticles, setPublishedArticles] = useState([]);
   const containerRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
   const subTopicTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${API_URL}/api/articles/published`);
+        if (res.ok) {
+          const data = await res.json();
+          setPublishedArticles(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch articles', error);
+      }
+    };
+    fetchArticles();
+  }, []);
 
   const handleMouseEnter = (topicId) => {
     if (window.innerWidth < 768) return;
@@ -351,15 +368,35 @@ export default function QuestionsSection() {
                       </p>
                       
                       <div className="flex flex-col gap-3">
-                        {topic.subItems[activeSubTopic].pathways.map((pathway, pIdx) => (
-                          <a 
-                            key={pIdx} 
-                            href={`/library/${topic.id}/${topic.subItems[activeSubTopic].title.toLowerCase().replace(/ /g, '-')}#${pathway.toLowerCase().replace(/ /g, '-')}`} 
-                            className="font-sans text-[0.6rem] md:text-[0.65rem] text-white/80 hover:text-white font-light transition-colors flex flex-col gap-1 border border-[#c79c6e]/20 bg-[#c79c6e]/5 rounded-md p-3 group hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/10"
-                          >
-                            <span className="leading-relaxed">{pathway}</span>
-                          </a>
-                        ))}
+                        {(() => {
+                          const currentTopic = topic;
+                          const currentSub = topic.subItems[activeSubTopic];
+                          const customArticles = publishedArticles.filter(
+                            (a) => a.categoryId === currentTopic.id && a.headingTitle.toLowerCase() === currentSub.title.toLowerCase()
+                          );
+                          
+                          if (customArticles.length > 0) {
+                            return customArticles.map((article) => (
+                              <a 
+                                key={article._id} 
+                                href={`/articles?category=${currentTopic.id}`} 
+                                className="font-sans text-[0.6rem] md:text-[0.65rem] text-white/80 hover:text-white font-light transition-colors flex flex-col gap-1 border border-[#c79c6e]/20 bg-[#c79c6e]/5 rounded-md p-3 group hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/10"
+                              >
+                                <span className="leading-relaxed">{article.title}</span>
+                              </a>
+                            ));
+                          }
+                          
+                          return topic.subItems[activeSubTopic].pathways.map((pathway, pIdx) => (
+                            <a 
+                              key={pIdx} 
+                              href={`/library/${topic.id}/${topic.subItems[activeSubTopic].title.toLowerCase().replace(/ /g, '-')}#${pathway.toLowerCase().replace(/ /g, '-')}`} 
+                              className="font-sans text-[0.6rem] md:text-[0.65rem] text-white/80 hover:text-white font-light transition-colors flex flex-col gap-1 border border-[#c79c6e]/20 bg-[#c79c6e]/5 rounded-md p-3 group hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/10"
+                            >
+                              <span className="leading-relaxed">{pathway}</span>
+                            </a>
+                          ));
+                        })()}
                       </div>
                       
                       <a href={`/articles?category=${topic.id}`} className="mt-auto pt-4 text-left font-sans text-[0.65rem] md:text-[0.7rem] text-[#c79c6e] hover:text-white transition-colors flex items-center gap-2 group">
@@ -401,15 +438,33 @@ export default function QuestionsSection() {
                         }`}
                       >
                         <div className="overflow-hidden flex flex-col gap-2 pt-1 pb-3">
-                          {sub.pathways.map((pathway, pIdx) => (
-                            <a 
-                              key={pIdx} 
-                              href={`/library/${topic.id}/${sub.title.toLowerCase().replace(/ /g, '-')}#${pathway.toLowerCase().replace(/ /g, '-')}`} 
-                              className="font-sans text-[0.65rem] text-white/80 hover:text-white font-light border border-[#c79c6e]/20 bg-[#c79c6e]/5 rounded-md p-3 group hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/10"
-                            >
-                              {pathway}
-                            </a>
-                          ))}
+                          {(() => {
+                            const customArticles = publishedArticles.filter(
+                              (a) => a.categoryId === topic.id && a.headingTitle.toLowerCase() === sub.title.toLowerCase()
+                            );
+                            
+                            if (customArticles.length > 0) {
+                              return customArticles.map((article) => (
+                                <a 
+                                  key={article._id} 
+                                  href={`/articles?category=${topic.id}`} 
+                                  className="font-sans text-[0.65rem] text-white/80 hover:text-white font-light border border-[#c79c6e]/20 bg-[#c79c6e]/5 rounded-md p-3 group hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/10"
+                                >
+                                  {article.title}
+                                </a>
+                              ));
+                            }
+                            
+                            return sub.pathways.map((pathway, pIdx) => (
+                              <a 
+                                key={pIdx} 
+                                href={`/library/${topic.id}/${sub.title.toLowerCase().replace(/ /g, '-')}#${pathway.toLowerCase().replace(/ /g, '-')}`} 
+                                className="font-sans text-[0.65rem] text-white/80 hover:text-white font-light border border-[#c79c6e]/20 bg-[#c79c6e]/5 rounded-md p-3 group hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/10"
+                              >
+                                {pathway}
+                              </a>
+                            ));
+                          })()}
                         </div>
                       </div>
                     </div>

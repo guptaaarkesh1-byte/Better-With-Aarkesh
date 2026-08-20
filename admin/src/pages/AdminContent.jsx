@@ -21,8 +21,11 @@ import {
   ListNumbers,
   ListBullets,
   Quotes,
+  VideoCamera,
+  Article
 } from '@phosphor-icons/react';
 import { useEditor, EditorContent } from '@tiptap/react';
+import VideoManager from '../components/video/VideoManager';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -283,6 +286,7 @@ function TiptapArticleEditor({ value, onChange }) {
 }
 
 export default function AdminContent() {
+  const [activeTab, setActiveTab] = useState('articles');
   const [articles, setArticles] = useState([]);
   const [activeCategoryId, setActiveCategoryId] = useState(articleTaxonomy[0].id);
   const [expandedHeadingId, setExpandedHeadingId] = useState(articleTaxonomy[0].headings[0].id);
@@ -749,15 +753,52 @@ export default function AdminContent() {
   }
 
   return (
-    <div className="p-6 md:p-8 w-full h-[calc(100vh)] flex flex-col gap-6 animate-in fade-in duration-500 font-sans overflow-hidden">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+    <div className="p-6 md:p-8 w-full h-[calc(100vh)] flex flex-col gap-6 animate-in fade-in duration-500 font-sans overflow-hidden bg-[#050505]">
+      
+      {/* HEADER & TABS */}
+      <div className="flex flex-col gap-6 shrink-0 border-b border-white/5 pb-4">
         <div className="flex flex-col gap-1">
-          <h1 className="font-serif text-3xl text-white">Articles Manager</h1>
-          <p className="font-sans text-sm text-white/50">Manage database-backed content for the client library</p>
+          <h1 className="font-serif text-3xl text-white">Content Library</h1>
+          <p className="font-sans text-sm text-white/50">Manage articles and video content for the client platform</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="relative group hidden lg:block">
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setActiveTab('articles')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-t-md font-sans text-[0.65rem] uppercase tracking-widest font-semibold transition-all duration-300 ${
+              activeTab === 'articles' 
+                ? 'bg-[#111] text-[#c79c6e] border-t border-l border-r border-white/10' 
+                : 'text-white/40 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Article size={16} />
+            Article Manager
+          </button>
+          <button 
+            onClick={() => setActiveTab('videos')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-t-md font-sans text-[0.65rem] uppercase tracking-widest font-semibold transition-all duration-300 ${
+              activeTab === 'videos' 
+                ? 'bg-[#111] text-[#c79c6e] border-t border-l border-r border-white/10' 
+                : 'text-white/40 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <VideoCamera size={16} />
+            Video Manager
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'videos' ? (
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-[#111] -mt-6 p-6 md:p-8 rounded-b-lg border-b border-l border-r border-white/10">
+          <VideoManager />
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden bg-[#111] -mt-6 p-6 md:p-8 rounded-b-lg border-b border-l border-r border-white/10 relative">
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+            <h2 className="font-serif text-2xl text-white hidden md:block">Articles</h2>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="relative group hidden lg:block">
             <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
             <input
               type="text"
@@ -767,14 +808,7 @@ export default function AdminContent() {
               className="bg-[#111] border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors w-64"
             />
           </div>
-          <a
-            href="/"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-2 px-4 py-2 border border-white/10 rounded bg-[#111] text-white/70 hover:text-white hover:bg-white/5 font-sans text-xs uppercase tracking-widest font-semibold transition-colors"
-          >
-            Preview Site <ArrowSquareOut size={16} />
-          </a>
+
           <button
             type="button"
             onClick={createNewArticle}
@@ -938,6 +972,8 @@ export default function AdminContent() {
           )}
         </div>
       </div>
+      </div>
+      )}
     </div>
-  );
+  );  
 }
