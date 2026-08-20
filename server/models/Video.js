@@ -6,10 +6,7 @@ const videoSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    description: {
-      type: String,
-      required: true,
-    },
+
     videoUrl: {
       type: String,
       required: true,
@@ -18,11 +15,7 @@ const videoSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    duration: {
-      type: String,
-      required: true,
-      default: '10 MIN',
-    },
+
     status: {
       type: String,
       enum: ['Draft', 'Published'],

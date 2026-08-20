@@ -35,14 +35,12 @@ router.get('/published', async (req, res) => {
 // @access  Private/Admin
 router.post('/', protect, admin, async (req, res) => {
   try {
-    const { title, description, videoUrl, thumbnailUrl, duration, status } = req.body;
+    const { title, videoUrl, thumbnailUrl, status } = req.body;
 
     const video = new Video({
       title,
-      description,
       videoUrl,
       thumbnailUrl,
-      duration,
       status,
     });
 
@@ -59,16 +57,14 @@ router.post('/', protect, admin, async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', protect, admin, async (req, res) => {
   try {
-    const { title, description, videoUrl, thumbnailUrl, duration, status } = req.body;
+    const { title, videoUrl, thumbnailUrl, status } = req.body;
 
     const video = await Video.findById(req.params.id);
 
     if (video) {
       video.title = title || video.title;
-      video.description = description || video.description;
       video.videoUrl = videoUrl || video.videoUrl;
       video.thumbnailUrl = thumbnailUrl || video.thumbnailUrl;
-      video.duration = duration || video.duration;
       video.status = status || video.status;
 
       const updatedVideo = await video.save();

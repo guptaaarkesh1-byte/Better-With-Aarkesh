@@ -15,10 +15,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const emptyForm = {
   id: null,
   title: '',
-  description: '',
   videoUrl: '',
   thumbnailUrl: '',
-  duration: '10 MIN',
   status: 'Draft',
 };
 
@@ -65,10 +63,8 @@ export default function VideoManager() {
     setForm({
       id: video._id,
       title: video.title,
-      description: video.description,
       videoUrl: video.videoUrl,
       thumbnailUrl: video.thumbnailUrl,
-      duration: video.duration,
       status: video.status,
     });
     setIsEditing(true);
@@ -110,10 +106,8 @@ export default function VideoManager() {
         },
         body: JSON.stringify({
           title: form.title,
-          description: form.description,
           videoUrl: form.videoUrl,
           thumbnailUrl: form.thumbnailUrl,
-          duration: form.duration,
           status: form.status,
         })
       });
@@ -190,7 +184,7 @@ export default function VideoManager() {
         </div>
 
         <form onSubmit={handleSave} className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-6 w-full">
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Title</label>
               <input
@@ -200,37 +194,23 @@ export default function VideoManager() {
                 value={form.title}
                 onChange={handleFormChange}
                 placeholder="E.g., When clarity asks something of you"
-                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
+                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors w-full"
               />
             </div>
+            
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Status</label>
               <select
                 name="status"
                 value={form.status}
                 onChange={handleFormChange}
-                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#c79c6e]/50 transition-colors appearance-none"
+                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#c79c6e]/50 transition-colors appearance-none w-full"
               >
                 <option value="Draft">Draft</option>
                 <option value="Published">Published</option>
               </select>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Description</label>
-            <textarea
-              required
-              name="description"
-              value={form.description}
-              onChange={handleFormChange}
-              placeholder="Brief description of the video..."
-              rows={3}
-              className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Video URL (YouTube/Instagram)</label>
               <input
@@ -240,23 +220,12 @@ export default function VideoManager() {
                 value={form.videoUrl}
                 onChange={handleFormChange}
                 placeholder="https://www.youtube.com/watch?v=..."
-                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Duration (e.g. "8 MIN")</label>
-              <input
-                type="text"
-                name="duration"
-                value={form.duration}
-                onChange={handleFormChange}
-                placeholder="10 MIN"
-                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
+                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors w-full"
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 w-full">
             <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Thumbnail Image (URL or Upload)</label>
             <div className="flex gap-4">
               <input
