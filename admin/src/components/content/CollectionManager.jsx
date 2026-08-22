@@ -209,7 +209,14 @@ export default function CollectionManager() {
           <p className="text-sm text-white/40 mt-1">Manage immersive multi-content cards for the frontend.</p>
         </div>
         
-
+        {!isEditing && (
+          <button 
+            onClick={handleAddNew}
+            className="flex items-center gap-2 px-4 py-2 bg-[#c79c6e] text-black hover:bg-[#b0885e] rounded text-sm uppercase tracking-widest font-semibold transition-colors"
+          >
+            <Plus size={16} weight="bold" /> New Collection
+          </button>
+        )}
       </div>
 
       {isEditing ? (
