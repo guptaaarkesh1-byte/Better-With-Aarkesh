@@ -25,6 +25,44 @@ router.post('/', protect, async (req, res) => {
     });
 
     const createdAppointment = await appointment.save();
+
+    // --- Cal.com Integration ---
+    if (process.env.CAL_API_KEY) {
+      try {
+        const startISO = new Date(`${date} ${time}`).toISOString();
+        const payload = {
+          eventTypeId: 6769198, // 30 min meeting
+          start: startISO,
+          attendee: {
+            name: name,
+            email: email,
+            timeZone: "Asia/Calcutta",
+            language: "en"
+          }
+        };
+
+        const calRes = await fetch('https://api.cal.com/v2/bookings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
+            'Content-Type': 'application/json',
+            'cal-api-version': '2024-08-13'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!calRes.ok) {
+          const errData = await calRes.json();
+          console.error("Cal.com API error:", errData);
+        } else {
+          console.log("Successfully created booking on Cal.com");
+        }
+      } catch (calError) {
+        console.error("Failed to sync with Cal.com:", calError);
+      }
+    }
+    // ---------------------------
+
     res.status(201).json(createdAppointment);
   } catch (error) {
     console.error(error);

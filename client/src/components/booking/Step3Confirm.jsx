@@ -32,7 +32,21 @@ export default function Step3Confirm({ data, onNext, onBack, isLoading, error })
               <Clock className="text-accent-gold text-2xl shrink-0" weight="light" />
               <div>
                 <p className="font-sans text-xs text-white/50 mb-1">Time</p>
-                <p className="text-white text-lg">{data.time || '10:30 AM'} – 11:30 AM IST</p>
+                <p className="text-white text-lg">
+                  {data.time ? (
+                    (() => {
+                      const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
+                      if (!match) return `${data.time} – 11:30 AM IST`;
+                      let [_, hours, minutes, ampm] = match;
+                      hours = parseInt(hours, 10);
+                      if (hours === 11) { ampm = ampm === 'AM' ? 'PM' : 'AM'; hours = 12; }
+                      else if (hours === 12) { hours = 1; }
+                      else { hours += 1; }
+                      const endTime = `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+                      return `${data.time} – ${endTime} IST`;
+                    })()
+                  ) : '10:30 AM – 11:30 AM IST'}
+                </p>
               </div>
             </div>
 

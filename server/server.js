@@ -7,6 +7,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import articleRoutes from './routes/articleRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
+import collectionRoutes from './routes/collectionRoutes.js';
 
 dotenv.config();
 
@@ -22,6 +23,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/api/auth', authRoutes);
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
+import calRoutes from './routes/calRoutes.js';
+
+app.use('/api/cal', calRoutes);
 
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/notes', noteRoutes);
@@ -29,6 +33,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);
+app.use('/api/collections', collectionRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');

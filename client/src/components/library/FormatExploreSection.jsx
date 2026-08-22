@@ -175,6 +175,7 @@ export default function FormatExploreSection() {
   const [hoveredFormat, setHoveredFormat] = useState(null);
   const [selectedFormat, setSelectedFormat] = useState(null);
   const [dbVideos, setDbVideos] = useState([]);
+  const [dbArticles, setDbArticles] = useState([]);
   
   const containerRef = useRef(null);
   const cardsContainerRef = useRef(null);
@@ -185,9 +186,15 @@ export default function FormatExploreSection() {
       .then(res => res.json())
       .then(data => setDbVideos(data))
       .catch(err => console.error('Error fetching videos:', err));
+      
+    fetch(`${API_URL}/api/articles/published`)
+      .then(res => res.json())
+      .then(data => setDbArticles(data))
+      .catch(err => console.error('Error fetching articles:', err));
   }, []);
 
   const displayVideos = dbVideos.length > 0 ? dbVideos : videos;
+  const displayArticles = dbArticles.length > 0 ? dbArticles : articles;
 
   useGSAP(() => {
     const tl = gsap.timeline({
@@ -269,7 +276,7 @@ export default function FormatExploreSection() {
         {/* Tabs (Only visible when a format is selected) */}
         {selectedFormat && (
           <div className="flex items-center gap-8 mt-2 animate-in fade-in duration-500">
-            {formats.map(f => (
+            {formats.map(f => ( 
               <button 
                 key={f.id}
                 onClick={() => handleTabClick(f.id)}
@@ -282,7 +289,7 @@ export default function FormatExploreSection() {
               >
                 {f.title}
               </button>
-            ))}
+            ))} 
           </div>
         )}
       </div>
@@ -340,37 +347,48 @@ export default function FormatExploreSection() {
             {selectedFormat === 'latest' && (
               <div className="flex flex-col h-full animate-in fade-in duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
-                  {[articles[0], displayVideos[0], reflectionTools[0]].map((item, idx) => (
-                    <div key={`latest-${idx}`} className="group cursor-pointer">
+                  {[displayArticles[0], displayVideos[0], reflectionTools[0]].filter(Boolean).map((item, idx) => {
+                    const isArticle = item.categoryId !== undefined || item.title?.includes('cost of holding');
+                    const isVideo = item.videoUrl !== undefined || item.title?.includes('clarity asks');
+                    
+                    return (
+                    <div 
+                      key={`latest-${idx}`} 
+                      className="group cursor-pointer"
+                      onClick={() => {
+                        if (isArticle && item._id) {
+                          sessionStorage.setItem('library_scroll_position', window.scrollY.toString());
+                          navigate(`/articles?category=${item.categoryId}&subCategory=${item.headingId}&article=${item._id}`);
+                        } else if (isVideo) {
+                          navigate('/videos');
+                        }
+                      }}
+                    >
                       <div className="w-full aspect-[16/10] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
-                        {item.image ? (
+                        {item.image || item.thumbnailUrl || item.featuredImage ? (
                            <>
-                             <img src={item.image} alt={item.title} className="w-full h-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-80" />
+                             <img src={item.image || item.thumbnailUrl || item.featuredImage} alt={item.title} className="w-full h-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-80" />
                              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
-                             <div className="absolute inset-0 flex items-center justify-center">
-                               <PlayCircle size={40} weight="light" className="text-white/80 group-hover:text-[#c79c6e] group-hover:scale-110 transition-all duration-500" />
-                             </div>
+                             {isVideo && (
+                               <div className="absolute inset-0 flex items-center justify-center">
+                                 <PlayCircle size={40} weight="light" className="text-white/80 group-hover:text-[#c79c6e] group-hover:scale-110 transition-all duration-500" />
+                               </div>
+                             )}
                            </>
                         ) : (
                            <div className="absolute inset-0 bg-[#050505] flex items-center justify-center p-6 text-white/20 group-hover:text-[#c79c6e]/20 transition-colors">
-                             <Sparkle size={48} weight="thin" />
+                             {isArticle ? <BookOpen size={48} weight="thin" /> : (isVideo ? <PlayCircle size={48} weight="thin" /> : <Sparkle size={48} weight="thin" />)}
                            </div>
                         )}
                       </div>
                       <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-2 block">
-                        LATEST &nbsp;•&nbsp; {item.duration}
+                        LATEST
                       </span>
                       <h4 className="font-serif text-[1.35rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 pr-4">
                         {item.title}
                       </h4>
                     </div>
-                  ))}
-                </div>
-                <div className="mt-8">
-                  <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
-                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL LATEST</span>
-                    <ArrowRight size={14} weight="bold" />
-                  </button>
+                  )})}
                 </div>
               </div>
             )}
@@ -397,22 +415,13 @@ export default function FormatExploreSection() {
                         </div>
                       </div>
                       <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-2 block">
-                        VIDEO &nbsp;•&nbsp; {video.duration}
+                        VIDEO
                       </span>
                       <h4 className="font-serif text-[1.35rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 pr-4">
                         {video.title}
                       </h4>
                     </div>
                   ))}
-                </div>
-                <div className="mt-8">
-                  <button 
-                    onClick={() => navigate('/videos')}
-                    className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300"
-                  >
-                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL VIDEOS</span>
-                    <ArrowRight size={14} weight="bold" />
-                  </button>
                 </div>
               </div>
             )}
@@ -421,27 +430,34 @@ export default function FormatExploreSection() {
             {selectedFormat === 'read' && (
               <div className="flex flex-col h-full animate-in fade-in duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
-                  {articles.map((item) => (
-                    <div key={item.id} className="group cursor-pointer">
+                  {displayArticles.slice(0, 3).map((item) => (
+                    <div 
+                      key={item.id || item._id} 
+                      className="group cursor-pointer"
+                      onClick={() => {
+                        if (item._id) {
+                          sessionStorage.setItem('library_scroll_position', window.scrollY.toString());
+                          navigate(`/articles?category=${item.categoryId}&subCategory=${item.headingId}&article=${item._id}`);
+                        }
+                      }}
+                    >
                       <div className="w-full aspect-[16/10] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
-                        <div className="absolute inset-0 bg-[#050505] flex items-center justify-center p-6 text-white/20 group-hover:text-[#c79c6e]/20 transition-colors">
-                           <BookOpen size={48} weight="thin" />
-                        </div>
+                        {item.featuredImage || item.image ? (
+                          <img src={item.featuredImage || item.image} alt={item.title} className="w-full h-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-80" />
+                        ) : (
+                          <div className="absolute inset-0 bg-[#050505] flex items-center justify-center p-6 text-white/20 group-hover:text-[#c79c6e]/20 transition-colors">
+                             <BookOpen size={48} weight="thin" />
+                          </div>
+                        )}
                       </div>
                       <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-2 block">
-                        ARTICLE &nbsp;•&nbsp; {item.duration}
+                        ARTICLE
                       </span>
                       <h4 className="font-serif text-[1.35rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 pr-4">
                         {item.title}
                       </h4>
                     </div>
                   ))}
-                </div>
-                <div className="mt-8">
-                  <a href="/articles?view=all" className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
-                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL 24 ARTICLES</span>
-                    <ArrowRight size={14} weight="bold" />
-                  </a>
                 </div>
               </div>
             )}
@@ -465,12 +481,6 @@ export default function FormatExploreSection() {
                       </div>
                     </div>
                   ))}
-                </div>
-                <div className="mt-8">
-                  <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
-                    <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW ALL 3 TOOLS</span>
-                    <ArrowRight size={14} weight="bold" />
-                  </button>
                 </div>
               </div>
             )}

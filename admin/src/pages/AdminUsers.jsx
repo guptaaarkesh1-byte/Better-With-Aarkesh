@@ -17,12 +17,33 @@ import {
 } from '@phosphor-icons/react';
 
 export default function AdminUsers() {
-  const [expandedUser, setExpandedUser] = useState(1); // Default expand first user
+  const [expandedUser, setExpandedUser] = useState(() => {
+    const saved = sessionStorage.getItem('admin_users_expanded');
+    return saved ? parseInt(saved, 10) : 1;
+  }); // Default expand first user
   
   // Sidebar State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedSession, setSelectedSession] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    return sessionStorage.getItem('admin_users_sidebar_open') === 'true';
+  });
+  const [selectedUser, setSelectedUser] = useState(() => {
+    const saved = sessionStorage.getItem('admin_users_selected_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [selectedSession, setSelectedSession] = useState(() => {
+    const saved = sessionStorage.getItem('admin_users_selected_session');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  // Persist states
+  React.useEffect(() => {
+    sessionStorage.setItem('admin_users_expanded', expandedUser);
+    sessionStorage.setItem('admin_users_sidebar_open', isSidebarOpen);
+    if (selectedUser) sessionStorage.setItem('admin_users_selected_user', JSON.stringify(selectedUser));
+    else sessionStorage.removeItem('admin_users_selected_user');
+    if (selectedSession) sessionStorage.setItem('admin_users_selected_session', JSON.stringify(selectedSession));
+    else sessionStorage.removeItem('admin_users_selected_session');
+  }, [expandedUser, isSidebarOpen, selectedUser, selectedSession]);
 
   const openProfile = (user) => {
     setSelectedSession(null);
@@ -54,91 +75,7 @@ export default function AdminUsers() {
   const [activeDropdown, setActiveDropdown] = useState(null);
 
   // Mock data with appointment history & payment details
-  const mockUsers = [
-    { 
-      id: 1, 
-      name: 'Emma Thompson', 
-      email: 'emma.t@example.com', 
-      phone: '+1 555-0101', 
-      joined: '12 Aug 2026', 
-      appointmentsCount: 3,
-      nextAppointmentDate: '15 Aug 2026',
-      nextAppointmentTime: '10:30 AM',
-      nextAppointmentStatus: 'Upcoming',
-      history: [
-        { 
-          id: 101, 
-          date: '15 Aug 2026', 
-          time: '10:30 AM', 
-          type: 'Life Coaching Session', 
-          status: 'Upcoming', 
-          txnId: 'TXN-9A8B7C', 
-          payment: 'Paid', 
-          beforeWeSpeak: 'I want to focus on overcoming my imposter syndrome at work and setting boundaries with my manager.',
-          rescheduleRequest: {
-            requestedDate: '16 Aug 2026',
-            requestedTime: '11:00 AM',
-            reason: 'I got called into a last-minute mandatory team meeting at my original time.'
-          }
-        },
-        { id: 102, date: '20 Aug 2026', time: '04:00 PM', type: 'Life Coaching Session', status: 'Upcoming', txnId: 'TXN-5D4E3F', payment: 'Failed', beforeWeSpeak: '' },
-        { id: 103, date: '05 Aug 2026', time: '02:00 PM', type: 'Life Coaching Session', status: 'Completed', txnId: 'TXN-1A2B3C', payment: 'Paid', beforeWeSpeak: 'Just general anxiety about my upcoming career transition.' },
-      ]
-    },
-    { 
-      id: 2, 
-      name: 'James Wilson', 
-      email: 'james.w@example.com', 
-      phone: '+1 555-0102', 
-      joined: '10 Aug 2026', 
-      appointmentsCount: 0,
-      nextAppointmentDate: null,
-      history: []
-    },
-    { 
-      id: 3, 
-      name: 'Sarah Connor', 
-      email: 'sarah.c@example.com', 
-      phone: '+1 555-0103', 
-      joined: '05 Aug 2026', 
-      appointmentsCount: 2,
-      nextAppointmentDate: '20 Aug 2026',
-      nextAppointmentTime: '04:00 PM',
-      nextAppointmentStatus: 'Upcoming',
-      history: [
-        { id: 104, date: '20 Aug 2026', time: '04:00 PM', type: 'Life Coaching Session', status: 'Upcoming', txnId: 'TXN-8K9L0M', payment: 'Paid', beforeWeSpeak: 'Discussing my progress on the weekly goals we set last time.' },
-        { id: 105, date: '01 Aug 2026', time: '10:00 AM', type: 'Introductory Call', status: 'Completed', txnId: 'TXN-2X3Y4Z', payment: 'Failed', beforeWeSpeak: '' },
-      ]
-    },
-    { 
-      id: 4, 
-      name: 'Michael Brown', 
-      email: 'm.brown@example.com', 
-      phone: '+1 555-0104', 
-      joined: '01 Aug 2026', 
-      appointmentsCount: 1,
-      nextAppointmentDate: '14 Aug 2026',
-      nextAppointmentTime: '06:30 PM',
-      nextAppointmentStatus: 'Today',
-      history: [
-        { id: 106, date: '14 Aug 2026', time: '06:30 PM', type: 'Life Coaching Session', status: 'Today', txnId: 'TXN-7P8Q9R', payment: 'Paid', beforeWeSpeak: 'I am feeling very stuck and need help finding motivation to stick to my daily routine.' }
-      ]
-    },
-    { 
-      id: 5, 
-      name: 'Lisa Ray', 
-      email: 'lisa.ray@example.com', 
-      phone: '+1 555-0105', 
-      joined: '28 Jul 2026', 
-      appointmentsCount: 1,
-      nextAppointmentDate: '28 Jul 2026',
-      nextAppointmentTime: '05:00 PM',
-      nextAppointmentStatus: 'Completed',
-      history: [
-        { id: 107, date: '28 Jul 2026', time: '05:00 PM', type: 'Initial Consultation', status: 'Completed', txnId: 'TXN-4N5M6L', payment: 'Paid', beforeWeSpeak: 'Exploring if life coaching is right for me.' }
-      ]
-    },
-  ];
+  const mockUsers = [];
 
   const [users, setUsers] = useState(mockUsers);
   const [statusDropdownOpenId, setStatusDropdownOpenId] = useState(null);
@@ -321,10 +258,6 @@ export default function AdminUsers() {
           <h1 className="font-serif text-3xl text-white">Appointments</h1>
           <p className="font-sans text-sm text-white/50">View all appointments and client statuses in one place.</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 rounded border border-white/10 hover:border-[#c79c6e]/50 text-white hover:text-[#c79c6e] font-sans text-xs uppercase tracking-widest transition-colors bg-[#0a0a0a]">
-          <Plus size={16} />
-          Add New Client
-        </button>
       </div>
 
       {/* Filter Bar */}

@@ -164,7 +164,7 @@ export default function VideoManager() {
 
   if (isEditing) {
     return (
-      <div className="flex flex-col gap-6 animate-in fade-in duration-300 w-full max-w-4xl">
+      <div className="flex flex-col gap-6 animate-in fade-in duration-300 w-full">
         <div className="flex items-center gap-4 pb-4 border-b border-white/5">
           <button
             type="button"
@@ -183,89 +183,95 @@ export default function VideoManager() {
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="flex flex-col gap-6">
-          <div className="flex flex-col gap-6 w-full">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Title</label>
-              <input
-                required
-                type="text"
-                name="title"
-                value={form.title}
-                onChange={handleFormChange}
-                placeholder="E.g., When clarity asks something of you"
-                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors w-full"
-              />
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Status</label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleFormChange}
-                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#c79c6e]/50 transition-colors appearance-none w-full"
-              >
-                <option value="Draft">Draft</option>
-                <option value="Published">Published</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Video URL (YouTube/Instagram)</label>
-              <input
-                required
-                type="text"
-                name="videoUrl"
-                value={form.videoUrl}
-                onChange={handleFormChange}
-                placeholder="https://www.youtube.com/watch?v=..."
-                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors w-full"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 w-full">
-            <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Thumbnail Image (URL or Upload)</label>
-            <div className="flex gap-4">
-              <input
-                required
-                type="text"
-                name="thumbnailUrl"
-                value={form.thumbnailUrl}
-                onChange={handleFormChange}
-                placeholder="https://example.com/image.jpg"
-                className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors flex-1"
-              />
-              <label className="flex items-center justify-center w-12 h-12 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#c79c6e]/30 cursor-pointer transition-all shrink-0">
-                <ImageIcon size={20} className="text-white/60" />
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-              </label>
-            </div>
-            {form.thumbnailUrl && (
-              <div className="mt-2 w-full max-w-[320px] aspect-video rounded border border-white/10 overflow-hidden bg-black relative">
-                <img src={form.thumbnailUrl} alt="Thumbnail preview" className="w-full h-full object-cover opacity-80" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Play size={32} weight="light" className="text-white/60" />
-                </div>
+        <form onSubmit={handleSave} className="flex flex-col gap-6 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6 w-full">
+            {/* Left Column: Details */}
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Title</label>
+                <input
+                  required
+                  type="text"
+                  name="title"
+                  value={form.title}
+                  onChange={handleFormChange}
+                  placeholder="E.g., When clarity asks something of you"
+                  className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors w-full"
+                />
               </div>
-            )}
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Description</label>
+                <textarea
+                  required
+                  name="description"
+                  value={form.description}
+                  onChange={handleFormChange}
+                  rows={4}
+                  placeholder="A brief description of this video..."
+                  className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors resize-none"
+                />
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Status</label>
+                <select
+                  name="status"
+                  value={form.status}
+                  onChange={handleFormChange}
+                  className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#c79c6e]/50 transition-colors appearance-none w-full"
+                >
+                  <option value="Draft">Draft</option>
+                  <option value="Published">Published</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Right Column: Media */}
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Video URL (YouTube/Instagram)</label>
+                <input
+                  required
+                  type="text"
+                  name="videoUrl"
+                  value={form.videoUrl}
+                  onChange={handleFormChange}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors w-full"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Thumbnail Image (URL or Upload)</label>
+                <div className="flex gap-4">
+                  <input
+                    required
+                    type="text"
+                    name="thumbnailUrl"
+                    value={form.thumbnailUrl}
+                    onChange={handleFormChange}
+                    placeholder="https://example.com/image.jpg"
+                    className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors flex-1"
+                  />
+                  <label className="flex items-center justify-center w-12 h-12 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#c79c6e]/30 cursor-pointer transition-all shrink-0">
+                    <ImageIcon size={20} className="text-white/60" />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+                  </label>
+                </div>
+                {form.thumbnailUrl && (
+                  <div className="mt-2 w-full max-w-[320px] aspect-video rounded border border-white/10 overflow-hidden bg-black relative">
+                    <img src={form.thumbnailUrl} alt="Thumbnail preview" className="w-full h-full object-cover opacity-80" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Play size={32} weight="light" className="text-white/60" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Description</label>
-            <textarea
-              required
-              name="description"
-              value={form.description}
-              onChange={handleFormChange}
-              rows={4}
-              placeholder="A brief description of this video..."
-              className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors resize-none"
-            />
-          </div>
-
-          <div className="flex items-center gap-4 mt-6">
+          <div className="flex items-center gap-4 mt-2 pt-6 border-t border-white/5 w-full">
             <button
               type="submit"
               disabled={isSaving}

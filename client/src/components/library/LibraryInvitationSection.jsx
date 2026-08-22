@@ -10,6 +10,8 @@ gsap.registerPlugin(ScrollTrigger);
 export default function LibraryInvitationSection() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [savedArticles, setSavedArticles] = useState([]);
+  const [publishedArticles, setPublishedArticles] = useState([]);
   const navigate = useNavigate();
   
   const containerRef = useRef(null);
@@ -18,7 +20,68 @@ export default function LibraryInvitationSection() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
+
+    if (token) {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
+      // Fetch saved articles
+      fetch(`${apiUrl}/api/users/saved-articles`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => setSavedArticles(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Error fetching saved articles:', err));
+
+      // Fetch all published articles for 'Continue' and 'Recently Viewed' fallbacks
+      fetch(`${apiUrl}/api/articles/published`)
+      .then(res => res.json())
+      .then(data => setPublishedArticles(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Error fetching published articles:', err));
+    }
   }, []);
+
+  const [continueArticle, setContinueArticle] = useState(null);
+  const [continueProgress, setContinueProgress] = useState(0);
+  const [recentArticle, setRecentArticle] = useState(null);
+
+  useEffect(() => {
+    if (publishedArticles.length > 0) {
+      let foundContinue = null;
+      let highestProgress = 0;
+      
+      for (const article of publishedArticles) {
+        try {
+          const savedStr = localStorage.getItem(`article_progress_${article._id}`);
+          if (savedStr) {
+            const parsed = JSON.parse(savedStr);
+            if (parsed.percentage > 0 && parsed.percentage < 100) {
+               foundContinue = article;
+               highestProgress = parsed.percentage;
+               break; // Stop at the first one we find that is in progress
+            }
+          }
+        } catch(e) {}
+      }
+      
+      if (foundContinue) {
+        setContinueArticle(foundContinue);
+        setContinueProgress(highestProgress);
+      } else {
+        setContinueArticle(publishedArticles[0]);
+        setContinueProgress(0);
+      }
+      
+      setRecentArticle(publishedArticles.length > 1 ? publishedArticles[1] : publishedArticles[0]);
+    }
+  }, [publishedArticles]);
+
+  const displaySaved = savedArticles.slice(0, 2);
+
+  const navigateToArticle = (article) => {
+    if (!article || !article._id) return;
+    sessionStorage.setItem('library_scroll_position', window.scrollY.toString());
+    navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`);
+  };
 
   useGSAP(() => {
     const tl = gsap.timeline({
@@ -140,25 +203,34 @@ export default function LibraryInvitationSection() {
               {/* Column 1: Continue */}
               <div className="flex flex-col gap-4">
                 <span className="font-sans text-[0.65rem] uppercase tracking-widest font-semibold text-[#c79c6e]">CONTINUE</span>
-                <div className="w-full p-8 rounded-md bg-[#050505]/60 backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex flex-col justify-between min-h-[220px]">
+                <div 
+                  className="w-full p-8 rounded-md bg-[#050505]/60 backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex flex-col justify-between min-h-[220px]"
+                  onClick={() => navigateToArticle(continueArticle)}
+                >
                   
                   <div className="flex items-center gap-6">
                     <div className="w-20 h-20 rounded-full border border-white/5 bg-black flex items-center justify-center shrink-0 text-white/30 overflow-hidden relative">
-                       {/* Placeholder Diagram */}
-                       <Target size={40} weight="thin" className="text-[#c79c6e]/40" />
+                       {continueArticle?.featuredImage ? (
+                         <img src={continueArticle.featuredImage} alt={continueArticle.title} className="w-full h-full object-cover opacity-60" />
+                       ) : (
+                         <Target size={40} weight="thin" className="text-[#c79c6e]/40" />
+                       )}
                     </div>
                     <div className="flex flex-col gap-1">
-                      <h4 className="font-serif text-[1.2rem] text-white/90">The Thinking Cycle</h4>
-                      <span className="font-sans text-[0.6rem] uppercase tracking-widest text-white/40">A Perspective on Awareness</span>
+                      <h4 className="font-serif text-[1.2rem] text-white/90">{continueArticle?.title || 'The Thinking Cycle'}</h4>
+                      <span className="font-sans text-[0.6rem] uppercase tracking-widest text-white/40">{continueArticle ? `A Perspective on ${continueArticle.categoryTitle}` : 'A Perspective on Awareness'}</span>
                     </div>
                   </div>
 
                   <div className="w-full flex flex-col gap-2 mt-auto">
                     <div className="w-full h-[2px] bg-white/10 rounded-full overflow-hidden relative">
-                      <div className="absolute top-0 left-0 h-full w-[64%] bg-[#c79c6e]" />
+                      <div 
+                        className="absolute top-0 left-0 h-full bg-[#c79c6e] transition-all duration-1000" 
+                        style={{ width: `${continueProgress}%` }}
+                      />
                     </div>
                     <div className="w-full flex justify-end">
-                      <span className="font-sans text-[0.65rem] text-white/50">64%</span>
+                      <span className="font-sans text-[0.65rem] text-white/50">{continueProgress}%</span>
                     </div>
                   </div>
 
@@ -177,39 +249,51 @@ export default function LibraryInvitationSection() {
               <div className="flex flex-col gap-4">
                 <span className="font-sans text-[0.65rem] uppercase tracking-widest font-semibold text-[#c79c6e]">SAVED</span>
                 <div className="flex flex-col gap-4">
-                  {/* Item 1 */}
-                  <div className="w-full p-5 rounded-md bg-[#050505]/60 backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full border border-white/5 bg-black flex items-center justify-center shrink-0">
-                      <Stack size={20} weight="thin" className="text-[#c79c6e]/40" />
+                  {displaySaved.length > 0 ? (
+                    displaySaved.map((item, idx) => (
+                      <div 
+                        key={item._id || idx}
+                        className="w-full p-5 rounded-md bg-[#050505]/60 backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex items-center gap-4"
+                        onClick={() => navigateToArticle(item)}
+                      >
+                        <div className="w-12 h-12 rounded-full border border-white/5 bg-black flex items-center justify-center shrink-0 overflow-hidden relative">
+                          {item.featuredImage ? (
+                            <img src={item.featuredImage} alt={item.title} className="w-full h-full object-cover opacity-60" />
+                          ) : (
+                            <Stack size={20} weight="thin" className="text-[#c79c6e]/40" />
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <h4 className="font-serif text-[1rem] text-white/90 leading-tight">{item.title}</h4>
+                          <span className="font-sans text-[0.55rem] uppercase tracking-widest text-white/40">A Perspective on {item.categoryTitle}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="w-full p-5 rounded-md bg-[#050505]/60 backdrop-blur-md border border-white/10 flex items-center justify-center min-h-[100px]">
+                      <span className="font-sans text-[0.65rem] uppercase tracking-widest text-white/30 text-center">No saved perspectives yet</span>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <h4 className="font-serif text-[1rem] text-white/90 leading-tight">Choosing Clarity</h4>
-                      <span className="font-sans text-[0.55rem] uppercase tracking-widest text-white/40">A Perspective on Decisions</span>
-                    </div>
-                  </div>
-                  {/* Item 2 */}
-                  <div className="w-full p-5 rounded-md bg-[#050505]/60 backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full border border-white/5 bg-black flex items-center justify-center shrink-0">
-                      <Recycle size={20} weight="thin" className="text-[#c79c6e]/40" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <h4 className="font-serif text-[1rem] text-white/90 leading-tight">Inner Alignment</h4>
-                      <span className="font-sans text-[0.55rem] uppercase tracking-widest text-white/40">A Perspective on Values</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
               {/* Column 3: Recently Viewed */}
               <div className="flex flex-col gap-4">
                 <span className="font-sans text-[0.65rem] uppercase tracking-widest font-semibold text-[#c79c6e]">RECENTLY VIEWED</span>
-                <div className="w-full p-5 rounded-md bg-[#050505]/60 backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full border border-white/5 bg-black flex items-center justify-center shrink-0">
-                    <Target size={20} weight="thin" className="text-[#c79c6e]/40" />
+                <div 
+                  className="w-full p-5 rounded-md bg-[#050505]/60 backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex items-center gap-4"
+                  onClick={() => navigateToArticle(recentArticle)}
+                >
+                  <div className="w-12 h-12 rounded-full border border-white/5 bg-black flex items-center justify-center shrink-0 overflow-hidden relative">
+                    {recentArticle?.featuredImage ? (
+                      <img src={recentArticle.featuredImage} alt={recentArticle.title} className="w-full h-full object-cover opacity-60" />
+                    ) : (
+                      <Target size={20} weight="thin" className="text-[#c79c6e]/40" />
+                    )}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <h4 className="font-serif text-[1rem] text-white/90 leading-tight">Patterns in Mind</h4>
-                    <span className="font-sans text-[0.55rem] uppercase tracking-widest text-white/40">A Perspective on Habits</span>
+                    <h4 className="font-serif text-[1rem] text-white/90 leading-tight">{recentArticle?.title || 'Patterns in Mind'}</h4>
+                    <span className="font-sans text-[0.55rem] uppercase tracking-widest text-white/40">{recentArticle ? `A Perspective on ${recentArticle.categoryTitle}` : 'A Perspective on Habits'}</span>
                   </div>
                 </div>
               </div>

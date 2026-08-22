@@ -63,8 +63,24 @@ export default function BookingSuccess({ data }) {
               <CalendarBlank className="text-accent-gold text-3xl shrink-0" weight="light" />
               <div>
                 <p className="font-sans text-[0.55rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-1">YOUR APPOINTMENT</p>
-                <p className="text-white text-lg font-medium">{data.date || 'Friday, October 4, 2024'}</p>
-                <p className="text-white/60 text-sm font-light mt-0.5">{data.time || '10:30 AM'} – 11:30 AM IST</p>
+                <div className="flex flex-col">
+                <span className="text-white text-base font-medium">{data.date || 'Friday, October 4, 2024'}</span>
+                <p className="text-white/60 text-sm font-light mt-0.5">
+                  {data.time ? (
+                    (() => {
+                      const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
+                      if (!match) return `${data.time} – 11:30 AM IST`;
+                      let [_, hours, minutes, ampm] = match;
+                      hours = parseInt(hours, 10);
+                      if (hours === 11) { ampm = ampm === 'AM' ? 'PM' : 'AM'; hours = 12; }
+                      else if (hours === 12) { hours = 1; }
+                      else { hours += 1; }
+                      const endTime = `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+                      return `${data.time} – ${endTime} IST`;
+                    })()
+                  ) : '10:30 AM – 11:30 AM IST'}
+                </p>
+                </div>
               </div>
             </div>
 

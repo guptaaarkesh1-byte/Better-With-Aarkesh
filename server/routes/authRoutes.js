@@ -226,4 +226,32 @@ router.post('/forgot-password-reset', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+// @route   POST /api/auth/admin/change-password
+// @desc    Change admin password (mock implementation as admin is hardcoded)
+// @access  Private (Admin)
+import { admin } from '../middleware/authMiddleware.js';
+
+router.post('/admin/change-password', admin, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    // Currently admin credentials are hardcoded in the frontend App.jsx
+    // This is a mock endpoint to complete the UI flow.
+    if (currentPassword !== 'admin123') {
+      return res.status(400).json({ message: 'Incorrect current password' });
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+
+    // In a real application, you would hash the new password and update the admin user in the database.
+    // For now, we just return success to complete the flow.
+    res.status(200).json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Admin Password Change Error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 export default router;

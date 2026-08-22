@@ -11,6 +11,10 @@ import {
   LockKey,
   Gear
 } from '@phosphor-icons/react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
 
 // --- Login Component ---
 function AdminLogin({ onLogin }) {
@@ -169,137 +173,89 @@ function AdminDashboard() {
         ))}
       </div>
 
-      {/* Quick Actions & Recent Activity placeholder */}
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+        {/* Revenue Graph */}
         <div className="lg:col-span-2 bg-[#111] border border-white/5 rounded-xl p-6 flex flex-col gap-6">
-          <h2 className="font-serif text-xl text-white">Recent Signups</h2>
-          <div className="flex-1 border border-dashed border-white/10 rounded-lg flex items-center justify-center min-h-[200px]">
-            <span className="text-white/30 font-sans text-sm">User list will appear here</span>
+          <h2 className="font-serif text-xl text-white">Revenue Overview</h2>
+          <div className="w-full h-[300px] mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={[
+                  { name: 'Jan', revenue: 40000 },
+                  { name: 'Feb', revenue: 30000 },
+                  { name: 'Mar', revenue: 60000 },
+                  { name: 'Apr', revenue: 50000 },
+                  { name: 'May', revenue: 90000 },
+                  { name: 'Jun', revenue: 85000 },
+                  { name: 'Jul', revenue: 120000 },
+                ]}
+                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#c79c6e" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#c79c6e" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value/1000}k`} dx={-10} />
+                <RechartsTooltip 
+                  contentStyle={{ backgroundColor: '#111', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                  itemStyle={{ color: '#c79c6e' }}
+                />
+                <Area type="monotone" dataKey="revenue" stroke="#c79c6e" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Schedule Pie Chart */}
         <div className="bg-[#111] border border-white/5 rounded-xl p-6 flex flex-col gap-6">
-          <h2 className="font-serif text-xl text-white">Upcoming Schedule</h2>
-          <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
+          <h2 className="font-serif text-xl text-white">Schedule Status</h2>
+          <div className="w-full h-[300px] flex flex-col items-center justify-center">
             {loading ? (
-              <div className="flex-1 border border-dashed border-white/10 rounded-lg flex items-center justify-center min-h-[200px]">
-                <span className="text-white/30 font-sans text-sm">Loading...</span>
-              </div>
-            ) : upcomingAppointments.length > 0 ? (
-              upcomingAppointments.map((app, idx) => {
-                const statusColor = app.status === 'Today' 
-                  ? 'text-blue-400 border-blue-400/40' 
-                  : 'text-[#c79c6e] border-[#c79c6e]/30';
-                  
-                return (
-                  <div key={idx} className="bg-[#050505] border border-white/10 rounded-lg p-4 flex flex-col gap-2">
-                    <div className="flex justify-between items-start">
-                      <span className="text-white/90 text-sm font-medium">{app.name || (app.userId && app.userId.name) || 'Unknown Client'}</span>
-                      <span className={`${statusColor} text-[0.65rem] uppercase tracking-wider border px-2 py-0.5 rounded-full`}>
-                        {app.status || 'Upcoming'}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-white/50 text-xs">
-                        <CalendarBlank size={12} />
-                        <span>{app.date} at {app.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              <span className="text-white/30 font-sans text-sm">Loading data...</span>
+            ) : appointments.length === 0 ? (
+               <span className="text-white/30 font-sans text-sm">No schedule data available</span>
             ) : (
-              <div className="flex-1 border border-dashed border-white/10 rounded-lg flex items-center justify-center min-h-[200px]">
-                <span className="text-white/30 font-sans text-sm">No upcoming appointments</span>
-              </div>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Completed', value: appointments.filter(a => a.status === 'Completed').length },
+                      { name: 'Upcoming', value: appointments.filter(a => a.status !== 'Completed').length }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    <Cell key="cell-0" fill="#222" />
+                    <Cell key="cell-1" fill="#c79c6e" />
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: '#111', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}/>
+                </PieChart>
+              </ResponsiveContainer>
             )}
           </div>
         </div>
       </div>
+
+
     </div>
   );
 }
 
-import { CaretLeft, CaretRight } from '@phosphor-icons/react';
-
-// --- Layout Component ---
-function AdminLayout({ children, onLogout }) {
-  const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  const navItems = [
-    { path: '/', label: 'Overview', icon: <SquaresFour size={20} /> },
-    { path: '/appointments', label: 'Appointments', icon: <CalendarBlank size={20} /> },
-    { path: '/content', label: 'Content', icon: <FileText size={20} /> },
-    { path: '/settings', label: 'Settings', icon: <Gear size={20} /> },
-  ];
-
-  return (
-    <div className="w-full min-h-screen bg-[#050505] text-white font-sans flex">
-      {/* Sidebar */}
-      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} border-r border-white/5 bg-[#0a0a0a] flex flex-col shrink-0 relative z-20 h-screen sticky top-0 transition-all duration-300`}>
-        <div className={`p-8 border-b border-white/5 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} relative h-[88px]`}>
-          {isSidebarOpen ? (
-            <div>
-              <h2 className="font-serif text-2xl text-[#c79c6e] whitespace-nowrap">BWA Admin</h2>
-              <span className="text-white/40 text-[0.65rem] uppercase tracking-widest mt-1 block">Dashboard</span>
-            </div>
-          ) : (
-            <h2 className="font-serif text-2xl text-[#c79c6e]">B</h2>
-          )}
-          
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`absolute ${isSidebarOpen ? 'right-4' : 'right-[-12px] bg-[#111] border border-white/10 rounded-full w-6 h-6 flex items-center justify-center z-50'} text-white/40 hover:text-white transition-colors`}
-          >
-            {isSidebarOpen ? <CaretLeft size={20} /> : <CaretRight size={14} />}
-          </button>
-        </div>
-        
-        <nav className="flex-1 py-8 px-4 flex flex-col gap-2 overflow-hidden">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path || 
-                             (item.path !== '/' && location.pathname.startsWith(item.path));
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-4 px-4 py-3 rounded-md transition-colors ${
-                  isActive 
-                    ? 'bg-[#c79c6e]/10 text-[#c79c6e] font-medium' 
-                    : 'text-white/50 hover:text-white hover:bg-white/5'
-                } ${!isSidebarOpen && 'justify-center px-0'}`}
-                title={!isSidebarOpen ? item.label : undefined}
-              >
-                <div className="shrink-0">{item.icon}</div>
-                <span className={`text-sm tracking-wide whitespace-nowrap transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
-        
-        <div className="p-6 border-t border-white/5 flex flex-col gap-2">
-          <button 
-            onClick={onLogout}
-            className={`flex items-center gap-4 px-4 py-3 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors ${!isSidebarOpen && 'justify-center px-0'}`}
-            title={!isSidebarOpen ? 'Logout' : undefined}
-          >
-            <div className="shrink-0"><SignOut size={20} /></div>
-            <span className={`text-sm tracking-wide whitespace-nowrap transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>
-              Logout
-            </span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-    </div>
-  );
-}
+import AdminLayout from './layouts/AdminLayout';
 
 // --- Protected Route Wrapper ---
 function ProtectedRoute({ isAuthenticated, children }) {
@@ -352,8 +308,8 @@ function App() {
                 <Routes>
                   <Route path="/" element={<AdminDashboard />} />
                   <Route path="/appointments" element={<AdminUsers />} />
-                  <Route path="/settings" element={<AdminSettings />} />
-                  <Route path="/content" element={<AdminContent />} />
+                  <Route path="/journey/settings" element={<AdminSettings />} />
+                  <Route path="/library/content" element={<AdminContent />} />
                   {/* More admin routes will go here */}
                 </Routes>
               </AdminLayout>

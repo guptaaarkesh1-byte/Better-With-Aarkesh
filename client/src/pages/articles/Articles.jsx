@@ -8,13 +8,26 @@ import savedDecisionsImg from '../../assets/PerspectivePage/saved_decisions.png'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const ExpandedArticle = ({ article, isExpanded }) => {
+const ExpandedArticle = ({ article, isExpanded, onBack }) => {
   const contentRef = useRef(null);
   const [progress, setProgress] = useState(0);
+  const maxProgressRef = useRef(0);
 
   useEffect(() => {
     if (!isExpanded || !article) {
       return undefined;
+    }
+
+    // Initialize max progress from localStorage
+    const savedScroll = localStorage.getItem(`article_progress_${article._id}`);
+    if (savedScroll) {
+      try {
+        const parsed = JSON.parse(savedScroll);
+        if (parsed.percentage) {
+          setProgress(parsed.percentage);
+          maxProgressRef.current = parsed.percentage;
+        }
+      } catch (e) {}
     }
 
     let timeoutId;
@@ -27,14 +40,18 @@ const ExpandedArticle = ({ article, isExpanded }) => {
       const startTrigger = window.innerHeight / 2;
       const scrolled = startTrigger - top;
       const nextProgress = Math.max(0, Math.min(100, (scrolled / Math.max(height, 1)) * 100));
-      setProgress(nextProgress);
+      
+      if (nextProgress > maxProgressRef.current) {
+        maxProgressRef.current = nextProgress;
+        setProgress(nextProgress);
+      }
 
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        if (nextProgress > 2 && window.scrollY > 200) {
+        if (maxProgressRef.current > 2 && window.scrollY > 200) {
           localStorage.setItem(`article_progress_${article._id}`, JSON.stringify({
             scrollY: window.scrollY,
-            percentage: Math.round(nextProgress)
+            percentage: Math.round(maxProgressRef.current)
           }));
         }
       }, 500);
@@ -44,7 +61,6 @@ const ExpandedArticle = ({ article, isExpanded }) => {
     handleScroll();
 
     // Restore scroll position if it exists
-    const savedScroll = localStorage.getItem(`article_progress_${article._id}`);
     if (savedScroll) {
       try {
         const parsed = JSON.parse(savedScroll);
@@ -80,6 +96,18 @@ const ExpandedArticle = ({ article, isExpanded }) => {
 
   return (
     <div className={`transition-all duration-1000 ease-in-out px-4 ml-4 ${isExpanded ? 'max-h-[20000px] opacity-100 pb-8' : 'max-h-0 opacity-0 pb-0'}`}>
+      
+      {/* Fixed Back Button that appears after scrolling */}
+      {progress > 2 && (
+        <button
+          onClick={onBack}
+          className="fixed top-32 left-4 md:left-8 z-[150] flex items-center gap-2 p-3 pr-4 rounded-full bg-[#050505]/80 backdrop-blur-md border border-[#c79c6e]/30 hover:border-[#c79c6e] text-[#c79c6e] hover:text-white transition-all shadow-[0_0_20px_rgba(199,156,110,0.1)] group animate-in fade-in duration-500"
+        >
+          <ArrowLeft size={18} weight="bold" className="group-hover:-translate-x-1 transition-transform" />
+          <span className="font-sans text-[0.6rem] tracking-[0.2em] uppercase font-bold hidden md:block">Back</span>
+        </button>
+      )}
+
       <div className="relative pl-6 flex flex-col gap-8" ref={contentRef}>
         <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#c79c6e]/30" />
         <div
@@ -256,8 +284,23 @@ export default function Articles() {
       setSelectedSubCategory(null);
       setExpandedArticleId(null);
       setStep(1);
+    } else if (articleParam && publishedArticles.length > 0) {
+      const found = publishedArticles.find(a => a._id === articleParam);
+      if (found) {
+        const autoCat = topics.find(t => t.id === found.categoryId);
+        if (autoCat) {
+          const autoSub = autoCat.subItems.find(si => si.id === found.headingId);
+          if (autoSub) {
+            setActiveCategory(autoCat);
+            setSelectedSubCategory(autoSub);
+            setExpandedArticleId(articleParam);
+            setStep(2);
+            return;
+          }
+        }
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, publishedArticles]);
 
   const getArticlesForSubCategory = (categoryId, subCategoryId) =>
     publishedArticles.filter(
@@ -306,7 +349,7 @@ export default function Articles() {
   };
 
   const executeBack = () => {
-    if (step === 0 || step === 1) {
+    if (step === 0 || step === 1 || sessionStorage.getItem('library_scroll_position')) {
       navigate('/library');
       return;
     }
@@ -614,11 +657,19 @@ export default function Articles() {
                         <div className="mb-12 flex flex-col md:flex-row md:items-start justify-between gap-6 border-b border-white/10 pb-8">
                           <div className="flex flex-col gap-4">
                             <button
-                              onClick={handleCollapseArticle}
+                              onClick={() => {
+                                if (sessionStorage.getItem('library_scroll_position')) {
+                                  // Skip the save prompt logic if they just want to go back to the library? 
+                                  // The handleBack logic has the save prompt. We can just call handleBack!
+                                  handleBack();
+                                } else {
+                                  handleCollapseArticle();
+                                }
+                              }}
                               className="flex items-center gap-2 text-white/50 hover:text-white text-sm font-sans tracking-widest uppercase transition-colors w-fit group"
                             >
                               <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                              Back to Articles
+                              {sessionStorage.getItem('library_scroll_position') ? 'BACK TO LIBRARY' : 'BACK TO ARTICLES'}
                             </button>
                             <div>
                               <div className="flex items-center gap-3 text-[#c79c6e] text-xs uppercase tracking-widest font-sans mb-4 mt-4">
@@ -646,7 +697,17 @@ export default function Articles() {
                             </div>
                           </div>
                         </div>
-                        <ExpandedArticle article={expandedArticle} isExpanded={true} />
+                        <ExpandedArticle 
+                          article={expandedArticle} 
+                          isExpanded={true} 
+                          onBack={() => {
+                            if (sessionStorage.getItem('library_scroll_position')) {
+                              handleBack();
+                            } else {
+                              handleCollapseArticle();
+                            }
+                          }}
+                        />
                       </div>
                     )}
                   </>

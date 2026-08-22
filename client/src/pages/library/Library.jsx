@@ -17,6 +17,7 @@ import AnimatedText from '../../components/ui/AnimatedText';
 
 export default function Library() {
   const [isHovered, setIsHovered] = useState(false);
+  const [isRestoringScroll, setIsRestoringScroll] = useState(!!sessionStorage.getItem('library_scroll_position'));
   const hotspotRef = useRef(null);
 
   // Handle click outside to close on mobile
@@ -34,9 +35,29 @@ export default function Library() {
     };
   }, []);
 
-  // Always start at the top
+  // Smart scroll restoration
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const savedScroll = sessionStorage.getItem('library_scroll_position');
+    if (savedScroll) {
+      setTimeout(() => {
+        const targetScroll = parseInt(savedScroll, 10);
+        if (window.lenis) {
+          window.lenis.scrollTo(targetScroll, { immediate: true });
+        } else {
+          window.scrollTo({ top: targetScroll, behavior: 'instant' });
+        }
+        sessionStorage.removeItem('library_scroll_position');
+        
+        // Small additional delay to allow browser paint before fading in
+        setTimeout(() => setIsRestoringScroll(false), 50);
+      }, 300); // delay to allow expanded section to render
+    } else {
+      if (window.lenis) {
+        window.lenis.scrollTo(0, { immediate: true });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    }
   }, []);
 
   // Golden Dust Particles Data (removing tailwind animation classes)
@@ -136,7 +157,7 @@ export default function Library() {
   }, { scope: heroRef });
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] overflow-x-hidden text-white select-none">
+    <div className={`w-full min-h-screen bg-[#050505] overflow-x-hidden text-white select-none transition-opacity duration-700 ease-in-out ${isRestoringScroll ? 'opacity-0' : 'opacity-100'}`}>
       
       {/* SECTION 1: Intro / Hotspot */}
       <section className="relative w-full h-screen overflow-hidden">

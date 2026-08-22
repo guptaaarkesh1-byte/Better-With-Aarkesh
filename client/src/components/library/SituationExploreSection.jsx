@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -14,67 +14,115 @@ import {
 import thumb1 from '../../assets/PerspectivePage/recognition/emotional_exhaustion.png';
 import thumb2 from '../../assets/PerspectivePage/recognition/comparison.png';
 import thumb3 from '../../assets/PerspectivePage/recognition/holding_it_in.png';
+import { useNavigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const situations = [
-  {
-    id: '1',
-    text: 'When you know something\nis wrong but cannot name it',
-  },
-  {
-    id: '2',
-    text: 'When leaving feels painful\nand staying feels dishonest',
-  },
-  {
-    id: '3',
-    text: 'When you keep questioning\nwhether you are overreacting',
-  },
-  {
-    id: '4',
-    text: 'When you understand\nthe pattern but still\nrepeat it',
-  },
-  {
-    id: '5',
-    text: 'When every available\ndecision comes with a loss',
-  },
-  {
-    id: '6',
-    text: 'When you need clarity,\nnot another opinion',
-  }
-];
-
-const curatedContent = [
-  {
-    id: 1,
-    image: thumb1,
-    type: 'ARTICLE',
-    duration: '7 MIN',
-    title: 'Why insight alone does not change a pattern',
-    hasPlay: false
-  },
-  {
-    id: 2,
-    image: thumb2,
-    type: 'VIDEO',
-    duration: '9 MIN',
-    title: 'The familiarity that keeps pulling you back',
-    hasPlay: true
-  },
-  {
-    id: 3,
-    image: thumb3,
-    type: 'REFLECTION TOOL',
-    duration: '12 MIN',
-    title: 'Map the loop before trying to break it',
-    hasPlay: false
-  }
-];
-
 export default function SituationExploreSection() {
+  const navigate = useNavigate();
+  const [situations, setSituations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [hoveredSituation, setHoveredSituation] = useState(null);
   const [selectedSituation, setSelectedSituation] = useState(null);
-  
+
+  useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/collections/published`);
+        const data = await res.json();
+        
+        const mapped = data.map(col => ({
+          id: col._id,
+          text: col.title,
+          curatedContent: col.items.map((item, idx) => ({
+            id: item.itemId || idx,
+            categoryId: item.categoryId,
+            headingId: item.headingId,
+            image: item.image || thumb1,
+            type: item.itemType === 'ReflectionTool' ? 'REFLECTION TOOL' : item.itemType.toUpperCase(),
+            duration: item.duration || (item.itemType === 'Article' ? '5 MIN' : '10 MIN'),
+            title: item.title,
+            hasPlay: item.hasPlay || item.itemType === 'Video'
+          }))
+        }));
+        
+        // Sync restoration state in same tick
+        const savedId = sessionStorage.getItem('library_expanded_id');
+        if (savedId) {
+          const sit = mapped.find(s => s.id === savedId);
+          if (sit) {
+            setSelectedSituation(sit);
+          }
+        }
+        
+        setSituations(mapped);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCollections();
+  }, []);
+
+  const [savedArticleIds, setSavedArticleIds] = useState([]);
+  useEffect(() => {
+    const fetchSaved = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/users/saved-articles`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSavedArticleIds(data.map(a => typeof a === 'object' ? a._id : a));
+        }
+      } catch (err) {
+        console.error('Failed to fetch saved articles', err);
+      }
+    };
+    fetchSaved();
+  }, []);
+
+  const handleToggleSave = async (articleId, e) => {
+    e?.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Please log in to save items to your library.");
+      return;
+    }
+
+    const isCurrentlySaved = savedArticleIds.includes(articleId);
+    setSavedArticleIds(prev => 
+      isCurrentlySaved ? prev.filter(id => id !== articleId) : [...prev, articleId]
+    );
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/users/save-article`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ articleId }),
+      });
+      if (!res.ok) {
+        setSavedArticleIds(prev => 
+          isCurrentlySaved ? [...prev, articleId] : prev.filter(id => id !== articleId)
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      setSavedArticleIds(prev => 
+        isCurrentlySaved ? [...prev, articleId] : prev.filter(id => id !== articleId)
+      );
+    }
+  };
+
   const containerRef = useRef(null);
   const gridContainerRef = useRef(null);
   const detailContainerRef = useRef(null);
@@ -106,7 +154,11 @@ export default function SituationExploreSection() {
 
   const handleSelect = (sit) => {
     if (window.innerWidth < 768) {
-      setSelectedSituation(selectedSituation?.id === sit.id ? null : sit);
+      const newSelected = selectedSituation?.id === sit.id ? null : sit;
+      if (newSelected) sessionStorage.setItem('library_expanded_id', newSelected.id);
+      else sessionStorage.removeItem('library_expanded_id');
+      
+      setSelectedSituation(newSelected);
       return;
     }
 
@@ -116,6 +168,7 @@ export default function SituationExploreSection() {
       duration: 0.3,
       ease: 'power2.in',
       onComplete: () => {
+        sessionStorage.setItem('library_expanded_id', sit.id);
         setSelectedSituation(sit);
         gsap.fromTo(detailContainerRef.current,
           { opacity: 0, y: 20 },
@@ -126,6 +179,7 @@ export default function SituationExploreSection() {
   };
 
   const handleBack = () => {
+    sessionStorage.removeItem('library_expanded_id');
     gsap.to(detailContainerRef.current, {
       opacity: 0,
       y: 20,
@@ -148,15 +202,7 @@ export default function SituationExploreSection() {
         {/* Header Area */}
         <div className="situation-header mb-12 flex flex-col items-start z-10 opacity-0 w-full relative">
           
-          {selectedSituation && (
-            <button 
-              onClick={handleBack}
-              className="absolute right-0 top-0 flex items-center gap-2 text-white/50 hover:text-white transition-colors duration-300 group"
-            >
-              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">BACK</span>
-            </button>
-          )}
+
 
           <span className="font-sans text-[0.65rem] md:text-[0.7rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-4">
             FOR WHAT YOU'RE CARRYING TODAY
@@ -217,8 +263,21 @@ export default function SituationExploreSection() {
                   >
                     <div className="overflow-hidden flex flex-col w-full border-t border-white/10 pt-6 mt-2">
                       <div className="flex flex-col gap-6 w-full text-left">
-                        {curatedContent.map((content) => (
-                          <div key={content.id} className="group cursor-pointer">
+                        {sit.curatedContent && sit.curatedContent.map((content) => (
+                          <div 
+                            key={content.id} 
+                            className="group cursor-pointer"
+                            onClick={() => {
+                              if (content.type === 'ARTICLE') {
+                                sessionStorage.setItem('library_scroll_position', window.scrollY.toString());
+                                if (content.categoryId && content.headingId) {
+                                  navigate(`/articles?category=${content.categoryId}&subCategory=${content.headingId}&article=${content.id}`);
+                                } else {
+                                  navigate(`/articles?article=${content.id}`);
+                                }
+                              }
+                            }}
+                          >
                             <div className="w-full aspect-[4/3] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-3">
                               <img src={content.image} alt={content.title} className="w-full h-full object-cover opacity-60" />
                               <div className="absolute inset-0 bg-black/40" />
@@ -227,21 +286,23 @@ export default function SituationExploreSection() {
                                   <PlayCircle size={32} weight="light" className="text-white/80" />
                                 </div>
                               )}
+                              
+                              {/* Top Right Bookmark */}
+                              <button 
+                                onClick={(e) => handleToggleSave(content.id, e)}
+                                className="absolute top-3 right-3 z-20 text-white/50 hover:text-[#c79c6e] transition-colors"
+                              >
+                                <BookmarkSimple size={18} weight={savedArticleIds.includes(content.id) ? "fill" : "light"} />
+                              </button>
                             </div>
                             <span className="font-sans text-[0.55rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-1 block">
-                              {content.type} &nbsp;•&nbsp; {content.duration}
+                              {content.type}
                             </span>
                             <h4 className="font-serif text-lg text-white/90 font-light leading-snug pr-2">
                               {content.title}
                             </h4>
                           </div>
                         ))}
-                      </div>
-                      <div className="w-full flex justify-center mt-6">
-                        <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
-                          <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW FULL COLLECTION</span>
-                          <ArrowRight size={14} weight="bold" />
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -253,9 +314,31 @@ export default function SituationExploreSection() {
           {/* DETAILED VIEW (Curated Collection - DESKTOP ONLY) */}
           {selectedSituation && (
             <div ref={detailContainerRef} className="hidden md:flex w-full md:absolute md:inset-0 pt-4 flex-col">
+              <div className="mb-6">
+                <button 
+                  onClick={handleBack}
+                  className="flex items-center gap-2 text-white/50 hover:text-white transition-colors duration-300 group w-fit"
+                >
+                  <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                  <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">BACK</span>
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                {curatedContent.map((content) => (
-                  <div key={content.id} className="group cursor-pointer">
+                {selectedSituation.curatedContent && selectedSituation.curatedContent.map((content) => (
+                  <div 
+                    key={content.id} 
+                    className="group cursor-pointer"
+                    onClick={() => {
+                      if (content.type === 'ARTICLE') {
+                        sessionStorage.setItem('library_scroll_position', window.scrollY.toString());
+                        if (content.categoryId && content.headingId) {
+                          navigate(`/articles?category=${content.categoryId}&subCategory=${content.headingId}&article=${content.id}`);
+                        } else {
+                          navigate(`/articles?article=${content.id}`);
+                        }
+                      }
+                    }}
+                  >
                     {/* Thumbnail */}
                     <div className="w-full aspect-[4/3] bg-[#0a0a0a] rounded-sm border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/50">
                       <img 
@@ -266,8 +349,11 @@ export default function SituationExploreSection() {
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
                       
                       {/* Top Right Bookmark */}
-                      <button className="absolute top-4 right-4 z-20 text-white/50 hover:text-[#c79c6e] transition-colors">
-                        <BookmarkSimple size={20} weight="light" />
+                      <button 
+                        onClick={(e) => handleToggleSave(content.id, e)}
+                        className="absolute top-4 right-4 z-20 text-white/50 hover:text-[#c79c6e] transition-colors"
+                      >
+                        <BookmarkSimple size={20} weight={savedArticleIds.includes(content.id) ? "fill" : "light"} />
                       </button>
 
                       {/* Center Play Icon (if video) */}
@@ -280,20 +366,13 @@ export default function SituationExploreSection() {
                     
                     {/* Info */}
                     <span className="font-sans text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e] mb-2 block">
-                      {content.type} &nbsp;•&nbsp; {content.duration}
+                      {content.type}
                     </span>
                     <h4 className="font-serif text-[1.25rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 pr-4">
                       {content.title}
                     </h4>
                   </div>
                 ))}
-              </div>
-
-              <div className="w-full flex justify-center mt-4">
-                <button className="flex items-center gap-2 text-[#c79c6e] hover:text-white transition-colors duration-300">
-                  <span className="font-sans text-[0.65rem] uppercase tracking-widest font-medium">VIEW THE FULL COLLECTION</span>
-                  <ArrowRight size={14} weight="bold" />
-                </button>
               </div>
             </div>
           )}

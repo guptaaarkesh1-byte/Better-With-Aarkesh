@@ -24,14 +24,9 @@ export default function Step1Time({ data, updateData, onNext }) {
   });
 
   const [selectedTime, setSelectedTime] = useState(data.time || null);
-
-  const times = [
-    '09:00 AM',
-    '10:30 AM',
-    '01:00 PM',
-    '02:30 PM',
-    '04:00 PM'
-  ];
+  const [times, setTimes] = useState([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState(null);
 
   // Dynamic Calendar logic
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
@@ -42,6 +37,56 @@ export default function Step1Time({ data, updateData, onNext }) {
   
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const years = Array.from({ length: 5 }, (_, i) => today.getFullYear() + i);
+
+  // Fetch live slots when a day is selected
+  React.useEffect(() => {
+    if (!selectedDay) {
+      setTimes([]);
+      return;
+    }
+
+    const fetchSlots = async () => {
+      setIsLoadingSlots(true);
+      setSlotsError(null);
+      setTimes([]);
+      
+      try {
+        // Format date as YYYY-MM-DD
+        const monthStr = String(currentMonth + 1).padStart(2, '0');
+        const dayStr = String(selectedDay).padStart(2, '0');
+        const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
+
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${API_URL}/api/cal/slots?date=${dateStr}`);
+        
+        if (!res.ok) throw new Error('Failed to fetch slots');
+        
+        const resData = await res.json();
+        
+        // Cal.com returns data.slots["YYYY-MM-DD"]
+        const dailySlots = resData?.data?.slots?.[dateStr] || [];
+        
+        // Format ISO times to local 12-hour strings
+        const formattedTimes = dailySlots.map(slot => {
+          const dateObj = new Date(slot.time);
+          return dateObj.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+        });
+        
+        setTimes(formattedTimes);
+      } catch (err) {
+        console.error(err);
+        setSlotsError("Could not load available times for this date.");
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+
+    fetchSlots();
+  }, [selectedDay, currentMonth, currentYear]);
 
   const handleNextMonth = () => {
     if (currentMonth === 11) {
@@ -240,7 +285,31 @@ export default function Step1Time({ data, updateData, onNext }) {
           </h3>
           
           <div className="flex flex-col gap-2">
-            {times.map(time => {
+            {!selectedDay && (
+              <div className="text-white/40 text-sm font-light italic p-4 text-center">
+                Select a date to view available times.
+              </div>
+            )}
+            
+            {isLoadingSlots && (
+              <div className="text-accent-gold text-sm font-light p-4 text-center animate-pulse">
+                Loading available slots...
+              </div>
+            )}
+
+            {slotsError && (
+              <div className="text-red-400 text-sm font-light p-4 text-center">
+                {slotsError}
+              </div>
+            )}
+            
+            {!isLoadingSlots && !slotsError && selectedDay && times.length === 0 && (
+              <div className="text-white/40 text-sm font-light italic p-4 text-center">
+                No slots available on this date.
+              </div>
+            )}
+
+            {!isLoadingSlots && times.map(time => {
               const isSelected = selectedTime === time;
               return (
                 <button
