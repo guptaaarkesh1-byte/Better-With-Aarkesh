@@ -29,7 +29,7 @@ router.post('/', protect, async (req, res) => {
     // --- Cal.com Integration ---
     if (process.env.CAL_API_KEY) {
       try {
-        const startISO = new Date(`${date} ${time}`).toISOString();
+        const startISO = new Date(`${date} ${time} GMT+0530`).toISOString();
         const payload = {
           eventTypeId: 6769198, // 30 min meeting
           start: startISO,
