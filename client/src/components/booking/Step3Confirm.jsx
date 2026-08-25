@@ -4,7 +4,7 @@ import {
   EnvelopeSimple, Lock, ArrowLeft, LockKey, CheckSquare, Square, ClockCounterClockwise 
 } from '@phosphor-icons/react';
 
-export default function Step3Confirm({ data, onNext, onBack, isLoading, error }) {
+export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, error }) {
   const [agreed, setAgreed] = useState(false);
 
   return (
@@ -36,13 +36,28 @@ export default function Step3Confirm({ data, onNext, onBack, isLoading, error })
                   {data.time ? (
                     (() => {
                       const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
-                      if (!match) return `${data.time} – 11:30 AM IST`;
+                      if (!match) return `${data.time}`;
+                      
                       let [_, hours, minutes, ampm] = match;
                       hours = parseInt(hours, 10);
-                      if (hours === 11) { ampm = ampm === 'AM' ? 'PM' : 'AM'; hours = 12; }
-                      else if (hours === 12) { hours = 1; }
-                      else { hours += 1; }
-                      const endTime = `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+                      minutes = parseInt(minutes, 10);
+                      
+                      // Convert to 24h for easier math
+                      if (ampm === 'PM' && hours !== 12) hours += 12;
+                      if (ampm === 'AM' && hours === 12) hours = 0;
+                      
+                      // Add duration
+                      const duration = data.sessionDuration || 60;
+                      minutes += duration;
+                      hours += Math.floor(minutes / 60);
+                      minutes = minutes % 60;
+                      
+                      // Convert back to 12h format
+                      const endAmpm = (hours >= 12 && hours < 24) ? 'PM' : 'AM';
+                      let endHours = hours % 12;
+                      if (endHours === 0) endHours = 12;
+                      
+                      const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${endAmpm}`;
                       return `${data.time} – ${endTime} IST`;
                     })()
                   ) : '10:30 AM – 11:30 AM IST'}
@@ -62,7 +77,7 @@ export default function Step3Confirm({ data, onNext, onBack, isLoading, error })
               <Clock className="text-accent-gold text-2xl shrink-0" weight="light" />
               <div>
                 <p className="font-sans text-xs text-white/50 mb-1">Duration</p>
-                <p className="text-white text-lg">60 minutes</p>
+                <p className="text-white text-lg">{data.sessionDuration || 60} minutes</p>
               </div>
             </div>
 
@@ -76,9 +91,9 @@ export default function Step3Confirm({ data, onNext, onBack, isLoading, error })
 
             <div className="flex items-start gap-4">
               <div className="w-6 flex justify-center text-accent-gold text-2xl shrink-0">₹</div>
-              <div>
-                <p className="font-sans text-xs text-white/50 mb-1">Total Amount</p>
-                <p className="text-white text-lg font-medium text-accent-gold">₹5,000</p>
+              <div className="flex flex-col gap-1">
+                <span className="font-sans text-[0.65rem] uppercase tracking-widest text-white/40">Total Amount</span>
+                <span className="font-sans text-xl font-medium text-white">₹{fee.toLocaleString('en-IN')}</span>
               </div>
             </div>
 

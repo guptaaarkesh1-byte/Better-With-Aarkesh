@@ -6,6 +6,7 @@ import Step1Time from '../components/booking/Step1Time';
 import Step2Details from '../components/booking/Step2Details';
 import Step3Confirm from '../components/booking/Step3Confirm';
 import BookingSuccess from '../components/booking/BookingSuccess';
+import BookingCancelled from '../components/booking/BookingCancelled';
 import bookingBg from '../assets/images/booking_bg_lamp.png';
 
 export default function Booking() {
@@ -19,6 +20,8 @@ export default function Booking() {
       time: null,
       name: userInfo.fullName || '',
       email: userInfo.email || '',
+      countryCode: userInfo.countryCode || '+91',
+      phoneNumber: userInfo.phoneNumber || '',
       source: '',
       reason: '',
       extra: '',
@@ -26,6 +29,22 @@ export default function Booking() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fees, setFees] = useState({ fee60min: 5000, fee90min: 7500 });
+
+  useEffect(() => {
+    const fetchFees = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/fees`);
+        if (res.ok) {
+          const data = await res.json();
+          setFees({ fee60min: data.fee60min || 5000, fee90min: data.fee90min || 7500 });
+        }
+      } catch (err) {
+        console.error('Failed to fetch fees:', err);
+      }
+    };
+    fetchFees();
+  }, []);
 
   // Always scroll to top when landing on the booking page or changing steps
   useEffect(() => {
@@ -44,10 +63,9 @@ export default function Booking() {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please log in to book an appointment.');
-        setIsLoading(false);
-        return;
+      const authHeaders = { 'Content-Type': 'application/json' };
+      if (token) {
+        authHeaders['Authorization'] = `Bearer ${token}`;
       }
 
       // 1. Load Razorpay script dynamically
@@ -71,14 +89,10 @@ export default function Booking() {
       }
 
       // 3. Create an order
-      const amount = 5000; // Hardcoded amount (e.g., INR 5000)
       const orderRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/create-order`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ amount, currency: 'INR' })
+        headers: authHeaders,
+        body: JSON.stringify({ email: bookingData.email, currency: 'INR' })
       });
       const orderData = await orderRes.json();
       
@@ -86,7 +100,34 @@ export default function Booking() {
         throw new Error(orderData.message || 'Failed to create order');
       }
 
-      // 4. Initialize Razorpay popup
+      // 4. Create the appointment as Pending
+      const initAppRes = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          ...bookingData,
+          orderId: orderData.id,
+        }),
+      });
+      if (!initAppRes.ok) {
+        throw new Error('Failed to initialize appointment');
+      }
+      const initAppData = await initAppRes.json();
+      const appointmentId = initAppData._id;
+
+      // Helper to record failed/abandoned appointments
+      const recordFailedAppointment = async () => {
+        try {
+          await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/fail`, {
+            method: 'PUT',
+            headers: authHeaders
+          });
+        } catch (err) {
+          console.error('Failed to mark appointment as failed:', err);
+        }
+      };
+
+      // 5. Initialize Razorpay popup
       const options = {
         key: keyData.keyId,
         amount: orderData.amount,
@@ -95,23 +136,19 @@ export default function Booking() {
         description: 'Life Coaching Session',
         order_id: orderData.id,
         handler: async function (response) {
-          // 5. On success, create the appointment in the backend
+          // 6. On success, finalize the appointment in the backend
           try {
-            const finalRes = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
+            const finalRes = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/finalize`, {
+              method: 'PUT',
+              headers: authHeaders,
               body: JSON.stringify({
-                ...bookingData,
                 paymentId: response.razorpay_payment_id,
-                orderId: response.razorpay_order_id,
                 signature: response.razorpay_signature
               }),
             });
 
             if (finalRes.ok) {
+              updateData({ appointmentId });
               nextStep();
             } else {
               const data = await finalRes.json();
@@ -130,12 +167,21 @@ export default function Booking() {
         },
         theme: {
           color: '#c79c6e'
+        },
+        modal: {
+          ondismiss: function() {
+            recordFailedAppointment();
+            setStep(5);
+            setIsLoading(false);
+          }
         }
       };
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response){
+        recordFailedAppointment();
         setError('Payment failed or was cancelled.');
+        setStep(5);
         setIsLoading(false);
       });
       rzp.open();
@@ -147,9 +193,17 @@ export default function Booking() {
     }
   };
 
+  // Calculate dynamic fee for display
+  const currentFee = bookingData.sessionDuration === 90 ? fees.fee90min : fees.fee60min;
+
   // Step 4 is the success screen
   if (step === 4) {
-    return <BookingSuccess data={bookingData} />;
+    return <BookingSuccess data={bookingData} fee={currentFee} />;
+  }
+
+  // Step 5 is the cancelled screen
+  if (step === 5) {
+    return <BookingCancelled data={bookingData} onRetry={() => setStep(3)} />;
   }
 
   return (
@@ -188,24 +242,24 @@ export default function Booking() {
             CHAPTER {step} OF 3
           </span>
           <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.1] text-white mb-4">
-            {step === 1 && "Let's Find a Time That Works"}
-            {step === 2 && "A Little About You"}
+            {step === 1 && "A Little About You"}
+            {step === 2 && "Let's Find a Time That Works"}
             {step === 3 && "Confirm & Secure Your Session"}
           </h1>
           <div className="h-[1px] w-8 bg-accent-gold mx-auto mb-4" />
           <p className="text-paragraph text-sm font-light tracking-wide text-white/80 max-w-lg mx-auto">
             {step === 1 && (
               <>
-                You don't need to have everything figured out before you begin.
+                This helps me understand you better before we meet.
                 <br className="hidden md:block" />
-                This is a space for honest conversation and real clarity.
+                Share only what you're comfortable with.
               </>
             )}
             {step === 2 && (
               <>
-                This helps me understand you better before we meet.
+                You don't need to have everything figured out before you begin.
                 <br className="hidden md:block" />
-                Share only what you're comfortable with.
+                This is a space for honest conversation and real clarity.
               </>
             )}
             {step === 3 && (
@@ -229,23 +283,25 @@ export default function Booking() {
 
             <div className="mt-8">
               {step === 1 && (
-                <Step1Time 
-                  data={bookingData} 
-                  updateData={updateData} 
-                  onNext={nextStep} 
-                />
-              )}
-              {step === 2 && (
                 <Step2Details 
                   data={bookingData} 
                   updateData={updateData} 
                   onNext={nextStep} 
-                  onBack={prevStep} 
+                  isAuthenticated={!!localStorage.getItem('token')}
+                />
+              )}
+              {step === 2 && (
+                <Step1Time 
+                  data={bookingData} 
+                  updateData={updateData} 
+                  onNext={nextStep} 
+                  onBack={prevStep}
                 />
               )}
               {step === 3 && (
                 <Step3Confirm 
                   data={bookingData} 
+                  fee={currentFee}
                   onNext={submitBooking} 
                   onBack={prevStep} 
                   isLoading={isLoading}

@@ -29,10 +29,16 @@ export default function Navbar() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const navRef = useRef(null);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { openBookingModal } = useBooking();
   const showMyJourney = location.pathname === '/' || location.pathname === '/library' || location.pathname === '/my-journey';
+
+  // Re-check auth status when route changes (e.g., after login redirect)
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem('token'));
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => {

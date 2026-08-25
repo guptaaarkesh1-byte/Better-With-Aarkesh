@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CaretLeft, CaretRight, CalendarBlank, CheckCircle, ArrowRight, CaretDown } from '@phosphor-icons/react';
 
-export default function Step1Time({ data, updateData, onNext }) {
+export default function Step1Time({ data, updateData, onNext, onBack }) {
   // Initialize date parsing
   const initialDate = data.date ? new Date(data.date) : new Date();
   const isDateValid = !isNaN(initialDate.getTime());
@@ -57,7 +57,8 @@ export default function Step1Time({ data, updateData, onNext }) {
         const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
 
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const res = await fetch(`${API_URL}/api/cal/slots?date=${dateStr}`);
+        const emailQuery = data.email ? `&email=${encodeURIComponent(data.email)}` : '';
+        const res = await fetch(`${API_URL}/api/cal/slots?date=${dateStr}${emailQuery}`);
         
         if (!res.ok) throw new Error('Failed to fetch slots');
         
@@ -65,6 +66,11 @@ export default function Step1Time({ data, updateData, onNext }) {
         
         // Cal.com returns data.slots["YYYY-MM-DD"]
         const dailySlots = resData?.data?.slots?.[dateStr] || [];
+        
+        // Update duration state for UI
+        if (resData?.metadata?.duration) {
+          updateData({ sessionDuration: resData.metadata.duration });
+        }
         
         // Format ISO times to local 12-hour strings
         const formattedTimes = dailySlots.map(slot => {
@@ -86,7 +92,7 @@ export default function Step1Time({ data, updateData, onNext }) {
     };
 
     fetchSlots();
-  }, [selectedDay, currentMonth, currentYear]);
+  }, [selectedDay, currentMonth, currentYear, data.email]);
 
   const handleNextMonth = () => {
     if (currentMonth === 11) {
@@ -340,22 +346,36 @@ export default function Step1Time({ data, updateData, onNext }) {
         
         <div className="flex items-center justify-center md:justify-start gap-3 text-white/40">
           <CalendarBlank className="text-2xl shrink-0" weight="light" />
-          <span className="font-sans text-[0.7rem] font-light text-center md:text-left">All sessions are 1-on-1 and last 60 minutes.</span>
+          <span className="font-sans text-[0.7rem] font-light text-center md:text-left">
+            All sessions are 1-on-1 and last {data.sessionDuration || 60} minutes.
+          </span>
         </div>
-        
-        <button
-          onClick={handleContinue}
-          disabled={!selectedDay || !selectedTime}
-          className={`flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-sans text-[0.8rem] font-semibold tracking-wide transition-all w-full md:w-auto
-            ${(!selectedDay || !selectedTime) 
-              ? 'bg-white/5 text-white/20 cursor-not-allowed' 
-              : 'bg-accent-gold text-black hover:bg-white hover:text-black hover:-translate-y-1'
-            }
-          `}
-        >
-          CONTINUE TO DETAILS
-          <ArrowRight className="text-lg" weight="bold" />
-        </button>
+
+        <div className="flex flex-col-reverse md:flex-row items-stretch md:items-center gap-4 md:gap-6">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all w-full md:w-auto"
+            >
+              <CaretLeft className="text-lg" />
+              BACK
+            </button>
+          )}
+          
+          <button
+            onClick={handleContinue}
+            disabled={!selectedDay || !selectedTime}
+            className={`flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-sans text-[0.8rem] font-semibold tracking-wide transition-all w-full md:w-auto
+              ${(!selectedDay || !selectedTime) 
+                ? 'bg-white/5 text-white/20 cursor-not-allowed' 
+                : 'bg-accent-gold text-black hover:bg-white hover:text-black hover:-translate-y-1'
+              }
+            `}
+          >
+            CONTINUE TO CONFIRM
+            <ArrowRight className="text-lg" weight="bold" />
+          </button>
+        </div>
       </div>
 
     </div>

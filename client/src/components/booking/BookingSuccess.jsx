@@ -1,12 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Check, CalendarBlank, Clock, User, VideoCamera, 
   EnvelopeSimple, House, Quotes, ChatCenteredText, BookOpen, ArrowLeft
 } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import bookingBg from '../../assets/images/booking_bg_lamp.png';
+import LoginModal from '../layout/LoginModal';
 
-export default function BookingSuccess({ data }) {
+export default function BookingSuccess({ data, fee }) {
+  const navigate = useNavigate();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const isAuthenticated = !!localStorage.getItem('token');
+
+  useEffect(() => {
+    if (!isAuthenticated && data.appointmentId) {
+      setIsLoginModalOpen(true);
+    }
+  }, [isAuthenticated, data.appointmentId]);
+
+  const handleRegistrationSuccess = async (userData) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token && data.appointmentId) {
+        await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${data.appointmentId}/link`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+      navigate('/my-journey');
+    } catch (err) {
+      console.error('Error linking appointment:', err);
+      // Still navigate since registration succeeded
+      navigate('/my-journey');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] relative pt-20 md:pt-28 pb-16 px-4 md:px-8 animate-in fade-in zoom-in-95 duration-1000">
       
@@ -69,13 +100,28 @@ export default function BookingSuccess({ data }) {
                   {data.time ? (
                     (() => {
                       const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
-                      if (!match) return `${data.time} – 11:30 AM IST`;
+                      if (!match) return `${data.time}`;
+                      
                       let [_, hours, minutes, ampm] = match;
                       hours = parseInt(hours, 10);
-                      if (hours === 11) { ampm = ampm === 'AM' ? 'PM' : 'AM'; hours = 12; }
-                      else if (hours === 12) { hours = 1; }
-                      else { hours += 1; }
-                      const endTime = `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+                      minutes = parseInt(minutes, 10);
+                      
+                      // Convert to 24h for easier math
+                      if (ampm === 'PM' && hours !== 12) hours += 12;
+                      if (ampm === 'AM' && hours === 12) hours = 0;
+                      
+                      // Add duration
+                      const duration = data.sessionDuration || 60;
+                      minutes += duration;
+                      hours += Math.floor(minutes / 60);
+                      minutes = minutes % 60;
+                      
+                      // Convert back to 12h format
+                      const endAmpm = (hours >= 12 && hours < 24) ? 'PM' : 'AM';
+                      let endHours = hours % 12;
+                      if (endHours === 0) endHours = 12;
+                      
+                      const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${endAmpm}`;
                       return `${data.time} – ${endTime} IST`;
                     })()
                   ) : '10:30 AM – 11:30 AM IST'}
@@ -99,7 +145,15 @@ export default function BookingSuccess({ data }) {
                 <Clock className="text-accent-gold text-2xl shrink-0" weight="light" />
                 <div>
                   <p className="font-sans text-[0.65rem] text-white/50 mb-1">Duration</p>
-                  <p className="text-white text-sm">60 minutes</p>
+                  <p className="text-white text-sm">{data.sessionDuration || 60} minutes</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-6 flex justify-center text-accent-gold text-2xl shrink-0">₹</div>
+                <div>
+                  <p className="font-sans text-[0.65rem] text-white/50 mb-1">Total Paid</p>
+                  <p className="text-white text-sm">₹{fee ? fee.toLocaleString('en-IN') : '5,000'}</p>
                 </div>
               </div>
 
@@ -168,7 +222,7 @@ export default function BookingSuccess({ data }) {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-          {localStorage.getItem('token') ? (
+          {isAuthenticated ? (
             <>
               <button className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/80 hover:text-white hover:border-white/30 transition-all w-full sm:w-auto">
                 <CalendarBlank className="text-lg text-accent-gold" />
@@ -186,10 +240,10 @@ export default function BookingSuccess({ data }) {
               </Link>
             </>
           ) : (
-            <Link to="/" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-accent-gold text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all w-full sm:w-auto">
-              RETURN HOME
-              <House className="text-lg" />
-            </Link>
+            <button onClick={() => setIsLoginModalOpen(true)} className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-accent-gold text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all w-full sm:w-auto">
+              CREATE ACCOUNT TO VIEW JOURNEY
+              <User className="text-lg" />
+            </button>
           )}
         </div>
 
@@ -218,6 +272,15 @@ export default function BookingSuccess({ data }) {
         </div>
 
       </div>
+
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+        onSuccess={handleRegistrationSuccess}
+        defaultMode="register"
+        defaultCountryCode={data.countryCode || '+91'}
+        defaultPhoneNumber={data.phoneNumber || ''}
+      />
     </div>
   );
 }

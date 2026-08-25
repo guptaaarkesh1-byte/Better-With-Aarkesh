@@ -4,15 +4,15 @@ import { X, Eye, EyeSlash } from '@phosphor-icons/react';
 import Button from '../ui/Button';
 import { COUNTRY_CODES } from '../../utils/countryCodes';
 
-export default function LoginModal({ isOpen, onClose, onSuccess }) {
+export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = 'login', defaultCountryCode = '+91', defaultPhoneNumber = '' }) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [countryCode, setCountryCode] = useState('+91');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [countryCode, setCountryCode] = useState(defaultCountryCode);
+  const [phoneNumber, setPhoneNumber] = useState(defaultPhoneNumber);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isOtpStep, setIsOtpStep] = useState(false);
@@ -24,14 +24,14 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
 
   useEffect(() => {
     if (isOpen) {
-      setIsLogin(true);
+      setIsLogin(defaultMode === 'login');
       setShowPassword(false);
       setPassword('');
       setConfirmPassword('');
       setFullName('');
       setEmail('');
-      setCountryCode('+91');
-      setPhoneNumber('');
+      setCountryCode(defaultCountryCode);
+      setPhoneNumber(defaultPhoneNumber);
       setError('');
       setIsLoading(false);
       setIsOtpStep(false);
@@ -39,7 +39,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
       setIsForgotPassword(false);
       setIsForgotOtpStep(false);
     }
-  }, [isOpen]);
+  }, [isOpen, defaultMode]);
 
   if (!isOpen) return null;
 

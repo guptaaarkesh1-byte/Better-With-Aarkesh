@@ -1,20 +1,22 @@
 import React from 'react';
 import { Clock, ArrowLeft, ArrowRight, ArrowUpRight } from '@phosphor-icons/react';
+import { COUNTRY_CODES } from '../../utils/countryCodes';
 
-export default function Step2Details({ data, updateData, onNext, onBack }) {
+export default function Step2Details({ data, updateData, onNext, onBack, isAuthenticated }) {
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     updateData({ [name]: value });
   };
 
+  const isFormValid = data.name.trim() !== '' && data.email.trim() !== '' && data.reason.trim() !== '' &&
+    (isAuthenticated || (data.phoneNumber && data.phoneNumber.length === 10));
+
   const handleContinue = () => {
-    if (data.name && data.email && data.reason) {
+    if (isFormValid) {
       onNext();
     }
   };
-
-  const isFormValid = data.name.trim() !== '' && data.email.trim() !== '' && data.reason.trim() !== '';
 
   return (
     <div className="flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -70,6 +72,39 @@ export default function Step2Details({ data, updateData, onNext, onBack }) {
             className="w-full bg-transparent border border-white/10 rounded-xl px-5 py-4 text-white placeholder-white/30 font-light focus:outline-none focus:border-accent-gold/50 transition-colors"
           />
         </div>
+
+        {/* Phone Number (Guest Only) */}
+        {!isAuthenticated && (
+          <div>
+            <label className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-3">
+              PHONE NUMBER
+            </label>
+            <div className="flex items-center border border-white/10 rounded-xl px-5 py-4 transition-colors focus-within:border-accent-gold/50 bg-transparent">
+              <select 
+                name="countryCode"
+                className="bg-transparent text-white/70 font-sans focus:outline-none appearance-none pr-2 cursor-pointer outline-none"
+                value={data.countryCode}
+                onChange={handleInputChange}
+              >
+                {COUNTRY_CODES.map((country, index) => (
+                  <option key={`${country.code}-${index}`} value={country.code} className="bg-[#0a0a0a] text-white">
+                    {country.label}
+                  </option>
+                ))}
+              </select>
+              <div className="w-[1px] h-4 bg-white/20 mx-3"></div>
+              <input 
+                type="tel" 
+                name="phoneNumber"
+                value={data.phoneNumber}
+                onChange={(e) => updateData({ phoneNumber: e.target.value.replace(/\D/g, '') })}
+                maxLength={10}
+                className="w-full bg-transparent text-white font-sans focus:outline-none placeholder-white/30"
+                placeholder="0000000000"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Reason */}
         <div>
@@ -134,13 +169,17 @@ export default function Step2Details({ data, updateData, onNext, onBack }) {
 
       {/* Bottom Action Bar */}
       <div className="mt-12 pt-8 border-t border-white/10 flex flex-col-reverse md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
-        <button
-          onClick={onBack}
-          className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all w-full md:w-auto"
-        >
-          <ArrowLeft className="text-lg" />
-          BACK TO TIME
-        </button>
+        {onBack ? (
+          <button
+            onClick={onBack}
+            className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all w-full md:w-auto"
+          >
+            <ArrowLeft className="text-lg" />
+            BACK
+          </button>
+        ) : (
+          <div></div>
+        )}
         
         <button
           onClick={handleContinue}
@@ -152,7 +191,7 @@ export default function Step2Details({ data, updateData, onNext, onBack }) {
             }
           `}
         >
-          CONTINUE TO CONFIRM
+          CONTINUE TO TIME
           <ArrowRight className="text-lg" />
         </button>
       </div>

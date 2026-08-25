@@ -115,7 +115,7 @@ const ExpandedArticle = ({ article, isExpanded, onBack }) => {
           style={{ height: `${progress}%`, transition: 'none' }}
         >
           {progress > 2 && (
-            <div className="absolute left-3 bottom-0 translate-y-1/2 text-[#c79c6e] font-sans text-[0.65rem] font-medium tracking-widest select-none pointer-events-none bg-[#0a0a0a] px-1 opacity-80">
+            <div className="absolute right-3 bottom-0 translate-y-1/2 text-[#c79c6e] font-sans text-[0.65rem] font-medium tracking-widest select-none pointer-events-none bg-[#0a0a0a] px-1 opacity-80">
               {Math.round(progress)}%
             </div>
           )}
@@ -136,7 +136,7 @@ const ExpandedArticle = ({ article, isExpanded, onBack }) => {
         )}
 
         <div
-          className="prose prose-invert prose-lg max-w-none font-sans text-white/75 prose-headings:font-serif prose-headings:text-white prose-p:leading-relaxed prose-li:text-white/75"
+          className="prose prose-invert prose-lg max-w-none font-serif text-white/80 prose-headings:font-serif prose-headings:text-white/90 prose-headings:font-semibold prose-p:leading-[1.8] prose-p:my-6 prose-li:text-white/80"
           dangerouslySetInnerHTML={{
             __html:
               article.bodyHtml ||

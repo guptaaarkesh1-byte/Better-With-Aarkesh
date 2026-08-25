@@ -22,6 +22,11 @@ export default function AdminUsers() {
     return saved ? parseInt(saved, 10) : 1;
   }); // Default expand first user
   
+  const [activeTab, setActiveTab] = useState('appointments');
+  const [feeSettings, setFeeSettings] = useState({ fee60min: 5000, fee90min: 7500 });
+  const [isSavingFees, setIsSavingFees] = useState(false);
+  const [feeMessage, setFeeMessage] = useState('');
+  
   // Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     return sessionStorage.getItem('admin_users_sidebar_open') === 'true';
@@ -176,8 +181,9 @@ export default function AdminUsers() {
               type: app.type || 'Life Coaching Session',
               status: calculatedStatus,
               txnId: app.orderId || 'TXN-PENDING',
-              payment: app.paymentId ? 'Paid' : 'Failed',
-              beforeWeSpeak: app.reason || ''
+              payment: app.paymentId ? 'Paid' : (app.paymentStatus || 'Failed'),
+              beforeWeSpeak: app.reason || '',
+              duration: app.duration || (app.isFirstSession ? 60 : 90)
             });
             userMap[uId].appointmentsCount++;
           });
@@ -201,6 +207,54 @@ export default function AdminUsers() {
     fetchRealData();
   }, []);
 
+  React.useEffect(() => {
+    const fetchFees = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/payment/fees`);
+        if (res.ok) {
+          const data = await res.json();
+          setFeeSettings({ 
+            fee60min: data.fee60min || 5000, 
+            fee90min: data.fee90min || 7500 
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch fees:', err);
+      }
+    };
+    fetchFees();
+  }, []);
+
+  const handleSaveFees = async (e) => {
+    e.preventDefault();
+    setIsSavingFees(true);
+    setFeeMessage('');
+    try {
+      const token = localStorage.getItem('adminToken');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/payment/fees`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(feeSettings)
+      });
+      if (res.ok) {
+        setFeeMessage('Fees updated successfully!');
+        setTimeout(() => setFeeMessage(''), 3000);
+      } else {
+        setFeeMessage('Failed to update fees.');
+      }
+    } catch (err) {
+      console.error(err);
+      setFeeMessage('Error communicating with server.');
+    } finally {
+      setIsSavingFees(false);
+    }
+  };
+
   const toggleExpand = (userId) => {
     setExpandedUser(expandedUser === userId ? null : userId);
   };
@@ -218,6 +272,7 @@ export default function AdminUsers() {
     switch(payment.toLowerCase()) {
       case 'paid': return 'text-green-500 bg-green-500/10 border-green-500/20';
       case 'failed': return 'text-red-500 bg-red-500/10 border-red-500/20';
+      case 'pending': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
       default: return 'text-white/60 border-white/20';
     }
   };
@@ -252,15 +307,82 @@ export default function AdminUsers() {
   return (
     <div className="p-8 md:p-10 w-full max-w-[1400px] mx-auto flex flex-col gap-6 animate-in fade-in duration-500 font-sans">
       
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-serif text-3xl text-white">Appointments</h1>
-          <p className="font-sans text-sm text-white/50">View all appointments and client statuses in one place.</p>
+      {/* Header & Tabs */}
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="font-serif text-3xl text-white">Appointments & Fees</h1>
+            <p className="font-sans text-sm text-white/50">Manage your client sessions and update your pricing structure.</p>
+          </div>
+        </div>
+        
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-6 border-b border-white/10 pb-px">
+          <button 
+            onClick={() => setActiveTab('appointments')}
+            className={`pb-3 font-sans text-xs uppercase tracking-widest transition-colors relative ${activeTab === 'appointments' ? 'text-[#c79c6e] font-semibold' : 'text-white/50 hover:text-white'}`}
+          >
+            Client Appointments
+            {activeTab === 'appointments' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#c79c6e]" />}
+          </button>
+          <button 
+            onClick={() => setActiveTab('fees')}
+            className={`pb-3 font-sans text-xs uppercase tracking-widest transition-colors relative ${activeTab === 'fees' ? 'text-[#c79c6e] font-semibold' : 'text-white/50 hover:text-white'}`}
+          >
+            Fee Settings
+            {activeTab === 'fees' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#c79c6e]" />}
+          </button>
         </div>
       </div>
 
-      {/* Filter Bar */}
+      {activeTab === 'fees' ? (
+        <div className="w-full max-w-2xl bg-[#111] border border-white/5 rounded-xl p-8 mt-4">
+          <div className="flex flex-col gap-2 mb-8">
+            <h2 className="font-serif text-2xl text-white">Session Pricing</h2>
+            <p className="font-sans text-sm text-white/50">Update the fees for your coaching sessions. These will be automatically reflected during checkout via Razorpay.</p>
+          </div>
+          
+          <form onSubmit={handleSaveFees} className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <label className="font-sans text-xs uppercase tracking-widest text-white/60">First Session (60 mins) - ₹</label>
+              <input 
+                type="number"
+                value={feeSettings.fee60min}
+                onChange={e => setFeeSettings({...feeSettings, fee60min: e.target.value === '' ? '' : parseInt(e.target.value)})}
+                className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors font-mono"
+                required
+              />
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <label className="font-sans text-xs uppercase tracking-widest text-white/60">Returning Session (90 mins) - ₹</label>
+              <input 
+                type="number"
+                value={feeSettings.fee90min}
+                onChange={e => setFeeSettings({...feeSettings, fee90min: e.target.value === '' ? '' : parseInt(e.target.value)})}
+                className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors font-mono"
+                required
+              />
+            </div>
+            
+            {feeMessage && (
+              <div className={`p-4 rounded-lg border font-sans text-sm ${feeMessage.includes('success') ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+                {feeMessage}
+              </div>
+            )}
+            
+            <button 
+              type="submit"
+              disabled={isSavingFees}
+              className="mt-4 px-6 py-3 rounded-lg bg-[#c79c6e] text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all disabled:opacity-50"
+            >
+              {isSavingFees ? 'SAVING...' : 'SAVE PRICING'}
+            </button>
+          </form>
+        </div>
+      ) : (
+        <>
+          {/* Filter Bar */}
       <div className="flex flex-wrap items-center gap-4 bg-[#111] border border-white/5 p-4 rounded-xl relative z-20">
         <div className="relative flex-1 min-w-[250px]">
           <MagnifyingGlass size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
@@ -299,7 +421,7 @@ export default function AdminUsers() {
             </button>
             {activeDropdown === 'payment' && (
               <div className="absolute top-full left-0 mt-2 w-40 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                {['All', 'Paid', 'Failed'].map(opt => (
+                {['All', 'Paid', 'Failed', 'Pending'].map(opt => (
                   <button key={opt} onClick={() => { setPaymentFilter(opt); setActiveDropdown(null); }} className="px-4 py-2 text-left text-xs text-white/70 hover:text-white hover:bg-white/5 transition-colors">
                     {opt}
                   </button>
@@ -562,9 +684,12 @@ export default function AdminUsers() {
                                 <span className="text-white/80 text-xs font-mono">{session.txnId}</span>
                               </div>
 
-                              <div>
+                              <div className="flex flex-col items-center gap-1.5">
                                 <span className={`px-2 py-0.5 rounded border text-[0.65rem] uppercase tracking-wider ${getPaymentPillColor(session.payment)}`}>
                                   {session.payment}
+                                </span>
+                                <span className="text-white/80 text-[0.65rem] font-medium font-mono">
+                                  ₹{(session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min).toLocaleString('en-IN')}
                                 </span>
                               </div>
 
@@ -614,6 +739,8 @@ export default function AdminUsers() {
         </div>
 
       </div>
+      </>
+      )}
 
       {/* Profile/Session Sidebar Overlay */}
       <div 

@@ -4,7 +4,7 @@ const appointmentSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
   },
   date: {
     type: String,
@@ -22,6 +22,12 @@ const appointmentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  countryCode: {
+    type: String,
+  },
+  phoneNumber: {
+    type: String,
+  },
   source: {
     type: String,
   },
@@ -36,6 +42,13 @@ const appointmentSchema = new mongoose.Schema({
     enum: ['UPCOMING', 'COMPLETED', 'DRAFTS'],
     default: 'UPCOMING',
   },
+  duration: {
+    type: Number,
+  },
+  isFirstSession: {
+    type: Boolean,
+    default: false,
+  },
   paymentId: {
     type: String,
   },
@@ -44,6 +57,11 @@ const appointmentSchema = new mongoose.Schema({
   },
   signature: {
     type: String,
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['Pending', 'Paid', 'Failed'],
+    default: 'Pending',
   }
 }, { timestamps: true });
 
