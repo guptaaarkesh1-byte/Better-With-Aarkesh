@@ -36,6 +36,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Article'
   }],
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);

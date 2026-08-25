@@ -4,11 +4,6 @@ import User from '../models/User.js';
 const protect = async (req, res, next) => {
   let token;
 
-  if (req.headers.authorization && req.headers.authorization === 'Bearer temp-admin-token') {
-    req.user = { isAdmin: true };
-    return next();
-  }
-
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
@@ -35,11 +30,6 @@ const protect = async (req, res, next) => {
 };
 
 const admin = (req, res, next) => {
-  // Temporary handling for the hardcoded admin token
-  if (req.headers.authorization && req.headers.authorization === 'Bearer temp-admin-token') {
-    return next();
-  }
-  
   if (req.user && req.user.isAdmin) {
     return next();
   }
@@ -52,11 +42,9 @@ const optionalAuth = async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      if (token !== 'temp-admin-token') {
+      if (token) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
         req.user = await User.findById(decoded.id).select('-password');
-      } else {
-        req.user = { isAdmin: true };
       }
     } catch (error) {
       console.error(error);

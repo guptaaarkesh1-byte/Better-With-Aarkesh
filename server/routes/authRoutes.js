@@ -226,18 +226,66 @@ router.post('/forgot-password-reset', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-// @route   POST /api/auth/admin/change-password
-// @desc    Change admin password (mock implementation as admin is hardcoded)
-// @access  Private (Admin)
-import { admin } from '../middleware/authMiddleware.js';
+// @route   POST /api/auth/admin/login
+// @desc    Admin login, initializes admin if doesn't exist
+// @access  Public
+router.post('/admin/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-router.post('/admin/change-password', admin, async (req, res) => {
+    if (email !== 'admin@betterwithaarkesh.com') {
+      return res.status(401).json({ message: 'Invalid admin credentials' });
+    }
+
+    let adminUser = await User.findOne({ email });
+
+    // Auto-initialize admin on first login attempt if missing
+    if (!adminUser) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('admin123', salt);
+      adminUser = await User.create({
+        fullName: 'Administrator',
+        email: 'admin@betterwithaarkesh.com',
+        password: hashedPassword,
+        isAdmin: true
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, adminUser.password);
+
+    if (isMatch && adminUser.isAdmin) {
+      res.json({
+        _id: adminUser._id,
+        email: adminUser.email,
+        isAdmin: adminUser.isAdmin,
+        token: generateToken(adminUser._id)
+      });
+    } else {
+      res.status(401).json({ message: 'Invalid admin credentials' });
+    }
+  } catch (error) {
+    console.error('Admin Login Error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/auth/admin/change-password
+// @desc    Change admin password in DB
+// @access  Private (Admin)
+import { protect, admin } from '../middleware/authMiddleware.js';
+
+router.post('/admin/change-password', protect, admin, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    // Currently admin credentials are hardcoded in the frontend App.jsx
-    // This is a mock endpoint to complete the UI flow.
-    if (currentPassword !== 'admin123') {
+    const adminUser = await User.findById(req.user._id);
+
+    if (!adminUser) {
+      return res.status(404).json({ message: 'Admin user not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, adminUser.password);
+    if (!isMatch) {
       return res.status(400).json({ message: 'Incorrect current password' });
     }
 
@@ -245,8 +293,10 @@ router.post('/admin/change-password', admin, async (req, res) => {
       return res.status(400).json({ message: 'New password must be at least 6 characters' });
     }
 
-    // In a real application, you would hash the new password and update the admin user in the database.
-    // For now, we just return success to complete the flow.
+    const salt = await bcrypt.genSalt(10);
+    adminUser.password = await bcrypt.hash(newPassword, salt);
+    await adminUser.save();
+
     res.status(200).json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Admin Password Change Error:', error.message);

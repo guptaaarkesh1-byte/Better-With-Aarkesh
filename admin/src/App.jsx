@@ -22,14 +22,29 @@ function AdminLogin({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Temporary hardcoded admin credentials for UI purposes
-    if (email === 'admin@betterwithaarkesh.com' && password === 'admin123') {
-      localStorage.setItem('adminToken', 'temp-admin-token');
-      onLogin(true);
-    } else {
-      setError('Invalid admin credentials.');
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/auth/admin/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.token) {
+        localStorage.setItem('adminToken', data.token);
+        onLogin(true);
+      } else {
+        setError(data.message || 'Invalid admin credentials.');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network error. Please try again later.');
     }
   };
 
