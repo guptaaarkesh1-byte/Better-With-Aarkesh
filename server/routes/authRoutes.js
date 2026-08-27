@@ -1,9 +1,12 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { Resend } from 'resend';
 import User from '../models/User.js';
 
 const router = express.Router();
+
+const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
 
 // Generate JWT
 const generateToken = (id) => {
@@ -32,8 +35,8 @@ router.post('/register-init', async (req, res) => {
       return res.status(400).json({ message: 'Email ID already exists. Use a different one.' });
     }
 
-    // Generate 4-digit OTP (hardcoded to 1234 for testing)
-    const otp = '1234';
+    // Generate 6-digit OTP
+    const otp = generateOTP();
     
     // Store in memory for 10 minutes
     pendingRegistrations.set(email, {
@@ -46,13 +49,46 @@ router.post('/register-init', async (req, res) => {
       expires: Date.now() + 10 * 60 * 1000
     });
 
-    // MOCK EMAIL SENDING
-    console.log(`\n==========================================`);
-    console.log(`MOCK EMAIL SENT TO: ${email}`);
-    console.log(`YOUR REGISTRATION OTP IS: ${otp}`);
-    console.log(`==========================================\n`);
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      const emailHtmlTemplate = `
+        <table width="100%" bgcolor="#090909" cellpadding="0" cellspacing="0" style="background-color: #090909; margin: 0; padding: 40px 0; width: 100%;">
+          <tr>
+            <td align="center">
+              <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #090909; color: #B8B1A7; text-align: left;">
+                <div style="border: 1px solid #333333; border-radius: 10px; background-color: #111111; padding: 30px;">
+                  <h2 style="color: #F5F2EB; text-align: center; margin-bottom: 20px;">Welcome to Better With Aarkesh!</h2>
+                  <p style="font-size: 16px; line-height: 1.5;">Hi ${fullName},</p>
+                  <p style="font-size: 16px; line-height: 1.5;">Thank you for starting your onboarding journey with us. Please use the following One-Time Password (OTP) to verify your email address:</p>
+                  <div style="text-align: center; margin: 40px 0;">
+                    <span style="display: inline-block; font-size: 28px; font-weight: bold; color: #111111; background-color: #B98A56; padding: 12px 24px; border-radius: 6px; letter-spacing: 6px;">${otp}</span>
+                  </div>
+                  <p style="font-size: 14px; text-align: center; color: #888888;">This OTP is valid for 10 minutes. Please do not share this code with anyone.</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      `;
 
-    res.status(200).json({ message: 'OTP sent successfully' });
+      const { data, error } = await resend.emails.send({
+        from: process.env.EMAIL_FROM || 'Onboarding <onboarding@resend.dev>',
+        to: email,
+        subject: 'Verify your email - Better With Aarkesh',
+        html: emailHtmlTemplate,
+      });
+
+      if (error) {
+        console.error('Resend Error:', error);
+        return res.status(500).json({ message: 'Failed to send OTP email' });
+      }
+
+      res.status(200).json({ message: 'OTP sent successfully' });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      res.status(500).json({ message: 'Failed to send OTP email' });
+    }
   } catch (error) {
     console.error('OTP Init Error:', error.message);
     res.status(500).json({ message: 'Server error' });
@@ -174,19 +210,53 @@ router.post('/forgot-password-init', async (req, res) => {
       return res.status(404).json({ message: 'User account does not exist' });
     }
 
-    const otp = '1234'; // hardcoded for testing
+    const otp = generateOTP();
     
     pendingPasswordResets.set(email, {
       otp,
       expires: Date.now() + 10 * 60 * 1000
     });
 
-    console.log(`\n==========================================`);
-    console.log(`MOCK PASSWORD RESET EMAIL SENT TO: ${email}`);
-    console.log(`YOUR PASSWORD RESET OTP IS: ${otp}`);
-    console.log(`==========================================\n`);
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
 
-    res.status(200).json({ message: 'OTP sent successfully' });
+      const emailHtmlTemplate = `
+        <table width="100%" bgcolor="#090909" cellpadding="0" cellspacing="0" style="background-color: #090909; margin: 0; padding: 40px 0; width: 100%;">
+          <tr>
+            <td align="center">
+              <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #090909; color: #B8B1A7; text-align: left;">
+                <div style="border: 1px solid #333333; border-radius: 10px; background-color: #111111; padding: 30px;">
+                  <h2 style="color: #F5F2EB; text-align: center; margin-bottom: 20px;">Password Reset Request</h2>
+                  <p style="font-size: 16px; line-height: 1.5;">Hi there,</p>
+                  <p style="font-size: 16px; line-height: 1.5;">We received a request to reset your password. Please use the following One-Time Password (OTP) to proceed:</p>
+                  <div style="text-align: center; margin: 40px 0;">
+                    <span style="display: inline-block; font-size: 28px; font-weight: bold; color: #111111; background-color: #B98A56; padding: 12px 24px; border-radius: 6px; letter-spacing: 6px;">${otp}</span>
+                  </div>
+                  <p style="font-size: 14px; text-align: center; color: #888888;">This OTP is valid for 10 minutes. If you did not request a password reset, please ignore this email.</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      `;
+
+      const { data, error } = await resend.emails.send({
+        from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+        to: email,
+        subject: 'Password Reset OTP - Better With Aarkesh',
+        html: emailHtmlTemplate,
+      });
+
+      if (error) {
+        console.error('Resend Error:', error);
+        return res.status(500).json({ message: 'Failed to send reset OTP email' });
+      }
+
+      res.status(200).json({ message: 'OTP sent successfully' });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      res.status(500).json({ message: 'Failed to send reset OTP email' });
+    }
   } catch (error) {
     console.error('Forgot Password Init Error:', error.message);
     res.status(500).json({ message: 'Server error' });
