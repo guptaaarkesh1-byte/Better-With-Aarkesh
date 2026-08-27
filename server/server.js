@@ -8,6 +8,12 @@ import articleRoutes from './routes/articleRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import collectionRoutes from './routes/collectionRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -34,6 +40,10 @@ app.use('/api/articles', articleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/collections', collectionRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Make uploads folder static
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
   res.send('API is running...');

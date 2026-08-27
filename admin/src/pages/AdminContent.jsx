@@ -146,17 +146,34 @@ function MenuBar({ editor }) {
     return null;
   }
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        editor.chain().focus().setImage({ src: reader.result }).run();
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
       }
-    };
-    reader.readAsDataURL(file);
+
+      const data = await response.json();
+      editor.chain().focus().setImage({ src: `${API_URL}${data.imageUrl}` }).run();
+    } catch (error) {
+      console.error(error);
+      alert('Unable to upload image right now.');
+    }
+    
     event.target.value = '';
   };
 
@@ -479,17 +496,35 @@ export default function AdminContent() {
     setMessage(`Chapter "${normalizedTitle}" added.`);
   };
 
-  const handleImageSelect = (event) => {
+  const handleImageSelect = async (event) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      handleFormChange('featuredImage', typeof reader.result === 'string' ? reader.result : '');
-    };
-    reader.readAsDataURL(file);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload featured image');
+      }
+
+      const data = await response.json();
+      handleFormChange('featuredImage', `${API_URL}${data.imageUrl}`);
+    } catch (error) {
+      console.error(error);
+      setMessage('Unable to upload featured image right now.');
+    }
   };
 
   const handleSave = async () => {
@@ -619,7 +654,7 @@ export default function AdminContent() {
 
   if (editingArticleId) {
     return (
-      <div className="p-6 md:p-8 w-full h-[calc(100vh)] flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300 font-sans overflow-hidden bg-[#050505]">
+      <div className="p-6 md:p-8 w-full h-[calc(100vh)] flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300 font-sans overflow-hidden bg-[#050505] relative">
         <div className="flex items-center justify-between shrink-0 pb-4 border-b border-white/5">
           <div className="flex items-center gap-4">
             <button
@@ -637,16 +672,6 @@ export default function AdminContent() {
                 Save changes here and the client library will read them from MongoDB.
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-6 py-3 bg-[#c79c6e] text-black hover:bg-[#b0885e] rounded text-sm uppercase tracking-widest font-semibold transition-colors shadow-lg shadow-[#c79c6e]/20 disabled:opacity-50"
-            >
-              {isSaving ? 'Saving...' : form.id ? 'Update Article' : 'Upload Article'}
-            </button>
           </div>
         </div>
 
@@ -780,6 +805,17 @@ export default function AdminContent() {
               )}
             </div>
           </div>
+        </div>
+
+        <div className="absolute bottom-8 right-8 z-50">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-8 py-4 bg-[#c79c6e] text-black hover:bg-[#b0885e] rounded-full text-sm uppercase tracking-widest font-bold transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(199,156,110,0.4)] disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
+          >
+            {isSaving ? 'Saving...' : form.id ? 'Update Article' : 'Upload Article'}
+          </button>
         </div>
       </div>
     );
