@@ -1,6 +1,6 @@
 import express from 'express';
 import Appointment from '../models/Appointment.js';
-import { protect, optionalAuth } from '../middleware/authMiddleware.js';
+import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -153,10 +153,8 @@ router.put('/:id/link', protect, async (req, res) => {
   }
 });
 
-import { admin } from '../middleware/authMiddleware.js';
-
 // GET /api/appointments/admin - Get all appointments (Admin only)
-router.get('/admin', admin, async (req, res) => {
+router.get('/admin', protect, admin, async (req, res) => {
   try {
     const appointments = await Appointment.find()
       .populate('userId', 'name email phone createdAt')
@@ -169,7 +167,7 @@ router.get('/admin', admin, async (req, res) => {
 });
 
 // PUT /api/appointments/admin/:id/status - Update appointment status
-router.put('/admin/:id/status', admin, async (req, res) => {
+router.put('/admin/:id/status', protect, admin, async (req, res) => {
   try {
     const { status } = req.body;
     const appointment = await Appointment.findById(req.params.id);

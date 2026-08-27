@@ -34,6 +34,7 @@ import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
+import Image from '@tiptap/extension-image';
 import { articleTaxonomy } from '../constants/articleTaxonomy';
 
 const ICON_MAP = { Heart, Leaf, Shield, ArrowsClockwise, Signpost, Sun };
@@ -145,6 +146,20 @@ function MenuBar({ editor }) {
     return null;
   }
 
+  const handleImageUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        editor.chain().focus().setImage({ src: reader.result }).run();
+      }
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-2 p-3 border-b border-white/10 bg-[#111]">
       <button
@@ -217,6 +232,13 @@ function MenuBar({ editor }) {
 
       <div className="w-[1px] h-6 bg-white/10 mx-1"></div>
 
+      <label className="p-2 rounded transition-colors text-white/70 hover:text-white hover:bg-white/10 cursor-pointer flex items-center justify-center" title="Insert Image">
+        <ImageIcon size={18} />
+        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+      </label>
+
+      <div className="w-[1px] h-6 bg-white/10 mx-1"></div>
+
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign('left').run()}
@@ -262,6 +284,7 @@ function TiptapArticleEditor({ value, onChange }) {
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       TextStyle,
       Color,
+      Image.configure({ HTMLAttributes: { class: 'max-w-full rounded-lg' } }),
     ],
     content: value || '',
     editorProps: {

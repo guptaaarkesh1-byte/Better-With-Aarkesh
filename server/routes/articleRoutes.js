@@ -1,6 +1,6 @@
 import express from 'express';
 import Article from '../models/Article.js';
-import { admin } from '../middleware/authMiddleware.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -37,7 +37,7 @@ router.get('/published', async (req, res) => {
   }
 });
 
-router.get('/admin', admin, async (req, res) => {
+router.get('/admin', protect, admin, async (req, res) => {
   try {
     const articles = await Article.find().sort({ updatedAt: -1, createdAt: -1 });
     res.json(articles);
@@ -47,7 +47,7 @@ router.get('/admin', admin, async (req, res) => {
   }
 });
 
-router.post('/admin', admin, async (req, res) => {
+router.post('/admin', protect, admin, async (req, res) => {
   try {
     const article = await Article.create(toPayload(req.body));
     res.status(201).json(article);
@@ -57,7 +57,7 @@ router.post('/admin', admin, async (req, res) => {
   }
 });
 
-router.put('/admin/:id', admin, async (req, res) => {
+router.put('/admin/:id', protect, admin, async (req, res) => {
   try {
     const article = await Article.findById(req.params.id);
 
@@ -74,7 +74,7 @@ router.put('/admin/:id', admin, async (req, res) => {
   }
 });
 
-router.delete('/admin/:id', admin, async (req, res) => {
+router.delete('/admin/:id', protect, admin, async (req, res) => {
   try {
     const article = await Article.findById(req.params.id);
 

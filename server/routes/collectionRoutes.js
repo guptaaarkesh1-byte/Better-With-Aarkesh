@@ -1,6 +1,7 @@
 import express from 'express';
 import Collection from '../models/Collection.js';
-import { admin } from '../middleware/authMiddleware.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
+
 
 import Article from '../models/Article.js';
 import Video from '../models/Video.js';
@@ -43,7 +44,7 @@ router.get('/published', async (req, res) => {
   }
 });
 
-router.get('/admin', admin, async (req, res) => {
+router.get('/admin', protect, admin, async (req, res) => {
   try {
     const collections = await Collection.find().sort({ updatedAt: -1, createdAt: -1 });
     res.json(collections);
@@ -53,7 +54,7 @@ router.get('/admin', admin, async (req, res) => {
   }
 });
 
-router.post('/admin', admin, async (req, res) => {
+router.post('/admin', protect, admin, async (req, res) => {
   try {
     const collection = await Collection.create({
       title: req.body.title,
@@ -67,7 +68,7 @@ router.post('/admin', admin, async (req, res) => {
   }
 });
 
-router.put('/admin/:id', admin, async (req, res) => {
+router.put('/admin/:id', protect, admin, async (req, res) => {
   try {
     const collection = await Collection.findById(req.params.id);
 
@@ -90,7 +91,7 @@ router.put('/admin/:id', admin, async (req, res) => {
   }
 });
 
-router.delete('/admin/:id', admin, async (req, res) => {
+router.delete('/admin/:id', protect, admin, async (req, res) => {
   try {
     const collection = await Collection.findById(req.params.id);
 

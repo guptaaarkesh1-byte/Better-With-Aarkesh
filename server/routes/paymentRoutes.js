@@ -53,7 +53,7 @@ router.get('/fees', async (req, res) => {
 // @desc    Update Session Fees
 // @route   POST /api/payment/fees
 // @access  Private/Admin
-router.post('/fees', admin, async (req, res) => {
+router.post('/fees', protect, admin, async (req, res) => {
   try {
     const { fee60min, fee90min } = req.body;
     let settings = await Settings.findOne({ key: 'fees' });
@@ -118,7 +118,7 @@ router.post('/create-order', optionalAuth, async (req, res) => {
 // @desc    Get Razorpay Settings (Admin)
 // @route   GET /api/payment/settings
 // @access  Private/Admin
-router.get('/settings', admin, async (req, res) => {
+router.get('/settings', protect, admin, async (req, res) => {
   try {
     let settings = await Settings.findOne({ key: 'razorpay' });
     if (!settings) {
@@ -134,7 +134,7 @@ router.get('/settings', admin, async (req, res) => {
 // @desc    Update Razorpay Settings (Admin)
 // @route   POST /api/payment/settings
 // @access  Private/Admin
-router.post('/settings', admin, async (req, res) => {
+router.post('/settings', protect, admin, async (req, res) => {
   try {
     const { keyId, keySecret } = req.body;
     
