@@ -10,6 +10,7 @@ import Notes from './pages/my-journey/Notes';
 import Prepare from './pages/prepare/Prepare';
 import Articles from './pages/articles/Articles';
 import Videos from './pages/videos/Videos';
+import Course from './pages/course/Course';
 import Footer from './components/layout/Footer';
 
 import { BookingProvider } from './context/BookingContext';
@@ -31,6 +32,7 @@ function App() {
             <Route path="/prepare" element={<Prepare />} />
             <Route path="/articles" element={<Articles />} />
             <Route path="/videos" element={<Videos />} />
+            <Route path="/course" element={<Course />} />
           </Routes>
           <Footer />
         </MainLayout>

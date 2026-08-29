@@ -6,7 +6,7 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { cn } from '../../utils/cn';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BookmarkSimple, List, X, User, LockKey, SignOut, ArrowRight } from '@phosphor-icons/react';
+import { BookmarkSimple, List, X, User, LockKey, SignOut, ArrowRight, Play } from '@phosphor-icons/react';
 import { useBooking } from '../../context/BookingContext';
 import LoginModal from './LoginModal';
 
@@ -134,7 +134,7 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <nav className="hidden lg:flex items-center justify-center gap-10 absolute left-1/2 -translate-x-1/2">
+        <nav className="hidden lg:flex flex-none items-center justify-center gap-6 lg:gap-8 xl:gap-10">
           {NAV_LINKS.map((link) => {
             let active = false;
             if (location.pathname === '/') {
@@ -166,8 +166,15 @@ export default function Navbar() {
           })}
         </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex-shrink-0 flex items-center gap-4">
             <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-4">
+              <Button 
+                variant="outline" 
+                className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
+                onClick={() => navigate('/course')}
+              >
+                <Play size={14} weight="light" /> COURSE
+              </Button>
               {showMyJourney && (
                 <>
                   {!isLoggedIn ? (
@@ -279,6 +286,16 @@ export default function Navbar() {
           <div className="w-12 h-[1px] bg-accent-gold/30 my-4" />
 
           <div className="flex flex-col items-center gap-4 w-full max-w-xs">
+            <Button 
+              variant="outline" 
+              className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center items-center gap-2"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                navigate('/course');
+              }}
+            >
+              <Play size={16} weight="light" /> COURSE
+            </Button>
             {showMyJourney && (
               <Button 
                 variant="outline" 
