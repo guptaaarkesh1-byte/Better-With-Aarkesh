@@ -12,6 +12,7 @@ import Articles from './pages/articles/Articles';
 import Videos from './pages/videos/Videos';
 import Course from './pages/course/Course';
 import Footer from './components/layout/Footer';
+import FooterDocumentView from './pages/FooterDocumentView';
 
 import { BookingProvider } from './context/BookingContext';
 import BookingModal from './components/ui/BookingModal';
@@ -33,6 +34,7 @@ function App() {
             <Route path="/articles" element={<Articles />} />
             <Route path="/videos" element={<Videos />} />
             <Route path="/course" element={<Course />} />
+            <Route path="/legal/:slug" element={<FooterDocumentView />} />
           </Routes>
           <Footer />
         </MainLayout>

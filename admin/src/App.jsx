@@ -283,6 +283,7 @@ function ProtectedRoute({ isAuthenticated, children }) {
 import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
 import AdminContent from './pages/AdminContent';
+import AdminFooterDocuments from './pages/AdminFooterDocuments';
 
 // --- Main App Route Setup ---
 function App() {
@@ -325,6 +326,7 @@ function App() {
                   <Route path="/appointments" element={<AdminUsers />} />
                   <Route path="/journey/settings" element={<AdminSettings />} />
                   <Route path="/library/content" element={<AdminContent />} />
+                  <Route path="/footer-documents" element={<AdminFooterDocuments />} />
                   {/* More admin routes will go here */}
                 </Routes>
               </AdminLayout>

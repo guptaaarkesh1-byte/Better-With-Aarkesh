@@ -21,6 +21,7 @@ export default function AdminLayout({ children, onLogout }) {
     if (currentPath.startsWith('/library')) return 'library';
     if (currentPath.startsWith('/journey')) return 'journey';
     if (currentPath.startsWith('/appointments')) return 'appointments';
+    if (currentPath.startsWith('/footer-documents')) return 'footer';
     return 'overview';
   };
 
@@ -31,6 +32,7 @@ export default function AdminLayout({ children, onLogout }) {
     { id: 'library', label: 'Library', icon: <Books size={18} />, path: '/library/content' },
     { id: 'journey', label: 'My Journey', icon: <Path size={18} />, path: '/journey/settings' },
     { id: 'appointments', label: 'Appointments', icon: <CalendarBlank size={18} />, path: '/appointments' },
+    { id: 'footer', label: 'Footer', icon: <FolderOpen size={18} />, path: '/footer-documents' },
   ];
 
   return (

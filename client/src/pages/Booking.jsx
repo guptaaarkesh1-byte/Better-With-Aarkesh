@@ -11,8 +11,20 @@ import bookingBg from '../assets/images/booking_bg_lamp.png';
 
 export default function Booking() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => {
+    const savedStep = sessionStorage.getItem('bookingStep');
+    return savedStep ? parseInt(savedStep, 10) : 1;
+  });
   const [bookingData, setBookingData] = useState(() => {
+    const savedBooking = sessionStorage.getItem('bookingData');
+    if (savedBooking) {
+      try {
+        return JSON.parse(savedBooking);
+      } catch (e) {
+        console.error('Failed to parse saved booking data', e);
+      }
+    }
+    
     const saved = localStorage.getItem('userInfo');
     const userInfo = saved ? JSON.parse(saved) : {};
     return {
@@ -45,6 +57,15 @@ export default function Booking() {
     };
     fetchFees();
   }, []);
+
+  // Save to sessionStorage whenever step or bookingData changes
+  useEffect(() => {
+    sessionStorage.setItem('bookingStep', step.toString());
+  }, [step]);
+
+  useEffect(() => {
+    sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
+  }, [bookingData]);
 
   // Always scroll to top when landing on the booking page or changing steps
   useEffect(() => {
@@ -149,6 +170,8 @@ export default function Booking() {
 
             if (finalRes.ok) {
               updateData({ appointmentId });
+              sessionStorage.removeItem('bookingStep');
+              sessionStorage.removeItem('bookingData');
               nextStep();
             } else {
               const data = await finalRes.json();

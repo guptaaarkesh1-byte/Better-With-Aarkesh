@@ -9,6 +9,7 @@ import userRoutes from './routes/userRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import collectionRoutes from './routes/collectionRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import footerDocumentRoutes from './routes/footerDocumentRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -41,6 +42,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/footer-documents', footerDocumentRoutes);
 
 // Make uploads folder static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

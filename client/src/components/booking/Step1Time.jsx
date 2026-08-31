@@ -290,7 +290,10 @@ export default function Step1Time({ data, updateData, onNext, onBack }) {
             CHOOSE A TIME
           </h3>
           
-          <div className="flex flex-col gap-2">
+          <div 
+            className="flex flex-col gap-2 max-h-[360px] overflow-y-auto custom-scrollbar pr-2 overscroll-contain"
+            data-lenis-prevent="true"
+          >
             {!selectedDay && (
               <div className="text-white/40 text-sm font-light italic p-4 text-center">
                 Select a date to view available times.

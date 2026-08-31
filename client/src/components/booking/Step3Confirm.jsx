@@ -3,9 +3,11 @@ import {
   CalendarBlank, Clock, User, VideoCamera, 
   EnvelopeSimple, Lock, ArrowLeft, LockKey, CheckSquare, Square, ClockCounterClockwise 
 } from '@phosphor-icons/react';
+import PolicyModal from '../ui/PolicyModal';
 
 export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, error }) {
   const [agreed, setAgreed] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
 
   return (
     <div className="flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -152,9 +154,12 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
               <p className="text-white/60 text-xs font-light leading-relaxed mb-2">
                 You can reschedule or cancel up to 24 hours before the session.
               </p>
-              <a href="#" className="text-accent-gold text-xs underline hover:text-white transition-colors">
+              <button 
+                onClick={() => setActiveModal('rescheduling-policy')}
+                className="text-accent-gold text-xs underline hover:text-white transition-colors"
+              >
                 View Rescheduling Policy
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -175,7 +180,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
               <Square className="text-white/30 text-2xl shrink-0 group-hover:text-white/60 transition-colors" weight="regular" />
             )}
             <p className="text-white/80 text-sm font-light leading-snug">
-              I have read and agree to the <a href="#" className="text-accent-gold hover:underline" onClick={(e) => e.stopPropagation()}>Terms & Conditions</a> and <a href="#" className="text-accent-gold hover:underline" onClick={(e) => e.stopPropagation()}>Privacy Policy</a>.
+              I agree to the <button className="text-accent-gold hover:underline" onClick={(e) => { e.stopPropagation(); setActiveModal('terms-and-conditions'); }}>terms and conditions</button> and understand that the amount above is the total payment shown in this summary.
             </p>
           </div>
         </div>
@@ -209,6 +214,15 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
 
       </div>
 
+      <PolicyModal
+        isOpen={!!activeModal}
+        onClose={() => setActiveModal(null)}
+        slug={activeModal}
+        title={activeModal === 'terms-and-conditions' ? 'Terms & Conditions' : 'Rescheduling Policy'}
+        showActions={activeModal === 'terms-and-conditions'}
+        onAgree={() => { setAgreed(true); setActiveModal(null); }}
+        onDecline={() => { setAgreed(false); setActiveModal(null); }}
+      />
     </div>
   );
 }

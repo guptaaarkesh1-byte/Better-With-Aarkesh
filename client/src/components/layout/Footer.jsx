@@ -1,9 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Container from '../ui/Container';
 import { InstagramLogo, LinkedinLogo, XLogo } from '@phosphor-icons/react';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const [footerLinks, setFooterLinks] = useState([]);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  useEffect(() => {
+    const fetchLinks = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/footer-documents/published`);
+        if (res.ok) {
+          const data = await res.json();
+          setFooterLinks(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch footer links', err);
+      }
+    };
+    fetchLinks();
+  }, [API_URL]);
 
   return (
     <footer className="w-full bg-black border-t border-white/10 pt-16 pb-8 snap-start relative z-20">
@@ -61,8 +79,22 @@ export default function Footer() {
             &copy; {currentYear} BetterWithAarkesh. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <a href="#" className="font-sans text-[0.65rem] text-white/40 hover:text-white transition-colors tracking-wider">Privacy Policy</a>
-            <a href="#" className="font-sans text-[0.65rem] text-white/40 hover:text-white transition-colors tracking-wider">Terms of Service</a>
+            {footerLinks.length > 0 ? (
+              footerLinks.map(link => (
+                <Link 
+                  key={link.slug} 
+                  to={`/legal/${link.slug}`} 
+                  className="font-sans text-[0.65rem] text-white/40 hover:text-white transition-colors tracking-wider"
+                >
+                  {link.title}
+                </Link>
+              ))
+            ) : (
+              <>
+                <a href="#" className="font-sans text-[0.65rem] text-white/40 hover:text-white transition-colors tracking-wider">Privacy Policy</a>
+                <a href="#" className="font-sans text-[0.65rem] text-white/40 hover:text-white transition-colors tracking-wider">Terms of Service</a>
+              </>
+            )}
           </div>
         </div>
 

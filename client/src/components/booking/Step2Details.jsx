@@ -9,7 +9,11 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
     updateData({ [name]: value });
   };
 
-  const isFormValid = data.name.trim() !== '' && data.email.trim() !== '' && data.reason.trim() !== '' &&
+  const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const isFormValid = data.name.trim() !== '' && isValidEmail(data.email) && data.reason.trim() !== '' &&
     (isAuthenticated || (data.phoneNumber && data.phoneNumber.length === 10));
 
   const handleContinue = () => {
