@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarBlank, CheckCircle, PencilSimple, FileText, Clock, VideoCamera, User, CalendarPlus, ArrowsClockwise, XCircle, X } from '@phosphor-icons/react';
+import { generateGoogleCalendarLink } from '../../../utils/calendar';
 
 export default function CoachingTab() {
   const [activeTab, setActiveTab] = useState('UPCOMING');
@@ -160,10 +161,15 @@ export default function CoachingTab() {
                           <PencilSimple size={16} />
                           <span>PREPARE</span>
                         </button>
-                        <button className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded border border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/30 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors">
+                        <a 
+                          href={generateGoogleCalendarLink(app.date, app.time, app.duration)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded border border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/30 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                        >
                           <CalendarPlus size={16} />
                           <span>ADD TO CALENDAR</span>
-                        </button>
+                        </a>
                         <button className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded border border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/30 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors">
                           <ArrowsClockwise size={16} />
                           <span>RESCHEDULE</span>
