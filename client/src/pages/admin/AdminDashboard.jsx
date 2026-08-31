@@ -1,7 +1,50 @@
-import React from 'react';
-import { Users, BookOpen, CurrencyDollar, CalendarBlank } from '@phosphor-icons/react';
+import React, { useState, useEffect } from 'react';
+import { Users, BookOpen, CurrencyDollar, CalendarBlank, CheckCircle, XCircle } from '@phosphor-icons/react';
 
 export default function AdminDashboard() {
+  const [requests, setRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+
+  const fetchRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/appointments/admin/reschedule-requests`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRequests(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const handleAction = async (id, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      const endpoint = action === 'approve' ? 'approve-reschedule' : 'reject-reschedule';
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/appointments/admin/${id}/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchRequests();
+      } else {
+        alert("Failed to process request.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred.");
+    }
+  };
+
   const stats = [
     { label: 'Total Clients', value: '124', icon: <Users size={24} />, trend: '+12% this month' },
     { label: 'Active Articles', value: '45', icon: <BookOpen size={24} />, trend: '+3 this week' },
@@ -46,9 +89,52 @@ export default function AdminDashboard() {
         </div>
 
         <div className="bg-[#111] border border-white/5 rounded-xl p-6 flex flex-col gap-6">
-          <h2 className="font-serif text-xl text-white">Today's Schedule</h2>
-          <div className="flex-1 border border-dashed border-white/10 rounded-lg flex items-center justify-center min-h-[200px]">
-            <span className="text-white/30 font-sans text-sm">Appointments will appear here</span>
+          <h2 className="font-serif text-xl text-white">Reschedule Requests</h2>
+          <div className="flex-1 flex flex-col gap-4">
+            {loadingRequests ? (
+              <div className="flex-1 border border-dashed border-white/10 rounded-lg flex items-center justify-center min-h-[200px]">
+                <span className="text-white/30 font-sans text-sm">Loading...</span>
+              </div>
+            ) : requests.length > 0 ? (
+              requests.map(req => (
+                <div key={req._id} className="bg-black/40 border border-[#c79c6e]/20 rounded-lg p-4 flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-serif text-white">{req.name}</h4>
+                      <p className="font-sans text-xs text-white/50">{req.email}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-white/5 p-2 rounded">
+                      <span className="text-white/40 block mb-1">Current:</span>
+                      <span className="text-white line-through">{req.date} {req.time}</span>
+                    </div>
+                    <div className="bg-[#c79c6e]/10 p-2 rounded">
+                      <span className="text-[#c79c6e]/60 block mb-1">Requested:</span>
+                      <span className="text-[#c79c6e]">{req.rescheduleRequest.date} {req.rescheduleRequest.time}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <button 
+                      onClick={() => handleAction(req._id, 'approve')}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 bg-[#c79c6e] hover:bg-[#b98a56] text-black font-sans text-[0.65rem] uppercase tracking-wider font-medium rounded transition-colors"
+                    >
+                      <CheckCircle size={16} /> Approve
+                    </button>
+                    <button 
+                      onClick={() => handleAction(req._id, 'reject')}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white font-sans text-[0.65rem] uppercase tracking-wider font-medium rounded transition-colors"
+                    >
+                      <XCircle size={16} /> Reject
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex-1 border border-dashed border-white/10 rounded-lg flex items-center justify-center min-h-[200px]">
+                <span className="text-white/30 font-sans text-sm">No pending requests</span>
+              </div>
+            )}
           </div>
         </div>
 

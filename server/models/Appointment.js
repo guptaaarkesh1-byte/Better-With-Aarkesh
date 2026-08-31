@@ -39,7 +39,7 @@ const appointmentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['UPCOMING', 'COMPLETED', 'DRAFTS'],
+    enum: ['UPCOMING', 'COMPLETED', 'DRAFTS', 'CANCELLED'],
     default: 'UPCOMING',
   },
   duration: {
@@ -62,6 +62,21 @@ const appointmentSchema = new mongoose.Schema({
     type: String,
     enum: ['Pending', 'Paid', 'Failed'],
     default: 'Pending',
+  },
+  calBookingUid: {
+    type: String,
+  },
+  meetLink: {
+    type: String,
+  },
+  rescheduleRequest: {
+    date: String,
+    time: String,
+    reason: String,
+    status: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+    }
   }
 }, { timestamps: true });
 

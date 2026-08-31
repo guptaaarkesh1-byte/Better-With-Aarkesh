@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { CalendarBlank, CheckCircle, PencilSimple, FileText, Clock, VideoCamera, User, CalendarPlus, ArrowsClockwise, XCircle, X } from '@phosphor-icons/react';
+import { CalendarBlank, CheckCircle, PencilSimple, FileText, Clock, VideoCamera, User, CalendarPlus, ArrowsClockwise, XCircle, X, DotsThree, CurrencyInr } from '@phosphor-icons/react';
 import { generateGoogleCalendarLink } from '../../../utils/calendar';
+import RescheduleModal from './RescheduleModal';
 
 export default function CoachingTab() {
   const [activeTab, setActiveTab] = useState('UPCOMING');
   const [selectedSession, setSelectedSession] = useState(null);
   const [prepareSession, setPrepareSession] = useState(null);
+  const [rescheduleSession, setRescheduleSession] = useState(null);
+  const [cancelSession, setCancelSession] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [optionsOpenId, setOptionsOpenId] = useState(null);
+
+  const handleRescheduleSuccess = () => {
+    setRescheduleSession(null);
+    window.location.reload(); // Simple way to refresh data
+  };
 
   useEffect(() => {
     if (selectedSession || prepareSession) {
@@ -40,17 +50,58 @@ export default function CoachingTab() {
         });
         if (res.ok) {
           const data = await res.json();
-          const formatted = data.map(app => ({
-            id: app._id,
-            status: app.status,
-            badge: app.status === 'UPCOMING' ? 'CONFIRMED' : 'COMPLETED',
-            date: app.date,
-            time: app.time,
-            durationStr: '60-MINUTE CONVERSATION',
-            person: app.name,
-            primaryAction: app.status === 'COMPLETED' ? 'VIEW SHARED NOTES' : 'VIEW APPOINTMENT',
-            ...app
-          }));
+          const formatted = data.map(app => {
+            let dateObj;
+            if (app.date && app.date.includes('-') && app.date.split('-').length === 3) {
+              const [y, m, d] = app.date.split('-');
+              dateObj = new Date(y, m - 1, d);
+            } else {
+              dateObj = new Date(app.date);
+            }
+
+            let formattedDate = app.date;
+            
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            if (!isNaN(dateObj)) {
+              formattedDate = `${days[dateObj.getDay()]}, ${String(dateObj.getDate()).padStart(2, '0')} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+            }
+
+            let formattedRescheduleDate = null;
+            if (app.rescheduleRequest && app.rescheduleRequest.date) {
+               let resDateObj;
+               if (app.rescheduleRequest.date.includes('-') && app.rescheduleRequest.date.split('-').length === 3) {
+                 const [y, m, d] = app.rescheduleRequest.date.split('-');
+                 resDateObj = new Date(y, m - 1, d);
+               } else {
+                 resDateObj = new Date(app.rescheduleRequest.date);
+               }
+               formattedRescheduleDate = app.rescheduleRequest.date;
+               if (!isNaN(resDateObj)) {
+                 formattedRescheduleDate = `${days[resDateObj.getDay()]}, ${String(resDateObj.getDate()).padStart(2, '0')} ${months[resDateObj.getMonth()]} ${resDateObj.getFullYear()}`;
+               }
+               
+               // Safely attach it to the reschedule request object for the modal
+               app.rescheduleRequest = {
+                 ...app.rescheduleRequest,
+                 formattedDate: formattedRescheduleDate
+               };
+            }
+
+            return {
+              ...app,
+              id: app._id,
+              status: app.status,
+              badge: app.status === 'UPCOMING' ? 'CONFIRMED' : 'COMPLETED',
+              date: formattedDate,
+              rawDate: app.date, // Keep raw date if needed for operations
+              time: app.time,
+              durationStr: '60-MINUTE CONVERSATION',
+              person: app.name,
+              primaryAction: app.status === 'COMPLETED' ? 'VIEW SHARED NOTES' : 'VIEW APPOINTMENT',
+            };
+          });
           setAppointments(formatted);
         }
       } catch (err) {
@@ -61,7 +112,34 @@ export default function CoachingTab() {
     };
     fetchAppointments();
   }, []);
-  const filteredAppointments = appointments.filter(app => app.status === activeTab);
+  
+  const filteredAppointments = appointments.filter(app => {
+    if (activeTab === 'UPCOMING') return app.status === 'UPCOMING' || app.status === 'CANCELLED';
+    return app.status === activeTab;
+  });
+
+  const handleCancelAppointment = async () => {
+    if (!cancelSession) return;
+    setIsCancelling(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${cancelSession.id}/cancel`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert("Failed to cancel appointment.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error cancelling appointment.");
+    } finally {
+      setIsCancelling(false);
+      setCancelSession(null);
+    }
+  };
 
   return (
     <div className="w-full h-full min-h-[500px] rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-8 md:p-12 flex flex-col animate-in fade-in duration-700 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_50px_rgba(199,156,110,0.15)]">
@@ -113,8 +191,33 @@ export default function CoachingTab() {
           filteredAppointments.map(app => (
             <div key={app.id} className="group/card w-full flex flex-col items-center">
                 {/* Main Card */}
-                <div className="w-full rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a]/90 backdrop-blur-md p-6 md:p-8 flex flex-col justify-between gap-6 hover:border-[#c79c6e]/60 transition-colors duration-500 shadow-xl relative z-10 h-full">
+                <div className="w-full rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a]/90 backdrop-blur-md p-6 md:p-8 flex flex-col justify-between gap-6 hover:border-[#c79c6e]/60 transition-colors duration-500 shadow-xl relative z-10 h-full overflow-hidden">
                   
+                  {app.rescheduleRequest?.status === 'APPROVED' && (
+                    <div className="absolute top-0 right-0 bg-green-500/10 border-b border-l border-green-500/20 px-4 py-2 rounded-bl-xl text-green-500 font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                      <CheckCircle weight="fill" size={14} />
+                      RESCHEDULE APPROVED
+                    </div>
+                  )}
+                  {app.rescheduleRequest?.status === 'PENDING' && (
+                    <div className="absolute top-0 right-0 bg-amber-500/10 border-b border-l border-amber-500/20 px-4 py-2 rounded-bl-xl text-amber-500 font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                      <Clock weight="fill" size={14} />
+                      RESCHEDULE PENDING
+                    </div>
+                  )}
+                  {app.rescheduleRequest?.status === 'REJECTED' && (
+                    <div className="absolute top-0 right-0 bg-red-500/10 border-b border-l border-red-500/20 px-4 py-2 rounded-bl-xl text-red-500 font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                      <XCircle weight="fill" size={14} />
+                      RESCHEDULE DECLINED
+                    </div>
+                  )}
+                  {app.status === 'CANCELLED' && (
+                    <div className="absolute top-0 right-0 bg-red-500/10 border-b border-l border-red-500/20 px-4 py-2 rounded-bl-xl text-red-500 font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                      <XCircle weight="fill" size={14} />
+                      CANCELLED
+                    </div>
+                  )}
+
                   {/* Top: Status & Details */}
                   <div className="flex flex-col gap-4">
                     <div className={`flex items-center gap-2 ${app.status === 'COMPLETED' ? 'text-green-500' : 'text-[#c79c6e]'} font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium`}>
@@ -141,47 +244,77 @@ export default function CoachingTab() {
                     </div>
                   </div>
 
-                  {/* Bottom: Main Action Button */}
-                  <div className="w-full shrink-0 flex items-center mt-2">
-                    <button className="w-full py-4 px-6 rounded border border-white/20 text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors">
+                  {/* Bottom: Main Action Button & Options */}
+                  <div className="w-full shrink-0 flex items-center mt-2 gap-2 relative">
+                    <button 
+                      onClick={() => setSelectedSession(app)}
+                      className="flex-1 py-4 px-6 rounded border border-white/20 text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                    >
                       {app.primaryAction}
                     </button>
-                  </div>
-                </div>
+                    
+                    {app.status === 'UPCOMING' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOptionsOpenId(optionsOpenId === app.id ? null : app.id);
+                        }}
+                        className={`p-3.5 rounded border transition-colors flex items-center justify-center ${optionsOpenId === app.id ? 'bg-[#c79c6e]/10 border-[#c79c6e]/40 text-[#c79c6e]' : 'border-white/20 text-white/60 hover:text-white hover:border-white/40 hover:bg-white/5'}`}
+                      >
+                        <DotsThree size={20} weight="bold" />
+                      </button>
+                    )}
 
-                {/* Expandable Action Row (Visible on hover of the main card area) */}
-                {app.status === 'UPCOMING' && (
-                  <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover/card:grid-rows-[1fr] group-hover/card:opacity-100 transition-all duration-500 ease-in-out">
-                    <div className="overflow-hidden">
-                      <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-4 pt-6 mt-2 border-t border-white/5">
-                        <button 
-                          onClick={() => setPrepareSession({ session: app, step: 1, noteVisible: true })}
-                          className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e]/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
-                        >
-                          <PencilSimple size={16} />
-                          <span>PREPARE</span>
-                        </button>
+                    {/* Popover Menu */}
+                    {optionsOpenId === app.id && app.status === 'UPCOMING' && (
+                      <div className="absolute bottom-full right-0 mb-3 w-56 bg-[#0a0a0a] border border-[#c79c6e]/20 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] flex flex-col py-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                        
                         <a 
                           href={generateGoogleCalendarLink(app.date, app.time, app.duration)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded border border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/30 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                          onClick={() => setOptionsOpenId(null)}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left text-white/70 hover:text-white hover:bg-white/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
                         >
-                          <CalendarPlus size={16} />
+                          <CalendarPlus size={16} className="text-blue-400" />
                           <span>ADD TO CALENDAR</span>
                         </a>
-                        <button className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded border border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/30 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors">
-                          <ArrowsClockwise size={16} />
-                          <span>RESCHEDULE</span>
+                        
+                        <button 
+                          onClick={() => {
+                            setRescheduleSession(app);
+                            setOptionsOpenId(null);
+                          }}
+                          disabled={app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'APPROVED'}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left text-white/70 hover:text-white hover:bg-white/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ArrowsClockwise size={16} className="text-amber-400" />
+                          <span>
+                            {app.rescheduleRequest?.status === 'PENDING' 
+                              ? 'RESCHEDULE PENDING' 
+                              : app.rescheduleRequest?.status === 'APPROVED' 
+                                ? 'RESCHEDULED' 
+                                : 'RESCHEDULE'}
+                          </span>
                         </button>
-                        <button className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded border border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/30 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors">
+                        
+                        <div className="h-px w-full bg-white/10 my-1"></div>
+
+                        <button 
+                          onClick={() => {
+                            setCancelSession(app);
+                            setOptionsOpenId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-400 hover:text-red-300 hover:bg-red-500/10 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                        >
                           <XCircle size={16} />
                           <span>CANCEL</span>
                         </button>
+
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
           ))
         )}
@@ -211,11 +344,87 @@ export default function CoachingTab() {
 
             {/* Scrollable Content Area */}
             <div className="overflow-y-auto overscroll-contain pr-2 md:pr-4 -mr-2 md:-mr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <h2 className="font-serif text-3xl md:text-4xl text-white mb-8 pr-8 leading-tight">
-                {selectedSession.title}
-              </h2>
+              <div className="flex flex-col gap-8 pb-4 pt-4">
+                
+                {/* Date */}
+                <div className="flex gap-5">
+                  <CalendarBlank size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Date</span>
+                    <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.date}</span>
+                  </div>
+                </div>
 
-              <div className="flex flex-col gap-6 pb-4">
+                {/* Time */}
+                <div className="flex gap-5">
+                  <Clock size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Time</span>
+                    <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.time}</span>
+                  </div>
+                </div>
+
+                {/* Session Type */}
+                <div className="flex gap-5">
+                  <User size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Session Type</span>
+                    <span className="font-sans text-lg md:text-xl text-white font-medium">1-on-1 Coaching Session</span>
+                  </div>
+                </div>
+
+                {/* Duration */}
+                <div className="flex gap-5">
+                  <Clock size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Duration</span>
+                    <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.duration || 60} minutes</span>
+                  </div>
+                </div>
+
+                {/* Where */}
+                <div className="flex gap-5">
+                  <VideoCamera size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Where</span>
+                    <div className="font-sans text-lg md:text-xl text-white font-medium flex flex-wrap items-center gap-2">
+                      Google Meet
+                      {selectedSession.meetLink ? (
+                         <a href={selectedSession.meetLink} target="_blank" rel="noopener noreferrer" className="text-[#c79c6e] hover:underline text-sm md:text-base ml-1">(Join Link)</a>
+                      ) : (
+                         <span className="text-white/40 text-sm md:text-base ml-1 font-normal">(Link will be shared after booking)</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Amount */}
+                <div className="flex gap-5">
+                  <CurrencyInr size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/50 font-semibold">TOTAL AMOUNT</span>
+                    <span className="font-sans text-xl md:text-2xl text-white font-bold">₹{selectedSession.duration === 90 ? '7,500' : '5,000'}</span>
+                  </div>
+                </div>
+
+                {/* Reschedule Details */}
+                {selectedSession.rescheduleRequest && (
+                  <div className="w-full rounded-2xl bg-gradient-to-br from-[#120f0d] to-[#050505] border border-amber-500/30 p-6 md:p-8 shadow-lg relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-amber-500/10 border-b border-l border-amber-500/30 px-3 py-1.5 rounded-bl-xl text-amber-500 font-sans text-[0.55rem] uppercase tracking-[0.2em] font-semibold">
+                      {selectedSession.rescheduleRequest.status}
+                    </div>
+                    <h4 className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-medium text-amber-500 mb-4">
+                      RESCHEDULE REQUEST
+                    </h4>
+                    <div className="flex flex-col gap-2 font-serif text-base md:text-lg text-white/90 leading-relaxed">
+                      <p><strong className="text-white/50 font-sans text-xs tracking-wider uppercase mr-2">Requested Date:</strong> {selectedSession.rescheduleRequest.formattedDate || selectedSession.rescheduleRequest.date}</p>
+                      <p><strong className="text-white/50 font-sans text-xs tracking-wider uppercase mr-2">Requested Time:</strong> {selectedSession.rescheduleRequest.time}</p>
+                      {selectedSession.rescheduleRequest.reason && (
+                        <p className="mt-2 text-white/70 italic">"{selectedSession.rescheduleRequest.reason}"</p>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 {/* Shared Summary Card */}
                 {selectedSession.sharedSummary && (
@@ -381,6 +590,50 @@ export default function CoachingTab() {
         document.body
       )}
 
+      {rescheduleSession && (
+        <RescheduleModal
+          isOpen={!!rescheduleSession}
+          onClose={() => setRescheduleSession(null)}
+          session={rescheduleSession}
+          onSuccess={handleRescheduleSuccess}
+        />
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {cancelSession && createPortal(
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
+        >
+          <div className="relative w-full max-w-md bg-[#0a0a0a] border border-red-500/20 rounded-2xl shadow-[0_0_50px_rgba(239,68,68,0.15)] p-8 flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
+              <XCircle className="text-red-500" size={32} weight="fill" />
+            </div>
+            
+            <h2 className="font-serif text-2xl text-white mb-2">Cancel Appointment?</h2>
+            <p className="font-sans text-white/60 text-sm mb-8 leading-relaxed">
+              Are you sure you want to cancel your session on <strong>{cancelSession.date}</strong> at <strong>{cancelSession.time}</strong>? This action cannot be undone.
+            </p>
+
+            <div className="flex w-full gap-4">
+              <button
+                onClick={() => setCancelSession(null)}
+                disabled={isCancelling}
+                className="flex-1 py-3 rounded border border-white/20 text-white/70 hover:bg-white/5 hover:text-white font-sans text-xs uppercase tracking-widest transition-colors"
+              >
+                No, Keep It
+              </button>
+              <button
+                onClick={handleCancelAppointment}
+                disabled={isCancelling}
+                className="flex-1 py-3 rounded bg-red-600 hover:bg-red-500 text-white font-sans text-xs uppercase tracking-widest font-semibold transition-colors disabled:opacity-50"
+              >
+                {isCancelling ? 'CANCELLING...' : 'YES, CANCEL'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

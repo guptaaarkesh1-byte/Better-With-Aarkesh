@@ -130,6 +130,59 @@ export default function AdminUsers() {
     }
   };
 
+  const handleRescheduleAction = async (userId, sessionId, action) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
+      const endpoint = action === 'approve' ? 'approve-reschedule' : 'reject-reschedule';
+      
+      const res = await fetch(`${apiUrl}/api/appointments/admin/${sessionId}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to perform action');
+      }
+
+      const updatedAppointment = await res.json();
+      
+      setUsers(prevUsers => prevUsers.map(user => {
+        if (user.id === userId) {
+          const updatedHistory = user.history.map(session => 
+            session.id === sessionId 
+              ? { 
+                  ...session, 
+                  date: updatedAppointment.date,
+                  time: updatedAppointment.time,
+                  rescheduleRequest: updatedAppointment.rescheduleRequest 
+                } 
+              : session
+          );
+          return { ...user, history: updatedHistory };
+        }
+        return user;
+      }));
+
+      if (selectedSession && selectedSession.id === sessionId) {
+        setSelectedSession(prev => ({
+           ...prev,
+           date: updatedAppointment.date,
+           time: updatedAppointment.time,
+           rescheduleRequest: updatedAppointment.rescheduleRequest
+        }));
+      }
+      
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to ${action} reschedule request`);
+    }
+  };
+
   // Fetch real appointments on load
   React.useEffect(() => {
     const fetchRealData = async () => {
@@ -183,7 +236,8 @@ export default function AdminUsers() {
               txnId: app.orderId || 'TXN-PENDING',
               payment: app.paymentId ? 'Paid' : (app.paymentStatus || 'Failed'),
               beforeWeSpeak: app.reason || '',
-              duration: app.duration || (app.isFirstSession ? 60 : 90)
+              duration: app.duration || (app.isFirstSession ? 60 : 90),
+              rescheduleRequest: app.rescheduleRequest || null
             });
             userMap[uId].appointmentsCount++;
           });
@@ -263,6 +317,7 @@ export default function AdminUsers() {
     switch(status.toLowerCase()) {
       case 'upcoming': return 'text-[#c79c6e] border-[#c79c6e]/40';
       case 'completed': return 'text-green-500 border-green-500/40';
+      case 'cancelled': return 'text-red-500 border-red-500/40';
       case 'today': return 'text-blue-400 border-blue-400/40';
       default: return 'text-white/60 border-white/20';
     }
@@ -479,13 +534,14 @@ export default function AdminUsers() {
       <div className="w-full bg-[#111] border border-white/5 rounded-xl overflow-hidden flex flex-col z-10">
         
         {/* Table Header */}
-        <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_1.5fr_80px] gap-4 px-6 py-4 bg-[#1a1a1a] border-b border-white/5 text-white/40 text-[0.65rem] uppercase tracking-widest font-semibold">
+        <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_1.5fr_1.2fr_80px] gap-4 px-6 py-4 bg-[#1a1a1a] border-b border-white/5 text-white/40 text-[0.65rem] uppercase tracking-widest font-semibold">
           <div>Client Name</div>
           <div>Email Address</div>
           <div>Phone No.</div>
           <div>Joined Date</div>
           <div className="text-center">Appointments</div>
           <div>Next Appointment</div>
+          <div>Reschedule Req</div>
           <div className="text-right">Actions</div>
         </div>
 
@@ -501,7 +557,7 @@ export default function AdminUsers() {
               <React.Fragment key={user.id}>
                 {/* Main Row */}
                 <div 
-                  className={`grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_1.5fr_80px] gap-4 px-6 py-5 border-b border-white/5 items-center transition-colors cursor-pointer group ${expandedUser === user.id ? 'bg-white/[0.02]' : 'hover:bg-white/[0.02]'}`}
+                  className={`grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_1.5fr_1.2fr_80px] gap-4 px-6 py-5 border-b border-white/5 items-center transition-colors cursor-pointer group ${expandedUser === user.id ? 'bg-white/[0.02]' : 'hover:bg-white/[0.02]'}`}
                   onClick={() => toggleExpand(user.id)}
                 >
                   <div className="flex items-center gap-4">
@@ -582,6 +638,14 @@ export default function AdminUsers() {
                     )}
                   </div>
                   
+                  <div className="flex flex-col items-start gap-1">
+                    {user.history.some(h => h.rescheduleRequest && h.rescheduleRequest.status === 'PENDING') ? (
+                      <span className="text-yellow-500 text-xs font-medium px-2 py-1 bg-yellow-500/10 rounded-full border border-yellow-500/20">Pending</span>
+                    ) : (
+                      <span className="text-white/30 text-sm">—</span>
+                    )}
+                  </div>
+                  
                   <div className="flex items-center justify-end gap-3 text-white/50">
                     <button 
                       onClick={(e) => {
@@ -627,7 +691,7 @@ export default function AdminUsers() {
                           
                           <div className="flex flex-col gap-2 pl-4 border-l border-white/10 ml-2">
                             {filteredHistory.map((session) => (
-                            <div key={session.id} className="grid grid-cols-[1fr_2fr_1fr_1.5fr_1fr_100px] gap-4 items-center px-4 py-3 bg-[#111] border border-white/5 rounded-lg hover:border-white/10 transition-colors">
+                            <div key={session.id} className="grid grid-cols-[1fr_2fr_1fr_1.5fr_1fr_1.5fr_100px] gap-4 items-center px-4 py-3 bg-[#111] border border-white/5 rounded-lg hover:border-white/10 transition-colors">
                               
                               <div className="flex items-start gap-3">
                                 <CalendarBlank size={16} className="text-white/30 mt-0.5" />
@@ -639,45 +703,47 @@ export default function AdminUsers() {
 
                               <div className="text-white/70 text-sm">{session.type}</div>
 
-                              <div className="relative">
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setStatusDropdownOpenId(statusDropdownOpenId === session.id ? null : session.id);
-                                  }}
-                                  className={`px-2.5 py-1 rounded-full border text-[0.65rem] uppercase tracking-wider hover:opacity-80 transition-opacity flex items-center gap-1 ${getStatusPillColor(session.status)}`}
-                                >
-                                  {session.status}
-                                  <CaretDown size={10} />
-                                </button>
-                                
-                                {statusDropdownOpenId === session.id && (
-                                  <div className="absolute top-full mt-1 left-0 w-28 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                                    {session.status.toUpperCase() !== 'COMPLETED' && (
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          updateAppointmentStatus(user.id, session.id, 'COMPLETED');
-                                        }} 
-                                        className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-green-500 hover:bg-white/5 transition-colors"
-                                      >
-                                        Completed
-                                      </button>
-                                    )}
-                                    {session.status.toUpperCase() !== 'UPCOMING' && (
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          updateAppointmentStatus(user.id, session.id, 'UPCOMING');
-                                        }} 
-                                        className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-[#c79c6e] hover:bg-white/5 transition-colors"
-                                      >
-                                        Upcoming
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+                                <div className="relative">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (session.status.toUpperCase() !== 'CANCELLED') {
+                                        setStatusDropdownOpenId(statusDropdownOpenId === session.id ? null : session.id);
+                                      }
+                                    }}
+                                    className={`px-2.5 py-1 rounded-full border text-[0.65rem] uppercase tracking-wider hover:opacity-80 transition-opacity flex items-center gap-1 ${getStatusPillColor(session.status)} ${session.status.toUpperCase() === 'CANCELLED' ? 'cursor-default opacity-80 hover:opacity-80' : ''}`}
+                                  >
+                                    {session.status}
+                                    {session.status.toUpperCase() !== 'CANCELLED' && <CaretDown size={10} />}
+                                  </button>
+                                  
+                                  {statusDropdownOpenId === session.id && (
+                                    <div className="absolute top-full mt-1 left-0 w-28 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
+                                      {session.status.toUpperCase() !== 'COMPLETED' && (
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateAppointmentStatus(user.id, session.id, 'COMPLETED');
+                                          }} 
+                                          className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-green-500 hover:bg-white/5 transition-colors"
+                                        >
+                                          Completed
+                                        </button>
+                                      )}
+                                      {session.status.toUpperCase() !== 'UPCOMING' && (
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateAppointmentStatus(user.id, session.id, 'UPCOMING');
+                                          }} 
+                                          className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-[#c79c6e] hover:bg-white/5 transition-colors"
+                                        >
+                                          Upcoming
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
 
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">Transaction ID</span>
@@ -691,6 +757,18 @@ export default function AdminUsers() {
                                 <span className="text-white/80 text-[0.65rem] font-medium font-mono">
                                   ₹{(session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min).toLocaleString('en-IN')}
                                 </span>
+                              </div>
+
+                              <div className="flex flex-col gap-0.5">
+                                {session.rescheduleRequest ? (
+                                  <>
+                                    <span className={`text-[0.65rem] uppercase tracking-wider font-semibold ${session.rescheduleRequest.status === 'PENDING' ? 'text-yellow-500' : session.rescheduleRequest.status === 'APPROVED' ? 'text-green-500' : 'text-red-500'}`}>{session.rescheduleRequest.status}</span>
+                                    <span className="text-white/80 text-xs">{session.rescheduleRequest.date}</span>
+                                    <span className="text-white/50 text-[0.6rem]">{session.rescheduleRequest.time}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-white/30 text-sm">—</span>
+                                )}
                               </div>
 
                               <div className="text-right">
@@ -827,23 +905,36 @@ export default function AdminUsers() {
                         <div className="flex flex-col gap-1">
                           <span className="text-amber-500/60 text-[0.65rem] uppercase tracking-widest font-semibold">Requested New Time</span>
                           <span className="text-amber-500 font-medium text-sm">
-                            {selectedSession.rescheduleRequest.requestedDate} at {selectedSession.rescheduleRequest.requestedTime}
+                            {selectedSession.rescheduleRequest.date} at {selectedSession.rescheduleRequest.time}
                           </span>
                         </div>
                         <div className="flex flex-col gap-1">
                           <span className="text-amber-500/60 text-[0.65rem] uppercase tracking-widest font-semibold">Client's Reason</span>
                           <span className="text-amber-500/90 text-sm italic">
-                            "{selectedSession.rescheduleRequest.reason}"
+                            {selectedSession.rescheduleRequest.reason ? `"${selectedSession.rescheduleRequest.reason}"` : <span className="text-amber-500/50">No reason provided.</span>}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <button className="flex-1 py-2 rounded bg-amber-500 text-black font-semibold text-xs uppercase tracking-widest hover:bg-amber-400 transition-colors">
-                            Accept
-                          </button>
-                          <button className="flex-1 py-2 rounded border border-amber-500/30 text-amber-500 font-semibold text-xs uppercase tracking-widest hover:bg-amber-500/10 transition-colors">
-                            Decline
-                          </button>
-                        </div>
+                        {selectedSession.rescheduleRequest.status === 'PENDING' && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <button 
+                              onClick={() => handleRescheduleAction(selectedUser.id, selectedSession.id, 'approve')}
+                              className="flex-1 py-2 rounded bg-amber-500 text-black font-semibold text-xs uppercase tracking-widest hover:bg-amber-400 transition-colors"
+                            >
+                              Accept
+                            </button>
+                            <button 
+                              onClick={() => handleRescheduleAction(selectedUser.id, selectedSession.id, 'reject')}
+                              className="flex-1 py-2 rounded border border-amber-500/30 text-amber-500 font-semibold text-xs uppercase tracking-widest hover:bg-amber-500/10 transition-colors"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
+                        {selectedSession.rescheduleRequest.status !== 'PENDING' && (
+                          <div className="mt-2 text-xs uppercase tracking-widest font-semibold opacity-60">
+                            Status: {selectedSession.rescheduleRequest.status}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

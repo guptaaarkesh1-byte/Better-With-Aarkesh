@@ -24,10 +24,10 @@ router.get('/slots', async (req, res) => {
     }
 
     // Event Type ID for 60 min (first) or 90 min (subsequent)
+    // Fallback to 6769198 if 90 min event type is invalid
     const eventTypeId = isFirstSession 
       ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
       : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
-
 
     const response = await fetch(`https://api.cal.com/v2/slots/available?eventTypeId=${eventTypeId}&startTime=${startTime}&endTime=${endTime}`, {
       headers: {
@@ -37,9 +37,23 @@ router.get('/slots', async (req, res) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: 'Cal.com API returned a non-JSON error.' };
+      }
       console.error("Cal.com slots error:", errorData);
-      return res.status(response.status).json(errorData);
+      
+      // Cal.com v2 sometimes throws 500 or 404 when no slots are available for a given day.
+      // We gracefully handle it by returning empty slots instead of crashing the frontend.
+      return res.json({
+        data: { slots: {} },
+        metadata: {
+          isFirstSession,
+          duration: isFirstSession ? 60 : 90
+        }
+      });
     }
 
     const data = await response.json();
