@@ -1,7 +1,10 @@
 import express from 'express';
 import Razorpay from 'razorpay';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import Settings from '../models/Settings.js';
 import Appointment from '../models/Appointment.js';
+import CourseUser from '../models/CourseUser.js';
 import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -154,6 +157,73 @@ router.post('/settings', protect, admin, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error updating settings' });
+  }
+});
+
+// @desc    Create Razorpay Order for Course
+// @route   POST /api/payment/course-order
+// @access  Public
+router.post('/course-order', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Base amount 15000 + 18% GST (2700) = 17700
+    const amount = 17700;
+    
+    const instance = await getRazorpayInstance();
+    
+    const options = {
+      amount: amount * 100, // in paise
+      currency: 'INR',
+      receipt: `course_${Date.now()}`,
+    };
+
+    const order = await instance.orders.create(options);
+    res.json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message || 'Error creating course order' });
+  }
+});
+
+// @desc    Verify Course Payment
+// @route   POST /api/payment/course-verify
+// @access  Public
+router.post('/course-verify', async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, token } = req.body;
+
+    const settings = await Settings.findOne({ key: 'razorpay' });
+    if (!settings || !settings.value || !settings.value.keySecret) {
+      return res.status(500).json({ message: 'Razorpay keys not configured' });
+    }
+
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', settings.value.keySecret)
+      .update(body.toString())
+      .digest('hex');
+
+    const isAuthentic = expectedSignature === razorpay_signature;
+
+    if (isAuthentic) {
+      // Decode the user token to update their database record
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
+          await CourseUser.findByIdAndUpdate(decoded.id, { isPurchased: true });
+        } catch (err) {
+          console.error('Failed to decode token during verification:', err);
+        }
+      }
+
+      res.json({ message: 'Payment verified successfully', success: true });
+    } else {
+      res.status(400).json({ message: 'Invalid payment signature', success: false });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error verifying payment' });
   }
 });
 

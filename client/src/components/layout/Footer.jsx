@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Container from '../ui/Container';
 import { InstagramLogo, LinkedinLogo, XLogo } from '@phosphor-icons/react';
 
@@ -22,6 +22,9 @@ export default function Footer() {
     };
     fetchLinks();
   }, [API_URL]);
+
+  const location = useLocation();
+  if (location.pathname === '/course') return null;
 
   return (
     <footer className="w-full bg-black border-t border-white/10 pt-16 pb-8 snap-start relative z-20">

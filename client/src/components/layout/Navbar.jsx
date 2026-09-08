@@ -111,6 +111,8 @@ export default function Navbar() {
     );
   });
 
+  if (location.pathname === '/course') return null;
+
   return (
     <header
       ref={navRef}
@@ -171,7 +173,7 @@ export default function Navbar() {
               <Button 
                 variant="outline" 
                 className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
-                onClick={() => navigate('/course')}
+                onClick={() => window.open('/course', '_blank')}
               >
                 <Play size={14} weight="light" /> COURSE
               </Button>
@@ -291,7 +293,7 @@ export default function Navbar() {
               className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center items-center gap-2"
               onClick={() => {
                 setMobileMenuOpen(false);
-                navigate('/course');
+                window.open('/course', '_blank');
               }}
             >
               <Play size={16} weight="light" /> COURSE

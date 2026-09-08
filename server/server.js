@@ -27,7 +27,9 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Routes
+import courseAuthRoutes from './routes/courseAuthRoutes.js';
 app.use('/api/auth', authRoutes);
+app.use('/api/course-auth', courseAuthRoutes);
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import calRoutes from './routes/calRoutes.js';

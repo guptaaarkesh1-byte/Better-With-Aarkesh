@@ -9,11 +9,23 @@ const videoSchema = mongoose.Schema(
 
     videoUrl: {
       type: String,
-      required: true,
+      default: '',
     },
     thumbnailUrl: {
       type: String,
-      required: true,
+      default: '',
+    },
+    description: {
+      type: String,
+      default: '',
+    },
+    duration: {
+      type: String,
+      default: '',
+    },
+    streamUid: {
+      type: String,
+      default: '',
     },
 
     status: {

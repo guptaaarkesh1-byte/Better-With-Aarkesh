@@ -15,8 +15,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const emptyForm = {
   id: null,
   title: '',
+  description: '',
+  duration: '',
   videoUrl: '',
   thumbnailUrl: '',
+  streamUid: '',
   status: 'Draft',
 };
 
@@ -27,6 +30,8 @@ export default function VideoManager() {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
+  const [videoFile, setVideoFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -63,10 +68,15 @@ export default function VideoManager() {
     setForm({
       id: video._id,
       title: video.title,
+      description: video.description || '',
+      duration: video.duration || '',
       videoUrl: video.videoUrl,
       thumbnailUrl: video.thumbnailUrl,
+      streamUid: video.streamUid || '',
       status: video.status,
     });
+    setVideoFile(null);
+    setUploadProgress(0);
     setIsEditing(true);
     setMessage('');
   };
@@ -74,7 +84,14 @@ export default function VideoManager() {
   const closeEditor = () => {
     setIsEditing(false);
     setForm(emptyForm);
+    setVideoFile(null);
+    setUploadProgress(0);
     setMessage('');
+  };
+
+  const handleVideoSelect = (event) => {
+    setVideoFile(event.target.files?.[0] || null);
+    setUploadProgress(0);
   };
 
   const handleImageSelect = (event) => {
@@ -95,6 +112,39 @@ export default function VideoManager() {
 
     try {
       const token = localStorage.getItem('adminToken');
+      let streamUid = form.streamUid;
+
+      if (videoFile) {
+        const uploadUrlRes = await fetch(`${API_URL}/api/videos/cloudflare-upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const uploadData = await uploadUrlRes.json();
+        if (!uploadUrlRes.ok) throw new Error(uploadData.message || 'Could not start Cloudflare upload');
+
+        const uploadRes = await new Promise((resolve, reject) => {
+          const request = new XMLHttpRequest();
+          request.open('POST', uploadData.uploadURL);
+          request.upload.onprogress = (event) => {
+            if (event.lengthComputable) setUploadProgress(Math.round((event.loaded / event.total) * 100));
+          };
+          request.onload = () => request.status >= 200 && request.status < 300
+            ? resolve(request)
+            : reject(new Error('Cloudflare video upload failed'));
+          request.onerror = () => reject(new Error('Cloudflare video upload failed'));
+          const body = new FormData();
+          body.append('file', videoFile);
+          request.send(body);
+        });
+
+        if (!uploadRes) throw new Error('Cloudflare video upload failed');
+        streamUid = uploadData.uid;
+      }
+
+      if (!streamUid && !form.videoUrl) {
+        throw new Error('Upload a video or provide an external video URL');
+      }
+
       const url = form.id ? `${API_URL}/api/videos/${form.id}` : `${API_URL}/api/videos`;
       const method = form.id ? 'PUT' : 'POST';
 
@@ -106,8 +156,11 @@ export default function VideoManager() {
         },
         body: JSON.stringify({
           title: form.title,
+          description: form.description,
+          duration: form.duration,
           videoUrl: form.videoUrl,
           thumbnailUrl: form.thumbnailUrl,
+          streamUid,
           status: form.status,
         })
       });
@@ -127,7 +180,7 @@ export default function VideoManager() {
       closeEditor();
     } catch (err) {
       console.error(err);
-      setMessage('Failed to save video.');
+      setMessage(err.message || 'Failed to save video.');
     } finally {
       setIsSaving(false);
     }
@@ -159,7 +212,7 @@ export default function VideoManager() {
 
   const filteredVideos = videos.filter(v => 
     v.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    v.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (v.description || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (isEditing) {
@@ -178,7 +231,7 @@ export default function VideoManager() {
               {form.id ? 'Edit Video' : 'Create New Video'}
             </h1>
             <p className="font-sans text-sm text-white/40 mt-1">
-              Add video details and YouTube/Instagram URLs here.
+              Upload directly to Cloudflare Stream or use an external video URL.
             </p>
           </div>
         </div>
@@ -230,14 +283,24 @@ export default function VideoManager() {
             {/* Right Column: Media */}
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Video URL (YouTube/Instagram)</label>
+                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Course Video File</label>
                 <input
-                  required
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoSelect}
+                  className="block w-full text-sm text-white/60 file:mr-4 file:rounded file:border-0 file:bg-[#c79c6e] file:px-4 file:py-2 file:text-xs file:font-semibold file:text-black hover:file:bg-[#b0885e]"
+                />
+                {videoFile && <span className="text-xs text-white/40">{videoFile.name} {uploadProgress > 0 ? `(${uploadProgress}%)` : ''}</span>}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">External Video URL</label>
+                <input
                   type="text"
                   name="videoUrl"
                   value={form.videoUrl}
                   onChange={handleFormChange}
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholder="Optional if uploading to Cloudflare"
                   className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors w-full"
                 />
               </div>
