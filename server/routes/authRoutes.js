@@ -69,6 +69,10 @@ router.post('/register-init', async (req, res) => {
       expires: Date.now() + 10 * 60 * 1000
     });
 
+    console.log(`\n========================================`);
+    console.log(`🔑 [USER REGISTRATION OTP] ${cleanEmail} -> OTP: ${otp}`);
+    console.log(`========================================\n`);
+
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
       
@@ -100,13 +104,25 @@ router.post('/register-init', async (req, res) => {
       });
 
       if (error) {
-        console.error('Resend Error:', error);
-        return res.status(500).json({ message: 'Failed to send OTP email' });
+        console.warn('⚠️ Resend Warning:', error.message || error);
+        if (process.env.NODE_ENV !== 'production') {
+          return res.status(200).json({ 
+            message: 'OTP generated (Dev Mode: Check backend console for OTP)', 
+            devOtp: otp 
+          });
+        }
+        return res.status(500).json({ message: error.message || 'Failed to send OTP email' });
       }
 
       res.status(200).json({ message: 'OTP sent successfully' });
     } catch (emailError) {
-      console.error('Email sending failed:', emailError);
+      console.warn('⚠️ Email send exception:', emailError.message);
+      if (process.env.NODE_ENV !== 'production') {
+        return res.status(200).json({ 
+          message: 'OTP generated (Dev Mode: Check backend console for OTP)', 
+          devOtp: otp 
+        });
+      }
       res.status(500).json({ message: 'Failed to send OTP email' });
     }
   } catch (error) {
