@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
 import CourseUser from '../models/CourseUser.js';
+import User from '../models/User.js';
+import Appointment from '../models/Appointment.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -265,6 +268,251 @@ router.post('/forgot-password-reset', async (req, res) => {
   } catch (error) {
     console.error('Course Forgot Password Reset Error:', error.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Middleware to protect course user routes
+const protectCourse = async (req, res, next) => {
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
+      token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
+      req.courseUser = await CourseUser.findById(decoded.id).select('-password');
+      if (!req.courseUser) {
+        return res.status(401).json({ message: 'Course user not found' });
+      }
+      return next();
+    } catch (error) {
+      console.error('Course token auth failed:', error.message);
+      return res.status(401).json({ message: 'Not authorized, token invalid or expired' });
+    }
+  }
+
+  if (!token) {
+    return res.status(401).json({ message: 'Not authorized, no token provided' });
+  }
+};
+
+// @route   GET /api/course-auth/me
+router.get('/me', protectCourse, async (req, res) => {
+  try {
+    const courseUserObj = req.courseUser.toObject();
+    
+    // Look up linked coaching user for free coaching session balance
+    if (courseUserObj.email) {
+      const email = courseUserObj.email.trim();
+      const escapedEmail = email.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
+      const coachingUser = await User.findOne({ email: emailRegex });
+      if (coachingUser) {
+        courseUserObj.freeSessions = coachingUser.freeSessions ?? 0;
+        courseUserObj.courseSessionsGranted = coachingUser.courseSessionsGranted ?? false;
+      } else if (courseUserObj.isPurchased) {
+        courseUserObj.freeSessions = 3;
+        courseUserObj.courseSessionsGranted = true;
+      } else {
+        courseUserObj.freeSessions = 0;
+        courseUserObj.courseSessionsGranted = false;
+      }
+    }
+    
+    res.json(courseUserObj);
+  } catch (error) {
+    console.error('Fetch course user error:', error.message);
+    res.status(500).json({ message: 'Server error fetching user profile' });
+  }
+});
+
+// @route   PUT /api/course-auth/profile
+router.put('/profile', protectCourse, async (req, res) => {
+  try {
+    const user = await CourseUser.findById(req.courseUser._id);
+    if (!user) {
+      return res.status(404).json({ message: 'Course user not found' });
+    }
+
+    if (req.body.fullName) user.fullName = req.body.fullName.trim();
+    if (req.body.phoneNumber) user.phoneNumber = req.body.phoneNumber.trim();
+    if (req.body.currentPassword && req.body.newPassword) {
+      const isMatch = await bcrypt.compare(req.body.currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Current password does not match' });
+      }
+      if (req.body.newPassword.length < 4) {
+        return res.status(400).json({ message: 'New password must be at least 4 characters long' });
+      }
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.newPassword, salt);
+    }
+
+    const updatedUser = await user.save();
+    res.json({
+      _id: updatedUser._id,
+      fullName: updatedUser.fullName,
+      email: updatedUser.email,
+      phoneNumber: updatedUser.phoneNumber,
+      isPurchased: updatedUser.isPurchased,
+      createdAt: updatedUser.createdAt
+    });
+  } catch (error) {
+    console.error('Update course profile error:', error.message);
+    res.status(500).json({ message: 'Server error updating profile' });
+  }
+});
+
+// @route   POST /api/course-auth/sync-coaching-account
+// @desc    Verify course purchase and prepare to grant 3 free coaching sessions.
+//          Does NOT create a coaching account - user must register on the booking page.
+//          Free sessions are identified by email and granted at registration/login.
+// @access  Private (course student)
+router.post('/sync-coaching-account', protectCourse, async (req, res) => {
+  try {
+    if (!req.courseUser || !req.courseUser.isPurchased) {
+      return res.status(403).json({ message: 'Course purchase is required to claim the 3 free coaching sessions.' });
+    }
+
+    const courseUser = await CourseUser.findById(req.courseUser._id);
+    if (!courseUser) {
+      return res.status(404).json({ message: 'Course user not found' });
+    }
+
+    const email = (courseUser.email || '').trim();
+    if (!email) {
+      return res.status(400).json({ message: 'Course account email is missing.' });
+    }
+
+    // Simply confirm the purchase — no coaching User is created here.
+    // When the student registers on the booking page with this same email,
+    // the register-verify endpoint will detect the course purchase and grant 3 free sessions.
+    res.json({
+      success: true,
+      message: 'Course purchase verified. Register on the booking page with your course email to claim 3 free sessions.',
+      email: courseUser.email,
+      fullName: courseUser.fullName,
+      phoneNumber: courseUser.phoneNumber || '',
+    });
+  } catch (error) {
+    console.error('Sync Coaching Account Error:', error.message);
+    res.status(500).json({ message: 'Server error syncing coaching account' });
+  }
+});
+
+// @route   GET /api/course-auth/admin/students
+// @desc    Get all course students with purchase and session details (Admin only)
+// @access  Private (Admin)
+router.get('/admin/students', protect, admin, async (req, res) => {
+  try {
+    const students = await CourseUser.find().select('-password').sort({ createdAt: -1 });
+    
+    // Enrich each student with coaching account info and appointment records
+    const enrichedStudents = await Promise.all(students.map(async (student) => {
+      const emailRegex = new RegExp(`^${student.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      
+      const [coachingUser, appointments] = await Promise.all([
+        User.findOne({ email: emailRegex }),
+        Appointment.find({ email: emailRegex }).sort({ date: -1 })
+      ]);
+
+      const freeSessionsClaimed = appointments.filter(a => a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION').length;
+      const totalAppointments = appointments.length;
+
+      return {
+        _id: student._id,
+        fullName: student.fullName,
+        email: student.email,
+        phoneNumber: student.phoneNumber || (coachingUser ? coachingUser.phoneNumber : ''),
+        isPurchased: student.isPurchased,
+        createdAt: student.createdAt,
+        updatedAt: student.updatedAt,
+        coachingRegistered: !!coachingUser,
+        freeSessionsRemaining: coachingUser ? (coachingUser.freeSessions ?? (student.isPurchased ? 3 - freeSessionsClaimed : 0)) : (student.isPurchased ? 3 : 0),
+        freeSessionsClaimed,
+        totalAppointments,
+        appointments: appointments.map(app => ({
+          _id: app._id,
+          date: app.date,
+          time: app.time,
+          status: app.status,
+          isFreeSession: !!app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION',
+          paymentStatus: app.paymentStatus,
+          orderId: app.orderId
+        }))
+      };
+    }));
+
+    res.json(enrichedStudents);
+  } catch (error) {
+    console.error('Fetch course students error:', error);
+    res.status(500).json({ message: 'Server error fetching course students' });
+  }
+});
+
+// @route   GET /api/course-auth/admin/stats
+// @desc    Get course revenue and student stats (Admin only)
+// @access  Private (Admin)
+router.get('/admin/stats', protect, admin, async (req, res) => {
+  try {
+    const [totalRegistered, totalPurchased, freeSessionAppointments] = await Promise.all([
+      CourseUser.countDocuments(),
+      CourseUser.countDocuments({ isPurchased: true }),
+      Appointment.countDocuments({ $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }] })
+    ]);
+
+    const coursePrice = 15000;
+    const totalRevenue = totalPurchased * coursePrice;
+
+    res.json({
+      totalRegistered,
+      totalPurchased,
+      totalRevenue,
+      freeSessionsClaimed: freeSessionAppointments,
+      coursePrice
+    });
+  } catch (error) {
+    console.error('Fetch course stats error:', error);
+    res.status(500).json({ message: 'Server error fetching course stats' });
+  }
+});
+
+// @route   PUT /api/course-auth/admin/students/:id/toggle-access
+// @desc    Toggle course access for a student manually (Admin only)
+// @access  Private (Admin)
+router.put('/admin/students/:id/toggle-access', protect, admin, async (req, res) => {
+  try {
+    const student = await CourseUser.findById(req.params.id);
+    if (!student) {
+      return res.status(404).json({ message: 'Course student not found' });
+    }
+
+    student.isPurchased = !student.isPurchased;
+    await student.save();
+
+    // Sync free sessions in coaching user if exists
+    if (student.email) {
+      const emailRegex = new RegExp(`^${student.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      const coachingUser = await User.findOne({ email: emailRegex });
+      if (coachingUser) {
+        if (student.isPurchased) {
+          if (!coachingUser.courseSessionsGranted) {
+            coachingUser.freeSessions = (coachingUser.freeSessions || 0) + 3;
+            coachingUser.courseSessionsGranted = true;
+          }
+        }
+        await coachingUser.save();
+      }
+    }
+
+    res.json({
+      _id: student._id,
+      fullName: student.fullName,
+      email: student.email,
+      isPurchased: student.isPurchased,
+      message: `Course access ${student.isPurchased ? 'granted' : 'revoked'} successfully.`
+    });
+  } catch (error) {
+    console.error('Toggle course access error:', error);
+    res.status(500).json({ message: 'Server error toggling course access' });
   }
 });
 

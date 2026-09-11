@@ -1,0 +1,1370 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  GraduationCap, 
+  Plus, 
+  Trash, 
+  Pen, 
+  FloppyDisk, 
+  X, 
+  VideoCamera, 
+  UploadSimple, 
+  CheckCircle, 
+  Clock, 
+  Play, 
+  ArrowUp, 
+  ArrowDown, 
+  Copy, 
+  Sparkle, 
+  Eye, 
+  EyeSlash, 
+  WarningCircle, 
+  FileText, 
+  Link as LinkIcon, 
+  MagnifyingGlass, 
+  ArrowClockwise,
+  FilmStrip,
+  Folders
+} from '@phosphor-icons/react';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+export default function AdminCourseCurriculum() {
+  const [courses, setCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  // Search & Filter
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedModules, setExpandedModules] = useState({});
+
+  // Module Modal State
+  const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
+  const [editingModule, setEditingModule] = useState(null);
+  const [moduleFormTitle, setModuleFormTitle] = useState('');
+  const [moduleFormDesc, setModuleFormDesc] = useState('');
+
+  // Lesson Drawer State
+  const [isLessonDrawerOpen, setIsLessonDrawerOpen] = useState(false);
+  const [activeModuleForLesson, setActiveModuleForLesson] = useState(null);
+  const [editingLesson, setEditingLesson] = useState(null);
+  const [lessonForm, setLessonForm] = useState({
+    title: '',
+    description: '',
+    duration: '00:00',
+    isFreePreview: false,
+    isPublished: true,
+    resources: [],
+  });
+
+  // Video Upload State for Mux
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [activeUploadingLessonId, setActiveUploadingLessonId] = useState(null);
+  const [activeUploadingLessonTitle, setActiveUploadingLessonTitle] = useState('');
+  const [videoStatus, setVideoStatus] = useState('none'); // 'none' | 'uploading' | 'processing' | 'ready' | 'errored'
+  const [uploadError, setUploadError] = useState('');
+  const [videoMetadata, setVideoMetadata] = useState({
+    playbackId: '',
+    assetId: '',
+    duration: '',
+    resolution: '',
+  });
+
+  // Resource Input State inside Lesson Drawer
+  const [newResourceTitle, setNewResourceTitle] = useState('');
+  const [newResourceUrl, setNewResourceUrl] = useState('');
+
+  const fileInputRef = useRef(null);
+  const pollingRef = useRef(null);
+
+  const showNotification = (msg, type = 'success') => {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  // Fetch Courses & select or auto-create primary course
+  const fetchCoursesAndCurriculum = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/admin/courses`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        let data = await res.json();
+        
+        // If no course exists, create default BWA Master Course
+        if (data.length === 0) {
+          const createRes = await fetch(`${API_URL}/api/admin/courses`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              title: 'The Presence Protocol™',
+              subtitle: 'Mastering Confident Presence, Communication & Executive Magnetism',
+              description: 'Comprehensive day-by-day video training masterclass.',
+              price: 15000,
+              duration: '6+ Hours',
+              level: 'Masterclass',
+              status: 'Published'
+            })
+          });
+
+          if (createRes.ok) {
+            const newCourse = await createRes.json();
+            data = [newCourse];
+          }
+        }
+
+        setCourses(data);
+        const currentCourse = selectedCourse ? data.find(c => c._id === selectedCourse._id) || data[0] : data[0];
+        setSelectedCourse(currentCourse);
+
+        if (currentCourse) {
+          await fetchCourseDetails(currentCourse._id);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading course curriculum:', err);
+      showNotification('Failed to load courses', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCourseDetails = async (courseId) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/admin/courses/${courseId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const fullCourse = await res.json();
+        setModules(fullCourse.modules || []);
+        // Expand all modules by default
+        const exp = {};
+        (fullCourse.modules || []).forEach(m => { exp[m._id] = true; });
+        setExpandedModules(exp);
+      }
+    } catch (err) {
+      console.error('Error fetching course details:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCoursesAndCurriculum();
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  const toggleModuleExpand = (moduleId) => {
+    setExpandedModules(prev => ({
+      ...prev,
+      [moduleId]: !prev[moduleId]
+    }));
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // MODULE (DAY) ACTIONS
+  // ═══════════════════════════════════════════════════════════════
+
+  const handleOpenModuleModal = (mod = null) => {
+    if (mod) {
+      setEditingModule(mod);
+      setModuleFormTitle(mod.title);
+      setModuleFormDesc(mod.description || '');
+    } else {
+      setEditingModule(null);
+      const nextDayNum = modules.length + 1;
+      setModuleFormTitle(`Day ${nextDayNum}: `);
+      setModuleFormDesc('');
+    }
+    setIsModuleModalOpen(true);
+  };
+
+  const handleSaveModule = async (e) => {
+    e.preventDefault();
+    if (!moduleFormTitle.trim() || !selectedCourse) return;
+
+    setSaving(true);
+    const token = localStorage.getItem('adminToken');
+
+    try {
+      if (editingModule) {
+        // Update Module
+        const res = await fetch(`${API_URL}/api/admin/courses/modules/${editingModule._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: moduleFormTitle.trim(),
+            description: moduleFormDesc.trim(),
+          })
+        });
+
+        if (res.ok) {
+          showNotification('Day/Section updated successfully');
+          await fetchCourseDetails(selectedCourse._id);
+          setIsModuleModalOpen(false);
+        }
+      } else {
+        // Create Module
+        const res = await fetch(`${API_URL}/api/admin/courses/${selectedCourse._id}/modules`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: moduleFormTitle.trim(),
+            description: moduleFormDesc.trim(),
+          })
+        });
+
+        if (res.ok) {
+          showNotification('New Day/Section added successfully');
+          await fetchCourseDetails(selectedCourse._id);
+          setIsModuleModalOpen(false);
+        }
+      }
+    } catch (err) {
+      console.error('Error saving module:', err);
+      showNotification('Failed to save module', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteModule = async (moduleId, title) => {
+    if (!window.confirm(`Are you sure you want to delete "${title}" and all its videos?`)) return;
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/admin/courses/modules/${moduleId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        showNotification('Section deleted');
+        await fetchCourseDetails(selectedCourse._id);
+      }
+    } catch (err) {
+      console.error('Error deleting module:', err);
+      showNotification('Failed to delete module', 'error');
+    }
+  };
+
+  const handleMoveModule = async (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= modules.length) return;
+
+    const reordered = [...modules];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    setModules(reordered);
+    const token = localStorage.getItem('adminToken');
+
+    try {
+      await fetch(`${API_URL}/api/admin/courses/${selectedCourse._id}/modules/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ moduleIds: reordered.map(m => m._id) })
+      });
+    } catch (err) {
+      console.error('Error reordering modules:', err);
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // LESSON (VIDEO) ACTIONS & MUX DIRECT UPLOAD
+  // ═══════════════════════════════════════════════════════════════
+
+  const handleOpenLessonDrawer = (mod, lesson = null) => {
+    setActiveModuleForLesson(mod);
+    setUploadProgress(0);
+    setIsUploading(false);
+    setUploadError('');
+
+    if (lesson) {
+      setEditingLesson(lesson);
+      setLessonForm({
+        title: lesson.title,
+        description: lesson.description || '',
+        duration: lesson.duration || '00:00',
+        isFreePreview: !!lesson.isFreePreview,
+        isPublished: lesson.isPublished !== false,
+        resources: lesson.resources || [],
+      });
+      setVideoStatus(lesson.videoStatus || (lesson.muxPlaybackId ? 'ready' : 'none'));
+      setVideoMetadata({
+        playbackId: lesson.muxPlaybackId || '',
+        assetId: lesson.muxAssetId || '',
+        duration: lesson.duration || '',
+        resolution: lesson.muxResolution || '',
+      });
+
+      // If lesson is currently processing, initiate polling
+      if (lesson.videoStatus === 'processing' || lesson.videoStatus === 'uploading') {
+        startStatusPolling(lesson.muxUploadId || lesson.muxAssetId);
+      }
+    } else {
+      setEditingLesson(null);
+      const lessonCount = mod.lessons?.length || 0;
+      setLessonForm({
+        title: `Video ${lessonCount + 1}: `,
+        description: '',
+        duration: '00:00',
+        isFreePreview: false,
+        isPublished: true,
+        resources: [],
+      });
+      setVideoStatus('none');
+      setVideoMetadata({ playbackId: '', assetId: '', duration: '', resolution: '' });
+    }
+
+    setIsLessonDrawerOpen(true);
+  };
+
+  const handleCloseLessonDrawer = () => {
+    setIsLessonDrawerOpen(false);
+    if (isUploading || videoStatus === 'processing') {
+      showNotification('Video upload is continuing in the background.', 'info');
+    } else {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    }
+  };
+
+  // Start polling Mux asset status
+  const startStatusPolling = (identifier) => {
+    if (!identifier) return;
+    if (pollingRef.current) clearInterval(pollingRef.current);
+
+    pollingRef.current = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API_URL}/api/admin/courses/mux/asset-status/${identifier}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'ready') {
+            setVideoStatus('ready');
+            setVideoMetadata(prev => ({
+              ...prev,
+              playbackId: data.playbackId || prev.playbackId,
+              assetId: data.assetId || prev.assetId,
+              duration: data.durationFormatted || prev.duration,
+              resolution: data.resolution || prev.resolution,
+            }));
+            if (data.durationFormatted) {
+              setLessonForm(prev => ({ ...prev, duration: data.durationFormatted }));
+            }
+            clearInterval(pollingRef.current);
+            showNotification('Video processing complete! Playback is ready.');
+            if (selectedCourse) fetchCourseDetails(selectedCourse._id);
+          } else if (data.status === 'errored') {
+            setVideoStatus('errored');
+            setUploadError('Mux video processing failed.');
+            clearInterval(pollingRef.current);
+          } else {
+            setVideoStatus('processing');
+          }
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 4000);
+  };
+
+  const handleFileSelect = async (e, directLesson = null, directModule = null) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate video file
+    if (!file.type.startsWith('video/')) {
+      setUploadError('Please select a valid video file (MP4, MOV, WebM, MKV).');
+      showNotification('Please select a valid video file (MP4, MOV, WebM, MKV)', 'error');
+      return;
+    }
+
+    const targetModule = directModule || activeModuleForLesson;
+    let targetLesson = directLesson || editingLesson;
+
+    // Auto-detect video duration from file metadata
+    try {
+      const tempVideo = document.createElement('video');
+      tempVideo.preload = 'metadata';
+      tempVideo.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(tempVideo.src);
+        const totalSecs = Math.floor(tempVideo.duration || 0);
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        setLessonForm(prev => ({ ...prev, duration: formatted }));
+        setVideoMetadata(prev => ({ ...prev, duration: formatted }));
+      };
+      tempVideo.src = URL.createObjectURL(file);
+    } catch (err) {
+      console.warn('Could not pre-calculate video duration from file:', err);
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadError('');
+    setVideoStatus('uploading');
+
+    try {
+      const token = localStorage.getItem('adminToken');
+
+      // If targetLesson does not exist yet, auto-create it in MongoDB first
+      if (!targetLesson && targetModule) {
+        const createRes = await fetch(`${API_URL}/api/admin/courses/modules/${targetModule._id}/lessons`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: lessonForm.title.trim() || `Video ${(targetModule.lessons?.length || 0) + 1}`,
+            description: lessonForm.description || '',
+            isFreePreview: !!lessonForm.isFreePreview,
+            duration: '00:00'
+          })
+        });
+
+        if (createRes.ok) {
+          const createdLesson = await createRes.json();
+          targetLesson = createdLesson;
+          setEditingLesson(createdLesson);
+          if (selectedCourse) fetchCourseDetails(selectedCourse._id);
+        }
+      }
+
+      if (targetLesson) {
+        setActiveUploadingLessonId(targetLesson._id);
+        setActiveUploadingLessonTitle(targetLesson.title);
+      }
+
+      // 1. Get Direct Upload URL from backend
+      const res = await fetch(`${API_URL}/api/admin/courses/mux/upload-url`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          lessonId: targetLesson?._id || null
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to request Mux upload URL.');
+      }
+
+      const { uploadUrl, uploadId } = await res.json();
+
+      // 2. Upload file directly to Mux using XMLHttpRequest for live progress
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', uploadUrl, true);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percentComplete);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setIsUploading(false);
+          setUploadProgress(100);
+          setVideoStatus('processing');
+          showNotification('Upload complete! Mux is now encoding the video...');
+
+          // Start polling for asset status
+          startStatusPolling(uploadId);
+        } else {
+          setIsUploading(false);
+          setVideoStatus('errored');
+          setUploadError(`Upload failed with status ${xhr.status}`);
+          showNotification(`Upload failed with status ${xhr.status}`, 'error');
+        }
+      };
+
+      xhr.onerror = () => {
+        setIsUploading(false);
+        setVideoStatus('errored');
+        setUploadError('Network error during video upload. Please check connection and retry.');
+        showNotification('Network error during video upload', 'error');
+      };
+
+      xhr.send(file);
+    } catch (err) {
+      console.error('Mux Direct Upload error:', err);
+      setIsUploading(false);
+      setVideoStatus('errored');
+      setUploadError(err.message || 'Direct upload to Mux failed.');
+      showNotification(err.message || 'Direct upload to Mux failed.', 'error');
+    }
+  };
+
+  // Save Lesson Details
+  const handleSaveLesson = async (e) => {
+    e.preventDefault();
+    if (!lessonForm.title.trim() || !activeModuleForLesson) return;
+
+    setSaving(true);
+    const token = localStorage.getItem('adminToken');
+
+    try {
+      if (editingLesson) {
+        // Update Lesson
+        const res = await fetch(`${API_URL}/api/admin/courses/lessons/${editingLesson._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: lessonForm.title.trim(),
+            description: lessonForm.description,
+            duration: lessonForm.duration || '00:00',
+            isFreePreview: lessonForm.isFreePreview,
+            isPublished: lessonForm.isPublished,
+            resources: lessonForm.resources,
+          })
+        });
+
+        if (res.ok) {
+          showNotification('Video lesson updated successfully');
+          await fetchCourseDetails(selectedCourse._id);
+          handleCloseLessonDrawer();
+        }
+      } else {
+        // Create Lesson in Module
+        const res = await fetch(`${API_URL}/api/admin/courses/modules/${activeModuleForLesson._id}/lessons`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: lessonForm.title.trim(),
+            description: lessonForm.description,
+            isFreePreview: lessonForm.isFreePreview,
+          })
+        });
+
+        if (res.ok) {
+          const created = await res.json();
+          showNotification('Video lesson created. You can now upload the video.');
+          await fetchCourseDetails(selectedCourse._id);
+          // Keep open as editing to upload video
+          setEditingLesson(created);
+        }
+      }
+    } catch (err) {
+      console.error('Error saving lesson:', err);
+      showNotification('Failed to save lesson', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteLesson = async (lessonId, title) => {
+    if (!window.confirm(`Are you sure you want to delete video "${title}"?`)) return;
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/admin/courses/lessons/${lessonId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        showNotification('Video lesson deleted');
+        await fetchCourseDetails(selectedCourse._id);
+      }
+    } catch (err) {
+      console.error('Error deleting lesson:', err);
+      showNotification('Failed to delete lesson', 'error');
+    }
+  };
+
+  const handleDuplicateLesson = async (lessonId) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/admin/courses/lessons/${lessonId}/duplicate`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        showNotification('Video lesson duplicated');
+        await fetchCourseDetails(selectedCourse._id);
+      }
+    } catch (err) {
+      console.error('Error duplicating lesson:', err);
+      showNotification('Failed to duplicate lesson', 'error');
+    }
+  };
+
+  const handleMoveLesson = async (moduleId, lessonIndex, direction) => {
+    const mod = modules.find(m => m._id === moduleId);
+    if (!mod || !mod.lessons) return;
+
+    const targetIndex = lessonIndex + direction;
+    if (targetIndex < 0 || targetIndex >= mod.lessons.length) return;
+
+    const reordered = [...mod.lessons];
+    const [moved] = reordered.splice(lessonIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    // Update UI optimistically
+    setModules(prev => prev.map(m => m._id === moduleId ? { ...m, lessons: reordered } : m));
+
+    const token = localStorage.getItem('adminToken');
+    try {
+      await fetch(`${API_URL}/api/admin/courses/modules/${moduleId}/lessons/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ lessonIds: reordered.map(l => l._id) })
+      });
+    } catch (err) {
+      console.error('Error reordering lessons:', err);
+    }
+  };
+
+  // Add resource attachment to lesson
+  const handleAddResource = () => {
+    if (!newResourceTitle.trim() || !newResourceUrl.trim()) return;
+    setLessonForm(prev => ({
+      ...prev,
+      resources: [...prev.resources, { title: newResourceTitle.trim(), fileUrl: newResourceUrl.trim() }]
+    }));
+    setNewResourceTitle('');
+    setNewResourceUrl('');
+  };
+
+  const handleRemoveResource = (index) => {
+    setLessonForm(prev => ({
+      ...prev,
+      resources: prev.resources.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Filter modules/lessons by search
+  const filteredModules = modules.filter(m => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const matchMod = m.title.toLowerCase().includes(q) || m.description?.toLowerCase().includes(q);
+    const matchLesson = m.lessons?.some(l => l.title.toLowerCase().includes(q) || l.description?.toLowerCase().includes(q));
+    return matchMod || matchLesson;
+  });
+
+  const totalLessonsCount = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
+  const readyVideosCount = modules.reduce((acc, m) => acc + (m.lessons?.filter(l => l.videoStatus === 'ready' || l.muxPlaybackId)?.length || 0), 0);
+
+  return (
+    <div className="p-6 md:p-10 max-w-7xl mx-auto font-sans text-white">
+      {/* Toast Notification */}
+      {notification && (
+        <div className={`fixed bottom-8 right-8 z-[250] px-5 py-3.5 rounded-xl border flex items-center gap-3 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-200 ${
+          notification.type === 'error' 
+            ? 'bg-red-500/15 border-red-500/30 text-red-300' 
+            : 'bg-[#c79c6e]/15 border-[#c79c6e]/40 text-[#c79c6e]'
+        }`}>
+          {notification.type === 'error' ? <WarningCircle size={20} /> : <CheckCircle size={20} />}
+          <span className="text-sm font-medium">{notification.msg}</span>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/10">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#c79c6e]/10 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e]">
+              <VideoCamera size={22} weight="light" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-serif text-white font-normal">
+                Course Curriculum & Video Upload
+              </h1>
+              <p className="text-white/50 text-xs md:text-sm mt-1">
+                Organize Day-by-Day video sections, upload videos to Mux, and attach learning worksheets.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => fetchCourseDetails(selectedCourse?._id)}
+            className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white transition-colors flex items-center gap-2 text-xs font-semibold uppercase tracking-wider"
+            title="Refresh"
+          >
+            <ArrowClockwise size={16} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+
+          <button
+            onClick={() => handleOpenModuleModal()}
+            className="px-5 py-3 rounded-xl bg-[#c79c6e] text-black hover:bg-[#b0885e] transition-all font-sans text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-[0_0_25px_rgba(199,156,110,0.25)] hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Plus size={16} weight="bold" />
+            <span>Add Day / Section</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-8">
+        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5">
+          <span className="text-[0.68rem] font-sans uppercase tracking-widest text-white/40 block mb-1">Total Days / Sections</span>
+          <span className="font-serif text-3xl text-white font-normal">{modules.length}</span>
+        </div>
+        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5">
+          <span className="text-[0.68rem] font-sans uppercase tracking-widest text-white/40 block mb-1">Total Video Lessons</span>
+          <span className="font-serif text-3xl text-[#c79c6e] font-normal">{totalLessonsCount}</span>
+        </div>
+        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5">
+          <span className="text-[0.68rem] font-sans uppercase tracking-widest text-white/40 block mb-1">Mux Video Ready</span>
+          <span className="font-serif text-3xl text-emerald-400 font-normal">{readyVideosCount}</span>
+        </div>
+        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5">
+          <span className="text-[0.68rem] font-sans uppercase tracking-widest text-white/40 block mb-1">Course Status</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-medium mt-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            Published Live
+          </span>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-6 relative">
+        <MagnifyingGlass size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search days, video titles, topics or descriptions..."
+          className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
+        />
+      </div>
+
+      {/* Curriculum Day-by-Day List */}
+      {loading ? (
+        <div className="py-24 text-center text-white/40 font-sans text-sm flex flex-col items-center justify-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#c79c6e] border-t-transparent rounded-full animate-spin" />
+          <span>Loading course curriculum...</span>
+        </div>
+      ) : filteredModules.length === 0 ? (
+        <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-12 text-center my-6">
+          <FilmStrip size={44} className="text-[#c79c6e]/50 mx-auto mb-4" weight="light" />
+          <h3 className="font-serif text-2xl text-white mb-2">No Days or Sections Found</h3>
+          <p className="text-white/50 text-sm max-w-md mx-auto mb-6">
+            Get started by adding your first Day (e.g. Day 1: Foundation of Presence) and uploading videos.
+          </p>
+          <button
+            onClick={() => handleOpenModuleModal()}
+            className="px-6 py-3.5 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-wider inline-flex items-center gap-2 hover:bg-[#b0885e] transition-colors"
+          >
+            <Plus size={16} weight="bold" /> Add Day 1
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {filteredModules.map((mod, modIndex) => {
+            const isExpanded = !!expandedModules[mod._id];
+            const lessons = mod.lessons || [];
+
+            return (
+              <div 
+                key={mod._id} 
+                className="bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all hover:border-[#c79c6e]/30"
+              >
+                {/* Module / Day Header Strip */}
+                <div className="p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-white/[0.03] to-transparent border-b border-white/5">
+                  <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                    {/* Reorder Buttons */}
+                    <div className="flex sm:flex-col gap-1 shrink-0">
+                      <button
+                        onClick={() => handleMoveModule(modIndex, -1)}
+                        disabled={modIndex === 0}
+                        className="p-1 rounded bg-white/5 hover:bg-white/10 text-white/50 hover:text-white disabled:opacity-20 disabled:hover:bg-transparent"
+                        title="Move Up"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleMoveModule(modIndex, 1)}
+                        disabled={modIndex === filteredModules.length - 1}
+                        className="p-1 rounded bg-white/5 hover:bg-white/10 text-white/50 hover:text-white disabled:opacity-20 disabled:hover:bg-transparent"
+                        title="Move Down"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => toggleModuleExpand(mod._id)}
+                      className="text-left flex-1 min-w-0 group"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-serif text-lg md:text-xl text-white font-normal group-hover:text-[#c79c6e] transition-colors truncate">
+                          {mod.title}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[0.65rem] text-[#c79c6e] font-semibold shrink-0">
+                          {lessons.length} {lessons.length === 1 ? 'Video' : 'Videos'}
+                        </span>
+                      </div>
+                      {mod.description && (
+                        <p className="text-white/50 text-xs mt-1 truncate">{mod.description}</p>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Day Actions */}
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button
+                      onClick={() => handleOpenLessonDrawer(mod)}
+                      className="px-3.5 py-2 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all text-xs font-semibold flex items-center gap-1.5"
+                    >
+                      <Plus size={14} weight="bold" />
+                      <span>Upload Video</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenModuleModal(mod)}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                      title="Edit Day Heading"
+                    >
+                      <Pen size={15} />
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteModule(mod._id, mod.title)}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/60 hover:text-red-400 transition-colors"
+                      title="Delete Day"
+                    >
+                      <Trash size={15} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Videos inside Day */}
+                {isExpanded && (
+                  <div className="p-4 md:p-6 space-y-3 bg-[#070707]/80">
+                    {lessons.length === 0 ? (
+                      <div className="py-8 px-4 rounded-xl border border-dashed border-white/10 text-center">
+                        <VideoCamera size={28} className="text-white/30 mx-auto mb-2" />
+                        <p className="text-white/50 text-xs">No videos in this section yet.</p>
+                        <button
+                          onClick={() => handleOpenLessonDrawer(mod)}
+                          className="mt-3 px-4 py-2 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-xs text-[#c79c6e] font-medium inline-flex items-center gap-1.5 transition-colors"
+                        >
+                          <Plus size={13} weight="bold" /> Upload First Video
+                        </button>
+                      </div>
+                    ) : (
+                      lessons.map((lesson, lessonIndex) => {
+                        const isCurrentUploading = isUploading && activeUploadingLessonId === lesson._id;
+                        const isCurrentProcessing = !isCurrentUploading && ((videoStatus === 'processing' && activeUploadingLessonId === lesson._id) || lesson.videoStatus === 'processing');
+                        const isReady = !isCurrentUploading && !isCurrentProcessing && (lesson.videoStatus === 'ready' || !!lesson.muxPlaybackId);
+                        const isErrored = !isCurrentUploading && !isCurrentProcessing && lesson.videoStatus === 'errored';
+
+                        return (
+                          <div
+                            key={lesson._id}
+                            className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl transition-all group relative overflow-hidden ${
+                              isCurrentUploading
+                                ? 'bg-gradient-to-r from-[#c79c6e]/[0.08] via-[#0e0e0e] to-[#0e0e0e] border border-[#c79c6e]/50 shadow-[0_0_25px_rgba(199,156,110,0.15)] ring-1 ring-[#c79c6e]/30'
+                                : isCurrentProcessing
+                                ? 'bg-gradient-to-r from-amber-500/[0.06] via-[#0e0e0e] to-[#0e0e0e] border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.1)] ring-1 ring-amber-500/20'
+                                : 'bg-[#0e0e0e] border border-white/5 hover:border-white/15'
+                            }`}
+                          >
+                            {/* Left: Reorder + Video Details */}
+                            <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                              {/* Reorder Lesson */}
+                              <div className="flex flex-col gap-0.5 shrink-0">
+                                <button
+                                  onClick={() => handleMoveLesson(mod._id, lessonIndex, -1)}
+                                  disabled={lessonIndex === 0 || isCurrentUploading}
+                                  className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white disabled:opacity-20"
+                                  title="Move Video Up"
+                                >
+                                  <ArrowUp size={12} />
+                                </button>
+                                <button
+                                  onClick={() => handleMoveLesson(mod._id, lessonIndex, 1)}
+                                  disabled={lessonIndex === lessons.length - 1 || isCurrentUploading}
+                                  className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white disabled:opacity-20"
+                                  title="Move Video Down"
+                                >
+                                  <ArrowDown size={12} />
+                                </button>
+                              </div>
+
+                              {/* Video Play / Status Badge */}
+                              <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 relative overflow-hidden ${
+                                isCurrentUploading
+                                  ? 'bg-[#c79c6e]/15 border border-[#c79c6e]/40'
+                                  : isCurrentProcessing
+                                  ? 'bg-amber-500/15 border border-amber-500/40'
+                                  : isReady
+                                  ? 'bg-black border border-white/10'
+                                  : 'bg-black border border-white/10'
+                              }`}>
+                                {isCurrentUploading ? (
+                                  <div className="flex flex-col items-center justify-center">
+                                    <div className="w-4 h-4 border-2 border-[#c79c6e] border-t-transparent rounded-full animate-spin" />
+                                    <span className="text-[0.58rem] text-[#c79c6e] font-bold mt-0.5">{uploadProgress}%</span>
+                                  </div>
+                                ) : isCurrentProcessing ? (
+                                  <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                                ) : isReady ? (
+                                  <Play size={18} weight="fill" className="text-[#c79c6e]" />
+                                ) : (
+                                  <VideoCamera size={18} className="text-white/30" />
+                                )}
+                              </div>
+
+                              {/* Title & Info */}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <button
+                                    onClick={() => handleOpenLessonDrawer(mod, lesson)}
+                                    className="text-sm font-medium text-white hover:text-[#c79c6e] transition-colors truncate text-left group-hover:text-[#c79c6e]"
+                                    title="Click to edit video title & details"
+                                  >
+                                    {lesson.title}
+                                  </button>
+                                  
+                                  {isCurrentUploading && (
+                                    <span className="px-2 py-0.5 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 text-[0.62rem] text-[#c79c6e] font-bold uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                                      <UploadSimple size={11} weight="bold" /> Uploading ({uploadProgress}%)
+                                    </span>
+                                  )}
+
+                                  {isCurrentProcessing && (
+                                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[0.62rem] text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" /> Mux Encoding
+                                    </span>
+                                  )}
+
+                                  {lesson.isFreePreview && (
+                                    <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-[0.6rem] text-amber-300 font-semibold uppercase tracking-wider">
+                                      Free Preview
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Active Upload Progress Bar directly on the row */}
+                                {isCurrentUploading ? (
+                                  <div className="mt-2 space-y-1.5 max-w-md">
+                                    <div className="flex items-center justify-between text-[0.7rem]">
+                                      <span className="text-[#c79c6e] font-medium flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#c79c6e] animate-ping" />
+                                        Directly uploading video to Mux ({uploadProgress}%)...
+                                      </span>
+                                      <span className="text-white/40 font-mono text-[0.68rem]">{lesson.duration || 'Auto-detected'}</span>
+                                    </div>
+                                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                                      <div 
+                                        className="bg-gradient-to-r from-[#c79c6e] via-[#e5c59f] to-[#c79c6e] h-full transition-all duration-150 rounded-full shadow-[0_0_10px_rgba(199,156,110,0.6)]"
+                                        style={{ width: `${uploadProgress}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : isCurrentProcessing ? (
+                                  <div className="flex items-center gap-3 text-xs text-white/40 mt-1">
+                                    <span className="inline-flex items-center gap-1.5 text-amber-400 text-[0.72rem] font-medium">
+                                      <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                                      Mux is encoding video into adaptive streaming formats...
+                                    </span>
+                                    {lesson.duration && (
+                                      <span className="text-white/40 flex items-center gap-1 text-[0.7rem]">
+                                        <Clock size={12} /> {lesson.duration}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-3 text-xs text-white/40 mt-1">
+                                    <div className="flex items-center gap-1">
+                                      <Clock size={12} />
+                                      <span>{lesson.duration || '00:00'}</span>
+                                    </div>
+
+                                    {/* Mux Status Pill */}
+                                    {isReady ? (
+                                      <span className="inline-flex items-center gap-1 text-emerald-400 text-[0.7rem]">
+                                        <CheckCircle size={12} weight="fill" /> Mux Video Ready
+                                      </span>
+                                    ) : isErrored ? (
+                                      <span className="inline-flex items-center gap-1 text-red-400 text-[0.7rem]">
+                                        <WarningCircle size={12} /> Upload / Encoding Failed
+                                      </span>
+                                    ) : (
+                                      <span className="text-white/30 text-[0.7rem]">
+                                        No video uploaded
+                                      </span>
+                                    )}
+
+                                    {lesson.resources?.length > 0 && (
+                                      <span className="text-[0.7rem] text-[#c79c6e] flex items-center gap-1">
+                                        <FileText size={12} /> {lesson.resources.length} Resource(s)
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Right: Actions */}
+                            <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center">
+                              {isCurrentUploading ? (
+                                <button
+                                  onClick={() => handleOpenLessonDrawer(mod, lesson)}
+                                  className="px-3.5 py-1.5 rounded-lg bg-[#c79c6e]/20 border border-[#c79c6e]/50 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all text-xs font-bold flex items-center gap-1.5 shadow-[0_0_15px_rgba(199,156,110,0.25)]"
+                                >
+                                  <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                  <span>Uploading {uploadProgress}%</span>
+                                </button>
+                              ) : isCurrentProcessing ? (
+                                <button
+                                  onClick={() => handleOpenLessonDrawer(mod, lesson)}
+                                  className="px-3.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25 transition-all text-xs font-semibold flex items-center gap-1.5"
+                                >
+                                  <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                                  <span>Processing in Mux...</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleOpenLessonDrawer(mod, lesson)}
+                                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white/80 hover:text-white transition-colors text-xs flex items-center gap-1.5"
+                                >
+                                  <UploadSimple size={14} />
+                                  <span>{isReady ? 'Replace Video' : 'Upload Video'}</span>
+                                </button>
+                              )}
+
+                              {/* Edit Video Heading & Description Button */}
+                              <button
+                                onClick={() => handleOpenLessonDrawer(mod, lesson)}
+                                disabled={isCurrentUploading}
+                                className="p-2 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 text-white/60 hover:text-[#c79c6e] border border-white/5 hover:border-[#c79c6e]/30 transition-colors disabled:opacity-20"
+                                title="Edit Video Heading & Details"
+                              >
+                                <Pen size={14} />
+                              </button>
+
+                              <button
+                                onClick={() => handleDuplicateLesson(lesson._id)}
+                                disabled={isCurrentUploading}
+                                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors disabled:opacity-20"
+                                title="Duplicate Video"
+                              >
+                                <Copy size={14} />
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteLesson(lesson._id, lesson.title)}
+                                disabled={isCurrentUploading}
+                                className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/60 hover:text-red-400 transition-colors disabled:opacity-20"
+                                title="Delete Video"
+                              >
+                                <Trash size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          MODULE (DAY) MODAL
+         ═══════════════════════════════════════════════════════════════ */}
+      {isModuleModalOpen && (
+        <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0e0e0e] border border-white/10 rounded-2xl w-full max-w-lg p-6 md:p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+              <h3 className="font-serif text-2xl text-white">
+                {editingModule ? 'Edit Day / Section' : 'Add New Day / Section'}
+              </h3>
+              <button
+                onClick={() => setIsModuleModalOpen(false)}
+                className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/5"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveModule} className="space-y-4">
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Day / Section Title</label>
+                <input
+                  type="text"
+                  required
+                  value={moduleFormTitle}
+                  onChange={(e) => setModuleFormTitle(e.target.value)}
+                  placeholder="e.g. Day 1: Foundation of Presence"
+                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#c79c6e]/60 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Topic Overview / Description</label>
+                <textarea
+                  rows={3}
+                  value={moduleFormDesc}
+                  onChange={(e) => setModuleFormDesc(e.target.value)}
+                  placeholder="Brief summary of what will be taught on this day..."
+                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#c79c6e]/60 text-sm resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsModuleModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-white/10 text-white/60 hover:text-white text-xs font-semibold tracking-wider"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-2.5 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-wider hover:bg-[#b0885e] transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : editingModule ? 'Update Day' : 'Create Day'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          LESSON & MUX VIDEO UPLOAD DRAWER
+         ═══════════════════════════════════════════════════════════════ */}
+      {isLessonDrawerOpen && (
+        <div className="fixed inset-0 z-[130] bg-black/80 backdrop-blur-sm flex justify-end">
+          <div className="bg-[#0e0e0e] border-l border-white/10 w-full max-w-2xl h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200 overflow-y-auto">
+            {/* Drawer Header */}
+            <div className="p-6 md:p-8 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#0e0e0e]/95 backdrop-blur-md z-10">
+              <div>
+                <span className="text-[0.65rem] uppercase tracking-widest text-[#c79c6e] font-semibold block mb-1">
+                  {activeModuleForLesson?.title}
+                </span>
+                <h3 className="font-serif text-2xl text-white">
+                  {editingLesson ? 'Edit Video & Resources' : 'Upload Video to Day'}
+                </h3>
+              </div>
+              <button
+                onClick={handleCloseLessonDrawer}
+                className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Drawer Body */}
+            <form onSubmit={handleSaveLesson} className="p-6 md:p-8 space-y-6 flex-1">
+              {/* Video Title */}
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Video Title</label>
+                <input
+                  type="text"
+                  required
+                  value={lessonForm.title}
+                  onChange={(e) => setLessonForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="e.g. How Do You Turn On Your Confidence?"
+                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#c79c6e]/60 text-sm"
+                />
+              </div>
+
+              {/* Video Description */}
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Description / Notes</label>
+                <textarea
+                  rows={3}
+                  value={lessonForm.description}
+                  onChange={(e) => setLessonForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Key takeaways, time-codes, or instructions for students..."
+                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#c79c6e]/60 text-sm resize-none"
+                />
+              </div>
+
+              {/* ── MUX DIRECT VIDEO UPLOAD SECTION ── */}
+              <div className="pt-2 pb-4 border-t border-b border-white/10">
+                <label className="block text-xs uppercase tracking-widest text-[#c79c6e] font-bold mb-3 flex items-center gap-2">
+                  <FilmStrip size={16} /> Mux Video Streaming
+                </label>
+
+                {/* Upload Box */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="video/*"
+                  className="hidden"
+                />
+
+                {videoStatus === 'ready' ? (
+                  /* Video Ready State */
+                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                        <CheckCircle size={18} weight="fill" />
+                        <span>✓ Video ready for streaming</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-xs text-[#c79c6e] hover:underline font-medium"
+                      >
+                        Replace Video
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs text-white/70 pt-2 border-t border-white/10 font-mono">
+                      <div>
+                        <span className="text-white/40 block text-[0.65rem] font-sans uppercase">Playback ID</span>
+                        <span className="truncate block">{videoMetadata.playbackId || editingLesson?.muxPlaybackId || 'Generated'}</span>
+                      </div>
+                      <div>
+                        <span className="text-white/40 block text-[0.65rem] font-sans uppercase">Duration</span>
+                        <span>{videoMetadata.duration || lessonForm.duration || 'Auto-detected'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : isUploading ? (
+                  /* Uploading Progress State */
+                  <div className="rounded-2xl border border-[#c79c6e]/40 bg-[#c79c6e]/5 p-6 text-center">
+                    <div className="w-8 h-8 border-2 border-[#c79c6e] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                    <h4 className="text-sm font-semibold text-white mb-1">Directly uploading to Mux...</h4>
+                    <p className="text-xs text-white/50 mb-4">{uploadProgress}% uploaded</p>
+
+                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-[#c79c6e] to-[#e5c59f] h-full transition-all duration-150 rounded-full"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : videoStatus === 'processing' ? (
+                  /* Mux Processing State */
+                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+                    <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                    <h4 className="text-sm font-semibold text-white mb-1">Mux is encoding video...</h4>
+                    <p className="text-xs text-white/50 max-w-sm mx-auto">
+                      Generating adaptive multi-bitrate streams (1080p, 720p, 480p). You can save and leave this page; it will complete automatically.
+                    </p>
+                  </div>
+                ) : (
+                  /* Default Drag & Drop Upload State */
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-2xl border-2 border-dashed border-white/15 hover:border-[#c79c6e]/60 bg-white/[0.02] hover:bg-white/[0.04] p-8 text-center cursor-pointer transition-all group"
+                  >
+                    <UploadSimple size={32} className="text-[#c79c6e] mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                    <h4 className="text-sm font-semibold text-white mb-1">Upload lesson video</h4>
+                    <p className="text-xs text-white/50 mb-3">Drag & drop or Click to browse</p>
+                    <span className="inline-block px-2.5 py-1 rounded bg-white/5 text-[0.65rem] uppercase tracking-wider text-white/40">
+                      MP4, MOV, WebM, MKV up to 5GB
+                    </span>
+                  </div>
+                )}
+
+                {uploadError && (
+                  <div className="mt-3 p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
+                    <WarningCircle size={16} className="shrink-0" />
+                    <span>{uploadError}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Auto Duration & Free Preview Toggle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-black/40 border border-white/10">
+                  <div>
+                    <span className="block text-xs font-semibold text-white">Video Duration</span>
+                    <span className="block text-[0.65rem] text-white/40">
+                      {lessonForm.duration && lessonForm.duration !== '00:00'
+                        ? 'Auto-detected from video'
+                        : 'Calculated upon video upload'}
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-[#c79c6e] font-mono text-xs font-semibold">
+                    {lessonForm.duration || '00:00'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-black/40 border border-white/10">
+                  <div>
+                    <span className="block text-xs font-semibold text-white">Free Preview</span>
+                    <span className="block text-[0.65rem] text-white/40">Visible to non-buyers</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={lessonForm.isFreePreview}
+                    onChange={(e) => setLessonForm(prev => ({ ...prev, isFreePreview: e.target.checked }))}
+                    className="w-4 h-4 accent-[#c79c6e] rounded cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Drawer Footer Actions */}
+              <div className="flex items-center justify-end gap-3 pt-6 border-t border-white/10 sticky bottom-0 bg-[#0e0e0e] py-4">
+                <button
+                  type="button"
+                  onClick={handleCloseLessonDrawer}
+                  className="px-5 py-2.5 rounded-xl border border-white/10 text-white/60 hover:text-white text-xs font-semibold tracking-wider"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-2.5 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-wider hover:bg-[#b0885e] transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <FloppyDisk size={16} />
+                  <span>{saving ? 'Saving...' : 'Save Lesson'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

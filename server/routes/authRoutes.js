@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
 import User from '../models/User.js';
+import CourseUser from '../models/CourseUser.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -27,11 +29,29 @@ const pendingPasswordResets = new Map();
 router.post('/register-init', async (req, res) => {
   try {
     const { fullName, email, password, countryCode, phoneNumber } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: emailRegex });
 
     if (userExists) {
+      // Check if this is a course purchaser — redirect to login instead of blocking
+      const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
+      if (courseUser) {
+        if (!userExists.courseSessionsGranted) {
+          userExists.freeSessions = 3;
+          userExists.courseSessionsGranted = true;
+          await userExists.save();
+        }
+        return res.status(409).json({
+          message: 'A booking account already exists for this email. Please sign in to access your 3 free sessions.',
+          redirectToLogin: true
+        });
+      }
       return res.status(400).json({ message: 'Email ID already exists. Use a different one.' });
     }
 
@@ -39,9 +59,9 @@ router.post('/register-init', async (req, res) => {
     const otp = generateOTP();
     
     // Store in memory for 10 minutes
-    pendingRegistrations.set(email, {
+    pendingRegistrations.set(cleanEmail, {
       fullName,
-      email,
+      email: cleanEmail,
       password,
       countryCode,
       phoneNumber,
@@ -74,7 +94,7 @@ router.post('/register-init', async (req, res) => {
 
       const { data, error } = await resend.emails.send({
         from: process.env.EMAIL_FROM || 'Onboarding <onboarding@resend.dev>',
-        to: email,
+        to: cleanEmail,
         subject: 'Verify your email - Better With Aarkesh',
         html: emailHtmlTemplate,
       });
@@ -101,15 +121,16 @@ router.post('/register-init', async (req, res) => {
 router.post('/register-verify', async (req, res) => {
   try {
     const { email, otp } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
 
-    const pendingData = pendingRegistrations.get(email);
+    const pendingData = pendingRegistrations.get(cleanEmail);
 
     if (!pendingData) {
       return res.status(400).json({ message: 'Session expired or invalid. Please try registering again.' });
     }
 
     if (pendingData.expires < Date.now()) {
-      pendingRegistrations.delete(email);
+      pendingRegistrations.delete(cleanEmail);
       return res.status(400).json({ message: 'OTP expired. Please try registering again.' });
     }
 
@@ -119,9 +140,10 @@ router.post('/register-verify', async (req, res) => {
 
     // OTP is valid, proceed with user creation
     const { fullName, password, countryCode, phoneNumber } = pendingData;
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: emailRegex });
 
     if (userExists) {
       return res.status(400).json({ message: 'Email ID already exists. Use a different one.' });
@@ -131,13 +153,19 @@ router.post('/register-verify', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Check if this email belongs to a course purchaser → grant 3 free sessions
+    const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
+    const hasCoursePerks = !!courseUser;
+
     // Create user
     const user = await User.create({
       fullName,
-      email,
+      email: cleanEmail,
       password: hashedPassword,
       countryCode,
       phoneNumber,
+      freeSessions: hasCoursePerks ? 3 : 0,
+      courseSessionsGranted: hasCoursePerks,
     });
 
     if (user) {
@@ -149,10 +177,12 @@ router.post('/register-verify', async (req, res) => {
         countryCode: user.countryCode,
         dob: user.dob,
         gender: user.gender,
+        freeSessions: user.freeSessions || 0,
+        courseSessionsGranted: user.courseSessionsGranted || false,
         token: generateToken(user._id),
       });
       // Clear pending data
-      pendingRegistrations.delete(email);
+      pendingRegistrations.delete(cleanEmail);
     } else {
       res.status(400).json({ message: 'Invalid user data' });
     }
@@ -168,9 +198,11 @@ router.post('/register-verify', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     // Check for user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: emailRegex });
 
     if (!user) {
       return res.status(401).json({ message: 'User account does not exist, please register first' });
@@ -180,6 +212,16 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
+      // If user purchased course but coaching account didn't have sessions granted yet, sync them
+      if (!user.courseSessionsGranted) {
+        const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
+        if (courseUser) {
+          user.freeSessions = 3;
+          user.courseSessionsGranted = true;
+          await user.save();
+        }
+      }
+
       res.json({
         _id: user._id,
         fullName: user.fullName,
@@ -188,6 +230,8 @@ router.post('/login', async (req, res) => {
         countryCode: user.countryCode,
         dob: user.dob,
         gender: user.gender,
+        freeSessions: user.freeSessions || 0,
+        courseSessionsGranted: user.courseSessionsGranted || false,
         token: generateToken(user._id),
       });
     } else {
@@ -196,6 +240,94 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login Error:', error.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/auth/me
+// @desc    Get current user profile with freeSessions
+// @access  Private
+router.get('/me', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Auto-sync if purchased course
+    if (!user.courseSessionsGranted && user.email) {
+      const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
+      if (courseUser) {
+        user.freeSessions = 3;
+        user.courseSessionsGranted = true;
+        await user.save();
+      }
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Fetch Auth Me Error:', error.message);
+    res.status(500).json({ message: 'Server error fetching profile' });
+  }
+});
+
+// @route   POST /api/auth/check-free-sessions
+// @desc    Check available free sessions by email
+// @access  Public
+router.post('/check-free-sessions', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.json({ hasFreeSessions: false, freeSessions: 0, isCoursePurchaser: false });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailRegex = new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+
+    const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
+    const coachingUser = await User.findOne({ email: emailRegex });
+
+    if (courseUser) {
+      if (!coachingUser) {
+        return res.json({
+          hasFreeSessions: true,
+          freeSessions: 3,
+          isCoursePurchaser: true,
+          courseUserName: courseUser.fullName
+        });
+      }
+
+      if (!coachingUser.courseSessionsGranted) {
+        coachingUser.freeSessions = 3;
+        coachingUser.courseSessionsGranted = true;
+        await coachingUser.save();
+      }
+
+      const freeSessions = coachingUser.freeSessions ?? 0;
+      return res.json({
+        hasFreeSessions: freeSessions > 0,
+        freeSessions,
+        isCoursePurchaser: true,
+        courseUserName: courseUser.fullName
+      });
+    }
+
+    if (coachingUser && coachingUser.freeSessions > 0) {
+      return res.json({
+        hasFreeSessions: true,
+        freeSessions: coachingUser.freeSessions,
+        isCoursePurchaser: coachingUser.courseSessionsGranted || false
+      });
+    }
+
+    return res.json({
+      hasFreeSessions: false,
+      freeSessions: 0,
+      isCoursePurchaser: false
+    });
+  } catch (error) {
+    console.error('Check Free Sessions Error:', error.message);
+    res.status(500).json({ message: 'Server error checking free sessions' });
   }
 });
 // @route   POST /api/auth/forgot-password-init
@@ -342,8 +474,6 @@ router.post('/admin/login', async (req, res) => {
 // @route   POST /api/auth/admin/change-password
 // @desc    Change admin password in DB
 // @access  Private (Admin)
-import { protect, admin } from '../middleware/authMiddleware.js';
-
 router.post('/admin/change-password', protect, admin, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;

@@ -1,0 +1,811 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  User,
+  Envelope,
+  Phone,
+  LockKey,
+  SignOut,
+  CaretLeft,
+  Crown,
+  BookOpen,
+  CheckCircle,
+  Eye,
+  EyeSlash,
+  ArrowRight,
+  ArrowLeft,
+  ShieldCheck,
+  Sparkle,
+  Clock,
+  CalendarPlus,
+  VideoCamera
+} from '@phosphor-icons/react';
+
+export default function CourseProfile() {
+  const navigate = useNavigate();
+
+  const [activeTab, setActiveTab] = useState('PROFILE'); // 'PROFILE' | 'ENROLLMENT' | 'SECURITY'
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Edit Profile Form State
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
+  const [profileErrorMsg, setProfileErrorMsg] = useState('');
+
+  // Password Form State
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordSuccessMsg, setPasswordSuccessMsg] = useState('');
+  const [passwordErrorMsg, setPasswordErrorMsg] = useState('');
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const token = localStorage.getItem('courseToken');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchUserProfile = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${API_URL}/api/course-auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+          setFullName(data.fullName || '');
+          setPhoneNumber(data.phoneNumber || '');
+          localStorage.setItem('courseUser', JSON.stringify(data));
+          if (data.isPurchased) {
+            localStorage.setItem('isCoursePurchased', 'true');
+          }
+        } else {
+          // Fallback to local storage
+          const storedUser = localStorage.getItem('courseUser');
+          if (storedUser) {
+            const parsed = JSON.parse(storedUser);
+            setUser(parsed);
+            setFullName(parsed.fullName || '');
+            setPhoneNumber(parsed.phoneNumber || '');
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching course profile:', err);
+        const storedUser = localStorage.getItem('courseUser');
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          setUser(parsed);
+          setFullName(parsed.fullName || '');
+          setPhoneNumber(parsed.phoneNumber || '');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('courseToken');
+    localStorage.removeItem('isCoursePurchased');
+    localStorage.removeItem('courseUser');
+    navigate('/course');
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setProfileErrorMsg('');
+    setProfileSuccessMsg('');
+
+    if (!fullName.trim()) {
+      setProfileErrorMsg('Full Name cannot be empty');
+      return;
+    }
+
+    if (phoneNumber && phoneNumber.trim().length !== 10) {
+      setProfileErrorMsg('Phone number must be exactly 10 digits');
+      return;
+    }
+
+    setIsUpdatingProfile(true);
+    try {
+      const token = localStorage.getItem('courseToken');
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${API_URL}/api/course-auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fullName: fullName.trim(),
+          phoneNumber: phoneNumber.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data);
+        localStorage.setItem('courseUser', JSON.stringify(data));
+        setProfileSuccessMsg('Profile updated successfully.');
+        setTimeout(() => setProfileSuccessMsg(''), 4000);
+      } else {
+        setProfileErrorMsg(data.message || 'Failed to update profile.');
+      }
+    } catch (err) {
+      console.error(err);
+      setProfileErrorMsg('An error occurred. Please try again.');
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    setPasswordErrorMsg('');
+    setPasswordSuccessMsg('');
+
+    if (!currentPassword) {
+      setPasswordErrorMsg('Please enter your current password');
+      return;
+    }
+    if (newPassword.length < 4) {
+      setPasswordErrorMsg('New password must be at least 4 characters long');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordErrorMsg('New passwords do not match');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const token = localStorage.getItem('courseToken');
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${API_URL}/api/course-auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setPasswordSuccessMsg('Password changed successfully.');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setTimeout(() => setPasswordSuccessMsg(''), 4000);
+      } else {
+        setPasswordErrorMsg(data.message || 'Failed to update password.');
+      }
+    } catch (err) {
+      console.error(err);
+      setPasswordErrorMsg('An error occurred. Please try again.');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
+  const [isSyncingCoaching, setIsSyncingCoaching] = useState(false);
+
+  const handleBookFreeSession = async () => {
+    setIsSyncingCoaching(true);
+    const courseEmail = user?.email || '';
+    const courseName = user?.fullName || '';
+    const coursePhone = user?.phoneNumber || '';
+    try {
+      const courseToken = localStorage.getItem('courseToken');
+      if (courseToken) {
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${API_URL}/api/course-auth/sync-coaching-account`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${courseToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (res.ok) {
+          // Account synced and 3 free sessions granted on backend.
+          // We intentionally do NOT set the token in localStorage here,
+          // so that the user is forced to manually log in on the booking page.
+          navigate(`/book?openAuth=true&authMode=register&email=${encodeURIComponent(courseEmail)}&name=${encodeURIComponent(courseName)}&phone=${encodeURIComponent(coursePhone)}`);
+        } else {
+          const errData = await res.json();
+          alert(`Could not sync account: ${errData.message}`);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync coaching account:', err);
+      alert('Network error. Please try again.');
+    } finally {
+      setIsSyncingCoaching(false);
+    }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const handleBackToCourse = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/course');
+    }
+  };
+
+  const isPurchased = user?.isPurchased || localStorage.getItem('isCoursePurchased') === 'true';
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-[#F5F2EB] font-sans selection:bg-[#c79c6e]/30 selection:text-white flex flex-col">
+      {/* Top Navbar */}
+      <header className="flex-none h-[72px] border-b border-white/10 bg-[#0a0a0a] px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
+        <Link to="/course" className="font-serif text-2xl text-white tracking-tight flex items-center hover:opacity-80 transition-opacity">
+          BetterWith<span className="text-white/60">Aarkesh</span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/"
+            className="text-[0.65rem] font-sans font-semibold uppercase tracking-[0.18em] px-3.5 py-2 rounded-lg border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all flex items-center gap-2 hover:scale-105 shadow-[0_0_20px_rgba(199,156,110,0.1)]"
+          >
+            <ArrowLeft size={14} weight="bold" /> COACHING
+          </Link>
+          <button
+            onClick={handleBackToCourse}
+            className="flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-white/60 hover:text-white transition-colors"
+          >
+            <BookOpen size={16} className="text-[#c79c6e]" /> Back to Course
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10 text-xs font-medium transition-colors"
+          >
+            <SignOut size={15} /> Log Out
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 md:px-8 py-10 md:py-14">
+        {/* Navigation Breadcrumb below navbar */}
+        <div className="mb-8 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/40">
+          <Link to="/" className="hover:text-white transition-colors flex items-center gap-1.5 text-white/60">
+            <CaretLeft size={14} weight="bold" className="text-[#c79c6e]" /> Coaching
+          </Link>
+          <span>/</span>
+          <button onClick={handleBackToCourse} className="hover:text-white transition-colors">
+            Course
+          </button>
+          <span>/</span>
+          <span className="text-[#c79c6e]">Student Profile</span>
+        </div>
+
+        {loading ? (
+          <div className="min-h-[400px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 border-2 border-[#c79c6e] border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-xs uppercase tracking-widest text-white/50">Loading profile...</p>
+            </div>
+          </div>
+        ) : !user && !localStorage.getItem('courseToken') ? (
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-10 text-center max-w-md mx-auto my-12 shadow-2xl">
+            <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-5 text-[#c79c6e]">
+              <User size={30} weight="light" />
+            </div>
+            <h2 className="font-serif text-2xl text-white mb-2">No Active Session</h2>
+            <p className="text-sm text-white/60 mb-6">
+              You are not logged into the course. Please log in from the course dashboard to view and manage your profile.
+            </p>
+            <Link
+              to="/course"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs tracking-wider uppercase hover:bg-[#d8ae80] transition-colors"
+            >
+              Go to Course <ArrowRight size={16} weight="bold" />
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Profile Header Card */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#121212] to-[#0a0a0a] p-6 md:p-8 shadow-2xl">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-[#c79c6e]/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+              
+              <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div className="flex items-center gap-5">
+                  <div className="relative">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border-2 border-[#c79c6e] bg-[#1a1714] flex items-center justify-center text-[#c79c6e] font-serif text-2xl md:text-3xl font-bold shadow-[0_0_30px_rgba(199,156,110,0.25)]">
+                      {getInitials(user?.fullName || 'Student')}
+                    </div>
+                    {isPurchased && (
+                      <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#c79c6e] text-black flex items-center justify-center shadow-lg" title="Full Lifetime Access">
+                        <Crown size={15} weight="fill" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h1 className="font-serif text-2xl md:text-3xl text-white font-medium">
+                        {user?.fullName || 'Course Student'}
+                      </h1>
+                      {isPurchased && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[0.65rem] uppercase tracking-wider font-semibold bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                          <Sparkle size={12} weight="fill" /> Enrolled Member
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-white/60 mt-1 flex items-center gap-2">
+                      <Envelope size={15} className="text-white/40" /> {user?.email || 'N/A'}
+                    </p>
+                    {user?.phoneNumber && (
+                      <p className="text-xs text-white/40 mt-1 flex items-center gap-2">
+                        <Phone size={14} className="text-white/40" /> +91 {user?.phoneNumber}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 w-full md:w-auto pt-2 md:pt-0 border-t border-white/5 md:border-t-0">
+                  {isPurchased ? (
+                    <Link
+                      to="/course"
+                      className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#c79c6e] text-black text-xs font-semibold uppercase tracking-wider hover:bg-[#d8ae80] transition-colors shadow-lg"
+                    >
+                      <BookOpen size={16} weight="bold" /> Resume Course
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/course?checkout=true"
+                      className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#c79c6e] text-black text-xs font-semibold uppercase tracking-wider hover:bg-[#d8ae80] transition-colors shadow-lg"
+                    >
+                      <Crown size={16} weight="fill" /> Unlock Course
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+              <button
+                onClick={() => setActiveTab('PROFILE')}
+                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all ${
+                  activeTab === 'PROFILE'
+                    ? 'bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30 shadow-[0_0_20px_rgba(199,156,110,0.1)]'
+                    : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <User size={16} /> Account Details
+              </button>
+              <button
+                onClick={() => setActiveTab('ENROLLMENT')}
+                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all ${
+                  activeTab === 'ENROLLMENT'
+                    ? 'bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30 shadow-[0_0_20px_rgba(199,156,110,0.1)]'
+                    : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <Crown size={16} /> Course & Access
+              </button>
+              <button
+                onClick={() => setActiveTab('SECURITY')}
+                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all ${
+                  activeTab === 'SECURITY'
+                    ? 'bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30 shadow-[0_0_20px_rgba(199,156,110,0.1)]'
+                    : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <LockKey size={16} /> Security
+              </button>
+            </div>
+
+            {/* TAB 1: Account Details */}
+            {activeTab === 'PROFILE' && (
+              <div className="w-full">
+                <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 md:p-8 shadow-xl w-full">
+                  <div className="mb-6">
+                    <h2 className="font-serif text-xl text-white">Personal Information</h2>
+                    <p className="text-xs text-white/50 mt-1">
+                      Update your profile information associated with your course student account.
+                    </p>
+                  </div>
+
+                  {profileSuccessMsg && (
+                    <div className="mb-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs flex items-center gap-2">
+                      <CheckCircle size={18} weight="fill" /> {profileSuccessMsg}
+                    </div>
+                  )}
+
+                  {profileErrorMsg && (
+                    <div className="mb-6 p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-xs">
+                      {profileErrorMsg}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleUpdateProfile} className="space-y-5">
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-white/70 mb-2 font-medium">
+                        Full Name
+                      </label>
+                      <div className="relative">
+                        <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                        <input
+                          type="text"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="w-full pl-11 pr-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-white/20 focus:border-[#c79c6e] focus:outline-none focus:ring-1 focus:ring-[#c79c6e] transition-all text-sm"
+                          placeholder="Your Full Name"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-white/70 mb-2 font-medium">
+                        Email Address <span className="text-xs text-white/40 font-normal lowercase">(cannot be changed)</span>
+                      </label>
+                      <div className="relative">
+                        <Envelope size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                        <input
+                          type="email"
+                          value={user?.email || ''}
+                          disabled
+                          className="w-full pl-11 pr-24 py-3 rounded-xl border border-white/5 bg-white/[0.02] text-white/50 cursor-not-allowed text-sm"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[0.65rem] font-semibold uppercase tracking-wider">
+                          Verified
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-white/70 mb-2 font-medium">
+                        Phone Number (10 Digits)
+                      </label>
+                      <div className="relative">
+                        <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                        <span className="absolute left-11 top-1/2 -translate-y-1/2 text-white/40 text-sm font-medium">+91</span>
+                        <input
+                          type="tel"
+                          maxLength={10}
+                          value={phoneNumber}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            setPhoneNumber(val);
+                          }}
+                          className="w-full pl-20 pr-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-white/20 focus:border-[#c79c6e] focus:outline-none focus:ring-1 focus:ring-[#c79c6e] transition-all text-sm tracking-wide"
+                          placeholder="9876543210"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 flex items-center justify-end gap-3">
+                      <button
+                        type="submit"
+                        disabled={isUpdatingProfile}
+                        className="px-6 py-3 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs tracking-wider uppercase hover:bg-[#d8ae80] transition-colors disabled:opacity-50"
+                      >
+                        {isUpdatingProfile ? 'Saving Changes...' : 'Save Profile'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: Course & Access */}
+            {activeTab === 'ENROLLMENT' && (
+              <div className="w-full space-y-6">
+                {isPurchased ? (
+                  <>
+                    {/* 1. Current Purchased Course Card */}
+                    <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 md:p-8 shadow-xl w-full">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] font-semibold">
+                              Current Enrolled Course
+                            </span>
+                          </div>
+                          <h2 className="font-serif text-2xl md:text-3xl text-white font-medium">
+                            Better With Aarkesh: The Mastery Course
+                          </h2>
+                          <p className="text-xs text-white/50 mt-1">
+                            Complete access to all modules, video lectures, action blueprints, and lifetime updates.
+                          </p>
+                        </div>
+
+                        <div className="shrink-0 flex items-center gap-3">
+                          <span className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
+                            <CheckCircle size={16} weight="fill" /> Active • Lifetime Access
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
+                        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                          <div className="flex items-center gap-2 text-white/50 text-xs uppercase tracking-wider mb-1">
+                            <BookOpen size={16} className="text-[#c79c6e]" /> Curriculum
+                          </div>
+                          <p className="text-base font-serif text-white">4 Core Modules</p>
+                          <p className="text-xs text-white/40 mt-0.5">14 In-depth Lessons</p>
+                        </div>
+
+                        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                          <div className="flex items-center gap-2 text-white/50 text-xs uppercase tracking-wider mb-1">
+                            <Clock size={16} className="text-[#c79c6e]" /> Access Type
+                          </div>
+                          <p className="text-base font-serif text-white">Full Lifetime Access</p>
+                          <p className="text-xs text-white/40 mt-0.5">Self-paced learning</p>
+                        </div>
+
+                        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                          <div className="flex items-center gap-2 text-white/50 text-xs uppercase tracking-wider mb-1">
+                            <Crown size={16} className="text-[#c79c6e]" /> Community
+                          </div>
+                          <p className="text-base font-serif text-white">Direct Guidance</p>
+                          <p className="text-xs text-white/40 mt-0.5">Aarkesh Mentorship</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 pt-6 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <p className="text-xs text-white/50">
+                          Ready to resume watching and studying your course materials?
+                        </p>
+                        <Link
+                          to="/course"
+                          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold tracking-wider uppercase transition-colors"
+                        >
+                          <BookOpen size={15} /> Open Course Player <ArrowRight size={14} />
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* 2. Free 3 Coaching Sessions Card */}
+                    <div className="relative overflow-hidden rounded-2xl border border-[#c79c6e]/30 bg-gradient-to-br from-[#141210] via-[#0d0c0a] to-[#0a0a0a] p-6 md:p-8 shadow-[0_0_50px_rgba(199,156,110,0.1)] w-full">
+                      <div className="absolute top-0 right-0 w-80 h-80 bg-[#c79c6e]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+
+                      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div className="max-w-2xl space-y-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/40 text-[#c79c6e] text-[0.65rem] font-semibold uppercase tracking-[0.2em]">
+                              <Sparkle size={13} weight="fill" /> Course Bonus
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.65rem] font-semibold uppercase tracking-wider">
+                              <CheckCircle size={13} weight="fill" /> {user?.freeSessions ?? 3} of 3 Available
+                            </span>
+                          </div>
+
+                          <h3 className="font-serif text-2xl md:text-3xl text-white font-normal tracking-tight">
+                            3 Complimentary 1-on-1 Coaching Sessions
+                          </h3>
+
+                          <p className="text-xs md:text-sm text-white/70 font-sans leading-relaxed">
+                            As an enrolled student, you receive 3 private 1-on-1 coaching sessions with Aarkesh at ₹0. To claim and schedule your sessions, click below and <span className="text-[#c79c6e] font-medium">log in or register using your course email (<span className="underline">{user?.email}</span>)</span> on the booking portal.
+                          </p>
+
+                          {/* Step-by-Step Info Box */}
+                          <div className="p-3 rounded-xl border border-[#c79c6e]/20 bg-white/[0.02] flex flex-col gap-1.5 text-xs text-white/70">
+                            <span className="text-[0.68rem] uppercase tracking-wider text-[#c79c6e] font-semibold flex items-center gap-1.5">
+                              <Sparkle size={12} weight="fill" /> How to schedule your session:
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[0.72rem] text-white/60">
+                              <div className="bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
+                                <strong className="text-white">1. Click Button:</strong> Redirect to booking page
+                              </div>
+                              <div className="bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
+                                <strong className="text-white">2. Same Email:</strong> Register to claim 3 sessions
+                              </div>
+                              <div className="bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
+                                <strong className="text-white">3. Book at ₹0:</strong> 3 free sessions applied
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3 pt-1">
+                            <div className="flex items-center gap-2 text-xs text-white/60 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">
+                              <CheckCircle size={14} weight="fill" className="text-[#c79c6e]" /> {user?.freeSessions ?? 3} Free Credits Left
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-white/60 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">
+                              <CheckCircle size={14} weight="fill" className="text-[#c79c6e]" /> Direct Mentorship
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-white/60 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">
+                              <CheckCircle size={14} weight="fill" className="text-[#c79c6e]" /> ₹0 Direct Booking
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 flex flex-col items-start lg:items-end gap-2 pt-2 lg:pt-0">
+                          <button
+                            onClick={handleBookFreeSession}
+                            disabled={isSyncingCoaching}
+                            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-[0.18em] hover:bg-[#d8ae80] hover:scale-[1.02] transition-all shadow-[0_0_25px_rgba(199,156,110,0.25)] disabled:opacity-50"
+                          >
+                            <CalendarPlus size={16} weight="bold" /> {isSyncingCoaching ? 'Opening Booking...' : 'Book Free Session'} <ArrowRight size={15} weight="bold" />
+                          </button>
+                          <span className="text-[0.68rem] text-white/40 tracking-wide">
+                            Included with your course • ₹0 checkout
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  /* Course Purchase Card for unpurchased users */
+                  <div className="relative overflow-hidden rounded-2xl border border-[#c79c6e]/40 bg-gradient-to-br from-[#15120f] via-[#0d0c0a] to-[#0a0a0a] p-8 md:p-12 shadow-[0_0_50px_rgba(199,156,110,0.15)] w-full">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-[#c79c6e]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+
+                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                      <div className="max-w-2xl space-y-4">
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/40 text-[#c79c6e] text-xs font-semibold uppercase tracking-[0.2em]">
+                          <Crown size={14} weight="fill" /> Course Access
+                        </div>
+
+                        <h2 className="font-serif text-3xl md:text-4xl text-white font-normal tracking-tight">
+                          Unlock Better With Aarkesh: The Mastery Course
+                        </h2>
+
+                        <p className="text-sm md:text-base text-white/70 font-sans leading-relaxed">
+                          You haven't unlocked the Mastery Course yet. Enroll today to get instant lifetime access to the complete video curriculum, action blueprints, and 3 complimentary 1-on-1 private coaching sessions with Aarkesh.
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                          <div className="flex items-center gap-2.5 text-xs text-white/70 bg-white/5 border border-white/10 px-4 py-3 rounded-xl">
+                            <BookOpen size={16} className="text-[#c79c6e] shrink-0" /> 4 Modules & 14 Lessons
+                          </div>
+                          <div className="flex items-center gap-2.5 text-xs text-white/70 bg-white/5 border border-white/10 px-4 py-3 rounded-xl">
+                            <Sparkle size={16} weight="fill" className="text-[#c79c6e] shrink-0" /> 3 Free 1-on-1 Sessions
+                          </div>
+                          <div className="flex items-center gap-2.5 text-xs text-white/70 bg-white/5 border border-white/10 px-4 py-3 rounded-xl">
+                            <Crown size={16} weight="fill" className="text-[#c79c6e] shrink-0" /> Lifetime Full Access
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 flex flex-col items-start lg:items-end gap-3 pt-4 lg:pt-0">
+                        <Link
+                          to="/course?checkout=true"
+                          className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-[0.2em] hover:bg-[#d8ae80] hover:scale-[1.02] transition-all shadow-[0_0_30px_rgba(199,156,110,0.3)]"
+                        >
+                          <Crown size={16} weight="fill" /> Purchase Course Now <ArrowRight size={16} weight="bold" />
+                        </Link>
+                        <span className="text-[0.7rem] text-white/40 tracking-wider">
+                          Instant access upon checkout
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: Security & Password */}
+            {activeTab === 'SECURITY' && (
+              <div className="w-full">
+                <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 md:p-8 shadow-xl w-full">
+                  <div className="mb-6">
+                    <h2 className="font-serif text-xl text-white">Change Password</h2>
+                    <p className="text-xs text-white/50 mt-1">
+                      Choose a strong, unique password to protect your course account.
+                    </p>
+                  </div>
+
+                  {passwordSuccessMsg && (
+                    <div className="mb-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs flex items-center gap-2">
+                      <CheckCircle size={18} weight="fill" /> {passwordSuccessMsg}
+                    </div>
+                  )}
+
+                  {passwordErrorMsg && (
+                    <div className="mb-6 p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-xs">
+                      {passwordErrorMsg}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleUpdatePassword} className="space-y-5">
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-white/70 mb-2 font-medium">
+                        Current Password
+                      </label>
+                      <div className="relative">
+                        <LockKey size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                        <input
+                          type={showCurrentPassword ? 'text' : 'password'}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="w-full pl-11 pr-11 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-white/20 focus:border-[#c79c6e] focus:outline-none focus:ring-1 focus:ring-[#c79c6e] transition-all text-sm"
+                          placeholder="••••••••"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                        >
+                          {showCurrentPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-white/70 mb-2 font-medium">
+                        New Password
+                      </label>
+                      <div className="relative">
+                        <LockKey size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full pl-11 pr-11 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-white/20 focus:border-[#c79c6e] focus:outline-none focus:ring-1 focus:ring-[#c79c6e] transition-all text-sm"
+                          placeholder="••••••••"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                        >
+                          {showNewPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-white/70 mb-2 font-medium">
+                        Confirm New Password
+                      </label>
+                      <div className="relative">
+                        <LockKey size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full pl-11 pr-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-white/20 focus:border-[#c79c6e] focus:outline-none focus:ring-1 focus:ring-[#c79c6e] transition-all text-sm"
+                          placeholder="••••••••"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 flex items-center justify-end">
+                      <button
+                        type="submit"
+                        disabled={isUpdatingPassword}
+                        className="px-6 py-3 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs tracking-wider uppercase hover:bg-[#d8ae80] transition-colors disabled:opacity-50"
+                      >
+                        {isUpdatingPassword ? 'Updating Password...' : 'Update Password'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

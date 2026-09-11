@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { 
   SquaresFour, 
   Books, 
@@ -8,7 +8,10 @@ import {
   CaretDown,
   CaretRight,
   SignOut,
-  FolderOpen
+  FolderOpen,
+  GraduationCap,
+  VideoCamera,
+  UploadSimple
 } from '@phosphor-icons/react';
 
 export default function AdminLayout({ children, onLogout }) {
@@ -18,9 +21,10 @@ export default function AdminLayout({ children, onLogout }) {
 
   // Determine active top tab based on route
   const getActiveTab = () => {
+    if (currentPath.startsWith('/course') || currentPath.startsWith('/admin/courses') || currentPath.startsWith('/upload-videos')) return 'course';
+    if (currentPath.startsWith('/appointments')) return 'appointments';
     if (currentPath.startsWith('/library')) return 'library';
     if (currentPath.startsWith('/journey')) return 'journey';
-    if (currentPath.startsWith('/appointments')) return 'appointments';
     if (currentPath.startsWith('/footer-documents')) return 'footer';
     return 'overview';
   };
@@ -29,10 +33,11 @@ export default function AdminLayout({ children, onLogout }) {
 
   const topTabs = [
     { id: 'overview', label: 'Overview', icon: <SquaresFour size={18} />, path: '/' },
+    { id: 'appointments', label: 'Appointments', icon: <CalendarBlank size={18} />, path: '/appointments' },
     { id: 'library', label: 'Library', icon: <Books size={18} />, path: '/library/content' },
     { id: 'journey', label: 'My Journey', icon: <Path size={18} />, path: '/journey/settings' },
-    { id: 'appointments', label: 'Appointments', icon: <CalendarBlank size={18} />, path: '/appointments' },
     { id: 'footer', label: 'Footer', icon: <FolderOpen size={18} />, path: '/footer-documents' },
+    { id: 'course', label: 'Course', icon: <GraduationCap size={18} />, path: '/course' },
   ];
 
   return (
@@ -81,7 +86,7 @@ export default function AdminLayout({ children, onLogout }) {
       <div className="flex-1 flex overflow-hidden">
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto bg-[#050505] relative">
-          {children}
+          {children || <Outlet />}
         </main>
       </div>
     </div>

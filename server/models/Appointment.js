@@ -49,6 +49,9 @@ const appointmentSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  amount: {
+    type: Number,
+  },
   paymentId: {
     type: String,
   },
@@ -63,11 +66,23 @@ const appointmentSchema = new mongoose.Schema({
     enum: ['Pending', 'Paid', 'Failed'],
     default: 'Pending',
   },
+  isFreeSession: {
+    type: Boolean,
+    default: false,
+  },
+  freeSessionRefunded: {
+    type: Boolean,
+    default: false,
+  },
   calBookingUid: {
     type: String,
   },
   meetLink: {
     type: String,
+  },
+  coachNotes: {
+    type: String,
+    default: '',
   },
   rescheduleRequest: {
     date: String,

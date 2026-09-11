@@ -9,8 +9,10 @@ import {
   CurrencyInr,
   SignOut,
   LockKey,
-  Gear
+  Gear,
+  GraduationCap
 } from '@phosphor-icons/react';
+import AdminCourseStudents from './pages/AdminCourseStudents';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -100,6 +102,7 @@ function AdminLogin({ onLogin }) {
 // --- Dashboard Component ---
 function AdminDashboard() {
   const [appointments, setAppointments] = useState([]);
+  const [courseStats, setCourseStats] = useState({ totalPurchased: 0, totalRevenue: 0, totalRegistered: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -107,12 +110,18 @@ function AdminDashboard() {
       try {
         const token = localStorage.getItem('adminToken');
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const res = await fetch(`${apiUrl}/api/appointments/admin`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
         
-        if (res.ok) {
-          const data = await res.json();
+        const [appRes, courseRes] = await Promise.all([
+          fetch(`${apiUrl}/api/appointments/admin`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${apiUrl}/api/course-auth/admin/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ]);
+        
+        if (appRes.ok) {
+          const data = await appRes.json();
           const today = new Date();
           const formattedData = data.map(app => {
             const appDateObj = new Date(app.date);
@@ -128,6 +137,11 @@ function AdminDashboard() {
           });
           setAppointments(formattedData);
         }
+
+        if (courseRes.ok) {
+          const cData = await courseRes.json();
+          setCourseStats(cData);
+        }
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
       } finally {
@@ -138,11 +152,15 @@ function AdminDashboard() {
     fetchDashboardData();
   }, []);
 
+  const totalClientsCount = new Set(appointments.map(a => a.email || (a.userId && a.userId.email))).size;
+  const coachingRevenue = appointments.filter(a => !a.isFreeSession && a.paymentStatus === 'Paid').length * 5000;
+  const totalCombinedRevenue = (courseStats.totalRevenue || 0) + coachingRevenue;
+
   const stats = [
-    { label: 'Total Clients', value: '124', icon: <Users size={24} />, trend: '+12% this month' },
-    { label: 'Active Articles', value: '45', icon: <FileText size={24} />, trend: '+3 this week' },
-    { label: 'Upcoming Sessions', value: appointments.filter(a => a.status !== 'Completed').length || '0', icon: <CalendarBlank size={24} />, trend: 'Based on bookings' },
-    { label: 'Revenue (MTD)', value: '₹3,50,000', icon: <CurrencyInr size={24} />, trend: '+8% vs last month' },
+    { label: 'Course Students', value: courseStats.totalPurchased || '0', icon: <GraduationCap size={24} />, trend: `${courseStats.totalRegistered || 0} registered total`, link: '/course-students' },
+    { label: 'Coaching Clients', value: totalClientsCount || appointments.length, icon: <Users size={24} />, trend: 'Active clients', link: '/appointments' },
+    { label: 'Upcoming Sessions', value: appointments.filter(a => a.status !== 'Completed').length || '0', icon: <CalendarBlank size={24} />, trend: 'Based on bookings', link: '/appointments' },
+    { label: 'Total Revenue', value: `₹${totalCombinedRevenue.toLocaleString('en-IN')}`, icon: <CurrencyInr size={24} />, trend: `₹${(courseStats.totalRevenue || 0).toLocaleString('en-IN')} from Course` },
   ];
 
   // Get upcoming appointments, sorted by closest date and time
@@ -152,8 +170,6 @@ function AdminDashboard() {
     .filter(a => {
       if (a.status === 'Completed') return false;
       const appDate = new Date(`${a.date} ${a.time}`);
-      // Only include if appointment is today or in the future
-      // We compare with 'now' - optionally zeroing out hours if we want to show missed ones from earlier today
       return appDate >= new Date(now.setHours(0, 0, 0, 0)); 
     })
     .sort((a, b) => {
@@ -284,6 +300,8 @@ import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
 import AdminContent from './pages/AdminContent';
 import AdminFooterDocuments from './pages/AdminFooterDocuments';
+import AdminCourse from './pages/AdminCourse';
+import AdminCourseCurriculum from './pages/AdminCourseCurriculum';
 
 // --- Main App Route Setup ---
 function App() {
@@ -317,22 +335,23 @@ function App() {
         />
         
         <Route 
-          path="/*" 
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <AdminLayout onLogout={handleLogout}>
-                <Routes>
-                  <Route path="/" element={<AdminDashboard />} />
-                  <Route path="/appointments" element={<AdminUsers />} />
-                  <Route path="/journey/settings" element={<AdminSettings />} />
-                  <Route path="/library/content" element={<AdminContent />} />
-                  <Route path="/footer-documents" element={<AdminFooterDocuments />} />
-                  {/* More admin routes will go here */}
-                </Routes>
-              </AdminLayout>
+              <AdminLayout onLogout={handleLogout} />
             </ProtectedRoute>
           } 
-        />
+        >
+          <Route path="/" element={<AdminDashboard />} />
+          <Route path="/course" element={<AdminCourse />} />
+          <Route path="/upload-videos" element={<AdminCourse />} />
+          <Route path="/course-curriculum" element={<AdminCourse />} />
+          <Route path="/admin/courses" element={<AdminCourse />} />
+          <Route path="/course-students" element={<AdminCourse />} />
+          <Route path="/appointments" element={<AdminUsers />} />
+          <Route path="/journey/settings" element={<AdminSettings />} />
+          <Route path="/library/content" element={<AdminContent />} />
+          <Route path="/footer-documents" element={<AdminFooterDocuments />} />
+        </Route>
       </Routes>
     </Router>
   )

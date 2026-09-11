@@ -1,14 +1,181 @@
 import express from 'express';
 import Appointment from '../models/Appointment.js';
+import User from '../models/User.js';
+import CourseUser from '../models/CourseUser.js';
+import Settings from '../models/Settings.js';
 import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 import { Resend } from 'resend';
 
 const router = express.Router();
 
+// --- Shared Cal.com sync helper (used by paid finalize + free course sessions) ---
+const syncAppointmentToCal = async (appointment) => {
+  if (!process.env.CAL_API_KEY) return;
+  try {
+    const startDate = new Date(`${appointment.date} ${appointment.time} GMT+0530`);
+    const startISO = startDate.toISOString();
+
+    const eventTypeId = appointment.isFirstSession
+      ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198)
+      : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
+
+    const payload = {
+      eventTypeId: parseInt(eventTypeId),
+      start: startISO,
+      attendee: {
+        name: appointment.name,
+        email: appointment.email,
+        timeZone: "Asia/Calcutta",
+        language: "en"
+      }
+    };
+
+    const calRes = await fetch('https://api.cal.com/v2/bookings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
+        'Content-Type': 'application/json',
+        'cal-api-version': '2024-08-13'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!calRes.ok) {
+      const errData = await calRes.json();
+      console.error("Cal.com API error:", errData);
+    } else {
+      const calData = await calRes.json();
+      console.log("Successfully created booking on Cal.com:", calData);
+      if (calData?.data?.uid) {
+        appointment.calBookingUid = calData.data.uid;
+      } else if (calData?.booking?.uid) {
+        appointment.calBookingUid = calData.booking.uid;
+      }
+
+      if (calData?.data?.location) {
+        appointment.meetLink = calData.data.location;
+      } else if (calData?.location) {
+        appointment.meetLink = calData.location;
+      } else if (calData?.data?.locationValue) {
+        appointment.meetLink = calData.data.locationValue;
+      }
+
+      await appointment.save();
+    }
+  } catch (calError) {
+    console.error("Cal.com API sync error:", calError);
+  }
+};
+
 // POST /api/appointments - Create a new appointment
 router.post('/', optionalAuth, async (req, res) => {
   try {
-    const { date, time, name, email, countryCode, phoneNumber, source, reason, extra, paymentId, orderId, signature } = req.body;
+    const { date, time, name, email, countryCode, phoneNumber, source, reason, extra, paymentId, orderId, signature, useFreeSession } = req.body;
+
+    // --- Free session booking (3 free sessions included with course purchase) ---
+    if (useFreeSession) {
+      const normalizedEmail = (email || '').trim().toLowerCase();
+      const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
+
+      // Only students who purchased the course can use free sessions
+      const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
+      let coachingUser = await User.findOne({ email: emailRegex });
+
+      if (!courseUser && (!coachingUser || !coachingUser.courseSessionsGranted || !coachingUser.freeSessions || coachingUser.freeSessions <= 0)) {
+        return res.status(403).json({ message: 'Free sessions are only available to course purchasers.' });
+      }
+
+      // Auto-create/sync coaching user if not present
+      if (!coachingUser && courseUser) {
+        coachingUser = new User({
+          fullName: courseUser.fullName || name,
+          email: normalizedEmail,
+          password: courseUser.password,
+          countryCode: countryCode || '+91',
+          phoneNumber: phoneNumber || courseUser.phoneNumber || '',
+          freeSessions: 3,
+          courseSessionsGranted: true
+        });
+        await coachingUser.save();
+      } else if (coachingUser && courseUser && !coachingUser.courseSessionsGranted) {
+        coachingUser.freeSessions = 3;
+        coachingUser.courseSessionsGranted = true;
+        await coachingUser.save();
+      }
+
+      if (!coachingUser || !coachingUser.freeSessions || coachingUser.freeSessions <= 0) {
+        return res.status(403).json({ message: 'No free sessions remaining on your account.' });
+      }
+
+      const pastAppointments = await Appointment.countDocuments({ email: normalizedEmail });
+      const isFirstSession = pastAppointments === 0;
+      const duration = isFirstSession ? 60 : 90;
+
+      const freeAppointment = new Appointment({
+        userId: coachingUser._id,
+        date,
+        time,
+        name,
+        email: normalizedEmail,
+        countryCode,
+        phoneNumber,
+        source,
+        reason,
+        extra,
+        status: 'UPCOMING',
+        duration,
+        isFirstSession,
+        amount: 0,
+        orderId: 'COURSE_FREE_SESSION',
+        paymentStatus: 'Paid',
+        isFreeSession: true
+      });
+
+      const createdFreeAppointment = await freeAppointment.save();
+
+      // Consume one free session credit
+      coachingUser.freeSessions -= 1;
+      await coachingUser.save();
+
+      // Sync with Cal.com just like a paid booking
+      await syncAppointmentToCal(createdFreeAppointment);
+
+      // Send confirmation email
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          const emailHtmlTemplate = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+              <h2>Your Coaching Session Is Confirmed (Course Perk)</h2>
+              <p>Hi ${name},</p>
+              <p>Your complimentary 1-on-1 coaching session with Aarkesh has been booked successfully!</p>
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                <strong>Date:</strong> ${date}<br>
+                <strong>Time:</strong> ${time}<br>
+                <strong>Duration:</strong> ${duration} minutes<br>
+                ${createdFreeAppointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${createdFreeAppointment.meetLink}" style="color: #c79c6e;">Click here to join</a><br>` : ''}
+              </div>
+              <p>Looking forward to speaking with you.</p>
+            </div>
+          `;
+
+          await resend.emails.send({
+            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+            to: normalizedEmail,
+            subject: 'Your 1-on-1 coaching session is confirmed',
+            html: emailHtmlTemplate,
+          });
+        } catch (emailErr) {
+          console.error("Failed to send free session confirmation email", emailErr);
+        }
+      }
+
+      return res.status(201).json({
+        ...createdFreeAppointment.toObject(),
+        freeSessionsRemaining: coachingUser.freeSessions
+      });
+    }
 
     // Check if user has past appointments
     const pastAppointments = await Appointment.countDocuments({ email: email });
@@ -29,6 +196,7 @@ router.post('/', optionalAuth, async (req, res) => {
       status: 'UPCOMING',
       duration,
       isFirstSession,
+      amount: req.body.amount !== undefined ? req.body.amount : (isFirstSession ? 5000 : 7500),
       paymentId,
       orderId,
       signature
@@ -143,8 +311,45 @@ router.put('/:id/fail', optionalAuth, async (req, res) => {
 // GET /api/appointments - Get all appointments for a user
 router.get('/', protect, async (req, res) => {
   try {
-    const appointments = await Appointment.find({ userId: req.user._id }).sort({ createdAt: -1 });
-    res.json(appointments);
+    // Fetch by userId OR by email (to catch free-session appointments that may have been booked before account linking)
+    const appointments = await Appointment.find({
+      $or: [
+        { userId: req.user._id },
+        { email: { $regex: new RegExp(`^${req.user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+      ]
+    }).sort({ createdAt: -1 });
+
+    // Deduplicate by _id (in case both userId and email matched)
+    const seen = new Set();
+    const unique = appointments.filter(a => {
+      const key = a._id.toString();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Fetch fee settings to ensure accurate fallback for any older records
+    const feeSettings = await Settings.findOne({ key: 'fees' });
+    const fee60 = feeSettings?.value?.fee60min || 1000;
+    const fee90 = feeSettings?.value?.fee90min || 1500;
+
+    const enriched = unique.map(a => {
+      const appObj = a.toObject();
+      const isFree = Boolean(appObj.isFreeSession || appObj.orderId === 'COURSE_FREE_SESSION');
+      const calculatedAmount = isFree 
+        ? 0 
+        : (appObj.amount !== undefined && appObj.amount !== null 
+            ? appObj.amount 
+            : (appObj.duration === 90 ? fee90 : fee60));
+
+      return {
+        ...appObj,
+        amount: calculatedAmount,
+        isFreeSession: isFree
+      };
+    });
+
+    res.json(enriched);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error fetching appointments' });
@@ -173,7 +378,36 @@ router.get('/admin', protect, admin, async (req, res) => {
     const appointments = await Appointment.find()
       .populate('userId', 'name email phone createdAt')
       .sort({ createdAt: -1 });
-    res.json(appointments);
+
+    // Fetch fee settings to ensure accurate fallback
+    const feeSettings = await Settings.findOne({ key: 'fees' });
+    const fee60 = feeSettings?.value?.fee60min || 1000;
+    const fee90 = feeSettings?.value?.fee90min || 1500;
+
+    // Fetch all course purchasers emails for fast lookup
+    const coursePurchasers = await CourseUser.find({ isPurchased: true }).select('email');
+    const coursePurchaserEmails = new Set(coursePurchasers.map(c => (c.email || '').toLowerCase().trim()));
+
+    const enrichedAppointments = appointments.map(app => {
+      const appObj = app.toObject();
+      const appEmail = (appObj.email || (appObj.userId && appObj.userId.email) || '').toLowerCase().trim();
+      const isCoursePurchaser = coursePurchaserEmails.has(appEmail);
+      const isFree = Boolean(appObj.isFreeSession || appObj.orderId === 'COURSE_FREE_SESSION');
+      const calculatedAmount = isFree 
+        ? 0 
+        : (appObj.amount !== undefined && appObj.amount !== null 
+            ? appObj.amount 
+            : (appObj.duration === 90 ? fee90 : fee60));
+      
+      return {
+        ...appObj,
+        amount: calculatedAmount,
+        isCourseMember: isCoursePurchaser || isFree,
+        isFreeSession: isFree
+      };
+    });
+
+    res.json(enrichedAppointments);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error fetching all appointments' });
@@ -196,6 +430,27 @@ router.put('/admin/:id/status', protect, admin, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error updating appointment status' });
+  }
+});
+
+// PUT /api/appointments/admin/:id/notes - Update coach's session notes
+router.put('/admin/:id/notes', protect, admin, async (req, res) => {
+  try {
+    const { notes, coachNotes } = req.body;
+    const notesToSave = notes !== undefined ? notes : (coachNotes !== undefined ? coachNotes : '');
+    
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    appointment.coachNotes = notesToSave;
+    const updatedAppointment = await appointment.save();
+    
+    res.json(updatedAppointment);
+  } catch (error) {
+    console.error('Failed to update coach notes:', error);
+    res.status(500).json({ message: 'Server error updating coach notes' });
   }
 });
 
@@ -404,6 +659,21 @@ router.put('/:id/cancel', optionalAuth, async (req, res) => {
 
     appointment.status = 'CANCELLED';
     await appointment.save();
+
+    // --- Credit the free course session back on cancellation ---
+    if (appointment.isFreeSession && !appointment.freeSessionRefunded) {
+      try {
+        const refundedUser = await User.findOne({ email: appointment.email });
+        if (refundedUser) {
+          refundedUser.freeSessions = (refundedUser.freeSessions || 0) + 1;
+          await refundedUser.save();
+          appointment.freeSessionRefunded = true;
+          await appointment.save();
+        }
+      } catch (refundErr) {
+        console.error('Failed to refund free session credit:', refundErr);
+      }
+    }
 
     // --- Cal.com Integration ---
     if (process.env.CAL_API_KEY && appointment.calBookingUid) {

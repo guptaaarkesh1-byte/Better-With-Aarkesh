@@ -1,31 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeft, Sparkle, CheckCircle } from '@phosphor-icons/react';
 import BookingStepper from '../components/booking/BookingStepper';
 import Step1Time from '../components/booking/Step1Time';
 import Step2Details from '../components/booking/Step2Details';
 import Step3Confirm from '../components/booking/Step3Confirm';
 import BookingSuccess from '../components/booking/BookingSuccess';
 import BookingCancelled from '../components/booking/BookingCancelled';
+import LoginModal from '../components/layout/LoginModal';
 import bookingBg from '../assets/images/booking_bg_lamp.png';
 
 export default function Booking() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(() => {
-    const savedStep = sessionStorage.getItem('bookingStep');
-    return savedStep ? parseInt(savedStep, 10) : 1;
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token'));
+  const [step, setStep] = useState(1);
   const [bookingData, setBookingData] = useState(() => {
-    const savedBooking = sessionStorage.getItem('bookingData');
-    if (savedBooking) {
-      try {
-        return JSON.parse(savedBooking);
-      } catch (e) {
-        console.error('Failed to parse saved booking data', e);
-      }
-    }
-    
-    const saved = localStorage.getItem('userInfo');
+    // Always start fresh — do not restore from sessionStorage
+    sessionStorage.removeItem('bookingStep');
+    sessionStorage.removeItem('bookingData');
+    const token = localStorage.getItem('token');
+    const saved = token ? localStorage.getItem('userInfo') : null;
     const userInfo = saved ? JSON.parse(saved) : {};
     return {
       date: null,
@@ -42,6 +36,49 @@ export default function Booking() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [fees, setFees] = useState({ fee60min: 5000, fee90min: 7500 });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('register');
+  const [authDefaultEmail, setAuthDefaultEmail] = useState('');
+  const [authDefaultName, setAuthDefaultName] = useState('');
+  const [authDefaultPhone, setAuthDefaultPhone] = useState('');
+  const [freeSessionInfo, setFreeSessionInfo] = useState({
+    hasFreeSessions: false,
+    freeSessions: 0,
+    isCoursePurchaser: false,
+    courseUserName: ''
+  });
+
+  // Handle openAuth query param and auth modal pre-fill
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const openAuth = params.get('openAuth');
+    const mode = params.get('authMode') || 'register';
+    const paramEmail = params.get('email');
+    const paramName = params.get('name');
+    const paramPhone = params.get('phone');
+
+    if (mode) setAuthMode(mode);
+    if (paramEmail) setAuthDefaultEmail(paramEmail);
+    if (paramName) setAuthDefaultName(paramName);
+    if (paramPhone) setAuthDefaultPhone(paramPhone);
+
+    const token = localStorage.getItem('token');
+    const loggedIn = !!token;
+    setIsLoggedIn(loggedIn);
+
+    if (loggedIn && (paramEmail || paramName || paramPhone)) {
+      setBookingData(prev => ({
+        ...prev,
+        name: prev.name || paramName || '',
+        email: prev.email || paramEmail || '',
+        phoneNumber: prev.phoneNumber || paramPhone || ''
+      }));
+    }
+
+    if (openAuth === 'true' && !token) {
+      setShowAuthModal(true);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchFees = async () => {
@@ -58,6 +95,42 @@ export default function Booking() {
     fetchFees();
   }, []);
 
+  // Check free sessions ONLY when user is logged in
+  useEffect(() => {
+    const checkFreeSessions = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setFreeSessionInfo({ hasFreeSessions: false, freeSessions: 0, isCoursePurchaser: false, courseUserName: '' });
+        return;
+      }
+
+      const email = bookingData.email?.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setFreeSessionInfo({ hasFreeSessions: false, freeSessions: 0, isCoursePurchaser: false, courseUserName: '' });
+        return;
+      }
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/check-free-sessions`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ email })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setFreeSessionInfo(data);
+        }
+      } catch (err) {
+        console.error('Failed to check free sessions:', err);
+      }
+    };
+
+    const debounce = setTimeout(checkFreeSessions, 300);
+    return () => clearTimeout(debounce);
+  }, [bookingData.email, isLoggedIn]);
+
   // Save to sessionStorage whenever step or bookingData changes
   useEffect(() => {
     sessionStorage.setItem('bookingStep', step.toString());
@@ -71,6 +144,26 @@ export default function Booking() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step]);
+
+  const handleAuthSuccess = (userData) => {
+    setIsLoggedIn(true);
+    setShowAuthModal(false);
+    setBookingData((prev) => ({
+      ...prev,
+      name: userData.fullName || prev.name,
+      email: userData.email || prev.email,
+      phoneNumber: userData.phoneNumber || prev.phoneNumber,
+      countryCode: userData.countryCode || prev.countryCode,
+    }));
+    if (userData.freeSessions !== undefined) {
+      setFreeSessionInfo({
+        hasFreeSessions: userData.freeSessions > 0,
+        freeSessions: userData.freeSessions,
+        isCoursePurchaser: !!userData.courseSessionsGranted,
+        courseUserName: userData.fullName
+      });
+    }
+  };
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -88,6 +181,43 @@ export default function Booking() {
       if (token) {
         authHeaders['Authorization'] = `Bearer ${token}`;
       }
+
+      // --- Course Free Session Zero-Payment Checkout ---
+      if (freeSessionInfo.hasFreeSessions && freeSessionInfo.freeSessions > 0) {
+        const freeRes = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({
+            ...bookingData,
+            useFreeSession: true
+          }),
+        });
+
+        if (!freeRes.ok) {
+          const errData = await freeRes.json();
+          throw new Error(errData.message || 'Failed to book complimentary coaching session');
+        }
+
+        const freeData = await freeRes.json();
+        updateData({ 
+          appointmentId: freeData._id,
+          isFreeSession: true,
+          freeSessionsRemaining: freeData.freeSessionsRemaining
+        });
+        setFreeSessionInfo(prev => ({
+          ...prev,
+          freeSessions: freeData.freeSessionsRemaining,
+          hasFreeSessions: freeData.freeSessionsRemaining > 0
+        }));
+
+        sessionStorage.removeItem('bookingStep');
+        sessionStorage.removeItem('bookingData');
+        setIsLoading(false);
+        nextStep();
+        return;
+      }
+
+      // --- Standard Paid Flow via Razorpay ---
 
       // 1. Load Razorpay script dynamically
       const scriptLoaded = await new Promise((resolve) => {
@@ -128,6 +258,7 @@ export default function Booking() {
         body: JSON.stringify({
           ...bookingData,
           orderId: orderData.id,
+          amount: orderData.amount ? orderData.amount / 100 : (bookingData.duration === 90 ? 7500 : 5000),
         }),
       });
       if (!initAppRes.ok) {
@@ -259,30 +390,57 @@ export default function Booking() {
           </div>
         )}
 
+        {/* Course Student Free Sessions Active Banner */}
+        {isLoggedIn && freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0 && (
+          <div className="mb-8 p-4 md:p-5 rounded-2xl border border-accent-gold/40 bg-gradient-to-r from-accent-gold/20 via-[#15120d] to-[#0a0a0a] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_35px_rgba(199,156,110,0.18)]">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-full bg-accent-gold/20 border border-accent-gold/40 flex items-center justify-center text-accent-gold shrink-0">
+                <Sparkle size={20} weight="fill" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-white text-sm font-medium">Mastery Course Benefit Active</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.65rem] font-semibold uppercase tracking-wider">
+                    {freeSessionInfo.freeSessions} of 3 Free Sessions Available
+                  </span>
+                </div>
+                <p className="text-white/70 text-xs font-light mt-0.5">
+                  Account: <span className="text-white font-normal">{bookingData.email || 'Course Student'}</span> • Your session is 100% complimentary (₹0 at checkout).
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 flex items-center gap-2">
+              <span className="text-accent-gold font-semibold text-xs tracking-wider uppercase bg-accent-gold/10 px-3.5 py-2 rounded-xl border border-accent-gold/30">
+                ₹0 Free Booking
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Header section based on step */}
         <div className="text-center mb-4">
           <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-medium text-accent-gold block mb-2">
             CHAPTER {step} OF 3
           </span>
           <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.1] text-white mb-4">
-            {step === 1 && "A Little About You"}
-            {step === 2 && "Let's Find a Time That Works"}
+            {step === 1 && "Let's Find a Time That Works"}
+            {step === 2 && "A Little About You"}
             {step === 3 && "Confirm & Secure Your Session"}
           </h1>
           <div className="h-[1px] w-8 bg-accent-gold mx-auto mb-4" />
           <p className="text-paragraph text-sm font-light tracking-wide text-white/80 max-w-lg mx-auto">
             {step === 1 && (
               <>
-                This helps me understand you better before we meet.
+                You don't need to have everything figured out before you begin.
                 <br className="hidden md:block" />
-                Share only what you're comfortable with.
+                This is a space for honest conversation and real clarity.
               </>
             )}
             {step === 2 && (
               <>
-                You don't need to have everything figured out before you begin.
+                This helps me understand you better before we meet.
                 <br className="hidden md:block" />
-                This is a space for honest conversation and real clarity.
+                Share only what you're comfortable with.
               </>
             )}
             {step === 3 && (
@@ -306,25 +464,28 @@ export default function Booking() {
 
             <div className="mt-8">
               {step === 1 && (
-                <Step2Details 
-                  data={bookingData} 
-                  updateData={updateData} 
-                  onNext={nextStep} 
-                  isAuthenticated={!!localStorage.getItem('token')}
-                />
-              )}
-              {step === 2 && (
                 <Step1Time 
                   data={bookingData} 
                   updateData={updateData} 
                   onNext={nextStep} 
                   onBack={prevStep}
+                  freeSessionInfo={freeSessionInfo}
+                />
+              )}
+              {step === 2 && (
+                <Step2Details 
+                  data={bookingData} 
+                  updateData={updateData} 
+                  onNext={nextStep} 
+                  isAuthenticated={!!localStorage.getItem('token')}
+                  freeSessionInfo={freeSessionInfo}
                 />
               )}
               {step === 3 && (
                 <Step3Confirm 
                   data={bookingData} 
                   fee={currentFee}
+                  freeSessionInfo={freeSessionInfo}
                   onNext={submitBooking} 
                   onBack={prevStep} 
                   isLoading={isLoading}
@@ -349,6 +510,17 @@ export default function Booking() {
         </div>
 
       </div>
+
+      <LoginModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        defaultMode={authMode}
+        defaultEmail={authDefaultEmail}
+        defaultFullName={authDefaultName}
+        defaultPhoneNumber={authDefaultPhone}
+        courseNotice={true}
+      />
     </div>
   );
 }

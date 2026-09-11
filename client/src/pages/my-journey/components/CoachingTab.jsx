@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { CalendarBlank, CheckCircle, PencilSimple, FileText, Clock, VideoCamera, User, CalendarPlus, ArrowsClockwise, XCircle, X, DotsThree, CurrencyInr } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
+import { CalendarBlank, CheckCircle, PencilSimple, FileText, Clock, VideoCamera, User, CalendarPlus, ArrowsClockwise, XCircle, X, DotsThree, CurrencyInr, Sparkle, ArrowRight } from '@phosphor-icons/react';
 import { generateGoogleCalendarLink } from '../../../utils/calendar';
 import RescheduleModal from './RescheduleModal';
 
 export default function CoachingTab() {
   const [activeTab, setActiveTab] = useState('UPCOMING');
   const [selectedSession, setSelectedSession] = useState(null);
+  const [sessionModalTab, setSessionModalTab] = useState('details'); // 'details' | 'notes'
   const [prepareSession, setPrepareSession] = useState(null);
   const [rescheduleSession, setRescheduleSession] = useState(null);
   const [cancelSession, setCancelSession] = useState(null);
@@ -32,10 +34,50 @@ export default function CoachingTab() {
     };
   }, [selectedSession, prepareSession]);
 
-  const tabs = ['UPCOMING', 'COMPLETED', 'DRAFTS'];
+  const tabs = ['UPCOMING', 'COMPLETED'];
   
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState(null);
+  const [feeSettings, setFeeSettings] = useState({ fee60min: 1000, fee90min: 1500 });
+
+  useEffect(() => {
+    const fetchFees = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/fees`);
+        if (res.ok) {
+          const data = await res.json();
+          setFeeSettings({
+            fee60min: data.fee60min || 1000,
+            fee90min: data.fee90min || 1500
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch fees:', err);
+      }
+    };
+    fetchFees();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUserProfile(data);
+          localStorage.setItem('userInfo', JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+      }
+    };
+    fetchUserProfile();
+  }, []);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -97,7 +139,7 @@ export default function CoachingTab() {
               date: formattedDate,
               rawDate: app.date, // Keep raw date if needed for operations
               time: app.time,
-              durationStr: '60-MINUTE CONVERSATION',
+              durationStr: `${app.sessionDuration || app.duration || 60}-MINUTE CONVERSATION`,
               person: app.name,
               primaryAction: app.status === 'COMPLETED' ? 'VIEW SHARED NOTES' : 'VIEW APPOINTMENT',
             };
@@ -154,9 +196,46 @@ export default function CoachingTab() {
         </span>
         <h2 className="font-serif text-4xl md:text-5xl text-white mb-4 tracking-tight">Coaching Appointments</h2>
         <p className="font-sans text-white/60 font-light text-lg max-w-xl">
-          Manage your upcoming sessions, review past conversations, and continue booking drafts.
+          Manage your upcoming sessions and review past conversations.
         </p>
       </div>
+
+      {/* Course Student Complimentary Sessions Widget */}
+      {(userProfile?.courseSessionsGranted || (userProfile?.freeSessions ?? 0) > 0) && (
+        <div className="mb-10 relative z-10 overflow-hidden rounded-2xl border border-[#c79c6e]/40 bg-gradient-to-r from-[#191510] via-[#12100d] to-[#0a0a0a] p-6 md:p-8 shadow-[0_0_35px_rgba(199,156,110,0.12)]">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] text-[0.65rem] font-semibold uppercase tracking-wider">
+                  <Sparkle size={13} weight="fill" /> Course Perk
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.65rem] font-semibold uppercase tracking-wider">
+                  <CheckCircle size={13} weight="fill" /> {userProfile?.freeSessions ?? 0} of 3 Credits Remaining
+                </span>
+              </div>
+              <h3 className="font-serif text-xl md:text-2xl text-white font-normal">
+                Complimentary 1-on-1 Coaching Sessions
+              </h3>
+              <p className="text-white/60 text-xs md:text-sm font-light max-w-xl leading-relaxed">
+                As an enrolled Mastery Course student, your membership includes 3 private coaching sessions with Aarkesh at ₹0.
+              </p>
+            </div>
+
+            {(userProfile?.freeSessions ?? 0) > 0 ? (
+              <Link
+                to="/book"
+                className="shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-[0.15em] hover:bg-[#d8ae80] hover:scale-[1.02] transition-all shadow-lg"
+              >
+                <CalendarPlus size={16} weight="bold" /> Book Free Session <ArrowRight size={14} weight="bold" />
+              </Link>
+            ) : (
+              <span className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/40 text-xs font-medium">
+                <CheckCircle size={15} weight="fill" className="text-[#c79c6e]" /> All 3 Sessions Utilized
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-8 border-b border-white/10 mb-10 relative z-10">
@@ -247,7 +326,10 @@ export default function CoachingTab() {
                   {/* Bottom: Main Action Button & Options */}
                   <div className="w-full shrink-0 flex items-center mt-2 gap-2 relative">
                     <button 
-                      onClick={() => setSelectedSession(app)}
+                      onClick={() => {
+                        setSelectedSession(app);
+                        setSessionModalTab(app.status === 'COMPLETED' || app.primaryAction === 'VIEW SHARED NOTES' ? 'notes' : 'details');
+                      }}
                       className="flex-1 py-4 px-6 rounded border border-white/20 text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
                     >
                       {app.primaryAction}
@@ -342,125 +424,228 @@ export default function CoachingTab() {
               <X size={24} />
             </button>
 
+            {/* Modal Tab Navigation */}
+            {(() => {
+              const hasNotes = Boolean(selectedSession.coachNotes && (
+                typeof selectedSession.coachNotes === 'string' 
+                  ? selectedSession.coachNotes.trim().length > 0 
+                  : Array.isArray(selectedSession.coachNotes) && selectedSession.coachNotes.length > 0
+              ));
+
+              return (
+                <div className="flex items-center gap-6 border-b border-white/10 pb-4 mb-4 pr-10">
+                  <button 
+                    onClick={() => setSessionModalTab('details')}
+                    className={`font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium transition-colors relative pb-1 flex items-center gap-2 ${sessionModalTab === 'details' ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white'}`}
+                  >
+                    <CalendarBlank size={16} />
+                    <span>Appointment Details</span>
+                    {sessionModalTab === 'details' && (
+                      <div className="absolute bottom-[-17px] left-0 w-full h-[2px] bg-[#c79c6e]" />
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => setSessionModalTab('notes')}
+                    className={`font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium transition-colors relative pb-1 flex items-center gap-2 ${sessionModalTab === 'notes' ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white'}`}
+                  >
+                    <FileText size={16} />
+                    <span>Coach's Session Notes</span>
+                    {hasNotes && (
+                      <span className="w-2 h-2 rounded-full bg-[#c79c6e] animate-pulse" />
+                    )}
+                    {sessionModalTab === 'notes' && (
+                      <div className="absolute bottom-[-17px] left-0 w-full h-[2px] bg-[#c79c6e]" />
+                    )}
+                  </button>
+                </div>
+              );
+            })()}
+
             {/* Scrollable Content Area */}
             <div className="overflow-y-auto overscroll-contain pr-2 md:pr-4 -mr-2 md:-mr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <div className="flex flex-col gap-8 pb-4 pt-4">
-                
-                {/* Date */}
-                <div className="flex gap-5">
-                  <CalendarBlank size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-1.5">
-                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Date</span>
-                    <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.date}</span>
+              {sessionModalTab === 'details' ? (
+                /* Tab 1: Appointment Details */
+                <div className="flex flex-col gap-8 pb-4 pt-2 animate-in fade-in duration-300">
+                  
+                  {/* Date */}
+                  <div className="flex gap-5">
+                    <CalendarBlank size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1.5">
+                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Date</span>
+                      <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.date}</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Time */}
-                <div className="flex gap-5">
-                  <Clock size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-1.5">
-                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Time</span>
-                    <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.time}</span>
+                  {/* Time */}
+                  <div className="flex gap-5">
+                    <Clock size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1.5">
+                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Time</span>
+                      <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.time}</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Session Type */}
-                <div className="flex gap-5">
-                  <User size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-1.5">
-                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Session Type</span>
-                    <span className="font-sans text-lg md:text-xl text-white font-medium">1-on-1 Coaching Session</span>
+                  {/* Session Type */}
+                  <div className="flex gap-5">
+                    <User size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1.5">
+                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Session Type</span>
+                      <span className="font-sans text-lg md:text-xl text-white font-medium">1-on-1 Coaching Session</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Duration */}
-                <div className="flex gap-5">
-                  <Clock size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-1.5">
-                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Duration</span>
-                    <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.duration || 60} minutes</span>
+                  {/* Duration */}
+                  <div className="flex gap-5">
+                    <Clock size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1.5">
+                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Duration</span>
+                      <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.duration || 60} minutes</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Where */}
-                <div className="flex gap-5">
-                  <VideoCamera size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-1.5">
-                    <span className="font-sans text-[0.7rem] text-white/50 font-medium">Where</span>
-                    <div className="font-sans text-lg md:text-xl text-white font-medium flex flex-wrap items-center gap-2">
-                      Google Meet
-                      {selectedSession.meetLink ? (
-                         <a href={selectedSession.meetLink} target="_blank" rel="noopener noreferrer" className="text-[#c79c6e] hover:underline text-sm md:text-base ml-1">(Join Link)</a>
+                  {/* Where */}
+                  <div className="flex gap-5">
+                    <VideoCamera size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1.5">
+                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Where</span>
+                      <div className="font-sans text-lg md:text-xl text-white font-medium flex flex-wrap items-center gap-2">
+                        Google Meet
+                        {selectedSession.meetLink ? (
+                           <a href={selectedSession.meetLink} target="_blank" rel="noopener noreferrer" className="text-[#c79c6e] hover:underline text-sm md:text-base ml-1">(Join Link)</a>
+                        ) : (
+                           <span className="text-white/40 text-sm md:text-base ml-1 font-normal">(Link will be shared after booking)</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Total Amount */}
+                  <div className="flex gap-5">
+                    <CurrencyInr size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1.5">
+                      <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/50 font-semibold">TOTAL AMOUNT</span>
+                      {selectedSession.isFreeSession ? (
+                        <div className="flex items-center gap-3">
+                          <span className="font-sans text-xl md:text-2xl text-white font-bold">₹0</span>
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.65rem] font-semibold uppercase tracking-wider">Course Free Session</span>
+                        </div>
                       ) : (
-                         <span className="text-white/40 text-sm md:text-base ml-1 font-normal">(Link will be shared after booking)</span>
+                        <span className="font-sans text-xl md:text-2xl text-white font-bold">
+                          ₹{Number(selectedSession.amount !== undefined && selectedSession.amount !== null ? selectedSession.amount : (selectedSession.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}
+                        </span>
                       )}
                     </div>
                   </div>
-                </div>
 
-                {/* Total Amount */}
-                <div className="flex gap-5">
-                  <CurrencyInr size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-1.5">
-                    <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/50 font-semibold">TOTAL AMOUNT</span>
-                    <span className="font-sans text-xl md:text-2xl text-white font-bold">₹{selectedSession.duration === 90 ? '7,500' : '5,000'}</span>
-                  </div>
-                </div>
-
-                {/* Reschedule Details */}
-                {selectedSession.rescheduleRequest && (
-                  <div className="w-full rounded-2xl bg-gradient-to-br from-[#120f0d] to-[#050505] border border-amber-500/30 p-6 md:p-8 shadow-lg relative overflow-hidden">
-                    <div className="absolute top-0 right-0 bg-amber-500/10 border-b border-l border-amber-500/30 px-3 py-1.5 rounded-bl-xl text-amber-500 font-sans text-[0.55rem] uppercase tracking-[0.2em] font-semibold">
-                      {selectedSession.rescheduleRequest.status}
+                  {/* Reschedule Details */}
+                  {selectedSession.rescheduleRequest && (
+                    <div className="w-full rounded-2xl bg-gradient-to-br from-[#120f0d] to-[#050505] border border-amber-500/30 p-6 md:p-8 shadow-lg relative overflow-hidden">
+                      <div className="absolute top-0 right-0 bg-amber-500/10 border-b border-l border-amber-500/30 px-3 py-1.5 rounded-bl-xl text-amber-500 font-sans text-[0.55rem] uppercase tracking-[0.2em] font-semibold">
+                        {selectedSession.rescheduleRequest.status}
+                      </div>
+                      <h4 className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-medium text-amber-500 mb-4">
+                        RESCHEDULE REQUEST
+                      </h4>
+                      <div className="flex flex-col gap-2 font-serif text-base md:text-lg text-white/90 leading-relaxed">
+                        <p><strong className="text-white/50 font-sans text-xs tracking-wider uppercase mr-2">Requested Date:</strong> {selectedSession.rescheduleRequest.formattedDate || selectedSession.rescheduleRequest.date}</p>
+                        <p><strong className="text-white/50 font-sans text-xs tracking-wider uppercase mr-2">Requested Time:</strong> {selectedSession.rescheduleRequest.time}</p>
+                        {selectedSession.rescheduleRequest.reason && (
+                          <p className="mt-2 text-white/70 italic">"{selectedSession.rescheduleRequest.reason}"</p>
+                        )}
+                      </div>
                     </div>
-                    <h4 className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-medium text-amber-500 mb-4">
-                      RESCHEDULE REQUEST
-                    </h4>
-                    <div className="flex flex-col gap-2 font-serif text-base md:text-lg text-white/90 leading-relaxed">
-                      <p><strong className="text-white/50 font-sans text-xs tracking-wider uppercase mr-2">Requested Date:</strong> {selectedSession.rescheduleRequest.formattedDate || selectedSession.rescheduleRequest.date}</p>
-                      <p><strong className="text-white/50 font-sans text-xs tracking-wider uppercase mr-2">Requested Time:</strong> {selectedSession.rescheduleRequest.time}</p>
-                      {selectedSession.rescheduleRequest.reason && (
-                        <p className="mt-2 text-white/70 italic">"{selectedSession.rescheduleRequest.reason}"</p>
-                      )}
+                  )}
+
+                  {/* Coach Notes Preview Banner (if notes exist) */}
+                  {Boolean(selectedSession.coachNotes && (typeof selectedSession.coachNotes === 'string' ? selectedSession.coachNotes.trim().length > 0 : selectedSession.coachNotes.length > 0)) && (
+                    <div 
+                      onClick={() => setSessionModalTab('notes')}
+                      className="w-full rounded-xl bg-[#c79c6e]/10 border border-[#c79c6e]/30 p-4 flex items-center justify-between cursor-pointer hover:bg-[#c79c6e]/15 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText size={20} className="text-[#c79c6e]" />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-white">Coach Notes Available</span>
+                          <span className="text-xs text-white/50">Aarkesh has written notes for this session. Click to view.</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold text-[#c79c6e] uppercase tracking-wider">
+                        View Notes &rarr;
+                      </span>
                     </div>
-                  </div>
-                )}
-                
-                {/* Shared Summary Card */}
-                {selectedSession.sharedSummary && (
-                  <div className="w-full rounded-2xl bg-gradient-to-br from-[#120f0d] to-[#050505] border border-[#c79c6e]/20 p-6 md:p-8 shadow-lg">
-                    <h4 className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-medium text-[#c79c6e] mb-4">
-                      SHARED SUMMARY
-                    </h4>
-                    <p className="font-serif text-base md:text-lg text-white/90 leading-relaxed">
-                      {selectedSession.sharedSummary}
-                    </p>
-                  </div>
-                )}
+                  )}
 
-                {/* Coach-Shared Notes Card */}
-                {selectedSession.coachNotes && selectedSession.coachNotes.length > 0 && (
-                  <div className="w-full rounded-2xl bg-gradient-to-br from-[#120f0d] to-[#050505] border border-[#c79c6e]/20 p-6 md:p-8 shadow-lg">
-                    <h4 className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-medium text-[#c79c6e] mb-6">
-                      COACH-SHARED NOTES
-                    </h4>
-                    
-                    <ul className="flex flex-col gap-4 mb-8">
-                      {selectedSession.coachNotes.map((note, idx) => (
-                        <li key={idx} className="flex items-start gap-4 text-white/90 font-serif text-base md:text-lg">
-                          <span className="text-[#c79c6e] mt-2 text-[0.5rem]">●</span>
-                          <span className="leading-relaxed">{note}</span>
-                        </li>
-                      ))}
-                    </ul>
+                </div>
+              ) : (
+                /* Tab 2: Coach's Session Notes */
+                <div className="flex flex-col gap-6 pb-4 pt-2 animate-in fade-in duration-300">
+                  {(() => {
+                    const notes = selectedSession.coachNotes;
+                    const hasNotes = Boolean(notes && (
+                      typeof notes === 'string' ? notes.trim().length > 0 : Array.isArray(notes) && notes.length > 0
+                    ));
 
-                    <p className="font-sans text-xs md:text-sm text-white/40 font-light">
-                      These are notes Aarkesh deliberately shared with you.<br/>His confidential coaching notes are not shown here.
-                    </p>
-                  </div>
-                )}
+                    if (!hasNotes) {
+                      return (
+                        <div className="w-full py-16 px-6 rounded-2xl bg-[#0e0e0e] border border-white/5 flex flex-col items-center justify-center text-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/30 mb-2">
+                            <FileText size={24} />
+                          </div>
+                          <span className="font-serif text-lg text-white/80">No Notes Shared Yet</span>
+                          <p className="font-sans text-xs text-white/40 max-w-md leading-relaxed">
+                            Aarkesh hasn't added notes for this session yet. Session takeaways, recommendations, and next steps will appear right here after or during your conversation.
+                          </p>
+                        </div>
+                      );
+                    }
 
-              </div>
+                    return (
+                      <div className="w-full rounded-2xl bg-gradient-to-br from-[#14100c] to-[#070707] border border-[#c79c6e]/30 p-6 md:p-8 shadow-xl flex flex-col gap-5">
+                        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 gap-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e]">
+                              <FileText size={18} />
+                            </div>
+                            <div className="flex flex-col">
+                              <h4 className="font-sans text-[0.7rem] uppercase tracking-[0.25em] font-medium text-[#c79c6e]">
+                                COACH'S SESSION NOTES
+                              </h4>
+                              <span className="text-white/40 text-xs">Shared with you by Aarkesh</span>
+                            </div>
+                          </div>
+                          <span className="px-3 py-1 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/20 text-[#c79c6e] text-xs font-medium">
+                            {selectedSession.date}
+                          </span>
+                        </div>
+
+                        {/* Notes Content */}
+                        <div className="text-white/90 font-serif text-base md:text-lg leading-relaxed whitespace-pre-wrap py-2">
+                          {typeof notes === 'string' ? (
+                            <p>{notes}</p>
+                          ) : Array.isArray(notes) ? (
+                            <ul className="flex flex-col gap-3">
+                              {notes.map((n, idx) => (
+                                <li key={idx} className="flex items-start gap-3">
+                                  <span className="text-[#c79c6e] mt-1.5 text-xs">●</span>
+                                  <span>{n}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>{JSON.stringify(notes)}</p>
+                          )}
+                        </div>
+
+                        {/* Footer Disclaimer */}
+                        <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-white/40 gap-2">
+                          <span>Personal guidance & action items shared for your journey</span>
+                          <span className="text-[#c79c6e]/70 font-serif italic">Better With Aarkesh</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
             
           </div>

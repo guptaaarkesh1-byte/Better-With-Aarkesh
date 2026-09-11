@@ -4,13 +4,13 @@ import { X, Eye, EyeSlash } from '@phosphor-icons/react';
 import Button from '../ui/Button';
 import { COUNTRY_CODES } from '../../utils/countryCodes';
 
-export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = 'login', defaultCountryCode = '+91', defaultPhoneNumber = '' }) {
-  const [isLogin, setIsLogin] = useState(true);
+export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = 'login', defaultCountryCode = '+91', defaultPhoneNumber = '', defaultEmail = '', defaultFullName = '', courseNotice = false }) {
+  const [isLogin, setIsLogin] = useState(defaultMode === 'login');
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState(defaultFullName || '');
+  const [email, setEmail] = useState(defaultEmail || '');
   const [countryCode, setCountryCode] = useState(defaultCountryCode);
   const [phoneNumber, setPhoneNumber] = useState(defaultPhoneNumber);
   const [error, setError] = useState('');
@@ -28,8 +28,8 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
       setShowPassword(false);
       setPassword('');
       setConfirmPassword('');
-      setFullName('');
-      setEmail('');
+      setFullName(defaultFullName || '');
+      setEmail(defaultEmail || '');
       setCountryCode(defaultCountryCode);
       setPhoneNumber(defaultPhoneNumber);
       setError('');
@@ -39,7 +39,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
       setIsForgotPassword(false);
       setIsForgotOtpStep(false);
     }
-  }, [isOpen, defaultMode]);
+  }, [isOpen, defaultMode, defaultEmail, defaultFullName, defaultCountryCode, defaultPhoneNumber]);
 
   if (!isOpen) return null;
 
@@ -129,12 +129,21 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             phoneNumber: data.phoneNumber,
             countryCode: data.countryCode,
             dob: data.dob,
-            gender: data.gender
+            gender: data.gender,
+            freeSessions: data.freeSessions,
+            courseSessionsGranted: data.courseSessionsGranted
           }));
           onSuccess({ ...data, isRegister: isOtpStep });
         }
       } else {
-        setError(data.message || 'Authentication failed');
+        // Handle special case: course student already has a booking account → switch to login
+        if (res.status === 409 && data.redirectToLogin) {
+          setIsLogin(true);
+          setIsOtpStep(false);
+          setError('You already have a booking account with this email. Please sign in to access your free sessions.');
+        } else {
+          setError(data.message || 'Authentication failed');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -172,8 +181,8 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
     setPassword('');
     setConfirmPassword('');
     setFullName('');
-    setEmail('');
-    setPhoneNumber('');
+    setEmail(defaultEmail || '');
+    setPhoneNumber(defaultPhoneNumber || '');
   };
 
   return createPortal(
@@ -210,7 +219,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             ? (isForgotOtpStep ? 'Reset Password' : 'Forgot Password')
             : (!isOtpStep ? (isLogin ? 'Welcome Back' : 'Begin Your Journey') : 'Verify Email')}
         </h2>
-        <p className="text-white/60 font-sans text-xs tracking-wider mb-8">
+        <p className="text-white/60 font-sans text-xs tracking-wider mb-6">
           {isForgotPassword
             ? (isForgotOtpStep ? `Enter the 4-digit OTP sent to ${email} and your new password` : 'Enter your email address to reset your password')
             : (!isOtpStep 
@@ -218,6 +227,21 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
               : `Enter the 4-digit OTP sent to ${email}`)
           }
         </p>
+
+        {/* Course Student Notice */}
+        {(courseNotice || defaultEmail) && !isForgotPassword && (
+          <div className="mb-6 p-3.5 rounded-xl border border-[#c79c6e]/40 bg-[#c79c6e]/10 flex items-start gap-3">
+            <span className="text-base leading-none mt-0.5">✨</span>
+            <div>
+              <p className="text-[#c79c6e] text-xs font-medium">Mastery Course Member</p>
+              <p className="text-white/70 text-[0.72rem] font-light mt-0.5 leading-relaxed">
+                {isLogin 
+                  ? `Sign in with your course email (${defaultEmail || email || 'your email'}) to access your 3 free coaching sessions.`
+                  : `Register with your course email (${defaultEmail || email || 'your email'}) to instantly claim your 3 free coaching sessions.`}
+              </p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isOtpStep && !isForgotOtpStep ? (

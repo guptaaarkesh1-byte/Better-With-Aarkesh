@@ -1,8 +1,8 @@
 import React from 'react';
-import { Clock, ArrowLeft, ArrowRight, ArrowUpRight } from '@phosphor-icons/react';
+import { Clock, ArrowLeft, ArrowRight, ArrowUpRight, Sparkle, CheckCircle } from '@phosphor-icons/react';
 import { COUNTRY_CODES } from '../../utils/countryCodes';
 
-export default function Step2Details({ data, updateData, onNext, onBack, isAuthenticated }) {
+export default function Step2Details({ data, updateData, onNext, onBack, isAuthenticated, freeSessionInfo }) {
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -25,6 +25,29 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
   return (
     <div className="flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
       
+      {/* Course Student Free Session Banner */}
+      {freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0 && (
+        <div className="mb-8 p-4 rounded-xl border border-accent-gold/40 bg-gradient-to-r from-accent-gold/15 to-transparent flex items-center justify-between gap-4 shadow-[0_0_20px_rgba(185,138,86,0.1)]">
+          <div className="flex items-center gap-3.5">
+            <div className="w-9 h-9 rounded-full bg-accent-gold/20 border border-accent-gold/40 flex items-center justify-center text-accent-gold shrink-0">
+              <Sparkle size={18} weight="fill" />
+            </div>
+            <div>
+              <p className="text-white text-xs font-medium flex items-center gap-2">
+                Course Student Benefit Recognized
+                <span className="text-accent-gold font-semibold">• {freeSessionInfo.freeSessions} Free {freeSessionInfo.freeSessions === 1 ? 'Session' : 'Sessions'} Available</span>
+              </p>
+              <p className="text-white/60 text-[0.72rem] font-light mt-0.5">
+                Included with your Mastery Course enrollment. No payment will be charged for this booking.
+              </p>
+            </div>
+          </div>
+          <span className="hidden sm:inline-block text-[0.65rem] uppercase tracking-wider font-semibold px-2.5 py-1 rounded bg-accent-gold text-black shrink-0">
+            ₹0 Complimentary
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
         
         {/* Name */}

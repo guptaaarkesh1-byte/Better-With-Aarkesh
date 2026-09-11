@@ -5,24 +5,34 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function PolicyModal({ isOpen, onClose, slug, title, onAgree, onDecline, showActions = true }) {
   const [content, setContent] = useState('');
+  const [docTitle, setDocTitle] = useState(title || 'Terms & Conditions');
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (title) setDocTitle(title);
+  }, [title]);
 
   useEffect(() => {
     if (isOpen && slug) {
       setLoading(true);
-      fetch(`${API_URL}/api/footer-documents/slug/${slug}`)
-        .then(res => res.json())
+      const cleanSlug = slug.replace(/^\/+/, '');
+      fetch(`${API_URL}/api/footer-documents/${cleanSlug}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+          return res.json();
+        })
         .then(data => {
           if (data && data.contentHtml) {
             setContent(data.contentHtml);
+            if (data.title) setDocTitle(data.title);
           } else {
-            setContent('<p>Document not found.</p>');
+            setContent('<p class="text-white/60">Document not found.</p>');
           }
           setLoading(false);
         })
         .catch(err => {
           console.error('Failed to fetch document:', err);
-          setContent('<p>Failed to load document.</p>');
+          setContent('<p class="text-white/60">Failed to load document.</p>');
           setLoading(false);
         });
     }
@@ -31,12 +41,12 @@ export default function PolicyModal({ isOpen, onClose, slug, title, onAgree, onD
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
-          <h2 className="text-2xl font-serif text-white">{title}</h2>
+          <h2 className="text-2xl font-serif text-white">{docTitle}</h2>
           <button
             onClick={onClose}
             className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"

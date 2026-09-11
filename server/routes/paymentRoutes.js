@@ -5,19 +5,33 @@ import jwt from 'jsonwebtoken';
 import Settings from '../models/Settings.js';
 import Appointment from '../models/Appointment.js';
 import CourseUser from '../models/CourseUser.js';
+import CoursePurchase from '../models/CoursePurchase.js';
+import Course from '../models/Course.js';
+import User from '../models/User.js';
 import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // Helper to get Razorpay instance
 const getRazorpayInstance = async () => {
-  const settings = await Settings.findOne({ key: 'razorpay' });
-  if (!settings || !settings.value || !settings.value.keyId || !settings.value.keySecret) {
-    throw new Error('Razorpay keys not configured');
+  let keyId = process.env.RAZORPAY_KEY_ID;
+  let keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret) {
+    const settings = await Settings.findOne({ key: 'razorpay' });
+    if (settings?.value?.keyId && settings?.value?.keySecret) {
+      keyId = settings.value.keyId;
+      keySecret = settings.value.keySecret;
+    }
   }
+
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay keys not configured. Please configure in Admin Settings or .env.');
+  }
+
   return new Razorpay({
-    key_id: settings.value.keyId,
-    key_secret: settings.value.keySecret,
+    key_id: keyId,
+    key_secret: keySecret,
   });
 };
 
@@ -26,11 +40,18 @@ const getRazorpayInstance = async () => {
 // @access  Public
 router.get('/public-key', async (req, res) => {
   try {
-    const settings = await Settings.findOne({ key: 'razorpay' });
-    if (!settings || !settings.value || !settings.value.keyId) {
+    let keyId = process.env.RAZORPAY_KEY_ID;
+    if (!keyId) {
+      const settings = await Settings.findOne({ key: 'razorpay' });
+      if (settings?.value?.keyId) {
+        keyId = settings.value.keyId;
+      }
+    }
+
+    if (!keyId) {
       return res.status(404).json({ message: 'Razorpay keys not configured' });
     }
-    res.json({ keyId: settings.value.keyId });
+    res.json({ keyId });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error fetching key' });
@@ -207,17 +228,75 @@ router.post('/course-verify', async (req, res) => {
     const isAuthentic = expectedSignature === razorpay_signature;
 
     if (isAuthentic) {
+      let coachingToken = null;
+      let freeSessions = 0;
+
       // Decode the user token to update their database record
       if (token) {
         try {
           const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-          await CourseUser.findByIdAndUpdate(decoded.id, { isPurchased: true });
+          const courseUser = await CourseUser.findByIdAndUpdate(decoded.id, { isPurchased: true }, { returnDocument: 'after' });
+
+          if (courseUser && courseUser.email) {
+            const email = courseUser.email.trim();
+            const escapedEmail = email.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
+
+            let coachingUser = await User.findOne({ email: emailRegex });
+            if (!coachingUser) {
+              coachingUser = new User({
+                fullName: courseUser.fullName,
+                email,
+                password: courseUser.password,
+                countryCode: '+91',
+                phoneNumber: courseUser.phoneNumber || '',
+              });
+            }
+            if (!coachingUser.courseSessionsGranted) {
+              coachingUser.freeSessions = 3;
+              coachingUser.courseSessionsGranted = true;
+            }
+            await coachingUser.save();
+            freeSessions = coachingUser.freeSessions;
+            coachingToken = jwt.sign({ id: coachingUser._id }, process.env.JWT_SECRET || 'fallback_secret_key', {
+              expiresIn: '30d',
+            });
+
+            // Find main course or default course
+            const primaryCourse = await Course.findOne().sort({ createdAt: 1 });
+            if (primaryCourse) {
+              await CoursePurchase.findOneAndUpdate(
+                { transactionId: razorpay_payment_id },
+                {
+                  userId: coachingUser._id,
+                  courseUserId: courseUser._id,
+                  courseId: primaryCourse._id,
+                  studentName: courseUser.fullName,
+                  studentEmail: email.toLowerCase(),
+                  amount: primaryCourse.price || 15000,
+                  currency: 'INR',
+                  paymentStatus: 'Paid',
+                  enrollmentStatus: 'Active',
+                  transactionId: razorpay_payment_id,
+                  razorpayOrderId: razorpay_order_id,
+                  razorpayPaymentId: razorpay_payment_id,
+                  purchaseDate: new Date(),
+                },
+                { upsert: true, returnDocument: 'after' }
+              );
+            }
+          }
         } catch (err) {
-          console.error('Failed to decode token during verification:', err);
+          console.error('Failed to decode token or sync coaching user during verification:', err);
         }
       }
 
-      res.json({ message: 'Payment verified successfully', success: true });
+      res.json({ 
+        message: 'Payment verified successfully', 
+        success: true,
+        coachingToken,
+        freeSessions
+      });
     } else {
       res.status(400).json({ message: 'Invalid payment signature', success: false });
     }

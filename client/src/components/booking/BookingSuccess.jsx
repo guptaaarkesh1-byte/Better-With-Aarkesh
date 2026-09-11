@@ -6,10 +6,13 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import bookingBg from '../../assets/images/booking_bg_lamp.png';
 import LoginModal from '../layout/LoginModal';
+import PolicyModal from '../ui/PolicyModal';
+import { generateGoogleCalendarLink } from '../../utils/calendar';
 
 export default function BookingSuccess({ data, fee }) {
   const navigate = useNavigate();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
   const isAuthenticated = !!localStorage.getItem('token');
 
   useEffect(() => {
@@ -153,7 +156,13 @@ export default function BookingSuccess({ data, fee }) {
                 <div className="w-6 flex justify-center text-accent-gold text-2xl shrink-0">₹</div>
                 <div>
                   <p className="font-sans text-[0.65rem] text-white/50 mb-1">Total Paid</p>
-                  <p className="text-white text-sm">₹{fee ? fee.toLocaleString('en-IN') : '5,000'}</p>
+                  {data.isFreeSession ? (
+                    <p className="text-[#c79c6e] text-sm font-medium">
+                      ₹0 <span className="text-white/50 text-xs font-light">(Course Bonus • {data.freeSessionsRemaining ?? 0} credits left)</span>
+                    </p>
+                  ) : (
+                    <p className="text-white text-sm">₹{fee ? fee.toLocaleString('en-IN') : '5,000'}</p>
+                  )}
                 </div>
               </div>
 
@@ -222,13 +231,19 @@ export default function BookingSuccess({ data, fee }) {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+          {/* Add to Google Calendar */}
+          <a 
+            href={generateGoogleCalendarLink(data.date, data.time, data.sessionDuration || 60)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/80 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all w-full sm:w-auto text-center"
+          >
+            <CalendarBlank className="text-lg text-accent-gold" />
+            ADD TO CALENDAR
+          </a>
+          
           {isAuthenticated ? (
             <>
-              <button className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/80 hover:text-white hover:border-white/30 transition-all w-full sm:w-auto">
-                <CalendarBlank className="text-lg text-accent-gold" />
-                ADD TO CALENDAR
-              </button>
-              
               <Link to="/my-journey" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-accent-gold text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all w-full sm:w-auto">
                 MY JOURNEY
                 <User className="text-lg" />
@@ -268,10 +283,24 @@ export default function BookingSuccess({ data, fee }) {
             <span className="font-sans text-xs uppercase tracking-[0.2em] font-medium text-accent-gold">NEED TO MAKE A CHANGE?</span>
           </div>
           <span className="font-sans text-xs text-white/40">You can reschedule or cancel up to 24 hours before the session.</span>
-          <a href="#" className="font-sans text-xs text-accent-gold underline hover:text-white transition-colors mt-1">View Rescheduling Policy &rarr;</a>
+          <button 
+            type="button"
+            onClick={() => setIsPolicyModalOpen(true)} 
+            className="font-sans text-xs text-accent-gold underline hover:text-white transition-colors mt-1 cursor-pointer"
+          >
+            View Rescheduling Policy &rarr;
+          </button>
         </div>
 
       </div>
+
+      <PolicyModal 
+        isOpen={isPolicyModalOpen}
+        onClose={() => setIsPolicyModalOpen(false)}
+        slug="rescheduling-policy"
+        title="Rescheduling Policy"
+        showActions={false}
+      />
 
       <LoginModal 
         isOpen={isLoginModalOpen} 

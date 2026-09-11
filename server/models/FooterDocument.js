@@ -13,6 +13,11 @@ const footerDocumentSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    columnHeading: {
+      type: String,
+      default: 'LEGAL',
+      trim: true,
+    },
     contentHtml: {
       type: String,
       default: '',
@@ -21,6 +26,11 @@ const footerDocumentSchema = new mongoose.Schema(
       type: String,
       enum: ['Draft', 'Published'],
       default: 'Draft',
+    },
+    category: {
+      type: String,
+      enum: ['coaching', 'course'],
+      default: 'coaching',
     },
     order: {
       type: Number,

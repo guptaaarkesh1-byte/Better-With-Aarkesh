@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -10,6 +11,8 @@ import videoRoutes from './routes/videoRoutes.js';
 import collectionRoutes from './routes/collectionRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import footerDocumentRoutes from './routes/footerDocumentRoutes.js';
+import footerColumnRoutes from './routes/footerColumnRoutes.js';
+import socialLinkRoutes from './routes/socialLinkRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -28,8 +31,15 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Routes
 import courseAuthRoutes from './routes/courseAuthRoutes.js';
+import courseAdminRoutes from './routes/courseAdminRoutes.js';
+import muxWebhookRoutes from './routes/muxWebhookRoutes.js';
+import coursePublicRoutes from './routes/coursePublicRoutes.js';
+
 app.use('/api/auth', authRoutes);
 app.use('/api/course-auth', courseAuthRoutes);
+app.use('/api/admin/courses', courseAdminRoutes);
+app.use('/api/mux', muxWebhookRoutes);
+app.use('/api/courses', coursePublicRoutes);
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import calRoutes from './routes/calRoutes.js';
@@ -45,6 +55,8 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/footer-documents', footerDocumentRoutes);
+app.use('/api/footer-columns', footerColumnRoutes);
+app.use('/api/social-links', socialLinkRoutes);
 
 // Make uploads folder static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

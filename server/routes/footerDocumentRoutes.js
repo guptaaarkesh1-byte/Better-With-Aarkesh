@@ -9,7 +9,11 @@ const router = express.Router();
 // @access  Private/Admin
 router.get('/', protect, admin, async (req, res) => {
   try {
-    const documents = await FooterDocument.find({}).sort({ order: 1, createdAt: -1 });
+    const filter = {};
+    if (req.query.category) {
+      filter.category = req.query.category;
+    }
+    const documents = await FooterDocument.find(filter).sort({ order: 1, createdAt: -1 });
     res.json(documents);
   } catch (error) {
     console.error(error);
@@ -22,7 +26,11 @@ router.get('/', protect, admin, async (req, res) => {
 // @access  Public
 router.get('/published', async (req, res) => {
   try {
-    const documents = await FooterDocument.find({ status: 'Published' }).sort({ order: 1, createdAt: -1 }).select('title slug order');
+    const filter = { status: 'Published' };
+    if (req.query.category) {
+      filter.category = req.query.category;
+    }
+    const documents = await FooterDocument.find(filter).sort({ order: 1, createdAt: -1 }).select('title slug order category columnHeading');
     res.json(documents);
   } catch (error) {
     console.error(error);
@@ -31,11 +39,15 @@ router.get('/published', async (req, res) => {
 });
 
 // @desc    Get footer document by slug
-// @route   GET /api/footer-documents/:slug
+// @route   GET /api/footer-documents/:slug or /api/footer-documents/slug/:slug
 // @access  Public
-router.get('/:slug', async (req, res) => {
+const getDocumentBySlug = async (req, res) => {
   try {
-    const document = await FooterDocument.findOne({ slug: req.params.slug, status: 'Published' });
+    const rawSlug = req.params.slug ? req.params.slug.replace(/^\/+/, '') : '';
+    const document = await FooterDocument.findOne({ 
+      slug: { $in: [rawSlug, `/${rawSlug}`] }, 
+      status: 'Published' 
+    });
     if (document) {
       res.json(document);
     } else {
@@ -45,14 +57,17 @@ router.get('/:slug', async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
-});
+};
+
+router.get('/slug/:slug', getDocumentBySlug);
+router.get('/:slug', getDocumentBySlug);
 
 // @desc    Create a footer document
 // @route   POST /api/footer-documents
 // @access  Private/Admin
 router.post('/', protect, admin, async (req, res) => {
   try {
-    const { title, slug, contentHtml, status, order } = req.body;
+    const { title, slug, contentHtml, status, order, category, columnHeading } = req.body;
     
     // Check if slug exists
     const documentExists = await FooterDocument.findOne({ slug });
@@ -65,6 +80,8 @@ router.post('/', protect, admin, async (req, res) => {
       slug,
       contentHtml,
       status: status || 'Draft',
+      category: category || 'coaching',
+      columnHeading: (columnHeading || 'LEGAL').trim().toUpperCase(),
       order: order || 0,
     });
 
@@ -81,7 +98,7 @@ router.post('/', protect, admin, async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', protect, admin, async (req, res) => {
   try {
-    const { title, slug, contentHtml, status, order } = req.body;
+    const { title, slug, contentHtml, status, order, category, columnHeading } = req.body;
 
     const document = await FooterDocument.findById(req.params.id);
 
@@ -98,6 +115,10 @@ router.put('/:id', protect, admin, async (req, res) => {
       document.slug = slug || document.slug;
       document.contentHtml = contentHtml !== undefined ? contentHtml : document.contentHtml;
       document.status = status || document.status;
+      document.category = category || document.category || 'coaching';
+      if (columnHeading !== undefined) {
+        document.columnHeading = columnHeading.trim().toUpperCase();
+      }
       document.order = order !== undefined ? order : document.order;
 
       const updatedDocument = await document.save();
@@ -119,6 +140,9 @@ router.delete('/:id', protect, admin, async (req, res) => {
     const document = await FooterDocument.findById(req.params.id);
 
     if (document) {
+      if ((document.category || 'coaching') === 'coaching') {
+        return res.status(400).json({ message: 'Coaching footer documents cannot be deleted.' });
+      }
       await FooterDocument.deleteOne({ _id: document._id });
       res.json({ message: 'Document removed' });
     } else {

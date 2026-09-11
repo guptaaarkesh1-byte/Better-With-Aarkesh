@@ -13,7 +13,8 @@ import {
   User,
   FileText,
   Clock,
-  CurrencyCircleDollar
+  CurrencyCircleDollar,
+  GraduationCap
 } from '@phosphor-icons/react';
 
 export default function AdminUsers() {
@@ -40,6 +41,20 @@ export default function AdminUsers() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Coach Session Notes State
+  const [sessionNotesText, setSessionNotesText] = useState(() => {
+    const saved = sessionStorage.getItem('admin_users_selected_session');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.coachNotes || '';
+      } catch (e) {}
+    }
+    return '';
+  });
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [notesSuccessMessage, setNotesSuccessMessage] = useState(false);
+
   // Persist states
   React.useEffect(() => {
     sessionStorage.setItem('admin_users_expanded', expandedUser);
@@ -53,13 +68,61 @@ export default function AdminUsers() {
   const openProfile = (user) => {
     setSelectedSession(null);
     setSelectedUser(user);
+    setSessionNotesText('');
+    setNotesSuccessMessage(false);
     setIsSidebarOpen(true);
   };
 
   const openSessionDetails = (user, session) => {
     setSelectedUser(user);
     setSelectedSession(session);
+    setSessionNotesText(session.coachNotes || '');
+    setNotesSuccessMessage(false);
     setIsSidebarOpen(true);
+  };
+
+  const handleSaveSessionNotes = async () => {
+    if (!selectedSession || !selectedSession.id) return;
+    setIsSavingNotes(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/appointments/admin/${selectedSession.id}/notes`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ notes: sessionNotesText })
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setNotesSuccessMessage(true);
+        setTimeout(() => setNotesSuccessMessage(false), 3000);
+
+        // Update selectedSession in state and storage
+        const updatedSession = { ...selectedSession, coachNotes: sessionNotesText };
+        setSelectedSession(updatedSession);
+        sessionStorage.setItem('admin_users_selected_session', JSON.stringify(updatedSession));
+
+        // Update users state
+        setUsers(prevUsers => prevUsers.map(u => {
+          if (u.id === selectedUser.id) {
+            const updatedHistory = u.history.map(s => s.id === selectedSession.id ? { ...s, coachNotes: sessionNotesText } : s);
+            return { ...u, history: updatedHistory };
+          }
+          return u;
+        }));
+      } else {
+        alert('Failed to save session notes');
+      }
+    } catch (err) {
+      console.error('Save session notes error:', err);
+      alert('An error occurred while saving notes.');
+    } finally {
+      setIsSavingNotes(false);
+    }
   };
 
   const closeProfile = () => {
@@ -200,6 +263,9 @@ export default function AdminUsers() {
           
           appointments.forEach(app => {
             const uId = (app.userId && app.userId._id) ? app.userId._id : 'guest_' + app._id;
+            const isFreeSession = !!app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION';
+            const isCourseMember = !!app.isCourseMember || isFreeSession;
+
             if (!userMap[uId]) {
               userMap[uId] = {
                 id: uId,
@@ -211,8 +277,11 @@ export default function AdminUsers() {
                 nextAppointmentDate: null,
                 nextAppointmentTime: null,
                 nextAppointmentStatus: null,
+                isCourseMember: isCourseMember,
                 history: []
               };
+            } else if (isCourseMember) {
+              userMap[uId].isCourseMember = true;
             }
             
             // Format appointment
@@ -231,13 +300,20 @@ export default function AdminUsers() {
               id: app._id,
               date: app.date,
               time: app.time,
-              type: app.type || 'Life Coaching Session',
+              type: isFreeSession ? '🎓 Course Complimentary Session' : (app.type || 'Life Coaching Session'),
               status: calculatedStatus,
-              txnId: app.orderId || 'TXN-PENDING',
-              payment: app.paymentId ? 'Paid' : (app.paymentStatus || 'Failed'),
+              txnId: isFreeSession ? 'COURSE_FREE_SESSION' : (app.orderId || 'TXN-PENDING'),
+              payment: isFreeSession ? 'Free' : (app.paymentId ? 'Paid' : (app.paymentStatus || 'Failed')),
               beforeWeSpeak: app.reason || '',
+              reason: app.reason || '',
+              extra: app.extra || '',
+              source: app.source || '',
               duration: app.duration || (app.isFirstSession ? 60 : 90),
-              rescheduleRequest: app.rescheduleRequest || null
+              rescheduleRequest: app.rescheduleRequest || null,
+              isFreeSession: isFreeSession,
+              isCourseMember: isCourseMember,
+              amount: app.amount,
+              coachNotes: app.coachNotes || ''
             });
             userMap[uId].appointmentsCount++;
           });
@@ -326,6 +402,8 @@ export default function AdminUsers() {
   const getPaymentPillColor = (payment) => {
     switch(payment.toLowerCase()) {
       case 'paid': return 'text-green-500 bg-green-500/10 border-green-500/20';
+      case 'free': 
+      case 'complimentary': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30 font-semibold';
       case 'failed': return 'text-red-500 bg-red-500/10 border-red-500/20';
       case 'pending': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
       default: return 'text-white/60 border-white/20';
@@ -564,7 +642,14 @@ export default function AdminUsers() {
                     <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 text-[#c79c6e] flex items-center justify-center font-serif text-lg shrink-0">
                       {user.name.charAt(0)}
                     </div>
-                    <span className="text-white/90 text-sm font-medium">{user.name}</span>
+                    <div className="flex flex-col">
+                      <span className="text-white/90 text-sm font-medium">{user.name}</span>
+                      {user.isCourseMember && (
+                        <span className="text-[0.65rem] text-[#c79c6e] flex items-center gap-1 font-sans">
+                          <GraduationCap size={11} /> Course Member
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="text-[#c79c6e] text-sm">{user.email}</div>
@@ -604,17 +689,26 @@ export default function AdminUsers() {
                           
                           {statusDropdownOpenId === `main-${user.id}` && (
                             <div className="absolute top-full mt-1 left-0 w-28 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                              {user.nextAppointmentStatus.toUpperCase() !== 'COMPLETED' && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateAppointmentStatus(user.id, user.history[0].id, 'COMPLETED');
-                                  }} 
-                                  className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-green-500 hover:bg-white/5 transition-colors"
-                                >
-                                  Completed
-                                </button>
-                              )}
+                              {user.nextAppointmentStatus.toUpperCase() !== 'COMPLETED' && (() => {
+                                // Disable "Mark as Completed" for future appointments
+                                const rawDate = user.history[0]?.date;
+                                const d = rawDate ? new Date(rawDate) : null;
+                                const today = new Date(); today.setHours(0,0,0,0);
+                                const isFuture = d && !isNaN(d) && d > today;
+                                return (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!isFuture) updateAppointmentStatus(user.id, user.history[0].id, 'COMPLETED');
+                                    }} 
+                                    disabled={isFuture}
+                                    title={isFuture ? 'Cannot mark a future appointment as completed' : 'Mark as completed'}
+                                    className={`px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest transition-colors ${isFuture ? 'text-green-500/30 cursor-not-allowed' : 'text-green-500 hover:bg-white/5'}`}
+                                  >
+                                    Completed
+                                  </button>
+                                );
+                              })()}
                               {user.nextAppointmentStatus.toUpperCase() !== 'UPCOMING' && (
                                 <button 
                                   onClick={(e) => {
@@ -755,7 +849,10 @@ export default function AdminUsers() {
                                   {session.payment}
                                 </span>
                                 <span className="text-white/80 text-[0.65rem] font-medium font-mono">
-                                  ₹{(session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min).toLocaleString('en-IN')}
+                                  {session.isFreeSession
+                                    ? <span className="text-emerald-400 font-semibold">₹0 FREE</span>
+                                    : `₹${Number(session.amount !== undefined && session.amount !== null ? session.amount : (session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}`
+                                  }
                                 </span>
                               </div>
 
@@ -860,6 +957,11 @@ export default function AdminUsers() {
                 <div className="flex flex-col gap-1">
                   <span className="font-sans text-xl text-white font-medium">{selectedUser.name}</span>
                   <span className="font-sans text-sm text-white/50">{selectedUser.email}</span>
+                  {selectedUser.isCourseMember && (
+                    <span className="text-[0.65rem] text-[#c79c6e] flex items-center gap-1 font-sans mt-0.5">
+                      <GraduationCap size={12} /> Course Member
+                    </span>
+                  )}
                   {!selectedSession && (
                     <div className="flex items-center gap-1.5 text-white/40 mt-1">
                       <Phone size={14} />
@@ -890,7 +992,11 @@ export default function AdminUsers() {
                       <span className={`text-sm font-medium ${selectedSession.payment === 'Paid' ? 'text-green-500' : 'text-red-500'}`}>
                         {selectedSession.payment}
                       </span>
-                      <span className="text-white/40 text-[0.65rem] font-mono">{selectedSession.txnId}</span>
+                      {selectedSession.isFreeSession ? (
+                        <span className="text-emerald-400 text-xs font-semibold">₹0 · Course Free Session</span>
+                      ) : (
+                        <span className="text-white/40 text-[0.65rem] font-mono">{selectedSession.txnId}</span>
+                      )}
                     </div>
                   </div>
 
@@ -939,35 +1045,85 @@ export default function AdminUsers() {
                     </div>
                   )}
 
-                  {/* Before We Speak Note */}
-                  <div className="flex flex-col gap-3">
+                  {/* Client's Booking Submission Details */}
+                  <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2 text-[#c79c6e] border-b border-white/5 pb-2">
                       <User size={18} />
-                      <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Client's Note</h3>
+                      <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Client's Submission Details</h3>
                     </div>
-                    <div className="bg-[#111] border border-white/5 rounded-xl p-5 text-white/80 font-sans text-sm leading-relaxed">
-                      {selectedSession.beforeWeSpeak ? (
-                        <p className="italic text-white/70">"{selectedSession.beforeWeSpeak}"</p>
-                      ) : (
-                        <p className="text-white/30 italic">No notes provided for this session.</p>
-                      )}
+
+                    {/* What Brings You Here? */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[#c79c6e]/80 text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
+                        What Brings You Here?
+                      </span>
+                      <div className="bg-[#111] border border-white/5 rounded-xl p-4 text-white/80 font-sans text-sm leading-relaxed">
+                        {(selectedSession.reason || selectedSession.beforeWeSpeak) ? (
+                          <p className="text-white/90 whitespace-pre-wrap">{selectedSession.reason || selectedSession.beforeWeSpeak}</p>
+                        ) : (
+                          <p className="text-white/30 italic text-xs">No response provided.</p>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Anything Else You Want Me To Know? */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[#c79c6e]/80 text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
+                        Anything Else You Want Me To Know? (Optional)
+                      </span>
+                      <div className="bg-[#111] border border-white/5 rounded-xl p-4 text-white/80 font-sans text-sm leading-relaxed">
+                        {selectedSession.extra ? (
+                          <p className="text-white/90 whitespace-pre-wrap">{selectedSession.extra}</p>
+                        ) : (
+                          <p className="text-white/30 italic text-xs">No additional information provided.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* How Did You Hear About Me? (Optional) */}
+                    {selectedSession.source && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[#c79c6e]/80 text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
+                          How Did You Hear About Me?
+                        </span>
+                        <div className="bg-[#111] border border-white/5 rounded-xl px-4 py-3 text-white/80 font-sans text-sm">
+                          <p className="text-white/90">{selectedSession.source}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Coach's Session Notes */}
                   <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-2 text-[#c79c6e] border-b border-white/5 pb-2">
-                      <FileText size={18} />
-                      <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Coach's Session Notes</h3>
+                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                      <div className="flex items-center gap-2 text-[#c79c6e]">
+                        <FileText size={18} />
+                        <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Coach's Session Notes</h3>
+                      </div>
+                      {notesSuccessMessage && (
+                        <span className="text-emerald-400 text-xs font-sans flex items-center gap-1 animate-in fade-in">
+                          ✓ Saved successfully
+                        </span>
+                      )}
                     </div>
                     <textarea 
-                      className="w-full h-40 bg-[#111] border border-white/5 rounded-xl p-4 text-white/80 font-sans text-sm resize-none focus:outline-none focus:border-[#c79c6e]/50 transition-colors placeholder-white/20"
-                      placeholder="Write your private notes about this specific session here..."
-                      defaultValue=""
+                      value={sessionNotesText}
+                      onChange={(e) => setSessionNotesText(e.target.value)}
+                      className="w-full h-40 bg-[#111] border border-white/10 rounded-xl p-4 text-white font-sans text-sm resize-none focus:outline-none focus:border-[#c79c6e] transition-colors placeholder-white/20"
+                      placeholder="Write your notes for this session here. These notes will be visible to the client in their appointment details..."
                     />
-                    <button className="self-end px-4 py-2 mt-2 rounded bg-white/5 text-white hover:bg-white/10 font-sans text-xs uppercase tracking-widest transition-colors">
-                      Save Session Notes
-                    </button>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[0.65rem] text-white/40 font-sans">
+                        Notes will appear in the client's "View Appointment" & "Shared Notes" view.
+                      </span>
+                      <button 
+                        onClick={handleSaveSessionNotes}
+                        disabled={isSavingNotes}
+                        className="px-5 py-2.5 rounded bg-[#c79c6e] text-black hover:bg-white font-sans text-xs uppercase tracking-widest font-semibold transition-all disabled:opacity-50"
+                      >
+                        {isSavingNotes ? 'Saving...' : 'Save Session Notes'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (

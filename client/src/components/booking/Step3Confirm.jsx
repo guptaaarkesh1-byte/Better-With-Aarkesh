@@ -5,9 +5,11 @@ import {
 } from '@phosphor-icons/react';
 import PolicyModal from '../ui/PolicyModal';
 
-export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, error }) {
+export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, error, freeSessionInfo }) {
   const [agreed, setAgreed] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
+
+  const isFreeSession = freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0;
 
   return (
     <div className="flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -95,7 +97,17 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
               <div className="w-6 flex justify-center text-accent-gold text-2xl shrink-0">₹</div>
               <div className="flex flex-col gap-1">
                 <span className="font-sans text-[0.65rem] uppercase tracking-widest text-white/40">Total Amount</span>
-                <span className="font-sans text-xl font-medium text-white">₹{fee.toLocaleString('en-IN')}</span>
+                {isFreeSession ? (
+                  <div className="flex items-center gap-3">
+                    <span className="font-sans text-2xl font-semibold text-accent-gold">₹0</span>
+                    <span className="font-sans text-xs line-through text-white/40">₹{fee.toLocaleString('en-IN')}</span>
+                    <span className="px-2 py-0.5 rounded bg-accent-gold/20 text-accent-gold text-[0.65rem] font-medium border border-accent-gold/30">
+                      Course Benefit ({freeSessionInfo.freeSessions} Left)
+                    </span>
+                  </div>
+                ) : (
+                  <span className="font-sans text-xl font-medium text-white">₹{fee.toLocaleString('en-IN')}</span>
+                )}
               </div>
             </div>
 
@@ -201,11 +213,11 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
               className={`flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-sans text-sm font-semibold tracking-wide transition-all
                 ${(!agreed || isLoading)
                   ? 'bg-white/5 text-white/20 cursor-not-allowed' 
-                  : 'bg-accent-gold text-black hover:bg-white hover:text-black hover:-translate-y-1'
+                  : 'bg-accent-gold text-black hover:bg-white hover:text-black hover:-translate-y-1 shadow-[0_0_25px_rgba(185,138,86,0.2)]'
                 }
               `}
             >
-              {isLoading ? 'BOOKING...' : 'CONFIRM & BOOK'}
+              {isLoading ? (isFreeSession ? 'RESERVING SESSION...' : 'BOOKING...') : (isFreeSession ? 'CONFIRM FREE SESSION' : 'CONFIRM & BOOK')}
               {!isLoading && <LockKey className="text-lg" weight="bold" />}
             </button>
             {error && <p className="text-red-400 font-sans text-xs text-center">{error}</p>}
