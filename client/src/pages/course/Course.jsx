@@ -250,13 +250,15 @@ export default function Course() {
     setIsLoading(true);
     setError('');
 
+    const API_URL = import.meta.env.VITE_API_URL || '';
+
     const safeJson = async (res) => {
       const text = await res.text();
       try {
         return JSON.parse(text);
       } catch {
         console.error('Non-JSON response:', text.substring(0, 200));
-        throw new Error(`Server error (${res.status}). Please ensure Razorpay keys are configured in admin settings.`);
+        throw new Error(`Server returned ${res.status}. Please ensure backend API is running and Razorpay keys are configured.`);
       }
     };
 
@@ -270,13 +272,13 @@ export default function Course() {
         document.body.appendChild(script);
       });
 
-      if (!scriptLoaded) throw new Error('Razorpay SDK failed to load.');
+      if (!scriptLoaded) throw new Error('Razorpay SDK failed to load. Please check your internet connection.');
 
-      const keyRes = await fetch('/api/payment/public-key');
+      const keyRes = await fetch(`${API_URL}/api/payment/public-key`);
       const keyData = await safeJson(keyRes);
       if (!keyRes.ok) throw new Error(keyData.message || 'Payment gateway not configured.');
 
-      const orderRes = await fetch('/api/payment/course-order', {
+      const orderRes = await fetch(`${API_URL}/api/payment/course-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -294,7 +296,7 @@ export default function Course() {
         handler: async function (response) {
           try {
             const token = localStorage.getItem('courseToken');
-            const verifyRes = await fetch('/api/payment/course-verify', {
+            const verifyRes = await fetch(`${API_URL}/api/payment/course-verify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
