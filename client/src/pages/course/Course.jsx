@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import PolicyModal from '../../components/ui/PolicyModal';
 import { 
@@ -41,6 +41,9 @@ import {
   Globe
 } from '@phosphor-icons/react';
 import Button from '../../components/ui/Button';
+import LessonComments from '../../components/course/LessonComments';
+import ProtectedYouTubePlayer from '../../components/course/ProtectedYouTubePlayer';
+import CoursePaymentSuccess from './CoursePaymentSuccess';
 
 const renderSocialIcon = (platform, size = 16) => {
   switch (platform?.toLowerCase()) {
@@ -54,6 +57,17 @@ const renderSocialIcon = (platform, size = 16) => {
     case 'tiktok': return <TiktokLogo size={size} />;
     default: return <Globe size={size} />;
   }
+};
+
+const extractYoutubeVideoId = (url) => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = trimmed.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : '';
 };
 
 // Dummy course data
@@ -96,7 +110,13 @@ const MODULES = [
 export default function Course() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showPricingModal, setShowPricingModal] = useState(false);
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(() => {
+    const isPurchasedStored = localStorage.getItem('isCoursePurchased') === 'true';
+    const hasToken = !!localStorage.getItem('courseToken');
+    const params = new URLSearchParams(window.location.search);
+    const isCheckout = params.get('checkout') === 'true' || sessionStorage.getItem('course_checkout_active') === 'true';
+    return hasToken && isPurchasedStored && !isCheckout;
+  });
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('courseToken'));
   const [isPurchased, setIsPurchased] = useState(() => localStorage.getItem('isCoursePurchased') === 'true');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -109,6 +129,7 @@ export default function Course() {
   });
   const [checkoutAgreed, setCheckoutAgreed] = useState(false);
   const profileMenuRef = useRef(null);
+  const leftColumnRef = useRef(null);
 
   // Auth Modal State
   const [showCourseLogin, setShowCourseLogin] = useState(false);
@@ -144,6 +165,48 @@ export default function Course() {
   const [courseDocuments, setCourseDocuments] = useState([]);
   const [socialLinks, setSocialLinks] = useState([]);
   const [activePolicySlug, setActivePolicySlug] = useState(null);
+  const [courseData, setCourseData] = useState(null);
+  const [activeMobileTab, setActiveMobileTab] = useState('playlist'); // 'playlist' | 'overview' | 'resources' | 'comments'
+  const [landscapeView, setLandscapeView] = useState('list'); // 'list' | 'player'
+  const [purchaseSuccessData, setPurchaseSuccessData] = useState(null);
+
+  // Flat list of all lessons with module reference for mobile & quick next/prev navigation
+  const allLessons = useMemo(() => {
+    const list = [];
+    curriculumModules.forEach((m) => {
+      (m.lessons || []).forEach((l) => {
+        list.push({ ...l, module: m });
+      });
+    });
+    return list;
+  }, [curriculumModules]);
+
+  const currentLessonIndex = useMemo(() => {
+    if (!activeLesson) return -1;
+    const currentId = (activeLesson._id || activeLesson.id)?.toString();
+    return allLessons.findIndex(l => (l._id || l.id)?.toString() === currentId);
+  }, [allLessons, activeLesson]);
+
+  const prevLesson = currentLessonIndex > 0 ? allLessons[currentLessonIndex - 1] : null;
+  const nextLesson = currentLessonIndex >= 0 && currentLessonIndex < allLessons.length - 1 ? allLessons[currentLessonIndex + 1] : null;
+
+  const handleSelectLesson = (lesson, module) => {
+    setActiveLesson(lesson);
+    if (module) setActiveModuleObj(module);
+    localStorage.setItem('lastActiveCourseLessonId', (lesson._id || lesson.id)?.toString());
+  };
+
+  const basePrice = courseData?.price !== undefined && courseData?.price !== null ? Number(courseData.price) : 15000;
+  const comparePrice = courseData?.comparePrice !== undefined && courseData?.comparePrice !== null ? Number(courseData.comparePrice) : 25000;
+  const gstRate = courseData?.gstRate !== undefined && courseData?.gstRate !== null ? Number(courseData.gstRate) : 18;
+  const isGstIncluded = Boolean(courseData?.isGstIncluded);
+
+  const gstAmount = isGstIncluded
+    ? Math.round(basePrice - (basePrice / (1 + (gstRate / 100))))
+    : Math.round((basePrice * gstRate) / 100);
+
+  const baseBeforeGst = isGstIncluded ? basePrice - gstAmount : basePrice;
+  const finalPayable = isGstIncluded ? basePrice : basePrice + gstAmount;
 
   useEffect(() => {
     const fetchPublishedCurriculum = async () => {
@@ -154,11 +217,37 @@ export default function Course() {
         const res = await fetch(`${apiUrl}/api/courses/primary/curriculum`, { headers });
         if (res.ok) {
           const data = await res.json();
+          if (data && data.course) {
+            setCourseData(data.course);
+          }
           if (data && data.modules && data.modules.length > 0) {
             setCurriculumModules(data.modules);
-            setActiveModuleObj(data.modules[0]);
-            if (data.modules[0].lessons && data.modules[0].lessons.length > 0) {
-              setActiveLesson(data.modules[0].lessons[0]);
+
+            const savedLessonId = localStorage.getItem('lastActiveCourseLessonId');
+            let matchedLesson = null;
+            let matchedModule = null;
+
+            if (savedLessonId) {
+              for (const mod of data.modules) {
+                const found = (mod.lessons || []).find(
+                  (l) => (l._id || l.id)?.toString() === savedLessonId.toString()
+                );
+                if (found) {
+                  matchedLesson = found;
+                  matchedModule = mod;
+                  break;
+                }
+              }
+            }
+
+            if (matchedLesson && matchedModule) {
+              setActiveModuleObj(matchedModule);
+              setActiveLesson(matchedLesson);
+            } else {
+              setActiveModuleObj(data.modules[0]);
+              if (data.modules[0].lessons && data.modules[0].lessons.length > 0) {
+                setActiveLesson(data.modules[0].lessons[0]);
+              }
             }
           }
         }
@@ -168,6 +257,13 @@ export default function Course() {
     };
     fetchPublishedCurriculum();
   }, [isPurchased]);
+
+  // Reset left column scroll to top whenever active lesson changes
+  useEffect(() => {
+    if (leftColumnRef.current) {
+      leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeLesson?._id, activeLesson?.id]);
 
   useEffect(() => {
     const fetchCourseFooter = async () => {
@@ -313,7 +409,25 @@ export default function Course() {
               setShowCheckout(false);
               sessionStorage.removeItem('course_checkout_active');
               setSearchParams({});
-              setShowDashboard(true);
+
+              const billPayload = verifyData.purchase || {
+                transactionId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                amount: finalPayable,
+                basePrice: baseBeforeGst,
+                gstRate,
+                gstAmount,
+                isGstIncluded,
+                finalAmount: finalPayable,
+                purchaseDate: new Date().toISOString(),
+                studentName: fullName || email?.split('@')[0] || 'Valued Student',
+                studentEmail: email,
+                courseTitle: 'The Presence Protocol™',
+                freeSessionsGranted: 3
+              };
+
+              setPurchaseSuccessData(billPayload);
+              sessionStorage.setItem('lastCoursePurchaseReceipt', JSON.stringify(billPayload));
             } else {
               setError(verifyData.message || 'Payment verification failed');
             }
@@ -328,8 +442,47 @@ export default function Course() {
       };
 
       const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function (response) {
-        setError(`Payment failed: ${response.error?.description || 'Please try again.'}`);
+      rzp.on('payment.failed', async function (response) {
+        console.warn('Razorpay payment failed:', response);
+        const failedPayload = {
+          status: 'Failed',
+          transactionId: response.error?.metadata?.payment_id || `failed_${Date.now().toString(36)}`,
+          orderId: response.error?.metadata?.order_id || orderData.id,
+          failureReason: response.error?.description || response.error?.reason || 'Transaction was declined by bank / user cancelled payment.',
+          errorCode: response.error?.code || 'PAYMENT_FAILED',
+          amount: finalPayable,
+          basePrice: baseBeforeGst,
+          gstRate,
+          gstAmount,
+          isGstIncluded,
+          finalAmount: finalPayable,
+          purchaseDate: new Date().toISOString(),
+          studentName: fullName || email?.split('@')[0] || 'Valued Student',
+          studentEmail: email,
+          courseTitle: 'The Presence Protocol™',
+        };
+
+        // Persist failed attempt in database for admin visibility
+        try {
+          fetch(`${API_URL}/api/payment/course-failed-record`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              studentName: fullName || email?.split('@')[0] || 'Student',
+              razorpay_order_id: failedPayload.orderId,
+              razorpay_payment_id: failedPayload.transactionId,
+              error_code: failedPayload.errorCode,
+              error_description: failedPayload.failureReason,
+              amount: finalPayable
+            })
+          }).catch(e => console.warn('Failed record log err:', e));
+        } catch (e) {
+          console.warn('Failed to record failure:', e);
+        }
+
+        setPurchaseSuccessData(failedPayload);
+        setShowCheckout(false);
         setIsLoading(false);
       });
       rzp.open();
@@ -347,11 +500,16 @@ export default function Course() {
     if (token) {
       setIsLoggedIn(true);
       setIsPurchased(purchased);
+      if (purchased) {
+        setShowDashboard(true);
+      }
       const userStr = localStorage.getItem('courseUser');
       if (userStr) {
         try {
           const userObj = JSON.parse(userStr);
           if (userObj?.email) setEmail(userObj.email);
+          if (userObj?.fullName) setFullName(userObj.fullName);
+          if (userObj?.phoneNumber) setPhoneNumber(userObj.phoneNumber);
         } catch (e) {}
       }
     }
@@ -376,6 +534,38 @@ export default function Course() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [searchParams]);
+
+  // Anti-Inspect & DevTools blocker in Course Dashboard
+  useEffect(() => {
+    if (!showDashboard) return;
+
+    const blockDevToolsKeys = (e) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
+        (e.metaKey && e.altKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
+        (e.ctrlKey && ['u', 'U', 's', 'S'].includes(e.key)) ||
+        (e.metaKey && ['u', 'U', 's', 'S'].includes(e.key))
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    const blockContextMenu = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    window.addEventListener('keydown', blockDevToolsKeys, { capture: true });
+    window.addEventListener('contextmenu', blockContextMenu);
+
+    return () => {
+      window.removeEventListener('keydown', blockDevToolsKeys, { capture: true });
+      window.removeEventListener('contextmenu', blockContextMenu);
+    };
+  }, [showDashboard]);
 
   const handleLogout = () => {
     localStorage.removeItem('courseToken');
@@ -518,8 +708,33 @@ export default function Course() {
 
 
   // ═══════════════════════════════════════════════════════════════
-  // DASHBOARD VIEW (purchased users)
+  // PAYMENT SUCCESS / FAILED TAX INVOICE RECEIPT VIEW
   // ═══════════════════════════════════════════════════════════════
+  if (purchaseSuccessData) {
+    return (
+      <CoursePaymentSuccess
+        purchaseData={purchaseSuccessData}
+        onStartLearning={() => {
+          setPurchaseSuccessData(null);
+          setShowDashboard(true);
+        }}
+        onBookSession={() => {
+          setPurchaseSuccessData(null);
+          navigate('/booking');
+        }}
+        onRetryPayment={() => {
+          setPurchaseSuccessData(null);
+          setShowCheckout(true);
+          handlePayment();
+        }}
+        onBackToCourse={() => {
+          setPurchaseSuccessData(null);
+          setShowCheckout(false);
+        }}
+      />
+    );
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // DASHBOARD VIEW (purchased users)
   // ═══════════════════════════════════════════════════════════════
@@ -537,12 +752,27 @@ export default function Course() {
           handleLogout={handleLogout}
           setShowCourseLogin={setShowCourseLogin}
         />
-        <div className="flex-grow flex flex-col lg:flex-row h-[calc(100vh-76px)] overflow-hidden">
-          {/* Left Column - Video Player, Details & Resources */}
-          <div className="flex-1 flex flex-col bg-[#050505] overflow-y-auto border-r border-white/10">
-            {/* Video Player Container */}
-            <div className="w-full aspect-video bg-black relative flex items-center justify-center border-b border-white/10 overflow-hidden">
-              {activeLesson?.muxPlaybackId ? (
+
+        {/* Main Dashboard Layout: Responsive Vertical/Landscape Mobile, Split on Desktop */}
+        <div className="flex-grow flex flex-col lg:flex-row h-[calc(100vh-66px)] sm:h-[calc(100vh-76px)] overflow-hidden" data-lenis-prevent="true">
+          
+          {/* ── LEFT / MAIN COLUMN (Scrollable on both mobile and desktop) ── */}
+          <div 
+            ref={leftColumnRef}
+            data-lenis-prevent="true"
+            className="flex-1 flex flex-col bg-[#050505] overflow-y-auto border-r border-white/10 scroll-smooth overscroll-contain h-full"
+          >
+            {/* ── 1. VIDEO PLAYER (Naturally scrollable so user can scroll down to view details, list & comments) ── */}
+            <div className="w-full aspect-video shrink-0 bg-black relative flex items-center justify-center border-b border-white/10 overflow-hidden z-20 shadow-2xl">
+              {activeLesson?.videoToken || activeLesson?.encryptedVideoToken || activeLesson?.youtubeVideoId || (activeLesson?.youtubeUrl && extractYoutubeVideoId(activeLesson.youtubeUrl)) || (activeLesson?.videoSourceType === 'youtube') ? (
+                <ProtectedYouTubePlayer 
+                  key={activeLesson?._id || activeLesson?.id || 'yt_active'}
+                  lesson={activeLesson}
+                  videoToken={activeLesson?.videoToken || activeLesson?.encryptedVideoToken}
+                  videoId={activeLesson?.youtubeVideoId || (activeLesson?.youtubeUrl ? extractYoutubeVideoId(activeLesson.youtubeUrl) : '')}
+                  title={activeLesson?.title}
+                />
+              ) : activeLesson?.muxPlaybackId ? (
                 <iframe
                   src={`https://player.mux.com/${activeLesson.muxPlaybackId}?accentColor=c79c6e`}
                   className="w-full h-full border-0"
@@ -565,18 +795,149 @@ export default function Course() {
               )}
             </div>
 
-            {/* Lesson Info & Action Resources */}
-            <div className="p-6 md:p-10 space-y-6">
+            {/* ── 2. MOBILE LESSON TITLE & MARK COMPLETED BAR ── */}
+            <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#0a0a0a] border-b border-white/10 shrink-0 gap-3">
+              <h3 className="font-serif text-base text-white font-normal leading-snug truncate min-w-0">
+                {activeLesson?.title}
+              </h3>
+
+              {/* Mark Complete Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = { ...activeLesson, isCompleted: !activeLesson?.isCompleted };
+                  setActiveLesson(updated);
+                }}
+                className={`px-3 py-1.5 rounded-xl border text-[11px] font-semibold flex items-center gap-1.5 transition-all shrink-0 ${
+                  activeLesson?.isCompleted
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                    : 'bg-white/5 border-white/10 text-white/80 hover:text-white'
+                }`}
+              >
+                <CheckCircle size={15} weight={activeLesson?.isCompleted ? 'fill' : 'regular'} />
+                <span>{activeLesson?.isCompleted ? 'Completed' : 'Mark Complete'}</span>
+              </button>
+            </div>
+
+            {/* ── 3. MOBILE TAB SELECTOR (Playlist & Comments) ── */}
+            <div className="lg:hidden flex items-center border-b border-white/10 bg-[#070707] px-3.5 py-2.5 gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveMobileTab('playlist')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  activeMobileTab === 'playlist'
+                    ? 'bg-[#c79c6e]/20 border border-[#c79c6e]/50 text-[#c79c6e] shadow-sm'
+                    : 'bg-white/[0.03] border border-white/5 text-white/60 hover:text-white'
+                }`}
+              >
+                <Play size={13} weight="fill" />
+                <span>Playlist</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-mono">
+                  {allLessons.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveMobileTab('comments')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  activeMobileTab === 'comments'
+                    ? 'bg-[#c79c6e]/20 border border-[#c79c6e]/50 text-[#c79c6e] shadow-sm'
+                    : 'bg-white/[0.03] border border-white/5 text-white/60 hover:text-white'
+                }`}
+              >
+                <ChatCenteredDots size={14} weight="bold" />
+                <span>Comments</span>
+              </button>
+            </div>
+
+            {/* ── MOBILE PLAYLIST VIEW ── */}
+            {activeMobileTab === 'playlist' && (
+              <div className="lg:hidden p-4 space-y-4 bg-[#050505]">
+                <div className="flex items-center justify-between px-1">
+                  <h4 className="font-serif text-base text-white">Course Curriculum</h4>
+                  <span className="text-xs text-white/40 font-mono">{allLessons.length} Videos</span>
+                </div>
+
+                <div className="space-y-3">
+                  {curriculumModules.map((module) => {
+                    const isCurrentMod = activeModuleObj?._id === module._id || activeModuleObj?.id === module.id;
+                    const lessons = module.lessons || [];
+
+                    return (
+                      <div key={module._id || module.id} className="border border-white/10 rounded-2xl bg-[#0a0a0a] overflow-hidden">
+                        <button
+                          type="button"
+                          className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left group"
+                          onClick={() => setActiveModuleObj(isCurrentMod ? null : module)}
+                        >
+                          <div className="pr-3">
+                            <h5 className={`font-serif text-sm mb-0.5 leading-snug ${isCurrentMod ? 'text-[#c79c6e]' : 'text-white'}`}>
+                              {module.title}
+                            </h5>
+                            <p className="font-sans text-[0.6rem] uppercase tracking-[0.15em] text-white/40">
+                              {lessons.length} {lessons.length === 1 ? 'VIDEO' : 'VIDEOS'}
+                            </p>
+                          </div>
+                          <CaretDown size={14} className={`text-white/40 transition-transform shrink-0 ${isCurrentMod ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isCurrentMod && (
+                          <div className="bg-[#050505] p-2 pt-0 border-t border-white/5 space-y-1">
+                            {lessons.map((lesson) => {
+                              const isActive = (activeLesson?._id && activeLesson._id === lesson._id) || (activeLesson?.id && activeLesson.id === lesson.id);
+
+                              return (
+                                <button
+                                  key={lesson._id || lesson.id}
+                                  type="button"
+                                  onClick={() => {
+                                    handleSelectLesson(lesson, module);
+                                    if (leftColumnRef.current) {
+                                      leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }
+                                  }}
+                                  className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl transition-all text-left ${
+                                    isActive ? 'bg-[#c79c6e]/15 border border-[#c79c6e]/40' : 'hover:bg-white/5 border border-transparent'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                    {lesson.isCompleted ? (
+                                      <CheckCircle size={15} weight="fill" className="text-[#c79c6e] shrink-0" />
+                                    ) : (
+                                      <Play size={14} weight={isActive ? 'fill' : 'regular'} className={`shrink-0 ${isActive ? 'text-[#c79c6e]' : 'text-white/40'}`} />
+                                    )}
+                                    <span className={`font-sans text-xs truncate ${isActive ? 'text-white font-medium' : 'text-white/70'}`}>
+                                      {lesson.title}
+                                    </span>
+                                  </div>
+                                  <span className="font-sans text-[0.6rem] text-white/40 whitespace-nowrap ml-2 shrink-0">
+                                    {lesson.duration || '12:00'}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── 4. DESKTOP ONLY: Overview Description & Worksheets ── */}
+            <div className="hidden lg:block p-6 md:p-10 pb-0 space-y-6">
               {/* About Lesson Card */}
               <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
                 <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-white/10">
-                  <h3 className="font-serif text-2xl text-white">{activeLesson?.title}</h3>
+                  <h3 className="font-serif text-xl sm:text-2xl text-white">{activeLesson?.title}</h3>
                   <button
                     onClick={() => {
                       const updated = { ...activeLesson, isCompleted: !activeLesson.isCompleted };
                       setActiveLesson(updated);
                     }}
-                    className={`px-4 py-2 rounded-xl border text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-all ${
+                    className={`px-4 py-2 rounded-xl border text-xs font-semibold uppercase tracking-wider items-center gap-2 transition-all ${
                       activeLesson?.isCompleted
                         ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
                         : 'bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/10'
@@ -607,7 +968,7 @@ export default function Course() {
                 <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8">
                   <div className="flex items-center gap-2 mb-4">
                     <FileText size={20} className="text-[#c79c6e]" />
-                    <h4 className="font-serif text-xl text-white font-normal">Action Resources & Worksheets</h4>
+                    <h4 className="font-serif text-lg sm:text-xl text-white font-normal">Action Resources & Worksheets</h4>
                   </div>
                   <div className="space-y-3">
                     {activeLesson.resources.map((res, rIdx) => (
@@ -616,7 +977,7 @@ export default function Course() {
                         href={res.fileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] hover:bg-[#c79c6e]/10 border border-white/10 hover:border-[#c79c6e]/40 transition-all group"
+                        className="flex items-center justify-between p-3.5 sm:p-4 rounded-xl bg-white/[0.03] hover:bg-[#c79c6e]/10 border border-white/10 hover:border-[#c79c6e]/40 transition-all group"
                       >
                         <div className="flex items-center gap-3">
                           <FileText size={18} className="text-[#c79c6e] group-hover:scale-110 transition-transform" />
@@ -629,16 +990,31 @@ export default function Course() {
                 </div>
               )}
             </div>
+
+            {/* ── 5. COMMENTS SECTION (Always on desktop, shown on mobile when Comments tab is active) ── */}
+            <div className={`${activeMobileTab === 'comments' ? 'block' : 'hidden lg:block'} p-3.5 sm:p-6 md:p-10 pt-3 sm:pt-6`}>
+              <LessonComments
+                lessonId={activeLesson?._id || activeLesson?.id}
+                lessonTitle={activeLesson?.title}
+                onRequireAuth={() => {
+                  setShowCourseLogin(true);
+                  setLoginMode('login');
+                }}
+              />
+            </div>
           </div>
 
-          {/* Right Column - Day by Day Curriculum Playlist */}
-          <div className="w-full lg:w-[420px] bg-black flex flex-col h-full overflow-y-auto p-6 gap-5 border-l border-white/10">
+          {/* ── DESKTOP RIGHT COLUMN - Day by Day Curriculum Playlist ── */}
+          <div 
+            data-lenis-prevent="true"
+            className="hidden lg:flex w-[420px] bg-black flex-col h-full overflow-y-auto p-6 gap-5 border-l border-white/10 overscroll-contain"
+          >
             <div className="sticky top-0 bg-black/95 backdrop-blur-md z-10 pb-2 flex items-center justify-between">
               <h3 className="font-sans text-[0.68rem] uppercase tracking-widest text-[#c79c6e] font-bold">
                 Day-by-Day Playlist
               </h3>
               <span className="text-xs text-white/40 font-sans">
-                {curriculumModules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)} Videos
+                {allLessons.length} Videos
               </span>
             </div>
 
@@ -672,10 +1048,7 @@ export default function Course() {
                           return (
                             <button
                               key={lesson._id || lesson.id}
-                              onClick={() => {
-                                setActiveLesson(lesson);
-                                setActiveModuleObj(module);
-                              }}
+                              onClick={() => handleSelectLesson(lesson, module)}
                               className={`w-full flex items-center justify-between py-3 px-3.5 rounded-xl transition-all text-left group ${
                                 isActive ? 'bg-[#c79c6e]/15 border border-[#c79c6e]/40' : 'hover:bg-white/5 border border-transparent'
                               }`}
@@ -882,11 +1255,6 @@ export default function Course() {
                             </span>
                           )}
                         </div>
-                        {!lesson.isLocked && (
-                          <span className="text-[#c79c6e] font-sans text-[0.6rem] uppercase tracking-wider bg-[#c79c6e]/10 border border-[#c79c6e]/30 px-2.5 py-0.5 rounded-full font-semibold">
-                            Free Preview
-                          </span>
-                        )}
                       </div>
                       <span className="font-sans text-xs text-white/30 whitespace-nowrap ml-6">{lesson.duration}</span>
                     </div>
@@ -966,9 +1334,9 @@ export default function Course() {
         </div>
         <div className="flex flex-col gap-4">
           {[
-            { q: 'How long do I have access to the course materials?', a: 'You get lifetime access to all 9 lessons, downloadable resources, and all future updates with no extra recurring charges.' },
+            { q: 'How long do I have access to the course materials?', a: 'You get lifetime access to all masterclass modules, downloadable resources, and all future updates with no recurring charges.' },
             { q: 'How do the 3 free coaching sessions work?', a: 'Once enrolled, you can book your private 1-on-1 sessions directly with Aarkesh through your course profile dashboard.' },
-            { q: 'Is there a money-back guarantee?', a: 'Yes. If you complete the lessons and do not experience a noticeable transformation within 30 days, simply contact us for a full refund.' },
+            { q: 'What format is the course delivered in?', a: 'High-definition on-demand video masterclasses with actionable workbooks, downloadable frameworks, and direct 1-on-1 coaching.' },
             { q: 'Is this course beginner-friendly?', a: 'Absolutely. The framework starts from the fundamental psychology of presence and builds step-by-step toward advanced leadership and magnetism.' }
           ].map((faq, fi) => (
             <div key={fi} className="border border-white/10 rounded-2xl bg-[#0a0a0a] p-6 hover:border-[#c79c6e]/30 transition-colors">
@@ -1017,11 +1385,21 @@ export default function Course() {
 
                 <div className="sm:text-right">
                   <div className="flex items-baseline gap-2 sm:justify-end">
-                    <span className="font-sans text-3xl sm:text-4xl font-bold text-[#c79c6e] tracking-tight">₹15,000</span>
-                    <span className="font-sans text-sm text-white/35 line-through">₹45,000</span>
+                    <span className="font-sans text-3xl sm:text-4xl font-bold text-[#c79c6e] tracking-tight">
+                      ₹{basePrice.toLocaleString('en-IN')}
+                    </span>
+                    {comparePrice > basePrice && (
+                      <span className="font-sans text-sm text-white/35 line-through">
+                        ₹{comparePrice.toLocaleString('en-IN')}
+                      </span>
+                    )}
                   </div>
                   <span className="font-sans text-[0.7rem] text-white/50 block mt-0.5">
-                    + 18% GST at checkout · One-time payment
+                    {gstRate > 0 && !isGstIncluded
+                      ? `+ ${gstRate}% GST (₹${gstAmount.toLocaleString('en-IN')}) at checkout · One-time payment`
+                      : gstRate > 0 && isGstIncluded
+                      ? `Inclusive of all taxes (${gstRate}% GST) · One-time payment`
+                      : 'Zero GST tax · One-time payment'}
                   </span>
                 </div>
               </div>
@@ -1064,18 +1442,14 @@ export default function Course() {
               </div>
 
               {/* Trust Badges Footer Grid */}
-              <div className="mt-6 pt-5 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-white/60 text-xs font-sans">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={18} className="text-[#c79c6e] shrink-0" weight="fill" />
-                  <span className="text-[0.7rem] leading-tight">30-day money-back guarantee</span>
-                </div>
+              <div className="mt-6 pt-5 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-white/60 text-xs font-sans">
                 <div className="flex items-center gap-2">
                   <LockKey size={18} className="text-[#c79c6e] shrink-0" weight="fill" />
                   <span className="text-[0.7rem] leading-tight">256-bit SSL encrypted checkout</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Lightning size={18} className="text-[#c79c6e] shrink-0" weight="fill" />
-                  <span className="text-[0.7rem] leading-tight">Instant access in 60 seconds</span>
+                  <span className="text-[0.7rem] leading-tight">Instant lifetime access in 60 seconds</span>
                 </div>
               </div>
 
@@ -1191,204 +1565,170 @@ export default function Course() {
 
       {/* 2-Column Minimal Glassmorphic Pricing Modal */}
       {showPricingModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl overflow-y-auto overscroll-contain p-3 sm:p-6 flex flex-col items-center justify-start sm:justify-center animate-in fade-in duration-200">
           {/* Background Ambient Glow */}
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-[#c79c6e]/12 rounded-full blur-[160px] pointer-events-none" />
 
-          {/* Minimal Glassmorphic Card (Left: Details | Right: Price) */}
-          <div className="relative w-full max-w-5xl rounded-3xl border border-[#c79c6e]/35 bg-[#0c0c0c]/95 backdrop-blur-2xl p-6 sm:p-10 shadow-[0_25px_90px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.15)] my-auto text-left overflow-hidden">
+          {/* Minimal Glassmorphic Modal Dialog Box */}
+          <div className="relative w-full max-w-4xl rounded-2xl sm:rounded-3xl border border-[#c79c6e]/35 bg-[#0c0c0c] shadow-[0_25px_90px_rgba(0,0,0,0.95)] p-4 sm:p-8 my-4 sm:my-auto text-left">
             
             {/* Top Close Button */}
             <button 
+              type="button"
               onClick={() => setShowPricingModal(false)} 
-              className="absolute right-5 top-5 z-20 w-9 h-9 rounded-full bg-white/5 border border-white/10 hover:bg-white/15 text-white/50 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+              className="absolute right-3.5 top-3.5 sm:right-6 sm:top-6 z-30 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 border border-white/15 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+              title="Close modal"
             >
-              <X size={18} />
+              <X size={17} />
             </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
+            {/* Modal Header */}
+            <div className="pr-10 mb-3">
+              <span className="font-sans text-[10px] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold block mb-1">
+                MASTERCLASS ACCESS
+              </span>
+              <h3 className="font-serif text-xl sm:text-3xl text-white font-normal tracking-tight">
+                The Presence Protocol™
+              </h3>
+            </div>
+
+            <p className="font-sans text-xs sm:text-sm text-white/70 leading-relaxed mb-5">
+              A transformative masterclass journey to master authentic presence, magnetic communication, and quiet confidence that commands every room.
+            </p>
+
+            {/* Grid Layout: Pricing Card & Features */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
               
-              {/* ─── LEFT COLUMN: COURSE DETAILS & WHAT'S INCLUDED (7 cols) ─── */}
-              <div className="lg:col-span-7 flex flex-col justify-between">
-                <div>
-                  <h3 className="font-serif text-3xl sm:text-4xl text-white font-normal mb-3 tracking-tight">
-                    The Presence Protocol™
-                  </h3>
-                  
-                  <p className="font-sans text-sm text-white/70 leading-relaxed mb-6 max-w-xl">
-                    A transformative 9-lesson journey to master authentic presence, magnetic communication, and the quiet confidence that commands every room.
-                  </p>
+              {/* ─── PRICING CARD (Placed First on Mobile, Right on Desktop) ─── */}
+              <div className="order-1 lg:order-2 lg:col-span-5 rounded-2xl border border-[#c79c6e]/40 bg-[#12100d] p-4 sm:p-6 shadow-2xl">
+                <span className="font-sans text-[10px] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold block mb-1">
+                  ONE-TIME ENROLLMENT
+                </span>
+                
+                <div className="flex items-baseline gap-2.5 mb-1">
+                  <span className="font-sans text-3xl sm:text-4xl font-bold text-[#c79c6e] tracking-tight">
+                    ₹{basePrice.toLocaleString('en-IN')}
+                  </span>
+                  {comparePrice > basePrice && (
+                    <span className="font-sans text-xs sm:text-sm text-white/35 line-through">
+                      ₹{comparePrice.toLocaleString('en-IN')}
+                    </span>
+                  )}
+                </div>
 
-                  {/* 3 Stats / Feature Pills Row */}
-                  <div className="grid grid-cols-3 gap-3 py-4 border-y border-white/10 mb-8">
-                    {/* Stat 1 */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full border border-[#c79c6e]/40 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0">
-                        <Play size={16} weight="fill" />
-                      </div>
-                      <div>
-                        <div className="font-sans text-xs font-semibold text-white leading-tight">9 Lessons</div>
-                        <div className="font-sans text-[0.7rem] text-white/50 leading-tight mt-0.5">On-demand videos</div>
-                      </div>
-                    </div>
+                <p className="font-sans text-[11px] text-white/60 mb-3.5">
+                  {gstRate > 0 && !isGstIncluded
+                    ? `+ ${gstRate}% GST (₹${gstAmount.toLocaleString('en-IN')}) at checkout · No recurring charges`
+                    : gstRate > 0 && isGstIncluded
+                    ? `Inclusive of all taxes (${gstRate}% GST) · No recurring charges`
+                    : 'Zero GST tax · No recurring charges'}
+                </p>
 
-                    {/* Stat 2 */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full border border-[#c79c6e]/40 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0">
-                        <Users size={16} />
-                      </div>
-                      <div>
-                        <div className="font-sans text-xs font-semibold text-white leading-tight">3 Private Calls</div>
-                        <div className="font-sans text-[0.7rem] text-white/50 leading-tight mt-0.5">With Aarkesh</div>
-                      </div>
-                    </div>
-
-                    {/* Stat 3 */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full border border-[#c79c6e]/40 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0">
-                        <Infinity size={16} />
-                      </div>
-                      <div>
-                        <div className="font-sans text-xs font-semibold text-white leading-tight">Lifetime Access</div>
-                        <div className="font-sans text-[0.7rem] text-white/50 leading-tight mt-0.5">Learn at your pace</div>
-                      </div>
-                    </div>
+                <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 mb-3.5 space-y-1.5 text-xs font-sans text-white/80">
+                  <div className="flex items-center justify-between">
+                    <span>Course Masterclass:</span>
+                    <span className="font-semibold text-white">Included</span>
                   </div>
-
-                  {/* Section Title */}
-                  <div className="text-[0.7rem] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold font-sans mb-6">
-                    WHAT'S INCLUDED
+                  <div className="flex items-center justify-between">
+                    <span>3 Private 1-on-1 Calls:</span>
+                    <span className="font-semibold text-[#c79c6e]">FREE</span>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <span>Validity:</span>
+                    <span className="font-semibold text-white">Lifetime Access</span>
+                  </div>
+                </div>
 
-                  {/* Spacious Feature List */}
-                  <div className="space-y-6">
-                    {/* Item 1 */}
-                    <div className="flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
-                        <Play size={18} weight="fill" />
-                      </div>
-                      <div>
-                        <h4 className="font-sans text-sm sm:text-base font-medium text-white leading-tight">
-                          Full Access to All 9 Master Lessons
-                        </h4>
-                        <p className="font-sans text-xs sm:text-sm text-white/60 mt-1 leading-relaxed">
-                          Self-paced HD video frameworks on mental clarity, posture & gravitas
-                        </p>
-                      </div>
-                    </div>
+                {/* Glassmorphic CTA Button */}
+                <button
+                  type="button"
+                  onClick={handlePurchase}
+                  className="w-full rounded-xl bg-gradient-to-r from-[#c79c6e] via-[#dfb98f] to-[#c79c6e] hover:brightness-110 text-black px-4 py-3.5 font-sans text-xs sm:text-sm font-bold uppercase tracking-[0.18em] transition-all hover:scale-[1.01] active:scale-[0.99] shadow-[0_0_30px_rgba(199,156,110,0.3)] flex items-center justify-center gap-2 cursor-pointer mb-3"
+                >
+                  <span>PROCEED TO CHECKOUT</span>
+                  <ArrowRight size={16} weight="bold" className="text-black" />
+                </button>
 
-                    {/* Item 2 */}
-                    <div className="flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
-                        <Users size={18} />
-                      </div>
-                      <div>
-                        <h4 className="font-sans text-sm sm:text-base font-medium text-white leading-tight">
-                          3 Free 1-on-1 Private Coaching Sessions with Aarkesh
-                        </h4>
-                        <p className="font-sans text-xs sm:text-sm text-white/60 mt-1 leading-relaxed">
-                          Direct personalized strategy and tailored breakthrough guidance
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Item 3 */}
-                    <div className="flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
-                        <FileText size={18} />
-                      </div>
-                      <div>
-                        <h4 className="font-sans text-sm sm:text-base font-medium text-white leading-tight">
-                          Actionable Workbooks & Mindset Guides
-                        </h4>
-                        <p className="font-sans text-xs sm:text-sm text-white/60 mt-1 leading-relaxed">
-                          Practical, downloadable templates for immediate implementation
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Item 4 */}
-                    <div className="flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
-                        <ShieldCheck size={18} weight="fill" />
-                      </div>
-                      <div>
-                        <h4 className="font-sans text-sm sm:text-base font-medium text-white leading-tight">
-                          Verified Certificate of Completion
-                        </h4>
-                        <p className="font-sans text-xs sm:text-sm text-white/60 mt-1 leading-relaxed">
-                          Plus exclusive access to our private community
-                        </p>
-                      </div>
-                    </div>
+                {/* Trust Strip */}
+                <div className="space-y-1.5 pt-3 border-t border-white/10 text-white/60 text-[11px] font-sans">
+                  <div className="flex items-center gap-2">
+                    <LockKey size={14} className="text-[#c79c6e]" />
+                    <span>256-Bit SSL Encrypted Checkout</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Lightning size={14} className="text-[#c79c6e]" />
+                    <span>Instant Lifetime Access</span>
                   </div>
                 </div>
               </div>
 
-              {/* ─── RIGHT COLUMN: PRICING, CTA & GUARANTEES (5 cols) ─── */}
-              <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border border-[#c79c6e]/30 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-xl shadow-inner">
-                <div>
-                  <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold block mb-2">
-                    ONE-TIME ENROLLMENT
-                  </span>
-                  
-                  <div className="flex items-baseline gap-3 mb-1">
-                    <span className="font-sans text-4xl sm:text-5xl font-bold text-[#c79c6e] tracking-tight">
-                      ₹15,000
-                    </span>
-                    <span className="font-sans text-sm text-white/35 line-through">
-                      ₹45,000
-                    </span>
+              {/* ─── FEATURES & WHAT'S INCLUDED (Placed Second on Mobile, Left on Desktop) ─── */}
+              <div className="order-2 lg:order-1 lg:col-span-7 space-y-3 pb-2">
+                <div className="text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold font-sans">
+                  WHAT'S INCLUDED
+                </div>
+
+                <div className="space-y-3">
+                  {/* Item 1 */}
+                  <div className="flex items-start gap-3 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-white/5 sm:border-0">
+                    <div className="w-8 h-8 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
+                      <Play size={14} weight="fill" />
+                    </div>
+                    <div>
+                      <h4 className="font-sans text-xs sm:text-sm font-medium text-white leading-tight">
+                        Full Masterclass Video Access
+                      </h4>
+                      <p className="font-sans text-[11px] text-white/60 mt-0.5 leading-relaxed">
+                        Self-paced HD video frameworks on mental clarity, posture &amp; gravitas
+                      </p>
+                    </div>
                   </div>
 
-                  <p className="font-sans text-xs text-white/60 mb-6">
-                    + 18% GST (₹2,700) at checkout · No recurring charges
-                  </p>
+                  {/* Item 2 */}
+                  <div className="flex items-start gap-3 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-white/5 sm:border-0">
+                    <div className="w-8 h-8 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
+                      <Users size={14} />
+                    </div>
+                    <div>
+                      <h4 className="font-sans text-xs sm:text-sm font-medium text-white leading-tight">
+                        3 Free 1-on-1 Private Coaching Sessions with Aarkesh
+                      </h4>
+                      <p className="font-sans text-[11px] text-white/60 mt-0.5 leading-relaxed">
+                        Direct personalized strategy and tailored breakthrough guidance
+                      </p>
+                    </div>
+                  </div>
 
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 mb-6 space-y-2.5">
-                    <div className="flex items-center justify-between text-xs font-sans text-white/80">
-                      <span>Course Masterclass:</span>
-                      <span className="font-semibold text-white">Included</span>
+                  {/* Item 3 */}
+                  <div className="flex items-start gap-3 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-white/5 sm:border-0">
+                    <div className="w-8 h-8 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
+                      <FileText size={14} />
                     </div>
-                    <div className="flex items-center justify-between text-xs font-sans text-white/80">
-                      <span>3 Private 1-on-1 Calls:</span>
-                      <span className="font-semibold text-[#c79c6e]">FREE</span>
+                    <div>
+                      <h4 className="font-sans text-xs sm:text-sm font-medium text-white leading-tight">
+                        Actionable Workbooks &amp; Mindset Guides
+                      </h4>
+                      <p className="font-sans text-[11px] text-white/60 mt-0.5 leading-relaxed">
+                        Practical, downloadable templates for immediate implementation
+                      </p>
                     </div>
-                    <div className="flex items-center justify-between text-xs font-sans text-white/80">
-                      <span>Validity:</span>
-                      <span className="font-semibold text-white">Lifetime Access</span>
+                  </div>
+
+                  {/* Item 4 */}
+                  <div className="flex items-start gap-3 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-white/5 sm:border-0">
+                    <div className="w-8 h-8 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
+                      <ShieldCheck size={14} weight="fill" />
+                    </div>
+                    <div>
+                      <h4 className="font-sans text-xs sm:text-sm font-medium text-white leading-tight">
+                        Verified Certificate of Completion
+                      </h4>
+                      <p className="font-sans text-[11px] text-white/60 mt-0.5 leading-relaxed">
+                        Plus exclusive access to our private community
+                      </p>
                     </div>
                   </div>
                 </div>
-
-                <div>
-                  {/* Glassmorphic CTA Button */}
-                  <button
-                    type="button"
-                    onClick={handlePurchase}
-                    className="w-full rounded-xl border border-[#c79c6e]/50 bg-white/[0.08] hover:bg-[#c79c6e]/20 hover:border-[#c79c6e] backdrop-blur-2xl px-6 py-4 font-sans text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-[1.01] active:scale-[0.99] shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.25)] hover:shadow-[0_0_40px_rgba(199,156,110,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] flex items-center justify-center gap-2.5 group cursor-pointer mb-5"
-                  >
-                    <span>PROCEED TO CHECKOUT</span>
-                    <ArrowRight size={17} weight="bold" className="text-[#c79c6e] group-hover:translate-x-1 transition-transform" />
-                  </button>
-
-                  {/* Trust Strip */}
-                  <div className="space-y-2.5 pt-4 border-t border-white/10 text-white/60 text-xs font-sans">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck size={16} className="text-[#c79c6e] shrink-0" weight="fill" />
-                      <span className="text-[0.7rem]">30-Day 100% Money-Back Guarantee</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <LockKey size={16} className="text-[#c79c6e] shrink-0" weight="fill" />
-                      <span className="text-[0.7rem]">256-Bit SSL Encrypted Checkout</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Lightning size={16} className="text-[#c79c6e] shrink-0" weight="fill" />
-                      <span className="text-[0.7rem]">Instant Lifetime Access in 60s</span>
-                    </div>
-                  </div>
-                </div>
-
               </div>
 
             </div>
@@ -1436,6 +1776,7 @@ export default function Course() {
         handlePayment={handlePayment}
         isLoading={isLoading}
         error={error}
+        courseData={courseData}
         onOpenTerms={() => {
           const termsDoc = courseDocuments.find(d => 
             (d.slug && (d.slug.toLowerCase().includes('term') || d.slug.toLowerCase().includes('condition'))) ||
@@ -1468,38 +1809,43 @@ export default function Course() {
 // ─── NAVBAR ─────────────────────────────────────────────────────
 function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard, profileMenuRef, showProfileMenu, setShowProfileMenu, handleLogout, setShowCourseLogin }) {
   return (
-    <header className="flex-none h-[76px] border-b border-white/10 bg-[#070707]/90 backdrop-blur-xl px-6 md:px-12 flex items-center justify-between z-50 sticky top-0">
+    <header className="flex-none h-[66px] sm:h-[76px] border-b border-white/10 bg-[#070707]/95 backdrop-blur-xl px-3.5 sm:px-6 md:px-12 flex items-center justify-between z-50 sticky top-0 w-full max-w-full">
       <div 
         onClick={() => isPurchased ? setShowDashboard(!showDashboard) : null}
-        className="font-serif text-2xl text-white tracking-tight flex items-center hover:opacity-90 transition-opacity select-none cursor-pointer"
+        className="font-serif text-lg sm:text-2xl text-white tracking-tight flex items-center hover:opacity-90 transition-opacity select-none cursor-pointer shrink-0"
       >
-        BetterWith<span className="text-white/60">Aarkesh</span>
+        BetterWith<span className="text-[#c79c6e]">Aarkesh</span>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
         {isPurchased && (
           <button
+            type="button"
             onClick={() => setShowDashboard(!showDashboard)}
-            className="text-[0.65rem] font-sans font-semibold uppercase tracking-[0.18em] px-4 py-2.5 rounded-lg border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all flex items-center gap-2 hover:scale-105 shadow-[0_0_20px_rgba(199,156,110,0.1)]"
+            className="hidden sm:flex text-[10px] sm:text-[0.65rem] font-sans font-semibold uppercase tracking-[0.15em] sm:tracking-[0.18em] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all items-center gap-1.5 shadow-[0_0_20px_rgba(199,156,110,0.1)] whitespace-nowrap"
           >
-            {showDashboard ? 'OVERVIEW' : 'WATCH LESSONS'}
+            {showDashboard ? 'OVERVIEW' : 'WATCH'}
           </button>
         )}
 
         <Link
           to="/"
-          className="text-[0.65rem] font-sans font-semibold uppercase tracking-[0.18em] px-4 py-2.5 rounded-lg border border-white/10 text-white/70 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2"
+          className="hidden sm:flex text-[10px] sm:text-[0.65rem] font-sans font-semibold uppercase tracking-[0.15em] sm:tracking-[0.18em] px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-lg border border-white/10 text-white/75 hover:bg-white/10 hover:text-white transition-all items-center gap-1.5 whitespace-nowrap"
+          title="Back to Coaching Portal"
         >
-          <ArrowLeft size={14} weight="bold" /> COACHING
+          <ArrowLeft size={13} weight="bold" />
+          <span className="hidden xs:inline sm:inline">COACHING</span>
         </Link>
 
         {isLoggedIn ? (
           <div className="relative" ref={profileMenuRef}>
             <button
+              type="button"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="w-10 h-10 rounded-full border border-[#c79c6e]/40 bg-[#111] flex items-center justify-center text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all hover:scale-105 shadow-[0_0_20px_rgba(199,156,110,0.15)]"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#c79c6e]/40 bg-[#111] flex items-center justify-center text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all shadow-[0_0_20px_rgba(199,156,110,0.15)] shrink-0 cursor-pointer"
+              title="Student Profile"
             >
-              <User size={18} weight="light" />
+              <User size={17} weight="bold" />
             </button>
             {showProfileMenu && (
               <div className="absolute right-0 mt-3 w-48 rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl py-2 z-[100] overflow-hidden">
@@ -1511,6 +1857,7 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
                   <User size={18} className="text-[#c79c6e]" /> Profile
                 </Link>
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3"
                 >
@@ -1521,10 +1868,12 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           </div>
         ) : (
           <button
-            className="text-xs font-sans font-semibold uppercase tracking-[0.2em] px-6 py-2.5 rounded-lg border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all flex items-center gap-2 hover:scale-105 shadow-[0_0_20px_rgba(199,156,110,0.1)]"
+            type="button"
+            className="text-[11px] sm:text-xs font-sans font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-lg border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all flex items-center gap-1.5 shadow-[0_0_20px_rgba(199,156,110,0.1)] whitespace-nowrap shrink-0 cursor-pointer"
             onClick={() => setShowCourseLogin(true)}
           >
-            <User size={15} weight="light" /> LOGIN
+            <User size={14} weight="bold" />
+            <span>LOGIN</span>
           </button>
         )}
       </div>
@@ -1567,7 +1916,7 @@ function AuthModal({
   if (!showCourseLogin) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] bg-[#050505] flex flex-col justify-between p-6 md:p-12 overflow-y-auto min-h-screen">
+    <div className="fixed inset-0 z-[120] bg-[#050505] flex flex-col justify-between p-4 sm:p-6 md:p-12 overflow-y-auto overscroll-contain min-h-screen">
       {/* Background Silhouette & Warm Glowing Atmosphere */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <img
@@ -1581,7 +1930,7 @@ function AuthModal({
       </div>
 
       {/* Top Bar: Brand Logo + Close Button */}
-      <div className="w-full max-w-7xl mx-auto flex items-center justify-between relative z-20">
+      <div className="w-full max-w-7xl mx-auto flex items-center justify-between relative z-20 shrink-0">
         <div className="flex items-center gap-3">
           {(isForgotPassword || loginMode === 'register') && (
             <button
@@ -1606,14 +1955,14 @@ function AuthModal({
         </div>
         <button
           onClick={() => setShowCourseLogin(false)}
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center transition-all"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center transition-all cursor-pointer"
         >
-          <X size={20} />
+          <X size={18} />
         </button>
       </div>
 
-      {/* Center Content Section */}
-      <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col md:flex-row items-center justify-between gap-12 my-auto md:-translate-y-6 relative z-10">
+      {/* Center Content Section (Centered Vertically on Mobile) */}
+      <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col md:flex-row items-center justify-center md:justify-between gap-8 md:gap-12 my-auto py-4 sm:py-6 relative z-10">
         {/* Left Side Quotes & Branding (visible on md+) */}
         <div className="hidden md:flex flex-col justify-center max-w-md">
           {isForgotPassword ? (
@@ -1959,13 +2308,29 @@ function AuthModal({
           </form>
         </div>
       </div>
+
+      {/* Bottom Minimal Footer (Anchor for vertical balance) */}
+      <div className="w-full max-w-7xl mx-auto flex items-center justify-center pt-2 relative z-20 text-[0.65rem] text-white/30 font-sans tracking-wider shrink-0 select-none">
+        <span>&copy; {new Date().getFullYear()} Better With Aarkesh • Secure Member Access</span>
+      </div>
     </div>
   );
 }
 
 // ─── CHECKOUT OVERLAY ───────────────────────────────────────────
-function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setCheckoutAgreed, handlePayment, isLoading, error, onOpenTerms }) {
+function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setCheckoutAgreed, handlePayment, isLoading, error, onOpenTerms, courseData }) {
   if (!showCheckout) return null;
+
+  const basePrice = courseData?.price !== undefined ? courseData.price : 15000;
+  const gstRate = courseData?.gstRate !== undefined ? courseData.gstRate : 18;
+  const isGstIncluded = Boolean(courseData?.isGstIncluded);
+
+  const gstAmount = isGstIncluded
+    ? Math.round(basePrice - (basePrice / (1 + (gstRate / 100))))
+    : Math.round((basePrice * gstRate) / 100);
+
+  const baseBeforeGst = isGstIncluded ? basePrice - gstAmount : basePrice;
+  const finalPayable = isGstIncluded ? basePrice : basePrice + gstAmount;
 
   return (
     <div className="fixed inset-0 z-[110] bg-[#050505] flex flex-col justify-between overflow-y-auto min-h-screen">
@@ -2025,22 +2390,25 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
           {/* Pricing Breakdown */}
           <div className="py-5 space-y-3 border-b border-white/10">
             <div className="flex justify-between items-center text-xs font-sans text-white/70">
-              <span>Course Bundle Price</span>
-              <span className="font-medium text-white">₹15,000</span>
+              <span>Course Base Fee</span>
+              <span className="font-medium text-white">₹{baseBeforeGst.toLocaleString('en-IN')}</span>
             </div>
             <div className="flex justify-between items-center text-xs font-sans text-white/70">
               <div className="flex items-center gap-1.5">
-                <span>GST (18%)</span>
+                <span>GST ({gstRate}%)</span>
+                {isGstIncluded && <span className="text-[10px] text-white/40">(included)</span>}
                 <Info size={13} className="text-white/40" />
               </div>
-              <span className="font-medium text-white">₹2,700</span>
+              <span className="font-medium text-white">₹{gstAmount.toLocaleString('en-IN')}</span>
             </div>
             <div className="flex justify-between items-center pt-2 text-white">
               <div>
                 <span className="font-sans text-sm font-bold block text-white">Total Amount Due</span>
-                <span className="font-sans text-[0.65rem] text-white/50 block">Inclusive of all taxes</span>
+                <span className="font-sans text-[0.65rem] text-white/50 block">
+                  {isGstIncluded ? `Inclusive of all taxes (${gstRate}% GST)` : `Includes ${gstRate}% GST`}
+                </span>
               </div>
-              <span className="font-sans text-2xl md:text-3xl font-bold text-[#c79c6e] tracking-tight">₹17,700</span>
+              <span className="font-sans text-2xl md:text-3xl font-bold text-[#c79c6e] tracking-tight">₹{finalPayable.toLocaleString('en-IN')}</span>
             </div>
           </div>
 
@@ -2083,7 +2451,7 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
               disabled={isLoading || !checkoutAgreed}
               className="w-full rounded-xl bg-gradient-to-r from-[#c79c6e] via-[#dfb98f] to-[#c79c6e] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed px-6 py-4 font-sans text-xs font-bold uppercase tracking-[0.2em] text-black transition-all shadow-[0_0_30px_rgba(199,156,110,0.25)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
             >
-              <span>{isLoading ? 'PROCESSING...' : 'PAY ₹17,700 & ENROLL NOW'}</span>
+              <span>{isLoading ? 'PROCESSING...' : `PAY ₹${finalPayable.toLocaleString('en-IN')} & ENROLL NOW`}</span>
               <ArrowRight size={16} weight="bold" />
             </button>
 

@@ -40,6 +40,22 @@ const courseLessonSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  // Video Provider & Source
+  videoSourceType: {
+    type: String,
+    enum: ['mux', 'youtube', 'custom'],
+    default: 'mux',
+  },
+  youtubeUrl: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  youtubeVideoId: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   // Mux Video Metadata
   videoStatus: {
     type: String,

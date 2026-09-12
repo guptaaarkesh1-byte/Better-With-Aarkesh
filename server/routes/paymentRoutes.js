@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
@@ -9,6 +10,7 @@ import CoursePurchase from '../models/CoursePurchase.js';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
 import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
+import { sendCoursePurchaseInvoiceEmail, sendCoursePaymentFailedEmail } from '../services/courseEmailService.js';
 
 const router = express.Router();
 
@@ -186,23 +188,43 @@ router.post('/settings', protect, admin, async (req, res) => {
 // @access  Public
 router.post('/course-order', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, courseId } = req.body;
     
-    // Base amount 15000 + 18% GST (2700) = 17700
-    const amount = 17700;
+    // Fetch course for dynamic fee and GST
+    let course = null;
+    if (courseId) {
+      course = await Course.findById(courseId);
+    }
+    if (!course) {
+      course = (await Course.findOne({ status: 'Published' })) || (await Course.findOne());
+    }
+
+    const basePrice = course?.price || 15000;
+    const gstRate = course?.gstRate !== undefined ? course.gstRate : 18;
+    const isGstIncluded = !!course?.isGstIncluded;
+
+    const gstAmount = isGstIncluded ? 0 : Math.round((basePrice * gstRate) / 100);
+    const finalAmount = isGstIncluded ? basePrice : (basePrice + gstAmount);
     
     const instance = await getRazorpayInstance();
     
     const options = {
-      amount: amount * 100, // in paise
+      amount: finalAmount * 100, // in paise
       currency: 'INR',
       receipt: `course_${Date.now()}`,
     };
 
     const order = await instance.orders.create(options);
-    res.json(order);
+    res.json({
+      ...order,
+      basePrice,
+      gstRate,
+      gstAmount,
+      finalAmount,
+      isGstIncluded,
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Course Order Error:', error);
     res.status(500).json({ message: error.message || 'Error creating course order' });
   }
 });
@@ -264,7 +286,23 @@ router.post('/course-verify', async (req, res) => {
 
             // Find main course or default course
             const primaryCourse = await Course.findOne().sort({ createdAt: 1 });
+            let courseTitle = 'The Presence Protocol™';
+            let basePrice = 15000;
+            let gstRate = 18;
+            let isGstIncluded = false;
+            let gstAmount = 2700;
+            let finalAmount = 17700;
+
             if (primaryCourse) {
+              courseTitle = primaryCourse.title || courseTitle;
+              basePrice = primaryCourse.price !== undefined ? primaryCourse.price : 15000;
+              gstRate = primaryCourse.gstRate !== undefined ? primaryCourse.gstRate : 18;
+              isGstIncluded = Boolean(primaryCourse.isGstIncluded);
+              gstAmount = isGstIncluded
+                ? Math.round(basePrice - (basePrice / (1 + (gstRate / 100))))
+                : Math.round((basePrice * gstRate) / 100);
+              finalAmount = isGstIncluded ? basePrice : basePrice + gstAmount;
+
               await CoursePurchase.findOneAndUpdate(
                 { transactionId: razorpay_payment_id },
                 {
@@ -273,7 +311,7 @@ router.post('/course-verify', async (req, res) => {
                   courseId: primaryCourse._id,
                   studentName: courseUser.fullName,
                   studentEmail: email.toLowerCase(),
-                  amount: primaryCourse.price || 15000,
+                  amount: finalAmount,
                   currency: 'INR',
                   paymentStatus: 'Paid',
                   enrollmentStatus: 'Active',
@@ -284,7 +322,52 @@ router.post('/course-verify', async (req, res) => {
                 },
                 { upsert: true, returnDocument: 'after' }
               );
+
+              // Asynchronously dispatch official tax invoice email
+              sendCoursePurchaseInvoiceEmail({
+                studentEmail: email.toLowerCase(),
+                studentName: courseUser.fullName || 'Valued Student',
+                txnId: razorpay_payment_id,
+                orderId: razorpay_order_id,
+                amount: finalAmount,
+                basePrice: isGstIncluded ? (basePrice - gstAmount) : basePrice,
+                gstRate,
+                gstAmount,
+                isGstIncluded,
+                courseTitle,
+                invoiceItemTitle: primaryCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
+                invoiceItemSubtitle: primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
+                bonusItemTitle: primaryCourse?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
+                bonusItemSubtitle: primaryCourse?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus',
+                purchaseDate: new Date(),
+              }).catch(err => console.error('Background purchase invoice email error:', err));
             }
+
+            return res.json({ 
+              message: 'Payment verified successfully', 
+              success: true,
+              coachingToken,
+              freeSessions,
+              purchase: {
+                transactionId: razorpay_payment_id,
+                orderId: razorpay_order_id,
+                amount: finalAmount,
+                basePrice: isGstIncluded ? (basePrice - gstAmount) : basePrice,
+                gstRate,
+                gstAmount,
+                isGstIncluded,
+                finalAmount,
+                purchaseDate: new Date().toISOString(),
+                studentName: courseUser.fullName,
+                studentEmail: email,
+                courseTitle,
+                invoiceItemTitle: primaryCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
+                invoiceItemSubtitle: primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
+                bonusItemTitle: primaryCourse?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
+                bonusItemSubtitle: primaryCourse?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus',
+                freeSessionsGranted: 3
+              }
+            });
           }
         } catch (err) {
           console.error('Failed to decode token or sync coaching user during verification:', err);
@@ -303,6 +386,72 @@ router.post('/course-verify', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error verifying payment' });
+  }
+});
+
+// @desc    Record Failed Payment Attempt
+// @route   POST /api/payment/course-failed-record
+// @access  Public
+router.post('/course-failed-record', async (req, res) => {
+  try {
+    const { 
+      email, 
+      studentName, 
+      razorpay_order_id, 
+      razorpay_payment_id, 
+      error_code, 
+      error_description, 
+      error_reason, 
+      amount 
+    } = req.body;
+
+    const primaryCourse = await Course.findOne().sort({ createdAt: 1 });
+    let courseUser = null;
+    if (email) {
+      courseUser = await CourseUser.findOne({ email: new RegExp(`^${email.trim()}$`, 'i') });
+    }
+
+    const failedTxnId = razorpay_payment_id || `failed_${Date.now()}`;
+    const failedOrderId = razorpay_order_id || `order_${Date.now()}`;
+
+    const purchase = await CoursePurchase.create({
+      userId: null,
+      courseUserId: courseUser ? courseUser._id : null,
+      courseId: primaryCourse ? primaryCourse._id : new mongoose.Types.ObjectId(),
+      studentName: studentName || (courseUser ? courseUser.fullName : 'Guest Student'),
+      studentEmail: (email || '').toLowerCase().trim(),
+      amount: amount || (primaryCourse ? primaryCourse.price : 11800),
+      currency: 'INR',
+      paymentStatus: 'Failed',
+      enrollmentStatus: 'Revoked',
+      transactionId: failedTxnId,
+      razorpayOrderId: failedOrderId,
+      razorpayPaymentId: razorpay_payment_id || '',
+      failureReason: error_description || error_reason || 'Bank transaction declined / user cancelled',
+      errorCode: error_code || 'PAYMENT_FAILED',
+      purchaseDate: new Date(),
+    });
+
+    // Asynchronously dispatch failed payment attempt notification & bill summary email
+    if (email) {
+      sendCoursePaymentFailedEmail({
+        studentEmail: (email || '').toLowerCase().trim(),
+        studentName: studentName || (courseUser ? courseUser.fullName : 'Valued Student'),
+        txnId: failedTxnId,
+        orderId: failedOrderId,
+        amount: amount || (primaryCourse ? primaryCourse.price : 11800),
+        failureReason: error_description || error_reason || 'Bank transaction declined / user cancelled payment',
+        errorCode: error_code || 'PAYMENT_FAILED',
+        courseTitle: primaryCourse?.title || 'The Presence Protocol™',
+        invoiceItemTitle: primaryCourse?.invoiceItemTitle || `${primaryCourse?.title || 'The Presence Protocol™'} — Masterclass Lifetime Access`,
+        purchaseDate: new Date(),
+      }).catch(err => console.error('Background payment failed notice email error:', err));
+    }
+
+    res.json({ success: true, message: 'Failed payment recorded', purchaseId: purchase._id });
+  } catch (err) {
+    console.error('Record failed payment error:', err);
+    res.status(500).json({ message: 'Error recording failed payment' });
   }
 });
 

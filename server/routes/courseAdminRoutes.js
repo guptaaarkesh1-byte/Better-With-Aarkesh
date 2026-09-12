@@ -202,8 +202,8 @@ router.put('/:id', protect, admin, async (req, res) => {
     }
 
     const fields = [
-      'title', 'slug', 'subtitle', 'description', 'thumbnail',
-      'price', 'comparePrice', 'duration', 'level', 'instructor',
+      'title', 'slug', 'subtitle', 'invoiceItemTitle', 'invoiceItemSubtitle', 'bonusItemTitle', 'bonusItemSubtitle', 'description', 'thumbnail',
+      'price', 'comparePrice', 'gstRate', 'isGstIncluded', 'duration', 'level', 'instructor',
       'benefits', 'whatYouWillLearn', 'requirements', 'status',
       'seoTitle', 'seoDescription', 'order',
     ];
@@ -472,6 +472,7 @@ router.put('/lessons/:lessonId', protect, admin, async (req, res) => {
 
     const fields = [
       'title', 'description', 'duration', 'isPublished', 'isFreePreview',
+      'videoSourceType', 'youtubeUrl', 'youtubeVideoId',
       'videoStatus', 'muxUploadId', 'muxAssetId', 'muxPlaybackId',
       'muxDuration', 'muxResolution', 'muxAspectRatio', 'videoReadyAt',
       'errorMessage', 'resources'

@@ -194,3 +194,20 @@ body .ql-editor.ql-blank::before {
 .ql-snow .ql-picker-item:hover {
   color: #c79c6e !important;
 }
+
+/* Luxury Dark Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080808;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(199, 156, 110, 0.5);
+}
+

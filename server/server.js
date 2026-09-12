@@ -57,6 +57,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/footer-documents', footerDocumentRoutes);
 app.use('/api/footer-columns', footerColumnRoutes);
 app.use('/api/social-links', socialLinkRoutes);
+import commentRoutes from './routes/commentRoutes.js';
+app.use('/api/comments', commentRoutes);
 
 // Make uploads folder static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

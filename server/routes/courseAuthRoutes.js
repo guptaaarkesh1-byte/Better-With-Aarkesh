@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
 import CourseUser from '../models/CourseUser.js';
 import User from '../models/User.js';
+import CoursePurchase from '../models/CoursePurchase.js';
+import Course from '../models/Course.js';
 import Appointment from '../models/Appointment.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -316,7 +318,7 @@ router.get('/me', protectCourse, async (req, res) => {
   try {
     const courseUserObj = req.courseUser.toObject();
     
-    // Look up linked coaching user for free coaching session balance
+    // Look up linked coaching user for free coaching session balance and purchase history
     if (courseUserObj.email) {
       const email = courseUserObj.email.trim();
       const escapedEmail = email.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -331,6 +333,28 @@ router.get('/me', protectCourse, async (req, res) => {
       } else {
         courseUserObj.freeSessions = 0;
         courseUserObj.courseSessionsGranted = false;
+      }
+
+      // Fetch official purchase records for this student
+      const purchases = await CoursePurchase.find({
+        $or: [
+          { courseUserId: courseUserObj._id },
+          { studentEmail: emailRegex }
+        ]
+      }).populate('courseId').sort({ purchaseDate: -1, createdAt: -1 });
+
+      courseUserObj.purchases = purchases;
+      courseUserObj.latestPurchase = purchases[0] || null;
+
+      // Primary course pricing info
+      const primaryCourse = await Course.findOne().sort({ createdAt: 1 });
+      if (primaryCourse) {
+        courseUserObj.coursePricing = {
+          price: primaryCourse.price,
+          gstRate: primaryCourse.gstRate,
+          isGstIncluded: primaryCourse.isGstIncluded,
+          title: primaryCourse.title
+        };
       }
     }
     
@@ -420,16 +444,33 @@ router.post('/sync-coaching-account', protectCourse, async (req, res) => {
 // @access  Private (Admin)
 router.get('/admin/students', protect, admin, async (req, res) => {
   try {
-    const students = await CourseUser.find().select('-password').sort({ createdAt: -1 });
+    const [students, allPurchases, primaryCourse] = await Promise.all([
+      CourseUser.find().select('-password').sort({ createdAt: -1 }),
+      CoursePurchase.find().sort({ purchaseDate: -1, createdAt: -1 }),
+      Course.findOne().sort({ createdAt: 1 })
+    ]);
     
-    // Enrich each student with coaching account info and appointment records
+    // Enrich each student with coaching account info, appointments, and all purchase attempts
+    const studentEmailsSet = new Set();
     const enrichedStudents = await Promise.all(students.map(async (student) => {
-      const emailRegex = new RegExp(`^${student.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      studentEmailsSet.add((student.email || '').toLowerCase().trim());
+      const emailRegex = new RegExp(`^${(student.email || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
       
       const [coachingUser, appointments] = await Promise.all([
         User.findOne({ email: emailRegex }),
         Appointment.find({ email: emailRegex }).sort({ date: -1 })
       ]);
+
+      const studentPurchases = allPurchases.filter(p => 
+        (p.courseUserId && p.courseUserId.toString() === student._id.toString()) ||
+        (p.studentEmail && p.studentEmail.toLowerCase() === (student.email || '').toLowerCase().trim())
+      );
+
+      const paidPurchases = studentPurchases.filter(p => p.paymentStatus === 'Paid');
+      const failedPurchases = studentPurchases.filter(p => p.paymentStatus === 'Failed');
+      const latestPaid = paidPurchases[0] || null;
+      const latestFailed = failedPurchases[0] || null;
+      const totalPaidAmount = paidPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
 
       const freeSessionsClaimed = appointments.filter(a => a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION').length;
       const totalAppointments = appointments.length;
@@ -446,6 +487,25 @@ router.get('/admin/students', protect, admin, async (req, res) => {
         freeSessionsRemaining: coachingUser ? (coachingUser.freeSessions ?? (student.isPurchased ? 3 - freeSessionsClaimed : 0)) : (student.isPurchased ? 3 : 0),
         freeSessionsClaimed,
         totalAppointments,
+        purchases: studentPurchases.map(p => ({
+          _id: p._id,
+          amount: p.amount,
+          currency: p.currency || 'INR',
+          paymentStatus: p.paymentStatus,
+          enrollmentStatus: p.enrollmentStatus,
+          transactionId: p.transactionId,
+          razorpayOrderId: p.razorpayOrderId,
+          razorpayPaymentId: p.razorpayPaymentId,
+          failureReason: p.failureReason || (p.paymentStatus === 'Failed' ? 'Bank transaction declined / cancelled' : ''),
+          errorCode: p.errorCode || '',
+          purchaseDate: p.purchaseDate || p.createdAt
+        })),
+        paidPurchasesCount: paidPurchases.length,
+        failedPurchasesCount: failedPurchases.length,
+        hasFailedPayments: failedPurchases.length > 0,
+        latestPaid,
+        latestFailed,
+        revenue: student.isPurchased ? (totalPaidAmount || (primaryCourse?.price ? (primaryCourse.isGstIncluded ? primaryCourse.price : Math.round(primaryCourse.price * (1 + (primaryCourse.gstRate || 18) / 100))) : 11800)) : 0,
         appointments: appointments.map(app => ({
           _id: app._id,
           date: app.date,
@@ -458,10 +518,79 @@ router.get('/admin/students', protect, admin, async (req, res) => {
       };
     }));
 
+    // Find any purchases whose email is not registered as a CourseUser yet (e.g. guest failed checkout)
+    const orphanPurchases = allPurchases.filter(p => {
+      const email = (p.studentEmail || '').toLowerCase().trim();
+      return email && !studentEmailsSet.has(email);
+    });
+
+    // Group orphan purchases by email
+    const orphanByEmail = {};
+    orphanPurchases.forEach(p => {
+      const email = (p.studentEmail || '').toLowerCase().trim();
+      if (!orphanByEmail[email]) orphanByEmail[email] = [];
+      orphanByEmail[email].push(p);
+    });
+
+    Object.entries(orphanByEmail).forEach(([email, purchases]) => {
+      const paidPurchases = purchases.filter(p => p.paymentStatus === 'Paid');
+      const failedPurchases = purchases.filter(p => p.paymentStatus === 'Failed');
+      const latestPaid = paidPurchases[0] || null;
+      const latestFailed = failedPurchases[0] || null;
+      const totalPaidAmount = paidPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      enrichedStudents.push({
+        _id: purchases[0]._id,
+        fullName: purchases[0].studentName || email.split('@')[0] || 'Guest Lead',
+        email: email,
+        phoneNumber: '',
+        isPurchased: paidPurchases.length > 0,
+        createdAt: purchases[0].createdAt || purchases[0].purchaseDate || new Date(),
+        updatedAt: purchases[0].updatedAt || new Date(),
+        coachingRegistered: false,
+        freeSessionsRemaining: paidPurchases.length > 0 ? 3 : 0,
+        freeSessionsClaimed: 0,
+        totalAppointments: 0,
+        purchases: purchases.map(p => ({
+          _id: p._id,
+          amount: p.amount,
+          currency: p.currency || 'INR',
+          paymentStatus: p.paymentStatus,
+          enrollmentStatus: p.enrollmentStatus,
+          transactionId: p.transactionId,
+          razorpayOrderId: p.razorpayOrderId,
+          razorpayPaymentId: p.razorpayPaymentId,
+          failureReason: p.failureReason || (p.paymentStatus === 'Failed' ? 'Bank transaction declined / cancelled' : ''),
+          errorCode: p.errorCode || '',
+          purchaseDate: p.purchaseDate || p.createdAt
+        })),
+        paidPurchasesCount: paidPurchases.length,
+        failedPurchasesCount: failedPurchases.length,
+        hasFailedPayments: failedPurchases.length > 0,
+        latestPaid,
+        latestFailed,
+        revenue: totalPaidAmount,
+        appointments: []
+      });
+    });
+
     res.json(enrichedStudents);
   } catch (error) {
     console.error('Fetch course students error:', error);
     res.status(500).json({ message: 'Server error fetching course students' });
+  }
+});
+
+// @route   GET /api/course-auth/admin/purchases
+// @desc    Get all transactions (Paid & Failed) sorted newest first (Admin only)
+// @access  Private (Admin)
+router.get('/admin/purchases', protect, admin, async (req, res) => {
+  try {
+    const purchases = await CoursePurchase.find().sort({ purchaseDate: -1, createdAt: -1 });
+    res.json(purchases);
+  } catch (error) {
+    console.error('Fetch all purchases error:', error);
+    res.status(500).json({ message: 'Server error fetching purchases' });
   }
 });
 
@@ -470,21 +599,33 @@ router.get('/admin/students', protect, admin, async (req, res) => {
 // @access  Private (Admin)
 router.get('/admin/stats', protect, admin, async (req, res) => {
   try {
-    const [totalRegistered, totalPurchased, freeSessionAppointments] = await Promise.all([
+    const [totalRegistered, totalPurchased, freeSessionAppointments, totalFailedPurchases, primaryCourse] = await Promise.all([
       CourseUser.countDocuments(),
       CourseUser.countDocuments({ isPurchased: true }),
-      Appointment.countDocuments({ $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }] })
+      Appointment.countDocuments({ $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }] }),
+      CoursePurchase.countDocuments({ paymentStatus: 'Failed' }),
+      Course.findOne().sort({ createdAt: 1 })
     ]);
 
-    const coursePrice = 15000;
-    const totalRevenue = totalPurchased * coursePrice;
+    const basePrice = primaryCourse?.price || 10000;
+    const gstRate = primaryCourse?.gstRate !== undefined ? primaryCourse.gstRate : 18;
+    const isGstIncluded = Boolean(primaryCourse?.isGstIncluded);
+    const finalAmount = isGstIncluded ? basePrice : Math.round(basePrice * (1 + gstRate / 100));
+
+    // Calculate actual revenue from paid purchases if available
+    const paidAggregation = await CoursePurchase.aggregate([
+      { $match: { paymentStatus: 'Paid' } },
+      { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }
+    ]);
+    const actualRevenue = paidAggregation.length > 0 ? paidAggregation[0].totalRevenue : (totalPurchased * finalAmount);
 
     res.json({
       totalRegistered,
       totalPurchased,
-      totalRevenue,
+      totalRevenue: actualRevenue,
       freeSessionsClaimed: freeSessionAppointments,
-      coursePrice
+      totalFailedPurchases,
+      coursePrice: finalAmount
     });
   } catch (error) {
     console.error('Fetch course stats error:', error);

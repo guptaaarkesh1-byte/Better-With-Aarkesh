@@ -18,15 +18,22 @@ import {
   Sparkle,
   Clock,
   CalendarPlus,
-  VideoCamera
+  VideoCamera,
+  Receipt,
+  Printer,
+  Copy,
+  Check,
+  FileText,
+  DownloadSimple
 } from '@phosphor-icons/react';
 
 export default function CourseProfile() {
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('PROFILE'); // 'PROFILE' | 'ENROLLMENT' | 'SECURITY'
+  const [activeTab, setActiveTab] = useState('PROFILE'); // 'PROFILE' | 'ENROLLMENT' | 'BILLING' | 'SECURITY'
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [copiedTxn, setCopiedTxn] = useState(false);
 
   // Edit Profile Form State
   const [fullName, setFullName] = useState('');
@@ -388,10 +395,10 @@ export default function CourseProfile() {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+            <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('PROFILE')}
-                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all ${
+                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all whitespace-nowrap ${
                   activeTab === 'PROFILE'
                     ? 'bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30 shadow-[0_0_20px_rgba(199,156,110,0.1)]'
                     : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
@@ -401,7 +408,7 @@ export default function CourseProfile() {
               </button>
               <button
                 onClick={() => setActiveTab('ENROLLMENT')}
-                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all ${
+                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all whitespace-nowrap ${
                   activeTab === 'ENROLLMENT'
                     ? 'bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30 shadow-[0_0_20px_rgba(199,156,110,0.1)]'
                     : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
@@ -410,8 +417,18 @@ export default function CourseProfile() {
                 <Crown size={16} /> Course & Access
               </button>
               <button
+                onClick={() => setActiveTab('BILLING')}
+                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all whitespace-nowrap ${
+                  activeTab === 'BILLING'
+                    ? 'bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30 shadow-[0_0_20px_rgba(199,156,110,0.1)]'
+                    : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <Receipt size={16} /> Invoices & Billing
+              </button>
+              <button
                 onClick={() => setActiveTab('SECURITY')}
-                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all ${
+                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs uppercase tracking-widest font-medium transition-all whitespace-nowrap ${
                   activeTab === 'SECURITY'
                     ? 'bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30 shadow-[0_0_20px_rgba(199,156,110,0.1)]'
                     : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
@@ -651,6 +668,34 @@ export default function CourseProfile() {
                         </div>
                       </div>
                     </div>
+
+                    {/* 3. Quick Bill / Tax Receipt Link Card */}
+                    <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 shadow-xl w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-[#c79c6e]/10 border border-[#c79c6e]/25 flex items-center justify-center text-[#c79c6e] shrink-0">
+                          <Receipt size={22} weight="fill" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-white font-semibold text-sm">Course Tax Invoice &amp; Payment Receipt</h4>
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-bold font-mono">PAID</span>
+                          </div>
+                          <p className="text-xs text-white/50 mt-0.5">
+                            Transaction ID: <span className="font-mono text-white/80">{user?.latestPurchase?.transactionId || user?.latestPurchase?.razorpayPaymentId || 'pay_verified'}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('BILLING')}
+                        className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-[#c79c6e] hover:text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <FileText size={15} />
+                        <span>View Full Invoice &amp; Bill</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
                   </>
                 ) : (
                   /* Course Purchase Card for unpurchased users */
@@ -701,7 +746,252 @@ export default function CourseProfile() {
               </div>
             )}
 
-            {/* TAB 3: Security & Password */}
+            {/* TAB 3: Invoices & Billing */}
+            {activeTab === 'BILLING' && (
+              <div className="w-full space-y-6">
+                {isPurchased ? (
+                  <div className="space-y-6">
+                    {/* Header with Print CTA */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10 print:hidden">
+                      <div>
+                        <h2 className="font-serif text-2xl text-white">Course Tax Invoice &amp; Receipts</h2>
+                        <p className="text-xs text-white/50 mt-1">
+                          Official tax invoice and Razorpay transaction receipt for your lifetime enrollment.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="self-start sm:self-auto px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Printer size={16} />
+                        <span>Print / Save PDF</span>
+                      </button>
+                    </div>
+
+                    {/* Official Tax Invoice Card */}
+                    {(() => {
+                      const latest = user?.latestPurchase || {};
+                      const txnId = latest.transactionId || latest.razorpayPaymentId || 'pay_verified_success';
+                      const orderId = latest.razorpayOrderId || 'order_verified';
+                      const finalAmount = latest.amount || user?.coursePricing?.price || 11800;
+                      const gstRate = user?.coursePricing?.gstRate !== undefined ? user.coursePricing.gstRate : 18;
+                      const isGstIncluded = Boolean(user?.coursePricing?.isGstIncluded);
+                      const basePrice = isGstIncluded ? finalAmount : Math.round(finalAmount / (1 + (gstRate / 100)));
+                      const gstAmount = finalAmount - basePrice;
+                      
+                      const purchaseDate = latest.purchaseDate ? new Date(latest.purchaseDate) : (latest.createdAt ? new Date(latest.createdAt) : new Date());
+                      const formattedDate = purchaseDate.toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      });
+                      const invoiceNumber = `INV-${purchaseDate.getFullYear()}${String(purchaseDate.getMonth() + 1).padStart(2, '0')}-${txnId.slice(-6).toUpperCase()}`;
+
+                      const invoiceHeading = latest.invoiceItemTitle || user?.coursePricing?.invoiceItemTitle || (latest.courseTitle ? `${latest.courseTitle} — Masterclass Lifetime Access` : 'The Presence Protocol™ — Masterclass Lifetime Access');
+                      const invoiceSubtitle = latest.invoiceItemSubtitle || user?.coursePricing?.invoiceItemSubtitle || 'Complete modular video lessons, action blueprints & community';
+                      const bonusHeading = latest.bonusItemTitle || user?.coursePricing?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh';
+                      const bonusSubtitle = latest.bonusItemSubtitle || user?.coursePricing?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus';
+
+                      const handleCopyTxn = () => {
+                        navigator.clipboard.writeText(txnId);
+                        setCopiedTxn(true);
+                        setTimeout(() => setCopiedTxn(false), 2500);
+                      };
+
+                      return (
+                        <div 
+                          id="profile-invoice-card"
+                          className="rounded-3xl border border-[#c79c6e]/30 bg-[#0a0a0a]/95 backdrop-blur-2xl p-6 sm:p-10 shadow-2xl relative overflow-hidden print:bg-white print:text-black print:border-gray-300 print:shadow-none"
+                        >
+                          <div className="absolute top-0 right-0 w-36 h-36 bg-[#c79c6e]/10 blur-3xl pointer-events-none print:hidden" />
+
+                          {/* Invoice Header */}
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pb-6 border-b border-white/10 print:border-gray-300">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-serif text-xl sm:text-2xl text-white font-bold tracking-tight print:text-black">
+                                  Better With Aarkesh
+                                </span>
+                                <span className="px-2 py-0.5 rounded bg-[#c79c6e]/20 text-[#c79c6e] text-[10px] font-mono font-bold tracking-wider print:border print:border-gray-400">
+                                  OFFICIAL INVOICE
+                                </span>
+                              </div>
+                              <p className="font-sans text-xs text-white/50 print:text-gray-600">
+                                Executive Leadership, Communication &amp; Gravitas Coaching
+                              </p>
+                              <p className="font-sans text-[11px] text-white/40 print:text-gray-500 mt-0.5">
+                                support@betterwithaarkesh.com · https://betterwithaarkesh.com
+                              </p>
+                            </div>
+
+                            <div className="sm:text-right space-y-1 font-mono text-xs">
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold uppercase text-[10px] tracking-widest border border-emerald-500/30 print:text-emerald-700 print:border-emerald-600">
+                                <span>PAID IN FULL</span>
+                              </div>
+                              <div className="text-white/80 print:text-gray-800 pt-1">
+                                <span className="text-white/40 print:text-gray-500">Invoice: </span>
+                                <strong>{invoiceNumber}</strong>
+                              </div>
+                              <div className="text-white/60 print:text-gray-600 text-[11px]">
+                                {formattedDate}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Billed To & Payment Metadata */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-b border-white/10 print:border-gray-300 text-xs">
+                            <div className="space-y-1">
+                              <span className="text-[10px] uppercase tracking-widest text-[#c79c6e] font-semibold block print:text-[#916b3f]">
+                                BILLED TO (STUDENT)
+                              </span>
+                              <p className="font-semibold text-white text-sm print:text-black">{user?.fullName || 'Valued Student'}</p>
+                              <p className="text-white/60 print:text-gray-600">{user?.email}</p>
+                              {user?.phoneNumber && (
+                                <p className="text-white/40 print:text-gray-500 text-[11px]">+91 {user?.phoneNumber}</p>
+                              )}
+                              <p className="text-white/40 print:text-gray-500 text-[11px]">Enrollment: <span className="text-emerald-400 font-semibold print:text-emerald-700">Lifetime Active</span></p>
+                            </div>
+
+                            <div className="space-y-1 sm:text-right">
+                              <span className="text-[10px] uppercase tracking-widest text-[#c79c6e] font-semibold block print:text-[#916b3f]">
+                                PAYMENT TRANSACTION DETAILS
+                              </span>
+                              <div className="flex items-center sm:justify-end gap-1.5 font-mono text-white/90 print:text-black">
+                                <span>ID: {txnId}</span>
+                                <button
+                                  type="button"
+                                  onClick={handleCopyTxn}
+                                  className="p-1 text-white/50 hover:text-white transition-colors print:hidden"
+                                  title="Copy Transaction ID"
+                                >
+                                  {copiedTxn ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                                </button>
+                              </div>
+                              <p className="text-white/50 print:text-gray-600 font-mono text-[11px]">Order: {orderId}</p>
+                              <p className="text-white/40 print:text-gray-500 text-[11px]">Gateway: Razorpay 256-bit Secure</p>
+                            </div>
+                          </div>
+
+                          {/* Itemized Table */}
+                          <div className="py-6 border-b border-white/10 print:border-gray-300">
+                            <table className="w-full text-left text-xs">
+                              <thead>
+                                <tr className="border-b border-white/10 print:border-gray-300 text-[10px] uppercase tracking-widest text-white/40 print:text-gray-500">
+                                  <th className="pb-3 font-semibold">Description</th>
+                                  <th className="pb-3 text-center font-semibold">Qty</th>
+                                  <th className="pb-3 text-right font-semibold">Amount (INR)</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/5 print:divide-gray-200">
+                                <tr>
+                                  <td className="py-3 pr-4">
+                                    <span className="font-semibold text-white block print:text-black">
+                                      {invoiceHeading}
+                                    </span>
+                                    <span className="text-[11px] text-white/50 print:text-gray-500 block">
+                                      {invoiceSubtitle}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 text-center text-white/70 print:text-gray-700 font-mono">1</td>
+                                  <td className="py-3 text-right font-mono text-white print:text-black">
+                                    ₹{basePrice.toLocaleString('en-IN')}
+                                  </td>
+                                </tr>
+
+                                <tr>
+                                  <td className="py-2.5 pr-4">
+                                    <span className="text-white/80 print:text-gray-800">
+                                      Goods &amp; Services Tax (GST @ {gstRate}%)
+                                    </span>
+                                    {isGstIncluded && (
+                                      <span className="text-[10px] text-white/40 print:text-gray-500 ml-1.5">(Inclusive)</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2.5 text-center text-white/50 print:text-gray-500 font-mono">-</td>
+                                  <td className="py-2.5 text-right font-mono text-white/90 print:text-black">
+                                    ₹{gstAmount.toLocaleString('en-IN')}
+                                  </td>
+                                </tr>
+
+                                {bonusHeading && (
+                                  <tr>
+                                    <td className="py-2.5 pr-4">
+                                      <span className="text-emerald-400 font-semibold print:text-emerald-700 flex items-center gap-1.5">
+                                        <Sparkle size={13} weight="fill" />
+                                        {bonusHeading}
+                                      </span>
+                                      {bonusSubtitle && (
+                                        <span className="text-[11px] text-white/40 print:text-gray-500 block">
+                                          {bonusSubtitle}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="py-2.5 text-center text-emerald-400 print:text-emerald-700 font-mono">3</td>
+                                    <td className="py-2.5 text-right font-mono font-bold text-emerald-400 print:text-emerald-700">
+                                      FREE (₹0)
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Total Calculations */}
+                          <div className="pt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div className="text-xs text-white/50 print:text-gray-600 max-w-sm">
+                              <p>
+                                Official tax invoice and proof of enrollment. All sales are authenticated via Razorpay.
+                              </p>
+                            </div>
+
+                            <div className="w-full sm:w-auto space-y-1.5 sm:text-right font-mono text-xs">
+                              <div className="flex justify-between sm:justify-end gap-6 text-white/70 print:text-gray-700">
+                                <span>Subtotal:</span>
+                                <span>₹{basePrice.toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between sm:justify-end gap-6 text-white/70 print:text-gray-700">
+                                <span>GST ({gstRate}%):</span>
+                                <span>₹{gstAmount.toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="pt-2 border-t border-white/10 print:border-gray-300 flex justify-between sm:justify-end gap-6 text-base font-bold text-white print:text-black">
+                                <span>Total Paid:</span>
+                                <span className="text-[#c79c6e] font-bold text-lg print:text-black">
+                                  ₹{finalAmount.toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-8 text-center space-y-4">
+                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 mx-auto">
+                      <Receipt size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-medium text-white">No Purchase Invoices Found</h3>
+                      <p className="text-xs text-white/50 mt-1 max-w-md mx-auto">
+                        You have not purchased the course yet. Once you enroll, your official tax invoices and transaction IDs will appear here.
+                      </p>
+                    </div>
+                    <Link
+                      to="/course?checkout=true"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#c79c6e] text-black text-xs font-semibold uppercase tracking-wider hover:bg-[#d8ae80] transition-colors"
+                    >
+                      <Crown size={15} weight="fill" /> Unlock Course &amp; Enroll
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 4: Security & Password */}
             {activeTab === 'SECURITY' && (
               <div className="w-full">
                 <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 md:p-8 shadow-xl w-full">

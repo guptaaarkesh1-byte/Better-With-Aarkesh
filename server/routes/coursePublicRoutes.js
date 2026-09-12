@@ -7,6 +7,8 @@ import CoursePurchase from '../models/CoursePurchase.js';
 import CourseProgress from '../models/CourseProgress.js';
 import CourseUser from '../models/CourseUser.js';
 
+import { encryptVideoPayload } from '../utils/videoSecurity.js';
+
 const router = express.Router();
 
 // Helper to extract authenticated student user from Authorization header
@@ -47,19 +49,26 @@ router.get('/primary/curriculum', async (req, res) => {
       position: mod.position,
       lessons: lessons
         .filter((l) => l.moduleId.toString() === mod._id.toString())
-        .map((l) => ({
-          _id: l._id,
-          id: l._id,
-          title: l.title,
-          description: l.description,
-          duration: l.duration,
-          position: l.position,
-          isFreePreview: l.isFreePreview,
-          videoStatus: l.videoStatus,
-          muxPlaybackId: l.muxPlaybackId,
-          resources: l.resources || [],
-          isCompleted: false,
-        })),
+        .map((l) => {
+          const ytId = l.youtubeVideoId || '';
+          const encryptedToken = ytId ? encryptVideoPayload(ytId) : '';
+          return {
+            _id: l._id,
+            id: l._id,
+            title: l.title,
+            description: l.description,
+            duration: l.duration,
+            position: l.position,
+            isFreePreview: l.isFreePreview,
+            videoSourceType: l.videoSourceType || (l.muxPlaybackId ? 'mux' : 'youtube'),
+            videoToken: encryptedToken,
+            encryptedVideoToken: encryptedToken,
+            videoStatus: l.videoStatus,
+            muxPlaybackId: l.muxPlaybackId,
+            resources: l.resources || [],
+            isCompleted: false,
+          };
+        }),
     }));
 
     res.json({ course, modules: formattedModules });
@@ -172,19 +181,26 @@ router.get('/:courseId/learn', async (req, res) => {
       position: mod.position,
       lessons: lessons
         .filter((l) => l.moduleId.toString() === mod._id.toString())
-        .map((l) => ({
-          _id: l._id,
-          title: l.title,
-          description: l.description,
-          duration: l.duration,
-          position: l.position,
-          isFreePreview: l.isFreePreview,
-          videoStatus: l.videoStatus,
-          muxPlaybackId: l.muxPlaybackId,
-          resources: l.resources || [],
-          isCompleted: !!progressMap[l._id.toString()]?.isCompleted,
-          lastWatchedPosition: progressMap[l._id.toString()]?.lastWatchedPosition || 0,
-        })),
+        .map((l) => {
+          const ytId = l.youtubeVideoId || '';
+          const encryptedToken = ytId ? encryptVideoPayload(ytId) : '';
+          return {
+            _id: l._id,
+            title: l.title,
+            description: l.description,
+            duration: l.duration,
+            position: l.position,
+            isFreePreview: l.isFreePreview,
+            videoSourceType: l.videoSourceType || (l.muxPlaybackId ? 'mux' : 'youtube'),
+            videoToken: encryptedToken,
+            encryptedVideoToken: encryptedToken,
+            videoStatus: l.videoStatus,
+            muxPlaybackId: l.muxPlaybackId,
+            resources: l.resources || [],
+            isCompleted: !!progressMap[l._id.toString()]?.isCompleted,
+            lastWatchedPosition: progressMap[l._id.toString()]?.lastWatchedPosition || 0,
+          };
+        }),
     }));
 
     const totalLessons = lessons.length;

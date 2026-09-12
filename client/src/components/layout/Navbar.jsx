@@ -130,13 +130,13 @@ export default function Navbar() {
       />
       
       <Container className="relative flex items-center justify-between">
-        <div className="flex-shrink-0">
-          <Link to="/" className="font-serif text-2xl text-white tracking-tight relative z-10 flex items-center">
+        <div className="flex-shrink-0 pr-4">
+          <Link to="/" className="font-serif text-xl sm:text-2xl text-white tracking-tight relative z-10 flex items-center whitespace-nowrap">
             BetterWith<span className="text-white/60">Aarkesh</span>
           </Link>
         </div>
 
-        <nav className="hidden lg:flex flex-none items-center justify-center gap-6 lg:gap-8 xl:gap-10">
+        <nav className="hidden xl:flex flex-none items-center justify-center gap-6 2xl:gap-8">
           {NAV_LINKS.map((link) => {
             let active = false;
             if (location.pathname === '/') {
@@ -168,11 +168,11 @@ export default function Navbar() {
           })}
         </nav>
 
-          <div className="flex-shrink-0 flex items-center gap-4">
-            <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-4">
+          <div className="flex-shrink-0 flex items-center gap-2.5 sm:gap-4">
+            <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-2.5 lg:gap-3.5">
               <Button 
                 variant="outline" 
-                className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
+                className="text-[0.65rem] px-3.5 lg:px-5 py-2 lg:py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
                 onClick={() => navigate('/course')}
               >
                 <Play size={14} weight="light" /> COURSE
@@ -182,7 +182,7 @@ export default function Navbar() {
                   {!isLoggedIn ? (
                     <Button 
                       variant="outline" 
-                      className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
+                      className="text-[0.65rem] px-3.5 lg:px-5 py-2 lg:py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
                       onClick={() => setShowLoginModal(true)}
                     >
                       <User size={14} weight="light" /> LOGIN
@@ -191,7 +191,7 @@ export default function Navbar() {
                     <div className="relative group">
                       <Button 
                         variant="outline" 
-                        className="text-[0.65rem] px-5 py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
+                        className="text-[0.65rem] px-3.5 lg:px-5 py-2 lg:py-[0.65rem] flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505]"
                         onClick={() => {
                           navigate('/my-journey');
                         }}
@@ -244,8 +244,8 @@ export default function Navbar() {
                 className={cn(
                   "text-[0.65rem] transition-all flex items-center gap-2",
                   scrolled 
-                    ? "bg-[#c79c6e] text-black border-transparent px-6 py-[0.7rem] hover:bg-[#b0885e]" 
-                    : "border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black bg-transparent px-5 py-[0.65rem]"
+                    ? "bg-[#c79c6e] text-black border-transparent px-4 lg:px-6 py-2 lg:py-[0.7rem] hover:bg-[#b0885e]" 
+                    : "border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black bg-transparent px-3.5 lg:px-5 py-2 lg:py-[0.65rem]"
                 )}
                 onClick={() => navigate('/book')}
               >
@@ -253,44 +253,44 @@ export default function Navbar() {
               </Button>
             </div>
 
-            {/* Mobile Hamburger Icon */}
-            <div className="lg:hidden flex items-center">
+            {/* Mobile / Tablet Hamburger Icon */}
+            <div className="xl:hidden flex items-center">
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="text-white focus:outline-none p-1 transition-transform active:scale-95"
+                className="text-white focus:outline-none p-1 transition-transform active:scale-95 cursor-pointer"
                 aria-label="Toggle Menu"
               >
-                {mobileMenuOpen ? <X size={28} weight="light" /> : <List size={28} weight="light" />}
+                {mobileMenuOpen ? <X size={26} weight="light" /> : <List size={26} weight="light" />}
               </button>
             </div>
           </div>
       </Container>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile / Tablet Menu Overlay */}
       <div 
         className={cn(
-          "fixed inset-0 z-[-1] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center lg:hidden w-full h-[100dvh] px-6 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] origin-top",
+          "fixed inset-0 z-[-1] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center xl:hidden w-full h-[100dvh] px-6 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] origin-top",
           mobileMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-[10vh] scale-95 pointer-events-none"
         )}
       >
-        <nav className="flex flex-col items-center gap-8 w-full mt-12 overflow-y-auto pb-10">
+        <nav className="flex flex-col items-center gap-7 w-full mt-12 overflow-y-auto pb-10">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.label}
               to={link.href}
-              className="text-3xl font-serif text-white hover:text-accent-gold transition-colors"
+              className="text-2xl sm:text-3xl font-serif text-white hover:text-accent-gold transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
               {link.label}
             </Link>
           ))}
           
-          <div className="w-12 h-[1px] bg-accent-gold/30 my-4" />
+          <div className="w-12 h-[1px] bg-accent-gold/30 my-3" />
 
-          <div className="flex flex-col items-center gap-4 w-full max-w-xs">
+          <div className="flex flex-col items-center gap-3.5 w-full max-w-xs">
             <Button 
               variant="outline" 
-              className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center items-center gap-2"
+              className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-3.5 text-xs tracking-[0.15em] flex justify-center items-center gap-2"
               onClick={() => {
                 setMobileMenuOpen(false);
                 navigate('/course');
@@ -298,10 +298,21 @@ export default function Navbar() {
             >
               <Play size={16} weight="light" /> COURSE
             </Button>
-            {showMyJourney && (
+            {!isLoggedIn ? (
               <Button 
                 variant="outline" 
-                className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center items-center gap-2"
+                className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-3.5 text-xs tracking-[0.15em] flex justify-center items-center gap-2"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowLoginModal(true);
+                }}
+              >
+                <User size={16} weight="light" /> LOGIN
+              </Button>
+            ) : showMyJourney ? (
+              <Button 
+                variant="outline" 
+                className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-3.5 text-xs tracking-[0.15em] flex justify-center items-center gap-2"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   navigate('/my-journey');
@@ -309,10 +320,10 @@ export default function Navbar() {
               >
                 <BookmarkSimple size={16} weight="light" /> MY JOURNEY
               </Button>
-            )}
+            ) : null}
             <Button 
               variant="outline" 
-              className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-4 text-xs tracking-[0.15em] flex justify-center" 
+              className="w-full text-center border-[#c79c6e]/40 text-[#c79c6e] py-3.5 text-xs tracking-[0.15em] flex justify-center" 
               onClick={() => {
                 setMobileMenuOpen(false);
                 navigate('/book');

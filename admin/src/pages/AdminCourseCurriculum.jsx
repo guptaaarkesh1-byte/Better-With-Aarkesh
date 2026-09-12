@@ -13,6 +13,7 @@ import {
   Play, 
   ArrowUp, 
   ArrowDown, 
+  ArrowClockwise, 
   Copy, 
   Sparkle, 
   Eye, 
@@ -21,12 +22,32 @@ import {
   FileText, 
   Link as LinkIcon, 
   MagnifyingGlass, 
-  ArrowClockwise,
   FilmStrip,
-  Folders
+  Folders,
+  ChatCenteredDots,
+  PushPin,
+  PaperPlaneRight,
+  Question,
+  Heart,
+  CircleNotch,
+  Check,
+  YoutubeLogo,
+  ShieldCheck
 } from '@phosphor-icons/react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Helper to extract clean YouTube video ID from any format
+const extractYoutubeVideoId = (url) => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = trimmed.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : '';
+};
 
 export default function AdminCourseCurriculum() {
   const [courses, setCourses] = useState([]);
@@ -59,6 +80,11 @@ export default function AdminCourseCurriculum() {
     resources: [],
   });
 
+  // Video Source Provider: 'mux' | 'youtube'
+  const [videoSourceType, setVideoSourceType] = useState('youtube');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeVideoId, setYoutubeVideoId] = useState('');
+
   // Video Upload State for Mux
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -77,12 +103,217 @@ export default function AdminCourseCurriculum() {
   const [newResourceTitle, setNewResourceTitle] = useState('');
   const [newResourceUrl, setNewResourceUrl] = useState('');
 
+  // Video-Specific Comments Sidebar & Notifications State
+  const [activeCommentsLesson, setActiveCommentsLesson] = useState(null);
+  const [lessonComments, setLessonComments] = useState([]);
+  const [loadingLessonComments, setLoadingLessonComments] = useState(false);
+  const [sidebarReplyText, setSidebarReplyText] = useState('');
+  const [replyingToCommentId, setReplyingToCommentId] = useState(null);
+  const [isPostingSidebarReply, setIsPostingSidebarReply] = useState(false);
+  const [commentSummaries, setCommentSummaries] = useState({});
+
+  // Inline Lesson Title Quick-Editing State
+  const [inlineEditingLessonId, setInlineEditingLessonId] = useState(null);
+  const [inlineLessonTitle, setInlineLessonTitle] = useState('');
+  const [savingInlineLesson, setSavingInlineLesson] = useState(false);
+
   const fileInputRef = useRef(null);
   const pollingRef = useRef(null);
 
   const showNotification = (msg, type = 'success') => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 4000);
+  };
+
+  // Fetch comment summaries across lessons to power unread red dot indicators
+  const fetchCommentSummaries = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/comments/admin/lessons-summary`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.summary) {
+          setCommentSummaries(data.summary);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch comment summaries:', err);
+    }
+  };
+
+  // Helper to check if a lesson has unread comments
+  const hasUnreadComments = (lessonId) => {
+    if (!lessonId) return false;
+    const summary = commentSummaries[lessonId.toString()];
+    if (!summary || !summary.totalComments || summary.totalComments === 0) return false;
+
+    const lastSeen = localStorage.getItem(`admin_seen_comments_${lessonId}`);
+    if (!lastSeen) return true;
+
+    if (summary.latestCommentAt) {
+      return new Date(summary.latestCommentAt).getTime() > new Date(lastSeen).getTime();
+    }
+    return false;
+  };
+
+  // Open Video-Specific Comments Sidebar
+  const handleOpenCommentsSidebar = async (lesson, mod) => {
+    setActiveCommentsLesson({ ...lesson, moduleTitle: mod?.title || 'Course Section' });
+    setLoadingLessonComments(true);
+    setSidebarReplyText('');
+    setReplyingToCommentId(null);
+
+    // Mark as seen immediately so red dot indicator clears
+    localStorage.setItem(`admin_seen_comments_${lesson._id}`, new Date().toISOString());
+    setCommentSummaries(prev => ({
+      ...prev,
+      [lesson._id.toString()]: {
+        ...(prev[lesson._id.toString()] || {}),
+        lastSeenAt: new Date().toISOString(),
+      }
+    }));
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/comments/lesson/${lesson._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLessonComments(data.comments || []);
+      }
+    } catch (err) {
+      console.error('Failed to load lesson comments:', err);
+    } finally {
+      setLoadingLessonComments(false);
+    }
+  };
+
+  const handleCloseCommentsSidebar = () => {
+    setActiveCommentsLesson(null);
+    setLessonComments([]);
+    setSidebarReplyText('');
+    setReplyingToCommentId(null);
+  };
+
+  const handlePostSidebarReply = async (commentId) => {
+    const trimmed = sidebarReplyText.trim();
+    if (!trimmed) return;
+    setIsPostingSidebarReply(true);
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/comments/${commentId}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: trimmed }),
+      });
+
+      const newReply = await res.json();
+      if (res.ok) {
+        setLessonComments(prev =>
+          prev.map(c => {
+            if (c._id === commentId) {
+              return {
+                ...c,
+                isAnswered: true,
+                replies: [...(c.replies || []), newReply],
+                replyCount: (c.replyCount || 0) + 1,
+              };
+            }
+            return c;
+          })
+        );
+        setSidebarReplyText('');
+        setReplyingToCommentId(null);
+        showNotification('Instructor reply posted successfully');
+      } else {
+        alert(newReply.message || 'Failed to post reply');
+      }
+    } catch (err) {
+      console.error('Reply submit error:', err);
+      alert('Network error while posting reply');
+    } finally {
+      setIsPostingSidebarReply(false);
+    }
+  };
+
+  const handleTogglePinSidebar = async (commentId) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/comments/${commentId}/pin`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLessonComments(prev => {
+          const updated = prev.map(c => (c._id === commentId ? { ...c, isPinned: data.isPinned } : c));
+          return [...updated].sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+        });
+        showNotification(data.isPinned ? 'Comment pinned to top' : 'Comment unpinned');
+      } else {
+        showNotification(data.message || 'Failed to toggle pin state', 'error');
+      }
+    } catch (err) {
+      console.error('Error toggling pin:', err);
+      showNotification('Network error while toggling pin', 'error');
+    }
+  };
+
+  const handleToggleHideSidebar = async (commentId, isCurrentlyHidden) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const endpoint = isCurrentlyHidden ? 'restore' : 'hide';
+      const res = await fetch(`${API_URL}/api/comments/${commentId}/${endpoint}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLessonComments(prev =>
+          prev.map(c =>
+            c._id === commentId ? { ...c, status: isCurrentlyHidden ? 'active' : 'hidden' } : c
+          )
+        );
+        showNotification(isCurrentlyHidden ? 'Comment restored and visible to students' : 'Comment hidden from students');
+      } else {
+        showNotification(data.message || 'Failed to update visibility', 'error');
+      }
+    } catch (err) {
+      console.error('Error updating comment visibility:', err);
+      showNotification('Network error while updating visibility', 'error');
+    }
+  };
+
+  const handleDeleteSidebarComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setLessonComments(prev =>
+          prev
+            .filter(c => c._id !== commentId)
+            .map(c => ({
+              ...c,
+              replies: c.replies ? c.replies.filter(r => r._id !== commentId) : [],
+              replyCount: c.replies ? c.replies.filter(r => r._id !== commentId).length : (c.replyCount || 0)
+            }))
+        );
+        showNotification('Comment deleted successfully');
+      }
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+    }
   };
 
   // Fetch Courses & select or auto-create primary course
@@ -160,8 +391,14 @@ export default function AdminCourseCurriculum() {
 
   useEffect(() => {
     fetchCoursesAndCurriculum();
+    fetchCommentSummaries();
+
+    // Poll for new comments periodically
+    const commentsInterval = setInterval(fetchCommentSummaries, 20000);
+
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
+      clearInterval(commentsInterval);
     };
   }, []);
 
@@ -302,6 +539,10 @@ export default function AdminCourseCurriculum() {
 
     if (lesson) {
       setEditingLesson(lesson);
+      const isYt = lesson.videoSourceType === 'youtube' || (!lesson.muxPlaybackId && !!lesson.youtubeVideoId);
+      setVideoSourceType(isYt ? 'youtube' : 'mux');
+      setYoutubeUrl(lesson.youtubeUrl || (lesson.youtubeVideoId ? `https://youtu.be/${lesson.youtubeVideoId}` : ''));
+      setYoutubeVideoId(lesson.youtubeVideoId || '');
       setLessonForm({
         title: lesson.title,
         description: lesson.description || '',
@@ -310,7 +551,7 @@ export default function AdminCourseCurriculum() {
         isPublished: lesson.isPublished !== false,
         resources: lesson.resources || [],
       });
-      setVideoStatus(lesson.videoStatus || (lesson.muxPlaybackId ? 'ready' : 'none'));
+      setVideoStatus(lesson.videoStatus || (lesson.muxPlaybackId || lesson.youtubeVideoId ? 'ready' : 'none'));
       setVideoMetadata({
         playbackId: lesson.muxPlaybackId || '',
         assetId: lesson.muxAssetId || '',
@@ -325,6 +566,9 @@ export default function AdminCourseCurriculum() {
     } else {
       setEditingLesson(null);
       const lessonCount = mod.lessons?.length || 0;
+      setVideoSourceType('youtube');
+      setYoutubeUrl('');
+      setYoutubeVideoId('');
       setLessonForm({
         title: `Video ${lessonCount + 1}: `,
         description: '',
@@ -536,6 +780,11 @@ export default function AdminCourseCurriculum() {
     try {
       if (editingLesson) {
         // Update Lesson
+        const parsedYtId = videoSourceType === 'youtube' ? (extractYoutubeVideoId(youtubeUrl) || youtubeVideoId) : '';
+        const computedVideoStatus = videoSourceType === 'youtube'
+          ? (parsedYtId ? 'ready' : 'none')
+          : (videoStatus || editingLesson.videoStatus || 'none');
+
         const res = await fetch(`${API_URL}/api/admin/courses/lessons/${editingLesson._id}`, {
           method: 'PUT',
           headers: {
@@ -548,6 +797,10 @@ export default function AdminCourseCurriculum() {
             duration: lessonForm.duration || '00:00',
             isFreePreview: lessonForm.isFreePreview,
             isPublished: lessonForm.isPublished,
+            videoSourceType,
+            youtubeUrl: videoSourceType === 'youtube' ? youtubeUrl.trim() : '',
+            youtubeVideoId: parsedYtId,
+            videoStatus: computedVideoStatus,
             resources: lessonForm.resources,
           })
         });
@@ -559,6 +812,9 @@ export default function AdminCourseCurriculum() {
         }
       } else {
         // Create Lesson in Module
+        const parsedYtId = videoSourceType === 'youtube' ? (extractYoutubeVideoId(youtubeUrl) || youtubeVideoId) : '';
+        const computedVideoStatus = videoSourceType === 'youtube' && parsedYtId ? 'ready' : 'none';
+
         const res = await fetch(`${API_URL}/api/admin/courses/modules/${activeModuleForLesson._id}/lessons`, {
           method: 'POST',
           headers: {
@@ -569,15 +825,19 @@ export default function AdminCourseCurriculum() {
             title: lessonForm.title.trim(),
             description: lessonForm.description,
             isFreePreview: lessonForm.isFreePreview,
+            videoSourceType,
+            youtubeUrl: videoSourceType === 'youtube' ? youtubeUrl.trim() : '',
+            youtubeVideoId: parsedYtId,
+            videoStatus: computedVideoStatus,
+            duration: lessonForm.duration || '00:00'
           })
         });
 
         if (res.ok) {
           const created = await res.json();
-          showNotification('Video lesson created. You can now upload the video.');
+          showNotification('Video lesson saved successfully.');
           await fetchCourseDetails(selectedCourse._id);
-          // Keep open as editing to upload video
-          setEditingLesson(created);
+          handleCloseLessonDrawer();
         }
       }
     } catch (err) {
@@ -623,6 +883,63 @@ export default function AdminCourseCurriculum() {
     } catch (err) {
       console.error('Error duplicating lesson:', err);
       showNotification('Failed to duplicate lesson', 'error');
+    }
+  };
+
+  const handleStartInlineEditLesson = (lesson, e) => {
+    if (e) e.stopPropagation();
+    setInlineEditingLessonId(lesson._id);
+    setInlineLessonTitle(lesson.title || '');
+  };
+
+  const handleCancelInlineEditLesson = (e) => {
+    if (e) e.stopPropagation();
+    setInlineEditingLessonId(null);
+    setInlineLessonTitle('');
+  };
+
+  const handleSaveInlineLessonTitle = async (lessonId, e) => {
+    if (e) e.preventDefault();
+    const trimmed = inlineLessonTitle.trim();
+    if (!trimmed) {
+      showNotification('Video title cannot be empty', 'error');
+      return;
+    }
+
+    setSavingInlineLesson(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/admin/courses/lessons/${lessonId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title: trimmed }),
+      });
+
+      if (res.ok) {
+        const updatedLesson = await res.json();
+        setModules(prevModules =>
+          prevModules.map(mod => ({
+            ...mod,
+            lessons: (mod.lessons || []).map(l =>
+              l._id === lessonId ? { ...l, title: updatedLesson.title || trimmed } : l
+            ),
+          }))
+        );
+        setInlineEditingLessonId(null);
+        setInlineLessonTitle('');
+        showNotification('Video title updated successfully');
+      } else {
+        const errData = await res.json();
+        showNotification(errData.message || 'Failed to update video title', 'error');
+      }
+    } catch (err) {
+      console.error('Error updating video title inline:', err);
+      showNotification('Network error updating video title', 'error');
+    } finally {
+      setSavingInlineLesson(false);
     }
   };
 
@@ -739,7 +1056,7 @@ export default function AdminCourseCurriculum() {
       </div>
 
       {/* Stats Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-8">
         <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5">
           <span className="text-[0.68rem] font-sans uppercase tracking-widest text-white/40 block mb-1">Total Days / Sections</span>
           <span className="font-serif text-3xl text-white font-normal">{modules.length}</span>
@@ -749,15 +1066,8 @@ export default function AdminCourseCurriculum() {
           <span className="font-serif text-3xl text-[#c79c6e] font-normal">{totalLessonsCount}</span>
         </div>
         <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5">
-          <span className="text-[0.68rem] font-sans uppercase tracking-widest text-white/40 block mb-1">Mux Video Ready</span>
+          <span className="text-[0.68rem] font-sans uppercase tracking-widest text-white/40 block mb-1">Video Ready</span>
           <span className="font-serif text-3xl text-emerald-400 font-normal">{readyVideosCount}</span>
-        </div>
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5">
-          <span className="text-[0.68rem] font-sans uppercase tracking-widest text-white/40 block mb-1">Course Status</span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-medium mt-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Published Live
-          </span>
         </div>
       </div>
 
@@ -953,33 +1263,80 @@ export default function AdminCourseCurriculum() {
 
                               {/* Title & Info */}
                               <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <button
-                                    onClick={() => handleOpenLessonDrawer(mod, lesson)}
-                                    className="text-sm font-medium text-white hover:text-[#c79c6e] transition-colors truncate text-left group-hover:text-[#c79c6e]"
-                                    title="Click to edit video title & details"
+                                {inlineEditingLessonId === lesson._id ? (
+                                  <form
+                                    onSubmit={(e) => handleSaveInlineLessonTitle(lesson._id, e)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-2 py-0.5 flex-wrap"
                                   >
-                                    {lesson.title}
-                                  </button>
-                                  
-                                  {isCurrentUploading && (
-                                    <span className="px-2 py-0.5 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 text-[0.62rem] text-[#c79c6e] font-bold uppercase tracking-wider flex items-center gap-1 animate-pulse">
-                                      <UploadSimple size={11} weight="bold" /> Uploading ({uploadProgress}%)
-                                    </span>
-                                  )}
+                                    <input
+                                      type="text"
+                                      autoFocus
+                                      value={inlineLessonTitle}
+                                      onChange={(e) => setInlineLessonTitle(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Escape') handleCancelInlineEditLesson(e);
+                                      }}
+                                      disabled={savingInlineLesson}
+                                      placeholder="Enter video title..."
+                                      className="flex-1 min-w-[220px] max-w-md bg-black/90 border border-[#c79c6e] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#c79c6e]/50 font-medium"
+                                    />
+                                    <button
+                                      type="submit"
+                                      disabled={savingInlineLesson || !inlineLessonTitle.trim()}
+                                      className="px-3 py-1.5 rounded-lg bg-[#c79c6e] hover:bg-[#b0885e] text-black text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+                                      title="Save Title"
+                                    >
+                                      {savingInlineLesson ? (
+                                        <CircleNotch size={14} className="animate-spin" />
+                                      ) : (
+                                        <Check size={14} weight="bold" />
+                                      )}
+                                      <span>Save</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelInlineEditLesson}
+                                      disabled={savingInlineLesson}
+                                      className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs transition-colors flex items-center gap-1 cursor-pointer"
+                                      title="Cancel"
+                                    >
+                                      <X size={14} />
+                                      <span>Cancel</span>
+                                    </button>
+                                  </form>
+                                ) : (
+                                  <div className="flex items-center gap-2 flex-wrap group/title">
+                                    <button
+                                      onClick={() => handleOpenLessonDrawer(mod, lesson)}
+                                      className="text-sm font-medium text-white hover:text-[#c79c6e] transition-colors truncate text-left group-hover:text-[#c79c6e]"
+                                      title="Click to edit video title & details"
+                                    >
+                                      {lesson.title}
+                                    </button>
 
-                                  {isCurrentProcessing && (
-                                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[0.62rem] text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" /> Mux Encoding
-                                    </span>
-                                  )}
+                                    {/* Inline Pencil Edit Button */}
+                                    <button
+                                      onClick={(e) => handleStartInlineEditLesson(lesson, e)}
+                                      className="p-1 rounded bg-white/5 hover:bg-[#c79c6e]/20 text-white/40 hover:text-[#c79c6e] border border-transparent hover:border-[#c79c6e]/30 transition-all cursor-pointer"
+                                      title="Quick Edit Title"
+                                    >
+                                      <Pen size={12} />
+                                    </button>
+                                    
+                                    {isCurrentUploading && (
+                                      <span className="px-2 py-0.5 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 text-[0.62rem] text-[#c79c6e] font-bold uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                                        <UploadSimple size={11} weight="bold" /> Uploading ({uploadProgress}%)
+                                      </span>
+                                    )}
 
-                                  {lesson.isFreePreview && (
-                                    <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-[0.6rem] text-amber-300 font-semibold uppercase tracking-wider">
-                                      Free Preview
-                                    </span>
-                                  )}
-                                </div>
+                                    {isCurrentProcessing && (
+                                      <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[0.62rem] text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" /> Mux Encoding
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
 
                                 {/* Active Upload Progress Bar directly on the row */}
                                 {isCurrentUploading ? (
@@ -1017,10 +1374,15 @@ export default function AdminCourseCurriculum() {
                                       <span>{lesson.duration || '00:00'}</span>
                                     </div>
 
-                                    {/* Mux Status Pill */}
-                                    {isReady ? (
+                                    {/* Video Status Pill */}
+                                    {lesson.videoSourceType === 'youtube' || lesson.youtubeVideoId ? (
+                                      <span className="inline-flex items-center gap-1 text-red-400 text-[0.7rem] bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 font-medium">
+                                        <YoutubeLogo size={13} weight="fill" className="text-red-500" />
+                                        <span>YouTube {lesson.youtubeVideoId ? 'Linked' : 'Pending'}</span>
+                                      </span>
+                                    ) : isReady ? (
                                       <span className="inline-flex items-center gap-1 text-emerald-400 text-[0.7rem]">
-                                        <CheckCircle size={12} weight="fill" /> Mux Video Ready
+                                        <CheckCircle size={12} weight="fill" /> Mux Ready
                                       </span>
                                     ) : isErrored ? (
                                       <span className="inline-flex items-center gap-1 text-red-400 text-[0.7rem]">
@@ -1069,6 +1431,23 @@ export default function AdminCourseCurriculum() {
                                   <span>{isReady ? 'Replace Video' : 'Upload Video'}</span>
                                 </button>
                               )}
+
+                              {/* View Video Comments Button */}
+                              <button
+                                onClick={() => handleOpenCommentsSidebar(lesson, mod)}
+                                disabled={isCurrentUploading}
+                                className="relative px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 hover:bg-[#c79c6e]/20 text-[#c79c6e] border border-[#c79c6e]/30 hover:border-[#c79c6e]/60 transition-colors disabled:opacity-20 flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                                title="View Video Comments & Discussions"
+                              >
+                                <ChatCenteredDots size={15} weight="bold" />
+                                <span>Comments</span>
+                                {hasUnreadComments(lesson._id) && (
+                                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-[#0a0a0a]"></span>
+                                  </span>
+                                )}
+                              </button>
 
                               {/* Edit Video Heading & Description Button */}
                               <button
@@ -1201,14 +1580,17 @@ export default function AdminCourseCurriculum() {
             <form onSubmit={handleSaveLesson} className="p-6 md:p-8 space-y-6 flex-1">
               {/* Video Title */}
               <div>
-                <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Video Title</label>
+                <label className="block text-xs uppercase tracking-widest text-[#c79c6e] font-semibold mb-2 flex items-center gap-1.5">
+                  <Pen size={13} />
+                  <span>Video Title (Editable)</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={lessonForm.title}
                   onChange={(e) => setLessonForm(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="e.g. How Do You Turn On Your Confidence?"
-                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#c79c6e]/60 text-sm"
+                  className="w-full bg-black/60 border border-white/10 focus:border-[#c79c6e] rounded-xl px-4 py-3 text-white focus:outline-none text-sm transition-colors"
                 />
               </div>
 
@@ -1224,97 +1606,215 @@ export default function AdminCourseCurriculum() {
                 />
               </div>
 
-              {/* ── MUX DIRECT VIDEO UPLOAD SECTION ── */}
-              <div className="pt-2 pb-4 border-t border-b border-white/10">
-                <label className="block text-xs uppercase tracking-widest text-[#c79c6e] font-bold mb-3 flex items-center gap-2">
-                  <FilmStrip size={16} /> Mux Video Streaming
-                </label>
+              {/* ── VIDEO SOURCE PROVIDER SELECTION & UPLOAD SECTION ── */}
+              <div className="pt-2 pb-5 border-t border-b border-white/10 space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs uppercase tracking-widest text-[#c79c6e] font-bold flex items-center gap-2">
+                    <VideoCamera size={16} /> Video Source &amp; Provider
+                  </label>
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-mono">
+                    {videoSourceType === 'youtube' ? 'YouTube Unlisted' : 'Mux Direct'}
+                  </span>
+                </div>
 
-                {/* Upload Box */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  accept="video/*"
-                  className="hidden"
-                />
-
-                {videoStatus === 'ready' ? (
-                  /* Video Ready State */
-                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
-                        <CheckCircle size={18} weight="fill" />
-                        <span>✓ Video ready for streaming</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="text-xs text-[#c79c6e] hover:underline font-medium"
-                      >
-                        Replace Video
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-xs text-white/70 pt-2 border-t border-white/10 font-mono">
-                      <div>
-                        <span className="text-white/40 block text-[0.65rem] font-sans uppercase">Playback ID</span>
-                        <span className="truncate block">{videoMetadata.playbackId || editingLesson?.muxPlaybackId || 'Generated'}</span>
-                      </div>
-                      <div>
-                        <span className="text-white/40 block text-[0.65rem] font-sans uppercase">Duration</span>
-                        <span>{videoMetadata.duration || lessonForm.duration || 'Auto-detected'}</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : isUploading ? (
-                  /* Uploading Progress State */
-                  <div className="rounded-2xl border border-[#c79c6e]/40 bg-[#c79c6e]/5 p-6 text-center">
-                    <div className="w-8 h-8 border-2 border-[#c79c6e] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <h4 className="text-sm font-semibold text-white mb-1">Directly uploading to Mux...</h4>
-                    <p className="text-xs text-white/50 mb-4">{uploadProgress}% uploaded</p>
-
-                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-[#c79c6e] to-[#e5c59f] h-full transition-all duration-150 rounded-full"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : videoStatus === 'processing' ? (
-                  /* Mux Processing State */
-                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 text-center">
-                    <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <h4 className="text-sm font-semibold text-white mb-1">Mux is encoding video...</h4>
-                    <p className="text-xs text-white/50 max-w-sm mx-auto">
-                      Generating adaptive multi-bitrate streams (1080p, 720p, 480p). You can save and leave this page; it will complete automatically.
-                    </p>
-                  </div>
-                ) : (
-                  /* Default Drag & Drop Upload State */
-                  <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="rounded-2xl border-2 border-dashed border-white/15 hover:border-[#c79c6e]/60 bg-white/[0.02] hover:bg-white/[0.04] p-8 text-center cursor-pointer transition-all group"
+                {/* Provider Tab Buttons */}
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-black/60 border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setVideoSourceType('youtube')}
+                    className={`py-2.5 px-3 rounded-lg text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      videoSourceType === 'youtube'
+                        ? 'bg-[#c79c6e] text-black font-bold shadow-[0_0_15px_rgba(199,156,110,0.3)]'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`}
                   >
-                    <UploadSimple size={32} className="text-[#c79c6e] mx-auto mb-3 group-hover:scale-110 transition-transform" />
-                    <h4 className="text-sm font-semibold text-white mb-1">Upload lesson video</h4>
-                    <p className="text-xs text-white/50 mb-3">Drag & drop or Click to browse</p>
-                    <span className="inline-block px-2.5 py-1 rounded bg-white/5 text-[0.65rem] uppercase tracking-wider text-white/40">
-                      MP4, MOV, WebM, MKV up to 5GB
-                    </span>
+                    <YoutubeLogo size={16} weight="fill" className={videoSourceType === 'youtube' ? 'text-red-600' : 'text-red-400'} />
+                    <span>YouTube Video Link</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setVideoSourceType('mux')}
+                    className={`py-2.5 px-3 rounded-lg text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      videoSourceType === 'mux'
+                        ? 'bg-[#c79c6e] text-black font-bold shadow-[0_0_15px_rgba(199,156,110,0.3)]'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <FilmStrip size={16} />
+                    <span>Mux Direct Upload</span>
+                  </button>
+                </div>
+
+                {/* ════ YOUTUBE VIDEO LINK SECTION ════ */}
+                {videoSourceType === 'youtube' && (
+                  <div className="space-y-4 pt-1">
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-white/70 font-semibold mb-2 flex items-center justify-between">
+                        <span>Paste YouTube Video URL or Video ID</span>
+                        <span className="text-[10px] text-[#c79c6e] font-normal lowercase">unlisted or public link</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={youtubeUrl}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setYoutubeUrl(val);
+                            const parsedId = extractYoutubeVideoId(val);
+                            setYoutubeVideoId(parsedId);
+                          }}
+                          placeholder="e.g. https://youtu.be/dQw4w9WgXcQ or https://www.youtube.com/watch?v=..."
+                          className="w-full bg-black/60 border border-white/15 focus:border-[#c79c6e] rounded-xl pl-4 pr-24 py-3 text-white focus:outline-none text-xs font-mono transition-colors"
+                        />
+                        {youtubeUrl && (
+                          <button
+                            type="button"
+                            onClick={() => { setYoutubeUrl(''); setYoutubeVideoId(''); }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-[10px] uppercase font-semibold"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
+                        Tip: Create an <strong>Unlisted</strong> video on YouTube so it won't be searchable on public YouTube.
+                      </p>
+                    </div>
+
+                    {/* YouTube Video Live Preview */}
+                    {youtubeVideoId ? (
+                      <div className="space-y-3 rounded-2xl border border-[#c79c6e]/30 bg-black/80 p-4">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#c79c6e] font-semibold flex items-center gap-1.5">
+                            <CheckCircle size={15} weight="fill" className="text-emerald-400" />
+                            <span>YouTube Video Detected</span>
+                          </span>
+                          <span className="font-mono text-[11px] text-white/50 bg-white/5 px-2 py-0.5 rounded">
+                            ID: {youtubeVideoId}
+                          </span>
+                        </div>
+
+                        {/* 16:9 Responsive Embed Preview */}
+                        <div className="w-full aspect-video rounded-xl overflow-hidden border border-white/10 bg-black">
+                          <iframe
+                            src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`}
+                            title="YouTube Preview"
+                            className="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+
+                        {/* Security Notice */}
+                        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 flex items-start gap-2 leading-relaxed">
+                          <ShieldCheck size={18} weight="bold" className="shrink-0 text-emerald-400 mt-0.5" />
+                          <div>
+                            <strong>Protected Course Player:</strong> When students watch inside the course classroom, title clicks, share buttons, and YouTube channel links are automatically shielded to protect your course content.
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.01] text-center">
+                        <YoutubeLogo size={32} className="text-red-500/60 mx-auto mb-2" weight="fill" />
+                        <h5 className="text-xs font-semibold text-white/80">No YouTube URL Entered</h5>
+                        <p className="text-[11px] text-white/40 mt-1 max-w-xs mx-auto">
+                          Paste any unlisted or public YouTube video link above to attach it to this lesson.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {uploadError && (
-                  <div className="mt-3 p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
-                    <WarningCircle size={16} className="shrink-0" />
-                    <span>{uploadError}</span>
+                {/* ════ MUX DIRECT UPLOAD SECTION ════ */}
+                {videoSourceType === 'mux' && (
+                  <div className="space-y-4 pt-1">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      accept="video/*"
+                      className="hidden"
+                    />
+
+                    {videoStatus === 'ready' && editingLesson?.muxPlaybackId ? (
+                      /* Video Ready State */
+                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                            <CheckCircle size={18} weight="fill" />
+                            <span>✓ Mux video ready for streaming</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-xs text-[#c79c6e] hover:underline font-medium"
+                          >
+                            Replace Video
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-xs text-white/70 pt-2 border-t border-white/10 font-mono">
+                          <div>
+                            <span className="text-white/40 block text-[0.65rem] font-sans uppercase">Playback ID</span>
+                            <span className="truncate block">{videoMetadata.playbackId || editingLesson?.muxPlaybackId || 'Generated'}</span>
+                          </div>
+                          <div>
+                            <span className="text-white/40 block text-[0.65rem] font-sans uppercase">Duration</span>
+                            <span>{videoMetadata.duration || lessonForm.duration || 'Auto-detected'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : isUploading ? (
+                      /* Uploading Progress State */
+                      <div className="rounded-2xl border border-[#c79c6e]/40 bg-[#c79c6e]/5 p-6 text-center">
+                        <div className="w-8 h-8 border-2 border-[#c79c6e] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                        <h4 className="text-sm font-semibold text-white mb-1">Directly uploading to Mux...</h4>
+                        <p className="text-xs text-white/50 mb-4">{uploadProgress}% uploaded</p>
+
+                        <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-[#c79c6e] to-[#e5c59f] h-full transition-all duration-150 rounded-full"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    ) : videoStatus === 'processing' ? (
+                      /* Mux Processing State */
+                      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+                        <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                        <h4 className="text-sm font-semibold text-white mb-1">Mux is encoding video...</h4>
+                        <p className="text-xs text-white/50 max-w-sm mx-auto">
+                          Generating adaptive multi-bitrate streams. You can save and leave this page; it will complete automatically.
+                        </p>
+                      </div>
+                    ) : (
+                      /* Default Drag & Drop Upload State */
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="rounded-2xl border-2 border-dashed border-white/15 hover:border-[#c79c6e]/60 bg-white/[0.02] hover:bg-white/[0.04] p-8 text-center cursor-pointer transition-all group"
+                      >
+                        <UploadSimple size={32} className="text-[#c79c6e] mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                        <h4 className="text-sm font-semibold text-white mb-1">Upload lesson video to Mux</h4>
+                        <p className="text-xs text-white/50 mb-3">Drag &amp; drop or Click to browse</p>
+                        <span className="inline-block px-2.5 py-1 rounded bg-white/5 text-[0.65rem] uppercase tracking-wider text-white/40">
+                          MP4, MOV, WebM, MKV up to 5GB
+                        </span>
+                      </div>
+                    )}
+
+                    {uploadError && (
+                      <div className="mt-3 p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
+                        <WarningCircle size={16} className="shrink-0" />
+                        <span>{uploadError}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Auto Duration & Free Preview Toggle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Auto Duration Box */}
+              <div>
                 <div className="flex items-center justify-between p-3.5 rounded-xl bg-black/40 border border-white/10">
                   <div>
                     <span className="block text-xs font-semibold text-white">Video Duration</span>
@@ -1327,19 +1827,6 @@ export default function AdminCourseCurriculum() {
                   <span className="px-2.5 py-1 rounded bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-[#c79c6e] font-mono text-xs font-semibold">
                     {lessonForm.duration || '00:00'}
                   </span>
-                </div>
-
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-black/40 border border-white/10">
-                  <div>
-                    <span className="block text-xs font-semibold text-white">Free Preview</span>
-                    <span className="block text-[0.65rem] text-white/40">Visible to non-buyers</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={lessonForm.isFreePreview}
-                    onChange={(e) => setLessonForm(prev => ({ ...prev, isFreePreview: e.target.checked }))}
-                    className="w-4 h-4 accent-[#c79c6e] rounded cursor-pointer"
-                  />
                 </div>
               </div>
 
@@ -1362,6 +1849,226 @@ export default function AdminCourseCurriculum() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* VIDEO-SPECIFIC COMMENTS SIDEBAR DRAWER */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {activeCommentsLesson && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-[#0a0a0a] border-l border-white/10 h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+            {/* Sidebar Header */}
+            <div className="p-6 border-b border-white/10 bg-[#0e0e0e] flex items-start justify-between gap-4 sticky top-0 z-10">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] text-[10px] font-bold uppercase tracking-wider">
+                    {activeCommentsLesson.moduleTitle}
+                  </span>
+                  <span className="text-[11px] text-white/40">
+                    {activeCommentsLesson.duration || 'Video'}
+                  </span>
+                </div>
+                <h3 className="font-serif text-xl text-white font-normal truncate">
+                  {activeCommentsLesson.title}
+                </h3>
+                <p className="text-xs text-white/50 mt-1 flex items-center gap-1.5">
+                  <ChatCenteredDots size={14} className="text-[#c79c6e]" />
+                  <span>{lessonComments.length} {lessonComments.length === 1 ? 'Comment / Discussion' : 'Comments / Discussions'}</span>
+                </p>
+              </div>
+
+              <button
+                onClick={handleCloseCommentsSidebar}
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                title="Close Sidebar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Comments Feed Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {loadingLessonComments ? (
+                <div className="py-20 text-center text-white/40 flex flex-col items-center justify-center gap-3">
+                  <CircleNotch size={28} className="animate-spin text-[#c79c6e]" />
+                  <span className="text-xs font-mono">Loading video discussions...</span>
+                </div>
+              ) : lessonComments.length === 0 ? (
+                <div className="py-16 text-center rounded-2xl bg-white/[0.02] border border-white/5 p-6">
+                  <ChatCenteredDots size={36} className="text-white/20 mx-auto mb-2" />
+                  <h4 className="font-serif text-base text-white mb-1">No comments for this video yet</h4>
+                  <p className="text-xs text-white/40 max-w-xs mx-auto">
+                    When students watch this video and post questions or thoughts, they will appear right here.
+                  </p>
+                </div>
+              ) : (
+                lessonComments.map((comment) => {
+                  const isHidden = comment.status === 'hidden';
+                  const isReplying = replyingToCommentId === comment._id;
+
+                  return (
+                    <div
+                      key={comment._id}
+                      className={`p-4 md:p-5 rounded-2xl border transition-all ${
+                        comment.isPinned
+                          ? 'border-[#c79c6e]/50 bg-gradient-to-r from-[#17140e] to-[#0a0a0a]'
+                          : isHidden
+                          ? 'border-dashed border-rose-500/30 bg-black/40 opacity-75'
+                          : 'border-white/10 bg-[#0d0d0d]'
+                      }`}
+                    >
+                      {/* Comment Header */}
+                      <div className="flex items-start justify-between gap-3 mb-2.5">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-white">{comment.userName}</span>
+                            {comment.isPinned && (
+                              <span className="px-2 py-0.5 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 text-[#c79c6e] text-[9px] font-bold uppercase tracking-wider">
+                                PINNED
+                              </span>
+                            )}
+                            {isHidden && (
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[9px] font-bold uppercase tracking-wider">
+                                HIDDEN
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-white/40">
+                            {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}
+                          </span>
+                        </div>
+
+                        {/* Quick Moderation Actions */}
+                        <div className="flex items-center gap-1.5">
+                          {/* Pin / Unpin Button */}
+                          <button
+                            onClick={() => handleTogglePinSidebar(comment._id)}
+                            title={comment.isPinned ? 'Unpin from top' : 'Pin to top of video comments'}
+                            className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                              comment.isPinned
+                                ? 'bg-[#c79c6e]/25 text-[#c79c6e] border border-[#c79c6e]/50 shadow-[0_0_10px_rgba(199,156,110,0.25)]'
+                                : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+                            }`}
+                          >
+                            <PushPin size={14} weight={comment.isPinned ? 'fill' : 'regular'} />
+                          </button>
+
+                          {/* Hide / Unhide Button */}
+                          <button
+                            onClick={() => handleToggleHideSidebar(comment._id, isHidden)}
+                            title={isHidden ? 'Restore & show to students' : 'Hide from students'}
+                            className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                              isHidden
+                                ? 'bg-rose-500/25 text-rose-300 border border-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.2)]'
+                                : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+                            }`}
+                          >
+                            {isHidden ? <EyeSlash size={14} weight="fill" /> : <Eye size={14} />}
+                          </button>
+
+                          {/* Delete Button */}
+                          <button
+                            onClick={() => handleDeleteSidebarComment(comment._id)}
+                            title="Delete this comment"
+                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/25 hover:text-rose-200 text-xs transition-all cursor-pointer"
+                          >
+                            <Trash size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Comment Body */}
+                      <p className="text-white/85 text-xs md:text-sm leading-relaxed whitespace-pre-wrap mb-3 bg-black/40 p-3 rounded-xl border border-white/5">
+                        {comment.content}
+                      </p>
+
+                      {/* Replies */}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="space-y-2 mb-3 pl-3 border-l-2 border-[#c79c6e]/30">
+                          {comment.replies.map((reply) => {
+                            const isInstructor = reply.authorRole === 'instructor' || reply.authorBadge === 'COURSE INSTRUCTOR';
+                            return (
+                              <div
+                                key={reply._id}
+                                className={`p-2.5 rounded-xl border text-xs ${
+                                  isInstructor
+                                    ? 'bg-gradient-to-r from-[#17140e] to-[#0a0a0a] border-[#c79c6e]/40'
+                                    : 'bg-white/[0.02] border-white/5'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-semibold text-white">{reply.userName}</span>
+                                    {isInstructor && (
+                                      <span className="px-1.5 py-0.2 rounded bg-[#c79c6e]/20 border border-[#c79c6e]/40 text-[#c79c6e] text-[8px] font-bold uppercase">
+                                        INSTRUCTOR
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeleteSidebarComment(reply._id)}
+                                    className="text-rose-400/60 hover:text-rose-400"
+                                  >
+                                    <Trash size={11} />
+                                  </button>
+                                </div>
+                                <p className="text-white/80 whitespace-pre-wrap text-[11px]">{reply.content}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Inline Reply Form */}
+                      {isReplying ? (
+                        <div className="pt-2.5 border-t border-white/10 space-y-2">
+                          <textarea
+                            rows={2}
+                            value={sidebarReplyText}
+                            onChange={(e) => setSidebarReplyText(e.target.value)}
+                            placeholder={`Reply as Instructor to ${comment.userName}...`}
+                            className="w-full p-2.5 rounded-xl bg-black/60 border border-[#c79c6e]/40 text-white text-xs outline-none focus:border-[#c79c6e] resize-none"
+                            autoFocus
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                setReplyingToCommentId(null);
+                                setSidebarReplyText('');
+                              }}
+                              className="px-3 py-1 rounded text-xs text-white/50 hover:text-white"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              disabled={isPostingSidebarReply || !sidebarReplyText.trim()}
+                              onClick={() => handlePostSidebarReply(comment._id)}
+                              className="px-3.5 py-1 rounded-lg bg-[#c79c6e] text-black font-semibold text-xs uppercase flex items-center gap-1 hover:brightness-110 disabled:opacity-50"
+                            >
+                              {isPostingSidebarReply ? <CircleNotch size={12} className="animate-spin" /> : <PaperPlaneRight size={12} weight="fill" />}
+                              <span>REPLY</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setReplyingToCommentId(comment._id);
+                            setSidebarReplyText('');
+                          }}
+                          className="px-3 py-1 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 hover:bg-[#c79c6e]/20 text-[#c79c6e] text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1 transition-colors"
+                        >
+                          <PaperPlaneRight size={12} weight="fill" />
+                          <span>Reply as Instructor</span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       )}

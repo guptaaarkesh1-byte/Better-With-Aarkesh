@@ -18,6 +18,26 @@ const courseSchema = new mongoose.Schema({
     default: '',
     trim: true,
   },
+  invoiceItemTitle: {
+    type: String,
+    default: 'The Presence Protocol™ — Masterclass Lifetime Access',
+    trim: true,
+  },
+  invoiceItemSubtitle: {
+    type: String,
+    default: 'HD video frameworks, modular curriculum, worksheets & community',
+    trim: true,
+  },
+  bonusItemTitle: {
+    type: String,
+    default: '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
+    trim: true,
+  },
+  bonusItemSubtitle: {
+    type: String,
+    default: 'Valued at ₹15,000 — 100% Complimentary student bonus',
+    trim: true,
+  },
   description: {
     type: String,
     default: '',
@@ -33,7 +53,17 @@ const courseSchema = new mongoose.Schema({
   },
   comparePrice: {
     type: Number,
-    default: null,
+    default: 25000,
+  },
+  gstRate: {
+    type: Number,
+    default: 18,
+    min: 0,
+    max: 100,
+  },
+  isGstIncluded: {
+    type: Boolean,
+    default: false,
   },
   duration: {
     type: String,

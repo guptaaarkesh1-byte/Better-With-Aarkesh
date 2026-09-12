@@ -63,6 +63,12 @@ const coursePurchaseSchema = new mongoose.Schema({
     default: Date.now,
     index: true,
   },
+  failureReason: {
+    type: String,
+  },
+  errorCode: {
+    type: String,
+  },
 }, { timestamps: true });
 
 const CoursePurchase = mongoose.model('CoursePurchase', coursePurchaseSchema);
