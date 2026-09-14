@@ -107,21 +107,21 @@ export default function MyLibraryTab() {
   };
 
   return (
-    <div className="w-full h-full min-h-[400px] rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-8 md:p-12 flex flex-col animate-in fade-in duration-500 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_40px_rgba(199,156,110,0.1)]">
+    <div className="w-full h-full min-h-[400px] rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-4 sm:p-6 md:p-10 lg:p-12 flex flex-col animate-in fade-in duration-500 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_40px_rgba(199,156,110,0.1)]">
       <div className="absolute top-0 right-0 w-64 h-64 bg-[#c79c6e]/5 rounded-full blur-[100px] pointer-events-none" />
       {/* Header */}
-      <div className="mb-10">
-        <h2 className="font-serif text-3xl md:text-4xl text-white mb-3 tracking-tight">My Library</h2>
-        <p className="font-sans text-white/60 font-light">The Perspectives, videos and tools you chose to return to.</p>
+      <div className="mb-6 md:mb-10">
+        <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white mb-2 tracking-tight">My Library</h2>
+        <p className="font-sans text-white/60 font-light text-sm sm:text-base">The Perspectives, videos and tools you chose to return to.</p>
       </div>
 
       {/* Main Tabs */}
-      <div className="flex items-center gap-8 border-b border-white/10 mb-6">
+      <div className="flex items-center gap-4 sm:gap-8 border-b border-white/10 mb-4 sm:mb-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {mainTabs.map(tab => (
           <button
             key={tab}
             onClick={() => setMainTab(tab)}
-            className={`pb-4 font-sans text-xs uppercase tracking-[0.15em] font-medium transition-colors relative ${
+            className={`pb-3 sm:pb-4 font-sans text-[0.65rem] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.15em] font-medium transition-colors relative shrink-0 ${
               mainTab === tab ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white/80'
             }`}
           >
@@ -134,12 +134,12 @@ export default function MyLibraryTab() {
       </div>
 
       {/* Sub Tabs */}
-      <div className="flex items-center gap-6 mb-8">
+      <div className="flex items-center gap-3 sm:gap-6 mb-6 md:mb-8 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {subTabs.map(tab => (
           <button
             key={tab}
             onClick={() => setSubTab(tab)}
-            className={`font-sans text-[0.65rem] uppercase tracking-[0.15em] font-medium transition-colors ${
+            className={`font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.12em] sm:tracking-[0.15em] font-medium transition-colors shrink-0 ${
               subTab === tab ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white/80'
             }`}
           >
@@ -149,11 +149,11 @@ export default function MyLibraryTab() {
       </div>
 
       {/* List */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4">
         {mainTab === 'BOOKMARKED' && (
           <>
             {savedArticles.length === 0 ? (
-              <div className="text-white/40 font-sans text-sm py-10 border border-dashed border-white/10 rounded text-center">
+              <div className="text-white/40 font-sans text-xs sm:text-sm py-10 border border-dashed border-white/10 rounded text-center">
                 You haven't saved any articles yet.
               </div>
             ) : (
@@ -176,45 +176,45 @@ export default function MyLibraryTab() {
                 }
 
                 return (
-                  <div key={article._id} className="group/card w-full rounded-xl border border-white/5 bg-[#050505]/60 backdrop-blur-md p-6 flex flex-col hover:border-white/10 transition-all duration-500 ease-out">
+                  <div key={article._id} className="group/card w-full rounded-xl border border-white/5 bg-[#050505]/60 backdrop-blur-md p-4 sm:p-6 flex flex-col hover:border-white/10 transition-all duration-500 ease-out">
                     
                     {/* Main Visible Content */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                      <div className="flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
+                      <div className="flex flex-col gap-2 sm:gap-3">
                         <div className="flex items-center gap-2 text-white/40">
                           <BookmarkSimple size={14} weight="light" />
-                          <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
+                          <span className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
                         </div>
-                        <h3 className="font-serif text-xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white">{article.title}</h3>
+                        <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
                       </div>
 
-                      <div className="flex flex-col md:items-end md:text-right shrink-0 gap-1">
-                        <div className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-bold text-[#c79c6e] mb-1">
+                      <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1 pt-2 sm:pt-0 border-t border-white/5 sm:border-0">
+                        <div className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold text-[#c79c6e]">
                           {hasLegacyProgress && readPercentage === 0 ? 'IN PROGRESS' : `${readPercentage}% READ`}
                         </div>
-                        <span className="font-sans text-[0.7rem] text-white/80">{article.categoryTitle || 'Article'}</span>
-                        <span className="font-sans text-[0.6rem] text-white/40">Saved {dateSaved}</span>
+                        <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/80">{article.categoryTitle || 'Article'}</span>
+                        <span className="font-sans text-[0.55rem] sm:text-[0.6rem] text-white/40 hidden sm:block">Saved {dateSaved}</span>
                       </div>
                     </div>
 
-                    {/* Expandable Actions on Hover */}
-                    <div className="max-h-0 overflow-hidden opacity-0 group-hover/card:max-h-[150px] group-hover/card:opacity-100 group-hover/card:mt-6 transition-all duration-500 ease-in-out">
-                      <div className="flex flex-wrap items-center gap-3 border-t border-white/5 pt-6">
+                    {/* Actions: Always visible on mobile, expandable on desktop hover */}
+                    <div className="block md:max-h-0 md:overflow-hidden md:opacity-0 md:group-hover/card:max-h-[150px] md:group-hover/card:opacity-100 md:group-hover/card:mt-6 transition-all duration-500 ease-in-out mt-4 md:mt-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t border-white/5 pt-4 md:pt-6">
                         <button 
                           onClick={(e) => { e.stopPropagation(); navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`); }}
-                          className="px-5 py-2.5 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.65rem] uppercase tracking-[0.2em] transition-colors"
+                          className="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
                         >
                           CONTINUE
                         </button>
                         <button 
                           onClick={(e) => handleRemove(article._id, e)}
-                          className="px-5 py-2.5 rounded border border-white/5 text-white/40 hover:border-white/20 hover:text-white/80 font-sans text-[0.65rem] uppercase tracking-[0.2em] transition-colors"
+                          className="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-white/5 text-white/40 hover:border-white/20 hover:text-white/80 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
                         >
-                          REMOVE BOOKMARK
+                          REMOVE
                         </button>
                         <button 
                           onClick={(e) => handleComplete(article._id, e)}
-                          className="px-5 py-2.5 rounded border border-white/5 text-white/40 hover:border-white/20 hover:text-white/80 font-sans text-[0.65rem] uppercase tracking-[0.2em] transition-colors"
+                          className="w-full sm:w-auto px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-white/5 text-white/40 hover:border-white/20 hover:text-white/80 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
                         >
                           MARK COMPLETE
                         </button>
@@ -230,41 +230,41 @@ export default function MyLibraryTab() {
         {mainTab === 'COMPLETED' && (
           <>
             {completedArticles.length === 0 ? (
-              <div className="text-white/40 font-sans text-sm py-10 border border-dashed border-white/10 rounded text-center">
+              <div className="text-white/40 font-sans text-xs sm:text-sm py-10 border border-dashed border-white/10 rounded text-center">
                 You haven't completed any articles yet.
               </div>
             ) : (
               completedArticles.map(article => {
                 const dateCompleted = new Date(article.updatedAt || article.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
                 return (
-                  <div key={article._id} className="group/card w-full rounded-xl border border-white/5 bg-[#050505]/60 backdrop-blur-md p-6 flex flex-col hover:border-white/10 transition-all duration-500 ease-out">
+                  <div key={article._id} className="group/card w-full rounded-xl border border-white/5 bg-[#050505]/60 backdrop-blur-md p-4 sm:p-6 flex flex-col hover:border-white/10 transition-all duration-500 ease-out">
                     
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                      <div className="flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
+                      <div className="flex flex-col gap-2 sm:gap-3">
                         <div className="flex items-center gap-2 text-white/40">
                           <BookmarkSimple size={14} weight="light" />
-                          <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
+                          <span className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
                         </div>
-                        <h3 className="font-serif text-xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white">{article.title}</h3>
+                        <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
                       </div>
 
-                      <div className="flex flex-col md:text-right shrink-0">
-                        <span className="font-sans text-[0.7rem] text-white/80 mb-1">{article.categoryTitle || 'Article'}</span>
-                        <span className="font-sans text-[0.6rem] text-white/40">Completed {dateCompleted}</span>
+                      <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1 pt-2 sm:pt-0 border-t border-white/5 sm:border-0">
+                        <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/80">{article.categoryTitle || 'Article'}</span>
+                        <span className="font-sans text-[0.55rem] sm:text-[0.6rem] text-white/40">Completed {dateCompleted}</span>
                       </div>
                     </div>
 
-                    <div className="max-h-0 overflow-hidden opacity-0 group-hover/card:max-h-[150px] group-hover/card:opacity-100 group-hover/card:mt-6 transition-all duration-500 ease-in-out">
-                      <div className="flex flex-wrap items-center gap-3 border-t border-white/5 pt-6">
+                    <div className="block md:max-h-0 md:overflow-hidden md:opacity-0 md:group-hover/card:max-h-[150px] md:group-hover/card:opacity-100 md:group-hover/card:mt-6 transition-all duration-500 ease-in-out mt-4 md:mt-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t border-white/5 pt-4 md:pt-6">
                         <button 
                           onClick={(e) => { e.stopPropagation(); navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`); }}
-                          className="px-5 py-2.5 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.65rem] uppercase tracking-[0.2em] transition-colors"
+                          className="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
                         >
                           REVISIT
                         </button>
                         <button 
                           onClick={(e) => handleComplete(article._id, e)}
-                          className="px-5 py-2.5 rounded border border-white/5 text-white/40 hover:border-white/20 hover:text-white/80 font-sans text-[0.65rem] uppercase tracking-[0.2em] transition-colors"
+                          className="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-white/5 text-white/40 hover:border-white/20 hover:text-white/80 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
                         >
                           MARK INCOMPLETE
                         </button>

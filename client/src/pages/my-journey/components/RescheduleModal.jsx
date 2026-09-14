@@ -97,41 +97,41 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
       
       {/* Modal */}
-      <div className="relative bg-[#111] border border-white/10 rounded-2xl w-[80vw] max-w-[1200px] max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col" data-lenis-prevent="true">
-        <div className="sticky top-0 bg-[#111] border-b border-white/5 p-6 flex items-center justify-between z-10">
-          <h2 className="font-serif text-2xl text-white">Reschedule Session</h2>
-          <button onClick={onClose} className="p-2 text-white/50 hover:text-white transition-colors">
-            <X size={24} />
+      <div className="relative bg-[#111] border border-white/10 rounded-xl sm:rounded-2xl w-[95vw] sm:w-[90vw] md:w-[80vw] max-w-[1200px] max-h-[92vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col" data-lenis-prevent="true">
+        <div className="sticky top-0 bg-[#111] border-b border-white/5 p-4 sm:p-6 flex items-center justify-between z-10">
+          <h2 className="font-serif text-xl sm:text-2xl text-white">Reschedule Session</h2>
+          <button onClick={onClose} className="p-1.5 sm:p-2 text-white/50 hover:text-white transition-colors">
+            <X size={20} className="sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        <div className="p-6 md:p-8 flex flex-col gap-8">
-          <p className="text-white/60 text-sm">
+        <div className="p-4 sm:p-6 md:p-8 flex flex-col gap-6 sm:gap-8">
+          <p className="text-white/60 text-xs sm:text-sm">
             Please select a new date and time for your session. Your request will be sent to admin for approval.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
             {/* Calendar */}
-            <div className="flex flex-col gap-6">
-              <div className="flex items-center justify-between bg-black/40 border border-white/5 p-3 rounded-lg">
-                <button onClick={handlePrevMonth} className="p-1 text-white/50 hover:text-white"><CaretLeft size={20}/></button>
-                <div className="font-sans text-sm uppercase tracking-[0.2em] text-white">
+            <div className="flex flex-col gap-4 sm:gap-6">
+              <div className="flex items-center justify-between bg-black/40 border border-white/5 p-2.5 sm:p-3 rounded-lg">
+                <button onClick={handlePrevMonth} className="p-1 text-white/50 hover:text-white"><CaretLeft size={18} className="sm:w-5 sm:h-5"/></button>
+                <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.15em] sm:tracking-[0.2em] text-white font-medium">
                   {monthNames[currentMonth]} {currentYear}
                 </div>
-                <button onClick={handleNextMonth} className="p-1 text-white/50 hover:text-white"><CaretRight size={20}/></button>
+                <button onClick={handleNextMonth} className="p-1 text-white/50 hover:text-white"><CaretRight size={18} className="sm:w-5 sm:h-5"/></button>
               </div>
 
               <div className="grid grid-cols-7 gap-1">
                 {['S','M','T','W','T','F','S'].map((d, i) => (
-                  <div key={i} className="text-center font-sans text-xs text-white/30 py-2">{d}</div>
+                  <div key={i} className="text-center font-sans text-xs text-white/30 py-1.5 sm:py-2">{d}</div>
                 ))}
                 {Array.from({ length: startingDayOfWeek }).map((_, i) => (
-                  <div key={`empty-${i}`} className="p-2" />
+                  <div key={`empty-${i}`} className="p-1 sm:p-2" />
                 ))}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1;
@@ -145,9 +145,9 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                       disabled={isPast}
                       onClick={() => { setSelectedDate(dateStr); setSelectedTime(null); }}
                       className={`
-                        aspect-square flex items-center justify-center rounded-full font-sans text-sm transition-all
+                        aspect-square flex items-center justify-center rounded-full font-sans text-xs sm:text-sm transition-all
                         ${isPast ? 'text-white/20 cursor-not-allowed' : 'text-white hover:bg-white/10'}
-                        ${isSelected ? 'bg-[#c79c6e] text-black hover:bg-[#b98a56]' : ''}
+                        ${isSelected ? 'bg-[#c79c6e] text-black font-semibold hover:bg-[#b98a56]' : ''}
                       `}
                     >
                       {day}
@@ -158,28 +158,28 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
             </div>
 
             {/* Times */}
-            <div className="flex flex-col gap-6 border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-8">
+            <div className="flex flex-col gap-4 sm:gap-6 border-t md:border-t-0 md:border-l border-white/5 pt-4 sm:pt-6 md:pt-0 md:pl-8">
               <div className="flex items-center gap-2 text-white/40">
-                <CalendarBlank size={20} />
-                <span className="font-sans text-sm uppercase tracking-wider">
+                <CalendarBlank size={18} />
+                <span className="font-sans text-xs sm:text-sm uppercase tracking-wider">
                   {selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select a date'}
                 </span>
               </div>
 
               {loadingSlots ? (
-                <div className="flex-1 flex items-center justify-center">
+                <div className="flex-1 flex items-center justify-center py-6">
                   <div className="w-5 h-5 border-2 border-white/20 border-t-[#c79c6e] rounded-full animate-spin"></div>
                 </div>
               ) : selectedDate && times.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar" data-lenis-prevent="true">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 max-h-[200px] sm:max-h-[250px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar" data-lenis-prevent="true">
                   {times.map((time, i) => (
                     <button
                       key={i}
                       onClick={() => setSelectedTime(time)}
                       className={`
-                        py-3 px-2 text-center rounded border transition-all font-sans text-sm
+                        py-2.5 sm:py-3 px-2 text-center rounded border transition-all font-sans text-xs sm:text-sm
                         ${selectedTime === time 
-                          ? 'border-[#c79c6e] bg-[#c79c6e]/10 text-[#c79c6e]' 
+                          ? 'border-[#c79c6e] bg-[#c79c6e]/10 text-[#c79c6e] font-semibold' 
                           : 'border-white/10 text-white hover:border-white/30 hover:bg-white/5'
                         }
                       `}
@@ -189,21 +189,21 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                   ))}
                 </div>
               ) : selectedDate ? (
-                <div className="flex-1 flex items-center justify-center text-white/40 text-sm text-center">
+                <div className="flex-1 flex items-center justify-center text-white/40 text-xs sm:text-sm text-center py-6">
                   No slots available for this date.
                 </div>
               ) : (
-                <div className="flex-1 flex items-center justify-center text-white/20 text-sm text-center">
+                <div className="flex-1 flex items-center justify-center text-white/20 text-xs sm:text-sm text-center py-6">
                   Available times will appear here.
                 </div>
               )}
-              <div className="flex flex-col gap-2 pt-4 mt-auto">
-                <label htmlFor="reason" className="text-white/60 text-sm">Reason for rescheduling (Optional)</label>
+              <div className="flex flex-col gap-1.5 sm:gap-2 pt-2 sm:pt-4 mt-auto">
+                <label htmlFor="reason" className="text-white/60 text-xs sm:text-sm">Reason for rescheduling (Optional)</label>
                 <textarea
                   id="reason"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="w-full h-24 bg-[#050505] border border-white/10 rounded-lg p-3 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#c79c6e]/50 transition-colors resize-none custom-scrollbar"
+                  className="w-full h-20 sm:h-24 bg-[#050505] border border-white/10 rounded-lg p-2.5 sm:p-3 text-white placeholder-white/30 text-xs sm:text-sm focus:outline-none focus:border-[#c79c6e]/50 transition-colors resize-none custom-scrollbar"
                   placeholder="E.g., I have a sudden work conflict..."
                 />
               </div>
@@ -211,11 +211,11 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
           </div>
         </div>
 
-        <div className="p-6 border-t border-white/5 bg-black/20 flex justify-end">
+        <div className="p-4 sm:p-6 border-t border-white/5 bg-black/20 flex justify-end">
           <button 
             disabled={!selectedDate || !selectedTime || submitting}
             onClick={handleSubmit}
-            className="px-8 py-3 bg-[#c79c6e] hover:bg-[#b98a56] text-black font-sans text-xs uppercase tracking-[0.2em] font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-[#c79c6e] hover:bg-[#b98a56] text-black font-sans text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center"
           >
             {submitting ? 'SUBMITTING...' : 'REQUEST RESCHEDULE'}
           </button>

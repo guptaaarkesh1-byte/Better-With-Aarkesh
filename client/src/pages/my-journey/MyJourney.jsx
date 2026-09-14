@@ -2,7 +2,6 @@ import React from 'react';
 import bgImage from '../../assets/images/empty_library_bg.png';
 
 import OverviewSection from './components/OverviewSection';
-import ContinueSection from './components/ContinueSection';
 import PreparationSection from './components/PreparationSection';
 import CompletedSessionsSection from './components/CompletedSessionsSection';
 import MyLibrarySection from './components/MyLibrarySection';
@@ -25,7 +24,6 @@ export default function MyJourney() {
       </div>
 
       <OverviewSection />
-      <ContinueSection />
       <ClosingNavigation />
 
     </div>

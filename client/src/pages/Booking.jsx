@@ -375,11 +375,11 @@ export default function Booking() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/50 via-transparent to-[#0a0a0a]/90" />
       </div>
 
-      <div className="relative z-10 px-4 md:px-8 w-full max-w-5xl mx-auto">
+      <div className="relative z-10 px-3 sm:px-6 md:px-8 w-full max-w-5xl mx-auto">
         
         {/* Top Left Back Button */}
         {step === 1 && (
-          <div className="flex w-full mt-6 md:mt-8 mb-4">
+          <div className="flex w-full mt-4 sm:mt-6 md:mt-8 mb-4">
             <button 
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 font-sans text-[0.65rem] uppercase tracking-widest text-white/60 hover:text-white hover:text-accent-gold transition-colors"
@@ -392,25 +392,25 @@ export default function Booking() {
 
         {/* Course Student Free Sessions Active Banner */}
         {isLoggedIn && freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0 && (
-          <div className="mb-8 p-4 md:p-5 rounded-2xl border border-accent-gold/40 bg-gradient-to-r from-accent-gold/20 via-[#15120d] to-[#0a0a0a] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_35px_rgba(199,156,110,0.18)]">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-accent-gold/20 border border-accent-gold/40 flex items-center justify-center text-accent-gold shrink-0">
-                <Sparkle size={20} weight="fill" />
+          <div className="mb-6 sm:mb-8 p-3.5 sm:p-5 rounded-2xl border border-accent-gold/40 bg-gradient-to-r from-accent-gold/20 via-[#15120d] to-[#0a0a0a] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 shadow-[0_0_35px_rgba(199,156,110,0.18)]">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-accent-gold/20 border border-accent-gold/40 flex items-center justify-center text-accent-gold shrink-0 mt-0.5 sm:mt-0">
+                <Sparkle size={18} weight="fill" className="sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-white text-sm font-medium">Mastery Course Benefit Active</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.65rem] font-semibold uppercase tracking-wider">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="text-white text-xs sm:text-sm font-medium">Mastery Course Benefit Active</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-wider">
                     {freeSessionInfo.freeSessions} of 3 Free Sessions Available
                   </span>
                 </div>
-                <p className="text-white/70 text-xs font-light mt-0.5">
+                <p className="text-white/70 text-[0.72rem] sm:text-xs font-light mt-1 break-words">
                   Account: <span className="text-white font-normal">{bookingData.email || 'Course Student'}</span> • Your session is 100% complimentary (₹0 at checkout).
                 </p>
               </div>
             </div>
-            <div className="shrink-0 flex items-center gap-2">
-              <span className="text-accent-gold font-semibold text-xs tracking-wider uppercase bg-accent-gold/10 px-3.5 py-2 rounded-xl border border-accent-gold/30">
+            <div className="w-full sm:w-auto shrink-0 flex items-center justify-center sm:justify-end">
+              <span className="w-full sm:w-auto text-center text-accent-gold font-semibold text-xs tracking-wider uppercase bg-accent-gold/10 px-3.5 py-2 rounded-xl border border-accent-gold/30">
                 ₹0 Free Booking
               </span>
             </div>
@@ -418,36 +418,36 @@ export default function Booking() {
         )}
 
         {/* Header section based on step */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-6">
           <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-medium text-accent-gold block mb-2">
             CHAPTER {step} OF 3
           </span>
-          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.1] text-white mb-4">
+          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.15] text-white mb-3 sm:mb-4">
             {step === 1 && "Let's Find a Time That Works"}
             {step === 2 && "A Little About You"}
             {step === 3 && "Confirm & Secure Your Session"}
           </h1>
-          <div className="h-[1px] w-8 bg-accent-gold mx-auto mb-4" />
-          <p className="text-paragraph text-sm font-light tracking-wide text-white/80 max-w-lg mx-auto">
+          <div className="h-[1px] w-8 bg-accent-gold mx-auto mb-3 sm:mb-4" />
+          <p className="text-paragraph text-xs sm:text-sm font-light tracking-wide text-white/80 max-w-lg mx-auto px-2">
             {step === 1 && (
               <>
                 You don't need to have everything figured out before you begin.
                 <br className="hidden md:block" />
-                This is a space for honest conversation and real clarity.
+                {" "}This is a space for honest conversation and real clarity.
               </>
             )}
             {step === 2 && (
               <>
                 This helps me understand you better before we meet.
                 <br className="hidden md:block" />
-                Share only what you're comfortable with.
+                {" "}Share only what you're comfortable with.
               </>
             )}
             {step === 3 && (
               <>
                 Almost there. Review your session details
                 <br className="hidden md:block" />
-                and let's make it official.
+                {" "}and let's make it official.
               </>
             )}
           </p>
@@ -459,7 +459,7 @@ export default function Booking() {
           {/* Subtle top glow */}
           <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-accent-gold/20 to-transparent" />
           
-          <div className="p-6 md:p-8">
+          <div className="p-4 sm:p-6 md:p-8">
             <BookingStepper currentStep={step} />
 
             <div className="mt-8">

@@ -7,7 +7,7 @@ import bookingBg from '../../assets/images/booking_bg_lamp.png';
 
 export default function BookingCancelled({ data, onRetry }) {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] relative pt-20 md:pt-28 pb-16 px-4 md:px-8 animate-in fade-in zoom-in-95 duration-1000">
+    <div className="min-h-screen bg-[#0a0a0a] relative pt-16 sm:pt-20 md:pt-28 pb-12 sm:pb-16 px-3 sm:px-4 md:px-8 animate-in fade-in zoom-in-95 duration-1000">
       
       {/* Background Image Layer */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -24,7 +24,7 @@ export default function BookingCancelled({ data, onRetry }) {
       <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[60vh]">
         
         {/* Top Left Back Button */}
-        <div className="absolute top-0 left-0 w-full mb-8">
+        <div className="absolute top-0 left-0 w-full mb-6 sm:mb-8">
           <Link 
             to="/" 
             className="flex items-center gap-2 font-sans text-[0.65rem] uppercase tracking-widest text-white/60 hover:text-white hover:text-accent-gold transition-colors"
@@ -35,17 +35,17 @@ export default function BookingCancelled({ data, onRetry }) {
         </div>
 
         {/* Header section */}
-        <div className="text-center mb-8 flex flex-col items-center justify-center w-full mt-16">
-          <div className="w-16 h-16 rounded-full border border-red-500/30 flex items-center justify-center mb-6 bg-red-500/10">
-            <X className="text-red-400 text-3xl" weight="bold" />
+        <div className="text-center mb-6 sm:mb-8 flex flex-col items-center justify-center w-full mt-12 sm:mt-16">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-red-500/30 flex items-center justify-center mb-4 sm:mb-6 bg-red-500/10">
+            <X className="text-red-400 text-2xl sm:text-3xl" weight="bold" />
           </div>
-          <span className="font-sans text-[0.6rem] uppercase tracking-[0.3em] font-medium text-red-400 block mb-3">
+          <span className="font-sans text-[0.6rem] uppercase tracking-[0.3em] font-medium text-red-400 block mb-2 sm:mb-3">
             PAYMENT CANCELLED
           </span>
-          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.1] text-white mb-6">
+          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.15] text-white mb-4 sm:mb-6">
             Your payment was not completed.
           </h1>
-          <p className="text-paragraph text-sm font-light tracking-wide text-white/70 max-w-md mx-auto mb-10 leading-relaxed">
+          <p className="text-paragraph text-xs sm:text-sm font-light tracking-wide text-white/70 max-w-md mx-auto mb-8 sm:mb-10 leading-relaxed">
             Your session has not been reserved because the payment was cancelled or failed. No charges were made to your account.
           </p>
           

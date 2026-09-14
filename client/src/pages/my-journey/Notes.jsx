@@ -129,7 +129,7 @@ export default function Notes() {
 
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white select-none relative font-sans overflow-x-hidden pt-32 pb-24">
+    <div className="w-full min-h-screen bg-[#050505] text-white select-none relative font-sans overflow-x-hidden pt-24 sm:pt-32 pb-16 sm:pb-24">
       
       {/* Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -142,30 +142,30 @@ export default function Notes() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 flex flex-col gap-8">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col gap-6 md:gap-8">
         
         {/* Header */}
         <div className="w-full flex flex-col">
           <button 
             onClick={() => navigate('/my-journey', { state: { activeTab: 'MY NOTES' } })}
-            className="flex items-center gap-2 text-white/60 hover:text-white font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors mb-8 w-fit"
+            className="flex items-center gap-2 text-white/60 hover:text-white font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors mb-6 md:mb-8 w-fit"
           >
             <CaretLeft size={14} weight="bold" /> BACK
           </button>
           
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-            <div className="flex flex-col gap-2">
-              <h1 className="font-serif text-3xl md:text-5xl text-white tracking-tight leading-[1.1] mb-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-6 mb-6 md:mb-8">
+            <div className="flex flex-col gap-1.5 sm:gap-2">
+              <h1 className="font-serif text-2xl sm:text-3xl md:text-5xl text-white tracking-tight leading-[1.15] mb-1 sm:mb-2">
                 All Notes
               </h1>
-              <p className="font-sans text-white/60 text-sm tracking-wide">
+              <p className="font-sans text-white/60 text-xs sm:text-sm tracking-wide">
                 All your private thoughts and reflections in one place.
               </p>
             </div>
             
             <button 
               onClick={() => handleOpenEditor()}
-              className="flex items-center gap-2 px-6 py-4 rounded bg-[#c79c6e] text-black hover:bg-[#b0885e] font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium transition-colors shrink-0 border border-transparent"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 rounded bg-[#c79c6e] text-black hover:bg-[#b0885e] font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors shrink-0 border border-transparent"
             >
               <Plus size={16} weight="bold" />
               <span>CREATE NEW</span>
@@ -174,24 +174,24 @@ export default function Notes() {
         </div>
 
         {/* Toolbar */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-          <div className="relative w-full md:w-96">
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 mb-4 md:mb-6">
+          <div className="relative w-full sm:max-w-xs md:max-w-sm">
             <MagnifyingGlass size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
             <input 
               type="text" 
               placeholder="Search your notes"
-              className="w-full bg-[#0a0a0a]/40 backdrop-blur-md border border-white/10 rounded-lg py-3.5 pl-12 pr-4 text-sm font-sans text-white placeholder-white/40 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
+              className="w-full bg-[#0a0a0a]/40 backdrop-blur-md border border-white/10 rounded-lg py-3 pl-11 pr-4 text-xs sm:text-sm font-sans text-white placeholder-white/40 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
             />
           </div>
           
-          <button className="flex items-center gap-2 text-white/60 hover:text-white transition-colors font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium shrink-0">
+          <button className="self-end sm:self-auto flex items-center gap-2 text-white/60 hover:text-white transition-colors font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium shrink-0">
             <span>SORT: NEWEST</span>
             <CaretDown size={14} />
           </button>
         </div>
 
         {/* Notes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {loading ? (
             <div className="col-span-full py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]/40 backdrop-blur-sm">
               <span className="font-sans text-white/40 text-sm tracking-wide">Loading notes...</span>
@@ -204,54 +204,46 @@ export default function Notes() {
             notes.map((note) => (
               <div 
                 key={note._id} 
-                className="w-full rounded-2xl border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-md hover:bg-[#0a0a0a]/70 hover:backdrop-blur-lg hover:border-[#c79c6e]/30 transition-all duration-500 p-6 flex flex-col group overflow-hidden"
+                className="w-full rounded-xl sm:rounded-2xl border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-md hover:bg-[#0a0a0a]/70 hover:backdrop-blur-lg hover:border-[#c79c6e]/30 transition-all duration-500 p-4 sm:p-5 md:p-6 flex flex-col group overflow-hidden"
               >
-                <div className="flex flex-col justify-between items-start gap-4 w-full h-full">
-                  <div className="flex flex-col gap-2 w-full">
-                    <h3 className="font-serif text-xl md:text-2xl text-white group-hover:text-[#c79c6e] transition-colors leading-tight">
+                <div className="flex flex-col justify-between items-start gap-3 sm:gap-4 w-full h-full">
+                  <div className="flex flex-col gap-1.5 w-full">
+                    <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-white group-hover:text-[#c79c6e] transition-colors leading-tight">
                       {note.title}
                     </h3>
-                    <p className="font-sans text-white/40 text-xs md:text-sm font-light">
+                    <p className="font-sans text-white/40 text-xs sm:text-sm font-light">
                       {formatDate(note.createdAt)}
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-1 w-full text-left mt-2">
-                    <span className="font-sans text-[0.7rem] text-white/40">Attached to:</span>
-                    <span className="font-sans text-sm text-white/90 leading-relaxed">
+                  <div className="flex flex-col gap-1 w-full text-left mt-1">
+                    <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/40">Attached to:</span>
+                    <span className="font-sans text-xs sm:text-sm text-white/90 leading-relaxed truncate">
                       {note.attachedTo || 'Standalone note'}
                     </span>
                   </div>
 
-                  <div className="shrink-0 mt-4 w-full flex justify-start opacity-100 group-hover:opacity-0 group-hover:pointer-events-none transition-opacity duration-300">
-                    <button onClick={() => handleOpenView(note)} className="px-8 py-3 rounded border border-white/20 text-white/60 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium hover:border-[#c79c6e]/40 hover:text-[#c79c6e]">
-                      OPEN
-                    </button>
-                  </div>
-                </div>
-
-                {/* Expandable Action Row */}
-                <div className="w-full grid grid-rows-[0fr] opacity-0 group-hover:grid-rows-[1fr] group-hover:opacity-100 transition-all duration-500 ease-in-out">
-                  <div className="overflow-hidden flex flex-col xl:flex-row gap-4 pt-4 mt-3 border-t border-white/5 group-hover:border-[#c79c6e]/20">
+                  <div className="w-full flex items-center gap-2 sm:gap-3 pt-3 mt-1 border-t border-white/5">
                     <button 
                       onClick={() => handleOpenView(note)} 
-                      className="flex-1 py-3 rounded border border-white/10 hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/5 text-white/60 hover:text-white font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                      className="flex-1 py-2 sm:py-2.5 rounded border border-white/10 hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/5 text-white/70 hover:text-white font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.12em] sm:tracking-[0.2em] font-medium transition-colors text-center"
                     >
                       OPEN
                     </button>
                     <button 
                       onClick={() => handleOpenEditor(note)} 
-                      className="flex-1 py-3 rounded border border-white/10 hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/5 text-white/60 hover:text-white font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                      className="flex-1 py-2 sm:py-2.5 rounded border border-white/10 hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/5 text-white/70 hover:text-white font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.12em] sm:tracking-[0.2em] font-medium transition-colors text-center"
                     >
                       EDIT
                     </button>
                     <button 
                       onClick={() => handleDeleteNote(note._id)}
-                      className="flex-1 py-3 rounded border border-red-500/20 hover:border-red-500/50 hover:bg-red-500/5 text-red-400 hover:text-red-300 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                      className="flex-1 py-2 sm:py-2.5 rounded border border-red-500/20 hover:border-red-500/50 hover:bg-red-500/5 text-red-400 hover:text-red-300 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.12em] sm:tracking-[0.2em] font-medium transition-colors text-center"
                     >
                       DELETE
                     </button>
                   </div>
+
                 </div>
 
               </div>

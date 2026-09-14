@@ -40,16 +40,16 @@ export default function NoteViewModal({ isOpen, onClose, note }) {
       <div className="relative w-full max-w-2xl h-full bg-[#0a0a0a] border-l border-white/10 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
         
         {/* Header */}
-        <div className="flex justify-between items-center p-6 md:px-10 border-b border-white/5 shrink-0">
-          <div className="flex items-center gap-3 text-[#c79c6e]">
-            <LockKey size={16} weight="regular" />
-            <span className="font-sans text-[0.7rem] uppercase tracking-[0.2em] font-semibold">
+        <div className="flex justify-between items-center p-4 sm:p-6 md:px-10 border-b border-white/5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 text-[#c79c6e]">
+            <LockKey size={15} weight="regular" />
+            <span className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold">
               VIEW NOTE
             </span>
           </div>
           <button 
             onClick={onClose}
-            className="text-white/40 hover:text-white transition-colors p-2 -mr-2"
+            className="text-white/40 hover:text-white transition-colors p-1.5 sm:p-2 -mr-1 sm:-mr-2"
           >
             <X size={20} weight="light" />
           </button>
@@ -57,16 +57,16 @@ export default function NoteViewModal({ isOpen, onClose, note }) {
 
         {/* Scrollable Area */}
         <div 
-          className="flex-1 w-full p-6 md:p-10 flex flex-col gap-6 overflow-y-auto overflow-x-hidden overscroll-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="flex-1 w-full p-4 sm:p-6 md:p-10 flex flex-col gap-4 sm:gap-6 overflow-y-auto overflow-x-hidden overscroll-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           data-lenis-prevent="true"
         >
           
           {/* Title and Meta */}
-          <div className="flex flex-col gap-3 mb-4">
-            <h1 className="font-serif text-4xl text-white leading-tight">
+          <div className="flex flex-col gap-2 sm:gap-3 mb-2 sm:mb-4">
+            <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white leading-tight">
               {note.title}
             </h1>
-            <p className="font-sans text-sm text-white/50">
+            <p className="font-sans text-xs sm:text-sm text-white/50">
               Created {formatDate(note.createdAt)} • {note.attachedTo || 'Standalone note'}
             </p>
           </div>
@@ -74,11 +74,11 @@ export default function NoteViewModal({ isOpen, onClose, note }) {
           {/* Note Content Box */}
           <div className="flex-1 border border-white/10 rounded-xl flex flex-col overflow-hidden relative min-h-0">
             <div 
-              className="p-6 md:p-8 flex-1 overflow-y-auto overflow-x-hidden overscroll-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] break-words"
+              className="p-4 sm:p-6 md:p-8 flex-1 overflow-y-auto overflow-x-hidden overscroll-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] break-words"
               data-lenis-prevent="true"
             >
               <div 
-                className="prose prose-invert prose-base max-w-full break-words
+                className="prose prose-invert prose-sm sm:prose-base max-w-full break-words
                   prose-headings:font-serif prose-headings:font-normal prose-headings:text-white 
                   prose-p:font-sans prose-p:font-light prose-p:text-white/80 prose-p:leading-relaxed prose-p:whitespace-pre-wrap prose-p:break-words
                   prose-a:text-[#c79c6e] hover:prose-a:text-[#d4b08c] prose-a:break-all
@@ -90,7 +90,7 @@ export default function NoteViewModal({ isOpen, onClose, note }) {
             </div>
             
             {/* Meta Footer inside the box */}
-            <div className="px-6 py-4 flex justify-between items-center text-xs font-sans text-white/40 bg-white/[0.02] border-t border-white/5 shrink-0">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center text-[0.7rem] sm:text-xs font-sans text-white/40 bg-white/[0.02] border-t border-white/5 shrink-0 gap-1 sm:gap-0">
               <span>Last edited {formatDate(note.updatedAt || note.createdAt)} at {formatTime(note.updatedAt || note.createdAt)}</span>
               <span>{wordCount} words</span>
             </div>
@@ -99,10 +99,10 @@ export default function NoteViewModal({ isOpen, onClose, note }) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 md:px-10 border-t border-white/10 shrink-0 flex justify-end bg-[#0a0a0a]">
+        <div className="p-4 sm:p-6 md:px-10 border-t border-white/10 shrink-0 flex justify-end bg-[#0a0a0a]">
           <button 
             onClick={onClose}
-            className="px-8 py-3 rounded border border-white/10 bg-[#111111] text-white/90 hover:bg-white/5 font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium transition-colors"
+            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 rounded border border-white/10 bg-[#111111] text-white/90 hover:bg-white/5 font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors text-center"
           >
             CLOSE
           </button>

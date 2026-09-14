@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowDown, BookmarkSimple, Sparkle, BookOpen, ArrowRight } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { ArrowDown, BookmarkSimple, Sparkle, BookOpen, ArrowRight, X } from '@phosphor-icons/react';
+import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import bgImage from '../../assets/PerspectivePage/Page1.png';
@@ -14,10 +14,15 @@ import ToolsReflectionSection from '../../components/library/ToolsReflectionSect
 import LibraryInvitationSection from '../../components/library/LibraryInvitationSection';
 import PerspectiveToConversationSection from '../../components/library/PerspectiveToConversationSection';
 import AnimatedText from '../../components/ui/AnimatedText';
+import { topics } from '../../constants/articleTaxonomy';
 
 export default function Library() {
+  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [isRestoringScroll, setIsRestoringScroll] = useState(!!sessionStorage.getItem('library_scroll_position'));
+  const [publishedArticles, setPublishedArticles] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [matchingArticles, setMatchingArticles] = useState([]);
   const hotspotRef = useRef(null);
 
   // Handle click outside to close on mobile
@@ -59,6 +64,102 @@ export default function Library() {
       }
     }
   }, []);
+
+  // Fetch published articles for live hero search
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/articles/published`);
+        if (res.ok) {
+          const data = await res.json();
+          setPublishedArticles(data);
+        }
+      } catch (err) {
+        console.error('Failed to load published articles:', err);
+      }
+    };
+    fetchArticles();
+  }, []);
+
+  // Live article search scoring
+  useEffect(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      setMatchingArticles([]);
+      return;
+    }
+
+    // Synonym/Theme keywords
+    const searchTerms = [q];
+    if (q.includes('stuck')) searchTerms.push('stuck', 'pattern', 'decision', 'growth', 'change', 'clarity');
+    if (q.includes('relationship')) searchTerms.push('relationship', 'conflict', 'boundaries', 'communication', 'heartbreak');
+    if (q.includes('decision')) searchTerms.push('decision', 'choices', 'limits', 'clarity', 'direction');
+    if (q.includes('pattern')) searchTerms.push('pattern', 'repeat', 'habit', 'behavioural', 'emotional');
+
+    const words = q.split(/\s+/).filter(Boolean);
+
+    const scored = publishedArticles.map(article => {
+      let score = 0;
+      const title = (article.title || '').toLowerCase();
+      const desc = (article.description || '').toLowerCase();
+      const content = (article.content || '').toLowerCase();
+      const category = (article.categoryId || '').toLowerCase();
+      const heading = (article.headingId || '').toLowerCase();
+      const tags = (Array.isArray(article.tags) ? article.tags.join(' ') : (article.tags || '')).toLowerCase();
+
+      // Direct phrase match
+      if (title.includes(q)) score += 15;
+      if (desc.includes(q)) score += 8;
+      if (category.includes(q) || heading.includes(q)) score += 6;
+      if (tags.includes(q)) score += 5;
+      if (content.includes(q)) score += 3;
+
+      // Word matches
+      words.forEach(w => {
+        if (title.includes(w)) score += 5;
+        if (desc.includes(w)) score += 3;
+        if (category.includes(w) || heading.includes(w)) score += 3;
+        if (tags.includes(w)) score += 2;
+        if (content.includes(w)) score += 1;
+      });
+
+      // Semantic phrase expansion
+      searchTerms.forEach(term => {
+        if (term !== q) {
+          if (title.includes(term)) score += 3;
+          if (desc.includes(term)) score += 2;
+          if (category.includes(term) || heading.includes(term)) score += 2;
+        }
+      });
+
+      return { article, score };
+    });
+
+    const results = scored
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.article);
+
+    setMatchingArticles(results);
+  }, [searchQuery, publishedArticles]);
+
+  const getCategoryLabel = (categoryId) => {
+    const topic = topics.find(t => t.id === categoryId);
+    return topic ? topic.title : (categoryId || 'PERSPECTIVE').toUpperCase();
+  };
+
+  const handleOpenArticle = (art) => {
+    sessionStorage.setItem('library_scroll_position', window.scrollY.toString());
+    navigate(`/articles?category=${art.categoryId}&subCategory=${art.headingId}&article=${art._id}`);
+  };
+
+  const handleSearchSubmit = (e) => {
+    e?.preventDefault();
+    if (matchingArticles.length > 0) {
+      handleOpenArticle(matchingArticles[0]);
+    }
+  };
 
   // Golden Dust Particles Data (removing tailwind animation classes)
   const particles = [
@@ -244,33 +345,126 @@ export default function Library() {
               Articles, videos and reflective tools for the parts of life that are difficult to see clearly while you are living through them.
             </p>
 
-            <div className="w-fit max-w-full">
-              <div className="w-full relative mb-6 group">
+            <div className="w-full max-w-xl">
+              <form onSubmit={handleSearchSubmit} className="w-full relative mb-4 group">
                 <input 
                   type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Describe what you're facing..."
-                  className="w-full bg-[#050505]/60 border border-[#c79c6e]/30 rounded-lg px-6 py-5 text-white placeholder-white/40 font-light text-lg focus:outline-none focus:border-[#c79c6e]/70 transition-all duration-300 backdrop-blur-sm pr-16"
+                  className="w-full bg-[#050505]/70 border border-[#c79c6e]/40 rounded-xl px-5 sm:px-6 py-4 md:py-5 text-white placeholder-white/40 font-light text-base md:text-lg focus:outline-none focus:border-[#c79c6e] focus:bg-[#050505]/90 transition-all duration-300 backdrop-blur-md pr-24 shadow-[0_0_25px_rgba(0,0,0,0.5)]"
                 />
-                <button className="absolute right-4 top-1/2 -translate-y-1/2 text-[#c79c6e] hover:text-white transition-colors p-2">
-                  <ArrowRight size={24} weight="light" />
-                </button>
-              </div>
-
-              <div className="w-full">
-                <span className="font-sans text-[0.65rem] md:text-[0.7rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-5 block">
-                  Not sure where to begin?
-                </span>
-                <div className="flex gap-3 md:gap-4 w-full overflow-x-auto no-scrollbar pb-2">
-                  {['I feel stuck', 'A relationship is confusing me', 'I have a decision to make'].map((topic, i) => (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  {searchQuery && (
                     <button 
-                      key={i}
-                      className="px-5 py-3 md:px-6 border border-[#c79c6e]/30 rounded-md bg-[#050505]/40 hover:bg-[#c79c6e]/10 text-white/80 hover:text-white text-sm font-light transition-all duration-300 backdrop-blur-sm whitespace-nowrap shrink-0"
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="text-white/40 hover:text-white p-2 transition-colors cursor-pointer"
+                      title="Clear search"
                     >
-                      {topic}
+                      <X size={18} />
                     </button>
-                  ))}
+                  )}
+                  <button 
+                    type="submit"
+                    className="text-[#c79c6e] hover:text-white transition-colors p-2 cursor-pointer hover:scale-110"
+                    title="Search"
+                  >
+                    <ArrowRight size={22} weight="light" />
+                  </button>
                 </div>
-              </div>
+              </form>
+
+              {/* Dynamic Suggestions Below Search */}
+              {searchQuery.trim() ? (
+                <div className="w-full mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center justify-between mb-2.5 px-1">
+                    <span className="font-sans text-[0.65rem] md:text-[0.7rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-1.5">
+                      <Sparkle size={13} weight="fill" />
+                      {matchingArticles.length > 0 
+                        ? `RELATED PERSPECTIVES (${matchingArticles.length})` 
+                        : 'NO DIRECT MATCHES'
+                      }
+                    </span>
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="text-white/40 hover:text-white text-xs font-sans flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <X size={12} />
+                      Clear
+                    </button>
+                  </div>
+
+                  {matchingArticles.length > 0 ? (
+                    <div className="flex flex-col gap-2 max-h-[300px] sm:max-h-[340px] overflow-y-auto custom-scrollbar pr-1 overscroll-contain">
+                      {matchingArticles.slice(0, 4).map((art) => (
+                        <div
+                          key={art._id}
+                          onClick={() => handleOpenArticle(art)}
+                          className="group p-3.5 sm:p-4 rounded-xl border border-[#c79c6e]/25 bg-[#0a0a0a]/90 hover:bg-[#15100a] hover:border-[#c79c6e]/70 transition-all duration-300 backdrop-blur-md cursor-pointer flex flex-col gap-1 shadow-lg shadow-black/50"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e]">
+                              {getCategoryLabel(art.categoryId)}
+                            </span>
+                            <div className="flex items-center gap-1 text-[#c79c6e] opacity-0 group-hover:opacity-100 transition-opacity text-xs font-sans font-medium">
+                              <span>Read</span>
+                              <ArrowRight size={12} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                            </div>
+                          </div>
+                          <h4 className="font-serif text-base sm:text-lg text-white font-normal group-hover:text-[#c79c6e] transition-colors leading-snug">
+                            {art.title}
+                          </h4>
+                          {art.description && (
+                            <p className="text-white/60 text-xs font-light line-clamp-2 leading-relaxed">
+                              {art.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                      {matchingArticles.length > 4 && (
+                        <button
+                          onClick={handleSearchSubmit}
+                          className="text-center py-2 text-xs uppercase tracking-widest font-semibold text-[#c79c6e] hover:text-white transition-colors cursor-pointer"
+                        >
+                          View all {matchingArticles.length} matching perspectives &rarr;
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl border border-white/10 bg-[#050505]/70 backdrop-blur-md text-center flex flex-col items-center gap-1.5">
+                      <p className="text-white/70 text-xs sm:text-sm font-light">
+                        No articles directly matching "<span className="text-white font-medium">{searchQuery}</span>".
+                      </p>
+                      <p className="text-white/40 text-xs font-light">
+                        Try: <button onClick={() => setSearchQuery('stuck')} className="text-[#c79c6e] underline hover:text-white">stuck</button>, <button onClick={() => setSearchQuery('relationship')} className="text-[#c79c6e] underline hover:text-white">relationship</button>, <button onClick={() => setSearchQuery('pattern')} className="text-[#c79c6e] underline hover:text-white">pattern</button>, or <button onClick={() => setSearchQuery('decision')} className="text-[#c79c6e] underline hover:text-white">decision</button>.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full">
+                  <span className="font-sans text-[0.65rem] md:text-[0.7rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-3 block">
+                    Not sure where to begin?
+                  </span>
+                  <div className="flex gap-2.5 md:gap-3 w-full overflow-x-auto no-scrollbar pb-2">
+                    {[
+                      { label: 'I feel stuck', query: 'stuck' },
+                      { label: 'A relationship is confusing me', query: 'relationship' },
+                      { label: 'I have a decision to make', query: 'decision' },
+                      { label: 'Breaking patterns', query: 'pattern' }
+                    ].map((item, i) => (
+                      <button 
+                        key={i}
+                        onClick={() => setSearchQuery(item.query)}
+                        className="px-4 py-2.5 md:px-5 md:py-3 border border-[#c79c6e]/30 rounded-lg bg-[#050505]/40 hover:bg-[#c79c6e]/15 hover:border-[#c79c6e]/60 text-white/80 hover:text-white text-xs md:text-sm font-light transition-all duration-300 backdrop-blur-sm whitespace-nowrap shrink-0 cursor-pointer"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           

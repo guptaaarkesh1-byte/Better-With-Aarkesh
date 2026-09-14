@@ -42,7 +42,7 @@ export default function BookingSuccess({ data, fee }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] relative pt-20 md:pt-28 pb-16 px-4 md:px-8 animate-in fade-in zoom-in-95 duration-1000">
+    <div className="min-h-screen bg-[#0a0a0a] relative pt-16 sm:pt-20 md:pt-28 pb-12 sm:pb-16 px-3 sm:px-4 md:px-8 animate-in fade-in zoom-in-95 duration-1000">
       
       {/* Background Image Layer */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -59,7 +59,7 @@ export default function BookingSuccess({ data, fee }) {
       <div className="relative z-10 max-w-5xl mx-auto">
         
         {/* Top Left Back Button */}
-        <div className="flex w-full mb-8">
+        <div className="flex w-full mb-6 sm:mb-8">
           <Link 
             to="/" 
             className="flex items-center gap-2 font-sans text-[0.65rem] uppercase tracking-widest text-white/60 hover:text-white hover:text-accent-gold transition-colors"
@@ -70,14 +70,14 @@ export default function BookingSuccess({ data, fee }) {
         </div>
 
         {/* Header section */}
-        <div className="text-center mb-8 flex flex-col items-center justify-center">
-          <div className="w-10 h-10 rounded-full border border-accent-gold flex items-center justify-center mb-4">
+        <div className="text-center mb-6 sm:mb-8 flex flex-col items-center justify-center">
+          <div className="w-10 h-10 rounded-full border border-accent-gold flex items-center justify-center mb-3 sm:mb-4">
             <Check className="text-accent-gold text-lg" weight="bold" />
           </div>
-          <span className="font-sans text-[0.6rem] uppercase tracking-[0.3em] font-medium text-accent-gold block mb-3">
+          <span className="font-sans text-[0.6rem] uppercase tracking-[0.3em] font-medium text-accent-gold block mb-2 sm:mb-3">
             YOUR SESSION IS RESERVED
           </span>
-          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.1] text-white mb-4 max-w-2xl mx-auto">
+          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.15] text-white mb-3 sm:mb-4 max-w-2xl mx-auto">
             Thank you for trusting me<br/>with a part of your story.
           </h1>
           <p className="text-paragraph text-xs md:text-sm font-light tracking-wide text-white/80 max-w-lg mx-auto">
@@ -90,7 +90,7 @@ export default function BookingSuccess({ data, fee }) {
         </div>
 
         {/* Appointment Card */}
-        <div className="grid grid-cols-1 md:grid-cols-5 bg-[#0f0f0f] border border-white/5 rounded-2xl overflow-hidden mb-8 shadow-2xl">
+        <div className="grid grid-cols-1 md:grid-cols-5 bg-[#0f0f0f] border border-white/5 rounded-2xl overflow-hidden mb-6 sm:mb-8 shadow-2xl">
           
           <div className="p-5 md:p-6 md:col-span-2 flex flex-col justify-center">
             <div className="flex items-start gap-3 mb-5">

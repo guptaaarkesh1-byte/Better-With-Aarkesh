@@ -14,8 +14,47 @@ import {
   FileText,
   Clock,
   CurrencyCircleDollar,
-  GraduationCap
+  GraduationCap,
+  Megaphone
 } from '@phosphor-icons/react';
+
+const formatSource = (src) => {
+  if (!src) return '';
+  const lower = src.toLowerCase();
+  if (lower === 'social') return 'Social Media';
+  if (lower === 'referral') return 'Referral';
+  if (lower === 'search') return 'Search Engine';
+  if (lower === 'other') return 'Other';
+  return src;
+};
+
+const formatTimeRange = (timeStr, duration = 60) => {
+  if (!timeStr) return '';
+  if (timeStr.includes('–') || timeStr.includes(' - ') || timeStr.includes(' to ')) {
+    return timeStr;
+  }
+
+  const match = timeStr.match(/(\d+):?(\d*)\s*(AM|PM)?/i);
+  if (!match) return timeStr;
+
+  let [_, hoursStr, minutesStr, ampmStr] = match;
+  let hours = parseInt(hoursStr, 10);
+  let minutes = minutesStr ? parseInt(minutesStr, 10) : 0;
+  let ampm = ampmStr ? ampmStr.toUpperCase() : 'AM';
+
+  let totalMinutes = (hours % 12 + (ampm === 'PM' ? 12 : 0)) * 60 + minutes;
+  let endTotalMinutes = totalMinutes + (parseInt(duration, 10) || 60);
+
+  let endHours = Math.floor((endTotalMinutes / 60) % 24);
+  let endMinutes = endTotalMinutes % 60;
+  let endAmpm = endHours >= 12 ? 'PM' : 'AM';
+  let endDisplayHours = endHours % 12 === 0 ? 12 : endHours % 12;
+
+  const formattedStartTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  const formattedEndTime = `${endDisplayHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')} ${endAmpm}`;
+
+  return `${formattedStartTime} – ${formattedEndTime}`;
+};
 
 export default function AdminUsers() {
   const [expandedUser, setExpandedUser] = useState(() => {
@@ -278,10 +317,16 @@ export default function AdminUsers() {
                 nextAppointmentTime: null,
                 nextAppointmentStatus: null,
                 isCourseMember: isCourseMember,
+                source: app.source || '',
                 history: []
               };
-            } else if (isCourseMember) {
-              userMap[uId].isCourseMember = true;
+            } else {
+              if (isCourseMember) {
+                userMap[uId].isCourseMember = true;
+              }
+              if (!userMap[uId].source && app.source) {
+                userMap[uId].source = app.source;
+              }
             }
             
             // Format appointment
@@ -667,7 +712,7 @@ export default function AdminUsers() {
                       <>
                         <div className="flex flex-col">
                           <span className="text-white/90 text-sm">{user.nextAppointmentDate}</span>
-                          <span className="text-white/50 text-xs">{user.nextAppointmentTime}</span>
+                          <span className="text-white/50 text-xs">{formatTimeRange(user.nextAppointmentTime, user.history?.[0]?.duration || 60)}</span>
                         </div>
                         <div className="relative inline-block">
                           {user.history.length > 0 ? (
@@ -791,11 +836,20 @@ export default function AdminUsers() {
                                 <CalendarBlank size={16} className="text-white/30 mt-0.5" />
                                 <div className="flex flex-col">
                                   <span className="text-white/80 text-sm">{session.date}</span>
-                                  <span className="text-white/40 text-xs">{session.time}</span>
+                                  <span className="text-white/40 text-xs">{formatTimeRange(session.time, session.duration || 60)}</span>
                                 </div>
                               </div>
 
-                              <div className="text-white/70 text-sm">{session.type}</div>
+                              <div className="flex flex-col">
+                                <span className="text-white/70 text-sm">{session.type}</span>
+                                {session.source && (
+                                  <span className="text-white/40 text-[0.65rem] flex items-center gap-1 mt-0.5">
+                                    <Megaphone size={11} className="text-[#c79c6e]" />
+                                    <span className="text-white/50">Heard via:</span>
+                                    <span className="text-[#c79c6e] font-medium">{formatSource(session.source)}</span>
+                                  </span>
+                                )}
+                              </div>
 
                                 <div className="relative">
                                   <button 
@@ -861,7 +915,7 @@ export default function AdminUsers() {
                                   <>
                                     <span className={`text-[0.65rem] uppercase tracking-wider font-semibold ${session.rescheduleRequest.status === 'PENDING' ? 'text-yellow-500' : session.rescheduleRequest.status === 'APPROVED' ? 'text-green-500' : 'text-red-500'}`}>{session.rescheduleRequest.status}</span>
                                     <span className="text-white/80 text-xs">{session.rescheduleRequest.date}</span>
-                                    <span className="text-white/50 text-[0.6rem]">{session.rescheduleRequest.time}</span>
+                                    <span className="text-white/50 text-[0.6rem]">{formatTimeRange(session.rescheduleRequest.time, session.duration || 60)}</span>
                                   </>
                                 ) : (
                                   <span className="text-white/30 text-sm">—</span>
@@ -963,9 +1017,17 @@ export default function AdminUsers() {
                     </span>
                   )}
                   {!selectedSession && (
-                    <div className="flex items-center gap-1.5 text-white/40 mt-1">
-                      <Phone size={14} />
-                      <span className="font-sans text-xs">{selectedUser.phone}</span>
+                    <div className="flex flex-wrap items-center gap-3 text-white/40 mt-1">
+                      <div className="flex items-center gap-1.5">
+                        <Phone size={14} />
+                        <span className="font-sans text-xs">{selectedUser.phone}</span>
+                      </div>
+                      {selectedUser.source && (
+                        <div className="flex items-center gap-1.5 text-white/60">
+                          <Megaphone size={13} className="text-[#c79c6e]" />
+                          <span className="font-sans text-xs">Heard via: <span className="text-white/90 font-medium">{formatSource(selectedUser.source)}</span></span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -982,7 +1044,7 @@ export default function AdminUsers() {
                         <span className="text-[0.65rem] uppercase tracking-widest">Date & Time</span>
                       </div>
                       <span className="text-white text-sm font-medium">{selectedSession.date}</span>
-                      <span className="text-white/60 text-xs">{selectedSession.time}</span>
+                      <span className="text-white/60 text-xs">{formatTimeRange(selectedSession.time, selectedSession.duration || 60)}</span>
                     </div>
                     <div className="bg-[#111] border border-white/5 p-4 rounded-xl flex flex-col gap-2">
                       <div className="flex items-center gap-2 text-white/40">
@@ -1011,7 +1073,7 @@ export default function AdminUsers() {
                         <div className="flex flex-col gap-1">
                           <span className="text-amber-500/60 text-[0.65rem] uppercase tracking-widest font-semibold">Requested New Time</span>
                           <span className="text-amber-500 font-medium text-sm">
-                            {selectedSession.rescheduleRequest.date} at {selectedSession.rescheduleRequest.time}
+                            {selectedSession.rescheduleRequest.date} at {formatTimeRange(selectedSession.rescheduleRequest.time, selectedSession.duration || 60)}
                           </span>
                         </div>
                         <div className="flex flex-col gap-1">
@@ -1066,6 +1128,27 @@ export default function AdminUsers() {
                       </div>
                     </div>
 
+                    {/* How Did You Hear About Me? */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5 text-[#c79c6e]/80">
+                        <Megaphone size={14} className="text-[#c79c6e]" />
+                        <span className="text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
+                          How Did You Hear About Me?
+                        </span>
+                      </div>
+                      <div className="bg-[#111] border border-white/5 rounded-xl p-4 text-white/90 font-sans text-sm">
+                        {selectedSession.source ? (
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] text-xs font-medium inline-block">
+                              {formatSource(selectedSession.source)}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-white/30 italic text-xs">No response provided.</p>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Anything Else You Want Me To Know? */}
                     <div className="flex flex-col gap-1.5">
                       <span className="text-[#c79c6e]/80 text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
@@ -1079,18 +1162,6 @@ export default function AdminUsers() {
                         )}
                       </div>
                     </div>
-
-                    {/* How Did You Hear About Me? (Optional) */}
-                    {selectedSession.source && (
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[#c79c6e]/80 text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
-                          How Did You Hear About Me?
-                        </span>
-                        <div className="bg-[#111] border border-white/5 rounded-xl px-4 py-3 text-white/80 font-sans text-sm">
-                          <p className="text-white/90">{selectedSession.source}</p>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Coach's Session Notes */}

@@ -18,9 +18,10 @@ export default function AdminCourse() {
     if (tabParam === 'students') return 'students';
     if (tabParam === 'curriculum' || tabParam === 'videos' || tabParam === 'comments') return 'curriculum';
     if (tabParam === 'fee' || tabParam === 'pricing' || tabParam === 'gst') return 'fee';
-    if (location.pathname.startsWith('/course-students')) return 'students';
+    if (location.pathname.startsWith('/course-fee') || location.pathname.startsWith('/course-pricing')) return 'fee';
     if (location.pathname.startsWith('/upload-videos') || location.pathname.startsWith('/course-curriculum')) return 'curriculum';
-    return 'fee';
+    if (location.pathname.startsWith('/course-students')) return 'students';
+    return 'students';
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab);
@@ -38,6 +39,8 @@ export default function AdminCourse() {
     } else if (location.pathname.startsWith('/upload-videos') || location.pathname.startsWith('/course-curriculum')) {
       setActiveTab('curriculum');
     } else if (location.pathname.startsWith('/course-students')) {
+      setActiveTab('students');
+    } else if (!tabParam) {
       setActiveTab('students');
     }
   }, [searchParams, location.pathname]);

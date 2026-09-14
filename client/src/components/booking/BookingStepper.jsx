@@ -39,7 +39,7 @@ export default function BookingStepper({ currentStep }) {
 
             {/* Line Connector */}
             {index < steps.length - 1 && (
-              <div className="w-8 md:w-24 h-[1px] mx-2 md:mx-4 transition-colors duration-500">
+              <div className="w-6 sm:w-10 md:w-24 h-[1px] mx-1.5 sm:mx-2.5 md:mx-4 transition-colors duration-500">
                 <div className={`h-full w-full ${isCompleted ? 'bg-accent-gold' : 'bg-white/10'}`} />
               </div>
             )}

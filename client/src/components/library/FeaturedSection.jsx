@@ -28,8 +28,11 @@ export default function FeaturedSection() {
         if (resArticles.ok) {
           const data = await resArticles.json();
           if (data.length > 0) {
-            // Pick a random article or the first one. Let's just pick the first one for consistency.
-            setArticle(data[0]);
+            // Rotate article every 5 hours deterministically
+            const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
+            const intervalIndex = Math.floor(Date.now() / FIVE_HOURS_MS);
+            const selectedIndex = intervalIndex % data.length;
+            setArticle(data[selectedIndex]);
           }
         }
 
@@ -49,6 +52,13 @@ export default function FeaturedSection() {
       }
     };
     fetchArticleAndSaves();
+
+    // Check periodically to auto-rotate if a 5-hour boundary passes while on page
+    const intervalTimer = setInterval(() => {
+      fetchArticleAndSaves();
+    }, 60 * 1000); // check every 1 minute
+
+    return () => clearInterval(intervalTimer);
   }, []);
 
   const handleToggleSave = async (articleId, e) => {

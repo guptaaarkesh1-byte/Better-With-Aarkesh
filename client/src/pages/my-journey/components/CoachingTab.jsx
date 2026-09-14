@@ -5,6 +5,34 @@ import { CalendarBlank, CheckCircle, PencilSimple, FileText, Clock, VideoCamera,
 import { generateGoogleCalendarLink } from '../../../utils/calendar';
 import RescheduleModal from './RescheduleModal';
 
+const formatTimeRange = (timeStr, duration = 60) => {
+  if (!timeStr) return '';
+  if (timeStr.includes('–') || timeStr.includes(' - ') || timeStr.includes(' to ')) {
+    return timeStr;
+  }
+
+  const match = timeStr.match(/(\d+):?(\d*)\s*(AM|PM)?/i);
+  if (!match) return timeStr;
+
+  let [_, hoursStr, minutesStr, ampmStr] = match;
+  let hours = parseInt(hoursStr, 10);
+  let minutes = minutesStr ? parseInt(minutesStr, 10) : 0;
+  let ampm = ampmStr ? ampmStr.toUpperCase() : 'AM';
+
+  let totalMinutes = (hours % 12 + (ampm === 'PM' ? 12 : 0)) * 60 + minutes;
+  let endTotalMinutes = totalMinutes + (parseInt(duration, 10) || 60);
+
+  let endHours = Math.floor((endTotalMinutes / 60) % 24);
+  let endMinutes = endTotalMinutes % 60;
+  let endAmpm = endHours >= 12 ? 'PM' : 'AM';
+  let endDisplayHours = endHours % 12 === 0 ? 12 : endHours % 12;
+
+  const formattedStartTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  const formattedEndTime = `${endDisplayHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')} ${endAmpm}`;
+
+  return `${formattedStartTime} – ${formattedEndTime}`;
+};
+
 export default function CoachingTab() {
   const [activeTab, setActiveTab] = useState('UPCOMING');
   const [selectedSession, setSelectedSession] = useState(null);
@@ -184,39 +212,39 @@ export default function CoachingTab() {
   };
 
   return (
-    <div className="w-full h-full min-h-[500px] rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-8 md:p-12 flex flex-col animate-in fade-in duration-700 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_50px_rgba(199,156,110,0.15)]">
+    <div className="w-full h-full min-h-[500px] rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-4 sm:p-6 md:p-10 lg:p-12 flex flex-col animate-in fade-in duration-700 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_50px_rgba(199,156,110,0.15)]">
       
       {/* Subtle Glow inside the card */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-[#c79c6e]/10 rounded-full blur-[120px] pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-60" />
 
       {/* Header */}
-      <div className="mb-10 relative z-10">
-        <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e] block mb-3 opacity-90">
+      <div className="mb-6 md:mb-10 relative z-10">
+        <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] md:tracking-[0.3em] font-medium text-[#c79c6e] block mb-2 md:mb-3 opacity-90">
           YOUR SCHEDULE
         </span>
-        <h2 className="font-serif text-4xl md:text-5xl text-white mb-4 tracking-tight">Coaching Appointments</h2>
-        <p className="font-sans text-white/60 font-light text-lg max-w-xl">
+        <h2 className="font-serif text-2xl sm:text-3xl md:text-5xl text-white mb-2 md:mb-4 tracking-tight">Coaching Appointments</h2>
+        <p className="font-sans text-white/60 font-light text-sm sm:text-base md:text-lg max-w-xl">
           Manage your upcoming sessions and review past conversations.
         </p>
       </div>
 
       {/* Course Student Complimentary Sessions Widget */}
       {(userProfile?.courseSessionsGranted || (userProfile?.freeSessions ?? 0) > 0) && (
-        <div className="mb-10 relative z-10 overflow-hidden rounded-2xl border border-[#c79c6e]/40 bg-gradient-to-r from-[#191510] via-[#12100d] to-[#0a0a0a] p-6 md:p-8 shadow-[0_0_35px_rgba(199,156,110,0.12)]">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="mb-6 md:mb-10 relative z-10 overflow-hidden rounded-xl md:rounded-2xl border border-[#c79c6e]/40 bg-gradient-to-r from-[#191510] via-[#12100d] to-[#0a0a0a] p-4 sm:p-6 md:p-8 shadow-[0_0_35px_rgba(199,156,110,0.12)]">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] text-[0.65rem] font-semibold uppercase tracking-wider">
-                  <Sparkle size={13} weight="fill" /> Course Perk
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-wider">
+                  <Sparkle size={12} weight="fill" /> Course Perk
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.65rem] font-semibold uppercase tracking-wider">
-                  <CheckCircle size={13} weight="fill" /> {userProfile?.freeSessions ?? 0} of 3 Credits Remaining
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-wider">
+                  <CheckCircle size={12} weight="fill" /> {userProfile?.freeSessions ?? 0} of 3 Credits Remaining
                 </span>
               </div>
-              <h3 className="font-serif text-xl md:text-2xl text-white font-normal">
+              <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-white font-normal">
                 Complimentary 1-on-1 Coaching Sessions
               </h3>
-              <p className="text-white/60 text-xs md:text-sm font-light max-w-xl leading-relaxed">
+              <p className="text-white/60 text-xs sm:text-sm font-light max-w-xl leading-relaxed">
                 As an enrolled Mastery Course student, your membership includes 3 private coaching sessions with Aarkesh at ₹0.
               </p>
             </div>
@@ -224,12 +252,12 @@ export default function CoachingTab() {
             {(userProfile?.freeSessions ?? 0) > 0 ? (
               <Link
                 to="/book"
-                className="shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-[0.15em] hover:bg-[#d8ae80] hover:scale-[1.02] transition-all shadow-lg"
+                className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-[0.15em] hover:bg-[#d8ae80] hover:scale-[1.02] transition-all shadow-lg text-center"
               >
                 <CalendarPlus size={16} weight="bold" /> Book Free Session <ArrowRight size={14} weight="bold" />
               </Link>
             ) : (
-              <span className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/40 text-xs font-medium">
+              <span className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/40 text-xs font-medium">
                 <CheckCircle size={15} weight="fill" className="text-[#c79c6e]" /> All 3 Sessions Utilized
               </span>
             )}
@@ -238,12 +266,12 @@ export default function CoachingTab() {
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-8 border-b border-white/10 mb-10 relative z-10">
+      <div className="flex items-center gap-6 md:gap-8 border-b border-white/10 mb-6 md:mb-10 relative z-10">
         {tabs.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-4 font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium transition-all duration-300 relative ${
+            className={`pb-3 md:pb-4 font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-all duration-300 relative ${
               activeTab === tab ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white/80'
             }`}
           >
@@ -256,7 +284,7 @@ export default function CoachingTab() {
       </div>
 
       {/* List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 relative z-10">
         {loading ? (
           <div className="py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]/40 backdrop-blur-sm">
             <span className="font-sans text-white/40 text-sm tracking-wide">Loading...</span>
@@ -270,55 +298,55 @@ export default function CoachingTab() {
           filteredAppointments.map(app => (
             <div key={app.id} className="group/card w-full flex flex-col items-center">
                 {/* Main Card */}
-                <div className="w-full rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a]/90 backdrop-blur-md p-6 md:p-8 flex flex-col justify-between gap-6 hover:border-[#c79c6e]/60 transition-colors duration-500 shadow-xl relative z-10 h-full overflow-hidden">
+                <div className="w-full rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a]/90 backdrop-blur-md p-4 sm:p-6 md:p-8 flex flex-col justify-between gap-5 sm:gap-6 hover:border-[#c79c6e]/60 transition-colors duration-500 shadow-xl relative z-10 h-full overflow-hidden">
                   
                   {app.rescheduleRequest?.status === 'APPROVED' && (
-                    <div className="absolute top-0 right-0 bg-green-500/10 border-b border-l border-green-500/20 px-4 py-2 rounded-bl-xl text-green-500 font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
-                      <CheckCircle weight="fill" size={14} />
+                    <div className="absolute top-0 right-0 bg-green-500/10 border-b border-l border-green-500/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-green-500 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                      <CheckCircle weight="fill" size={13} />
                       RESCHEDULE APPROVED
                     </div>
                   )}
                   {app.rescheduleRequest?.status === 'PENDING' && (
-                    <div className="absolute top-0 right-0 bg-amber-500/10 border-b border-l border-amber-500/20 px-4 py-2 rounded-bl-xl text-amber-500 font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
-                      <Clock weight="fill" size={14} />
+                    <div className="absolute top-0 right-0 bg-amber-500/10 border-b border-l border-amber-500/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-amber-500 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                      <Clock weight="fill" size={13} />
                       RESCHEDULE PENDING
                     </div>
                   )}
                   {app.rescheduleRequest?.status === 'REJECTED' && (
-                    <div className="absolute top-0 right-0 bg-red-500/10 border-b border-l border-red-500/20 px-4 py-2 rounded-bl-xl text-red-500 font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
-                      <XCircle weight="fill" size={14} />
+                    <div className="absolute top-0 right-0 bg-red-500/10 border-b border-l border-red-500/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-red-500 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                      <XCircle weight="fill" size={13} />
                       RESCHEDULE DECLINED
                     </div>
                   )}
                   {app.status === 'CANCELLED' && (
-                    <div className="absolute top-0 right-0 bg-red-500/10 border-b border-l border-red-500/20 px-4 py-2 rounded-bl-xl text-red-500 font-sans text-[0.6rem] uppercase tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
-                      <XCircle weight="fill" size={14} />
+                    <div className="absolute top-0 right-0 bg-red-500/10 border-b border-l border-red-500/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-red-500 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                      <XCircle weight="fill" size={13} />
                       CANCELLED
                     </div>
                   )}
 
                   {/* Top: Status & Details */}
-                  <div className="flex flex-col gap-4">
-                    <div className={`flex items-center gap-2 ${app.status === 'COMPLETED' ? 'text-green-500' : 'text-[#c79c6e]'} font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium`}>
+                  <div className="flex flex-col gap-3 sm:gap-4 pt-2 sm:pt-0">
+                    <div className={`flex items-center gap-2 ${app.status === 'COMPLETED' ? 'text-green-500' : 'text-[#c79c6e]'} font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium`}>
                       <span>{app.badge}</span>
-                      {app.badge === 'CONFIRMED' && <CheckCircle weight="fill" size={16} />}
-                      {app.badge === 'PENDING' && <Clock weight="fill" size={16} />}
-                      {app.badge === 'COMPLETED' && <CheckCircle weight="fill" size={16} />}
+                      {app.badge === 'CONFIRMED' && <CheckCircle weight="fill" size={14} />}
+                      {app.badge === 'PENDING' && <Clock weight="fill" size={14} />}
+                      {app.badge === 'COMPLETED' && <CheckCircle weight="fill" size={14} />}
                     </div>
 
-                    <div className="flex flex-col gap-1.5">
-                      <h3 className="font-serif text-2xl md:text-[1.7rem] text-white uppercase tracking-wide leading-tight transition-colors group-hover/card:text-[#c79c6e]">
+                    <div className="flex flex-col gap-1 sm:gap-1.5">
+                      <h3 className="font-serif text-xl sm:text-2xl md:text-[1.7rem] text-white uppercase tracking-wide leading-tight transition-colors group-hover/card:text-[#c79c6e]">
                         {app.date}
                       </h3>
-                      <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3 font-sans text-[0.7rem] tracking-[0.15em] text-white/60 uppercase mt-1">
-                        <span>{app.time}</span>
-                        <span className="hidden md:block w-1 h-1 rounded-full bg-white/20"></span>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 font-sans text-[0.65rem] sm:text-[0.7rem] tracking-[0.12em] sm:tracking-[0.15em] text-white/60 uppercase mt-1">
+                        <span>{formatTimeRange(app.time, app.duration || app.sessionDuration || 60)}</span>
+                        <span className="hidden sm:block w-1 h-1 rounded-full bg-white/20"></span>
                         <span>{app.durationStr}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 mt-1 text-white/90 font-sans text-[0.75rem] tracking-[0.15em] uppercase font-medium">
-                      <User size={20} weight="light" className="text-[#c79c6e]" />
+                    <div className="flex items-center gap-2.5 sm:gap-3 mt-1 text-white/90 font-sans text-[0.7rem] sm:text-[0.75rem] tracking-[0.12em] sm:tracking-[0.15em] uppercase font-medium">
+                      <User size={18} weight="light" className="text-[#c79c6e] shrink-0" />
                       <span>{app.person}</span>
                     </div>
                   </div>
@@ -330,7 +358,7 @@ export default function CoachingTab() {
                         setSelectedSession(app);
                         setSessionModalTab(app.status === 'COMPLETED' || app.primaryAction === 'VIEW SHARED NOTES' ? 'notes' : 'details');
                       }}
-                      className="flex-1 py-4 px-6 rounded border border-white/20 text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                      className="flex-1 py-3 sm:py-4 px-4 sm:px-6 rounded border border-white/20 text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/5 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors text-center"
                     >
                       {app.primaryAction}
                     </button>
@@ -341,24 +369,24 @@ export default function CoachingTab() {
                           e.stopPropagation();
                           setOptionsOpenId(optionsOpenId === app.id ? null : app.id);
                         }}
-                        className={`p-3.5 rounded border transition-colors flex items-center justify-center ${optionsOpenId === app.id ? 'bg-[#c79c6e]/10 border-[#c79c6e]/40 text-[#c79c6e]' : 'border-white/20 text-white/60 hover:text-white hover:border-white/40 hover:bg-white/5'}`}
+                        className={`p-3 sm:p-3.5 rounded border transition-colors flex items-center justify-center shrink-0 ${optionsOpenId === app.id ? 'bg-[#c79c6e]/10 border-[#c79c6e]/40 text-[#c79c6e]' : 'border-white/20 text-white/60 hover:text-white hover:border-white/40 hover:bg-white/5'}`}
                       >
-                        <DotsThree size={20} weight="bold" />
+                        <DotsThree size={18} weight="bold" />
                       </button>
                     )}
 
                     {/* Popover Menu */}
                     {optionsOpenId === app.id && app.status === 'UPCOMING' && (
-                      <div className="absolute bottom-full right-0 mb-3 w-56 bg-[#0a0a0a] border border-[#c79c6e]/20 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] flex flex-col py-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                      <div className="absolute bottom-full right-0 mb-3 w-48 sm:w-56 bg-[#0a0a0a] border border-[#c79c6e]/20 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] flex flex-col py-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                         
                         <a 
                           href={generateGoogleCalendarLink(app.date, app.time, app.duration)}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => setOptionsOpenId(null)}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left text-white/70 hover:text-white hover:bg-white/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-white/70 hover:text-white hover:bg-white/5 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors"
                         >
-                          <CalendarPlus size={16} className="text-blue-400" />
+                          <CalendarPlus size={15} className="text-blue-400 shrink-0" />
                           <span>ADD TO CALENDAR</span>
                         </a>
                         
@@ -368,9 +396,9 @@ export default function CoachingTab() {
                             setOptionsOpenId(null);
                           }}
                           disabled={app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'APPROVED'}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left text-white/70 hover:text-white hover:bg-white/5 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-white/70 hover:text-white hover:bg-white/5 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <ArrowsClockwise size={16} className="text-amber-400" />
+                          <ArrowsClockwise size={15} className="text-amber-400 shrink-0" />
                           <span>
                             {app.rescheduleRequest?.status === 'PENDING' 
                               ? 'RESCHEDULE PENDING' 
@@ -387,9 +415,9 @@ export default function CoachingTab() {
                             setCancelSession(app);
                             setOptionsOpenId(null);
                           }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-400 hover:text-red-300 hover:bg-red-500/10 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors"
+                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-red-400 hover:text-red-300 hover:bg-red-500/10 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors"
                         >
-                          <XCircle size={16} />
+                          <XCircle size={15} className="shrink-0" />
                           <span>CANCEL</span>
                         </button>
 
@@ -402,26 +430,24 @@ export default function CoachingTab() {
         )}
       </div>
 
-
-
       {/* Modal for Session Details */}
       {selectedSession && createPortal(
         <div 
           data-lenis-prevent="true" 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-[#0a0a0a]/90 backdrop-blur-xl animate-in fade-in duration-300 overscroll-none"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 md:p-8 bg-[#0a0a0a]/90 backdrop-blur-xl animate-in fade-in duration-300 overscroll-none"
         >
           {/* Clickable backdrop to close */}
           <div className="absolute inset-0" onClick={() => setSelectedSession(null)} />
           
           {/* Modal Content */}
-          <div className="relative w-full max-w-3xl bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] p-6 md:p-10 flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-8 duration-500">
+          <div className="relative w-full max-w-3xl bg-[#0a0a0a] border border-white/10 rounded-xl sm:rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] p-4 sm:p-6 md:p-10 flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-in slide-in-from-bottom-8 duration-500">
             
             {/* Close Button */}
             <button 
               onClick={() => setSelectedSession(null)}
-              className="absolute top-4 right-4 md:top-6 md:right-6 p-2 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors z-10"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 p-2 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors z-10"
             >
-              <X size={24} />
+              <X size={20} className="sm:w-6 sm:h-6" />
             </button>
 
             {/* Modal Tab Navigation */}
@@ -433,28 +459,28 @@ export default function CoachingTab() {
               ));
 
               return (
-                <div className="flex items-center gap-6 border-b border-white/10 pb-4 mb-4 pr-10">
+                <div className="flex items-center gap-4 sm:gap-6 border-b border-white/10 pb-3 sm:pb-4 mb-4 pr-10 overflow-x-auto [scrollbar-width:none]">
                   <button 
                     onClick={() => setSessionModalTab('details')}
-                    className={`font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium transition-colors relative pb-1 flex items-center gap-2 ${sessionModalTab === 'details' ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white'}`}
+                    className={`font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors relative pb-1 flex items-center gap-1.5 sm:gap-2 shrink-0 ${sessionModalTab === 'details' ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white'}`}
                   >
-                    <CalendarBlank size={16} />
+                    <CalendarBlank size={15} />
                     <span>Appointment Details</span>
                     {sessionModalTab === 'details' && (
-                      <div className="absolute bottom-[-17px] left-0 w-full h-[2px] bg-[#c79c6e]" />
+                      <div className="absolute bottom-[-13px] sm:bottom-[-17px] left-0 w-full h-[2px] bg-[#c79c6e]" />
                     )}
                   </button>
                   <button 
                     onClick={() => setSessionModalTab('notes')}
-                    className={`font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium transition-colors relative pb-1 flex items-center gap-2 ${sessionModalTab === 'notes' ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white'}`}
+                    className={`font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors relative pb-1 flex items-center gap-1.5 sm:gap-2 shrink-0 ${sessionModalTab === 'notes' ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white'}`}
                   >
-                    <FileText size={16} />
+                    <FileText size={15} />
                     <span>Coach's Session Notes</span>
                     {hasNotes && (
                       <span className="w-2 h-2 rounded-full bg-[#c79c6e] animate-pulse" />
                     )}
                     {sessionModalTab === 'notes' && (
-                      <div className="absolute bottom-[-17px] left-0 w-full h-[2px] bg-[#c79c6e]" />
+                      <div className="absolute bottom-[-13px] sm:bottom-[-17px] left-0 w-full h-[2px] bg-[#c79c6e]" />
                     )}
                   </button>
                 </div>
@@ -462,75 +488,75 @@ export default function CoachingTab() {
             })()}
 
             {/* Scrollable Content Area */}
-            <div className="overflow-y-auto overscroll-contain pr-2 md:pr-4 -mr-2 md:-mr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="overflow-y-auto overscroll-contain pr-1 sm:pr-2 md:pr-4 -mr-1 sm:-mr-2 md:-mr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {sessionModalTab === 'details' ? (
                 /* Tab 1: Appointment Details */
-                <div className="flex flex-col gap-8 pb-4 pt-2 animate-in fade-in duration-300">
+                <div className="flex flex-col gap-6 sm:gap-8 pb-4 pt-2 animate-in fade-in duration-300">
                   
                   {/* Date */}
-                  <div className="flex gap-5">
-                    <CalendarBlank size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                    <div className="flex flex-col gap-1.5">
-                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Date</span>
-                      <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.date}</span>
+                  <div className="flex gap-3.5 sm:gap-5">
+                    <CalendarBlank size={20} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/50 font-medium">Date</span>
+                      <span className="font-sans text-base sm:text-lg md:text-xl text-white font-medium">{selectedSession.date}</span>
                     </div>
                   </div>
 
                   {/* Time */}
-                  <div className="flex gap-5">
-                    <Clock size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                    <div className="flex flex-col gap-1.5">
-                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Time</span>
-                      <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.time}</span>
+                  <div className="flex gap-3.5 sm:gap-5">
+                    <Clock size={20} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/50 font-medium">Time</span>
+                      <span className="font-sans text-base sm:text-lg md:text-xl text-white font-medium">{formatTimeRange(selectedSession.time, selectedSession.duration || 60)}</span>
                     </div>
                   </div>
 
                   {/* Session Type */}
-                  <div className="flex gap-5">
-                    <User size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                    <div className="flex flex-col gap-1.5">
-                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Session Type</span>
-                      <span className="font-sans text-lg md:text-xl text-white font-medium">1-on-1 Coaching Session</span>
+                  <div className="flex gap-3.5 sm:gap-5">
+                    <User size={20} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/50 font-medium">Session Type</span>
+                      <span className="font-sans text-base sm:text-lg md:text-xl text-white font-medium">1-on-1 Coaching Session</span>
                     </div>
                   </div>
 
                   {/* Duration */}
-                  <div className="flex gap-5">
-                    <Clock size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                    <div className="flex flex-col gap-1.5">
-                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Duration</span>
-                      <span className="font-sans text-lg md:text-xl text-white font-medium">{selectedSession.duration || 60} minutes</span>
+                  <div className="flex gap-3.5 sm:gap-5">
+                    <Clock size={20} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/50 font-medium">Duration</span>
+                      <span className="font-sans text-base sm:text-lg md:text-xl text-white font-medium">{selectedSession.duration || 60} minutes</span>
                     </div>
                   </div>
 
                   {/* Where */}
-                  <div className="flex gap-5">
-                    <VideoCamera size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                    <div className="flex flex-col gap-1.5">
-                      <span className="font-sans text-[0.7rem] text-white/50 font-medium">Where</span>
-                      <div className="font-sans text-lg md:text-xl text-white font-medium flex flex-wrap items-center gap-2">
+                  <div className="flex gap-3.5 sm:gap-5">
+                    <VideoCamera size={20} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/50 font-medium">Where</span>
+                      <div className="font-sans text-base sm:text-lg md:text-xl text-white font-medium flex flex-wrap items-center gap-1.5 sm:gap-2">
                         Google Meet
                         {selectedSession.meetLink ? (
-                           <a href={selectedSession.meetLink} target="_blank" rel="noopener noreferrer" className="text-[#c79c6e] hover:underline text-sm md:text-base ml-1">(Join Link)</a>
+                           <a href={selectedSession.meetLink} target="_blank" rel="noopener noreferrer" className="text-[#c79c6e] hover:underline text-xs sm:text-sm md:text-base ml-1">(Join Link)</a>
                         ) : (
-                           <span className="text-white/40 text-sm md:text-base ml-1 font-normal">(Link will be shared after booking)</span>
+                           <span className="text-white/40 text-xs sm:text-sm md:text-base ml-1 font-normal">(Link will be shared after booking)</span>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Total Amount */}
-                  <div className="flex gap-5">
-                    <CurrencyInr size={22} className="text-[#c79c6e] shrink-0 mt-0.5" />
-                    <div className="flex flex-col gap-1.5">
-                      <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/50 font-semibold">TOTAL AMOUNT</span>
+                  <div className="flex gap-3.5 sm:gap-5">
+                    <CurrencyInr size={20} className="text-[#c79c6e] shrink-0 mt-0.5" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] text-white/50 font-semibold">TOTAL AMOUNT</span>
                       {selectedSession.isFreeSession ? (
-                        <div className="flex items-center gap-3">
-                          <span className="font-sans text-xl md:text-2xl text-white font-bold">₹0</span>
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.65rem] font-semibold uppercase tracking-wider">Course Free Session</span>
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                          <span className="font-sans text-lg sm:text-xl md:text-2xl text-white font-bold">₹0</span>
+                          <span className="px-2 sm:px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-wider">Course Free Session</span>
                         </div>
                       ) : (
-                        <span className="font-sans text-xl md:text-2xl text-white font-bold">
+                        <span className="font-sans text-lg sm:text-xl md:text-2xl text-white font-bold">
                           ₹{Number(selectedSession.amount !== undefined && selectedSession.amount !== null ? selectedSession.amount : (selectedSession.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}
                         </span>
                       )}
@@ -539,16 +565,16 @@ export default function CoachingTab() {
 
                   {/* Reschedule Details */}
                   {selectedSession.rescheduleRequest && (
-                    <div className="w-full rounded-2xl bg-gradient-to-br from-[#120f0d] to-[#050505] border border-amber-500/30 p-6 md:p-8 shadow-lg relative overflow-hidden">
-                      <div className="absolute top-0 right-0 bg-amber-500/10 border-b border-l border-amber-500/30 px-3 py-1.5 rounded-bl-xl text-amber-500 font-sans text-[0.55rem] uppercase tracking-[0.2em] font-semibold">
+                    <div className="w-full rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#120f0d] to-[#050505] border border-amber-500/30 p-4 sm:p-6 md:p-8 shadow-lg relative overflow-hidden">
+                      <div className="absolute top-0 right-0 bg-amber-500/10 border-b border-l border-amber-500/30 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-bl-xl text-amber-500 font-sans text-[0.5rem] sm:text-[0.55rem] uppercase tracking-[0.2em] font-semibold">
                         {selectedSession.rescheduleRequest.status}
                       </div>
-                      <h4 className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-medium text-amber-500 mb-4">
+                      <h4 className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.25em] font-medium text-amber-500 mb-3 sm:mb-4">
                         RESCHEDULE REQUEST
                       </h4>
-                      <div className="flex flex-col gap-2 font-serif text-base md:text-lg text-white/90 leading-relaxed">
+                      <div className="flex flex-col gap-1.5 sm:gap-2 font-serif text-sm sm:text-base md:text-lg text-white/90 leading-relaxed">
                         <p><strong className="text-white/50 font-sans text-xs tracking-wider uppercase mr-2">Requested Date:</strong> {selectedSession.rescheduleRequest.formattedDate || selectedSession.rescheduleRequest.date}</p>
-                        <p><strong className="text-white/50 font-sans text-xs tracking-wider uppercase mr-2">Requested Time:</strong> {selectedSession.rescheduleRequest.time}</p>
+                        <p><strong className="text-white/50 font-sans text-xs tracking-wider uppercase mr-2">Requested Time:</strong> {formatTimeRange(selectedSession.rescheduleRequest.time, selectedSession.duration || 60)}</p>
                         {selectedSession.rescheduleRequest.reason && (
                           <p className="mt-2 text-white/70 italic">"{selectedSession.rescheduleRequest.reason}"</p>
                         )}
@@ -560,16 +586,16 @@ export default function CoachingTab() {
                   {Boolean(selectedSession.coachNotes && (typeof selectedSession.coachNotes === 'string' ? selectedSession.coachNotes.trim().length > 0 : selectedSession.coachNotes.length > 0)) && (
                     <div 
                       onClick={() => setSessionModalTab('notes')}
-                      className="w-full rounded-xl bg-[#c79c6e]/10 border border-[#c79c6e]/30 p-4 flex items-center justify-between cursor-pointer hover:bg-[#c79c6e]/15 transition-colors"
+                      className="w-full rounded-xl bg-[#c79c6e]/10 border border-[#c79c6e]/30 p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 cursor-pointer hover:bg-[#c79c6e]/15 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <FileText size={20} className="text-[#c79c6e]" />
+                        <FileText size={18} className="text-[#c79c6e] shrink-0" />
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-white">Coach Notes Available</span>
-                          <span className="text-xs text-white/50">Aarkesh has written notes for this session. Click to view.</span>
+                          <span className="text-xs sm:text-sm font-medium text-white">Coach Notes Available</span>
+                          <span className="text-[0.7rem] sm:text-xs text-white/50">Aarkesh has written notes for this session. Click to view.</span>
                         </div>
                       </div>
-                      <span className="text-xs font-semibold text-[#c79c6e] uppercase tracking-wider">
+                      <span className="text-xs font-semibold text-[#c79c6e] uppercase tracking-wider shrink-0">
                         View Notes &rarr;
                       </span>
                     </div>
@@ -578,7 +604,7 @@ export default function CoachingTab() {
                 </div>
               ) : (
                 /* Tab 2: Coach's Session Notes */
-                <div className="flex flex-col gap-6 pb-4 pt-2 animate-in fade-in duration-300">
+                <div className="flex flex-col gap-4 sm:gap-6 pb-4 pt-2 animate-in fade-in duration-300">
                   {(() => {
                     const notes = selectedSession.coachNotes;
                     const hasNotes = Boolean(notes && (
@@ -587,11 +613,11 @@ export default function CoachingTab() {
 
                     if (!hasNotes) {
                       return (
-                        <div className="w-full py-16 px-6 rounded-2xl bg-[#0e0e0e] border border-white/5 flex flex-col items-center justify-center text-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/30 mb-2">
-                            <FileText size={24} />
+                        <div className="w-full py-12 sm:py-16 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-[#0e0e0e] border border-white/5 flex flex-col items-center justify-center text-center gap-3">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/30 mb-2">
+                            <FileText size={20} className="sm:w-6 sm:h-6" />
                           </div>
-                          <span className="font-serif text-lg text-white/80">No Notes Shared Yet</span>
+                          <span className="font-serif text-base sm:text-lg text-white/80">No Notes Shared Yet</span>
                           <p className="font-sans text-xs text-white/40 max-w-md leading-relaxed">
                             Aarkesh hasn't added notes for this session yet. Session takeaways, recommendations, and next steps will appear right here after or during your conversation.
                           </p>
@@ -600,33 +626,33 @@ export default function CoachingTab() {
                     }
 
                     return (
-                      <div className="w-full rounded-2xl bg-gradient-to-br from-[#14100c] to-[#070707] border border-[#c79c6e]/30 p-6 md:p-8 shadow-xl flex flex-col gap-5">
-                        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 gap-2">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e]">
-                              <FileText size={18} />
+                      <div className="w-full rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#14100c] to-[#070707] border border-[#c79c6e]/30 p-4 sm:p-6 md:p-8 shadow-xl flex flex-col gap-4 sm:gap-5">
+                        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-3 sm:pb-4 gap-2">
+                          <div className="flex items-center gap-2.5 sm:gap-3">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e]">
+                              <FileText size={16} />
                             </div>
                             <div className="flex flex-col">
-                              <h4 className="font-sans text-[0.7rem] uppercase tracking-[0.25em] font-medium text-[#c79c6e]">
+                              <h4 className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.2em] sm:tracking-[0.25em] font-medium text-[#c79c6e]">
                                 COACH'S SESSION NOTES
                               </h4>
-                              <span className="text-white/40 text-xs">Shared with you by Aarkesh</span>
+                              <span className="text-white/40 text-[0.7rem] sm:text-xs">Shared with you by Aarkesh</span>
                             </div>
                           </div>
-                          <span className="px-3 py-1 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/20 text-[#c79c6e] text-xs font-medium">
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/20 text-[#c79c6e] text-[0.7rem] sm:text-xs font-medium">
                             {selectedSession.date}
                           </span>
                         </div>
 
                         {/* Notes Content */}
-                        <div className="text-white/90 font-serif text-base md:text-lg leading-relaxed whitespace-pre-wrap py-2">
+                        <div className="text-white/90 font-serif text-sm sm:text-base md:text-lg leading-relaxed whitespace-pre-wrap py-2">
                           {typeof notes === 'string' ? (
                             <p>{notes}</p>
                           ) : Array.isArray(notes) ? (
-                            <ul className="flex flex-col gap-3">
+                            <ul className="flex flex-col gap-2.5 sm:gap-3">
                               {notes.map((n, idx) => (
-                                <li key={idx} className="flex items-start gap-3">
-                                  <span className="text-[#c79c6e] mt-1.5 text-xs">●</span>
+                                <li key={idx} className="flex items-start gap-2.5 sm:gap-3">
+                                  <span className="text-[#c79c6e] mt-1 text-xs">●</span>
                                   <span>{n}</span>
                                 </li>
                               ))}
@@ -637,7 +663,7 @@ export default function CoachingTab() {
                         </div>
 
                         {/* Footer Disclaimer */}
-                        <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-white/40 gap-2">
+                        <div className="pt-3 sm:pt-4 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[0.7rem] sm:text-xs text-white/40 gap-1.5 sm:gap-2">
                           <span>Personal guidance & action items shared for your journey</span>
                           <span className="text-[#c79c6e]/70 font-serif italic">Better With Aarkesh</span>
                         </div>
@@ -657,28 +683,28 @@ export default function CoachingTab() {
       {prepareSession && prepareSession.step === 1 && createPortal(
         <div 
           data-lenis-prevent="true"
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overscroll-none"
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300 overscroll-none"
         >
           <div className="absolute inset-0" onClick={() => setPrepareSession(null)} />
-          <div className="relative w-full max-w-[340px] bg-[#050505] border border-[#c79c6e]/30 rounded-2xl shadow-2xl p-8 animate-in zoom-in-95 duration-300">
+          <div className="relative w-full max-w-[340px] bg-[#050505] border border-[#c79c6e]/30 rounded-2xl shadow-2xl p-6 sm:p-8 animate-in zoom-in-95 duration-300">
             <button 
               onClick={() => setPrepareSession(null)}
-              className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors"
+              className="absolute top-5 right-5 sm:top-6 sm:right-6 text-white/40 hover:text-white transition-colors"
             >
               <X size={20} />
             </button>
-            <h3 className="font-sans text-[0.7rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e] mb-6 leading-relaxed pr-6">
+            <h3 className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-medium text-[#c79c6e] mb-4 sm:mb-6 leading-relaxed pr-6">
               PREPARE FOR THE<br/>CONVERSATION
             </h3>
-            <p className="font-sans text-white/90 text-[1.05rem] leading-[1.6] mb-8 font-light">
+            <p className="font-sans text-white/90 text-sm sm:text-[1.05rem] leading-[1.6] mb-6 sm:mb-8 font-light">
               Optional questions to help you gather what feels important before we speak.
             </p>
-            <p className="font-sans text-white/40 text-[0.8rem] mb-8 font-light">
+            <p className="font-sans text-white/40 text-xs sm:text-[0.8rem] mb-6 sm:mb-8 font-light">
               Your responses here will be shared with Aarkesh.
             </p>
             <button 
               onClick={() => setPrepareSession({ ...prepareSession, step: 2 })}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-lg border border-[#c79c6e]/50 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium transition-colors"
+              className="w-full flex items-center justify-center gap-2 sm:gap-3 py-3.5 sm:py-4 rounded-lg border border-[#c79c6e]/50 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors"
             >
               <span>BEGIN PREPARATION</span>
               <span>&rarr;</span>
@@ -695,49 +721,49 @@ export default function CoachingTab() {
           className="fixed inset-0 z-[120] bg-[#050505] flex flex-col overflow-y-auto overscroll-none animate-in slide-in-from-bottom-8 duration-500 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           {/* Header Row */}
-          <div className="w-full px-6 md:px-16 pt-10 md:pt-20 flex flex-col items-start max-w-[1400px] mx-auto min-h-screen pb-20">
-              <div className="flex flex-wrap items-center gap-3 px-5 py-2.5 rounded border border-white/10 mb-8 font-sans text-[0.6rem] md:text-[0.65rem] uppercase tracking-[0.2em] font-medium text-white/60">
-                <span>{prepareSession.session.date} • {prepareSession.session.time}</span>
-                <span className="text-[#c79c6e] flex items-center gap-1.5 ml-2">
+          <div className="w-full px-4 sm:px-8 md:px-16 pt-8 sm:pt-12 md:pt-20 flex flex-col items-start max-w-[1400px] mx-auto min-h-screen pb-16 md:pb-20">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-white/10 mb-6 sm:mb-8 font-sans text-[0.55rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium text-white/60">
+                <span>{prepareSession.session.date} • {formatTimeRange(prepareSession.session.time, prepareSession.session.duration || 60)}</span>
+                <span className="text-[#c79c6e] flex items-center gap-1.5 ml-1 sm:ml-2">
                   • {prepareSession.session.badge} <CheckCircle size={12} weight="fill" />
                 </span>
               </div>
               
               <button 
                 onClick={() => setPrepareSession(null)}
-                className="flex items-center gap-3 font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] hover:text-white transition-colors mb-16"
+                className="flex items-center gap-2.5 sm:gap-3 font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium text-[#c79c6e] hover:text-white transition-colors mb-8 sm:mb-16"
               >
                 <span>&larr;</span>
                 <span>BACK TO APPOINTMENT</span>
               </button>
               
-              <div className="w-full flex flex-col lg:flex-row justify-between items-start gap-12 lg:gap-24 flex-1">
+              <div className="w-full flex flex-col lg:flex-row justify-between items-start gap-8 sm:gap-12 lg:gap-24 flex-1">
                 
                 {/* Left Column: Form */}
                 <div className="flex flex-col flex-1 w-full max-w-4xl">
-                  <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-medium text-[#c79c6e] mb-6 block">
+                  <span className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-medium text-[#c79c6e] mb-4 sm:mb-6 block">
                     BEFORE WE SPEAK
                   </span>
-                  <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white tracking-tight leading-[1.05] mb-12">
+                  <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] text-white tracking-tight leading-[1.1] mb-6 sm:mb-12">
                     What feels most important to bring into this conversation?
                   </h1>
                   
-                  <div className="w-full relative mb-4">
+                  <div className="w-full relative mb-3 sm:mb-4">
                     <textarea 
-                      className="w-full h-72 md:h-80 bg-[#0a0a0a]/50 border border-white/10 rounded-2xl p-6 md:p-8 font-serif text-lg md:text-xl text-white placeholder-white/20 resize-none focus:outline-none focus:border-[#c79c6e]/40 transition-colors"
+                      className="w-full h-56 sm:h-72 md:h-80 bg-[#0a0a0a]/50 border border-white/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 font-serif text-base sm:text-lg md:text-xl text-white placeholder-white/20 resize-none focus:outline-none focus:border-[#c79c6e]/40 transition-colors"
                       placeholder="Write as much or as little as you need."
                     />
                   </div>
-                  <p className="font-sans text-xs md:text-sm text-white/30 font-light mb-12">
+                  <p className="font-sans text-xs sm:text-sm text-white/30 font-light mb-8 sm:mb-12">
                     Optional - Shared with Aarkesh for this conversation
                   </p>
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8 mt-auto">
-                    <button className="flex items-center justify-center gap-4 px-10 py-4 rounded-lg border border-[#c79c6e]/50 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium transition-colors">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-8 mt-auto">
+                    <button className="flex items-center justify-center gap-3 sm:gap-4 px-8 sm:px-10 py-3.5 sm:py-4 rounded-lg border border-[#c79c6e]/50 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-colors">
                       <span>CONTINUE</span>
                       <span>&rarr;</span>
                     </button>
-                    <button onClick={() => setPrepareSession(null)} className="font-sans text-[0.7rem] uppercase tracking-[0.2em] font-medium text-white/40 hover:text-white transition-colors">
+                    <button onClick={() => setPrepareSession(null)} className="py-2.5 sm:py-0 text-center font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium text-white/40 hover:text-white transition-colors">
                       SKIP FOR NOW
                     </button>
                   </div>
@@ -745,25 +771,25 @@ export default function CoachingTab() {
 
                 {/* Right Column: Note from Coach */}
                 {prepareSession.noteVisible && (
-                  <div className="w-full lg:w-[380px] shrink-0 rounded-3xl bg-gradient-to-b from-[#120f0d] to-[#0a0a0a] border border-[#c79c6e]/20 p-10 shadow-2xl relative animate-in fade-in zoom-in-95 duration-500 mt-0 lg:-mt-2">
+                  <div className="w-full lg:w-[380px] shrink-0 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-[#120f0d] to-[#0a0a0a] border border-[#c79c6e]/20 p-6 sm:p-10 shadow-2xl relative animate-in fade-in zoom-in-95 duration-500 mt-0 lg:-mt-2">
                     <button 
                       onClick={() => setPrepareSession({ ...prepareSession, noteVisible: false })}
-                      className="absolute top-8 right-8 text-white/40 hover:text-white transition-colors"
+                      className="absolute top-6 right-6 sm:top-8 sm:right-8 text-white/40 hover:text-white transition-colors"
                     >
                       <X size={16} />
                     </button>
                     
-                    <h4 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-8">
+                    <h4 className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-4 sm:mb-8">
                       A NOTE FROM AARKESH
                     </h4>
-                    <p className="font-serif text-base md:text-lg text-white/80 leading-[1.8] mb-10">
+                    <p className="font-serif text-sm sm:text-base md:text-lg text-white/80 leading-[1.7] sm:leading-[1.8] mb-6 sm:mb-10">
                       Before our conversation, take a few quiet minutes to revisit what felt most important after our last session. You do not need to arrive with an answer.
                     </p>
                     
-                    <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-medium text-white/30 block mb-4">
+                    <span className="font-sans text-[0.55rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-medium text-white/30 block mb-3 sm:mb-4">
                       FOR THIS CONVERSATION
                     </span>
-                    <button className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] hover:text-white transition-colors border-b border-[#c79c6e]/30 hover:border-white/50 pb-1">
+                    <button className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium text-[#c79c6e] hover:text-white transition-colors border-b border-[#c79c6e]/30 hover:border-white/50 pb-1">
                       COACH'S NOTES
                     </button>
                   </div>
@@ -789,28 +815,28 @@ export default function CoachingTab() {
         <div 
           className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
         >
-          <div className="relative w-full max-w-md bg-[#0a0a0a] border border-red-500/20 rounded-2xl shadow-[0_0_50px_rgba(239,68,68,0.15)] p-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
-              <XCircle className="text-red-500" size={32} weight="fill" />
+          <div className="relative w-full max-w-md bg-[#0a0a0a] border border-red-500/20 rounded-2xl shadow-[0_0_50px_rgba(239,68,68,0.15)] p-6 sm:p-8 flex flex-col items-center text-center">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4 sm:mb-6">
+              <XCircle className="text-red-500" size={28} weight="fill" />
             </div>
             
-            <h2 className="font-serif text-2xl text-white mb-2">Cancel Appointment?</h2>
-            <p className="font-sans text-white/60 text-sm mb-8 leading-relaxed">
-              Are you sure you want to cancel your session on <strong>{cancelSession.date}</strong> at <strong>{cancelSession.time}</strong>? This action cannot be undone.
+            <h2 className="font-serif text-xl sm:text-2xl text-white mb-2">Cancel Appointment?</h2>
+            <p className="font-sans text-white/60 text-xs sm:text-sm mb-6 sm:mb-8 leading-relaxed">
+              Are you sure you want to cancel your session on <strong>{cancelSession.date}</strong> at <strong>{formatTimeRange(cancelSession.time, cancelSession.duration || 60)}</strong>? This action cannot be undone.
             </p>
 
-            <div className="flex w-full gap-4">
+            <div className="flex w-full gap-3 sm:gap-4">
               <button
                 onClick={() => setCancelSession(null)}
                 disabled={isCancelling}
-                className="flex-1 py-3 rounded border border-white/20 text-white/70 hover:bg-white/5 hover:text-white font-sans text-xs uppercase tracking-widest transition-colors"
+                className="flex-1 py-2.5 sm:py-3 rounded border border-white/20 text-white/70 hover:bg-white/5 hover:text-white font-sans text-[0.65rem] sm:text-xs uppercase tracking-wider sm:tracking-widest transition-colors"
               >
                 No, Keep It
               </button>
               <button
                 onClick={handleCancelAppointment}
                 disabled={isCancelling}
-                className="flex-1 py-3 rounded bg-red-600 hover:bg-red-500 text-white font-sans text-xs uppercase tracking-widest font-semibold transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 sm:py-3 rounded bg-red-600 hover:bg-red-500 text-white font-sans text-[0.65rem] sm:text-xs uppercase tracking-wider sm:tracking-widest font-semibold transition-colors disabled:opacity-50"
               >
                 {isCancelling ? 'CANCELLING...' : 'YES, CANCEL'}
               </button>
