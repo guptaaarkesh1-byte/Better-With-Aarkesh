@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import Container from '../ui/Container';
-import { CaretDown, ChatCircleText, ArrowRight, LockKey, Sparkle } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
-import { useBooking } from '../../context/BookingContext';
+import { CaretDown, Sparkle } from '@phosphor-icons/react';
 
 const COACHING_FAQS = [
   {
@@ -39,7 +37,6 @@ const COACHING_FAQS = [
 
 export default function CoachingFaqSection() {
   const [openIndex, setOpenIndex] = useState(0);
-  const { openBookingModal } = useBooking();
 
   const toggleAccordion = (index) => {
     setOpenIndex(openIndex === index ? -1 : index);
@@ -110,22 +107,6 @@ export default function CoachingFaqSection() {
               </div>
             );
           })}
-        </div>
-
-        {/* Bottom Callout */}
-        <div className="mt-14 p-6 md:p-8 rounded-2xl bg-gradient-to-r from-white/[0.03] via-white/[0.01] to-white/[0.03] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
-          <div className="flex flex-col gap-1">
-            <span className="font-serif text-lg text-white">Have a specific question not listed here?</span>
-            <span className="font-sans text-xs text-white/50">Book a conversation or reach out anytime.</span>
-          </div>
-
-          <button
-            onClick={openBookingModal}
-            className="px-6 py-3 rounded-xl bg-[#c79c6e] hover:bg-[#b0885e] text-black font-semibold text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(199,156,110,0.2)] hover:scale-[1.02] active:scale-[0.98] shrink-0 cursor-pointer"
-          >
-            <span>Book A Session</span>
-            <ArrowRight size={14} weight="bold" />
-          </button>
         </div>
       </Container>
     </section>
