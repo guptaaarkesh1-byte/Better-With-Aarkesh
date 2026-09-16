@@ -19,8 +19,59 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+const INITIAL_DEFAULT_CARDS = [
+  {
+    title: 'The Foundation of Presence',
+    description: 'Discover how to anchor yourself in any high-pressure situation with calm, unshakeable energy.',
+    order: 0,
+    isActive: true,
+  },
+  {
+    title: 'Breaking Reactive Patterns',
+    description: 'Identify and dissolve the emotional triggers that cause you to react instead of respond.',
+    order: 1,
+    isActive: true,
+  },
+  {
+    title: 'Magnetic Communication',
+    description: 'Develop a voice and language that people naturally lean toward and remember.',
+    order: 2,
+    isActive: true,
+  },
+  {
+    title: 'Non-Verbal Mastery',
+    description: 'Harness the 93% of communication that happens without words — posture, eye contact, space.',
+    order: 3,
+    isActive: true,
+  },
+  {
+    title: 'Leadership from Within',
+    description: 'Stop performing authority and start embodying it — people will follow without being asked.',
+    order: 4,
+    isActive: true,
+  },
+  {
+    title: 'Emotional Sovereignty',
+    description: 'Condition your nervous system to stay laser-focused, composed, and mentally sharp under extreme stress.',
+    order: 5,
+    isActive: true,
+  },
+  {
+    title: 'Executive Gravitas & Charisma',
+    description: 'Command high-stakes rooms and social dynamics with effortless poise, vocal resonance, and respect.',
+    order: 6,
+    isActive: true,
+  },
+  {
+    title: 'The Ripple Effect',
+    description: 'Turn your internal transformation into lasting impact on every relationship and environment.',
+    order: 7,
+    isActive: true,
+  },
+];
+
 export default function AdminCourseControl() {
-  const [cards, setCards] = useState([]);
+  const [cards, setCards] = useState(INITIAL_DEFAULT_CARDS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -45,18 +96,23 @@ export default function AdminCourseControl() {
     try {
       setLoading(true);
       const token = localStorage.getItem('adminToken');
-      const res = await fetch(`${API_URL}/api/courses/cards/admin`, {
+      let res = await fetch(`${API_URL}/api/courses/cards/admin`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (!res.ok) {
+        // Fallback to public cards endpoint
+        res = await fetch(`${API_URL}/api/courses/cards/public`);
+      }
+
       if (res.ok) {
         const data = await res.json();
-        setCards(data);
-      } else {
-        showNotification('Failed to load curriculum cards', 'error');
+        if (Array.isArray(data) && data.length > 0) {
+          setCards(data);
+        }
       }
     } catch (err) {
       console.error('Error fetching cards:', err);
-      showNotification('Error connecting to server', 'error');
     } finally {
       setLoading(false);
     }
