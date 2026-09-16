@@ -791,7 +791,7 @@ export default function CourseProfile() {
                       });
                       const invoiceNumber = `INV-${purchaseDate.getFullYear()}${String(purchaseDate.getMonth() + 1).padStart(2, '0')}-${txnId.slice(-6).toUpperCase()}`;
 
-                      const invoiceHeading = latest.invoiceItemTitle || user?.coursePricing?.invoiceItemTitle || (latest.courseTitle ? `${latest.courseTitle} — Masterclass Lifetime Access` : 'The Presence Protocol™ — Masterclass Lifetime Access');
+                      const invoiceHeading = latest.invoiceItemTitle || user?.coursePricing?.invoiceItemTitle || (latest.courseTitle ? `${latest.courseTitle} — Masterclass Lifetime Access` : 'The Better Man™ — Masterclass Lifetime Access');
                       const invoiceSubtitle = latest.invoiceItemSubtitle || user?.coursePricing?.invoiceItemSubtitle || 'Complete modular video lessons, action blueprints & community';
                       const bonusHeading = latest.bonusItemTitle || user?.coursePricing?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh';
                       const bonusSubtitle = latest.bonusItemSubtitle || user?.coursePricing?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus';

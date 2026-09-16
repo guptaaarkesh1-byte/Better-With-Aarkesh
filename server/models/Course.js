@@ -20,7 +20,7 @@ const courseSchema = new mongoose.Schema({
   },
   invoiceItemTitle: {
     type: String,
-    default: 'The Presence Protocol™ — Masterclass Lifetime Access',
+    default: 'The Better Man™ — Masterclass Lifetime Access',
     trim: true,
   },
   invoiceItemSubtitle: {

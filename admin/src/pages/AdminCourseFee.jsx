@@ -27,9 +27,9 @@ export default function AdminCourseFee() {
   const [notification, setNotification] = useState(null);
 
   // Form State
-  const [courseTitle, setCourseTitle] = useState('The Presence Protocol™');
+  const [courseTitle, setCourseTitle] = useState('The Better Man™');
   const [courseSubtitle, setCourseSubtitle] = useState('');
-  const [invoiceItemTitle, setInvoiceItemTitle] = useState('The Presence Protocol™ — Masterclass Lifetime Access');
+  const [invoiceItemTitle, setInvoiceItemTitle] = useState('The Better Man™ — Masterclass Lifetime Access');
   const [invoiceItemSubtitle, setInvoiceItemSubtitle] = useState('HD video frameworks, modular curriculum, worksheets & community');
   const [bonusItemTitle, setBonusItemTitle] = useState('3 Private 1-on-1 Executive Coaching Sessions with Aarkesh');
   const [bonusItemSubtitle, setBonusItemSubtitle] = useState('Valued at ₹15,000 — 100% Complimentary student bonus');
@@ -56,11 +56,11 @@ export default function AdminCourseFee() {
         const primaryCourse = courses[0];
         if (primaryCourse) {
           setCourse(primaryCourse);
-          setCourseTitle(primaryCourse.title || 'The Presence Protocol™');
+          setCourseTitle(primaryCourse.title || 'The Better Man™');
           setCourseSubtitle(primaryCourse.subtitle || '');
           setInvoiceItemTitle(
             primaryCourse.invoiceItemTitle || 
-            (primaryCourse.title ? `${primaryCourse.title} — Masterclass Lifetime Access` : 'The Presence Protocol™ — Masterclass Lifetime Access')
+            (primaryCourse.title ? `${primaryCourse.title} — Masterclass Lifetime Access` : 'The Better Man™ — Masterclass Lifetime Access')
           );
           setInvoiceItemSubtitle(
             primaryCourse.invoiceItemSubtitle || 
@@ -107,7 +107,7 @@ export default function AdminCourseFee() {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          title: courseTitle.trim() || 'The Presence Protocol™',
+          title: courseTitle.trim() || 'The Better Man™',
           subtitle: courseSubtitle.trim(),
           invoiceItemTitle: invoiceItemTitle.trim() || `${courseTitle.trim()} — Masterclass Lifetime Access`,
           invoiceItemSubtitle: invoiceItemSubtitle.trim(),
@@ -245,7 +245,7 @@ export default function AdminCourseFee() {
                   required
                   value={courseTitle}
                   onChange={(e) => setCourseTitle(e.target.value)}
-                  placeholder="e.g. The Presence Protocol™"
+                  placeholder="e.g. The Better Man™"
                   className="w-full bg-black/60 border border-white/15 focus:border-[#c79c6e] rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-colors"
                 />
                 <span className="text-[11px] text-white/40 block mt-1">
@@ -262,7 +262,7 @@ export default function AdminCourseFee() {
                   type="text"
                   value={courseSubtitle}
                   onChange={(e) => setCourseSubtitle(e.target.value)}
-                  placeholder="e.g. Presence Protocol™ Course Hub"
+                  placeholder="e.g. The Better Man™ Course Hub"
                   className="w-full bg-black/60 border border-white/15 focus:border-[#c79c6e] rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-colors"
                 />
               </div>
@@ -283,7 +283,7 @@ export default function AdminCourseFee() {
                     required
                     value={invoiceItemTitle}
                     onChange={(e) => setInvoiceItemTitle(e.target.value)}
-                    placeholder="e.g. The Presence Protocol™ — Masterclass Lifetime Access"
+                    placeholder="e.g. The Better Man™ — Masterclass Lifetime Access"
                     className="w-full bg-black/60 border border-white/15 focus:border-[#c79c6e] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none transition-colors font-medium"
                   />
                   <span className="text-[11px] text-white/40 block mt-1">

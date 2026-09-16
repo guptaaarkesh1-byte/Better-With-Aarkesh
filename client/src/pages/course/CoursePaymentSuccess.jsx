@@ -36,8 +36,8 @@ export default function CoursePaymentSuccess({
   const orderId = purchaseData?.orderId || `order_${Math.random().toString(36).substr(2, 9)}`;
   const studentName = purchaseData?.studentName || 'Valued Student';
   const studentEmail = purchaseData?.studentEmail || '';
-  const courseTitle = purchaseData?.courseTitle || 'The Presence Protocol™';
-  const invoiceHeading = purchaseData?.invoiceItemTitle || (purchaseData?.courseTitle ? `${purchaseData.courseTitle} — Masterclass Lifetime Access` : 'The Presence Protocol™ — Masterclass Lifetime Access');
+  const courseTitle = purchaseData?.courseTitle || 'The Better Man™';
+  const invoiceHeading = purchaseData?.invoiceItemTitle || (purchaseData?.courseTitle ? `${purchaseData.courseTitle} — Masterclass Lifetime Access` : 'The Better Man™ — Masterclass Lifetime Access');
   const invoiceSubtitle = purchaseData?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community';
   const bonusHeading = purchaseData?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh';
   const bonusSubtitle = purchaseData?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus';

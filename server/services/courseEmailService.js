@@ -17,7 +17,7 @@ export async function sendCoursePurchaseInvoiceEmail({
   gstRate = 18,
   gstAmount = 1800,
   isGstIncluded = false,
-  courseTitle = 'The Presence Protocol™',
+  courseTitle = 'The Better Man™',
   invoiceItemTitle = '',
   invoiceItemSubtitle = '',
   bonusItemTitle = '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
@@ -248,7 +248,7 @@ export async function sendCoursePaymentFailedEmail({
   amount = 11800,
   failureReason = 'Transaction declined by issuing bank or cancelled',
   errorCode = 'PAYMENT_FAILED',
-  courseTitle = 'The Presence Protocol™',
+  courseTitle = 'The Better Man™',
   invoiceItemTitle = '',
   purchaseDate = new Date(),
 }) {

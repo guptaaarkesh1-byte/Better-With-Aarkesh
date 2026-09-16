@@ -422,7 +422,7 @@ export default function Course() {
                 purchaseDate: new Date().toISOString(),
                 studentName: fullName || email?.split('@')[0] || 'Valued Student',
                 studentEmail: email,
-                courseTitle: 'The Presence Protocol™',
+                courseTitle: 'The Better Man™',
                 freeSessionsGranted: 3
               };
 
@@ -459,7 +459,7 @@ export default function Course() {
           purchaseDate: new Date().toISOString(),
           studentName: fullName || email?.split('@')[0] || 'Valued Student',
           studentEmail: email,
-          courseTitle: 'The Presence Protocol™',
+          courseTitle: 'The Better Man™',
         };
 
         // Persist failed attempt in database for admin visibility
@@ -1119,8 +1119,8 @@ export default function Course() {
 
           {/* Clean Grand Title */}
           <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] text-white leading-[1.05] mb-6 font-normal tracking-tight">
-            The Presence<br />
-            <span className="text-[#c79c6e]">Protocol</span>
+            The Better<br />
+            <span className="text-[#c79c6e]">Man</span>
           </h1>
 
           {/* Minimal Subtitle */}
@@ -1136,7 +1136,7 @@ export default function Course() {
                 onClick={handleEnroll}
                 className="group relative inline-flex items-center gap-4 rounded-full border border-[#c79c6e]/40 bg-white/[0.06] hover:bg-[#c79c6e]/15 hover:border-[#c79c6e] backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-105 shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(199,156,110,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] cursor-pointer"
               >
-                <span>ENROLL NOW</span>
+                <span>Register Now</span>
                 <span className="w-10 h-10 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 flex items-center justify-center text-[#c79c6e] group-hover:bg-[#c79c6e] group-hover:text-black transition-all shadow-inner">
                   <ArrowRight size={17} weight="bold" />
                 </span>
@@ -1158,30 +1158,170 @@ export default function Course() {
             </p>
           </div>
 
-          {/* Minimal Key Highlights Bar */}
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 pt-6 border-t border-white/10 text-white/60 font-sans text-xs">
+          {/* Minimal Key Highlight */}
+          <div className="flex items-center justify-center pt-6 border-t border-white/10 text-white/70 font-sans text-xs">
             <div className="flex items-center gap-2">
-              <Play size={15} className="text-[#c79c6e]" weight="fill" />
-              <span>9 Master Lessons (3.5h)</span>
-            </div>
-            <span className="text-white/20 hidden sm:inline">•</span>
-            <div className="flex items-center gap-2">
-              <Users size={15} className="text-[#c79c6e]" />
-              <span>3 1-on-1 Coaching Calls</span>
-            </div>
-            <span className="text-white/20 hidden sm:inline">•</span>
-            <div className="flex items-center gap-2">
-              <Star size={15} className="text-amber-400" weight="fill" />
-              <span>4.9 / 5 Rating (500+ Students)</span>
-            </div>
-            <span className="text-white/20 hidden sm:inline">•</span>
-            <div className="flex items-center gap-2">
-              <Infinity size={15} className="text-[#c79c6e]" />
-              <span>Lifetime Access</span>
+              <Infinity size={16} className="text-[#c79c6e]" weight="bold" />
+              <span className="tracking-wide font-medium">Lifetime Access</span>
             </div>
           </div>
         </div>
       </section>
+
+      {/* ─── THE MANIFESTO: PURE EDITORIAL FLOWING TEXT (No Boxes/Cards - Full Width) ─── */}
+      <section className="py-20 sm:py-28 px-6 sm:px-10 md:px-16 lg:px-24 max-w-7xl mx-auto w-full relative z-10 text-[#F5F2EB]">
+        <div className="space-y-14 sm:space-y-20">
+
+          {/* ─── PART 1 ─── */}
+          <div className="space-y-6">
+            <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
+              PART I · THE UNSEEN FRACTURE
+            </span>
+
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white font-normal leading-[1.15] tracking-tight">
+              Most men are not failing because they lack ambition. <span className="text-[#c79c6e] font-semibold">They are drowning in uncalibrated internal noise.</span>
+            </h2>
+
+            <p className="font-sans text-xl sm:text-2xl text-white font-bold leading-snug">
+              You wake up, check your screen before your feet touch the floor, and instantly hand over the steering wheel of your nervous system to fifty different external demands.
+            </p>
+
+            <p className="font-sans text-base sm:text-lg text-white/75 leading-relaxed">
+              <span className="text-lg sm:text-xl font-bold text-white block mb-1">By noon, you have fought a dozen silent battles:</span> negotiating difficult conversations, repressing subtle micro-frustrations, pretending to be fully focused when your mind is fractured into a hundred pieces, and <strong className="text-white font-bold">carrying an invisible weight in your chest</strong> that you have never once spoken out loud. You look successful on paper. You hit targets, you pay bills, you show up where you are expected. Yet beneath the curated surface, <span className="text-lg sm:text-xl text-[#F5F2EB] font-bold">there is a persistent sensation that you are simply performing a version of yourself</span> rather than inhabiting your genuine power.
+            </p>
+
+            <p className="font-serif text-2xl sm:text-3xl text-[#c79c6e] italic font-normal leading-relaxed pl-5 border-l-2 border-[#c79c6e] my-4">
+              "Presence is not something you fabricate through aggressive posturing. Presence is what remains when you finally stop leaking your attention to things you cannot control."
+            </p>
+
+            <p className="font-sans text-xs sm:text-sm text-white/45 leading-relaxed">
+              <strong className="text-white/70 font-semibold text-sm">Key Neuroscience Finding:</strong> Chronic sensory overload degrades executive presence by more than 40%, forcing the human nervous system into an unceasing baseline state of low-grade fight-or-flight.
+            </p>
+          </div>
+
+          {/* ─── PART 2 ─── */}
+          <div className="space-y-6">
+            <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
+              PART II · THE REACTION LOOP
+            </span>
+
+            <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white font-normal leading-tight">
+              The moment you react impulsively, <span className="font-bold text-white">you surrender the room.</span>
+            </h3>
+
+            <p className="font-sans text-xl sm:text-2xl text-[#c79c6e] font-bold leading-snug">
+              True authority is never loud. It is measured, grounded, and unshakeable in the eye of emotional turbulence.
+            </p>
+
+            <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
+              <span className="text-lg sm:text-xl font-bold text-white block mb-1">Consider what happens in high-stakes environments:</span> When someone challenges your viewpoint in a boardroom, when unexpected conflict arises in your relationship, or when financial friction strikes without warning—<strong className="text-white font-bold">what is your instinctual bodily response?</strong> For 95% of men, the heart rate spikes, the breath climbs high into the collarbones, the vocal pitch tightens, and words rush out in an involuntary attempt to defend, validate, or appease.
+            </p>
+
+            <p className="font-sans text-2xl sm:text-3xl text-white font-bold leading-tight">
+              Every single person in the room sub-consciously registers that micro-panic. <span className="text-[#c79c6e]">They do not hear your words; they feel your instability.</span>
+            </p>
+
+            <p className="font-sans text-base sm:text-lg text-white/75 leading-relaxed">
+              Human beings are biological mirrors. We possess mirror neuron systems evolutionary fine-tuned over two million years to sense whether the man standing in front of us is anchored in reality or dangling by a psychological thread. <span className="text-lg sm:text-xl font-bold text-white">You cannot out-talk an ungrounded nervous system.</span> You cannot fake composure when your physiology is broadcasting insecurity with every shallow breath and restless shift of weight.
+            </p>
+
+            <p className="font-sans text-sm sm:text-base text-white/60 leading-relaxed font-medium">
+              When you learn to <strong className="text-white font-bold text-base sm:text-lg">lengthen the gap between stimulus and response</strong>, you reclaim sovereign control over every social, professional, and personal interaction in your life.
+            </p>
+          </div>
+
+          {/* ─── PART 3 ─── */}
+          <div className="space-y-6">
+            <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
+              PART III · THE TRIAD OF SELF-COMMAND
+            </span>
+
+            <h3 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white font-normal">
+              The Three Pillars of The Better Man
+            </h3>
+
+            <p className="font-sans text-xl sm:text-2xl text-white font-bold leading-snug">
+              Transformation is not an emotional high that fades by Monday morning. It is a systematic reconstruction of your mental, somatic, and vocal operating system.
+            </p>
+
+            <div className="space-y-5 pt-2">
+              <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
+                <span className="text-xl sm:text-2xl font-bold text-white block mb-0.5">1. Somatic Anchoring</span>
+                Rewiring your autonomic nervous system so your default response under severe pressure is <strong className="text-white font-bold">physiological calmness</strong> rather than adrenaline-driven reaction.
+              </p>
+              <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
+                <span className="text-xl sm:text-2xl font-bold text-white block mb-0.5">2. Magnetic Cadence</span>
+                Eliminating filler words, uptalk, and rushed speech. Speaking with <strong className="text-white font-bold">deliberate resonance, tactical silence</strong>, and unwavering eye contact.
+              </p>
+              <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
+                <span className="text-xl sm:text-2xl font-bold text-white block mb-0.5">3. Internal Sovereignty</span>
+                Eradicating the need for external validation. Cultivating an <strong className="text-white font-bold">unshakeable locus of control</strong> that no insult, crisis, or chaotic environment can disturb.
+              </p>
+            </div>
+
+            <p className="font-sans text-lg sm:text-xl text-white/90 leading-relaxed pt-2">
+              <span className="text-xl sm:text-2xl font-bold text-[#c79c6e] block mb-1">When these three pillars integrate into your daily unconscious behavior:</span> You stop straining for respect because your stillness commands it automatically. You stop over-explaining your decisions because your clarity carries unquestioned weight.
+            </p>
+          </div>
+
+          {/* ─── PART 4 ─── */}
+          <div className="space-y-6">
+            <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
+              PART IV · THE RIPPLE EFFECT
+            </span>
+
+            <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white font-normal leading-snug">
+              What changes when you master authentic presence?
+            </h3>
+
+            <p className="font-sans text-2xl sm:text-3xl text-[#c79c6e] font-bold leading-tight">
+              Everything. Because how you do anything is how you do everything.
+            </p>
+
+            <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
+              <span className="text-lg sm:text-xl font-bold text-white block mb-1">In business and negotiations:</span> Clients stop hesitating and start saying yes because they feel your conviction. In leadership, teams look to you during turbulence because <strong className="text-white font-bold">your calm is contagious</strong>. In personal relationships, your partner feels safe and deeply connected because you are genuinely in the room with them—listening with your entire being.
+            </p>
+
+            <p className="font-sans text-xl sm:text-2xl text-white font-bold leading-snug">
+              You stop living in anticipation of the next catastrophe and start living in absolute command of the present moment.
+            </p>
+
+            <p className="font-sans text-xs sm:text-sm text-white/45 leading-relaxed">
+              *The Better Man curriculum is intentionally built without generic fluff. Every lesson and framework is distilled from over 10 years of intensive 1-on-1 coaching with top executives and high-performing leaders.*
+            </p>
+          </div>
+
+          {/* ─── PART 5 ─── */}
+          <div className="space-y-6 pb-6">
+            <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
+              PART V · THE THRESHOLD
+            </span>
+
+            <h3 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white font-normal leading-tight">
+              The standard you walk past is <span className="text-[#c79c6e] font-bold">the standard you accept.</span>
+            </h3>
+
+            <p className="font-sans text-2xl sm:text-3xl text-white font-bold leading-snug">
+              Another year of reactive living, silent frustration, and untapped potential is too high a price to pay.
+            </p>
+
+            <p className="font-sans text-base sm:text-lg text-white/75 leading-relaxed">
+              <span className="text-lg sm:text-xl font-bold text-white block mb-1">You are here for a reason:</span> Something in you knows that your current trajectory does not match your true capacity. You know that talent and hard work without presence will always leave you feeling undervalued. <strong className="text-white font-bold">The tools to re-architect your presence, communication, and emotional grounding exist.</strong> The blueprint is ready.
+            </p>
+
+            <p className="font-serif text-2xl sm:text-3xl text-[#c79c6e] italic font-normal leading-snug pl-5 border-l-2 border-[#c79c6e] my-4">
+              "The version of you that commands respect without demanding it is waiting on the other side of this decision."
+            </p>
+
+            <p className="font-sans text-sm sm:text-base text-white/60 leading-normal font-medium">
+              Click <strong className="text-white font-bold">Register Now</strong> above to begin your journey immediately.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      <div className="w-full max-w-6xl mx-auto px-6"><div className="h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" /></div>
 
       {/* ─── WHAT YOU'LL LEARN ──────────────────────────────────── */}
       <section className="py-24 px-6 max-w-6xl mx-auto w-full">
@@ -1211,120 +1351,6 @@ export default function Course() {
 
       <div className="w-full max-w-6xl mx-auto px-6"><div className="h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" /></div>
 
-      {/* ─── CURRICULUM ──────────────────────────────────────────── */}
-      <section id="curriculum" className="py-24 px-6 max-w-6xl mx-auto w-full">
-        <div className="text-center mb-16">
-          <p className="font-sans text-[0.6rem] uppercase tracking-[0.4em] text-[#c79c6e] mb-3">Inside the Course</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-white">Course Curriculum</h2>
-          <p className="text-white/50 font-sans text-sm mt-3">9 lessons · 3 modules · 3h 30m total</p>
-        </div>
-        <div className="flex flex-col gap-6 max-w-3xl mx-auto">
-          {MODULES.map((module, mi) => (
-            <div key={module.id} className="border border-white/10 rounded-2xl md:rounded-3xl bg-[#0a0a0a] overflow-hidden shadow-xl">
-              <button className="w-full flex items-center justify-between p-6 md:p-8 hover:bg-white/[0.03] transition-colors text-left group cursor-pointer" onClick={() => setActiveModule(activeModule === module.id ? null : module.id)}>
-                <div className="flex items-center gap-5">
-                  <span className="w-10 h-10 rounded-full border border-[#c79c6e]/30 bg-[#c79c6e]/10 flex items-center justify-center text-[#c79c6e] font-serif text-base shrink-0">{mi + 1}</span>
-                  <div>
-                    <h4 className={`font-serif text-xl transition-colors leading-snug ${activeModule === module.id ? 'text-[#c79c6e]' : 'text-white group-hover:text-[#c79c6e]'}`}>{module.title}</h4>
-                    <p className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/40 mt-1.5">{module.lessons.length} LESSONS · {module.duration}</p>
-                  </div>
-                </div>
-                <CaretDown size={18} className={`text-white/40 transition-transform shrink-0 ml-4 ${activeModule === module.id ? 'rotate-180 text-[#c79c6e]' : ''}`} />
-              </button>
-              <div className={`overflow-hidden transition-all duration-300 ${activeModule === module.id ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="border-t border-white/[0.08] px-6 md:px-8 py-5 flex flex-col gap-4">
-                  {module.lessons.map((lesson) => (
-                    <div key={lesson.id} className="flex items-center justify-between py-4 border-b border-white/[0.04] last:border-0">
-                      <div className="flex items-center gap-4 flex-1">
-                        {lesson.isLocked ? (
-                          <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/30 shrink-0">
-                            <LockKey size={16} />
-                          </div>
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e] shrink-0">
-                            <Play size={16} weight="fill" />
-                          </div>
-                        )}
-                        <div className="flex flex-col flex-1">
-                          <span className={`font-sans text-sm md:text-base ${lesson.isLocked ? 'text-white/40 blur-[4.5px] select-none pointer-events-none' : 'text-white font-medium'}`}>
-                            {lesson.title}
-                          </span>
-                          {lesson.isLocked && (
-                            <span className="text-[0.6rem] font-sans text-[#c79c6e]/70 tracking-widest uppercase mt-0.5">
-                              LOCKED LESSON · ENROLL TO ACCESS
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <span className="font-sans text-xs text-white/30 whitespace-nowrap ml-6">{lesson.duration}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div className="w-full max-w-6xl mx-auto px-6"><div className="h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" /></div>
-
-      {/* ─── INSTRUCTOR ──────────────────────────────────────────── */}
-      <section id="about" className="py-24 px-6 max-w-6xl mx-auto w-full">
-        <div className="text-center mb-16">
-          <p className="font-sans text-[0.6rem] uppercase tracking-[0.4em] text-[#c79c6e] mb-3">Your Guide</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-white">Meet Aarkesh</h2>
-        </div>
-        <div className="flex flex-col md:flex-row gap-12 items-center max-w-4xl mx-auto">
-          <div className="shrink-0">
-            <div className="w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden border-2 border-[#c79c6e]/30 shadow-[0_0_60px_rgba(199,156,110,0.15)]">
-              <img src="/instructor_avatar.jpg" alt="Aarkesh Gupta" className="w-full h-full object-cover" />
-            </div>
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="font-serif text-2xl text-white mb-1">Aarkesh Gupta</h3>
-            <p className="font-sans text-[0.65rem] uppercase tracking-widest text-[#c79c6e] mb-5">Certified Life Coach · NLP Practitioner</p>
-            <p className="font-sans text-white/60 text-sm leading-relaxed mb-6">
-              Aarkesh has spent the last decade studying the psychology of human connection and influence. Having coached 500+ individuals from executives to artists, his approach blends neuroscience, mindfulness, and real-world social dynamics into a framework that creates lasting transformation.
-            </p>
-            <div className="flex gap-8 flex-wrap justify-center md:justify-start">
-              {[['500+', 'Students Coached'], ['10+', 'Years Experience'], ['4.9★', 'Average Rating']].map(([num, label]) => (
-                <div key={label}>
-                  <div className="font-serif text-2xl text-[#c79c6e]">{num}</div>
-                  <div className="font-sans text-[0.6rem] uppercase tracking-widest text-white/40">{label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="w-full max-w-6xl mx-auto px-6"><div className="h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" /></div>
-
-      {/* ─── TESTIMONIALS ────────────────────────────────────────── */}
-      <section id="reviews" className="py-24 px-6 max-w-6xl mx-auto w-full">
-        <div className="text-center mb-16">
-          <p className="font-sans text-[0.6rem] uppercase tracking-[0.4em] text-[#c79c6e] mb-3">Student Stories</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-white">Real transformations</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { name: 'Rohan M.', role: 'Startup Founder', text: 'Within 3 weeks of starting this course, I walked into a pitch meeting and actually felt present. Not nervous, not performing — present. We closed the round.' },
-            { name: 'Priya S.', role: 'Marketing Director', text: "I've done therapy, read every self-help book — nothing clicked until this. Aarkesh doesn't give you scripts, he rewires how you see yourself." },
-            { name: 'Arjun K.', role: 'Medical Professional', text: 'The module on non-verbal communication alone was worth the full price. My patient interactions, my relationships — everything shifted.' },
-          ].map((t, i) => (
-            <div key={i} className="p-8 rounded-2xl border border-white/[0.08] bg-[#0a0a0a] flex flex-col gap-4 hover:border-[#c79c6e]/20 transition-colors">
-              <div className="flex gap-0.5 text-[#c79c6e] text-sm">★★★★★</div>
-              <p className="font-sans text-white/70 text-sm leading-relaxed italic flex-1">"{t.text}"</p>
-              <div>
-                <div className="font-sans font-semibold text-white text-sm">{t.name}</div>
-                <div className="font-sans text-[0.6rem] uppercase tracking-widest text-white/30">{t.role}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div className="w-full max-w-6xl mx-auto px-6"><div className="h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" /></div>
 
       {/* ─── FAQ SECTION ─────────────────────────────────────────── */}
       <section id="faq" className="py-24 px-6 max-w-4xl mx-auto w-full">
@@ -1347,116 +1373,6 @@ export default function Course() {
         </div>
       </section>
 
-      {/* ─── FINAL CTA ───────────────────────────────────────────── */}
-      {!isPurchased && (
-        <section className="py-24 px-4 sm:px-6 w-full bg-[#0a0a0a] border-t border-white/[0.08] relative overflow-hidden">
-          {/* Ambient radial glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[#c79c6e]/10 rounded-full blur-[160px] pointer-events-none" />
-
-          <div className="max-w-4xl mx-auto text-center relative z-10">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-[#c79c6e] text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] mb-4">
-              <Sparkle size={13} weight="fill" />
-              <span>TRANSFORM YOUR PRESENCE</span>
-            </div>
-            
-            <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-white mb-4 leading-tight">
-              Ready to step into<br />your fullest self?
-            </h2>
-            <p className="font-sans text-white/60 text-sm md:text-base mb-10 max-w-xl mx-auto leading-relaxed">
-              One intentional investment. A lifetime of calm authority, magnetism, and mastery.
-            </p>
-
-            {/* High-Converting Glassmorphic Trust Card */}
-            <div className="w-full max-w-2xl mx-auto rounded-2xl md:rounded-3xl border border-[#c79c6e]/35 bg-white/[0.04] backdrop-blur-2xl p-6 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)] relative text-left">
-              
-              {/* Course Title & Pricing Block */}
-              <div className="pb-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-baseline justify-between gap-4">
-                <div>
-                  <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] font-semibold block mb-1">
-                    COMPLETE MASTERCLASS ACCESS
-                  </span>
-                  <h3 className="font-serif text-2xl sm:text-3xl text-white font-normal">
-                    The Presence Protocol™
-                  </h3>
-                  <p className="font-sans text-xs text-white/50 mt-1">
-                    Lifetime access + 3 Private 1-on-1 Coaching Sessions
-                  </p>
-                </div>
-
-                <div className="sm:text-right">
-                  <div className="flex items-baseline gap-2 sm:justify-end">
-                    <span className="font-sans text-3xl sm:text-4xl font-bold text-[#c79c6e] tracking-tight">
-                      ₹{basePrice.toLocaleString('en-IN')}
-                    </span>
-                    {comparePrice > basePrice && (
-                      <span className="font-sans text-sm text-white/35 line-through">
-                        ₹{comparePrice.toLocaleString('en-IN')}
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-sans text-[0.7rem] text-white/50 block mt-0.5">
-                    {gstRate > 0 && !isGstIncluded
-                      ? `+ ${gstRate}% GST (₹${gstAmount.toLocaleString('en-IN')}) at checkout · One-time payment`
-                      : gstRate > 0 && isGstIncluded
-                      ? `Inclusive of all taxes (${gstRate}% GST) · One-time payment`
-                      : 'Zero GST tax · One-time payment'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Value Points Checklist */}
-              <div className="py-6 space-y-3.5">
-                {[
-                  { title: 'Full access to all 9 core lessons & frameworks', desc: 'Step-by-step master video modules on mental clarity, posture & gravitas' },
-                  { title: '3 Free 1-on-1 Private Coaching Sessions with Aarkesh', desc: 'Direct personalized strategy and real-time behavioral feedback' },
-                  { title: 'Lifetime access & all future curriculum upgrades', desc: 'Zero recurring subscriptions. Learn at your own pace anytime' },
-                  { title: 'Actionable workbooks, prompts & mindset guides', desc: 'Practical templates for immediate real-world implementation' },
-                  { title: 'Verified Certificate of Completion & VIP Community', desc: 'Connect and grow with an exclusive network of ambitious peers' },
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
-                      <CheckCircle size={14} weight="fill" />
-                    </div>
-                    <div>
-                      <h4 className="font-sans text-xs sm:text-sm font-semibold text-white/95 leading-tight">
-                        {item.title}
-                      </h4>
-                      <p className="font-sans text-[0.7rem] text-white/50 mt-0.5 leading-relaxed">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Glassmorphic CTA Action Button */}
-              <div className="pt-4">
-                <button
-                  type="button"
-                  onClick={handlePurchase}
-                  className="w-full rounded-2xl border border-[#c79c6e]/50 bg-white/[0.08] hover:bg-[#c79c6e]/20 hover:border-[#c79c6e] backdrop-blur-2xl px-8 py-4 font-sans text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-[1.01] active:scale-[0.99] shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.25)] hover:shadow-[0_0_40px_rgba(199,156,110,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] flex items-center justify-center gap-3 group cursor-pointer"
-                >
-                  <span>ENROLL NOW — GET INSTANT ACCESS</span>
-                  <ArrowRight size={17} weight="bold" className="text-[#c79c6e] group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
-
-              {/* Trust Badges Footer Grid */}
-              <div className="mt-6 pt-5 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-white/60 text-xs font-sans">
-                <div className="flex items-center gap-2">
-                  <LockKey size={18} className="text-[#c79c6e] shrink-0" weight="fill" />
-                  <span className="text-[0.7rem] leading-tight">256-bit SSL encrypted checkout</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Lightning size={18} className="text-[#c79c6e] shrink-0" weight="fill" />
-                  <span className="text-[0.7rem] leading-tight">Instant lifetime access in 60 seconds</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ─── FULL-WIDTH FOOTER ──────────────────────────────────────── */}
       <footer className="w-full bg-[#080808] border-t border-white/10 pt-16 pb-12 px-6 sm:px-10 md:px-16 lg:px-20 relative z-20 overflow-hidden">
@@ -1588,7 +1504,7 @@ export default function Course() {
                 MASTERCLASS ACCESS
               </span>
               <h3 className="font-serif text-xl sm:text-3xl text-white font-normal tracking-tight">
-                The Presence Protocol™
+                The Better Man™
               </h3>
             </div>
 
@@ -2382,7 +2298,7 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
               <span className="inline-block px-2 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[0.65rem] text-[#c79c6e] font-medium tracking-wide uppercase mb-1">
                 Full Master Access
               </span>
-              <h3 className="font-sans text-sm font-semibold text-white truncate">The Presence Protocol™</h3>
+              <h3 className="font-sans text-sm font-semibold text-white truncate">The Better Man™</h3>
               <p className="font-sans text-xs text-white/60 truncate">All Modules + 3 Coaching Calls + Community</p>
             </div>
           </div>

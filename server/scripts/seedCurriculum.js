@@ -14,8 +14,8 @@ async function seed() {
   let course = await Course.findOne();
   if (!course) {
     course = await Course.create({
-      title: 'The Presence Protocol™',
-      slug: 'the-presence-protocol',
+      title: 'The Better Man™',
+      slug: 'the-better-man',
       subtitle: 'Master the psychology of calm authority, magnetic communication, and effortless self-command.',
       description: 'The definitive masterclass designed for high-impact leaders, founders, and professionals.',
       price: 15000,
@@ -147,7 +147,7 @@ async function seed() {
         },
         {
           title: 'The Ripple Effect: Sustaining Your Daily Presence',
-          description: 'Integrating the Presence Protocol into your morning routines, key meetings, and long-term career.',
+          description: 'Integrating The Better Man into your morning routines, key meetings, and long-term career.',
           duration: '35:45',
           position: 2,
           videoStatus: 'ready',

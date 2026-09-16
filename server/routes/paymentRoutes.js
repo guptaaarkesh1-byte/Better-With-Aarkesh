@@ -286,7 +286,7 @@ router.post('/course-verify', async (req, res) => {
 
             // Find main course or default course
             const primaryCourse = await Course.findOne().sort({ createdAt: 1 });
-            let courseTitle = 'The Presence Protocol™';
+            let courseTitle = 'The Better Man™';
             let basePrice = 15000;
             let gstRate = 18;
             let isGstIncluded = false;
@@ -442,8 +442,8 @@ router.post('/course-failed-record', async (req, res) => {
         amount: amount || (primaryCourse ? primaryCourse.price : 11800),
         failureReason: error_description || error_reason || 'Bank transaction declined / user cancelled payment',
         errorCode: error_code || 'PAYMENT_FAILED',
-        courseTitle: primaryCourse?.title || 'The Presence Protocol™',
-        invoiceItemTitle: primaryCourse?.invoiceItemTitle || `${primaryCourse?.title || 'The Presence Protocol™'} — Masterclass Lifetime Access`,
+        courseTitle: primaryCourse?.title || 'The Better Man™',
+        invoiceItemTitle: primaryCourse?.invoiceItemTitle || `${primaryCourse?.title || 'The Better Man™'} — Masterclass Lifetime Access`,
         purchaseDate: new Date(),
       }).catch(err => console.error('Background payment failed notice email error:', err));
     }

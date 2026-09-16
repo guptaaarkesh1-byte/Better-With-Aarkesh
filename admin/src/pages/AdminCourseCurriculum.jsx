@@ -337,7 +337,7 @@ export default function AdminCourseCurriculum() {
               'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-              title: 'The Presence Protocol™',
+              title: 'The Better Man™',
               subtitle: 'Mastering Confident Presence, Communication & Executive Magnetism',
               description: 'Comprehensive day-by-day video training masterclass.',
               price: 15000,
