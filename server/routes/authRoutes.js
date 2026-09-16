@@ -451,11 +451,12 @@ router.post('/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (email !== 'admin@betterwithaarkesh.com') {
+    const normalizedEmail = (email || '').toLowerCase().trim();
+    if (normalizedEmail !== 'admin@aarkeshgupta.com' && normalizedEmail !== 'admin@betterwithaarkesh.com') {
       return res.status(401).json({ message: 'Invalid admin credentials' });
     }
 
-    let adminUser = await User.findOne({ email });
+    let adminUser = await User.findOne({ $or: [{ email: normalizedEmail }, { email: 'admin@aarkeshgupta.com' }, { email: 'admin@betterwithaarkesh.com' }] });
 
     // Auto-initialize admin on first login attempt if missing
     if (!adminUser) {
@@ -463,7 +464,7 @@ router.post('/admin/login', async (req, res) => {
       const hashedPassword = await bcrypt.hash('admin123', salt);
       adminUser = await User.create({
         fullName: 'Administrator',
-        email: 'admin@betterwithaarkesh.com',
+        email: normalizedEmail,
         password: hashedPassword,
         isAdmin: true
       });

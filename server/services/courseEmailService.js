@@ -208,7 +208,7 @@ export async function sendCoursePurchaseInvoiceEmail({
                 <tr>
                   <td style="padding: 20px 36px; background-color: #080808; border-top: 1px solid #1a1a1a; text-align: center; font-size: 11px; color: #555555; line-height: 1.5;">
                     <div>Better With Aarkesh · Executive Leadership &amp; Gravitas Coaching</div>
-                    <div>For any invoice or technical queries, contact <a href="mailto:support@betterwithaarkesh.com" style="color: #c79c6e; text-decoration: none;">support@betterwithaarkesh.com</a></div>
+                    <div>For any invoice or technical queries, contact <a href="mailto:support@aarkeshgupta.com" style="color: #c79c6e; text-decoration: none;">support@aarkeshgupta.com</a></div>
                   </td>
                 </tr>
 
@@ -389,7 +389,7 @@ export async function sendCoursePaymentFailedEmail({
                 <tr>
                   <td style="padding: 20px 36px; background-color: #080808; border-top: 1px solid #1a1a1a; text-align: center; font-size: 11px; color: #555555; line-height: 1.5;">
                     <div>Better With Aarkesh · Executive Leadership Coaching</div>
-                    <div>Need help? Email us directly at <a href="mailto:support@betterwithaarkesh.com" style="color: #c79c6e; text-decoration: none;">support@betterwithaarkesh.com</a></div>
+                    <div>Need help? Email us directly at <a href="mailto:support@aarkeshgupta.com" style="color: #c79c6e; text-decoration: none;">support@aarkeshgupta.com</a></div>
                   </td>
                 </tr>
 

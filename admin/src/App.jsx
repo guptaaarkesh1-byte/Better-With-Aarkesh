@@ -68,7 +68,7 @@ function AdminLogin({ onLogin }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
-              placeholder="admin@betterwithaarkesh.com"
+              placeholder="admin@aarkeshgupta.com"
               required
             />
           </div>

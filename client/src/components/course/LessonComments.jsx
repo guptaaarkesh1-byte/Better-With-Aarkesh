@@ -697,6 +697,7 @@ export default function LessonComments({
               comment.authorBadge === 'COURSE INSTRUCTOR' ||
               comment.userName === 'Administrator' ||
               comment.userName === 'Aarkesh (Instructor)' ||
+              comment.userEmail?.toLowerCase() === 'admin@aarkeshgupta.com' ||
               comment.userEmail?.toLowerCase() === 'admin@betterwithaarkesh.com';
 
             const isOwner = auth.isAdmin || (auth.userId && (comment.userId === auth.userId || comment.userId?._id === auth.userId));
@@ -936,6 +937,7 @@ export default function LessonComments({
                         reply.authorBadge === 'COURSE INSTRUCTOR' ||
                         reply.userName === 'Administrator' ||
                         reply.userName === 'Aarkesh (Instructor)' ||
+                        reply.userEmail?.toLowerCase() === 'admin@aarkeshgupta.com' ||
                         reply.userEmail?.toLowerCase() === 'admin@betterwithaarkesh.com';
 
                       const isReplyOwner = auth.isAdmin || (auth.userId && (reply.userId === auth.userId || reply.userId?._id === auth.userId));

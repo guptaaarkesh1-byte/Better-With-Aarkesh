@@ -36,7 +36,7 @@ const seedDefaultColumns = async (category = 'course') => {
           { label: 'Course Terms & Conditions', url: '', type: 'document', documentSlug: 'course-terms-and-conditions', order: 0 },
           { label: 'Course Refund Policy', url: '', type: 'document', documentSlug: 'course-refund-policy', order: 1 },
           { label: 'Course Privacy Policy', url: '', type: 'document', documentSlug: 'course-privacy-policy', order: 2 },
-          { label: 'support@betterwithaarkesh.com', url: 'mailto:support@betterwithaarkesh.com', type: 'external', order: 3 },
+          { label: 'support@aarkeshgupta.com', url: 'mailto:support@aarkeshgupta.com', type: 'external', order: 3 },
         ],
       },
     ];

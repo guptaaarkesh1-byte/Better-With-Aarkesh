@@ -138,7 +138,7 @@ export default function PolicyModal({
             </div>
           ) : (
             <div 
-              className="prose prose-invert prose-p:text-white/75 prose-p:leading-relaxed prose-headings:text-white prose-headings:font-serif prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:text-[#c79c6e] prose-h2:mt-6 prose-h2:mb-3 prose-h2:font-normal prose-h3:text-base prose-h3:text-white prose-ul:text-white/70 prose-li:my-1.5 prose-strong:text-white prose-a:text-[#c79c6e] hover:prose-a:underline max-w-none text-sm sm:text-base font-sans"
+              className="legal-policy-content max-w-none"
               dangerouslySetInnerHTML={{ __html: content }}
             />
           )}

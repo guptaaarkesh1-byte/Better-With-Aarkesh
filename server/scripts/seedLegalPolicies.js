@@ -16,7 +16,7 @@ const coachingTermsHtml = `
 <h2>4. Session Bookings, Scheduling &amp; Rescheduling</h2>
 <p>All coaching sessions must be scheduled in advance via our official online booking portal. You are responsible for ensuring accurate time-zone selection and providing a valid email address and phone number for session communication.</p>
 <ul>
-  <li><strong>Rescheduling Window:</strong> Sessions may be rescheduled at no additional charge up to <strong>24 hours prior to the scheduled session start time</strong> via your confirmation link or by contacting <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a>.</li>
+  <li><strong>Rescheduling Window:</strong> Sessions may be rescheduled at no additional charge up to <strong>24 hours prior to the scheduled session start time</strong> via your confirmation link or by contacting <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a>.</li>
   <li><strong>No-Show Policy:</strong> If you fail to attend a confirmed session within 15 minutes of the start time without prior written notice within the allowed 24-hour window, the session will be considered completed and non-refundable.</li>
 </ul>
 
@@ -35,7 +35,7 @@ const coachingTermsHtml = `
 
 <h2>9. Contact Information</h2>
 <p>For questions regarding these Terms &amp; Conditions or your coaching bookings, please contact us at:</p>
-<p><strong>Email:</strong> <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a> / <a href="mailto:contact@betterwithaarkesh.com">contact@betterwithaarkesh.com</a><br/>
+<p><strong>Email:</strong> <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a> / <a href="mailto:contact@aarkeshgupta.com">contact@aarkeshgupta.com</a><br/>
 <strong>Legal Entity:</strong> Better With Aarkesh (Proprietor: Aarkesh Gupta)<br/>
 <strong>Address:</strong> Mumbai, Maharashtra, India</p>
 `;
@@ -76,14 +76,14 @@ const coachingPrivacyHtml = `
 <p>We implement industry-standard technical and organizational security measures (including SSL/TLS encryption and restricted database access) to protect your personal data against unauthorized access, alteration, disclosure, or destruction. We retain personal records only as long as necessary to fulfill coaching engagements and meet statutory tax/accounting obligations.</p>
 
 <h2>6. Your Privacy Rights</h2>
-<p>Depending on your jurisdiction, you have the right to request access to, correction of, or deletion of your personal information held by us. To exercise any of these rights, please contact our privacy representative at <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a>.</p>
+<p>Depending on your jurisdiction, you have the right to request access to, correction of, or deletion of your personal information held by us. To exercise any of these rights, please contact our privacy representative at <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a>.</p>
 
 <h2>7. Cookies &amp; Tracking Technologies</h2>
 <p>Our website may use essential cookies and lightweight local storage to maintain session state, user preferences, and secure site operations. You can control or disable cookies through your browser settings.</p>
 
 <h2>8. Contact Us</h2>
 <p>If you have any questions or concerns about this Privacy Policy or our data handling practices, please contact us at:</p>
-<p><strong>Email:</strong> <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a><br/>
+<p><strong>Email:</strong> <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a><br/>
 <strong>Legal Entity:</strong> Better With Aarkesh (Proprietor: Aarkesh Gupta)<br/>
 <strong>Address:</strong> Mumbai, Maharashtra, India</p>
 `;
@@ -95,7 +95,7 @@ const coachingRefundHtml = `
 <h2>2. 1:1 Coaching Sessions — Cancellation &amp; Rescheduling</h2>
 <p>We understand that unexpected circumstances arise. We offer flexible rescheduling options subject to the following conditions:</p>
 <ul>
-  <li><strong>Rescheduling Notice:</strong> You may reschedule your booked 1:1 session at no additional charge by notifying us at least <strong>24 hours prior to the scheduled session start time</strong> via your booking confirmation link or by emailing <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a>.</li>
+  <li><strong>Rescheduling Notice:</strong> You may reschedule your booked 1:1 session at no additional charge by notifying us at least <strong>24 hours prior to the scheduled session start time</strong> via your booking confirmation link or by emailing <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a>.</li>
   <li><strong>Late Cancellations &amp; No-Shows:</strong> Cancellations made with less than <strong>24 hours notice</strong>, or failure to join the scheduled video call within 15 minutes of the start time (no-show), are non-refundable and will forfeit the session slot.</li>
   <li><strong>Cancellations by the Coach:</strong> In the rare event that the coach must cancel or reschedule due to illness, emergency, or technical outage, you will be offered an immediate full reschedule at your earliest convenience or a 100% full refund.</li>
 </ul>
@@ -109,7 +109,7 @@ const coachingRefundHtml = `
 
 <h2>4. How to Request Assistance</h2>
 <p>To request a reschedule, cancellation, or billing review, please contact our support team with your booking reference number and email address at:</p>
-<p><strong>Email:</strong> <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a> / <a href="mailto:contact@betterwithaarkesh.com">contact@betterwithaarkesh.com</a><br/>
+<p><strong>Email:</strong> <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a> / <a href="mailto:contact@aarkeshgupta.com">contact@aarkeshgupta.com</a><br/>
 <strong>Legal Entity:</strong> Better With Aarkesh (Proprietor: Aarkesh Gupta)<br/>
 <strong>Address:</strong> Mumbai, Maharashtra, India</p>
 `;
@@ -134,8 +134,8 @@ const shippingPolicyHtml = `
 
 <h2>4. Troubleshooting Access &amp; Inquiries</h2>
 <p>If you experience any delay in receiving your email confirmation, meeting link, or digital course access after a successful transaction, please check your spam/promotions folder or contact our support desk immediately:</p>
-<p><strong>Support Email:</strong> <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a><br/>
-<strong>Contact Email:</strong> <a href="mailto:contact@betterwithaarkesh.com">contact@betterwithaarkesh.com</a><br/>
+<p><strong>Support Email:</strong> <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a><br/>
+<strong>Contact Email:</strong> <a href="mailto:contact@aarkeshgupta.com">contact@aarkeshgupta.com</a><br/>
 <strong>Legal Entity:</strong> Better With Aarkesh (Proprietor: Aarkesh Gupta)<br/>
 <strong>Address:</strong> Mumbai, Maharashtra, India</p>
 `;
@@ -169,7 +169,7 @@ const courseTermsHtml = `
 
 <h2>8. Contact &amp; Support</h2>
 <p>For questions or support regarding your course access or billing, please contact:</p>
-<p><strong>Support Email:</strong> <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a><br/>
+<p><strong>Support Email:</strong> <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a><br/>
 <strong>Legal Entity:</strong> Better With Aarkesh (Proprietor: Aarkesh Gupta)<br/>
 <strong>Address:</strong> Mumbai, Maharashtra, India</p>
 `;
@@ -203,10 +203,10 @@ const coursePrivacyHtml = `
 </ul>
 
 <h2>5. Data Retention &amp; Rights</h2>
-<p>Your course account and progression records are retained for the lifetime of your active enrollment. You may request account deletion or data review at any time by contacting our data protection support at <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a>.</p>
+<p>Your course account and progression records are retained for the lifetime of your active enrollment. You may request account deletion or data review at any time by contacting our data protection support at <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a>.</p>
 
 <h2>6. Contact Details</h2>
-<p><strong>Support Email:</strong> <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a><br/>
+<p><strong>Support Email:</strong> <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a><br/>
 <strong>Legal Entity:</strong> Better With Aarkesh (Proprietor: Aarkesh Gupta)<br/>
 <strong>Address:</strong> Mumbai, Maharashtra, India</p>
 `;
@@ -218,7 +218,7 @@ const courseRefundHtml = `
 <h2>2. Refund Window &amp; Eligibility Criteria</h2>
 <p>Because digital courses provide instant access to intellectual property, downloadable frameworks, and proprietary video content upon purchase, refund requests are evaluated according to the following transparent terms:</p>
 <ul>
-  <li><strong>Refund Period:</strong> Refund requests must be submitted in writing to <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a> within <strong>7 days of your initial purchase date</strong>.</li>
+  <li><strong>Refund Period:</strong> Refund requests must be submitted in writing to <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a> within <strong>7 days of your initial purchase date</strong>.</li>
   <li><strong>Eligibility Conditions:</strong> To be eligible for a refund, you must have completed <strong>less than 20% of the course video content</strong>, and no 1:1 coaching calls included in the package must have been redeemed.</li>
   <li><strong>Exceptions:</strong> Purchases made during promotional sales or where the course has been fully consumed/downloaded are non-refundable.</li>
 </ul>
@@ -231,7 +231,7 @@ const courseRefundHtml = `
 
 <h2>4. Contact for Refund Inquiries</h2>
 <p>To submit a refund request or discuss billing concerns, please email us with your full name, registered email address, and Razorpay payment ID at:</p>
-<p><strong>Support Email:</strong> <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a><br/>
+<p><strong>Support Email:</strong> <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a><br/>
 <strong>Legal Entity:</strong> Better With Aarkesh (Proprietor: Aarkesh Gupta)<br/>
 <strong>Address:</strong> Mumbai, Maharashtra, India</p>
 `;
@@ -249,7 +249,7 @@ const courseShippingHtml = `
 </ul>
 
 <h2>3. Support</h2>
-<p>If you experience any difficulties accessing your course lessons or receipt, please contact <a href="mailto:support@betterwithaarkesh.com">support@betterwithaarkesh.com</a>.</p>
+<p>If you experience any difficulties accessing your course lessons or receipt, please contact <a href="mailto:support@aarkeshgupta.com">support@aarkeshgupta.com</a>.</p>
 `;
 
 async function seedPolicies() {

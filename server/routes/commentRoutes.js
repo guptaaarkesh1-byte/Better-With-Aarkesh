@@ -29,7 +29,7 @@ const authenticateUser = async (req, res, next) => {
         // 1. Check if user is an Admin in User model
         const adminUser = await User.findById(decoded.id).select('-password');
         if (adminUser) {
-          const isAdmin = adminUser.isAdmin === true || adminUser.role === 'admin' || adminUser.email === 'admin@betterwithaarkesh.com';
+          const isAdmin = adminUser.isAdmin === true || adminUser.role === 'admin' || adminUser.email === 'admin@aarkeshgupta.com' || adminUser.email === 'admin@betterwithaarkesh.com';
           req.user = {
             _id: adminUser._id,
             fullName: adminUser.fullName || (isAdmin ? 'Administrator' : 'Student'),
@@ -60,7 +60,7 @@ const authenticateUser = async (req, res, next) => {
         // 3. Check regular User (Student)
         const generalUser = await User.findById(decoded.id).select('-password');
         if (generalUser) {
-          const isGeneralAdmin = generalUser.isAdmin === true || generalUser.role === 'admin' || generalUser.email === 'admin@betterwithaarkesh.com';
+          const isGeneralAdmin = generalUser.isAdmin === true || generalUser.role === 'admin' || generalUser.email === 'admin@aarkeshgupta.com' || generalUser.email === 'admin@betterwithaarkesh.com';
           req.user = {
             _id: generalUser._id,
             fullName: generalUser.fullName,
@@ -78,7 +78,8 @@ const authenticateUser = async (req, res, next) => {
       if (decoded && (decoded.email || decoded.role === 'admin' || decoded.isAdmin)) {
         const adminUser = await User.findOne({
           $or: [
-            { email: decoded.email || 'admin@betterwithaarkesh.com' },
+            { email: decoded.email || 'admin@aarkeshgupta.com' },
+            { email: 'admin@betterwithaarkesh.com' },
             { isAdmin: true },
           ],
         }).select('-password');
@@ -86,7 +87,7 @@ const authenticateUser = async (req, res, next) => {
         req.user = {
           _id: adminUser ? adminUser._id : new mongoose.Types.ObjectId(),
           fullName: adminUser?.fullName || 'Administrator',
-          email: adminUser?.email || 'admin@betterwithaarkesh.com',
+          email: adminUser?.email || 'admin@aarkeshgupta.com',
           isAdmin: true,
           authorRole: 'instructor',
           authorBadge: 'COURSE INSTRUCTOR',

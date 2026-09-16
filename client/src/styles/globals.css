@@ -126,3 +126,99 @@ select:-webkit-autofill:focus {
   color: #F5F2EB !important;
 }
 
+/* ==========================================================================
+   LEGAL POLICY & DOCUMENT VIEW TYPOGRAPHY (Exact Parity with Editor)
+   ========================================================================== */
+.legal-policy-content {
+  color: rgba(255, 255, 255, 0.85);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.legal-policy-content h1 {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin-top: 2.25rem !important;
+  margin-bottom: 0.85rem !important;
+  line-height: 1.3 !important;
+}
+
+.legal-policy-content h2 {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-size: 1.55rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin-top: 2.25rem !important;
+  margin-bottom: 0.85rem !important;
+  line-height: 1.35 !important;
+}
+
+.legal-policy-content h3 {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.65rem !important;
+}
+
+.legal-policy-content p {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin-top: 0.85rem !important;
+  margin-bottom: 0.85rem !important;
+}
+
+.legal-policy-content strong,
+.legal-policy-content b {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.legal-policy-content ul {
+  list-style-type: disc !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.85rem !important;
+  margin-bottom: 0.85rem !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.legal-policy-content ol {
+  list-style-type: decimal !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.85rem !important;
+  margin-bottom: 0.85rem !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.legal-policy-content li {
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.4rem !important;
+  line-height: 1.7 !important;
+}
+
+.legal-policy-content a {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  transition: color 0.2s ease;
+}
+
+.legal-policy-content a:hover {
+  color: #c79c6e !important;
+}
+
+.legal-policy-content blockquote {
+  border-left: 3px solid rgba(255, 255, 255, 0.3) !important;
+  padding-left: 1.25rem !important;
+  margin: 1.25rem 0 !important;
+  font-style: italic !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+

@@ -71,7 +71,7 @@ export default function BookingCancelled({ data, onRetry }) {
         {/* Contact Note */}
         <div className="mt-12 pt-8 border-t border-white/5 w-full text-center">
           <p className="font-sans text-xs text-white/40 mb-2">Having trouble with payment?</p>
-          <a href="mailto:support@betterwithaarkesh.com" className="font-sans text-xs text-accent-gold underline hover:text-white transition-colors">
+          <a href="mailto:support@aarkeshgupta.com" className="font-sans text-xs text-accent-gold underline hover:text-white transition-colors">
             Contact Support
           </a>
         </div>

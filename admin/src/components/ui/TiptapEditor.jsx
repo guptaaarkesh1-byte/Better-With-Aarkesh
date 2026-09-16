@@ -57,15 +57,15 @@ function MenuBar({ editor }) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`p-2 rounded transition-colors ${editor.isActive('bold') ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`p-2 rounded transition-colors ${editor.isActive('bold') ? 'text-[#c79c6e] bg-[#c79c6e]/15 font-bold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
         title="Bold"
       >
-        <TextB size={18} />
+        <TextB size={18} weight="bold" />
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`p-2 rounded transition-colors ${editor.isActive('italic') ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`p-2 rounded transition-colors ${editor.isActive('italic') ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
         title="Italic"
       >
         <TextItalic size={18} />
@@ -76,21 +76,21 @@ function MenuBar({ editor }) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        className={`px-3 py-1 text-sm font-serif font-bold rounded transition-colors ${editor.isActive('heading', { level: 1 }) ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`px-3 py-1 text-sm font-sans font-bold rounded transition-colors ${editor.isActive('heading', { level: 1 }) ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
       >
         H1
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={`px-3 py-1 text-sm font-serif font-bold rounded transition-colors ${editor.isActive('heading', { level: 2 }) ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`px-3 py-1 text-sm font-sans font-bold rounded transition-colors ${editor.isActive('heading', { level: 2 }) ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
       >
         H2
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        className={`px-3 py-1 text-sm font-serif font-bold rounded transition-colors ${editor.isActive('heading', { level: 3 }) ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`px-3 py-1 text-sm font-sans font-bold rounded transition-colors ${editor.isActive('heading', { level: 3 }) ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
       >
         H3
       </button>
@@ -100,7 +100,7 @@ function MenuBar({ editor }) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`p-2 rounded transition-colors ${editor.isActive('bulletList') ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`p-2 rounded transition-colors ${editor.isActive('bulletList') ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
         title="Bullet List"
       >
         <ListBullets size={18} />
@@ -108,7 +108,7 @@ function MenuBar({ editor }) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`p-2 rounded transition-colors ${editor.isActive('orderedList') ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`p-2 rounded transition-colors ${editor.isActive('orderedList') ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
         title="Ordered List"
       >
         <ListNumbers size={18} />
@@ -116,7 +116,7 @@ function MenuBar({ editor }) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={`p-2 rounded transition-colors ${editor.isActive('blockquote') ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`p-2 rounded transition-colors ${editor.isActive('blockquote') ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
         title="Blockquote"
       >
         <Quotes size={18} />
@@ -134,21 +134,21 @@ function MenuBar({ editor }) {
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        className={`px-2 py-1 text-sm rounded transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
       >
         Left
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        className={`px-2 py-1 text-sm rounded transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
       >
         Center
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        className={`px-2 py-1 text-sm rounded transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'text-[#c79c6e] bg-[#c79c6e]/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+        className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'text-[#c79c6e] bg-[#c79c6e]/15' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
       >
         Right
       </button>
@@ -169,7 +169,9 @@ function MenuBar({ editor }) {
   );
 }
 
-export default function TiptapEditor({ value, onChange }) {
+export default function TiptapEditor({ value, content, onChange }) {
+  const initialData = value !== undefined ? value : content !== undefined ? content : '';
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -178,23 +180,26 @@ export default function TiptapEditor({ value, onChange }) {
       Color,
       Image.configure({ HTMLAttributes: { class: 'max-w-full rounded-lg' } }),
     ],
-    content: value || '',
+    content: initialData,
     editorProps: {
       attributes: {
         class:
-          'prose prose-invert prose-p:my-2 prose-headings:my-4 prose-h1:text-4xl prose-h2:text-2xl prose-h3:text-xl max-w-none focus:outline-none min-h-[500px] p-6 text-white/90 text-lg leading-relaxed custom-scrollbar',
+          'prose prose-invert max-w-none focus:outline-none min-h-[480px] p-6 text-white/85 text-sm sm:text-base leading-relaxed font-sans prose-headings:font-bold prose-headings:text-white prose-h1:text-3xl prose-h2:text-2xl prose-h2:text-[#c79c6e] prose-h2:font-bold prose-h2:mt-6 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-bold prose-p:my-2 prose-p:text-white/80 prose-strong:text-white prose-strong:font-bold prose-ul:text-white/80 prose-li:my-1.5 prose-a:text-[#c79c6e] custom-scrollbar',
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
-      onChange(currentEditor.getHTML());
+      if (onChange) {
+        onChange(currentEditor.getHTML());
+      }
     },
   });
 
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value || '', false);
+    const currentVal = value !== undefined ? value : content !== undefined ? content : '';
+    if (editor && currentVal !== editor.getHTML()) {
+      editor.commands.setContent(currentVal || '', false);
     }
-  }, [editor, value]);
+  }, [editor, value, content]);
 
   return (
     <div className="border border-white/10 rounded-xl overflow-hidden focus-within:border-[#c79c6e]/50 transition-colors bg-[#0a0a0a]">

@@ -18,7 +18,8 @@ const protect = async (req, res, next) => {
       if (!req.user && (decoded.email || decoded.role === 'admin')) {
         req.user = await User.findOne({ 
           $or: [
-            { email: decoded.email || 'admin@betterwithaarkesh.com' },
+            { email: decoded.email || 'admin@aarkeshgupta.com' },
+            { email: 'admin@betterwithaarkesh.com' },
             { isAdmin: true }
           ] 
         }).select('-password');
