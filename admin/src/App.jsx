@@ -347,6 +347,8 @@ function App() {
           <Route path="/appointments" element={<AdminCoaching />} />
           <Route path="/library" element={<AdminCoaching />} />
           <Route path="/library/content" element={<AdminCoaching />} />
+          <Route path="/profile" element={<AdminCoaching />} />
+          <Route path="/profile/settings" element={<AdminCoaching />} />
           <Route path="/journey" element={<AdminCoaching />} />
           <Route path="/journey/settings" element={<AdminCoaching />} />
           <Route path="/course" element={<AdminCourse />} />

@@ -16,7 +16,7 @@ export default function AdminLayout({ children, onLogout }) {
   // Determine active top tab based on route
   const getActiveTab = () => {
     if (currentPath.startsWith('/course') || currentPath.startsWith('/admin/courses') || currentPath.startsWith('/upload-videos')) return 'course';
-    if (currentPath.startsWith('/coaching') || currentPath.startsWith('/appointments') || currentPath.startsWith('/library') || currentPath.startsWith('/journey')) return 'coaching';
+    if (currentPath.startsWith('/coaching') || currentPath.startsWith('/appointments') || currentPath.startsWith('/library') || currentPath.startsWith('/profile') || currentPath.startsWith('/journey')) return 'coaching';
     if (currentPath.startsWith('/footer-documents')) return 'footer';
     return 'overview';
   };

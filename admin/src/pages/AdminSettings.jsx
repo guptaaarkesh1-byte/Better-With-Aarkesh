@@ -115,7 +115,7 @@ export default function AdminSettings() {
   return (
     <div className="p-8 md:p-12 w-full max-w-5xl mx-auto flex flex-col gap-8 animate-in fade-in duration-500 font-sans">
       
-      <AdminBreadcrumb items={['MY JOURNEY', 'SETTINGS']} />
+      <AdminBreadcrumb items={['PROFILE', 'SETTINGS']} />
 
       <AdminCardPills 
         title="Settings" 
