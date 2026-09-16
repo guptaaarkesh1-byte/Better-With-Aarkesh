@@ -1447,8 +1447,8 @@ export default function Course() {
               {/* Main Top Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
                 
-                {/* Left Brand Column (lg:col-span-4) */}
-                <div className="lg:col-span-4 flex flex-col items-start gap-4">
+                {/* Left Brand Column (lg:col-span-5) */}
+                <div className="lg:col-span-5 flex flex-col items-start gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e]">
                       <Sparkle size={22} weight="fill" />
@@ -1499,157 +1499,42 @@ export default function Course() {
                   </div>
                 </div>
 
-                {/* Right Columns: Navigation, Legal & Support (lg:col-span-8) */}
-                <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-10">
-                  
-                  {/* Column 1: Course Navigation */}
-                  <div className="flex flex-col gap-3.5 text-left">
-                    <h4 className="font-sans text-[0.7rem] uppercase tracking-[0.2em] text-[#c79c6e] font-semibold">
-                      Course
-                    </h4>
-                    <ul className="flex flex-col gap-2.5 font-sans text-xs">
-                      <li>
-                        <button
-                          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                          className="text-white/50 hover:text-white transition-colors text-left"
-                        >
-                          The Better Man™
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          onClick={() => {
-                            if (isLoggedIn && isPurchased) {
-                              setShowDashboard(true);
-                            } else {
-                              setShowCourseLogin(true);
-                            }
-                          }}
-                          className="text-white/50 hover:text-[#c79c6e] transition-colors text-left"
-                        >
-                          {isLoggedIn ? (isPurchased ? 'My Dashboard' : 'Student Area') : 'Student Login'}
-                        </button>
-                      </li>
-                      <li>
-                        <a
-                          href="#curriculum"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            document.getElementById('curriculum')?.scrollIntoView({ behavior: 'smooth' });
-                          }}
-                          className="text-white/50 hover:text-white transition-colors text-left"
-                        >
-                          Curriculum
-                        </a>
-                      </li>
-                      <li>
-                        <a
-                          href="#faq"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' });
-                          }}
-                          className="text-white/50 hover:text-white transition-colors text-left"
-                        >
-                          Course FAQ
-                        </a>
-                      </li>
-                      <li>
-                        <Link
-                          to="/"
-                          className="text-[#c79c6e]/80 hover:text-[#c79c6e] transition-colors text-left inline-flex items-center gap-1"
-                        >
-                          <span>1:1 Coaching Portal</span>
-                          <span>→</span>
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Column 2: Legal & Policies */}
-                  <div className="flex flex-col gap-3.5 text-left">
-                    <h4 className="font-sans text-[0.7rem] uppercase tracking-[0.2em] text-[#c79c6e] font-semibold">
-                      Legal &amp; Policy
-                    </h4>
-                    <ul className="flex flex-col gap-2.5 font-sans text-xs">
-                      {courseDocuments.length > 0 ? (
-                        courseDocuments.map((doc) => (
-                          <li key={doc.slug || doc._id}>
-                            <button
-                              onClick={() => setActivePolicySlug(doc.slug)}
-                              className="text-white/50 hover:text-[#c79c6e] transition-colors text-left cursor-pointer"
-                            >
-                              {doc.title}
-                            </button>
-                          </li>
-                        ))
-                      ) : (
-                        <>
-                          <li>
-                            <button onClick={() => setActivePolicySlug('course-terms-and-conditions')} className="text-white/50 hover:text-white transition-colors text-left">
-                              Terms &amp; Conditions
-                            </button>
-                          </li>
-                          <li>
-                            <button onClick={() => setActivePolicySlug('course-privacy-policy')} className="text-white/50 hover:text-white transition-colors text-left">
-                              Privacy Policy
-                            </button>
-                          </li>
-                          <li>
-                            <button onClick={() => setActivePolicySlug('course-refund-policy')} className="text-white/50 hover:text-white transition-colors text-left">
-                              Refund Policy
-                            </button>
-                          </li>
-                          <li>
-                            <button onClick={() => setActivePolicySlug('course-shipping-policy')} className="text-white/50 hover:text-white transition-colors text-left">
-                              Shipping Policy
-                            </button>
-                          </li>
-                        </>
-                      )}
-                    </ul>
-                  </div>
-
-                  {/* Column 3: Support & Verification */}
-                  <div className="col-span-2 sm:col-span-1 flex flex-col gap-3.5 text-left">
-                    <h4 className="font-sans text-[0.7rem] uppercase tracking-[0.2em] text-[#c79c6e] font-semibold">
-                      Support Desk
-                    </h4>
-                    <div className="flex flex-col gap-2.5 font-sans text-xs text-white/50">
-                      <p className="leading-relaxed">
-                        Need assistance with your enrollment or account?
-                      </p>
-                      <a
-                        href="mailto:support@betterwithaarkesh.com"
-                        className="text-[#c79c6e] hover:underline font-medium break-all"
-                      >
-                        support@betterwithaarkesh.com
-                      </a>
-                      <div className="pt-2 text-[0.68rem] text-white/40 space-y-1">
-                        <p>✓ 100% Digital Delivery</p>
-                        <p>✓ Razorpay 256-bit SSL Security</p>
+                {/* Dynamic Columns from Admin Course Footer Tab (Aligned to Right) */}
+                <div className="lg:col-span-7 flex flex-wrap justify-start sm:justify-end gap-10 md:gap-16">
+                  {Object.keys(groupedColumns).length > 0 ? (
+                    Object.entries(groupedColumns).map(([heading, docs]) => (
+                      <div key={heading} className="flex flex-col gap-3.5 min-w-[130px] text-left">
+                        <h4 className="font-sans text-[0.7rem] uppercase tracking-[0.2em] text-white font-semibold">
+                          {heading}
+                        </h4>
+                        <ul className="flex flex-col gap-2.5 font-sans text-xs">
+                          {docs.map((doc) => (
+                            <li key={doc.slug || doc._id}>
+                              <button
+                                onClick={() => setActivePolicySlug(doc.slug)}
+                                className="text-white/50 hover:text-[#c79c6e] transition-colors text-left cursor-pointer"
+                              >
+                                {doc.title}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-white/30 text-xs font-sans">
+                      No footer links added yet. Add documents in Admin Footer Management.
                     </div>
-                  </div>
-
+                  )}
                 </div>
 
               </div>
 
-              {/* Bottom Bar: Copyright & Quick Links */}
+              {/* Bottom Bar: Copyright Only */}
               <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-white/40">
                 <p className="text-[0.7rem]">
                   &copy; {new Date().getFullYear()} Better With Aarkesh. All rights reserved.
                 </p>
-                <div className="flex items-center gap-4 text-[0.68rem]">
-                  <Link to="/course-terms-and-conditions" className="hover:text-white transition-colors">Terms</Link>
-                  <span>•</span>
-                  <Link to="/course-privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
-                  <span>•</span>
-                  <Link to="/course-refund-policy" className="hover:text-white transition-colors">Refunds</Link>
-                  <span>•</span>
-                  <Link to="/course-shipping-policy" className="hover:text-white transition-colors">Shipping</Link>
-                </div>
               </div>
 
             </div>
