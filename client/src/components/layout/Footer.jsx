@@ -83,15 +83,14 @@ export default function Footer() {
             </span>
           </div>
 
-          {/* Coaching Navigation Quick Links */}
-          <nav aria-label="Footer Navigation" className="flex flex-wrap justify-center items-center gap-5 sm:gap-7 text-xs font-sans uppercase tracking-widest text-white/60">
-            <Link to="/" className="hover:text-accent-gold transition-colors">Home</Link>
-            <a href="/#meet-aarkesh" className="hover:text-accent-gold transition-colors">About</a>
-            <a href="/#coaching" className="hover:text-accent-gold transition-colors">Coaching</a>
-            <Link to="/book" className="hover:text-accent-gold transition-colors text-[#c79c6e]">Book Session</Link>
-            <Link to="/library" className="hover:text-accent-gold transition-colors">Library</Link>
-            <a href="/#testimonials" className="hover:text-accent-gold transition-colors">Testimonials</a>
-            <a href="/#contact" className="hover:text-accent-gold transition-colors">Contact</a>
+          {/* Coaching Navigation Quick Links (Matches Navbar exact items & order) */}
+          <nav aria-label="Footer Navigation" className="flex flex-wrap justify-center items-center gap-6 sm:gap-8 text-xs font-sans uppercase tracking-widest text-white/60">
+            <Link to="/" className="hover:text-accent-gold transition-colors">HOME</Link>
+            <a href="/#coaching" className="hover:text-accent-gold transition-colors">COACHING</a>
+            <a href="/#meet-aarkesh" className="hover:text-accent-gold transition-colors">ABOUT</a>
+            <a href="/#testimonials" className="hover:text-accent-gold transition-colors">TESTIMONIALS</a>
+            <Link to="/library" className="hover:text-accent-gold transition-colors">LIBRARY</Link>
+            <a href="/#faq" className="hover:text-accent-gold transition-colors">FAQ</a>
           </nav>
 
           {/* Universal Social Icons */}
