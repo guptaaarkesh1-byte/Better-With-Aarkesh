@@ -1123,24 +1123,24 @@ export default function Course() {
 
         {/* Center Hero Content */}
         <div className="relative z-10 text-center max-w-3xl mx-auto flex flex-col items-center justify-center my-auto">
-          {/* Eyebrow / Banner */}
-          {isComingSoon ? (
-            <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-amber-500/15 border border-amber-500/40 backdrop-blur-md text-amber-300 text-xs sm:text-sm font-sans font-semibold uppercase tracking-[0.25em] mb-6 shadow-[0_0_30px_rgba(245,158,11,0.25)]">
-              <Sparkle size={15} weight="fill" className="text-amber-400 animate-pulse" />
-              <span>{courseData?.comingSoonText || 'COMING SOON · PRE-REGISTRATION OPEN'}</span>
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] mb-6">
-              <Sparkle size={12} weight="fill" />
-              <span>THE OFFICIAL MASTERCLASS</span>
-            </div>
-          )}
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] mb-6">
+            <Sparkle size={12} weight="fill" />
+            <span>THE OFFICIAL MASTERCLASS</span>
+          </div>
 
           {/* Clean Grand Title */}
-          <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] text-white leading-[1.05] mb-6 font-normal tracking-tight">
-            The Better<br />
-            <span className="text-[#c79c6e]">Man</span>
-          </h1>
+          {isComingSoon ? (
+            <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] text-white leading-[1.05] mb-6 font-normal tracking-tight">
+              Coming<br />
+              <span className="text-[#c79c6e]">Soon</span>
+            </h1>
+          ) : (
+            <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] text-white leading-[1.05] mb-6 font-normal tracking-tight">
+              The Better<br />
+              <span className="text-[#c79c6e]">Man</span>
+            </h1>
+          )}
 
           {/* Minimal Subtitle */}
           <p className="font-sans text-white/70 text-sm sm:text-base md:text-lg leading-relaxed max-w-xl mx-auto mb-10">
@@ -1153,11 +1153,11 @@ export default function Course() {
               <button
                 type="button"
                 onClick={handleEnroll}
-                className="group relative inline-flex items-center gap-4 rounded-full border border-amber-500/40 bg-white/[0.06] hover:bg-amber-500/15 hover:border-amber-400 backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-105 shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(245,158,11,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] cursor-pointer"
+                className="group relative inline-flex items-center gap-4 rounded-full border border-[#c79c6e]/40 bg-white/[0.06] hover:bg-[#c79c6e]/15 hover:border-[#c79c6e] backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-105 shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(199,156,110,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] cursor-pointer"
               >
-                <span>{isLoggedIn ? '✓ Early Access Reserved' : 'Register Now'}</span>
-                <span className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 group-hover:bg-amber-400 group-hover:text-black transition-all shadow-inner">
-                  {isLoggedIn ? <CheckCircle size={17} weight="bold" /> : <ArrowRight size={17} weight="bold" />}
+                <span>Register Now</span>
+                <span className="w-10 h-10 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 flex items-center justify-center text-[#c79c6e] group-hover:bg-[#c79c6e] group-hover:text-black transition-all shadow-inner">
+                  <ArrowRight size={17} weight="bold" />
                 </span>
               </button>
             ) : !isPurchased ? (
@@ -1183,11 +1183,11 @@ export default function Course() {
                 </span>
               </button>
             )}
-            <p className="text-white/40 font-sans text-xs tracking-wide">
-              {isComingSoon 
-                ? 'Pre-Register for Early Priority Access & Launch Perks' 
-                : 'Instant Access · 3 Private 1-on-1 Sessions Included · 30-Day Guarantee'}
-            </p>
+            {!isComingSoon && (
+              <p className="text-white/40 font-sans text-xs tracking-wide">
+                Instant Access · 3 Private 1-on-1 Sessions Included · 30-Day Guarantee
+              </p>
+            )}
           </div>
 
           {/* Minimal Key Highlight */}
@@ -1774,33 +1774,21 @@ export default function Course() {
             </div>
 
             <div className="space-y-2">
-              <span className="text-[10px] uppercase tracking-[0.25em] text-amber-400 font-semibold block">
-                PRE-REGISTRATION CONFIRMED
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold block">
+                REGISTRATION CONFIRMED
               </span>
               <h3 className="font-serif text-2xl sm:text-3xl text-white font-normal">
-                You're on the Priority List
+                You're Registered!
               </h3>
               <p className="font-sans text-xs sm:text-sm text-white/65 leading-relaxed max-w-sm mx-auto">
-                Thank you for registering! You have reserved your early access spot for <span className="text-white font-semibold">The Better Man™</span>. We will notify you via email the moment enrollment goes live.
+                Thank you for registering. We will notify you via email the moment the course launches.
               </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left space-y-1.5">
-              <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
-                <Sparkle size={14} weight="fill" className="text-amber-400" />
-                <span>VIP Early Bird Perks</span>
-              </div>
-              <ul className="text-[11px] text-white/70 space-y-1 pl-1 list-disc list-inside">
-                <li>Guaranteed early enrollment access before public launch</li>
-                <li>Priority reservation for 3 free 1-on-1 coaching sessions</li>
-                <li>Exclusive launch pricing &amp; priority community perks</li>
-              </ul>
             </div>
 
             <button
               type="button"
               onClick={() => setShowPreRegSuccessModal(false)}
-              className="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-amber-400/20 active:scale-[0.99]"
+              className="w-full py-3.5 rounded-xl bg-[#c79c6e] hover:bg-[#b0885e] text-black font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#c79c6e]/20 active:scale-[0.99]"
             >
               Got It
             </button>
