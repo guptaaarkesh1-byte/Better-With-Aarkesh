@@ -192,7 +192,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
               <Square className="text-white/30 text-xl sm:text-2xl shrink-0 mt-0.5 group-hover:text-white/60 transition-colors" weight="regular" />
             )}
             <p className="text-white/80 text-xs sm:text-sm font-light leading-snug">
-              I agree to the <button className="text-accent-gold hover:underline font-medium" onClick={(e) => { e.stopPropagation(); setActiveModal('terms-and-conditions'); }}>terms and conditions</button> and understand that the amount above is the total payment shown in this summary.
+              I agree to the <button type="button" className="text-accent-gold hover:underline font-medium cursor-pointer inline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveModal('terms-and-conditions'); }}>terms and conditions</button> and understand that the amount above is the total payment shown in this summary.
             </p>
           </div>
         </div>
