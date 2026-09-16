@@ -170,6 +170,16 @@ export default function Course() {
   const [activeMobileTab, setActiveMobileTab] = useState('playlist'); // 'playlist' | 'overview' | 'resources' | 'comments'
   const [landscapeView, setLandscapeView] = useState('list'); // 'list' | 'player'
   const [purchaseSuccessData, setPurchaseSuccessData] = useState(null);
+  const [curriculumCards, setCurriculumCards] = useState([
+    { title: 'The Foundation of Presence', description: 'Discover how to anchor yourself in any high-pressure situation with calm, unshakeable energy.' },
+    { title: 'Breaking Reactive Patterns', description: 'Identify and dissolve the emotional triggers that cause you to react instead of respond.' },
+    { title: 'Magnetic Communication', description: 'Develop a voice and language that people naturally lean toward and remember.' },
+    { title: 'Non-Verbal Mastery', description: 'Harness the 93% of communication that happens without words — posture, eye contact, space.' },
+    { title: 'Leadership from Within', description: 'Stop performing authority and start embodying it — people will follow without being asked.' },
+    { title: 'Emotional Sovereignty', description: 'Condition your nervous system to stay laser-focused, composed, and mentally sharp under extreme stress.' },
+    { title: 'Executive Gravitas & Charisma', description: 'Command high-stakes rooms and social dynamics with effortless poise, vocal resonance, and respect.' },
+    { title: 'The Ripple Effect', description: 'Turn your internal transformation into lasting impact on every relationship and environment.' },
+  ]);
 
   const allLessons = curriculumModules.flatMap((m) => (m.lessons || []).map((l) => ({ ...l, module: m })));
   const currentLessonIndex = allLessons.findIndex(
@@ -289,8 +299,24 @@ export default function Course() {
       }
     };
 
+    const fetchCurriculumCards = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/courses/cards/public`);
+        if (res.ok) {
+          const cardsData = await res.json();
+          if (Array.isArray(cardsData) && cardsData.length > 0) {
+            setCurriculumCards(cardsData);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch curriculum cards:', err);
+      }
+    };
+
     fetchCourseFooter();
     fetchSocialLinks();
+    fetchCurriculumCards();
   }, []);
 
   const [pendingCheckout, setPendingCheckout] = useState(false);
@@ -1393,21 +1419,12 @@ export default function Course() {
               <h2 className="font-serif text-4xl md:text-5xl text-white">What you will master</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { title: 'The Foundation of Presence', desc: 'Discover how to anchor yourself in any high-pressure situation with calm, unshakeable energy.' },
-                { title: 'Breaking Reactive Patterns', desc: 'Identify and dissolve the emotional triggers that cause you to react instead of respond.' },
-                { title: 'Magnetic Communication', desc: 'Develop a voice and language that people naturally lean toward and remember.' },
-                { title: 'Non-Verbal Mastery', desc: 'Harness the 93% of communication that happens without words — posture, eye contact, space.' },
-                { title: 'Leadership from Within', desc: 'Stop performing authority and start embodying it — people will follow without being asked.' },
-                { title: 'Emotional Sovereignty', desc: 'Condition your nervous system to stay laser-focused, composed, and mentally sharp under extreme stress.' },
-                { title: 'Executive Gravitas & Charisma', desc: 'Command high-stakes rooms and social dynamics with effortless poise, vocal resonance, and respect.' },
-                { title: 'The Ripple Effect', desc: 'Turn your internal transformation into lasting impact on every relationship and environment.' },
-              ].map((item, i) => (
-                <div key={i} className="flex gap-4 p-6 rounded-2xl border border-white/[0.08] bg-[#0a0a0a] hover:border-[#c79c6e]/20 transition-colors group">
+              {curriculumCards.map((item, i) => (
+                <div key={item._id || i} className="flex gap-4 p-6 rounded-2xl border border-white/[0.08] bg-[#0a0a0a] hover:border-[#c79c6e]/20 transition-colors group">
                   <CheckCircle size={22} weight="fill" className="text-[#c79c6e] shrink-0 mt-0.5" />
                   <div>
                     <h3 className="font-sans font-semibold text-white text-sm mb-1 group-hover:text-[#c79c6e] transition-colors">{item.title}</h3>
-                    <p className="font-sans text-xs text-white/50 leading-relaxed">{item.desc}</p>
+                    <p className="font-sans text-xs text-white/50 leading-relaxed">{item.description || item.desc}</p>
                   </div>
                 </div>
               ))}

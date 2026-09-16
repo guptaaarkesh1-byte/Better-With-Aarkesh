@@ -34,10 +34,12 @@ import courseAuthRoutes from './routes/courseAuthRoutes.js';
 import courseAdminRoutes from './routes/courseAdminRoutes.js';
 import muxWebhookRoutes from './routes/muxWebhookRoutes.js';
 import coursePublicRoutes from './routes/coursePublicRoutes.js';
+import courseCardRoutes from './routes/courseCardRoutes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/course-auth', courseAuthRoutes);
 app.use('/api/admin/courses', courseAdminRoutes);
+app.use('/api/courses/cards', courseCardRoutes);
 app.use('/api/mux', muxWebhookRoutes);
 app.use('/api/courses', coursePublicRoutes);
 import appointmentRoutes from './routes/appointmentRoutes.js';
