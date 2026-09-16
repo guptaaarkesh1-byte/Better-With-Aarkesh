@@ -42,7 +42,7 @@ export default function Footer() {
           setFooterLinks(data);
         }
       } catch (err) {
-        console.error('Failed to fetch footer links', err);
+        console.error('Failed to fetch coaching footer links', err);
       }
     };
 
@@ -63,42 +63,36 @@ export default function Footer() {
   }, [API_URL]);
 
   const location = useLocation();
+  // Do not render coaching footer on course pages
   if (location.pathname.startsWith('/course')) return null;
 
   return (
-    <footer className="w-full bg-black border-t border-white/10 pt-16 pb-8 snap-start relative z-20">
-      <Container className="flex flex-col gap-12">
+    <footer className="w-full bg-black border-t border-white/10 pt-16 pb-10 snap-start relative z-20">
+      <Container className="flex flex-col gap-10">
         
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+        {/* Top Section: Brand, Navigation & Socials */}
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 text-center lg:text-left">
           
-          {/* Logo */}
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <span className="font-serif text-2xl text-white tracking-tight">
-              BetterWith<span className="text-white/60">Aarkesh</span>
-            </span>
-            <span className="font-sans text-xs text-white/50 tracking-widest uppercase">
-              Transform your life
+          {/* Logo & Tagline */}
+          <div className="flex flex-col items-center lg:items-start gap-1.5">
+            <Link to="/" className="font-serif text-2xl text-white tracking-tight hover:opacity-90 transition-opacity">
+              BetterWith<span className="text-[#c79c6e]">Aarkesh</span>
+            </Link>
+            <span className="font-sans text-[0.65rem] text-white/50 tracking-widest uppercase">
+              1:1 Life Coaching &amp; Transformational Mentorship
             </span>
           </div>
 
-          {/* Quick Links */}
-          <div className="flex flex-wrap justify-center gap-6 md:gap-8">
-            {[
-              { label: 'About', href: '/#meet-aarkesh' },
-              { label: 'Coaching', href: '/#coaching' },
-              { label: 'Library', href: '/library' },
-              { label: 'Testimonials', href: '/#testimonials' },
-              { label: 'FAQ', href: '/#faq' }
-            ].map((link) => (
-              <a 
-                key={link.label} 
-                href={link.href}
-                className="font-sans text-xs uppercase tracking-widest text-white/60 hover:text-accent-gold transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
+          {/* Coaching Navigation Quick Links */}
+          <nav aria-label="Footer Navigation" className="flex flex-wrap justify-center items-center gap-5 sm:gap-7 text-xs font-sans uppercase tracking-widest text-white/60">
+            <Link to="/" className="hover:text-accent-gold transition-colors">Home</Link>
+            <a href="/#meet-aarkesh" className="hover:text-accent-gold transition-colors">About</a>
+            <a href="/#coaching" className="hover:text-accent-gold transition-colors">Coaching</a>
+            <Link to="/book" className="hover:text-accent-gold transition-colors text-[#c79c6e]">Book Session</Link>
+            <Link to="/library" className="hover:text-accent-gold transition-colors">Library</Link>
+            <a href="/#testimonials" className="hover:text-accent-gold transition-colors">Testimonials</a>
+            <a href="/#contact" className="hover:text-accent-gold transition-colors">Contact</a>
+          </nav>
 
           {/* Universal Social Icons */}
           <div className="flex items-center gap-3 flex-wrap justify-center">
@@ -111,21 +105,21 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   aria-label={s.label || s.platform}
                   title={s.label || s.platform}
-                  className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-accent-gold hover:border-accent-gold/50 hover:bg-accent-gold/10 transition-all"
+                  className="w-9 h-9 rounded-full border border-white/10 bg-white/[0.02] flex items-center justify-center text-white/60 hover:text-accent-gold hover:border-accent-gold/50 hover:bg-accent-gold/10 transition-all"
                 >
-                  {renderSocialIcon(s.platform, 18)}
+                  {renderSocialIcon(s.platform, 17)}
                 </a>
               ))
             ) : (
               <>
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-accent-gold hover:border-accent-gold/50 hover:bg-accent-gold/10 transition-all" aria-label="Instagram">
-                  <InstagramLogo size={18} weight="light" />
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-accent-gold hover:border-accent-gold/50 hover:bg-accent-gold/10 transition-all" aria-label="Instagram">
+                  <InstagramLogo size={17} weight="light" />
                 </a>
-                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-accent-gold hover:border-accent-gold/50 hover:bg-accent-gold/10 transition-all" aria-label="LinkedIn">
-                  <LinkedinLogo size={18} weight="light" />
+                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-accent-gold hover:border-accent-gold/50 hover:bg-accent-gold/10 transition-all" aria-label="LinkedIn">
+                  <LinkedinLogo size={17} weight="light" />
                 </a>
-                <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-accent-gold hover:border-accent-gold/50 hover:bg-accent-gold/10 transition-all" aria-label="X">
-                  <XLogo size={18} weight="light" />
+                <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-accent-gold hover:border-accent-gold/50 hover:bg-accent-gold/10 transition-all" aria-label="X">
+                  <XLogo size={17} weight="light" />
                 </a>
               </>
             )}
@@ -133,26 +127,29 @@ export default function Footer() {
 
         </div>
 
-        {/* Bottom Bar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-white/10">
-          <p className="font-sans text-[0.65rem] text-white/40 tracking-wider">
-            &copy; {currentYear} BetterWithAarkesh. All rights reserved.
+        {/* Bottom Legal Bar */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-white/10">
+          <p className="font-sans text-[0.68rem] text-white/40 tracking-wider">
+            &copy; {currentYear} Better With Aarkesh. All rights reserved.
           </p>
-          <div className="flex items-center gap-6">
+          
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             {footerLinks.length > 0 ? (
               footerLinks.map(link => (
                 <Link 
                   key={link.slug} 
-                  to={`/legal/${link.slug}`} 
-                  className="font-sans text-[0.65rem] text-white/40 hover:text-white transition-colors tracking-wider"
+                  to={`/${link.slug}`} 
+                  className="font-sans text-[0.68rem] text-white/40 hover:text-white transition-colors tracking-wider"
                 >
                   {link.title}
                 </Link>
               ))
             ) : (
               <>
-                <a href="#" className="font-sans text-[0.65rem] text-white/40 hover:text-white transition-colors tracking-wider">Privacy Policy</a>
-                <a href="#" className="font-sans text-[0.65rem] text-white/40 hover:text-white transition-colors tracking-wider">Terms of Service</a>
+                <Link to="/terms-and-conditions" className="font-sans text-[0.68rem] text-white/40 hover:text-white transition-colors tracking-wider">Terms &amp; Conditions</Link>
+                <Link to="/privacy-policy" className="font-sans text-[0.68rem] text-white/40 hover:text-white transition-colors tracking-wider">Privacy Policy</Link>
+                <Link to="/refund-and-cancellation" className="font-sans text-[0.68rem] text-white/40 hover:text-white transition-colors tracking-wider">Refund Policy</Link>
+                <Link to="/shipping-policy" className="font-sans text-[0.68rem] text-white/40 hover:text-white transition-colors tracking-wider">Shipping Policy</Link>
               </>
             )}
           </div>
@@ -162,4 +159,3 @@ export default function Footer() {
     </footer>
   );
 }
-
