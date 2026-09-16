@@ -1508,16 +1508,32 @@ export default function Course() {
                           {heading}
                         </h4>
                         <ul className="flex flex-col gap-2.5 font-sans text-xs">
-                          {docs.map((doc) => (
-                            <li key={doc.slug || doc._id}>
-                              <button
-                                onClick={() => setActivePolicySlug(doc.slug)}
-                                className="text-white/50 hover:text-[#c79c6e] transition-colors text-left cursor-pointer"
-                              >
-                                {doc.title}
-                              </button>
-                            </li>
-                          ))}
+                          {docs.map((doc) => {
+                            const isExternal = doc.url && (doc.url.startsWith('http') || doc.url.startsWith('mailto:') || doc.url.startsWith('tel:'));
+                            const linkPath = doc.url || `/${doc.slug || ''}`;
+
+                            return (
+                              <li key={doc.slug || doc._id}>
+                                {isExternal ? (
+                                  <a
+                                    href={doc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-white/50 hover:text-[#c79c6e] transition-colors text-left"
+                                  >
+                                    {doc.title || doc.label}
+                                  </a>
+                                ) : (
+                                  <Link
+                                    to={linkPath}
+                                    className="text-white/50 hover:text-[#c79c6e] transition-colors text-left"
+                                  >
+                                    {doc.title || doc.label}
+                                  </Link>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     ))

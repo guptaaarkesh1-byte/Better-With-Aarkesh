@@ -105,13 +105,20 @@ export default function FooterDocumentView({ slug: propSlug }) {
         
         {/* Navigation Breadcrumb / Back Link */}
         <div className="mb-8">
-          <Link
-            to={isCourseDoc ? '/course' : '/'}
-            className="inline-flex items-center gap-2 text-xs font-sans text-white/50 hover:text-accent-gold transition-colors group"
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                window.location.href = isCourseDoc ? '/course' : '/';
+              }
+            }}
+            className="inline-flex items-center gap-2 text-xs font-sans text-white/50 hover:text-accent-gold transition-colors group cursor-pointer bg-transparent border-0 p-0"
           >
             <ArrowLeft size={14} weight="bold" className="group-hover:-translate-x-0.5 transition-transform" />
             <span>Back to {isCourseDoc ? 'The Better Man™ Course' : 'Better With Aarkesh'}</span>
-          </Link>
+          </button>
         </div>
 
         {/* Page Header */}
