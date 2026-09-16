@@ -9,6 +9,7 @@ import CoachingJourney from '../components/principles/CoachingJourney';
 import MeetAarkesh from '../components/about/MeetAarkesh';
 import TestimonialsSection from '../components/testimonials/TestimonialsSection';
 import FinalCtaSection from '../components/cta/FinalCtaSection';
+import CoachingFaqSection from '../components/faq/CoachingFaqSection';
 
 export default function Home() {
   return (
@@ -25,6 +26,7 @@ export default function Home() {
       <MeetAarkesh />
       <TestimonialsSection />
       <FinalCtaSection />
+      <CoachingFaqSection />
     </>
   );
 }
