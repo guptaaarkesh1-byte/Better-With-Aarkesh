@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { 
   SlidersHorizontal,
+  Question,
   GraduationCap, 
   UploadSimple, 
   CurrencyInr 
 } from '@phosphor-icons/react';
 import AdminCourseControl from './AdminCourseControl';
+import AdminCourseFaq from './AdminCourseFaq';
 import AdminCourseCurriculum from './AdminCourseCurriculum';
 import AdminCourseStudents from './AdminCourseStudents';
 import AdminCourseFee from './AdminCourseFee';
@@ -17,11 +19,13 @@ export default function AdminCourse() {
 
   const getInitialTab = () => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'control' || tabParam === 'cards') return 'control';
+    if (tabParam === 'control' || tabParam === 'cards' || tabParam === 'master') return 'control';
+    if (tabParam === 'faq' || tabParam === 'faqs' || tabParam === 'questions') return 'faq';
     if (tabParam === 'students') return 'students';
     if (tabParam === 'curriculum' || tabParam === 'videos' || tabParam === 'comments') return 'curriculum';
     if (tabParam === 'fee' || tabParam === 'pricing' || tabParam === 'gst') return 'fee';
     if (location.pathname.startsWith('/course-control') || location.pathname.startsWith('/course-cards')) return 'control';
+    if (location.pathname.startsWith('/course-faq')) return 'faq';
     if (location.pathname.startsWith('/course-fee') || location.pathname.startsWith('/course-pricing')) return 'fee';
     if (location.pathname.startsWith('/upload-videos') || location.pathname.startsWith('/course-curriculum')) return 'curriculum';
     if (location.pathname.startsWith('/course-students')) return 'students';
@@ -32,8 +36,10 @@ export default function AdminCourse() {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'control' || tabParam === 'cards') {
+    if (tabParam === 'control' || tabParam === 'cards' || tabParam === 'master') {
       setActiveTab('control');
+    } else if (tabParam === 'faq' || tabParam === 'faqs' || tabParam === 'questions') {
+      setActiveTab('faq');
     } else if (tabParam === 'fee' || tabParam === 'pricing' || tabParam === 'gst') {
       setActiveTab('fee');
     } else if (tabParam === 'curriculum' || tabParam === 'videos' || tabParam === 'comments') {
@@ -42,6 +48,8 @@ export default function AdminCourse() {
       setActiveTab('students');
     } else if (location.pathname.startsWith('/course-control') || location.pathname.startsWith('/course-cards')) {
       setActiveTab('control');
+    } else if (location.pathname.startsWith('/course-faq')) {
+      setActiveTab('faq');
     } else if (location.pathname.startsWith('/course-fee') || location.pathname.startsWith('/course-pricing')) {
       setActiveTab('fee');
     } else if (location.pathname.startsWith('/upload-videos') || location.pathname.startsWith('/course-curriculum')) {
@@ -61,7 +69,7 @@ export default function AdminCourse() {
       {/* Sub Navigation Bar for Course Vertical */}
       <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/5 px-6 py-3.5 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-2 flex-wrap">
-          {/* 1. Control (First in Order) */}
+          {/* 1. What you will master (First in Order) */}
           <button
             id="tab-btn-control"
             onClick={() => handleTabSwitch('control')}
@@ -75,7 +83,21 @@ export default function AdminCourse() {
             <span>What you will master</span>
           </button>
 
-          {/* 2. Course Fee & GST */}
+          {/* 2. FAQ (Right side of What you will master) */}
+          <button
+            id="tab-btn-faq"
+            onClick={() => handleTabSwitch('faq')}
+            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+              activeTab === 'faq'
+                ? 'bg-[#c79c6e] text-black shadow-lg shadow-[#c79c6e]/15'
+                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Question size={15} weight={activeTab === 'faq' ? 'bold' : 'regular'} />
+            <span>FAQ</span>
+          </button>
+
+          {/* 3. Course Fee & GST */}
           <button
             id="tab-btn-fee"
             onClick={() => handleTabSwitch('fee')}
@@ -89,7 +111,7 @@ export default function AdminCourse() {
             <span>Course Fee &amp; GST</span>
           </button>
 
-          {/* 3. Upload Videos & Curriculum */}
+          {/* 4. Upload Videos & Curriculum */}
           <button
             id="tab-btn-curriculum"
             onClick={() => handleTabSwitch('curriculum')}
@@ -103,7 +125,7 @@ export default function AdminCourse() {
             <span>Upload Videos &amp; Curriculum</span>
           </button>
 
-          {/* 4. Course Students & Purchases */}
+          {/* 5. Course Students & Purchases */}
           <button
             id="tab-btn-students"
             onClick={() => handleTabSwitch('students')}
@@ -123,6 +145,8 @@ export default function AdminCourse() {
       <div className="flex-1">
         {activeTab === 'control' ? (
           <AdminCourseControl />
+        ) : activeTab === 'faq' ? (
+          <AdminCourseFaq />
         ) : activeTab === 'fee' ? (
           <AdminCourseFee />
         ) : activeTab === 'curriculum' ? (

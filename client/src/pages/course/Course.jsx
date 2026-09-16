@@ -180,6 +180,12 @@ export default function Course() {
     { title: 'Executive Gravitas & Charisma', description: 'Command high-stakes rooms and social dynamics with effortless poise, vocal resonance, and respect.' },
     { title: 'The Ripple Effect', description: 'Turn your internal transformation into lasting impact on every relationship and environment.' },
   ]);
+  const [courseFaqs, setCourseFaqs] = useState([
+    { question: 'How long do I have access to the course materials?', answer: 'You get lifetime access to all masterclass modules, downloadable resources, and all future updates with no recurring charges.' },
+    { question: 'How do the 3 free coaching sessions work?', answer: 'Once enrolled, you can book your private 1-on-1 sessions directly with Aarkesh through your course profile dashboard.' },
+    { question: 'What format is the course delivered in?', answer: 'High-definition on-demand video masterclasses with actionable workbooks, downloadable frameworks, and direct 1-on-1 coaching.' },
+    { question: 'Is this course beginner-friendly?', answer: 'Absolutely. The framework starts from the fundamental psychology of presence and builds step-by-step toward advanced leadership and magnetism.' },
+  ]);
 
   const allLessons = curriculumModules.flatMap((m) => (m.lessons || []).map((l) => ({ ...l, module: m })));
   const currentLessonIndex = allLessons.findIndex(
@@ -314,9 +320,25 @@ export default function Course() {
       }
     };
 
+    const fetchCourseFaqs = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/courses/faqs/public`);
+        if (res.ok) {
+          const faqsData = await res.json();
+          if (Array.isArray(faqsData) && faqsData.length > 0) {
+            setCourseFaqs(faqsData);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch course FAQs:', err);
+      }
+    };
+
     fetchCourseFooter();
     fetchSocialLinks();
     fetchCurriculumCards();
+    fetchCourseFaqs();
   }, []);
 
   const [pendingCheckout, setPendingCheckout] = useState(false);
@@ -1440,15 +1462,10 @@ export default function Course() {
               <h2 className="font-serif text-4xl md:text-5xl text-white">Everything you need to know</h2>
             </div>
             <div className="flex flex-col gap-4">
-              {[
-                { q: 'How long do I have access to the course materials?', a: 'You get lifetime access to all masterclass modules, downloadable resources, and all future updates with no recurring charges.' },
-                { q: 'How do the 3 free coaching sessions work?', a: 'Once enrolled, you can book your private 1-on-1 sessions directly with Aarkesh through your course profile dashboard.' },
-                { q: 'What format is the course delivered in?', a: 'High-definition on-demand video masterclasses with actionable workbooks, downloadable frameworks, and direct 1-on-1 coaching.' },
-                { q: 'Is this course beginner-friendly?', a: 'Absolutely. The framework starts from the fundamental psychology of presence and builds step-by-step toward advanced leadership and magnetism.' }
-              ].map((faq, fi) => (
-                <div key={fi} className="border border-white/10 rounded-2xl bg-[#0a0a0a] p-6 hover:border-[#c79c6e]/30 transition-colors">
-                  <h3 className="font-serif text-lg text-white mb-2">{faq.q}</h3>
-                  <p className="font-sans text-xs md:text-sm text-white/60 leading-relaxed">{faq.a}</p>
+              {courseFaqs.map((faq, fi) => (
+                <div key={faq._id || fi} className="border border-white/10 rounded-2xl bg-[#0a0a0a] p-6 hover:border-[#c79c6e]/30 transition-colors">
+                  <h3 className="font-serif text-lg text-white mb-2">{faq.question || faq.q}</h3>
+                  <p className="font-sans text-xs md:text-sm text-white/60 leading-relaxed">{faq.answer || faq.a}</p>
                 </div>
               ))}
             </div>
