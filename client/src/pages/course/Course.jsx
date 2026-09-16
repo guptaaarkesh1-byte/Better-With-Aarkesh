@@ -244,7 +244,15 @@ export default function Course() {
         console.error('Failed to fetch dynamic curriculum:', err);
       }
     };
+
     fetchPublishedCurriculum();
+    window.addEventListener('focus', fetchPublishedCurriculum);
+    const interval = setInterval(fetchPublishedCurriculum, 4000);
+
+    return () => {
+      window.removeEventListener('focus', fetchPublishedCurriculum);
+      clearInterval(interval);
+    };
   }, [isPurchased]);
 
   // Reset left column scroll to top whenever active lesson changes
