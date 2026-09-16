@@ -206,6 +206,7 @@ router.put('/:id', protect, admin, async (req, res) => {
       'price', 'comparePrice', 'gstRate', 'isGstIncluded', 'duration', 'level', 'instructor',
       'benefits', 'whatYouWillLearn', 'requirements', 'status',
       'seoTitle', 'seoDescription', 'order',
+      'isComingSoon', 'comingSoonText',
     ];
 
     fields.forEach((field) => {

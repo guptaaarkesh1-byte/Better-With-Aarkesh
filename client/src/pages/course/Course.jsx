@@ -128,6 +128,7 @@ export default function Course() {
     return (params.get('checkout') === 'true' || isCheckoutStored) && hasToken && !isPurchasedStored;
   });
   const [checkoutAgreed, setCheckoutAgreed] = useState(false);
+  const [showPreRegSuccessModal, setShowPreRegSuccessModal] = useState(false);
   const profileMenuRef = useRef(null);
   const leftColumnRef = useRef(null);
 
@@ -170,23 +171,10 @@ export default function Course() {
   const [landscapeView, setLandscapeView] = useState('list'); // 'list' | 'player'
   const [purchaseSuccessData, setPurchaseSuccessData] = useState(null);
 
-  // Flat list of all lessons with module reference for mobile & quick next/prev navigation
-  const allLessons = useMemo(() => {
-    const list = [];
-    curriculumModules.forEach((m) => {
-      (m.lessons || []).forEach((l) => {
-        list.push({ ...l, module: m });
-      });
-    });
-    return list;
-  }, [curriculumModules]);
-
-  const currentLessonIndex = useMemo(() => {
-    if (!activeLesson) return -1;
-    const currentId = (activeLesson._id || activeLesson.id)?.toString();
-    return allLessons.findIndex(l => (l._id || l.id)?.toString() === currentId);
-  }, [allLessons, activeLesson]);
-
+  const allLessons = curriculumModules.flatMap((m) => (m.lessons || []).map((l) => ({ ...l, module: m })));
+  const currentLessonIndex = allLessons.findIndex(
+    (l) => (l._id || l.id)?.toString() === (activeLesson?._id || activeLesson?.id)?.toString()
+  );
   const prevLesson = currentLessonIndex > 0 ? allLessons[currentLessonIndex - 1] : null;
   const nextLesson = currentLessonIndex >= 0 && currentLessonIndex < allLessons.length - 1 ? allLessons[currentLessonIndex + 1] : null;
 
@@ -196,6 +184,7 @@ export default function Course() {
     localStorage.setItem('lastActiveCourseLessonId', (lesson._id || lesson.id)?.toString());
   };
 
+  const isComingSoon = Boolean(courseData?.isComingSoon);
   const basePrice = courseData?.price !== undefined && courseData?.price !== null ? Number(courseData.price) : 15000;
   const comparePrice = courseData?.comparePrice !== undefined && courseData?.comparePrice !== null ? Number(courseData.comparePrice) : 25000;
   const gstRate = courseData?.gstRate !== undefined && courseData?.gstRate !== null ? Number(courseData.gstRate) : 18;
@@ -312,10 +301,27 @@ export default function Course() {
   }, [courseDocuments]);
 
   const handleEnroll = () => {
-    setShowPricingModal(true);
+    if (!isLoggedIn) {
+      setLoginMode('register');
+      setIsOtpStep(false);
+      setIsForgotPassword(false);
+      setIsForgotOtpStep(false);
+      setError('');
+      setShowPricingModal(false);
+      setShowCourseLogin(true);
+    } else if (isComingSoon) {
+      setShowPreRegSuccessModal(true);
+    } else {
+      setShowPricingModal(true);
+    }
   };
 
   const handlePurchase = () => {
+    if (isComingSoon) {
+      setShowPricingModal(false);
+      setShowPreRegSuccessModal(true);
+      return;
+    }
     if (!isLoggedIn) {
       setShowPricingModal(false);
       setPendingCheckout(true);
@@ -676,19 +682,25 @@ export default function Course() {
         } else {
           localStorage.setItem('courseToken', data.token);
           localStorage.setItem('courseUser', JSON.stringify(data));
-          if (data.isPurchased) {
+          if (data.isPurchased && !isComingSoon) {
             localStorage.setItem('isCoursePurchased', 'true');
             setIsPurchased(true);
             setShowDashboard(true);
+            setShowPricingModal(false);
           } else {
             localStorage.removeItem('isCoursePurchased');
             setIsPurchased(false);
             setShowDashboard(false);
-            if (pendingCheckout || searchParams.get('checkout') === 'true') {
+            if (isComingSoon) {
+              setShowCheckout(false);
+              setShowPricingModal(false);
+              setShowPreRegSuccessModal(true);
+            } else if (pendingCheckout || searchParams.get('checkout') === 'true') {
               setShowCheckout(true);
               setPendingCheckout(false);
             } else {
               setShowCheckout(false);
+              setShowPricingModal(true);
             }
           }
           setShowCourseLogin(false);
@@ -1111,11 +1123,18 @@ export default function Course() {
 
         {/* Center Hero Content */}
         <div className="relative z-10 text-center max-w-3xl mx-auto flex flex-col items-center justify-center my-auto">
-          {/* Delicate Eyebrow */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] mb-6">
-            <Sparkle size={12} weight="fill" />
-            <span>THE OFFICIAL MASTERCLASS</span>
-          </div>
+          {/* Eyebrow / Banner */}
+          {isComingSoon ? (
+            <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-amber-500/15 border border-amber-500/40 backdrop-blur-md text-amber-300 text-xs sm:text-sm font-sans font-semibold uppercase tracking-[0.25em] mb-6 shadow-[0_0_30px_rgba(245,158,11,0.25)]">
+              <Sparkle size={15} weight="fill" className="text-amber-400 animate-pulse" />
+              <span>{courseData?.comingSoonText || 'COMING SOON · PRE-REGISTRATION OPEN'}</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] mb-6">
+              <Sparkle size={12} weight="fill" />
+              <span>THE OFFICIAL MASTERCLASS</span>
+            </div>
+          )}
 
           {/* Clean Grand Title */}
           <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] text-white leading-[1.05] mb-6 font-normal tracking-tight">
@@ -1130,13 +1149,24 @@ export default function Course() {
 
           {/* CTA Action */}
           <div className="flex flex-col items-center gap-3.5 mb-12">
-            {!isPurchased ? (
+            {isComingSoon ? (
+              <button
+                type="button"
+                onClick={handleEnroll}
+                className="group relative inline-flex items-center gap-4 rounded-full border border-amber-500/40 bg-white/[0.06] hover:bg-amber-500/15 hover:border-amber-400 backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-105 shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(245,158,11,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] cursor-pointer"
+              >
+                <span>{isLoggedIn ? '✓ Early Access Reserved' : 'Register Now'}</span>
+                <span className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 group-hover:bg-amber-400 group-hover:text-black transition-all shadow-inner">
+                  {isLoggedIn ? <CheckCircle size={17} weight="bold" /> : <ArrowRight size={17} weight="bold" />}
+                </span>
+              </button>
+            ) : !isPurchased ? (
               <button
                 type="button"
                 onClick={handleEnroll}
                 className="group relative inline-flex items-center gap-4 rounded-full border border-[#c79c6e]/40 bg-white/[0.06] hover:bg-[#c79c6e]/15 hover:border-[#c79c6e] backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-105 shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(199,156,110,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] cursor-pointer"
               >
-                <span>Register Now</span>
+                <span>{isLoggedIn ? 'Enroll Now' : 'Register Now'}</span>
                 <span className="w-10 h-10 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 flex items-center justify-center text-[#c79c6e] group-hover:bg-[#c79c6e] group-hover:text-black transition-all shadow-inner">
                   <ArrowRight size={17} weight="bold" />
                 </span>
@@ -1154,7 +1184,9 @@ export default function Course() {
               </button>
             )}
             <p className="text-white/40 font-sans text-xs tracking-wide">
-              Instant Access · 3 Private 1-on-1 Sessions Included · 30-Day Guarantee
+              {isComingSoon 
+                ? 'Pre-Register for Early Priority Access & Launch Perks' 
+                : 'Instant Access · 3 Private 1-on-1 Sessions Included · 30-Day Guarantee'}
             </p>
           </div>
 
@@ -1314,7 +1346,7 @@ export default function Course() {
             </p>
 
             <p className="font-sans text-sm sm:text-base text-white/60 leading-normal font-medium">
-              Click <strong className="text-white font-bold">Register Now</strong> above to begin your journey immediately.
+              Click <strong className="text-white font-bold">{isLoggedIn ? 'Enroll Now' : 'Register Now'}</strong> above to begin your journey immediately.
             </p>
           </div>
 
@@ -1336,6 +1368,8 @@ export default function Course() {
             { title: 'Magnetic Communication', desc: 'Develop a voice and language that people naturally lean toward and remember.' },
             { title: 'Non-Verbal Mastery', desc: 'Harness the 93% of communication that happens without words — posture, eye contact, space.' },
             { title: 'Leadership from Within', desc: 'Stop performing authority and start embodying it — people will follow without being asked.' },
+            { title: 'Emotional Sovereignty', desc: 'Condition your nervous system to stay laser-focused, composed, and mentally sharp under extreme stress.' },
+            { title: 'Executive Gravitas & Charisma', desc: 'Command high-stakes rooms and social dynamics with effortless poise, vocal resonance, and respect.' },
             { title: 'The Ripple Effect', desc: 'Turn your internal transformation into lasting impact on every relationship and environment.' },
           ].map((item, i) => (
             <div key={i} className="flex gap-4 p-6 rounded-2xl border border-white/[0.08] bg-[#0a0a0a] hover:border-[#c79c6e]/20 transition-colors group">
@@ -1718,6 +1752,58 @@ export default function Course() {
           setActivePolicySlug(null);
         }}
       />
+
+      {/* ─── PRE-REGISTRATION CONFIRMATION MODAL ─── */}
+      {showPreRegSuccessModal && (
+        <div className="fixed inset-0 z-[120] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md rounded-2xl sm:rounded-3xl border border-amber-500/40 bg-[#0c0c0c] p-6 sm:p-8 shadow-[0_20px_70px_rgba(0,0,0,0.9),0_0_40px_rgba(245,158,11,0.15)] text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => setShowPreRegSuccessModal(false)}
+              className="absolute right-4 top-4 w-8 h-8 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              title="Close modal"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
+              <CheckCircle size={34} weight="fill" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-amber-400 font-semibold block">
+                PRE-REGISTRATION CONFIRMED
+              </span>
+              <h3 className="font-serif text-2xl sm:text-3xl text-white font-normal">
+                You're on the Priority List
+              </h3>
+              <p className="font-sans text-xs sm:text-sm text-white/65 leading-relaxed max-w-sm mx-auto">
+                Thank you for registering! You have reserved your early access spot for <span className="text-white font-semibold">The Better Man™</span>. We will notify you via email the moment enrollment goes live.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left space-y-1.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
+                <Sparkle size={14} weight="fill" className="text-amber-400" />
+                <span>VIP Early Bird Perks</span>
+              </div>
+              <ul className="text-[11px] text-white/70 space-y-1 pl-1 list-disc list-inside">
+                <li>Guaranteed early enrollment access before public launch</li>
+                <li>Priority reservation for 3 free 1-on-1 coaching sessions</li>
+                <li>Exclusive launch pricing &amp; priority community perks</li>
+              </ul>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowPreRegSuccessModal(false)}
+              className="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-amber-400/20 active:scale-[0.99]"
+            >
+              Got It
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

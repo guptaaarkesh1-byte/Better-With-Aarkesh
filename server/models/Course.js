@@ -70,6 +70,15 @@ const courseSchema = new mongoose.Schema({
     default: '6+ Hours',
     trim: true,
   },
+  isComingSoon: {
+    type: Boolean,
+    default: false,
+  },
+  comingSoonText: {
+    type: String,
+    default: 'Coming Soon — Pre-Register for Early Access',
+    trim: true,
+  },
   level: {
     type: String,
     enum: ['All Levels', 'Beginner', 'Intermediate', 'Advanced', 'Masterclass'],

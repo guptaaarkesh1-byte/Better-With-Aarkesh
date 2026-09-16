@@ -13,7 +13,10 @@ import {
   Pen,
   FileText,
   BookOpen,
-  Gift
+  Gift,
+  Broadcast,
+  Clock,
+  WarningCircle
 } from '@phosphor-icons/react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -29,6 +32,8 @@ export default function AdminCourseFee() {
   // Form State
   const [courseTitle, setCourseTitle] = useState('The Better Man™');
   const [courseSubtitle, setCourseSubtitle] = useState('');
+  const [isComingSoon, setIsComingSoon] = useState(false);
+  const [comingSoonText, setComingSoonText] = useState('Coming Soon — Pre-Register for Early Access');
   const [invoiceItemTitle, setInvoiceItemTitle] = useState('The Better Man™ — Masterclass Lifetime Access');
   const [invoiceItemSubtitle, setInvoiceItemSubtitle] = useState('HD video frameworks, modular curriculum, worksheets & community');
   const [bonusItemTitle, setBonusItemTitle] = useState('3 Private 1-on-1 Executive Coaching Sessions with Aarkesh');
@@ -58,6 +63,8 @@ export default function AdminCourseFee() {
           setCourse(primaryCourse);
           setCourseTitle(primaryCourse.title || 'The Better Man™');
           setCourseSubtitle(primaryCourse.subtitle || '');
+          setIsComingSoon(Boolean(primaryCourse.isComingSoon));
+          setComingSoonText(primaryCourse.comingSoonText || 'Coming Soon — Pre-Register for Early Access');
           setInvoiceItemTitle(
             primaryCourse.invoiceItemTitle || 
             (primaryCourse.title ? `${primaryCourse.title} — Masterclass Lifetime Access` : 'The Better Man™ — Masterclass Lifetime Access')
@@ -109,6 +116,8 @@ export default function AdminCourseFee() {
         body: JSON.stringify({
           title: courseTitle.trim() || 'The Better Man™',
           subtitle: courseSubtitle.trim(),
+          isComingSoon: Boolean(isComingSoon),
+          comingSoonText: comingSoonText.trim() || 'Coming Soon — Pre-Register for Early Access',
           invoiceItemTitle: invoiceItemTitle.trim() || `${courseTitle.trim()} — Masterclass Lifetime Access`,
           invoiceItemSubtitle: invoiceItemSubtitle.trim(),
           bonusItemTitle: bonusItemTitle.trim(),
@@ -123,7 +132,7 @@ export default function AdminCourseFee() {
       const updated = await res.json();
       if (res.ok) {
         setCourse(updated);
-        showNotification('Course name, bill details & GST settings updated successfully!');
+        showNotification('Course settings, status & pricing saved successfully!');
       } else {
         showNotification(updated.message || 'Failed to update settings', 'error');
       }
@@ -222,6 +231,115 @@ export default function AdminCourseFee() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Column: Form Controls */}
           <div className="lg:col-span-7 space-y-6">
+            {/* ── 0. Launch Status & Coming Soon Toggle Card ── */}
+            <div className={`bg-[#0a0a0a] border rounded-2xl p-6 shadow-xl space-y-5 relative overflow-hidden transition-all duration-300 ${
+              isComingSoon 
+                ? 'border-amber-500/50 shadow-amber-500/5' 
+                : 'border-emerald-500/40 shadow-emerald-500/5'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
+                    isComingSoon 
+                      ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' 
+                      : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                  }`}>
+                    {isComingSoon ? <Clock size={18} weight="bold" /> : <Broadcast size={18} weight="bold" />}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+                      Course Page Launch Status
+                    </h3>
+                    <p className="text-[11px] text-white/40">
+                      Switch between Live Enrollment and Coming Soon Pre-Registration mode
+                    </p>
+                  </div>
+                </div>
+
+                <span className={`px-3 py-1 rounded-full border text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                  isComingSoon
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
+                    : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${isComingSoon ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
+                  {isComingSoon ? 'COMING SOON MODE' : 'LIVE MODE'}
+                </span>
+              </div>
+
+              {/* Toggle Switch Selector */}
+              <div className="grid grid-cols-2 gap-3 p-1.5 bg-black/60 rounded-xl border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsComingSoon(false)}
+                  className={`py-3 px-4 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    !isComingSoon
+                      ? 'bg-emerald-500 text-black font-bold shadow-lg shadow-emerald-500/20 scale-[1.01]'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Broadcast size={16} weight={!isComingSoon ? 'bold' : 'regular'} />
+                  <span>🟢 Live Enrollment</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsComingSoon(true)}
+                  className={`py-3 px-4 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    isComingSoon
+                      ? 'bg-amber-400 text-black font-bold shadow-lg shadow-amber-500/20 scale-[1.01]'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Clock size={16} weight={isComingSoon ? 'bold' : 'regular'} />
+                  <span>🟡 Coming Soon</span>
+                </button>
+              </div>
+
+              {/* Status Details / Explanations */}
+              {isComingSoon ? (
+                <div className="space-y-4 pt-3 border-t border-white/10">
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest text-amber-400/90 mb-2 font-semibold flex items-center gap-1.5">
+                      <Sparkle size={13} weight="fill" />
+                      Coming Soon Banner Text *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={comingSoonText}
+                      onChange={(e) => setComingSoonText(e.target.value)}
+                      placeholder="e.g. Coming Soon — Pre-Register for Early Access"
+                      className="w-full bg-black/60 border border-amber-500/30 focus:border-amber-400 rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-colors"
+                    />
+                    <span className="text-[11px] text-white/40 block mt-1.5">
+                      This banner will be prominently displayed at the top of the course landing page.
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300/90 text-xs space-y-1">
+                    <p className="font-semibold flex items-center gap-1.5 text-amber-400">
+                      <Info size={14} weight="bold" />
+                      What visitors will see in Coming Soon mode:
+                    </p>
+                    <ul className="list-disc list-inside space-y-0.5 text-[11px] text-amber-200/80 pl-1">
+                      <li>Prominent luxury Coming Soon banner in the hero section</li>
+                      <li>Only the <strong>"Register Now"</strong> (Pre-Registration) button is displayed</li>
+                      <li>No direct checkout/payment links; users pre-register for early priority access</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300/90 text-xs space-y-1">
+                  <p className="font-semibold flex items-center gap-1.5 text-emerald-400">
+                    <CheckCircle size={14} weight="bold" />
+                    Live Mode Active:
+                  </p>
+                  <p className="text-[11px] text-emerald-200/80">
+                    Course landing page is live with full enrollment. Registered users can click "Enroll Now", view the course breakdown, and complete secure checkout.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* ── 1. Course Name & Heading Settings Card ── */}
             <div className="bg-[#0a0a0a] border border-[#c79c6e]/30 rounded-2xl p-6 shadow-xl space-y-5 relative overflow-hidden">
