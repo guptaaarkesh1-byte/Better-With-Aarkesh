@@ -135,10 +135,12 @@ export default function AdminCourseFaq() {
     try {
       setSaving(true);
       const token = localStorage.getItem('adminToken');
-      const url = editingFaq
-        ? `${API_URL}/api/courses/faqs/admin/${editingFaq._id}`
+      const isEdit = Boolean(editingFaq && (editingFaq._id || editingFaq.id));
+      const faqId = editingFaq?._id || editingFaq?.id || '';
+      const url = isEdit
+        ? `${API_URL}/api/courses/faqs/admin/${faqId}`
         : `${API_URL}/api/courses/faqs/admin`;
-      const method = editingFaq ? 'PUT' : 'POST';
+      const method = isEdit ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
         method,
@@ -150,7 +152,7 @@ export default function AdminCourseFaq() {
       });
 
       if (res.ok) {
-        showNotification(editingFaq ? 'FAQ updated successfully' : 'New FAQ added successfully');
+        showNotification(isEdit ? 'FAQ updated successfully' : 'New FAQ added successfully');
         handleCloseModal();
         fetchFaqs();
       } else {

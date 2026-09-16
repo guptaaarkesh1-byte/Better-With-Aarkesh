@@ -19,24 +19,26 @@ export default function AdminCourse() {
 
   const getInitialTab = () => {
     const tabParam = searchParams.get('tab');
+    if (tabParam === 'students' || tabParam === 'purchases' || tabParam === 'orders' || tabParam === 'users') return 'students';
     if (tabParam === 'control' || tabParam === 'cards' || tabParam === 'master') return 'control';
     if (tabParam === 'faq' || tabParam === 'faqs' || tabParam === 'questions') return 'faq';
-    if (tabParam === 'students') return 'students';
-    if (tabParam === 'curriculum' || tabParam === 'videos' || tabParam === 'comments') return 'curriculum';
     if (tabParam === 'fee' || tabParam === 'pricing' || tabParam === 'gst') return 'fee';
+    if (tabParam === 'curriculum' || tabParam === 'videos' || tabParam === 'comments') return 'curriculum';
+    if (location.pathname.startsWith('/course-students') || location.pathname.startsWith('/course-purchases')) return 'students';
     if (location.pathname.startsWith('/course-control') || location.pathname.startsWith('/course-cards')) return 'control';
     if (location.pathname.startsWith('/course-faq')) return 'faq';
     if (location.pathname.startsWith('/course-fee') || location.pathname.startsWith('/course-pricing')) return 'fee';
     if (location.pathname.startsWith('/upload-videos') || location.pathname.startsWith('/course-curriculum')) return 'curriculum';
-    if (location.pathname.startsWith('/course-students')) return 'students';
-    return 'control';
+    return 'students';
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'control' || tabParam === 'cards' || tabParam === 'master') {
+    if (tabParam === 'students' || tabParam === 'purchases' || tabParam === 'orders' || tabParam === 'users') {
+      setActiveTab('students');
+    } else if (tabParam === 'control' || tabParam === 'cards' || tabParam === 'master') {
       setActiveTab('control');
     } else if (tabParam === 'faq' || tabParam === 'faqs' || tabParam === 'questions') {
       setActiveTab('faq');
@@ -44,7 +46,7 @@ export default function AdminCourse() {
       setActiveTab('fee');
     } else if (tabParam === 'curriculum' || tabParam === 'videos' || tabParam === 'comments') {
       setActiveTab('curriculum');
-    } else if (tabParam === 'students') {
+    } else if (location.pathname.startsWith('/course-students') || location.pathname.startsWith('/course-purchases')) {
       setActiveTab('students');
     } else if (location.pathname.startsWith('/course-control') || location.pathname.startsWith('/course-cards')) {
       setActiveTab('control');
@@ -54,8 +56,6 @@ export default function AdminCourse() {
       setActiveTab('fee');
     } else if (location.pathname.startsWith('/upload-videos') || location.pathname.startsWith('/course-curriculum')) {
       setActiveTab('curriculum');
-    } else if (location.pathname.startsWith('/course-students')) {
-      setActiveTab('students');
     }
   }, [searchParams, location.pathname]);
 
@@ -69,7 +69,21 @@ export default function AdminCourse() {
       {/* Sub Navigation Bar for Course Vertical */}
       <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/5 px-6 py-3.5 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-2 flex-wrap">
-          {/* 1. What you will master (First in Order) */}
+          {/* 1. Course Students & Purchases (First in Order) */}
+          <button
+            id="tab-btn-students"
+            onClick={() => handleTabSwitch('students')}
+            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+              activeTab === 'students'
+                ? 'bg-[#c79c6e] text-black shadow-lg shadow-[#c79c6e]/15'
+                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <GraduationCap size={16} weight={activeTab === 'students' ? 'bold' : 'regular'} />
+            <span>Course Students &amp; Purchases</span>
+          </button>
+
+          {/* 2. What you will master */}
           <button
             id="tab-btn-control"
             onClick={() => handleTabSwitch('control')}
@@ -83,7 +97,7 @@ export default function AdminCourse() {
             <span>What you will master</span>
           </button>
 
-          {/* 2. FAQ (Right side of What you will master) */}
+          {/* 3. FAQ */}
           <button
             id="tab-btn-faq"
             onClick={() => handleTabSwitch('faq')}
@@ -97,7 +111,7 @@ export default function AdminCourse() {
             <span>FAQ</span>
           </button>
 
-          {/* 3. Course Fee & GST */}
+          {/* 4. Course Fee & GST */}
           <button
             id="tab-btn-fee"
             onClick={() => handleTabSwitch('fee')}
@@ -111,7 +125,7 @@ export default function AdminCourse() {
             <span>Course Fee &amp; GST</span>
           </button>
 
-          {/* 4. Upload Videos & Curriculum */}
+          {/* 5. Upload Videos & Curriculum */}
           <button
             id="tab-btn-curriculum"
             onClick={() => handleTabSwitch('curriculum')}
@@ -124,35 +138,21 @@ export default function AdminCourse() {
             <UploadSimple size={15} weight={activeTab === 'curriculum' ? 'bold' : 'regular'} />
             <span>Upload Videos &amp; Curriculum</span>
           </button>
-
-          {/* 5. Course Students & Purchases */}
-          <button
-            id="tab-btn-students"
-            onClick={() => handleTabSwitch('students')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-              activeTab === 'students'
-                ? 'bg-[#c79c6e] text-black shadow-lg shadow-[#c79c6e]/15'
-                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <GraduationCap size={16} weight={activeTab === 'students' ? 'bold' : 'regular'} />
-            <span>Course Students &amp; Purchases</span>
-          </button>
         </div>
       </div>
 
       {/* Main Tab Content */}
       <div className="flex-1">
-        {activeTab === 'control' ? (
+        {activeTab === 'students' ? (
+          <AdminCourseStudents />
+        ) : activeTab === 'control' ? (
           <AdminCourseControl />
         ) : activeTab === 'faq' ? (
           <AdminCourseFaq />
         ) : activeTab === 'fee' ? (
           <AdminCourseFee />
-        ) : activeTab === 'curriculum' ? (
-          <AdminCourseCurriculum />
         ) : (
-          <AdminCourseStudents />
+          <AdminCourseCurriculum />
         )}
       </div>
     </div>

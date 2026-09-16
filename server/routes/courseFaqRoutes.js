@@ -88,13 +88,31 @@ router.post('/admin', protect, admin, async (req, res) => {
   }
 });
 
+import mongoose from 'mongoose';
+
 // ─── ADMIN: Update an existing FAQ ───
 router.put('/admin/:id', protect, admin, async (req, res) => {
   try {
     const { question, answer, order, isActive } = req.body;
-    const faq = await CourseFaq.findById(req.params.id);
+    let faq = null;
+
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      faq = await CourseFaq.findById(req.params.id);
+    } else if (question) {
+      faq = await CourseFaq.findOne({ question: question.trim() });
+    }
+
     if (!faq) {
-      return res.status(404).json({ message: 'FAQ not found' });
+      // If not found by ID or question, create new one
+      const highestOrderDoc = await CourseFaq.findOne().sort({ order: -1 });
+      const nextOrder = order !== undefined ? Number(order) : (highestOrderDoc?.order !== undefined ? highestOrderDoc.order + 1 : 0);
+      faq = await CourseFaq.create({
+        question: question ? question.trim() : 'FAQ Question',
+        answer: answer ? answer.trim() : 'FAQ Answer',
+        order: nextOrder,
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
+      });
+      return res.status(201).json(faq);
     }
 
     if (question !== undefined) faq.question = question.trim();
@@ -106,13 +124,16 @@ router.put('/admin/:id', protect, admin, async (req, res) => {
     res.json(faq);
   } catch (error) {
     console.error('Error updating course FAQ:', error);
-    res.status(500).json({ message: 'Failed to update FAQ' });
+    res.status(500).json({ message: error.message || 'Failed to update FAQ' });
   }
 });
 
 // ─── ADMIN: Delete an FAQ ───
 router.delete('/admin/:id', protect, admin, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid FAQ ID' });
+    }
     const faq = await CourseFaq.findByIdAndDelete(req.params.id);
     if (!faq) {
       return res.status(404).json({ message: 'FAQ not found' });
@@ -120,7 +141,7 @@ router.delete('/admin/:id', protect, admin, async (req, res) => {
     res.json({ message: 'FAQ deleted successfully' });
   } catch (error) {
     console.error('Error deleting course FAQ:', error);
-    res.status(500).json({ message: 'Failed to delete FAQ' });
+    res.status(500).json({ message: error.message || 'Failed to delete FAQ' });
   }
 });
 
