@@ -2,16 +2,10 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { 
   SquaresFour, 
-  Books, 
-  Path, 
-  CalendarBlank,
-  CaretDown,
-  CaretRight,
-  SignOut,
+  Users,
   FolderOpen,
   GraduationCap,
-  VideoCamera,
-  UploadSimple
+  SignOut
 } from '@phosphor-icons/react';
 
 export default function AdminLayout({ children, onLogout }) {
@@ -22,9 +16,7 @@ export default function AdminLayout({ children, onLogout }) {
   // Determine active top tab based on route
   const getActiveTab = () => {
     if (currentPath.startsWith('/course') || currentPath.startsWith('/admin/courses') || currentPath.startsWith('/upload-videos')) return 'course';
-    if (currentPath.startsWith('/appointments')) return 'appointments';
-    if (currentPath.startsWith('/library')) return 'library';
-    if (currentPath.startsWith('/journey')) return 'journey';
+    if (currentPath.startsWith('/coaching') || currentPath.startsWith('/appointments') || currentPath.startsWith('/library') || currentPath.startsWith('/journey')) return 'coaching';
     if (currentPath.startsWith('/footer-documents')) return 'footer';
     return 'overview';
   };
@@ -33,11 +25,9 @@ export default function AdminLayout({ children, onLogout }) {
 
   const topTabs = [
     { id: 'overview', label: 'Overview', icon: <SquaresFour size={18} />, path: '/' },
-    { id: 'appointments', label: 'Appointments', icon: <CalendarBlank size={18} />, path: '/appointments' },
-    { id: 'library', label: 'Library', icon: <Books size={18} />, path: '/library/content' },
-    { id: 'journey', label: 'My Journey', icon: <Path size={18} />, path: '/journey/settings' },
-    { id: 'footer', label: 'Footer', icon: <FolderOpen size={18} />, path: '/footer-documents' },
+    { id: 'coaching', label: 'Coaching', icon: <Users size={18} />, path: '/coaching' },
     { id: 'course', label: 'Course', icon: <GraduationCap size={18} />, path: '/course' },
+    { id: 'footer', label: 'Footer', icon: <FolderOpen size={18} />, path: '/footer-documents' },
   ];
 
   return (

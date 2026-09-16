@@ -302,6 +302,7 @@ import AdminContent from './pages/AdminContent';
 import AdminFooterDocuments from './pages/AdminFooterDocuments';
 import AdminCourse from './pages/AdminCourse';
 import AdminCourseCurriculum from './pages/AdminCourseCurriculum';
+import AdminCoaching from './pages/AdminCoaching';
 
 // --- Main App Route Setup ---
 function App() {
@@ -342,14 +343,17 @@ function App() {
           } 
         >
           <Route path="/" element={<AdminDashboard />} />
+          <Route path="/coaching" element={<AdminCoaching />} />
+          <Route path="/appointments" element={<AdminCoaching />} />
+          <Route path="/library" element={<AdminCoaching />} />
+          <Route path="/library/content" element={<AdminCoaching />} />
+          <Route path="/journey" element={<AdminCoaching />} />
+          <Route path="/journey/settings" element={<AdminCoaching />} />
           <Route path="/course" element={<AdminCourse />} />
           <Route path="/upload-videos" element={<AdminCourse />} />
           <Route path="/course-curriculum" element={<AdminCourse />} />
           <Route path="/admin/courses" element={<AdminCourse />} />
           <Route path="/course-students" element={<AdminCourse />} />
-          <Route path="/appointments" element={<AdminUsers />} />
-          <Route path="/journey/settings" element={<AdminSettings />} />
-          <Route path="/library/content" element={<AdminContent />} />
           <Route path="/footer-documents" element={<AdminFooterDocuments />} />
         </Route>
       </Routes>
