@@ -142,21 +142,6 @@ export default function FooterDocumentView({ slug: propSlug }) {
           className="prose prose-invert prose-p:text-white/70 prose-p:leading-relaxed prose-headings:text-white prose-headings:font-serif prose-h2:text-2xl prose-h2:text-[#c79c6e] prose-h2:mt-8 prose-h2:mb-4 prose-h2:font-normal prose-h3:text-lg prose-h3:text-white prose-ul:text-white/70 prose-li:my-1.5 prose-strong:text-white prose-a:text-[#c79c6e] hover:prose-a:underline max-w-none text-sm sm:text-base font-sans"
           dangerouslySetInnerHTML={{ __html: document.contentHtml }}
         />
-
-        {/* Footer Support Callout */}
-        <div className="mt-14 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/[0.02] border border-white/5 rounded-2xl p-6">
-          <div>
-            <h4 className="font-serif text-base text-white mb-1">Have questions about this policy?</h4>
-            <p className="font-sans text-xs text-white/50">Our support desk is here to provide clarity and assistance.</p>
-          </div>
-          <a
-            href="mailto:support@betterwithaarkesh.com"
-            className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-[#c79c6e]/40 bg-[#c79c6e]/10 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black font-sans text-xs font-semibold tracking-wider transition-all whitespace-nowrap"
-          >
-            Contact Support Desk
-          </a>
-        </div>
-
       </Container>
     </div>
   );
