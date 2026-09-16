@@ -1781,7 +1781,7 @@ export default function Course() {
                 You're Registered!
               </h3>
               <p className="font-sans text-xs sm:text-sm text-white/65 leading-relaxed max-w-sm mx-auto">
-                Thank you for registering. We will notify you via email the moment the course launches.
+                You will be able to see the course once it is live.
               </p>
             </div>
 
