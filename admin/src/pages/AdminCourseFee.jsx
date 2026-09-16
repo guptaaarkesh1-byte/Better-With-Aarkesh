@@ -144,6 +144,39 @@ export default function AdminCourseFee() {
     }
   };
 
+  // Instant toggle for Live vs Coming Soon mode
+  const handleToggleLaunchStatus = async (statusBoolean) => {
+    setIsComingSoon(statusBoolean);
+    if (!course?._id) return;
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/admin/courses/${course._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          isComingSoon: Boolean(statusBoolean),
+          comingSoonText: comingSoonText.trim() || 'Coming Soon — Pre-Register for Early Access'
+        })
+      });
+
+      const updated = await res.json();
+      if (res.ok) {
+        setCourse(updated);
+        showNotification(
+          statusBoolean
+            ? '🟡 Switched to Coming Soon Mode! Landing page is now in pre-launch mode.'
+            : '🟢 Switched to LIVE Mode! Full course landing page and enrollment are now active.'
+        );
+      }
+    } catch (err) {
+      console.error('Error toggling launch status:', err);
+    }
+  };
+
   // Calculations for Live Preview
   const numPrice = Math.max(0, Number(price) || 0);
   const numComparePrice = Math.max(0, Number(comparePrice) || 0);
@@ -270,7 +303,7 @@ export default function AdminCourseFee() {
               <div className="grid grid-cols-2 gap-3 p-1.5 bg-black/60 rounded-xl border border-white/10">
                 <button
                   type="button"
-                  onClick={() => setIsComingSoon(false)}
+                  onClick={() => handleToggleLaunchStatus(false)}
                   className={`py-3 px-4 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     !isComingSoon
                       ? 'bg-emerald-500 text-black font-bold shadow-lg shadow-emerald-500/20 scale-[1.01]'
@@ -283,7 +316,7 @@ export default function AdminCourseFee() {
 
                 <button
                   type="button"
-                  onClick={() => setIsComingSoon(true)}
+                  onClick={() => handleToggleLaunchStatus(true)}
                   className={`py-3 px-4 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     isComingSoon
                       ? 'bg-amber-400 text-black font-bold shadow-lg shadow-amber-500/20 scale-[1.01]'
