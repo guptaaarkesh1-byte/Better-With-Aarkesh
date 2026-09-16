@@ -1393,12 +1393,6 @@ export default function AdminCourseCurriculum() {
                                         No video uploaded
                                       </span>
                                     )}
-
-                                    {lesson.resources?.length > 0 && (
-                                      <span className="text-[0.7rem] text-[#c79c6e] flex items-center gap-1">
-                                        <FileText size={12} /> {lesson.resources.length} Resource(s)
-                                      </span>
-                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1565,7 +1559,7 @@ export default function AdminCourseCurriculum() {
                   {activeModuleForLesson?.title}
                 </span>
                 <h3 className="font-serif text-2xl text-white">
-                  {editingLesson ? 'Edit Video & Resources' : 'Upload Video to Day'}
+                  {editingLesson ? 'Edit Video Lesson' : 'Upload Video to Day'}
                 </h3>
               </div>
               <button

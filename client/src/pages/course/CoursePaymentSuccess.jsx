@@ -303,20 +303,22 @@ export default function CoursePaymentSuccess({
                 </tr>
 
                 {/* GST */}
-                <tr>
-                  <td className="py-2.5 pr-4">
-                    <span className="text-white/80 print:text-gray-800">
-                      Goods &amp; Services Tax (GST @ {gstRate}%)
-                    </span>
-                    {isGstIncluded && (
-                      <span className="text-[10px] text-white/40 print:text-gray-500 ml-1.5">(Inclusive)</span>
-                    )}
-                  </td>
-                  <td className="py-2.5 text-center text-white/50 print:text-gray-500 font-mono">-</td>
-                  <td className="py-2.5 text-right font-mono text-white/90 print:text-black">
-                    ₹{gstAmount.toLocaleString('en-IN')}
-                  </td>
-                </tr>
+                {gstRate > 0 && (
+                  <tr>
+                    <td className="py-2.5 pr-4">
+                      <span className="text-white/80 print:text-gray-800">
+                        Goods &amp; Services Tax (GST @ {gstRate}%)
+                      </span>
+                      {isGstIncluded && (
+                        <span className="text-[10px] text-white/40 print:text-gray-500 ml-1.5">(Inclusive)</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 text-center text-white/50 print:text-gray-500 font-mono">-</td>
+                    <td className="py-2.5 text-right font-mono text-white/90 print:text-black">
+                      ₹{gstAmount.toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                )}
 
                 {/* VIP Bonus 3 Calls */}
                 {bonusHeading && (
@@ -361,10 +363,12 @@ export default function CoursePaymentSuccess({
                 <span>Subtotal:</span>
                 <span>₹{basePrice.toLocaleString('en-IN')}</span>
               </div>
-              <div className="flex justify-between sm:justify-end gap-6 text-white/70 print:text-gray-700">
-                <span>GST ({gstRate}%):</span>
-                <span>₹{gstAmount.toLocaleString('en-IN')}</span>
-              </div>
+              {gstRate > 0 && (
+                <div className="flex justify-between sm:justify-end gap-6 text-white/70 print:text-gray-700">
+                  <span>GST ({gstRate}%):</span>
+                  <span>₹{gstAmount.toLocaleString('en-IN')}</span>
+                </div>
+              )}
               <div className="pt-2 border-t border-white/10 print:border-gray-300 flex justify-between sm:justify-end gap-6 text-base font-bold text-white print:text-black">
                 <span>{isFailed ? 'Amount Due (Unpaid):' : 'Total Paid:'}</span>
                 <span className={`${isFailed ? 'text-rose-400' : 'text-[#c79c6e]'} font-bold text-lg print:text-black`}>

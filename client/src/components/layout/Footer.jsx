@@ -89,8 +89,8 @@ export default function Footer() {
             <a href="/#coaching" className="hover:text-accent-gold transition-colors">COACHING</a>
             <a href="/#meet-aarkesh" className="hover:text-accent-gold transition-colors">ABOUT</a>
             <a href="/#testimonials" className="hover:text-accent-gold transition-colors">TESTIMONIALS</a>
-            <Link to="/library" className="hover:text-accent-gold transition-colors">LIBRARY</Link>
             <a href="/#faq" className="hover:text-accent-gold transition-colors">FAQ</a>
+            <Link to="/library" className="hover:text-accent-gold transition-colors">LIBRARY</Link>
           </nav>
 
           {/* Universal Social Icons */}

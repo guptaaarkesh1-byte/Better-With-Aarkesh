@@ -83,35 +83,7 @@ export default function AdminCourse() {
             <span>Course Students &amp; Purchases</span>
           </button>
 
-          {/* 2. What you will master */}
-          <button
-            id="tab-btn-control"
-            onClick={() => handleTabSwitch('control')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-              activeTab === 'control'
-                ? 'bg-[#c79c6e] text-black shadow-lg shadow-[#c79c6e]/15'
-                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <SlidersHorizontal size={15} weight={activeTab === 'control' ? 'bold' : 'regular'} />
-            <span>What you will master</span>
-          </button>
-
-          {/* 3. FAQ */}
-          <button
-            id="tab-btn-faq"
-            onClick={() => handleTabSwitch('faq')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-              activeTab === 'faq'
-                ? 'bg-[#c79c6e] text-black shadow-lg shadow-[#c79c6e]/15'
-                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Question size={15} weight={activeTab === 'faq' ? 'bold' : 'regular'} />
-            <span>FAQ</span>
-          </button>
-
-          {/* 4. Course Fee & GST */}
+          {/* 2. Course Fee & GST */}
           <button
             id="tab-btn-fee"
             onClick={() => handleTabSwitch('fee')}
@@ -125,7 +97,7 @@ export default function AdminCourse() {
             <span>Course Fee &amp; GST</span>
           </button>
 
-          {/* 5. Upload Videos & Curriculum */}
+          {/* 3. Upload Videos & Curriculum */}
           <button
             id="tab-btn-curriculum"
             onClick={() => handleTabSwitch('curriculum')}
@@ -138,6 +110,34 @@ export default function AdminCourse() {
             <UploadSimple size={15} weight={activeTab === 'curriculum' ? 'bold' : 'regular'} />
             <span>Upload Videos &amp; Curriculum</span>
           </button>
+
+          {/* 4. What you will master */}
+          <button
+            id="tab-btn-control"
+            onClick={() => handleTabSwitch('control')}
+            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+              activeTab === 'control'
+                ? 'bg-[#c79c6e] text-black shadow-lg shadow-[#c79c6e]/15'
+                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <SlidersHorizontal size={15} weight={activeTab === 'control' ? 'bold' : 'regular'} />
+            <span>What you will master</span>
+          </button>
+
+          {/* 5. FAQ */}
+          <button
+            id="tab-btn-faq"
+            onClick={() => handleTabSwitch('faq')}
+            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+              activeTab === 'faq'
+                ? 'bg-[#c79c6e] text-black shadow-lg shadow-[#c79c6e]/15'
+                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Question size={15} weight={activeTab === 'faq' ? 'bold' : 'regular'} />
+            <span>FAQ</span>
+          </button>
         </div>
       </div>
 
@@ -145,14 +145,14 @@ export default function AdminCourse() {
       <div className="flex-1">
         {activeTab === 'students' ? (
           <AdminCourseStudents />
-        ) : activeTab === 'control' ? (
-          <AdminCourseControl />
-        ) : activeTab === 'faq' ? (
-          <AdminCourseFaq />
         ) : activeTab === 'fee' ? (
           <AdminCourseFee />
-        ) : (
+        ) : activeTab === 'curriculum' ? (
           <AdminCourseCurriculum />
+        ) : activeTab === 'control' ? (
+          <AdminCourseControl />
+        ) : (
+          <AdminCourseFaq />
         )}
       </div>
     </div>

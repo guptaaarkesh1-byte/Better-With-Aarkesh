@@ -1030,33 +1030,6 @@ export default function Course() {
                   </div>
                 </div>
               </div>
-
-              {/* Action Resources Container */}
-              {activeLesson?.resources && activeLesson.resources.length > 0 && (
-                <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <FileText size={20} className="text-[#c79c6e]" />
-                    <h4 className="font-serif text-lg sm:text-xl text-white font-normal">Action Resources & Worksheets</h4>
-                  </div>
-                  <div className="space-y-3">
-                    {activeLesson.resources.map((res, rIdx) => (
-                      <a
-                        key={rIdx}
-                        href={res.fileUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-between p-3.5 sm:p-4 rounded-xl bg-white/[0.03] hover:bg-[#c79c6e]/10 border border-white/10 hover:border-[#c79c6e]/40 transition-all group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileText size={18} className="text-[#c79c6e] group-hover:scale-110 transition-transform" />
-                          <span className="text-sm font-medium text-white group-hover:text-[#c79c6e] transition-colors">{res.title}</span>
-                        </div>
-                        <span className="text-xs font-semibold text-[#c79c6e] uppercase tracking-wider">Download PDF →</span>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* ── 5. COMMENTS SECTION (Always on desktop, shown on mobile when Comments tab is active) ── */}
@@ -1652,7 +1625,7 @@ export default function Course() {
                     ? `+ ${gstRate}% GST (₹${gstAmount.toLocaleString('en-IN')}) at checkout · No recurring charges`
                     : gstRate > 0 && isGstIncluded
                     ? `Inclusive of all taxes (${gstRate}% GST) · No recurring charges`
-                    : 'Zero GST tax · No recurring charges'}
+                    : 'No recurring charges'}
                 </p>
 
                 <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 mb-3.5 space-y-1.5 text-xs font-sans text-white/80">
@@ -2460,24 +2433,30 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
 
           {/* Pricing Breakdown */}
           <div className="py-5 space-y-3 border-b border-white/10">
-            <div className="flex justify-between items-center text-xs font-sans text-white/70">
-              <span>Course Base Fee</span>
-              <span className="font-medium text-white">₹{baseBeforeGst.toLocaleString('en-IN')}</span>
-            </div>
-            <div className="flex justify-between items-center text-xs font-sans text-white/70">
-              <div className="flex items-center gap-1.5">
-                <span>GST ({gstRate}%)</span>
-                {isGstIncluded && <span className="text-[10px] text-white/40">(included)</span>}
-                <Info size={13} className="text-white/40" />
+            {gstRate > 0 && (
+              <div className="flex justify-between items-center text-xs font-sans text-white/70">
+                <span>Course Base Fee</span>
+                <span className="font-medium text-white">₹{baseBeforeGst.toLocaleString('en-IN')}</span>
               </div>
-              <span className="font-medium text-white">₹{gstAmount.toLocaleString('en-IN')}</span>
-            </div>
+            )}
+            {gstRate > 0 && (
+              <div className="flex justify-between items-center text-xs font-sans text-white/70">
+                <div className="flex items-center gap-1.5">
+                  <span>GST ({gstRate}%)</span>
+                  {isGstIncluded && <span className="text-[10px] text-white/40">(included)</span>}
+                  <Info size={13} className="text-white/40" />
+                </div>
+                <span className="font-medium text-white">₹{gstAmount.toLocaleString('en-IN')}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-2 text-white">
               <div>
                 <span className="font-sans text-sm font-bold block text-white">Total Amount Due</span>
-                <span className="font-sans text-[0.65rem] text-white/50 block">
-                  {isGstIncluded ? `Inclusive of all taxes (${gstRate}% GST)` : `Includes ${gstRate}% GST`}
-                </span>
+                {gstRate > 0 && (
+                  <span className="font-sans text-[0.65rem] text-white/50 block">
+                    {isGstIncluded ? `Inclusive of all taxes (${gstRate}% GST)` : `Includes ${gstRate}% GST`}
+                  </span>
+                )}
               </div>
               <span className="font-sans text-2xl md:text-3xl font-bold text-[#c79c6e] tracking-tight">₹{finalPayable.toLocaleString('en-IN')}</span>
             </div>
