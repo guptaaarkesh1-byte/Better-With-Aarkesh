@@ -1119,29 +1119,49 @@ export default function Course() {
       />
 
       {/* ─── HERO ───────────────────────────────────────────────── */}
-      <section id="hero" className="relative w-full flex-1 min-h-[calc(100vh-76px)] flex flex-col justify-center items-center overflow-hidden bg-[#050505] px-6 py-20">
-        {/* Background Image & Ambient Vignettes */}
-        <div className="absolute inset-0 pointer-events-none">
-          <img src="/course_hero_bg.jpg" alt="" className="w-full h-full object-cover object-center opacity-85" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/80 via-transparent to-[#050505]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/85 via-transparent to-[#050505]/85" />
-          {/* Ambient center gold glow behind the figure */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-[#c79c6e]/12 rounded-full blur-[150px]" />
-        </div>
+      <section id="hero" className={`relative w-full flex-1 min-h-[calc(100vh-76px)] flex flex-col justify-center items-center overflow-hidden px-6 py-20 ${
+        isComingSoon 
+          ? 'bg-gradient-to-b from-[#080808] via-[#050505] to-[#020202]' 
+          : 'bg-[#050505]'
+      }`}>
+        {/* Ambient Backgrounds */}
+        {isComingSoon ? (
+          /* Luxury Gradient & Radial Ambient Lighting for Coming Soon */
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {/* Soft top ambient spotlight */}
+            <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[850px] h-[550px] bg-gradient-to-b from-[#c79c6e]/20 via-[#c79c6e]/8 to-transparent rounded-full blur-[140px]" />
+            {/* Center golden radial core */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#c79c6e]/14 rounded-full blur-[160px]" />
+            {/* Bottom depth vignette */}
+            <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-[#c79c6e]/10 rounded-full blur-[150px]" />
+            {/* Delicate subtle mesh lines/vignette */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(5,5,5,0.85)_100%)]" />
+          </div>
+        ) : (
+          /* Background Image & Vignettes for Live Masterclass Mode */
+          <div className="absolute inset-0 pointer-events-none">
+            <img src="/course_hero_bg.jpg" alt="" className="w-full h-full object-cover object-center opacity-85" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/80 via-transparent to-[#050505]" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/85 via-transparent to-[#050505]/85" />
+            {/* Ambient center gold glow behind the figure */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-[#c79c6e]/12 rounded-full blur-[150px]" />
+          </div>
+        )}
 
         {/* Center Hero Content */}
         <div className="relative z-10 text-center max-w-3xl mx-auto flex flex-col items-center justify-center my-auto">
           {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] mb-6">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] mb-6 shadow-sm">
             <Sparkle size={12} weight="fill" />
             <span>THE OFFICIAL MASTERCLASS</span>
           </div>
 
           {/* Clean Grand Title */}
           {isComingSoon ? (
-            <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] text-white leading-[1.05] mb-6 font-normal tracking-tight">
-              Coming<br />
-              <span className="text-[#c79c6e]">Soon</span>
+            <h1 className="font-serif text-6xl sm:text-7xl md:text-8xl lg:text-[6.5rem] leading-[1.05] mb-6 font-normal tracking-tight">
+              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white via-[#faeedf] to-[#c79c6e] drop-shadow-[0_10px_35px_rgba(199,156,110,0.25)]">
+                Coming Soon
+              </span>
             </h1>
           ) : (
             <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] text-white leading-[1.05] mb-6 font-normal tracking-tight">
@@ -1151,7 +1171,7 @@ export default function Course() {
           )}
 
           {/* Minimal Subtitle */}
-          <p className="font-sans text-white/70 text-sm sm:text-base md:text-lg leading-relaxed max-w-xl mx-auto mb-10">
+          <p className="font-sans text-white/75 text-sm sm:text-base md:text-lg leading-relaxed max-w-xl mx-auto mb-10">
             Master the psychology of calm authority, magnetic communication, and effortless self-command.
           </p>
 
@@ -1161,9 +1181,9 @@ export default function Course() {
               <button
                 type="button"
                 onClick={handleEnroll}
-                className="group relative inline-flex items-center gap-4 rounded-full border border-[#c79c6e]/40 bg-white/[0.06] hover:bg-[#c79c6e]/15 hover:border-[#c79c6e] backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-105 shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(199,156,110,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] cursor-pointer"
+                className="group relative inline-flex items-center gap-4 rounded-full border border-[#c79c6e]/50 bg-gradient-to-r from-white/[0.08] to-[#c79c6e]/[0.08] hover:from-[#c79c6e]/20 hover:to-[#c79c6e]/30 hover:border-[#c79c6e] backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-105 shadow-[0_4px_30px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.25)] hover:shadow-[0_0_50px_rgba(199,156,110,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] cursor-pointer"
               >
-                <span>Register Now</span>
+                <span className="tracking-[0.2em]">Register Now</span>
                 <span className="w-10 h-10 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 flex items-center justify-center text-[#c79c6e] group-hover:bg-[#c79c6e] group-hover:text-black transition-all shadow-inner">
                   <ArrowRight size={17} weight="bold" />
                 </span>
