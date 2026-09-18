@@ -140,9 +140,6 @@ router.delete('/:id', protect, admin, async (req, res) => {
     const document = await FooterDocument.findById(req.params.id);
 
     if (document) {
-      if ((document.category || 'coaching') === 'coaching') {
-        return res.status(400).json({ message: 'Coaching footer documents cannot be deleted.' });
-      }
       await FooterDocument.deleteOne({ _id: document._id });
       res.json({ message: 'Document removed' });
     } else {

@@ -9,13 +9,7 @@ import {
   MagnifyingGlass, 
   Compass, 
   Flag, 
-  ChartLineUp,
-  UsersThree,
-  Star,
-  Clock,
-  ShieldCheck,
-  Play,
-  ArrowDown
+  ChartLineUp
 } from '@phosphor-icons/react';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -48,11 +42,6 @@ export default function CoachingPrinciple() {
       { opacity: 0, y: 20 },
       { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.1 },
       "-=0.4"
-    )
-    .fromTo('.coaching-bottom',
-      { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
-      "-=0.2"
     );
   }, { scope: container });
 
@@ -75,8 +64,8 @@ export default function CoachingPrinciple() {
       </div>
 
       {/* Main Content Area */}
-      <div className="relative flex-grow flex items-start pt-20 pb-12 lg:pb-48">
-        <Container className="relative z-10 w-full flex items-start">
+      <div className="relative flex-grow flex items-center py-20 lg:py-24">
+        <Container className="relative z-10 w-full flex items-center">
           
           <div className="w-full lg:w-[85%] xl:w-[80%] shrink-0 lg:pr-8">
             {/* Header */}
@@ -132,79 +121,7 @@ export default function CoachingPrinciple() {
 
           </div>
 
-          {/* Right space for sticky progress bar */}
-          <div className="hidden lg:block w-full pointer-events-none" />
-
         </Container>
-      </div>
-
-      {/* Bottom Banners */}
-      <div className="relative mt-8 lg:mt-0 lg:absolute lg:bottom-0 left-0 w-full z-40 coaching-bottom pointer-events-none">
-        
-        {/* Stats Row */}
-        <div className="border-t border-white/5 bg-[#0a0a0a]/90 backdrop-blur-md pointer-events-auto">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 flex flex-col lg:flex-row items-center justify-between gap-8 w-full">
-            
-            {/* Quote */}
-            <div className="flex items-start gap-4 lg:w-1/3">
-              <span className="font-serif text-5xl text-accent-gold leading-none mt-1">"</span>
-              <div>
-                <p className="font-serif text-xl text-white mb-1">This isn't just coaching.</p>
-                <p className="font-serif text-xl text-accent-gold italic">It's a partnership in your growth.</p>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 lg:flex lg:flex-nowrap items-start lg:items-center justify-between gap-y-8 gap-x-4 lg:gap-6 lg:w-2/3 mt-6 lg:mt-0 w-full">
-              <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
-                <UsersThree className="text-accent-gold text-3xl shrink-0" weight="light" />
-                <div>
-                  <div className="text-white text-lg font-medium">100+</div>
-                  <div className="text-white/50 text-xs uppercase tracking-wider">Sessions<br/>Conducted</div>
-                </div>
-              </div>
-              <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
-                <Star className="text-accent-gold text-3xl shrink-0" weight="light" />
-                <div>
-                  <div className="text-white text-lg font-medium">5.0</div>
-                  <div className="text-white/50 text-xs uppercase tracking-wider">Client<br/>Rating</div>
-                </div>
-              </div>
-              <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
-                <Clock className="text-accent-gold text-3xl shrink-0" weight="light" />
-                <div>
-                  <div className="text-white text-lg font-medium">200+</div>
-                  <div className="text-white/50 text-xs uppercase tracking-wider">Hours of<br/>Coaching</div>
-                </div>
-              </div>
-              <div className="flex flex-col lg:flex-row items-center justify-center text-center lg:text-left gap-2 lg:gap-4 lg:border-l lg:border-white/10 lg:pl-6">
-                <ShieldCheck className="text-accent-gold text-3xl shrink-0" weight="light" />
-                <div>
-                  <div className="text-white text-lg font-medium">100%</div>
-                  <div className="text-white/50 text-xs uppercase tracking-wider">Confidential<br/>& Safe</div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Transition Row */}
-        <div className="border-t border-white/5 bg-[#0a0a0a] pointer-events-auto">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4 flex items-center justify-center">
-            
-            <div className="flex items-center gap-4 cursor-pointer group">
-              <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-accent-gold font-semibold transition-colors group-hover:text-white">
-              
-              </span>
-              <div className="w-8 h-8 rounded-full border border-accent-gold/40 flex items-center justify-center transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                <ArrowDown className="text-accent-gold text-sm transition-transform group-hover:translate-y-1" />
-              </div>
-            </div>
-
-          </div>
-        </div>
-
       </div>
 
     </section>

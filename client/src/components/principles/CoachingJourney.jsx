@@ -37,22 +37,22 @@ export default function CoachingJourney() {
   const floatingNodes = [
     { 
       num: '01', title: 'CLARIFY', icon: Compass, text: 'Root cause clarity.\nReal understanding.', 
-      top: '60%', left: '58%', 
+      top: '50%', left: '58%', 
       mobTop: '70%', mobLeft: '50%' 
     },
     { 
       num: '02', title: 'CONNECT', icon: Heart, text: 'Emotional honesty.\nValues alignment.', 
-      top: '44%', left: '51%', flip: true,
+      top: '38%', left: '51%', flip: true,
       mobTop: '44%', mobLeft: '23%'
     },
     { 
       num: '03', title: 'CREATE', icon: GitFork, text: 'Aligned decisions.\nIntentional life.', 
-      top: '30%', left: '57%', flip: true,
+      top: '26%', left: '57%', flip: true,
       mobTop: '30%', mobLeft: '27%'
     },
     { 
       num: '04', title: 'COMMIT', icon: Mountains, text: 'Sustained action.\nLasting change.', 
-      top: '24%', left: '71%', 
+      top: '18%', left: '71%', 
       mobTop: '18%', mobLeft: '78%'
     },
   ];
@@ -101,45 +101,45 @@ export default function CoachingJourney() {
       </div>
 
       {/* Main Content Area */}
-      <div className="relative flex-grow flex items-start pt-24 pb-12 lg:pb-48">
+      <div className="relative flex-grow flex items-start pt-14 sm:pt-16 lg:pt-14 xl:pt-18 pb-12 lg:pb-52">
         <Container className="relative z-10 w-full h-full">
           
           <div className="w-full lg:w-[55%] shrink-0 h-full flex flex-col">
             {/* Header */}
-            <div className="flex items-center gap-4 mb-4 journey-fade">
+            <div className="flex items-center gap-4 mb-3 journey-fade">
               <div className="h-[1px] w-6 bg-accent-gold origin-left" />
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-medium text-accent-gold">
                 THE COACHING JOURNEY
               </span>
             </div>
 
-            <h2 className="font-serif text-4xl md:text-5xl lg:text-[3.5rem] font-medium tracking-tight leading-[1.1] mb-4 flex flex-col items-start journey-fade">
-              <span className="text-white pb-1">A clear process.</span>
-              <span className="text-accent-gold italic font-light pb-1">Real transformation.</span>
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-[2.5rem] xl:text-[3.2rem] font-medium tracking-tight leading-[1.1] mb-2 xl:mb-3 flex flex-col items-start journey-fade">
+              <span className="text-white pb-0.5">A clear process.</span>
+              <span className="text-accent-gold italic font-light pb-0.5">Real transformation.</span>
             </h2>
 
-            <p className="text-white text-lg font-serif font-light tracking-wide leading-relaxed mb-10 journey-fade max-w-md">
+            <p className="text-white text-sm sm:text-base font-serif font-light tracking-wide leading-relaxed mb-4 xl:mb-6 journey-fade max-w-md">
               We don't do hacks. We follow a proven, human-first process designed to create deep, lasting change.
             </p>
 
             {/* Vertical Steps (2 columns) */}
-            <div className="flex gap-x-12 mt-4 journey-fade">
+            <div className="flex gap-x-6 xl:gap-x-10 mt-2 xl:mt-3 journey-fade">
               {/* Left Column: Clarify & Connect */}
-              <div className="flex flex-col gap-y-5 flex-1">
+              <div className="flex flex-col gap-y-2.5 xl:gap-y-3.5 flex-1">
                 {leftSteps.slice(0, 2).map((step, i) => {
                   const Icon = step.icon;
                   return (
-                    <div key={i} className="flex gap-4 items-start group cursor-pointer p-3 rounded-xl transition-all duration-500 hover:bg-white/[0.03] border border-transparent hover:border-white/5">
-                      <div className="w-10 h-10 rounded-full border border-accent-gold/40 bg-black/40 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                        <Icon className="text-accent-gold text-lg transition-transform duration-500 group-hover:scale-110" weight="light" />
+                    <div key={i} className="flex gap-3 items-start group cursor-pointer p-2 xl:p-2.5 rounded-xl transition-all duration-500 hover:bg-white/[0.03] border border-transparent hover:border-white/5">
+                      <div className="w-8 h-8 xl:w-9 xl:h-9 rounded-full border border-accent-gold/40 bg-black/40 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
+                        <Icon className="text-accent-gold text-base xl:text-lg transition-transform duration-500 group-hover:scale-110" weight="light" />
                       </div>
-                      <div className="flex flex-col justify-center min-h-[40px]">
+                      <div className="flex flex-col justify-center min-h-[36px]">
                         <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block">
                           {step.title}
                         </span>
                         <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
                           <div className="overflow-hidden">
-                            <p className="text-paragraph text-xs font-light leading-relaxed opacity-0 group-hover:opacity-90 transition-opacity duration-500 delay-100 whitespace-pre-line pt-2">
+                            <p className="text-paragraph text-[11px] xl:text-xs font-light leading-relaxed opacity-0 group-hover:opacity-90 transition-opacity duration-500 delay-100 whitespace-pre-line pt-1.5">
                               {step.text}
                             </p>
                           </div>
@@ -151,21 +151,21 @@ export default function CoachingJourney() {
               </div>
 
               {/* Right Column: Create & Commit */}
-              <div className="flex flex-col gap-y-5 flex-1">
+              <div className="flex flex-col gap-y-2.5 xl:gap-y-3.5 flex-1">
                 {leftSteps.slice(2, 4).map((step, i) => {
                   const Icon = step.icon;
                   return (
-                    <div key={i} className="flex gap-4 items-start group cursor-pointer p-3 rounded-xl transition-all duration-500 hover:bg-white/[0.03] border border-transparent hover:border-white/5">
-                      <div className="w-10 h-10 rounded-full border border-accent-gold/40 bg-black/40 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                        <Icon className="text-accent-gold text-lg transition-transform duration-500 group-hover:scale-110" weight="light" />
+                    <div key={i} className="flex gap-3 items-start group cursor-pointer p-2 xl:p-2.5 rounded-xl transition-all duration-500 hover:bg-white/[0.03] border border-transparent hover:border-white/5">
+                      <div className="w-8 h-8 xl:w-9 xl:h-9 rounded-full border border-accent-gold/40 bg-black/40 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
+                        <Icon className="text-accent-gold text-base xl:text-lg transition-transform duration-500 group-hover:scale-110" weight="light" />
                       </div>
-                      <div className="flex flex-col justify-center min-h-[40px]">
+                      <div className="flex flex-col justify-center min-h-[36px]">
                         <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block">
                           {step.title}
                         </span>
                         <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
                           <div className="overflow-hidden">
-                            <p className="text-paragraph text-xs font-light leading-relaxed opacity-0 group-hover:opacity-90 transition-opacity duration-500 delay-100 whitespace-pre-line pt-2">
+                            <p className="text-paragraph text-[11px] xl:text-xs font-light leading-relaxed opacity-0 group-hover:opacity-90 transition-opacity duration-500 delay-100 whitespace-pre-line pt-1.5">
                               {step.text}
                             </p>
                           </div>
@@ -267,7 +267,7 @@ export default function CoachingJourney() {
       })}
 
       {/* Floating Quote */}
-      <div className="hidden lg:block absolute bottom-[250px] right-12 max-w-[280px] journey-quote z-20">
+      <div className="hidden lg:block absolute bottom-[200px] xl:bottom-[220px] right-12 max-w-[280px] journey-quote z-20">
         <span className="font-serif text-4xl text-accent-gold leading-none block mb-2">"</span>
         <p className="font-serif text-2xl text-white mb-2 leading-tight">Transformation isn't a moment.</p>
         <p className="font-serif text-2xl text-accent-gold italic leading-tight">It's a journey you walk with the right guide.</p>

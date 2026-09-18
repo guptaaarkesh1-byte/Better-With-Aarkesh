@@ -664,15 +664,13 @@ export default function AdminFooterDocuments() {
                             >
                               <Pen size={16} />
                             </button>
-                            {(doc.category || 'coaching') !== 'coaching' && (
-                              <button
-                                onClick={() => handleDeleteDoc(doc._id)}
-                                className="p-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                                title="Delete"
-                              >
-                                <Trash size={16} />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleDeleteDoc(doc._id)}
+                              className="p-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                              title="Delete"
+                            >
+                              <Trash size={16} />
+                            </button>
                           </div>
                         </td>
                       </tr>

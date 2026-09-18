@@ -150,14 +150,7 @@ export default function MeetAarkesh() {
                 <div className="flex flex-col items-center gap-2 opacity-0 transform translate-y-8 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible">
                   <p className="text-white/80 font-light text-xs md:text-sm">{role.sub1}</p>
                   <p className="text-white/80 font-light text-xs md:text-sm mb-2">{role.sub2}</p>
-                  <p className="text-accent-gold font-serif italic text-sm md:text-base mb-6">{role.highlight}</p>
-                  
-                  <div className="flex items-center gap-3 cursor-pointer">
-                    <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white/70 transition-colors hover:text-white">
-                      EXPLORE THIS CHAPTER
-                    </span>
-                    <ArrowRight className="text-accent-gold text-xs" weight="light" />
-                  </div>
+                  <p className="text-accent-gold font-serif italic text-sm md:text-base">{role.highlight}</p>
                 </div>
               </div>
             </div>
