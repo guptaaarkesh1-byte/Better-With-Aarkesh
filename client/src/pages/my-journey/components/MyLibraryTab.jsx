@@ -10,7 +10,7 @@ export default function MyLibraryTab() {
   const navigate = useNavigate();
 
   const mainTabs = ['CONTINUE', 'BOOKMARKED', 'COMPLETED'];
-  const subTabs = ['ALL', 'PERSPECTIVES', 'VIDEOS', 'TOOLS'];
+  const subTabs = ['ALL', 'ARTICLES', 'VIDEOS'];
 
   useEffect(() => {
     const fetchSavedAndCompleted = async () => {
@@ -112,7 +112,7 @@ export default function MyLibraryTab() {
       {/* Header */}
       <div className="mb-6 md:mb-10">
         <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white mb-2 tracking-tight">My Library</h2>
-        <p className="font-sans text-white/60 font-light text-sm sm:text-base">The Perspectives, videos and tools you chose to return to.</p>
+        <p className="font-sans text-white/60 font-light text-sm sm:text-base">The Articles and videos you chose to return to.</p>
       </div>
 
       {/* Main Tabs */}
@@ -183,7 +183,7 @@ export default function MyLibraryTab() {
                       <div className="flex flex-col gap-2 sm:gap-3">
                         <div className="flex items-center gap-2 text-white/40">
                           <BookmarkSimple size={14} weight="light" />
-                          <span className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
+                          <span className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.2em] font-medium">ARTICLE</span>
                         </div>
                         <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
                       </div>
@@ -243,7 +243,7 @@ export default function MyLibraryTab() {
                       <div className="flex flex-col gap-2 sm:gap-3">
                         <div className="flex items-center gap-2 text-white/40">
                           <BookmarkSimple size={14} weight="light" />
-                          <span className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
+                          <span className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.2em] font-medium">ARTICLE</span>
                         </div>
                         <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
                       </div>

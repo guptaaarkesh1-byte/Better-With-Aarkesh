@@ -117,7 +117,7 @@ export default function MyLibrarySection() {
             My Library
           </h2>
           <p className="font-sans text-white/70 text-base md:text-lg font-light leading-relaxed max-w-lg">
-            The Perspectives, videos and tools you chose to return to.
+            The Articles and videos you chose to return to.
           </p>
         </div>
 
@@ -149,7 +149,7 @@ export default function MyLibrarySection() {
         {/* Filters & Sort */}
         <div className="flex flex-col md:flex-row md:items-center justify-between w-full mb-10 gap-6">
           <div className="flex flex-wrap items-center gap-4 md:gap-6">
-            {['ALL', 'PERSPECTIVES', 'VIDEOS', 'TOOLS'].map((filter) => (
+            {['ALL', 'ARTICLES', 'VIDEOS'].map((filter) => (
               <button
                 key={filter}
                 onClick={() => setLibraryFilter(filter)}
@@ -188,7 +188,7 @@ export default function MyLibrarySection() {
                         <div className="flex flex-col gap-2 flex-1">
                           <div className="flex items-center gap-2 text-white/50 group-hover:text-[#c79c6e] transition-colors">
                             <BookmarkSimple size={16} weight="regular" />
-                            <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
+                            <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium">ARTICLE</span>
                           </div>
                           <h3 className="font-serif text-2xl text-white pr-4">{article.title}</h3>
                         </div>
@@ -283,7 +283,7 @@ export default function MyLibrarySection() {
                         <div className="flex flex-col gap-2 flex-1">
                           <div className="flex items-center gap-2 text-white/50 group-hover:text-[#c79c6e] transition-colors">
                             <BookmarkSimple size={16} weight="regular" />
-                            <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
+                            <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium">ARTICLE</span>
                           </div>
                           <h3 className="font-serif text-2xl text-white pr-4">{article.title}</h3>
                         </div>

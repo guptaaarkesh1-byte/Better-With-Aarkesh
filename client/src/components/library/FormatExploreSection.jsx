@@ -78,7 +78,7 @@ const formats = [
     icon: Sparkle,
     title: 'LATEST',
     count: 'NEW ARRIVALS',
-    desc: 'The most recent\nperspectives and tools.',
+    desc: 'The most recent\narticles and videos.',
     action: 'EXPLORE LATEST'
   },
   {
@@ -96,14 +96,6 @@ const formats = [
     count: '10 VIDEOS',
     desc: 'Perspectives spoken\nand explored.',
     action: 'EXPLORE VIDEOS'
-  },
-  {
-    id: 'tool',
-    icon: Key,
-    title: 'USE A TOOL',
-    count: '3 REFLECTION TOOLS',
-    desc: 'A structured way to\nexamine what is\nhappening.',
-    action: 'EXPLORE TOOLS'
   }
 ];
 
@@ -297,9 +289,9 @@ export default function FormatExploreSection() {
       {/* Main Content Area */}
       <div className="w-full flex-1 relative md:min-h-[70vh]">
         
-        {/* OVERVIEW (The 4 Cards) */}
+        {/* OVERVIEW (The 3 Cards) */}
         {!selectedFormat && (
-          <div ref={cardsContainerRef} className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:absolute md:inset-0">
+          <div ref={cardsContainerRef} className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 md:absolute md:inset-0">
             {formats.map((format) => (
               <div 
                 key={format.id}
@@ -339,7 +331,7 @@ export default function FormatExploreSection() {
           </div>
         )}
 
-        {/* DETAILED VIEW (The Videos/Articles/Tools) */}
+        {/* DETAILED VIEW (The Videos/Articles) */}
         {selectedFormat && (
           <div ref={contentContainerRef} className="w-full md:absolute md:inset-0 pt-4">
             
@@ -347,7 +339,7 @@ export default function FormatExploreSection() {
             {selectedFormat === 'latest' && (
               <div className="flex flex-col h-full animate-in fade-in duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
-                  {[displayArticles[0], displayVideos[0], reflectionTools[0]].filter(Boolean).map((item, idx) => {
+                  {[displayArticles[0], displayVideos[0], displayArticles[1] || displayVideos[1]].filter(Boolean).map((item, idx) => {
                     const isArticle = item.categoryId !== undefined || item.title?.includes('cost of holding');
                     const isVideo = item.videoUrl !== undefined || item.title?.includes('clarity asks');
                     
@@ -377,7 +369,7 @@ export default function FormatExploreSection() {
                            </>
                         ) : (
                            <div className="absolute inset-0 bg-[#050505] flex items-center justify-center p-6 text-white/20 group-hover:text-[#c79c6e]/20 transition-colors">
-                             {isArticle ? <BookOpen size={48} weight="thin" /> : (isVideo ? <PlayCircle size={48} weight="thin" /> : <Sparkle size={48} weight="thin" />)}
+                             {isArticle ? <BookOpen size={48} weight="thin" /> : <PlayCircle size={48} weight="thin" />}
                            </div>
                         )}
                       </div>
@@ -456,29 +448,6 @@ export default function FormatExploreSection() {
                       <h4 className="font-serif text-[1.35rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 pr-4">
                         {item.title}
                       </h4>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* TOOL TAB */}
-            {selectedFormat === 'tool' && (
-              <div className="flex flex-col h-full animate-in fade-in duration-500">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12">
-                  {reflectionTools.map((item) => (
-                    <div key={item.id} className="group cursor-pointer">
-                      <div className="w-full aspect-[4/5] bg-[#050505]/60 backdrop-blur-md rounded-md border border-white/10 overflow-hidden relative mb-4 transition-all duration-500 group-hover:border-[#c79c6e]/80 group-hover:shadow-[0_0_30px_rgba(199,156,110,0.15)] group-hover:bg-black group-hover:scale-[1.02] flex flex-col items-center justify-center p-8 text-center">
-                        <div className="text-white/40 group-hover:text-[#c79c6e] transition-colors duration-500 mb-8 w-full flex justify-center">
-                           {item.icon ? <item.icon size={160} weight="thin" /> : <Key size={80} weight="thin" />}
-                        </div>
-                        <h4 className="font-serif text-[1.5rem] md:text-[1.75rem] text-white/90 font-light leading-snug group-hover:text-white transition-colors duration-300 mb-4">
-                          {item.title}
-                        </h4>
-                        <p className="font-sans text-[0.75rem] text-white/40 leading-relaxed whitespace-pre-line group-hover:text-white/70 transition-colors duration-300">
-                          {item.desc}
-                        </p>
-                      </div>
                     </div>
                   ))}
                 </div>
