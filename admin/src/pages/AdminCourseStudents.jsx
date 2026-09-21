@@ -42,7 +42,6 @@ export default function AdminCourseStudents() {
   // Drawer / Details Modal State
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isTogglingAccess, setIsTogglingAccess] = useState(false);
 
   const fetchStudentsAndStats = async () => {
     setLoading(true);
@@ -78,36 +77,6 @@ export default function AdminCourseStudents() {
   useEffect(() => {
     fetchStudentsAndStats();
   }, []);
-
-  const handleToggleAccess = async (studentId) => {
-    if (!window.confirm('Are you sure you want to change course access for this student?')) return;
-    setIsTogglingAccess(true);
-    try {
-      const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/course-auth/admin/students/${studentId}/toggle-access`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (res.ok) {
-        await fetchStudentsAndStats();
-        if (selectedStudent && selectedStudent._id === studentId) {
-          setSelectedStudent(prev => ({
-            ...prev,
-            isPurchased: !prev.isPurchased
-          }));
-        }
-      } else {
-        alert('Failed to update course access.');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error updating course access.');
-    } finally {
-      setIsTogglingAccess(false);
-    }
-  };
 
   const handleCopy = (text, id) => {
     if (!text) return;
@@ -791,25 +760,6 @@ export default function AdminCourseStudents() {
                 )}
               </div>
 
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="pt-6 border-t border-white/10 flex flex-col gap-3 mt-6">
-              <button
-                onClick={() => handleToggleAccess(selectedStudent._id)}
-                disabled={isTogglingAccess}
-                className={`w-full py-3 rounded-lg text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer ${
-                  selectedStudent.isPurchased 
-                    ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30' 
-                    : 'bg-[#c79c6e] hover:bg-[#b0885e] text-black font-bold'
-                }`}
-              >
-                {isTogglingAccess 
-                  ? 'Updating...' 
-                  : selectedStudent.isPurchased 
-                    ? 'Revoke Course Access' 
-                    : 'Grant Course Access (Manually)'}
-              </button>
             </div>
 
           </div>
