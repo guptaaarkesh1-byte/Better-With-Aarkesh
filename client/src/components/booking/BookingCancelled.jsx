@@ -3,7 +3,7 @@ import {
   X, CalendarBlank, Clock, User, ArrowLeft, ArrowRight
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
-import bookingBg from '../../assets/images/booking_bg_lamp.png';
+import bookingBg from '../../assets/images/booking_bg_lamp.webp';
 
 export default function BookingCancelled({ data, onRetry }) {
   return (

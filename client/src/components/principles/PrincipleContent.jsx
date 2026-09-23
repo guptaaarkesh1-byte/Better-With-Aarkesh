@@ -23,25 +23,36 @@ export default function PrincipleContent({
 
     if (isThinkPage) {
       // THINK CLEARLY PAGE: Cinematic specific text reveal
-      const split = new SplitType('.phil-heading-word', { types: 'words' });
-      gsap.set('.phil-heading-word .word', { opacity: 0, y: 40, filter: 'blur(12px)' });
-      // ensure other elements are visible since they aren't animated here
-      gsap.set(['.phil-eyebrow', '.phil-line', '.phil-paragraph', '.phil-button'], { opacity: 1 });
+      let split = null;
+      try {
+        const target = container.current?.querySelectorAll('.phil-heading-word');
+        if (target && target.length > 0) {
+          split = new SplitType(target, { types: 'words' });
+          gsap.set(container.current.querySelectorAll('.phil-heading-word .word'), { opacity: 0, y: 40, filter: 'blur(12px)' });
+          gsap.set(container.current.querySelectorAll('.phil-eyebrow, .phil-line, .phil-paragraph, .phil-button'), { opacity: 1 });
 
-      gsap.to('.phil-heading-word .word', {
-        scrollTrigger: {
-          trigger: container.current,
-          start: 'top 75%',
-        },
-        opacity: 1,
-        y: 0,
-        filter: 'blur(0px)',
-        duration: 1,
-        stagger: 0.12,
-        ease: 'power3.out'
-      });
+          gsap.to(container.current.querySelectorAll('.phil-heading-word .word'), {
+            scrollTrigger: {
+              trigger: container.current,
+              start: 'top 75%',
+            },
+            opacity: 1,
+            y: 0,
+            filter: 'blur(0px)',
+            duration: 1,
+            stagger: 0.12,
+            ease: 'power3.out'
+          });
+        }
+      } catch (e) {
+        console.warn('SplitType error:', e);
+      }
 
-      return () => split.revert();
+      return () => {
+        if (split) {
+          try { split.revert(); } catch (_) {}
+        }
+      };
     } else {
       // DEFAULT ANIMATION FOR OTHER PAGES
       const tl = gsap.timeline({
@@ -76,7 +87,7 @@ export default function PrincipleContent({
         "-=0.4"
       );
     }
-  }, { scope: container });
+  }, { scope: container, dependencies: [headlineWhite, headlineGold, paragraphs, eyebrow, id] });
 
   return (
     <div ref={container} className="max-w-xl text-left relative z-20">
@@ -93,11 +104,11 @@ export default function PrincipleContent({
         <span className={`phil-heading-word overflow-hidden pb-1 ${headlineGoldItalic ? 'italic font-light' : ''} ${headlineGold === headlineGold.toUpperCase() ? 'uppercase' : ''}`} style={{ color: '#B98A56' }}>{headlineGold}</span>
       </h2>
 
-      <div className="space-y-4 mb-6">
+      <div className="space-y-5 mb-6">
         {paragraphs.map((p, i) => (
           <p 
             key={i} 
-            className={`phil-paragraph text-paragraph font-serif ${i === 0 ? 'text-lg lg:text-xl' : 'text-base lg:text-lg opacity-70'} font-light tracking-wide leading-relaxed`}
+            className={`phil-paragraph text-paragraph font-serif ${i === 0 ? 'text-xl lg:text-2xl text-white/95' : 'text-lg lg:text-xl text-white/85'} font-light tracking-wide leading-relaxed`}
             dangerouslySetInnerHTML={{ __html: p }}
           />
         ))}

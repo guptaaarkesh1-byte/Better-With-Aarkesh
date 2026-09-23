@@ -14,15 +14,18 @@ import Course from './pages/course/Course';
 import CourseProfile from './pages/course/CourseProfile';
 import Footer from './components/layout/Footer';
 import FooterDocumentView from './pages/FooterDocumentView';
+import ContactUs from './pages/ContactUs';
 
 import { BookingProvider } from './context/BookingContext';
+import { ThemeProvider } from './context/ThemeContext';
 import BookingModal from './components/ui/BookingModal';
 
 function App() {
   return (
-    <BookingProvider>
-      <Router>
-        <MainLayout>
+    <ThemeProvider>
+      <BookingProvider>
+        <Router>
+          <MainLayout>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/book" element={<Booking />} />
@@ -37,21 +40,19 @@ function App() {
             <Route path="/course" element={<Course />} />
             <Route path="/course/profile" element={<CourseProfile />} />
 
-            {/* Direct Clean Policy Routes (Razorpay & Legal Compliance) */}
+            {/* Direct Static & Policy Pages */}
+            <Route path="/about-us" element={<FooterDocumentView slug="about-us" />} />
+            <Route path="/about" element={<FooterDocumentView slug="about-us" />} />
+            <Route path="/contact-us" element={<ContactUs />} />
+            <Route path="/contact" element={<ContactUs />} />
             <Route path="/terms-and-conditions" element={<FooterDocumentView slug="terms-and-conditions" />} />
             <Route path="/privacy-policy" element={<FooterDocumentView slug="privacy-policy" />} />
             <Route path="/refund-and-cancellation" element={<FooterDocumentView slug="refund-and-cancellation" />} />
             <Route path="/refund-policy" element={<FooterDocumentView slug="refund-and-cancellation" />} />
-            <Route path="/shipping-policy" element={<FooterDocumentView slug="shipping-policy" />} />
             <Route path="/rescheduling-policy" element={<FooterDocumentView slug="rescheduling-policy" />} />
 
-            {/* Course Policy Direct Routes */}
-            <Route path="/course-terms-and-conditions" element={<FooterDocumentView slug="course-terms-and-conditions" />} />
-            <Route path="/course-privacy-policy" element={<FooterDocumentView slug="course-privacy-policy" />} />
-            <Route path="/course-refund-policy" element={<FooterDocumentView slug="course-refund-policy" />} />
-            <Route path="/course-shipping-policy" element={<FooterDocumentView slug="course-shipping-policy" />} />
-
-            {/* Dynamic Legal Document Route */}
+            {/* Dynamic Pages & Legal Document Route */}
+            <Route path="/page/:slug" element={<FooterDocumentView />} />
             <Route path="/legal/:slug" element={<FooterDocumentView />} />
           </Routes>
           <Footer />
@@ -59,6 +60,7 @@ function App() {
         <BookingModal />
       </Router>
     </BookingProvider>
+  </ThemeProvider>
   )
 }
 

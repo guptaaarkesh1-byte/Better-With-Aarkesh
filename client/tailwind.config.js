@@ -7,15 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#090909',
-        card: '#111111',
-        heading: '#F5F2EB',
-        paragraph: '#B8B1A7',
+        background: 'var(--color-bg-primary, #090909)',
+        card: 'var(--color-bg-card, #111111)',
+        heading: 'var(--color-text-heading, #F5F2EB)',
+        paragraph: 'var(--color-text-paragraph, #B8B1A7)',
         accent: {
-          gold: '#B98A56',
-          hover: '#C79A63',
+          gold: 'var(--color-gold, #B98A56)',
+          hover: 'var(--color-gold-hover, #C79A63)',
         },
-        border: 'rgba(255,255,255,0.10)',
+        border: 'var(--color-border, rgba(255,255,255,0.10))',
       },
       fontFamily: {
         serif: ['"Playfair Display"', 'serif'],

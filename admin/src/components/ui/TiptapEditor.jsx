@@ -25,6 +25,15 @@ function MenuBar({ editor }) {
     const file = event.target.files?.[0];
     if (!file) return;
     
+    // Strict validation: under 200 KB
+    const MAX_SIZE_BYTES = 200 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      const sizeKB = (file.size / 1024).toFixed(1);
+      alert(`Image is ${sizeKB} KB. Max allowed file size is Under 200 KB. Please compress your image.`);
+      event.target.value = '';
+      return;
+    }
+
     try {
       const formData = new FormData();
       formData.append('image', file);

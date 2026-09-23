@@ -4,8 +4,15 @@ import { useGSAP } from '@gsap/react';
 import AnimatedText from '../ui/AnimatedText';
 import Button from '../ui/Button';
 
-export default function HeroContent() {
+export default function HeroContent({ heroData = {} }) {
   const container = useRef(null);
+
+  const eyebrow = heroData.eyebrowText || 'Clarity. Honesty. Intention.';
+  const heading1 = heroData.headingLine1 || 'Clarity changes';
+  const headingAccent = heroData.headingAccent || 'everything.';
+  const description = heroData.description || 'A space to think clearly, feel honestly and decide intentionally.';
+  const ctaText = heroData.ctaText || 'Book a Session';
+  const ctaLink = heroData.ctaLink || '/book';
 
   useGSAP(() => {
     const tl = gsap.timeline({ delay: 0.8 });
@@ -35,7 +42,7 @@ export default function HeroContent() {
       "-=0.2"
     );
 
-  }, { scope: container });
+  }, { scope: container, dependencies: [eyebrow, heading1, headingAccent, description] });
 
   return (
     <div ref={container} className="max-w-5xl mt-0">
@@ -43,27 +50,27 @@ export default function HeroContent() {
       <div className="flex items-center gap-6 mb-4 lg:mb-7">
         <div className="hero-line h-[1px] w-12 bg-accent-gold origin-left" />
         <span className="hero-eyebrow eyebrow-text" style={{ color: '#B98A56' }}>
-          Clarity. Honesty. Intention.
+          {eyebrow}
         </span>
       </div>
 
       <h1 className="heading-luxury mb-4">
-        <AnimatedText text="Clarity changes" tag="span" className="inline-flex mr-4 md:mr-6" delay={0.8} stagger={0.3} />
+        <AnimatedText text={heading1} tag="span" className="inline-flex mr-4 md:mr-6" delay={0.8} stagger={0.3} />
         <AnimatedText 
-          text="everything." 
+          text={headingAccent} 
           tag="span" 
           className="inline-flex text-accent-gold italic pr-4" 
           delay={1.4} 
         />
       </h1>
 
-      <p className="hero-paragraph text-paragraph text-lg lg:text-xl font-light tracking-wide leading-relaxed max-w-md mb-8">
-        A space to think clearly, feel honestly and decide intentionally.
+      <p className="hero-paragraph text-paragraph text-xl lg:text-2xl font-light tracking-wide leading-relaxed max-w-lg mb-8">
+        {description}
       </p>
 
       <div className="hero-buttons flex flex-wrap items-center gap-6">
-        <Button variant="primary" icon to="/book">
-          Book a Session
+        <Button variant="primary" icon to={ctaLink}>
+          {ctaText}
         </Button>
       </div>
 

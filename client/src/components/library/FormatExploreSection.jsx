@@ -20,12 +20,12 @@ import { useNavigate } from 'react-router-dom';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Placeholders for video thumbnails
-import videoThumb1 from '../../assets/PerspectivePage/recognition/emotional_exhaustion.png';
-import videoThumb2 from '../../assets/PerspectivePage/recognition/comparison.png';
-import videoThumb3 from '../../assets/PerspectivePage/recognition/holding_it_in.png';
+import videoThumb1 from '../../assets/PerspectivePage/recognition/emotional_exhaustion.webp';
+import videoThumb2 from '../../assets/PerspectivePage/recognition/comparison.webp';
+import videoThumb3 from '../../assets/PerspectivePage/recognition/holding_it_in.webp';
 
 // Import topics for the articles list
-import { topics } from './QuestionsSection';
+import { topics } from '../../constants/articleTaxonomy';
 
 gsap.registerPlugin(ScrollTrigger);
 

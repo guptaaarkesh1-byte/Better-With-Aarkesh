@@ -37,15 +37,15 @@ export default function OverviewSection() {
       <div className="flex flex-col gap-6 md:gap-8 w-full flex-1 min-h-0">
         
         {/* Top Tabs Menu */}
-        <div className="w-full rounded-xl md:rounded-2xl border border-white/20 shrink-0 sticky top-[65px] md:top-[71px] z-40 bg-[#050505]/90 backdrop-blur-md p-1.5 sm:p-2 md:py-4 md:px-6 shadow-xl">
+        <div className="w-full rounded-xl md:rounded-2xl border border-white/15 shrink-0 sticky top-[65px] md:top-[71px] z-40 bg-[#080808]/95 p-1.5 sm:p-2 md:py-3.5 md:px-6 shadow-xl will-change-transform">
          
           <div className="flex flex-row overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden gap-1.5 sm:gap-2 md:gap-3 w-full">
             {/* Tab 1: MY LIBRARY */}
             <button 
               onClick={() => setActiveTab('MY LIBRARY')}
-              className={`flex-1 min-w-[110px] sm:min-w-0 flex justify-center items-center gap-1.5 sm:gap-2 md:gap-3 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 md:py-3.5 rounded-lg transition-all duration-300 border ${
+              className={`flex-1 min-w-[110px] sm:min-w-0 flex justify-center items-center gap-1.5 sm:gap-2 md:gap-3 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 md:py-3.5 rounded-lg transition-colors duration-200 border ${
                 activeTab === 'MY LIBRARY' 
-                  ? 'border-[#c79c6e] bg-[#0a0a0a]/90 backdrop-blur-sm text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.15)]' 
+                  ? 'border-[#c79c6e] bg-[#121212] text-[#c79c6e] shadow-[0_0_15px_rgba(199,156,110,0.12)]' 
                   : 'border-transparent text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -56,9 +56,9 @@ export default function OverviewSection() {
             {/* Tab 2: COACHING */}
             <button 
               onClick={() => setActiveTab('COACHING')}
-              className={`flex-1 min-w-[110px] sm:min-w-0 flex justify-center items-center gap-1.5 sm:gap-2 md:gap-3 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 md:py-3.5 rounded-lg transition-all duration-300 border ${
+              className={`flex-1 min-w-[110px] sm:min-w-0 flex justify-center items-center gap-1.5 sm:gap-2 md:gap-3 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 md:py-3.5 rounded-lg transition-colors duration-200 border ${
                 activeTab === 'COACHING' 
-                  ? 'border-[#c79c6e] bg-[#0a0a0a]/90 backdrop-blur-sm text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.15)]' 
+                  ? 'border-[#c79c6e] bg-[#121212] text-[#c79c6e] shadow-[0_0_15px_rgba(199,156,110,0.12)]' 
                   : 'border-transparent text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -69,9 +69,9 @@ export default function OverviewSection() {
             {/* Tab 3: MY NOTES */}
             <button 
               onClick={() => setActiveTab('MY NOTES')}
-              className={`flex-1 min-w-[110px] sm:min-w-0 flex justify-center items-center gap-1.5 sm:gap-2 md:gap-3 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 md:py-3.5 rounded-lg transition-all duration-300 border ${
+              className={`flex-1 min-w-[110px] sm:min-w-0 flex justify-center items-center gap-1.5 sm:gap-2 md:gap-3 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 md:py-3.5 rounded-lg transition-colors duration-200 border ${
                 activeTab === 'MY NOTES' 
-                  ? 'border-[#c79c6e] bg-[#0a0a0a]/90 backdrop-blur-sm text-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.15)]' 
+                  ? 'border-[#c79c6e] bg-[#121212] text-[#c79c6e] shadow-[0_0_15px_rgba(199,156,110,0.12)]' 
                   : 'border-transparent text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >

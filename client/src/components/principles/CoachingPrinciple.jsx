@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import Container from '../ui/Container';
-import bgImg from '../../assets/Page6/ChatGPT Image Jul 24, 2026, 03_28_41 PM.png';
+import defaultBgImg from '../../assets/Page6/ChatGPT Image Jul 24, 2026, 03_28_41 PM.webp';
 import { 
   ChatTeardropText, 
   MagnifyingGlass, 
@@ -14,17 +14,53 @@ import {
 
 gsap.registerPlugin(ScrollTrigger);
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const ICONS = [ChatTeardropText, MagnifyingGlass, Compass, Flag, ChartLineUp];
+
+const DEFAULT_COACHING_DATA = {
+  eyebrowText: 'THE COACHING PROCESS',
+  headingLine1: 'A proven process',
+  headingAccent: 'built around you.',
+  subtitle: 'A clear path from where you are, to where you want to be.',
+  subnote: 'Simple. Effective.',
+  bgImg: '',
+  steps: [
+    { num: '01', title: 'CONNECT', text: 'We start with a meaningful conversation to understand what matters to you.' },
+    { num: '02', title: 'CLARIFY', text: "We dig deep to bring clarity to your thoughts, patterns, and what's keeping you stuck." },
+    { num: '03', title: 'ALIGN', text: 'We align your values, goals, and actions with the life you truly want to create.' },
+    { num: '04', title: 'ACT', text: "You take intentional action with confidence. I'm here to guide, challenge, and support you." },
+    { num: '05', title: 'EVOLVE', text: 'We reflect, recalibrate, and keep building momentum for lasting transformation.' },
+  ]
+};
+
 export default function CoachingPrinciple() {
   const container = useRef(null);
   const [activeStep, setActiveStep] = useState(null);
+  const [data, setData] = useState(DEFAULT_COACHING_DATA);
 
-  const steps = [
-    { num: '01', title: 'CONNECT', icon: ChatTeardropText, text: 'We start with a meaningful conversation to understand what matters to you.' },
-    { num: '02', title: 'CLARIFY', icon: MagnifyingGlass, text: "We dig deep to bring clarity to your thoughts, patterns, and what's keeping you stuck." },
-    { num: '03', title: 'ALIGN', icon: Compass, text: 'We align your values, goals, and actions with the life you truly want to create.' },
-    { num: '04', title: 'ACT', icon: Flag, text: "You take intentional action with confidence. I'm here to guide, challenge, and support you." },
-    { num: '05', title: 'EVOLVE', icon: ChartLineUp, text: 'We reflect, recalibrate, and keep building momentum for lasting transformation.' },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCoachingData = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/home-settings/coachingProcess`);
+        if (res.ok && isMounted) {
+          const json = await res.json();
+          setData(prev => ({
+            ...prev,
+            ...json,
+            steps: json.steps && json.steps.length > 0 ? json.steps : prev.steps
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load coaching process settings:', err);
+      }
+    };
+    fetchCoachingData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const steps = data.steps || DEFAULT_COACHING_DATA.steps;
 
   useGSAP(() => {
     const tl = gsap.timeline({
@@ -43,7 +79,7 @@ export default function CoachingPrinciple() {
       { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.1 },
       "-=0.4"
     );
-  }, { scope: container });
+  }, { scope: container, dependencies: [data] });
 
   return (
     <section ref={container} id="coaching" className="principle-panel relative w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
@@ -51,13 +87,18 @@ export default function CoachingPrinciple() {
       {/* Background Image */}
       <div className="absolute inset-0 z-0 pointer-events-none block">
         <img 
-          src={bgImg} 
+          src={data.bgImg || defaultBgImg} 
           alt="Coaching Process"
           className="w-full h-full object-cover lg:object-contain opacity-30 lg:opacity-100 object-center lg:object-[80%_center]"
           style={{
             maskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 75%, transparent 95%)',
             WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 75%, transparent 95%)'
           }}
+        />
+        {/* Global contrast overlay layer */}
+        <div 
+          className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" 
+          style={{ opacity: 'var(--overlay-opacity, 0.4)' }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 lg:via-black/40 to-black/40 lg:to-black/20" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 lg:from-transparent via-transparent to-black" />
@@ -72,25 +113,25 @@ export default function CoachingPrinciple() {
             <div className="flex items-center gap-4 mb-4 coaching-fade">
               <div className="h-[1px] w-8 bg-accent-gold origin-left" />
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-medium text-accent-gold">
-                THE COACHING PROCESS
+                {data.eyebrowText || 'THE COACHING PROCESS'}
               </span>
             </div>
 
             <h2 className="font-serif text-4xl md:text-5xl lg:text-[4rem] font-medium tracking-tight leading-[1.1] mb-2 flex flex-col items-start coaching-fade">
-              <span className="text-white pb-1">A proven process</span>
-              <span className="text-accent-gold italic font-light pb-1">built around you.</span>
+              <span className="text-white pb-1">{data.headingLine1 || 'A proven process'}</span>
+              <span className="text-accent-gold italic font-light pb-1">{data.headingAccent || 'built around you.'}</span>
             </h2>
 
-            <p className="text-white text-base lg:text-lg font-serif font-light tracking-wide leading-relaxed mb-4 coaching-fade max-w-md">
-              <span className="italic text-lg">A clear path from where you are, to where you want to be.</span><br />
+            <p className="text-white text-lg lg:text-xl font-serif font-light tracking-wide leading-relaxed mb-4 coaching-fade max-w-lg">
+              <span className="italic text-xl lg:text-2xl">{data.subtitle || 'A clear path from where you are, to where you want to be.'}</span><br />
               <br />
-              Simple. Effective.
+              {data.subnote || 'Simple. Effective.'}
             </p>
 
-            {/* Grid Stepper (Converted to Flex for centering the last row) */}
+            {/* Grid Stepper */}
             <div className="relative flex flex-wrap justify-center gap-x-6 gap-y-4 lg:gap-x-8 lg:gap-y-6 mt-4">
               {steps.map((step, i) => {
-                const Icon = step.icon;
+                const Icon = ICONS[i % ICONS.length];
                 const isActive = activeStep === i;
                 return (
                   <div 
@@ -103,7 +144,7 @@ export default function CoachingPrinciple() {
                     </div>
                     <div className="flex flex-col justify-center min-h-[40px]">
                       <div className="flex items-center gap-2">
-                        <span className="font-sans text-[0.65rem] tracking-widest text-accent-gold">{step.num}</span>
+                        <span className="font-sans text-[0.65rem] tracking-widest text-accent-gold">{step.num || `0${i+1}`}</span>
                         <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-white">{step.title}</span>
                       </div>
                       <div className={`grid transition-[grid-template-rows] duration-500 ease-out ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] group-hover:grid-rows-[1fr]'}`}>

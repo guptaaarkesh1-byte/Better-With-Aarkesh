@@ -9,9 +9,9 @@ import {
 } from '@phosphor-icons/react';
 
 // Placeholders for content thumbnails
-import thumb1 from '../../assets/PerspectivePage/recognition/emotional_exhaustion.png';
-import thumb2 from '../../assets/PerspectivePage/recognition/comparison.png';
-import thumb3 from '../../assets/PerspectivePage/recognition/holding_it_in.png';
+import thumb1 from '../../assets/PerspectivePage/recognition/emotional_exhaustion.webp';
+import thumb2 from '../../assets/PerspectivePage/recognition/comparison.webp';
+import thumb3 from '../../assets/PerspectivePage/recognition/holding_it_in.webp';
 
 gsap.registerPlugin(ScrollTrigger);
 

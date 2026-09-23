@@ -98,9 +98,19 @@ export default function VideoManager() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Strict validation: under 200 KB
+    const MAX_SIZE_BYTES = 200 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      const sizeKB = (file.size / 1024).toFixed(1);
+      setMessage(`Thumbnail is ${sizeKB} KB. Max allowed file size is Under 200 KB. Please compress your image.`);
+      event.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setForm(prev => ({ ...prev, thumbnailUrl: typeof reader.result === 'string' ? reader.result : '' }));
+      setMessage('Thumbnail image selected (Under 200 KB)!');
     };
     reader.readAsDataURL(file);
   };
@@ -306,7 +316,17 @@ export default function VideoManager() {
               </div>
 
               <div className="flex flex-col gap-2 w-full">
-                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Thumbnail Image (URL or Upload)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Thumbnail Image</label>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-[0.62rem] font-mono font-semibold text-[#c79c6e]">
+                      1280 × 720 px (16:9)
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-black/60 border border-white/10 text-[0.62rem] font-mono text-[#c79c6e]">
+                      Max: Under 200 KB
+                    </span>
+                  </div>
+                </div>
                 <div className="flex gap-4">
                   <input
                     required
@@ -315,9 +335,9 @@ export default function VideoManager() {
                     value={form.thumbnailUrl}
                     onChange={handleFormChange}
                     placeholder="https://example.com/image.jpg"
-                    className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors flex-1"
+                    className="bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors flex-1 text-xs"
                   />
-                  <label className="flex items-center justify-center w-12 h-12 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#c79c6e]/30 cursor-pointer transition-all shrink-0">
+                  <label className="flex items-center justify-center w-12 h-12 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#c79c6e]/30 cursor-pointer transition-all shrink-0" title="Upload Thumbnail (< 200 KB)">
                     <ImageIcon size={20} className="text-white/60" />
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
                   </label>

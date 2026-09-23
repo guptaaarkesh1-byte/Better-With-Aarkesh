@@ -1,8 +1,10 @@
-import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import authRoutes from './routes/authRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import articleRoutes from './routes/articleRoutes.js';
@@ -13,8 +15,19 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import footerDocumentRoutes from './routes/footerDocumentRoutes.js';
 import footerColumnRoutes from './routes/footerColumnRoutes.js';
 import socialLinkRoutes from './routes/socialLinkRoutes.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import courseAuthRoutes from './routes/courseAuthRoutes.js';
+import courseAdminRoutes from './routes/courseAdminRoutes.js';
+import muxWebhookRoutes from './routes/muxWebhookRoutes.js';
+import coursePublicRoutes from './routes/coursePublicRoutes.js';
+import courseCardRoutes from './routes/courseCardRoutes.js';
+import courseFaqRoutes from './routes/courseFaqRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
+import noteRoutes from './routes/noteRoutes.js';
+import calRoutes from './routes/calRoutes.js';
+import contactSettingsRoutes from './routes/contactSettingsRoutes.js';
+import commentRoutes from './routes/commentRoutes.js';
+import homeSettingsRoutes from './routes/homeSettingsRoutes.js';
+import librarySettingsRoutes from './routes/librarySettingsRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,13 +43,6 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Routes
-import courseAuthRoutes from './routes/courseAuthRoutes.js';
-import courseAdminRoutes from './routes/courseAdminRoutes.js';
-import muxWebhookRoutes from './routes/muxWebhookRoutes.js';
-import coursePublicRoutes from './routes/coursePublicRoutes.js';
-import courseCardRoutes from './routes/courseCardRoutes.js';
-import courseFaqRoutes from './routes/courseFaqRoutes.js';
-
 app.use('/api/auth', authRoutes);
 app.use('/api/course-auth', courseAuthRoutes);
 app.use('/api/admin/courses', courseAdminRoutes);
@@ -44,12 +50,7 @@ app.use('/api/courses/cards', courseCardRoutes);
 app.use('/api/courses/faqs', courseFaqRoutes);
 app.use('/api/mux', muxWebhookRoutes);
 app.use('/api/courses', coursePublicRoutes);
-import appointmentRoutes from './routes/appointmentRoutes.js';
-import noteRoutes from './routes/noteRoutes.js';
-import calRoutes from './routes/calRoutes.js';
-
 app.use('/api/cal', calRoutes);
-
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/payment', paymentRoutes);
@@ -61,8 +62,10 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/footer-documents', footerDocumentRoutes);
 app.use('/api/footer-columns', footerColumnRoutes);
 app.use('/api/social-links', socialLinkRoutes);
-import commentRoutes from './routes/commentRoutes.js';
+app.use('/api/contact-settings', contactSettingsRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/home-settings', homeSettingsRoutes);
+app.use('/api/library-settings', librarySettingsRoutes);
 
 // Make uploads folder static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

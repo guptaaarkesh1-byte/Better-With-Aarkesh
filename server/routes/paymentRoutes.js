@@ -104,26 +104,41 @@ router.post('/fees', protect, admin, async (req, res) => {
 // @access  Public/Optional
 router.post('/create-order', optionalAuth, async (req, res) => {
   try {
-    const { email, currency = 'INR', receipt = `rcpt_${Date.now()}` } = req.body;
+    const { email, phoneNumber, currency = 'INR', receipt = `rcpt_${Date.now()}` } = req.body;
     
-    // 1. Determine if first session
-    let isFirstSession = true;
-    if (email) {
-      const pastAppointments = await Appointment.countDocuments({ email: email });
-      isFirstSession = pastAppointments === 0;
-    }
-
-    // 2. Fetch fees from settings
+    // 1. Fetch fees from settings
     let feeSettings = await Settings.findOne({ key: 'fees' });
     let fee60min = 5000;
     let fee90min = 7500;
     if (feeSettings && feeSettings.value) {
-      fee60min = feeSettings.value.fee60min || 5000;
-      fee90min = feeSettings.value.fee90min || 7500;
+      fee60min = Number(feeSettings.value.fee60min) || 5000;
+      fee90min = Number(feeSettings.value.fee90min) || 7500;
     }
 
-    // 3. Calculate dynamic amount
-    const amount = isFirstSession ? fee60min : fee90min;
+    // 2. Check if user is first session (Registered or Unregistered)
+    const normalizedEmail = (email || (req.user && req.user.email) || '').toLowerCase().trim();
+    const phone = (phoneNumber || (req.user && req.user.phoneNumber) || '').trim();
+
+    let isFirstSession = true;
+    if (normalizedEmail) {
+      const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pastAppointments = await Appointment.countDocuments({ 
+        email: new RegExp(`^${escapedEmail}$`, 'i'),
+        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
+      isFirstSession = pastAppointments === 0;
+    } else if (req.user?._id) {
+      const pastAppointments = await Appointment.countDocuments({ 
+        userId: req.user._id,
+        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
+      isFirstSession = pastAppointments === 0;
+    }
+
+    const targetDuration = isFirstSession ? 60 : 90;
+    const amount = targetDuration === 90 ? fee90min : fee60min;
     
     const instance = await getRazorpayInstance();
     
@@ -131,10 +146,20 @@ router.post('/create-order', optionalAuth, async (req, res) => {
       amount: amount * 100, // amount in smallest currency unit (paise)
       currency,
       receipt,
+      notes: {
+        duration: `${targetDuration} mins`,
+        sessionType: isFirstSession ? 'First Session (60 mins)' : 'Returning Session (90 mins)',
+        email: normalizedEmail
+      }
     };
 
     const order = await instance.orders.create(options);
-    res.json(order);
+    res.json({
+      ...order,
+      targetDuration,
+      isFirstSession,
+      amountRupees: amount
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message || 'Error creating order' });

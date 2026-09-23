@@ -18,8 +18,14 @@ router.get('/slots', async (req, res) => {
     // Check if user is returning
     let isFirstSession = true;
     if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
+      const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const Appointment = (await import('../models/Appointment.js')).default;
-      const pastAppointments = await Appointment.countDocuments({ email: email });
+      const pastAppointments = await Appointment.countDocuments({ 
+        email: new RegExp(`^${escapedEmail}$`, 'i'),
+        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
       isFirstSession = pastAppointments === 0;
     }
 

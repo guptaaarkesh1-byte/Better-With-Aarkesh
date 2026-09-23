@@ -67,6 +67,53 @@ const syncAppointmentToCal = async (appointment) => {
   }
 };
 
+// @desc    Check if session is first (60m) or returning (90m) + return updatable fees
+// @route   POST /api/appointments/check-session-type
+// @access  Public/Optional
+router.post('/check-session-type', optionalAuth, async (req, res) => {
+  try {
+    const rawEmail = (req.body.email || (req.user && req.user.email) || '').toLowerCase().trim();
+
+    // Fetch updatable fees from settings
+    const feeSettings = await Settings.findOne({ key: 'fees' });
+    const fee60min = Number(feeSettings?.value?.fee60min) || 5000;
+    const fee90min = Number(feeSettings?.value?.fee90min) || 7500;
+
+    let isFirstSession = true;
+
+    if (rawEmail) {
+      const escapedEmail = rawEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pastAppointments = await Appointment.countDocuments({
+        email: new RegExp(`^${escapedEmail}$`, 'i'),
+        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
+      isFirstSession = pastAppointments === 0;
+    } else if (req.user?._id) {
+      const pastAppointments = await Appointment.countDocuments({
+        userId: req.user._id,
+        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
+      isFirstSession = pastAppointments === 0;
+    }
+
+    const duration = isFirstSession ? 60 : 90;
+    const fee = duration === 90 ? fee90min : fee60min;
+
+    res.json({
+      isFirstSession,
+      duration,
+      fee,
+      fee60min,
+      fee90min
+    });
+  } catch (error) {
+    console.error('Error checking session type:', error);
+    res.status(500).json({ message: 'Error checking session type' });
+  }
+});
+
 // POST /api/appointments - Create a new appointment
 router.post('/', optionalAuth, async (req, res) => {
   try {
@@ -108,7 +155,7 @@ router.post('/', optionalAuth, async (req, res) => {
         return res.status(403).json({ message: 'No free sessions remaining on your account.' });
       }
 
-      const pastAppointments = await Appointment.countDocuments({ email: normalizedEmail });
+      const pastAppointments = await Appointment.countDocuments({ email: emailRegex });
       const isFirstSession = pastAppointments === 0;
       const duration = isFirstSession ? 60 : 90;
 
@@ -141,30 +188,24 @@ router.post('/', optionalAuth, async (req, res) => {
       // Sync with Cal.com just like a paid booking
       await syncAppointmentToCal(createdFreeAppointment);
 
-      // Send confirmation email
+      // Send confirmation emails in background
       if (process.env.RESEND_API_KEY) {
         try {
           const resend = new Resend(process.env.RESEND_API_KEY);
-          const emailHtmlTemplate = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-              <h2>Your Coaching Session Is Confirmed (Course Perk)</h2>
-              <p>Hi ${name},</p>
-              <p>Your complimentary 1-on-1 coaching session with Aarkesh has been booked successfully!</p>
-              <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-                <strong>Date:</strong> ${date}<br>
-                <strong>Time:</strong> ${time}<br>
-                <strong>Duration:</strong> ${duration} minutes<br>
-                ${createdFreeAppointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${createdFreeAppointment.meetLink}" style="color: #c79c6e;">Click here to join</a><br>` : ''}
-              </div>
-              <p>Looking forward to speaking with you.</p>
-            </div>
-          `;
-
           await resend.emails.send({
-            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+            from: 'Better With Aarkesh <coaching@betterwithaarkesh.com>',
             to: normalizedEmail,
-            subject: 'Your 1-on-1 coaching session is confirmed',
-            html: emailHtmlTemplate,
+            subject: 'Your Free Coaching Session is Confirmed',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <h2>Coaching Session Confirmed</h2>
+                <p>Hello ${name},</p>
+                <p>Your 1-on-1 complimentary coaching session with Aarkesh has been reserved.</p>
+                <p><strong>Date:</strong> ${date}<br/><strong>Time:</strong> ${time}<br/><strong>Duration:</strong> ${duration} Minutes</p>
+                <p>Remaining complimentary credits: ${coachingUser.freeSessions}</p>
+                <p>Google Meet details will follow prior to the call.</p>
+              </div>
+            `
           });
         } catch (emailErr) {
           console.error("Failed to send free session confirmation email", emailErr);
@@ -177,26 +218,52 @@ router.post('/', optionalAuth, async (req, res) => {
       });
     }
 
-    // Check if user has past appointments
-    const pastAppointments = await Appointment.countDocuments({ email: email });
-    const isFirstSession = pastAppointments === 0;
+    // Check if user has past appointments (Registered or Unregistered)
+    const normalizedEmail = (email || (req.user && req.user.email) || '').toLowerCase().trim();
+    const phone = (phoneNumber || (req.user && req.user.phoneNumber) || '').trim();
+
+    let isFirstSession = true;
+    if (normalizedEmail) {
+      const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pastAppointments = await Appointment.countDocuments({ 
+        email: new RegExp(`^${escapedEmail}$`, 'i'),
+        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
+      isFirstSession = pastAppointments === 0;
+    } else if (req.user?._id) {
+      const pastAppointments = await Appointment.countDocuments({ 
+        userId: req.user._id,
+        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
+      isFirstSession = pastAppointments === 0;
+    }
+
     const duration = isFirstSession ? 60 : 90;
+
+    // Fetch dynamic fee settings
+    const feeSettings = await Settings.findOne({ key: 'fees' });
+    const fee60 = Number(feeSettings?.value?.fee60min) || 5000;
+    const fee90 = Number(feeSettings?.value?.fee90min) || 7500;
+    const dynamicAmount = duration === 90 ? fee90 : fee60;
+    const finalAmount = req.body.amount !== undefined && req.body.amount !== null ? Number(req.body.amount) : dynamicAmount;
 
     const appointment = new Appointment({
       userId: req.user ? req.user._id : undefined,
       date,
       time,
       name,
-      email,
+      email: normalizedEmail,
       countryCode,
-      phoneNumber,
+      phoneNumber: phone,
       source,
       reason,
       extra,
       status: 'UPCOMING',
       duration,
       isFirstSession,
-      amount: req.body.amount !== undefined ? req.body.amount : (isFirstSession ? 5000 : 7500),
+      amount: finalAmount,
       paymentId,
       orderId,
       signature

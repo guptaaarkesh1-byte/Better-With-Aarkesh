@@ -70,19 +70,35 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
           <label className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-2 sm:mb-3">
             HOW DID YOU HEAR ABOUT ME? (OPTIONAL)
           </label>
-          <select
-            name="source"
-            value={data.source}
-            onChange={handleInputChange}
-            className="w-full bg-transparent border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 text-sm text-white/80 font-light focus:outline-none focus:border-accent-gold/50 transition-colors appearance-none cursor-pointer"
-            style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.2rem top 50%', backgroundSize: '0.65rem auto' }}
-          >
-            <option value="" disabled className="bg-[#0f0f0f] text-white/50">Select an option</option>
-            <option value="social" className="bg-[#0f0f0f]">Social Media</option>
-            <option value="referral" className="bg-[#0f0f0f]">Referral</option>
-            <option value="search" className="bg-[#0f0f0f]">Search Engine</option>
-            <option value="other" className="bg-[#0f0f0f]">Other</option>
-          </select>
+          <div className="flex flex-col gap-2.5">
+            <select
+              name="source"
+              value={data.source}
+              onChange={handleInputChange}
+              className="w-full bg-transparent border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 text-sm text-white/80 font-light focus:outline-none focus:border-accent-gold/50 transition-colors appearance-none cursor-pointer"
+              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.2rem top 50%', backgroundSize: '0.65rem auto' }}
+            >
+              <option value="" disabled className="bg-[#0f0f0f] text-white/50">Select an option</option>
+              <option value="social" className="bg-[#0f0f0f]">Social Media</option>
+              <option value="referral" className="bg-[#0f0f0f]">Referral</option>
+              <option value="search" className="bg-[#0f0f0f]">Search Engine</option>
+              <option value="other" className="bg-[#0f0f0f]">Other</option>
+            </select>
+
+            {data.source === 'other' && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <input
+                  type="text"
+                  name="otherSource"
+                  value={data.otherSource || ''}
+                  onChange={handleInputChange}
+                  placeholder="Please specify (e.g. YouTube, Podcast, Friend, Book...)"
+                  className="w-full bg-[#121212] border border-accent-gold/40 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-white placeholder-white/30 font-light focus:outline-none focus:border-accent-gold transition-colors"
+                  autoFocus
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Email */}

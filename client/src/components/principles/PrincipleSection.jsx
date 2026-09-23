@@ -133,6 +133,11 @@ export default function PrincipleSection({
               WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 75%, transparent 95%)'
             }}
           />
+          {/* Global contrast overlay layer */}
+          <div 
+            className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" 
+            style={{ opacity: 'var(--overlay-opacity, 0.4)' }}
+          />
           {/* Subtle gradient to darken the image for text readability and blend with edges */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/90" />

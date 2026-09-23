@@ -1,5 +1,5 @@
 import React from 'react';
-import bgImage from '../../assets/images/empty_library_bg.png';
+import bgImage from '../../assets/images/empty_library_bg.webp';
 
 import OverviewSection from './components/OverviewSection';
 import PreparationSection from './components/PreparationSection';
@@ -13,11 +13,12 @@ export default function MyJourney() {
     <div className="w-full min-h-screen bg-[#050505] text-white select-none relative font-sans">
       
       {/* Background - Fixed while scrolling */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="fixed inset-0 z-0 pointer-events-none transform-gpu will-change-transform">
         <img 
           src={bgImage} 
           alt="Library Background" 
           className="w-full h-full object-cover object-center opacity-70"
+          loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />

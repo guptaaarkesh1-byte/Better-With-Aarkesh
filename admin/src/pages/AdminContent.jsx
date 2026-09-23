@@ -310,6 +310,15 @@ export default function AdminContent() {
       return;
     }
 
+    // Strict validation: under 200 KB
+    const MAX_SIZE_BYTES = 200 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      const sizeKB = (file.size / 1024).toFixed(1);
+      setMessage(`Image is ${sizeKB} KB. Max allowed file size is Under 200 KB. Please compress your image.`);
+      event.target.value = '';
+      return;
+    }
+
     try {
       const formData = new FormData();
       formData.append('image', file);
@@ -329,6 +338,7 @@ export default function AdminContent() {
 
       const data = await response.json();
       handleFormChange('featuredImage', `${API_URL}${data.imageUrl}`);
+      setMessage('Featured image uploaded successfully (Under 200 KB)!');
     } catch (error) {
       console.error(error);
       setMessage('Unable to upload featured image right now.');
@@ -561,15 +571,26 @@ export default function AdminContent() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Featured Image</label>
-                <label className="border-2 border-dashed border-white/10 hover:border-[#c79c6e]/50 transition-colors rounded-xl min-h-64 bg-[#111] flex flex-col items-center justify-center cursor-pointer group overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-white/60 uppercase tracking-widest">Featured Image</label>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-[0.62rem] font-mono font-semibold text-[#c79c6e]">
+                      1200 × 630 px (16:9)
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-black/60 border border-white/10 text-[0.62rem] font-mono text-white/60">
+                      Max: Under 200 KB
+                    </span>
+                  </div>
+                </div>
+
+                <label className="border-2 border-dashed border-white/10 hover:border-[#c79c6e]/50 transition-colors rounded-xl min-h-64 bg-[#111] flex flex-col items-center justify-center cursor-pointer group overflow-hidden relative">
                   {form.featuredImage ? (
                     <img src={form.featuredImage} alt={form.title || 'Article'} className="w-full h-64 object-cover" />
                   ) : (
                     <>
                       <ImageIcon size={48} className="text-white/20 group-hover:text-[#c79c6e] mb-4 transition-colors" />
                       <span className="text-base font-medium text-white/70">Click to choose a featured image</span>
-                      <span className="text-sm text-white/30 mt-1">Saved directly with the article record</span>
+                      <span className="text-xs text-[#c79c6e] mt-1 font-mono">1200 × 630 px • File size Under 200 KB</span>
                     </>
                   )}
                   <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />

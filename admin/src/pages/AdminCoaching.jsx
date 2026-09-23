@@ -16,9 +16,7 @@ export default function AdminCoaching() {
   const getInitialTab = () => {
     const tabParam = searchParams.get('tab');
     if (tabParam === 'appointments' || tabParam === 'bookings' || tabParam === 'users') return 'appointments';
-    if (tabParam === 'library' || tabParam === 'content' || tabParam === 'articles') return 'library';
     if (tabParam === 'profile' || tabParam === 'journey' || tabParam === 'settings') return 'profile';
-    if (location.pathname.startsWith('/library')) return 'library';
     if (location.pathname.startsWith('/profile') || location.pathname.startsWith('/journey')) return 'profile';
     if (location.pathname.startsWith('/appointments')) return 'appointments';
     return 'appointments';
@@ -30,12 +28,8 @@ export default function AdminCoaching() {
     const tabParam = searchParams.get('tab');
     if (tabParam === 'appointments' || tabParam === 'bookings' || tabParam === 'users') {
       setActiveTab('appointments');
-    } else if (tabParam === 'library' || tabParam === 'content' || tabParam === 'articles') {
-      setActiveTab('library');
     } else if (tabParam === 'profile' || tabParam === 'journey' || tabParam === 'settings') {
       setActiveTab('profile');
-    } else if (location.pathname.startsWith('/library')) {
-      setActiveTab('library');
     } else if (location.pathname.startsWith('/profile') || location.pathname.startsWith('/journey')) {
       setActiveTab('profile');
     } else if (location.pathname.startsWith('/appointments')) {
@@ -67,21 +61,7 @@ export default function AdminCoaching() {
             <span>Appointments</span>
           </button>
 
-          {/* 2. Library */}
-          <button
-            id="tab-btn-library"
-            onClick={() => handleTabSwitch('library')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-              activeTab === 'library'
-                ? 'bg-[#c79c6e] text-black shadow-lg shadow-[#c79c6e]/15'
-                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Books size={15} weight={activeTab === 'library' ? 'bold' : 'regular'} />
-            <span>Library</span>
-          </button>
-
-          {/* 3. Profile */}
+          {/* 2. Profile */}
           <button
             id="tab-btn-profile"
             onClick={() => handleTabSwitch('profile')}
@@ -101,8 +81,6 @@ export default function AdminCoaching() {
       <div className="flex-1">
         {activeTab === 'appointments' ? (
           <AdminUsers />
-        ) : activeTab === 'library' ? (
-          <AdminContent />
         ) : (
           <AdminSettings />
         )}

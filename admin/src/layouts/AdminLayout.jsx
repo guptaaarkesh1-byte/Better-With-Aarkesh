@@ -5,7 +5,9 @@ import {
   Users,
   FolderOpen,
   GraduationCap,
-  SignOut
+  SignOut,
+  House,
+  Books
 } from '@phosphor-icons/react';
 
 export default function AdminLayout({ children, onLogout }) {
@@ -15,8 +17,10 @@ export default function AdminLayout({ children, onLogout }) {
 
   // Determine active top tab based on route
   const getActiveTab = () => {
+    if (currentPath.startsWith('/home') || currentPath.startsWith('/home-editor')) return 'home';
+    if (currentPath.startsWith('/library')) return 'library';
+    if (currentPath.startsWith('/coaching') || currentPath.startsWith('/appointments') || currentPath.startsWith('/profile') || currentPath.startsWith('/journey')) return 'coaching';
     if (currentPath.startsWith('/course') || currentPath.startsWith('/admin/courses') || currentPath.startsWith('/upload-videos')) return 'course';
-    if (currentPath.startsWith('/coaching') || currentPath.startsWith('/appointments') || currentPath.startsWith('/library') || currentPath.startsWith('/profile') || currentPath.startsWith('/journey')) return 'coaching';
     if (currentPath.startsWith('/footer-documents')) return 'footer';
     return 'overview';
   };
@@ -25,6 +29,8 @@ export default function AdminLayout({ children, onLogout }) {
 
   const topTabs = [
     { id: 'overview', label: 'Overview', icon: <SquaresFour size={18} />, path: '/' },
+    { id: 'home', label: 'Home', icon: <House size={18} />, path: '/home-editor' },
+    { id: 'library', label: 'Library', icon: <Books size={18} />, path: '/library' },
     { id: 'coaching', label: 'Coaching', icon: <Users size={18} />, path: '/coaching' },
     { id: 'course', label: 'Course', icon: <GraduationCap size={18} />, path: '/course' },
     { id: 'footer', label: 'Footer', icon: <FolderOpen size={18} />, path: '/footer-documents' },

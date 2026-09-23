@@ -48,11 +48,11 @@ export default function PhilosophyContent() {
       </h2>
 
       <div className="space-y-6 mb-6">
-        <p className="phil-paragraph text-paragraph text-lg lg:text-xl font-light tracking-wide leading-relaxed">
+        <p className="phil-paragraph text-paragraph text-xl lg:text-2xl font-light tracking-wide leading-relaxed">
           Clarity begins when you stop <br className="hidden lg:block" />
           believing every thought you think.
         </p>
-        <p className="phil-paragraph text-paragraph text-base lg:text-lg font-light tracking-wide leading-relaxed opacity-70">
+        <p className="phil-paragraph text-paragraph text-lg lg:text-xl font-light tracking-wide leading-relaxed opacity-80">
           We slow down the noise <br className="hidden lg:block" />
           so you can see what truly matters.
         </p>

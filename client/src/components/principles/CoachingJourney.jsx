@@ -1,9 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import Container from '../ui/Container';
-import bgImg from '../../assets/Page7/ChatGPT Image Jul 24, 2026, 03_42_25 PM.png';
+import defaultBgImg from '../../assets/Page7/ChatGPT Image Jul 24, 2026, 03_42_25 PM.webp';
 import { 
   Compass, 
   Heart, 
@@ -19,43 +19,87 @@ import {
 
 gsap.registerPlugin(ScrollTrigger);
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const ICONS = [Compass, Heart, GitFork, Mountains];
+
+const DEFAULT_JOURNEY_DATA = {
+  eyebrowText: 'THE COACHING JOURNEY',
+  headingLine1: 'A clear process.',
+  headingAccent: 'Real transformation.',
+  description: "We don't do hacks. We follow a proven, human-first process designed to create deep, lasting change.",
+  quoteLine1: "Transformation isn't a moment.",
+  quoteAccent: "It's a journey you walk with the right guide.",
+  bgImg: '',
+  steps: [
+    { num: '01', title: 'CLARIFY', text: "Root cause clarity.\nReal understanding." },
+    { num: '02', title: 'CONNECT', text: "Emotional honesty.\nValues alignment." },
+    { num: '03', title: 'CREATE', text: "Aligned decisions.\nIntentional life." },
+    { num: '04', title: 'COMMIT', text: "Sustained action.\nLasting change." }
+  ],
+  howItWorks: [
+    'Personalized coaching sessions tailored to you.',
+    'Powerful conversations that create real shifts.',
+    'Practical tools and frameworks you can use.',
+    'Accountability that keeps you moving forward.'
+  ],
+  transitionAccent: 'Guided. Structured. Flexible.',
+  transitionSubtext: 'A process that adapts to you—so you can create a life that lasts.'
+};
+
 export default function CoachingJourney() {
   const container = useRef(null);
+  const [data, setData] = useState(DEFAULT_JOURNEY_DATA);
 
-  const leftSteps = [
-    { title: 'CLARIFY', icon: Compass, text: "We get to the root.\nYou gain real clarity about what's holding you back." },
-    { title: 'CONNECT', icon: Heart, text: "We go beneath the surface.\nYou reconnect with what you feel, value, and truly want." },
-    { title: 'CREATE', icon: GitFork, text: "We design with intention.\nYou make aligned decisions and build a life that fits you." },
-    { title: 'COMMIT', icon: Mountains, text: "We turn insight into action.\nYou build momentum and become the person you choose to be." },
+  useEffect(() => {
+    let isMounted = true;
+    const fetchJourneyData = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/home-settings/coachingJourney`);
+        if (res.ok && isMounted) {
+          const json = await res.json();
+          setData(prev => ({
+            ...prev,
+            ...json,
+            steps: json.steps && json.steps.length > 0 ? json.steps : prev.steps,
+            howItWorks: json.howItWorks && json.howItWorks.length > 0 ? json.howItWorks : prev.howItWorks
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load coaching journey settings:', err);
+      }
+    };
+    fetchJourneyData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const rawSteps = data.steps || DEFAULT_JOURNEY_DATA.steps;
+
+  const leftSteps = rawSteps.map((step, idx) => ({
+    title: step.title,
+    icon: ICONS[idx % ICONS.length],
+    text: step.text
+  }));
+
+  const nodePositions = [
+    { top: '50%', left: '58%', mobTop: '70%', mobLeft: '50%', flip: false },
+    { top: '38%', left: '51%', mobTop: '44%', mobLeft: '23%', flip: true },
+    { top: '26%', left: '57%', mobTop: '30%', mobLeft: '27%', flip: true },
+    { top: '18%', left: '71%', mobTop: '18%', mobLeft: '78%', flip: false },
   ];
 
-  // ==========================================
-  // 🛠️ FLOATING NODES CONFIGURATION
-  // Use `top` and `left` to move the nodes on DESKTOP
-  // Use `mobTop` and `mobLeft` to move the nodes on MOBILE
-  // ==========================================
-  const floatingNodes = [
-    { 
-      num: '01', title: 'CLARIFY', icon: Compass, text: 'Root cause clarity.\nReal understanding.', 
-      top: '50%', left: '58%', 
-      mobTop: '70%', mobLeft: '50%' 
-    },
-    { 
-      num: '02', title: 'CONNECT', icon: Heart, text: 'Emotional honesty.\nValues alignment.', 
-      top: '38%', left: '51%', flip: true,
-      mobTop: '44%', mobLeft: '23%'
-    },
-    { 
-      num: '03', title: 'CREATE', icon: GitFork, text: 'Aligned decisions.\nIntentional life.', 
-      top: '26%', left: '57%', flip: true,
-      mobTop: '30%', mobLeft: '27%'
-    },
-    { 
-      num: '04', title: 'COMMIT', icon: Mountains, text: 'Sustained action.\nLasting change.', 
-      top: '18%', left: '71%', 
-      mobTop: '18%', mobLeft: '78%'
-    },
-  ];
+  const floatingNodes = rawSteps.map((step, idx) => {
+    const pos = nodePositions[idx] || { top: '50%', left: '50%', mobTop: '50%', mobLeft: '50%', flip: false };
+    return {
+      num: step.num || `0${idx + 1}`,
+      title: step.title,
+      icon: ICONS[idx % ICONS.length],
+      text: step.text,
+      ...pos
+    };
+  });
+
+  const howItWorks = data.howItWorks || DEFAULT_JOURNEY_DATA.howItWorks;
 
   useGSAP(() => {
     const tl = gsap.timeline({
@@ -84,7 +128,7 @@ export default function CoachingJourney() {
       { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
       "-=0.4"
     );
-  }, { scope: container });
+  }, { scope: container, dependencies: [data] });
 
   return (
     <section ref={container} id="coaching-journey" className="principle-panel relative w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-black snap-start">
@@ -92,9 +136,14 @@ export default function CoachingJourney() {
       {/* Background Image (Desktop Only) */}
       <div className="absolute inset-0 z-0 pointer-events-none pt-8 hidden lg:block">
         <img 
-          src={bgImg} 
+          src={data.bgImg || defaultBgImg} 
           alt="The Coaching Journey"
           className="w-full h-full object-cover opacity-90 object-[75%_top]"
+        />
+        {/* Global contrast overlay layer */}
+        <div 
+          className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" 
+          style={{ opacity: 'var(--overlay-opacity, 0.4)' }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-black/60 to-transparent w-[50%]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30" />
@@ -109,17 +158,17 @@ export default function CoachingJourney() {
             <div className="flex items-center gap-4 mb-3 journey-fade">
               <div className="h-[1px] w-6 bg-accent-gold origin-left" />
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-medium text-accent-gold">
-                THE COACHING JOURNEY
+                {data.eyebrowText || 'THE COACHING JOURNEY'}
               </span>
             </div>
 
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-[2.5rem] xl:text-[3.2rem] font-medium tracking-tight leading-[1.1] mb-2 xl:mb-3 flex flex-col items-start journey-fade">
-              <span className="text-white pb-0.5">A clear process.</span>
-              <span className="text-accent-gold italic font-light pb-0.5">Real transformation.</span>
+              <span className="text-white pb-0.5">{data.headingLine1 || 'A clear process.'}</span>
+              <span className="text-accent-gold italic font-light pb-0.5">{data.headingAccent || 'Real transformation.'}</span>
             </h2>
 
             <p className="text-white text-sm sm:text-base font-serif font-light tracking-wide leading-relaxed mb-4 xl:mb-6 journey-fade max-w-md">
-              We don't do hacks. We follow a proven, human-first process designed to create deep, lasting change.
+              {data.description || "We don't do hacks. We follow a proven, human-first process designed to create deep, lasting change."}
             </p>
 
             {/* Vertical Steps (2 columns) */}
@@ -180,7 +229,7 @@ export default function CoachingJourney() {
             {/* Mobile Image (Visible below points on mobile) */}
             <div className="block lg:hidden w-[calc(100%+2rem)] -ml-4 mt-12 relative flex justify-center pointer-events-auto">
               <img 
-                src={bgImg} 
+                src={data.bgImg || defaultBgImg} 
                 alt="The Coaching Journey"
                 className="w-full min-h-[85vh] object-cover opacity-90 object-[75%_top]"
                 style={{
@@ -269,8 +318,8 @@ export default function CoachingJourney() {
       {/* Floating Quote */}
       <div className="hidden lg:block absolute bottom-[200px] xl:bottom-[220px] right-12 max-w-[280px] journey-quote z-20">
         <span className="font-serif text-4xl text-accent-gold leading-none block mb-2">"</span>
-        <p className="font-serif text-2xl text-white mb-2 leading-tight">Transformation isn't a moment.</p>
-        <p className="font-serif text-2xl text-accent-gold italic leading-tight">It's a journey you walk with the right guide.</p>
+        <p className="font-serif text-2xl text-white mb-2 leading-tight">{data.quoteLine1 || "Transformation isn't a moment."}</p>
+        <p className="font-serif text-2xl text-accent-gold italic leading-tight">{data.quoteAccent || "It's a journey you walk with the right guide."}</p>
       </div>
 
       {/* Bottom Banners */}
@@ -288,7 +337,7 @@ export default function CoachingJourney() {
               <div className="flex items-center gap-4 group">
                 <CalendarBlank className="text-accent-gold text-2xl group-hover:scale-110 transition-transform" weight="light" />
                 <p className="text-white/80 text-xs font-light max-w-[140px] leading-relaxed">
-                  Personalized coaching sessions tailored to you.
+                  {howItWorks[0] || 'Personalized coaching sessions tailored to you.'}
                 </p>
               </div>
               
@@ -297,7 +346,7 @@ export default function CoachingJourney() {
               <div className="flex items-center gap-4 group">
                 <ChatTeardropText className="text-accent-gold text-2xl group-hover:scale-110 transition-transform" weight="light" />
                 <p className="text-white/80 text-xs font-light max-w-[140px] leading-relaxed">
-                  Powerful conversations that create real shifts.
+                  {howItWorks[1] || 'Powerful conversations that create real shifts.'}
                 </p>
               </div>
 
@@ -306,7 +355,7 @@ export default function CoachingJourney() {
               <div className="flex items-center gap-4 group">
                 <ListDashes className="text-accent-gold text-2xl group-hover:scale-110 transition-transform" weight="light" />
                 <p className="text-white/80 text-xs font-light max-w-[140px] leading-relaxed">
-                  Practical tools and frameworks you can use.
+                  {howItWorks[2] || 'Practical tools and frameworks you can use.'}
                 </p>
               </div>
 
@@ -315,7 +364,7 @@ export default function CoachingJourney() {
               <div className="flex items-center gap-4 group">
                 <TrendUp className="text-accent-gold text-2xl group-hover:scale-110 transition-transform" weight="light" />
                 <p className="text-white/80 text-xs font-light max-w-[140px] leading-relaxed">
-                  Accountability that keeps you moving forward.
+                  {howItWorks[3] || 'Accountability that keeps you moving forward.'}
                 </p>
               </div>
             </div>
@@ -332,9 +381,9 @@ export default function CoachingJourney() {
                 <Sparkle className="text-accent-gold text-xl" weight="light" />
               </div>
               <div>
-                <p className="font-serif text-accent-gold text-lg mb-0.5 italic">Guided. Structured. Flexible.</p>
+                <p className="font-serif text-accent-gold text-lg mb-0.5 italic">{data.transitionAccent || 'Guided. Structured. Flexible.'}</p>
                 <p className="text-paragraph text-xs text-white/70">
-                  A process that adapts to you—so you can create a life that lasts.
+                  {data.transitionSubtext || 'A process that adapts to you—so you can create a life that lasts.'}
                 </p>
               </div>
             </div>

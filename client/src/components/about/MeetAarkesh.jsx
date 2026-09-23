@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -11,45 +11,77 @@ import {
   Brain, 
   Users,
   ArrowRight,
-  MouseScroll
 } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
 
-// Import individual images
-import pilotImg from '../../assets/Page8/pilot.png';
-import coachImg from '../../assets/Page8/Coach.png';
-import humanImg from '../../assets/Page8/human.png';
+// Import default images
+import pilotImg from '../../assets/Page8/pilot.webp';
+import coachImg from '../../assets/Page8/Coach.webp';
+import humanImg from '../../assets/Page8/human.webp';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function MeetAarkesh() {
   const container = useRef(null);
+  const [aboutData, setAboutData] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAboutData = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/home-settings/about`);
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          setAboutData(data);
+        }
+      } catch (err) {
+        console.error('Failed to load about section:', err);
+      }
+    };
+    fetchAboutData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const eyebrowText = aboutData?.eyebrowText || 'MEET AARKESH';
+  const headingLine = aboutData?.headingLine || 'Three roles. One purpose.';
+  const subheading = aboutData?.subheading || 'Different lenses. Same mission—your growth.';
+  const missionHeading = aboutData?.missionHeading || 'The journey that shaped the mission.';
+  const missionDescription = aboutData?.missionDescription || "From the skies to the soul—here's the story behind why I do what I do.";
+  const storyBtnText = aboutData?.storyBtnText || 'READ MY STORY';
+  const storyBtnLink = aboutData?.storyBtnLink || '/about-us';
+
+  const pilotData = aboutData?.rolePilot || {};
+  const coachData = aboutData?.roleCoach || {};
+  const humanData = aboutData?.roleHuman || {};
 
   const roles = [
     {
-      title: 'PILOT',
+      title: pilotData.title || 'PILOT',
       icon: AirplaneTilt,
-      sub1: 'Years in the cockpit.',
-      sub2: 'High stakes. Clear decisions.',
-      highlight: 'I know what pressure feels like.',
-      bgImg: pilotImg,
+      sub1: pilotData.sub1 || 'Years in the cockpit.',
+      sub2: pilotData.sub2 || 'High stakes. Clear decisions.',
+      highlight: pilotData.highlight || 'I know what pressure feels like.',
+      bgImg: pilotData.bgImg || pilotImg,
       imgPos: 'object-center'
     },
     {
-      title: 'COACH',
+      title: coachData.title || 'COACH',
       icon: Crosshair,
-      sub1: 'ICF-certified life coach.',
-      sub2: 'Evidence-based. Human-first.',
-      highlight: 'I walk beside you, not ahead of you.',
-      bgImg: coachImg,
-      imgPos: 'object-top' // Moves the image down to show more of the top
+      sub1: coachData.sub1 || 'ICF-certified life coach.',
+      sub2: coachData.sub2 || 'Evidence-based. Human-first.',
+      highlight: coachData.highlight || 'I walk beside you, not ahead of you.',
+      bgImg: coachData.bgImg || coachImg,
+      imgPos: 'object-top'
     },
     {
-      title: 'HUMAN',
+      title: humanData.title || 'HUMAN',
       icon: Heart,
-      sub1: 'Flaws. Lessons. Growth.',
-      sub2: 'Still figuring things out.',
-      highlight: 'Just like you.',
-      bgImg: humanImg,
+      sub1: humanData.sub1 || 'Flaws. Lessons. Growth.',
+      sub2: humanData.sub2 || 'Still figuring things out.',
+      highlight: humanData.highlight || 'Just like you.',
+      bgImg: humanData.bgImg || humanImg,
       imgPos: 'object-center'
     }
   ];
@@ -76,7 +108,7 @@ export default function MeetAarkesh() {
       { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' },
       "-=0.2"
     );
-  }, { scope: container });
+  }, { scope: container, dependencies: [aboutData] });
 
   return (
     <section ref={container} id="meet-aarkesh" className="relative w-full h-auto lg:h-screen min-h-screen flex flex-col bg-black overflow-hidden snap-section pt-12 md:pt-20">
@@ -86,21 +118,21 @@ export default function MeetAarkesh() {
         <div className="flex items-center gap-4 mb-4">
           <div className="h-[1px] w-6 bg-accent-gold" />
           <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-bold text-accent-gold">
-            MEET AARKESH
+            {eyebrowText}
           </span>
           <div className="h-[1px] w-6 bg-accent-gold" />
         </div>
 
         <h2 className="font-serif text-4xl font-medium tracking-tight mb-2 text-white">
-          Three roles. One purpose.
+          {headingLine}
         </h2>
         
         <p className="text-paragraph text-sm font-light tracking-wide text-white/70">
-          Different lenses. Same mission—your growth.
+          {subheading}
         </p>
       </div>
 
-      {/* Grid Panes (Images fill from just below navbar to the bottom banner) */}
+      {/* Grid Panes */}
       <div className="w-full flex-grow flex flex-col md:flex-row border-y border-white/10 min-h-0 relative">
         
         {roles.map((role, i) => {
@@ -128,17 +160,17 @@ export default function MeetAarkesh() {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="h-[1px] w-6 bg-accent-gold" />
                     <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-bold text-accent-gold">
-                      MEET AARKESH
+                      {eyebrowText}
                     </span>
                     <div className="h-[1px] w-6 bg-accent-gold" />
                   </div>
 
                   <h2 className="font-serif text-4xl md:text-5xl lg:text-5xl font-medium tracking-tight mb-2 text-white">
-                    Three roles. One purpose.
+                    {headingLine}
                   </h2>
                   
                   <p className="text-paragraph text-sm md:text-base font-light tracking-wide text-white/70">
-                    Different lenses. Same mission—your growth.
+                    {subheading}
                   </p>
                 </div>
               )}
@@ -167,31 +199,30 @@ export default function MeetAarkesh() {
             <div className="flex items-center gap-3 mb-1.5">
               <div className="h-[1px] w-4 bg-accent-gold origin-left" />
               <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-bold text-accent-gold">
-                BEYOND THE ROLES
+                {aboutData?.missionEyebrow || 'BEYOND THE ROLES'}
               </span>
             </div>
             
             <h3 className="font-serif text-lg md:text-xl text-white tracking-tight mb-1">
-              The journey that shaped the mission.
+              {missionHeading}
             </h3>
             
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <p className="text-white/70 font-light text-[0.65rem] max-w-sm leading-relaxed">
-                From the skies to the soul—here's the story behind why I do what I do.
+                {missionDescription}
               </p>
               
-              <button className="flex items-center gap-2 border border-accent-gold/40 rounded-sm px-4 py-1.5 transition-colors hover:border-accent-gold hover:bg-accent-gold/10 shrink-0">
+              <Link to={storyBtnLink} className="flex items-center gap-2 border border-accent-gold/40 rounded-sm px-4 py-1.5 transition-colors hover:border-accent-gold hover:bg-accent-gold/10 shrink-0">
                 <span className="font-sans text-[0.5rem] uppercase tracking-[0.2em] font-semibold text-accent-gold">
-                  READ MY STORY
+                  {storyBtnText}
                 </span>
                 <ArrowRight className="text-accent-gold text-[0.6rem]" />
-              </button>
+              </Link>
             </div>
           </div>
 
           {/* Right Side: Features */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 w-full xl:w-auto xl:border-l border-white/10 xl:pl-8">
-            
             <div className="flex items-start gap-3 group">
               <div className="w-8 h-8 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0 transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/10">
                 <Compass className="text-accent-gold text-base" weight="light" />
@@ -221,13 +252,10 @@ export default function MeetAarkesh() {
                 <span className="text-paragraph text-[0.6rem] font-light text-white/60 leading-tight">No jargon. No masks.<br/>Just real conversations.</span>
               </div>
             </div>
-
           </div>
 
         </div>
       </div>
-
-
 
     </section>
   );

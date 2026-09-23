@@ -4,10 +4,10 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// @desc    Get all footer documents (admin)
+// @desc    Get all footer documents (admin / public)
 // @route   GET /api/footer-documents
-// @access  Private/Admin
-router.get('/', protect, admin, async (req, res) => {
+// @access  Public
+router.get('/', async (req, res) => {
   try {
     const filter = {};
     if (req.query.category) {

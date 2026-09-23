@@ -2,11 +2,16 @@ import { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import AnimatedText from '../ui/AnimatedText';
-import bottomImg from '../../assets/Page2/bottom.png';
+import bottomImg from '../../assets/Page2/bottom.webp';
 
-export default function TransitionIntro() {
+export default function TransitionIntro({ problemData = {} }) {
   const container = useRef(null);
   const mouseRef = useRef(null);
+
+  const transEyebrow = problemData.transEyebrow || "CLARITY ISN'T LUCK.";
+  const transHeading = problemData.transHeading || "It's a skill. And it";
+  const transAccent = problemData.transAccent || "changes everything.";
+  const transBg = problemData.transBgImg || bottomImg;
 
   useGSAP(() => {
     // Reveal animation
@@ -36,7 +41,7 @@ export default function TransitionIntro() {
       ease: 'power1.inOut'
     });
 
-  }, { scope: container });
+  }, { scope: container, dependencies: [transEyebrow, transHeading, transAccent] });
 
   return (
     <div ref={container} className="relative flex flex-col items-center justify-center text-center px-4 py-4 lg:py-6 overflow-hidden">
@@ -44,9 +49,14 @@ export default function TransitionIntro() {
       {/* Background Image */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
-          src={bottomImg} 
+          src={transBg} 
           alt="Dust and light particles"
-          className="w-full h-full object-cover object-bottom  opacity-80"
+          className="w-full h-full object-cover object-bottom opacity-80"
+        />
+        {/* Global contrast overlay layer */}
+        <div 
+          className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" 
+          style={{ opacity: 'var(--overlay-opacity, 0.4)' }}
         />
         {/* Subtle gradient to blend edges if needed */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-50" />
@@ -54,14 +64,14 @@ export default function TransitionIntro() {
 
       <div className="relative z-10 flex flex-col items-center justify-center">
         <span className="trans-eyebrow font-sans text-[0.65rem] uppercase tracking-[0.3em] text-accent-gold mb-2 inline-block">
-          CLARITY ISN'T LUCK.
+          {transEyebrow}
         </span>
 
         <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-thin tracking-tight text-heading mb-4">
-          <AnimatedText text="It's a skill. And it " tag="span" className="inline-block" delay={0.2} />
+          <AnimatedText text={`${transHeading} `} tag="span" className="inline-block" delay={0.2} />
           <span className="relative inline-block overflow-hidden">
             <AnimatedText 
-              text="changes everything." 
+              text={transAccent} 
               tag="span" 
               className="inline-block text-accent-gold italic" 
               delay={0.4} 

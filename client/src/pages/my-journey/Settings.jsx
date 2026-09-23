@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { User, Bell, LockKey, CaretLeft } from '@phosphor-icons/react';
-import bgImage from '../../assets/images/my-journey-bg.png';
+import bgImage from '../../assets/images/my-journey-bg.webp';
 
 import ProfileTab from './components/settings/ProfileTab';
 import NotificationsTab from './components/settings/NotificationsTab';

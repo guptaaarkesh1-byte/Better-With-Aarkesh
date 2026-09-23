@@ -1,5 +1,59 @@
 import React, { useState } from 'react';
-import { CaretLeft, CaretRight, CalendarBlank, CheckCircle, ArrowRight, CaretDown } from '@phosphor-icons/react';
+import { 
+  CaretLeft, CaretRight, CalendarBlank, CheckCircle, 
+  ArrowRight, CaretDown, SunHorizon, Sun, Moon, Clock 
+} from '@phosphor-icons/react';
+
+const PERIOD_CONFIG = {
+  morning: {
+    label: 'Morning',
+    sub: 'Before 12:00 PM',
+    icon: SunHorizon,
+    iconColor: 'text-amber-400',
+  },
+  afternoon: {
+    label: 'Afternoon',
+    sub: '12:00 PM – 5:00 PM',
+    icon: Sun,
+    iconColor: 'text-accent-gold',
+  },
+  evening: {
+    label: 'Evening',
+    sub: '5:00 PM Onwards',
+    icon: Moon,
+    iconColor: 'text-indigo-300',
+  }
+};
+
+const getGroupedSlots = (slots) => {
+  const groups = {
+    morning: [],
+    afternoon: [],
+    evening: []
+  };
+
+  slots.forEach((timeStr) => {
+    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) {
+      groups.afternoon.push(timeStr);
+      return;
+    }
+    let [_, h, m, meridiem] = match;
+    let hour = parseInt(h, 10);
+    if (meridiem.toUpperCase() === 'PM' && hour !== 12) hour += 12;
+    if (meridiem.toUpperCase() === 'AM' && hour === 12) hour = 0;
+
+    if (hour < 12) {
+      groups.morning.push(timeStr);
+    } else if (hour < 17) {
+      groups.afternoon.push(timeStr);
+    } else {
+      groups.evening.push(timeStr);
+    }
+  });
+
+  return groups;
+};
 
 export default function Step1Time({ data, updateData, onNext, onBack }) {
   // Initialize date parsing
@@ -286,60 +340,111 @@ export default function Step1Time({ data, updateData, onNext, onBack }) {
 
         {/* Right Column - Times */}
         <div className="flex-1 mt-4 sm:mt-6 lg:mt-0">
-          <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-2.5 sm:mb-3">
-            CHOOSE A TIME
-          </h3>
+          <div className="flex items-center justify-between mb-2.5 sm:mb-3">
+            <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold">
+              CHOOSE A TIME
+            </h3>
+            {times.length > 0 && !isLoadingSlots && (
+              <span className="font-sans text-[0.6rem] uppercase tracking-wider text-white/40">
+                {times.length} {times.length === 1 ? 'Slot Available' : 'Slots Available'}
+              </span>
+            )}
+          </div>
           
           <div 
-            className="flex flex-col gap-2 max-h-[280px] sm:max-h-[360px] overflow-y-auto custom-scrollbar pr-1 sm:pr-2 overscroll-contain"
+            className="flex flex-col gap-4 max-h-[300px] sm:max-h-[380px] overflow-y-auto custom-scrollbar pr-1 sm:pr-2 overscroll-contain"
             data-lenis-prevent="true"
           >
             {!selectedDay && (
-              <div className="text-white/40 text-xs sm:text-sm font-light italic p-4 text-center">
-                Select a date to view available times.
+              <div className="text-white/40 text-xs sm:text-sm font-light italic p-6 text-center border border-white/5 rounded-xl bg-white/[0.01]">
+                Select a date from the calendar to view available times.
               </div>
             )}
             
             {isLoadingSlots && (
-              <div className="text-accent-gold text-xs sm:text-sm font-light p-4 text-center animate-pulse">
-                Loading available slots...
+              <div className="text-accent-gold text-xs sm:text-sm font-light p-8 text-center animate-pulse border border-white/5 rounded-xl bg-white/[0.01] flex flex-col items-center gap-2">
+                <div className="w-5 h-5 border-2 border-accent-gold/20 border-t-accent-gold rounded-full animate-spin mb-1" />
+                Finding available time slots...
               </div>
             )}
 
             {slotsError && (
-              <div className="text-red-400 text-xs sm:text-sm font-light p-4 text-center">
+              <div className="text-red-400 text-xs sm:text-sm font-light p-4 text-center border border-red-500/20 rounded-xl bg-red-500/5">
                 {slotsError}
               </div>
             )}
             
             {!isLoadingSlots && !slotsError && selectedDay && times.length === 0 && (
-              <div className="text-white/40 text-xs sm:text-sm font-light italic p-4 text-center">
-                No slots available on this date.
+              <div className="text-white/40 text-xs sm:text-sm font-light italic p-6 text-center border border-white/5 rounded-xl bg-white/[0.01]">
+                No slots available on this date. Please pick another date.
               </div>
             )}
 
-            {!isLoadingSlots && times.map(time => {
-              const isSelected = selectedTime === time;
-              return (
-                <button
-                  key={time}
-                  onClick={() => setSelectedTime(time)}
-                  className={`w-full text-left px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl border transition-all flex items-center justify-between
-                    ${isSelected 
-                      ? 'bg-[#1a130c] border-accent-gold/40' 
-                      : 'bg-transparent border-white/5 hover:border-white/20'
-                    }
-                  `}
-                >
-                  <span className={`text-xs sm:text-sm font-light ${isSelected ? 'text-accent-gold font-medium' : 'text-white/80'}`}>
-                    {time}
-                  </span>
-                  {isSelected && (
-                    <CheckCircle className="text-accent-gold text-lg sm:text-xl" weight="fill" />
-                  )}
-                </button>
-              );
-            })}
+            {!isLoadingSlots && !slotsError && selectedDay && times.length > 0 && (
+              (() => {
+                const grouped = getGroupedSlots(times);
+                return (
+                  <div className="flex flex-col gap-4">
+                    {['morning', 'afternoon', 'evening'].map(periodKey => {
+                      const periodSlots = grouped[periodKey];
+                      if (!periodSlots || periodSlots.length === 0) return null;
+                      const config = PERIOD_CONFIG[periodKey];
+                      const Icon = config.icon;
+
+                      return (
+                        <div key={periodKey} className="flex flex-col gap-2.5">
+                          {/* Period Header */}
+                          <div className="flex items-center justify-between px-1 pb-1 border-b border-white/5">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              <Icon className={`text-sm sm:text-base ${config.iconColor}`} weight="bold" />
+                              <span className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.16em] font-semibold text-white/90">
+                                {config.label}
+                              </span>
+                              <span className="text-[0.6rem] sm:text-[0.65rem] text-white/35 font-light">
+                                • {config.sub}
+                              </span>
+                            </div>
+                            <span className="text-[0.55rem] uppercase tracking-wider text-accent-gold/80 bg-accent-gold/10 px-2 py-0.5 rounded-md border border-accent-gold/20 font-medium">
+                              {periodSlots.length} {periodSlots.length === 1 ? 'slot' : 'slots'}
+                            </span>
+                          </div>
+
+                          {/* Period Slots Grid */}
+                          <div className="grid grid-cols-2 gap-2">
+                            {periodSlots.map(time => {
+                              const isSelected = selectedTime === time;
+                              return (
+                                <button
+                                  key={time}
+                                  type="button"
+                                  onClick={() => setSelectedTime(time)}
+                                  className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-left transition-all flex items-center justify-between group cursor-pointer
+                                    ${isSelected 
+                                      ? 'bg-gradient-to-r from-accent-gold/20 to-accent-gold/10 border-accent-gold text-accent-gold shadow-[0_0_15px_rgba(199,156,110,0.18)]' 
+                                      : 'bg-[#121212] border-white/5 text-white/80 hover:border-white/20 hover:bg-white/[0.03] hover:text-white'
+                                    }
+                                  `}
+                                >
+                                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                    <Clock className={`text-xs shrink-0 ${isSelected ? 'text-accent-gold' : 'text-white/30 group-hover:text-accent-gold transition-colors'}`} />
+                                    <span className={`text-xs sm:text-sm font-sans tracking-wide truncate ${isSelected ? 'font-semibold text-accent-gold' : 'font-light'}`}>
+                                      {time}
+                                    </span>
+                                  </div>
+                                  {isSelected && (
+                                    <CheckCircle className="text-accent-gold text-base shrink-0 ml-1" weight="fill" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()
+            )}
           </div>
         </div>
       </div>

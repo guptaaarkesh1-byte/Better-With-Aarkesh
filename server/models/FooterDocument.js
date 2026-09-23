@@ -29,8 +29,7 @@ const footerDocumentSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['coaching', 'course'],
-      default: 'coaching',
+      default: 'general',
     },
     order: {
       type: Number,

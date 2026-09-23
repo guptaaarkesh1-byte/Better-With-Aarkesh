@@ -8,7 +8,7 @@ import Step3Confirm from '../components/booking/Step3Confirm';
 import BookingSuccess from '../components/booking/BookingSuccess';
 import BookingCancelled from '../components/booking/BookingCancelled';
 import LoginModal from '../components/layout/LoginModal';
-import bookingBg from '../assets/images/booking_bg_lamp.png';
+import bookingBg from '../assets/images/booking_bg_lamp.webp';
 
 export default function Booking() {
   const navigate = useNavigate();
@@ -29,6 +29,7 @@ export default function Booking() {
       countryCode: userInfo.countryCode || '+91',
       phoneNumber: userInfo.phoneNumber || '',
       source: '',
+      otherSource: '',
       reason: '',
       extra: '',
     };
@@ -80,20 +81,42 @@ export default function Booking() {
     }
   }, []);
 
+  // Dynamic Session Duration & Fees check (First Session = 60 mins, Returning = 90 mins)
   useEffect(() => {
-    const fetchFees = async () => {
+    const checkSessionType = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/fees`);
+        const token = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/check-session-type`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            email: bookingData.email || '',
+            phoneNumber: bookingData.phoneNumber || ''
+          })
+        });
         if (res.ok) {
           const data = await res.json();
-          setFees({ fee60min: data.fee60min || 5000, fee90min: data.fee90min || 7500 });
+          setFees({
+            fee60min: data.fee60min || 5000,
+            fee90min: data.fee90min || 7500
+          });
+          setBookingData(prev => ({
+            ...prev,
+            sessionDuration: data.duration,
+            isFirstSession: data.isFirstSession
+          }));
         }
       } catch (err) {
-        console.error('Failed to fetch fees:', err);
+        console.error('Failed to check session type:', err);
       }
     };
-    fetchFees();
-  }, []);
+
+    const timer = setTimeout(checkSessionType, 200);
+    return () => clearTimeout(timer);
+  }, [bookingData.email, bookingData.phoneNumber, isLoggedIn]);
 
   // Check free sessions ONLY when user is logged in
   useEffect(() => {
@@ -182,13 +205,22 @@ export default function Booking() {
         authHeaders['Authorization'] = `Bearer ${token}`;
       }
 
+      const finalSource = bookingData.source === 'other'
+        ? (bookingData.otherSource?.trim() ? `Other: ${bookingData.otherSource.trim()}` : 'Other')
+        : bookingData.source;
+
+      const payloadData = {
+        ...bookingData,
+        source: finalSource
+      };
+
       // --- Course Free Session Zero-Payment Checkout ---
       if (freeSessionInfo.hasFreeSessions && freeSessionInfo.freeSessions > 0) {
         const freeRes = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
           method: 'POST',
           headers: authHeaders,
           body: JSON.stringify({
-            ...bookingData,
+            ...payloadData,
             useFreeSession: true
           }),
         });
@@ -243,7 +275,12 @@ export default function Booking() {
       const orderRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/create-order`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ email: bookingData.email, currency: 'INR' })
+        body: JSON.stringify({ 
+          email: bookingData.email,
+          phoneNumber: bookingData.phoneNumber,
+          sessionDuration: bookingData.sessionDuration || 60,
+          currency: 'INR' 
+        })
       });
       const orderData = await orderRes.json();
       
@@ -251,14 +288,19 @@ export default function Booking() {
         throw new Error(orderData.message || 'Failed to create order');
       }
 
+      const chargedAmountInRupees = orderData.amount ? orderData.amount / 100 : (orderData.amountRupees || currentFee);
+      const finalDuration = orderData.targetDuration || bookingData.sessionDuration || (orderData.isFirstSession ? 60 : 90);
+
       // 4. Create the appointment as Pending
       const initAppRes = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
         method: 'POST',
         headers: authHeaders,
         body: JSON.stringify({
-          ...bookingData,
+          ...payloadData,
           orderId: orderData.id,
-          amount: orderData.amount ? orderData.amount / 100 : (bookingData.duration === 90 ? 7500 : 5000),
+          amount: chargedAmountInRupees,
+          duration: finalDuration,
+          isFirstSession: orderData.isFirstSession ?? bookingData.isFirstSession
         }),
       });
       if (!initAppRes.ok) {
@@ -300,7 +342,10 @@ export default function Booking() {
             });
 
             if (finalRes.ok) {
-              updateData({ appointmentId });
+              updateData({ 
+                appointmentId, 
+                paidAmount: chargedAmountInRupees 
+              });
               sessionStorage.removeItem('bookingStep');
               sessionStorage.removeItem('bookingData');
               nextStep();

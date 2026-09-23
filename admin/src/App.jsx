@@ -299,10 +299,12 @@ function ProtectedRoute({ isAuthenticated, children }) {
 import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
 import AdminContent from './pages/AdminContent';
+import AdminLibraryEditor from './pages/AdminLibraryEditor';
 import AdminFooterDocuments from './pages/AdminFooterDocuments';
 import AdminCourse from './pages/AdminCourse';
 import AdminCourseCurriculum from './pages/AdminCourseCurriculum';
 import AdminCoaching from './pages/AdminCoaching';
+import AdminHomeEditor from './pages/AdminHomeEditor';
 
 // --- Main App Route Setup ---
 function App() {
@@ -343,10 +345,12 @@ function App() {
           } 
         >
           <Route path="/" element={<AdminDashboard />} />
+          <Route path="/home-editor" element={<AdminHomeEditor />} />
+          <Route path="/home" element={<AdminHomeEditor />} />
+          <Route path="/library" element={<AdminLibraryEditor />} />
+          <Route path="/library/content" element={<AdminLibraryEditor />} />
           <Route path="/coaching" element={<AdminCoaching />} />
           <Route path="/appointments" element={<AdminCoaching />} />
-          <Route path="/library" element={<AdminCoaching />} />
-          <Route path="/library/content" element={<AdminCoaching />} />
           <Route path="/profile" element={<AdminCoaching />} />
           <Route path="/profile/settings" element={<AdminCoaching />} />
           <Route path="/journey" element={<AdminCoaching />} />

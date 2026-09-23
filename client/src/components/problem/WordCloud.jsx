@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
-import silhouetteImg from '../../assets/Page2/ChatGPT Image Jul 24, 2026, 01_49_09 PM.png';
+import silhouetteImg from '../../assets/Page2/ChatGPT Image Jul 24, 2026, 01_49_09 PM.webp';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -74,28 +74,40 @@ export default function WordCloud() {
       <div className="absolute inset-0 -translate-x-20 md:translate-x-0 pointer-events-none">
         {/* Background Floating Words (Blurred for depth of field) */}
         {WORDS.map((word, i) => (
-          <span 
+          <div 
             key={`bg-${i}`}
-            className={`floating-word absolute font-serif text-heading ${word.size} opacity-20 whitespace-nowrap z-0 blur-sm scale-75`}
+            className="word-track absolute"
             style={{ 
-              // Shift positions so they don't perfectly align with the foreground ones
               top: `${(parseFloat(word.top) + (i % 2 === 0 ? 15 : -10) + 100) % 95}%`, 
-              left: `${(parseFloat(word.left) + (i % 3 === 0 ? -20 : 25) + 100) % 95}%` 
+              left: `${(parseFloat(word.left) + (i % 3 === 0 ? -20 : 25) + 100) % 95}%`,
+              willChange: 'transform, opacity'
             }}
           >
-            {word.text}
-          </span>
+            <span 
+              className={`floating-word inline-block font-serif text-heading ${word.size} opacity-20 whitespace-nowrap z-0 blur-sm scale-75`}
+            >
+              {word.text}
+            </span>
+          </div>
         ))}
 
         {/* Foreground Floating Words */}
         {WORDS.map((word, i) => (
-          <span 
+          <div 
             key={`fg-${i}`}
-            className={`floating-word absolute font-serif text-heading ${word.size} ${word.opacity} whitespace-nowrap z-10`}
-            style={{ top: word.top, left: word.left }}
+            className="word-track absolute"
+            style={{ 
+              top: word.top, 
+              left: word.left,
+              willChange: 'transform, opacity'
+            }}
           >
-            {word.text}
-          </span>
+            <span 
+              className={`floating-word inline-block font-serif text-heading ${word.size} ${word.opacity} whitespace-nowrap z-10`}
+            >
+              {word.text}
+            </span>
+          </div>
         ))}
       </div>
 

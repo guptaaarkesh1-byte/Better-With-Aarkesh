@@ -4,7 +4,7 @@ import {
   EnvelopeSimple, House, Quotes, ChatCenteredText, BookOpen, ArrowLeft
 } from '@phosphor-icons/react';
 import { Link, useNavigate } from 'react-router-dom';
-import bookingBg from '../../assets/images/booking_bg_lamp.png';
+import bookingBg from '../../assets/images/booking_bg_lamp.webp';
 import LoginModal from '../layout/LoginModal';
 import PolicyModal from '../ui/PolicyModal';
 import { generateGoogleCalendarLink } from '../../utils/calendar';
@@ -140,7 +140,11 @@ export default function BookingSuccess({ data, fee }) {
                 <User className="text-accent-gold text-2xl shrink-0" weight="light" />
                 <div>
                   <p className="font-sans text-[0.65rem] text-white/50 mb-1">Session Type</p>
-                  <p className="text-white text-sm">1-on-1 Coaching Session</p>
+                  <p className="text-white text-sm">
+                    {data.sessionDuration === 90 || data.isFirstSession === false
+                      ? '1-on-1 Follow-up Coaching Session'
+                      : '1-on-1 First Coaching Session'}
+                  </p>
                 </div>
               </div>
 
@@ -148,7 +152,9 @@ export default function BookingSuccess({ data, fee }) {
                 <Clock className="text-accent-gold text-2xl shrink-0" weight="light" />
                 <div>
                   <p className="font-sans text-[0.65rem] text-white/50 mb-1">Duration</p>
-                  <p className="text-white text-sm">{data.sessionDuration || 60} minutes</p>
+                  <p className="text-white text-sm">
+                    {data.sessionDuration || (data.isFirstSession === false ? 90 : 60)} minutes
+                  </p>
                 </div>
               </div>
 
@@ -161,7 +167,7 @@ export default function BookingSuccess({ data, fee }) {
                       ₹0 <span className="text-white/50 text-xs font-light">(Course Bonus • {data.freeSessionsRemaining ?? 0} credits left)</span>
                     </p>
                   ) : (
-                    <p className="text-white text-sm">₹{fee ? fee.toLocaleString('en-IN') : '5,000'}</p>
+                    <p className="text-white text-sm">₹{(data.paidAmount ?? fee ?? 5000).toLocaleString('en-IN')}</p>
                   )}
                 </div>
               </div>
@@ -307,8 +313,11 @@ export default function BookingSuccess({ data, fee }) {
         onClose={() => setIsLoginModalOpen(false)} 
         onSuccess={handleRegistrationSuccess}
         defaultMode="register"
+        defaultFullName={data.name || ''}
+        defaultEmail={data.email || ''}
         defaultCountryCode={data.countryCode || '+91'}
         defaultPhoneNumber={data.phoneNumber || ''}
+        courseNotice={false}
       />
     </div>
   );

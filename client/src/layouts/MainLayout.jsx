@@ -33,15 +33,15 @@ export default function MainLayout({ children }) {
     // Sync Lenis scroll with GSAP ScrollTrigger
     lenisRef.current.on('scroll', ScrollTrigger.update);
 
-    gsap.ticker.add((time) => {
+    const updateLenis = (time) => {
       lenisRef.current?.raf(time * 1000);
-    });
-    gsap.ticker.lagSmoothing(0);
+    };
+
+    gsap.ticker.add(updateLenis);
+    gsap.ticker.lagSmoothing(500, 33);
 
     return () => {
-      gsap.ticker.remove((time) => {
-        lenisRef.current?.raf(time * 1000);
-      });
+      gsap.ticker.remove(updateLenis);
       lenisRef.current?.destroy();
       window.lenis = undefined;
     };

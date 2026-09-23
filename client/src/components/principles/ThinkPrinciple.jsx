@@ -1,21 +1,52 @@
+import { useState, useEffect } from 'react';
 import PrincipleSection from './PrincipleSection';
-import bgImg from '../../assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.png';
+import defaultBgImg from '../../assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.webp';
 import { Sparkle, SunDim, TextT, Coffee, Circle } from '@phosphor-icons/react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const DEFAULT_THINK_DATA = {
+  eyebrow: 'MY PHILOSOPHY',
+  title: 'THINK',
+  subtitle: 'CLEARLY.',
+  highlight: 'Clarity is the bridge between intention and action.',
+  description: 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.',
+  buttonText: 'SCROLL FOR NEXT PRINCIPLE',
+  bgImg: ''
+};
+
 export default function ThinkPrinciple() {
+  const [data, setData] = useState(DEFAULT_THINK_DATA);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/home-settings/principles`)
+      .then(res => res.ok ? res.json() : null)
+      .then(d => {
+        if (d?.think) setData(prev => ({ ...prev, ...d.think }));
+      })
+      .catch(() => {});
+  }, []);
+
+  const eyebrow = data.eyebrow || 'MY PHILOSOPHY';
+  const headlineWhite = data.title || 'THINK';
+  const headlineGold = data.subtitle || 'CLEARLY.';
+  const paragraphs = [
+    `<span class='italic text-lg'>${data?.highlight || 'Clarity is the bridge between intention and action.'}</span>`,
+    `<span class='text-white text-lg'>....${data?.description || 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.'}</span>`
+  ];
+  const buttonText = data?.buttonText || 'SCROLL FOR NEXT PRINCIPLE';
+  const bgImg = data?.bgImg || defaultBgImg;
+
   return (
     <PrincipleSection 
       id="think-principle"
       bgImg={bgImg}
-      eyebrow="MY PHILOSOPHY"
-      headlineWhite="THINK"
-      headlineGold="CLEARLY."
+      eyebrow={eyebrow}
+      headlineWhite={headlineWhite}
+      headlineGold={headlineGold}
       headlineGoldItalic={false}
-      paragraphs={[
-        "<span class='italic text-lg'>Slow down the noise. Stop believing every thought you think.</span>",
-        "<span class='text-white text-lg'>....See what truly matters</span>"
-      ]}
-      buttonText="SCROLL FOR NEXT PRINCIPLE"
+      paragraphs={paragraphs}
+      buttonText={buttonText}
       activeStep={1}
       bannerTitle="DYNAMIC<br/>ELEMENT"
       bannerIcon={Sparkle}

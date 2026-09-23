@@ -5,7 +5,7 @@ import { useGSAP } from '@gsap/react';
 import Container from '../ui/Container';
 import PhilosophyContent from './PhilosophyContent';
 import PhilosophyProgress from './PhilosophyProgress';
-import bgImg from '../../assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.png';
+import bgImg from '../../assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.webp';
 
 gsap.registerPlugin(ScrollTrigger);
 export default function PhilosophySection() {

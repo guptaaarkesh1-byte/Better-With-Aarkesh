@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowLeft, BookmarkSimple, X } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import Footer from '../../components/layout/Footer';
 import { topics } from '../../constants/articleTaxonomy';
-import savedDecisionsImg from '../../assets/PerspectivePage/saved_decisions.png';
+import savedDecisionsImg from '../../assets/PerspectivePage/saved_decisions.webp';
+import ArticleReaderView from './ArticleReaderView';
+import { getCuratedArticle } from '../../constants/libraryArticlesData';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -411,8 +412,38 @@ export default function Articles() {
   const selectedArticles = selectedSubCategory
     ? getArticlesForSubCategory(activeCategory.id, selectedSubCategory.id)
     : [];
-  const expandedArticle =
-    selectedArticles.find((article) => article._id === expandedArticleId) || null;
+  const articleParam = searchParams.get('article');
+  const titleParam = searchParams.get('title');
+
+  const curatedArticle = (articleParam || titleParam) 
+    ? getCuratedArticle(articleParam || titleParam) 
+    : null;
+    
+  const dbArticle = articleParam && publishedArticles.length > 0
+    ? publishedArticles.find(a => a._id === articleParam || a.slug === articleParam)
+    : null;
+
+  const activeEditorialArticle = dbArticle
+    ? {
+        ...curatedArticle,
+        ...dbArticle,
+        title: dbArticle.title,
+        subtitle: dbArticle.description || curatedArticle?.subtitle,
+        bodyHtml: dbArticle.bodyHtml || dbArticle.content,
+        image: dbArticle.featuredImage || curatedArticle?.image || '/library_preview_silhouette.jpg'
+      }
+    : (curatedArticle || (articleParam ? getCuratedArticle('attention-feels-like-love') : null));
+
+  if (articleParam && activeEditorialArticle) {
+    return (
+      <ArticleReaderView 
+        article={activeEditorialArticle} 
+        onBack={() => {
+          navigate('/library');
+        }} 
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col font-sans text-white relative">
@@ -719,10 +750,6 @@ export default function Articles() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent pointer-events-none z-40" />
-
-      <div className="relative z-50">
-        <Footer />
-      </div>
 
       {showSavePrompt && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">

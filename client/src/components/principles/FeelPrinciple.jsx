@@ -1,21 +1,52 @@
+import { useState, useEffect } from 'react';
 import PrincipleSection from './PrincipleSection';
-import bgImg from '../../assets/Page4/ChatGPT Image Jul 24, 2026, 02_41_22 PM.png';
+import defaultBgImg from '../../assets/Page4/ChatGPT Image Jul 24, 2026, 02_41_22 PM.webp';
 import { Sparkle, CloudRain, Waves, Heart, SunDim } from '@phosphor-icons/react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const DEFAULT_FEEL_DATA = {
+  eyebrow: 'MY PHILOSOPHY',
+  title: 'Feel honestly.',
+  subtitle: 'Heal deeply.',
+  highlight: "You can't move forward, running from what you feel.",
+  description: 'We create the safe space to feel it all - without judgement',
+  buttonText: '',
+  bgImg: ''
+};
+
 export default function FeelPrinciple() {
+  const [data, setData] = useState(DEFAULT_FEEL_DATA);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/home-settings/principles`)
+      .then(res => res.ok ? res.json() : null)
+      .then(d => {
+        if (d?.feel) setData(prev => ({ ...prev, ...d.feel }));
+      })
+      .catch(() => {});
+  }, []);
+
+  const eyebrow = data.eyebrow || 'MY PHILOSOPHY';
+  const headlineWhite = data.title || 'Feel honestly.';
+  const headlineGold = data.subtitle || 'Heal deeply.';
+  const paragraphs = [
+    `<span class='italic text-xl lg:text-2xl leading-relaxed'>${data?.highlight || "You can't move forward, running from what you feel."}</span>`,
+    `<span class='text-white text-lg lg:text-xl leading-relaxed'>....${data?.description || "We create the safe space to feel it all - without judgement"}</span>`
+  ];
+  const buttonText = data?.buttonText || '';
+  const bgImg = data?.bgImg || defaultBgImg;
+
   return (
     <PrincipleSection 
       id="feel-principle"
       bgImg={bgImg}
-      eyebrow="MY PHILOSOPHY"
-      headlineWhite="Feel honestly."
-      headlineGold="Heal deeply."
+      eyebrow={eyebrow}
+      headlineWhite={headlineWhite}
+      headlineGold={headlineGold}
       headlineGoldItalic={true}
-      paragraphs={[
-        "<span class='italic text-lg'>You can't move forward, running from what you feel.</span>",
-        "<span class='text-white text-lg'>....We create the safe space to feel it all - without judgement</span>"
-      ]}
-      buttonText=""
+      paragraphs={paragraphs}
+      buttonText={buttonText}
       activeStep={2}
       bannerTitle="DYNAMIC<br/>EXPERIENCE"
       bannerIcon={Sparkle}

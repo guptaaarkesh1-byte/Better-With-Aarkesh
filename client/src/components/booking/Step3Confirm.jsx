@@ -73,7 +73,11 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
               <User className="text-accent-gold text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div>
                 <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">Session Type</p>
-                <p className="text-white text-base sm:text-lg">1-on-1 Coaching Session</p>
+                <p className="text-white text-base sm:text-lg">
+                  {data.sessionDuration === 90 || data.isFirstSession === false 
+                    ? '1-on-1 Follow-up Coaching Session' 
+                    : '1-on-1 First Coaching Session'}
+                </p>
               </div>
             </div>
 
@@ -81,7 +85,9 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
               <Clock className="text-accent-gold text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div>
                 <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">Duration</p>
-                <p className="text-white text-base sm:text-lg">{data.sessionDuration || 60} minutes</p>
+                <p className="text-white text-base sm:text-lg">
+                  {data.sessionDuration || (data.isFirstSession === false ? 90 : 60)} minutes
+                </p>
               </div>
             </div>
 

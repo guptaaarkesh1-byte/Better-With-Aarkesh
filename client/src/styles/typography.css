@@ -1,16 +1,16 @@
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  @layer utilities {
+    .text-balance {
+      text-wrap: balance;
+    }
+    .heading-luxury {
+      @apply font-serif text-heading font-thin tracking-tight text-balance;
+      font-size: clamp(2.75rem, 6.5vw, 6rem);
+      line-height: 1.12;
+    }
+    .nav-link {
+      @apply font-sans text-sm uppercase tracking-widest text-heading/80 hover:text-heading transition-colors duration-300;
+    }
+    .eyebrow-text {
+      @apply font-sans text-[0.78rem] uppercase tracking-[0.3em] text-accent-gold;
+    }
   }
-  .heading-luxury {
-    @apply font-serif text-heading font-thin tracking-tight text-balance;
-    font-size: clamp(2.5rem, 6vw, 5.5rem);
-    line-height: 1.1;
-  }
-  .nav-link {
-    @apply font-sans text-xs uppercase tracking-widest text-heading/80 hover:text-heading transition-colors duration-300;
-  }
-  .eyebrow-text {
-    @apply font-sans text-[0.65rem] uppercase tracking-[0.3em] text-accent-gold;
-  }
-}

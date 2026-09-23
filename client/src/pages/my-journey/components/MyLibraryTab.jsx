@@ -107,7 +107,7 @@ export default function MyLibraryTab() {
   };
 
   return (
-    <div className="w-full h-full min-h-[400px] rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-4 sm:p-6 md:p-10 lg:p-12 flex flex-col animate-in fade-in duration-500 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_40px_rgba(199,156,110,0.1)]">
+    <div className="w-full h-full min-h-[400px] rounded-2xl border border-[#c79c6e]/40 bg-[#080808] p-4 sm:p-6 md:p-10 lg:p-12 flex flex-col animate-in fade-in duration-500 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_40px_rgba(199,156,110,0.1)]">
       <div className="absolute top-0 right-0 w-64 h-64 bg-[#c79c6e]/5 rounded-full blur-[100px] pointer-events-none" />
       {/* Header */}
       <div className="mb-6 md:mb-10">
@@ -116,30 +116,30 @@ export default function MyLibraryTab() {
       </div>
 
       {/* Main Tabs */}
-      <div className="flex items-center gap-4 sm:gap-8 border-b border-white/10 mb-4 sm:mb-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex items-center gap-5 sm:gap-8 border-b border-white/10 mb-5 sm:mb-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {mainTabs.map(tab => (
           <button
             key={tab}
             onClick={() => setMainTab(tab)}
-            className={`pb-3 sm:pb-4 font-sans text-[0.65rem] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.15em] font-medium transition-colors relative shrink-0 ${
+            className={`pb-3 sm:pb-4 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors relative shrink-0 ${
               mainTab === tab ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white/80'
             }`}
           >
             {tab}
             {mainTab === tab && (
-              <span className="absolute bottom-[-1px] left-0 w-full h-[1px] bg-[#c79c6e]" />
+              <span className="absolute bottom-[-1px] left-0 w-full h-[1.5px] bg-[#c79c6e]" />
             )}
           </button>
         ))}
       </div>
 
       {/* Sub Tabs */}
-      <div className="flex items-center gap-3 sm:gap-6 mb-6 md:mb-8 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {subTabs.map(tab => (
           <button
             key={tab}
             onClick={() => setSubTab(tab)}
-            className={`font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.12em] sm:tracking-[0.15em] font-medium transition-colors shrink-0 ${
+            className={`font-sans text-xs sm:text-xs uppercase tracking-[0.16em] font-semibold transition-colors shrink-0 ${
               subTab === tab ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white/80'
             }`}
           >
@@ -176,24 +176,24 @@ export default function MyLibraryTab() {
                 }
 
                 return (
-                  <div key={article._id} className="group/card w-full rounded-xl border border-white/5 bg-[#050505]/60 backdrop-blur-md p-4 sm:p-6 flex flex-col hover:border-white/10 transition-all duration-500 ease-out">
+                  <div key={article._id} className="group/card w-full rounded-xl border border-white/10 bg-[#0c0c0c] p-5 sm:p-6 md:p-7 flex flex-col hover:border-[#c79c6e]/40 transition-all duration-300 ease-out">
                     
                     {/* Main Visible Content */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
                       <div className="flex flex-col gap-2 sm:gap-3">
-                        <div className="flex items-center gap-2 text-white/40">
-                          <BookmarkSimple size={14} weight="light" />
-                          <span className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.2em] font-medium">ARTICLE</span>
+                        <div className="flex items-center gap-2 text-white/50">
+                          <BookmarkSimple size={16} weight="light" />
+                          <span className="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#c79c6e]/80">ARTICLE</span>
                         </div>
-                        <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
+                        <h3 className="font-serif text-xl sm:text-2xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
                       </div>
 
-                      <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1 pt-2 sm:pt-0 border-t border-white/5 sm:border-0">
-                        <div className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold text-[#c79c6e]">
+                      <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1.5 pt-2 sm:pt-0 border-t border-white/5 sm:border-0">
+                        <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold text-[#c79c6e]">
                           {hasLegacyProgress && readPercentage === 0 ? 'IN PROGRESS' : `${readPercentage}% READ`}
                         </div>
-                        <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/80">{article.categoryTitle || 'Article'}</span>
-                        <span className="font-sans text-[0.55rem] sm:text-[0.6rem] text-white/40 hidden sm:block">Saved {dateSaved}</span>
+                        <span className="font-sans text-xs sm:text-sm text-white/90 font-medium">{article.categoryTitle || 'Article'}</span>
+                        <span className="font-sans text-xs text-white/50 hidden sm:block">Saved {dateSaved}</span>
                       </div>
                     </div>
 
@@ -202,19 +202,19 @@ export default function MyLibraryTab() {
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t border-white/5 pt-4 md:pt-6">
                         <button 
                           onClick={(e) => { e.stopPropagation(); navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`); }}
-                          className="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
+                          className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
                         >
                           CONTINUE
                         </button>
                         <button 
                           onClick={(e) => handleRemove(article._id, e)}
-                          className="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-white/5 text-white/40 hover:border-white/20 hover:text-white/80 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
+                          className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-white/10 text-white/50 hover:border-white/25 hover:text-white font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
                         >
                           REMOVE
                         </button>
                         <button 
                           onClick={(e) => handleComplete(article._id, e)}
-                          className="w-full sm:w-auto px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-white/5 text-white/40 hover:border-white/20 hover:text-white/80 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
+                          className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-white/10 text-white/50 hover:border-white/25 hover:text-white font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
                         >
                           MARK COMPLETE
                         </button>
@@ -237,20 +237,20 @@ export default function MyLibraryTab() {
               completedArticles.map(article => {
                 const dateCompleted = new Date(article.updatedAt || article.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
                 return (
-                  <div key={article._id} className="group/card w-full rounded-xl border border-white/5 bg-[#050505]/60 backdrop-blur-md p-4 sm:p-6 flex flex-col hover:border-white/10 transition-all duration-500 ease-out">
+                  <div key={article._id} className="group/card w-full rounded-xl border border-white/10 bg-[#0c0c0c] p-5 sm:p-6 md:p-7 flex flex-col hover:border-[#c79c6e]/40 transition-all duration-300 ease-out">
                     
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
                       <div className="flex flex-col gap-2 sm:gap-3">
-                        <div className="flex items-center gap-2 text-white/40">
-                          <BookmarkSimple size={14} weight="light" />
-                          <span className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.2em] font-medium">ARTICLE</span>
+                        <div className="flex items-center gap-2 text-white/50">
+                          <BookmarkSimple size={16} weight="light" />
+                          <span className="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#c79c6e]/80">ARTICLE</span>
                         </div>
-                        <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
+                        <h3 className="font-serif text-xl sm:text-2xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
                       </div>
 
-                      <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1 pt-2 sm:pt-0 border-t border-white/5 sm:border-0">
-                        <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-white/80">{article.categoryTitle || 'Article'}</span>
-                        <span className="font-sans text-[0.55rem] sm:text-[0.6rem] text-white/40">Completed {dateCompleted}</span>
+                      <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1.5 pt-2 sm:pt-0 border-t border-white/5 sm:border-0">
+                        <span className="font-sans text-xs sm:text-sm text-white/90 font-medium">{article.categoryTitle || 'Article'}</span>
+                        <span className="font-sans text-xs text-white/50">Completed {dateCompleted}</span>
                       </div>
                     </div>
 
@@ -258,13 +258,13 @@ export default function MyLibraryTab() {
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t border-white/5 pt-4 md:pt-6">
                         <button 
                           onClick={(e) => { e.stopPropagation(); navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`); }}
-                          className="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
+                          className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
                         >
                           REVISIT
                         </button>
                         <button 
                           onClick={(e) => handleComplete(article._id, e)}
-                          className="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 sm:py-2.5 rounded border border-white/5 text-white/40 hover:border-white/20 hover:text-white/80 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-colors text-center"
+                          className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-white/10 text-white/50 hover:border-white/25 hover:text-white font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
                         >
                           MARK INCOMPLETE
                         </button>

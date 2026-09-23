@@ -24,13 +24,13 @@ export default function ContinueSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 w-full mt-auto mb-auto items-start">
           
           {/* Card 1: PERSPECTIVE */}
-          <div className="group border border-white/10 hover:border-[#c79c6e] rounded-xl p-5 sm:p-6 md:p-8 bg-[#050505] flex flex-col transition-all duration-500 ease-in-out cursor-pointer hover:shadow-[0_0_30px_rgba(199,156,110,0.15)] relative overflow-hidden">
+          <div className="group border border-white/10 hover:border-[#c79c6e] rounded-xl p-6 sm:p-7 md:p-8 bg-[#050505] flex flex-col transition-all duration-500 ease-in-out cursor-pointer hover:shadow-[0_0_30px_rgba(199,156,110,0.15)] relative overflow-hidden">
             
             {/* Header & Title */}
             <div className="w-full flex flex-col min-h-0 md:h-[180px] shrink-0">
               <div className="w-full flex justify-between items-center mb-4 md:mb-6 text-[#c79c6e]">
-                <span className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-medium">PERSPECTIVE</span>
-                <BookmarkSimple size={20} className="md:w-6 md:h-6" weight="light" />
+                <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold">PERSPECTIVE</span>
+                <BookmarkSimple size={24} className="md:w-6 md:h-6" weight="light" />
               </div>
               <h3 className="font-serif text-xl sm:text-2xl md:text-3xl text-white pr-2 md:pr-4 leading-snug line-clamp-3">
                 When you understand the pattern but still repeat it
@@ -39,31 +39,31 @@ export default function ContinueSection() {
             
             {/* Details */}
             <div className="w-full block md:grid md:grid-rows-[0fr] md:opacity-0 md:group-hover:grid-rows-[1fr] md:group-hover:opacity-100 transition-all duration-500 ease-in-out">
-              <div className="overflow-hidden flex flex-col pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-white/5">
-                <span className="font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium text-[#c79c6e] mb-1.5 sm:mb-2">
+              <div className="overflow-hidden flex flex-col pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-white/10">
+                <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.18em] font-semibold text-[#c79c6e] mb-2">
                   PATTERNS · BEHAVIOURAL PATTERNS
                 </span>
-                <span className="text-white/60 font-light text-xs mb-3 sm:mb-4">
+                <span className="text-white/70 font-light text-xs sm:text-sm mb-3 sm:mb-4">
                   Last opened 2 August
                 </span>
-                <p className="text-white/80 font-light text-xs sm:text-sm mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-white/10">
+                <p className="text-white/90 font-light text-sm sm:text-base mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-white/10 leading-relaxed">
                   Resume at: Why insight alone doesn't create change
                 </p>
-                <button className="w-full py-3 sm:py-4 bg-[#c79c6e]/10 border border-[#c79c6e] rounded-lg text-[0.65rem] sm:text-xs uppercase tracking-widest font-medium text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-colors flex items-center justify-center gap-2 sm:gap-3">
-                  CONTINUE READING <span className="text-base sm:text-lg leading-none group-hover:translate-x-1 transition-transform">→</span>
+                <button className="w-full py-3.5 sm:py-4 bg-[#c79c6e]/10 border border-[#c79c6e] rounded-lg text-xs sm:text-sm uppercase tracking-widest font-semibold text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-colors flex items-center justify-center gap-2 sm:gap-3">
+                  CONTINUE READING <span className="text-base sm:text-lg leading-none group-hover:translate-x-1.5 transition-transform">→</span>
                 </button>
               </div>
             </div>
           </div>
 
           {/* Card 2: VIDEO */}
-          <div className="group border border-white/10 hover:border-white/30 rounded-xl p-5 sm:p-6 md:p-8 bg-[#050505] flex flex-col transition-all duration-500 ease-in-out cursor-pointer hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] relative overflow-hidden">
+          <div className="group border border-white/10 hover:border-white/30 rounded-xl p-6 sm:p-7 md:p-8 bg-[#050505] flex flex-col transition-all duration-500 ease-in-out cursor-pointer hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] relative overflow-hidden">
             
             {/* Header & Title */}
             <div className="w-full flex flex-col min-h-0 md:h-[180px] shrink-0">
               <div className="w-full flex justify-between items-center mb-4 md:mb-6 text-[#c79c6e]">
-                <span className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-medium">VIDEO</span>
-                <PlayCircle size={20} className="md:w-6 md:h-6" weight="light" />
+                <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold">VIDEO</span>
+                <PlayCircle size={24} className="md:w-6 md:h-6" weight="light" />
               </div>
               <h3 className="font-serif text-xl sm:text-2xl md:text-3xl text-white pr-2 md:pr-4 leading-snug line-clamp-3">
                 Change without an audience
@@ -72,25 +72,25 @@ export default function ContinueSection() {
 
             {/* Details */}
             <div className="w-full block md:grid md:grid-rows-[0fr] md:opacity-0 md:group-hover:grid-rows-[1fr] md:group-hover:opacity-100 transition-all duration-500 ease-in-out">
-              <div className="overflow-hidden flex flex-col pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-white/5">
-                <p className="text-white/50 font-light text-xs sm:text-sm mb-4 sm:mb-6">
+              <div className="overflow-hidden flex flex-col pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-white/10">
+                <p className="text-white/70 font-light text-xs sm:text-sm mb-4 sm:mb-6">
                   04:18 remaining
                 </p>
-                <button className="w-full py-3 sm:py-4 border border-white/20 hover:border-white/50 rounded-lg text-[0.65rem] sm:text-xs uppercase tracking-widest font-medium text-white/80 hover:text-white transition-colors flex items-center justify-center gap-2 sm:gap-3">
-                  CONTINUE WATCHING <span className="text-base sm:text-lg leading-none group-hover:translate-x-1 transition-transform">→</span>
+                <button className="w-full py-3.5 sm:py-4 border border-white/20 hover:border-white/50 rounded-lg text-xs sm:text-sm uppercase tracking-widest font-semibold text-white/90 hover:text-white transition-colors flex items-center justify-center gap-2 sm:gap-3">
+                  CONTINUE WATCHING <span className="text-base sm:text-lg leading-none group-hover:translate-x-1.5 transition-transform">→</span>
                 </button>
               </div>
             </div>
           </div>
 
           {/* Card 3: REFLECTION TOOL */}
-          <div className="group border border-white/10 hover:border-white/30 rounded-xl p-5 sm:p-6 md:p-8 bg-[#050505] flex flex-col transition-all duration-500 ease-in-out cursor-pointer hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] relative overflow-hidden">
+          <div className="group border border-white/10 hover:border-white/30 rounded-xl p-6 sm:p-7 md:p-8 bg-[#050505] flex flex-col transition-all duration-500 ease-in-out cursor-pointer hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] relative overflow-hidden">
             
             {/* Header & Title */}
             <div className="w-full flex flex-col min-h-0 md:h-[180px] shrink-0">
               <div className="w-full flex justify-between items-center mb-4 md:mb-6 text-[#c79c6e]">
-                <span className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-medium">REFLECTION TOOL</span>
-                <Faders size={20} className="md:w-6 md:h-6" weight="light" /> 
+                <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold">REFLECTION TOOL</span>
+                <Faders size={24} className="md:w-6 md:h-6" weight="light" /> 
               </div>
               <h3 className="font-serif text-xl sm:text-2xl md:text-3xl text-white pr-2 md:pr-4 leading-snug line-clamp-3">
                 Wheel of Life
@@ -99,12 +99,12 @@ export default function ContinueSection() {
 
             {/* Details */}
             <div className="w-full block md:grid md:grid-rows-[0fr] md:opacity-0 md:group-hover:grid-rows-[1fr] md:group-hover:opacity-100 transition-all duration-500 ease-in-out">
-              <div className="overflow-hidden flex flex-col pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-white/5">
-                <p className="text-white/50 font-light text-xs sm:text-sm mb-4 sm:mb-6">
+              <div className="overflow-hidden flex flex-col pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-white/10">
+                <p className="text-white/70 font-light text-xs sm:text-sm mb-4 sm:mb-6">
                   Step 3 of 8
                 </p>
-                <button className="w-full py-3 sm:py-4 border border-white/20 hover:border-white/50 rounded-lg text-[0.65rem] sm:text-xs uppercase tracking-widest font-medium text-white/80 hover:text-white transition-colors flex items-center justify-center gap-2 sm:gap-3">
-                  RESUME EXERCISE <span className="text-base sm:text-lg leading-none group-hover:translate-x-1 transition-transform">→</span>
+                <button className="w-full py-3.5 sm:py-4 border border-white/20 hover:border-white/50 rounded-lg text-xs sm:text-sm uppercase tracking-widest font-semibold text-white/90 hover:text-white transition-colors flex items-center justify-center gap-2 sm:gap-3">
+                  RESUME EXERCISE <span className="text-base sm:text-lg leading-none group-hover:translate-x-1.5 transition-transform">→</span>
                 </button>
               </div>
             </div>

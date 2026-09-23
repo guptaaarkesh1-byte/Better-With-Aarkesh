@@ -22,7 +22,7 @@ export default function AnimatedText({ text, className, tag: Tag = 'p', delay = 
     );
   }, { scope: container });
 
-  const words = text.split(' ');
+  const words = (text || '').split(' ').filter(Boolean);
 
   return (
     <Tag ref={container} className={cn('overflow-hidden flex flex-wrap', className)}>

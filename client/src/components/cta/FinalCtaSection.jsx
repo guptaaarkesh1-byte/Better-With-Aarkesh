@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Container from '../ui/Container';
-import bgImg from '../../assets/Page10/ChatGPT Image Jul 24, 2026, 05_10_01 PM.png';
+import defaultBgImg from '../../assets/Page10/ChatGPT Image Jul 24, 2026, 05_10_01 PM.webp';
 import { 
   ArrowRight, 
   LockKey,
@@ -10,7 +10,39 @@ import {
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function FinalCtaSection() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/home-settings/cta`);
+        if (res.ok && isMounted) {
+          const json = await res.json();
+          setData(json);
+        }
+      } catch (err) {
+        console.error('Failed to load final CTA settings:', err);
+      }
+    };
+    fetchData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const eyebrow = data?.eyebrowText || 'A CONVERSATION CAN CHANGE EVERYTHING';
+  const heading1 = data?.headingLine1 || 'Your next chapter';
+  const headingAccent = data?.headingAccent || 'starts here.';
+  const description = data?.description || "This is your space to be heard, understood, and guided forward. Let's create real change—together.";
+  const ctaText = data?.ctaText || 'BOOK YOUR SESSION';
+  const ctaLink = data?.ctaLink || '/book';
+  const confidentialText = data?.confidentialText || '100% Confidential & Safe Space';
+  const bgImg = data?.bgImg || defaultBgImg;
+  const quote1 = data?.quoteLine1 || "You don't have to have it all figured out.";
+  const quote2 = data?.quoteLine2 || "You just have to be willing to begin.";
+
   return (
     <section id="book-session" className="relative w-full min-h-screen h-auto bg-[#050505] overflow-hidden flex flex-col snap-section">
       
@@ -21,9 +53,12 @@ export default function FinalCtaSection() {
           alt="Cinematic Coffee Cup" 
           className="absolute right-0 top-0 h-full w-full md:w-[65%] object-cover object-left md:object-right opacity-90"
         />
-        {/* Horizontal Gradient fading to solid dark on the left */}
+        {/* Global contrast overlay layer */}
+        <div 
+          className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" 
+          style={{ opacity: 'var(--overlay-opacity, 0.4)' }}
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/95 to-transparent" />
-        {/* Vertical Gradient for bottom quote integration */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-[#050505]/40" />
       </div>
 
@@ -38,27 +73,25 @@ export default function FinalCtaSection() {
               <div className="flex items-center gap-4">
                 <div className="h-[1px] w-8 bg-accent-gold" />
                 <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-bold text-accent-gold">
-                  A CONVERSATION CAN CHANGE EVERYTHING
+                  {eyebrow}
                 </span>
               </div>
               
               <h2 className="font-serif text-5xl md:text-6xl text-white font-medium tracking-tight leading-[1.1]">
-                Your next chapter<br/>
-                <span className="text-accent-gold italic">starts here.</span>
+                {heading1}<br/>
+                <span className="text-accent-gold italic">{headingAccent}</span>
               </h2>
               
               <p className="font-libertinus text-white text-lg font-light max-w-md mt-1 leading-relaxed">
-                This is your space to be heard,<br/>
-                understood, and guided forward.<br/>
-                Let's create real change—together.
+                {description}
               </p>
             </div>
 
             {/* CTA Button & Lock */}
             <div className="flex flex-col items-start gap-3 mt-1">
-              <Link to="/book" className="flex items-center gap-3 bg-[#a37946] rounded-sm px-6 py-3 transition-colors hover:bg-[#c29158] shadow-[0_0_15px_rgba(163,121,70,0.3)]">
+              <Link to={ctaLink} className="flex items-center gap-3 bg-[#a37946] rounded-sm px-6 py-3 transition-colors hover:bg-[#c29158] shadow-[0_0_15px_rgba(163,121,70,0.3)]">
                 <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-white">
-                  BOOK YOUR SESSION
+                  {ctaText}
                 </span>
                 <ArrowRight className="text-white text-sm" />
               </Link>
@@ -66,7 +99,7 @@ export default function FinalCtaSection() {
               <div className="flex items-center gap-2 opacity-60">
                 <LockKey className="text-white text-sm" weight="light" />
                 <span className="font-sans text-[0.65rem] text-white tracking-wider">
-                  100% Confidential & Safe Space
+                  {confidentialText}
                 </span>
               </div>
             </div>
@@ -77,7 +110,6 @@ export default function FinalCtaSection() {
           <div className="w-full mt-8 mb-6 border border-white/5 bg-white/[0.02] backdrop-blur-md rounded-lg p-5">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 divide-y md:divide-y-0 md:divide-x divide-white/10">
               
-              {/* Feature 1 */}
               <div className="flex items-start gap-4 pt-4 md:pt-0 px-2 group">
                 <CalendarBlank className="text-accent-gold text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="light" />
                 <div className="flex flex-col">
@@ -86,7 +118,6 @@ export default function FinalCtaSection() {
                 </div>
               </div>
 
-              {/* Feature 2 */}
               <div className="flex items-start gap-4 pt-4 md:pt-0 px-2 group lg:pl-8">
                 <div className="relative shrink-0 group-hover:scale-110 transition-transform">
                   <div className="absolute inset-0 bg-accent-gold/20 rotate-45 rounded-sm" />
@@ -98,7 +129,6 @@ export default function FinalCtaSection() {
                 </div>
               </div>
 
-              {/* Feature 3 */}
               <div className="flex items-start gap-4 pt-4 md:pt-0 px-2 group lg:pl-8">
                 <User className="text-accent-gold text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="light" />
                 <div className="flex flex-col">
@@ -107,7 +137,6 @@ export default function FinalCtaSection() {
                 </div>
               </div>
 
-              {/* Feature 4 */}
               <div className="flex items-start gap-4 pt-4 md:pt-0 px-2 group lg:pl-8">
                 <Target className="text-accent-gold text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="light" />
                 <div className="flex flex-col">
@@ -123,10 +152,10 @@ export default function FinalCtaSection() {
           <div className="w-full flex flex-col items-center text-center pb-2">
             <h2 className="font-serif text-2xl md:text-3xl text-white tracking-tight flex items-center gap-3">
               <span className="text-accent-gold opacity-80 text-3xl mt-1 font-serif">"</span>
-              You don't have to have it all figured out.
+              {quote1}
             </h2>
             <h2 className="font-serif text-2xl md:text-3xl text-accent-gold italic tracking-tight flex items-center gap-3 mt-1">
-              You just have to be willing to begin.
+              {quote2}
               <span className="text-accent-gold opacity-80 text-3xl mt-1 font-serif">"</span>
             </h2>
             

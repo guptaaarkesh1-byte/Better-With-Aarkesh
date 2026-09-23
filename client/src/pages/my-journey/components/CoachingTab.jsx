@@ -212,7 +212,7 @@ export default function CoachingTab() {
   };
 
   return (
-    <div className="w-full h-full min-h-[500px] rounded-2xl border border-[#c79c6e]/40 bg-[#0a0a0a]/70 backdrop-blur-sm p-4 sm:p-6 md:p-10 lg:p-12 flex flex-col animate-in fade-in duration-700 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_50px_rgba(199,156,110,0.15)]">
+    <div className="w-full h-full min-h-[500px] rounded-2xl border border-[#c79c6e]/40 bg-[#080808] p-4 sm:p-6 md:p-10 lg:p-12 flex flex-col animate-in fade-in duration-700 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_50px_rgba(199,156,110,0.15)]">
       
       {/* Subtle Glow inside the card */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-[#c79c6e]/10 rounded-full blur-[120px] pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-60" />
@@ -286,11 +286,11 @@ export default function CoachingTab() {
       {/* List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 relative z-10">
         {loading ? (
-          <div className="py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]/40 backdrop-blur-sm">
+          <div className="py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#080808]">
             <span className="font-sans text-white/40 text-sm tracking-wide">Loading...</span>
           </div>
         ) : filteredAppointments.length === 0 ? (
-          <div className="py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]/40 backdrop-blur-sm">
+          <div className="py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#080808]">
             <CalendarBlank size={32} className="text-white/20 mb-4" />
             <span className="font-sans text-white/40 text-sm tracking-wide">No {activeTab.toLowerCase()} appointments found.</span>
           </div>
@@ -298,28 +298,28 @@ export default function CoachingTab() {
           filteredAppointments.map(app => (
             <div key={app.id} className="group/card w-full flex flex-col items-center">
                 {/* Main Card */}
-                <div className="w-full rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a]/90 backdrop-blur-md p-4 sm:p-6 md:p-8 flex flex-col justify-between gap-5 sm:gap-6 hover:border-[#c79c6e]/60 transition-colors duration-500 shadow-xl relative z-10 h-full overflow-hidden">
+                <div className="w-full rounded-xl border border-[#c79c6e]/30 bg-[#0c0c0c] p-4 sm:p-6 md:p-8 flex flex-col justify-between gap-5 sm:gap-6 hover:border-[#c79c6e]/60 transition-colors duration-500 shadow-xl relative z-10 h-full overflow-hidden">
                   
                   {app.rescheduleRequest?.status === 'APPROVED' && (
-                    <div className="absolute top-0 right-0 bg-green-500/10 border-b border-l border-green-500/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-green-500 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                    <div className="absolute top-0 right-0 bg-emerald-950/90 border-b border-l border-emerald-500/30 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-emerald-400 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 z-20">
                       <CheckCircle weight="fill" size={13} />
                       RESCHEDULE APPROVED
                     </div>
                   )}
                   {app.rescheduleRequest?.status === 'PENDING' && (
-                    <div className="absolute top-0 right-0 bg-amber-500/10 border-b border-l border-amber-500/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-amber-500 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                    <div className="absolute top-0 right-0 bg-amber-950/90 border-b border-l border-amber-500/30 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-amber-400 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 z-20">
                       <Clock weight="fill" size={13} />
                       RESCHEDULE PENDING
                     </div>
                   )}
                   {app.rescheduleRequest?.status === 'REJECTED' && (
-                    <div className="absolute top-0 right-0 bg-red-500/10 border-b border-l border-red-500/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-red-500 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                    <div className="absolute top-0 right-0 bg-rose-950/90 border-b border-l border-rose-500/30 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-rose-400 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 z-20">
                       <XCircle weight="fill" size={13} />
                       RESCHEDULE DECLINED
                     </div>
                   )}
                   {app.status === 'CANCELLED' && (
-                    <div className="absolute top-0 right-0 bg-red-500/10 border-b border-l border-red-500/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-red-500 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 backdrop-blur-md z-20">
+                    <div className="absolute top-0 right-0 bg-rose-950/90 border-b border-l border-rose-500/30 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-rose-400 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 z-20">
                       <XCircle weight="fill" size={13} />
                       CANCELLED
                     </div>

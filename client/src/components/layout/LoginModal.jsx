@@ -30,8 +30,8 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
       setConfirmPassword('');
       setFullName(defaultFullName || '');
       setEmail(defaultEmail || '');
-      setCountryCode(defaultCountryCode);
-      setPhoneNumber(defaultPhoneNumber);
+      setCountryCode(defaultCountryCode || '+91');
+      setPhoneNumber(defaultPhoneNumber || '');
       setError('');
       setIsLoading(false);
       setIsOtpStep(false);
@@ -180,8 +180,9 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
     setError('');
     setPassword('');
     setConfirmPassword('');
-    setFullName('');
+    setFullName(defaultFullName || '');
     setEmail(defaultEmail || '');
+    setCountryCode(defaultCountryCode || '+91');
     setPhoneNumber(defaultPhoneNumber || '');
   };
 
@@ -229,7 +230,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
         </p>
 
         {/* Course Student Notice */}
-        {(courseNotice || defaultEmail) && !isForgotPassword && (
+        {courseNotice && !isForgotPassword && (
           <div className="mb-6 p-3.5 rounded-xl border border-[#c79c6e]/40 bg-[#c79c6e]/10 flex items-start gap-3">
             <span className="text-base leading-none mt-0.5">✨</span>
             <div>

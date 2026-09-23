@@ -5,11 +5,16 @@ import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function ProblemContent() {
+export default function ProblemContent({ problemData = {} }) {
   const container = useRef(null);
 
+  const eyebrow = problemData.eyebrowText || "MAYBE YOU'VE SPENT YEARS";
+  const heading1 = problemData.headingLine1 || "Trying to fix what isn't the";
+  const headingAccent = problemData.headingAccent || "real problem.";
+  const quoteItalic = problemData.quoteItalic || "Things you carry, cloud your perspective.";
+  const quoteSubtext = problemData.quoteSubtext || "....Until you learn to see clearly";
+
   useGSAP(() => {
-    // Basic reveal animation for the text when section enters
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: container.current,
@@ -42,7 +47,7 @@ export default function ProblemContent() {
       "-=0.6"
     );
 
-  }, { scope: container });
+  }, { scope: container, dependencies: [eyebrow, heading1, headingAccent, quoteItalic, quoteSubtext] });
 
   return (
     <div ref={container} className="max-w-md pt-0 relative z-50">
@@ -50,20 +55,20 @@ export default function ProblemContent() {
       <div className="flex items-center gap-4 mb-4">
         <div className="prob-line h-[1px] w-8 bg-accent-gold origin-left" />
         <span className="prob-eyebrow eyebrow-text" style={{ color: '#B98A56' }}>
-          MAYBE YOU'VE SPENT YEARS
+          {eyebrow}
         </span>
       </div>
 
       <h2 className="prob-heading font-serif text-4xl lg:text-5xl font-thin tracking-tight leading-[1.1] mb-6 text-heading">
-        Trying to fix what isn't the <span className="italic" style={{ color: '#B98A56' }}>real problem.</span>
+        {heading1} <span className="italic" style={{ color: '#B98A56' }}>{headingAccent}</span>
       </h2>
 
       <div className="prob-divider h-[1px] w-8 bg-white/20 origin-left mb-6" />
 
-      <p className="prob-paragraph text-paragraph text-base lg:text-lg font-serif font-light  tracking-wide leading-snug">
-      <span className="italic text-lg">Things you carry, cloud your perspective.</span><br />
+      <p className="prob-paragraph text-paragraph text-lg lg:text-xl font-serif font-light tracking-wide leading-relaxed">
+        <span className="italic text-xl lg:text-2xl">{quoteItalic}</span><br />
         <br />
-        <span className="text-white">....Until you learn to see clearly</span>
+        <span className="text-white text-lg lg:text-xl">{quoteSubtext}</span>
       </p>
 
     </div>

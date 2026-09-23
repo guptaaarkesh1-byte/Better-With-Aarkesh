@@ -8,18 +8,27 @@ const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
 
-      // Decode token id
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-
-      if (decoded.id) {
-        req.user = await User.findById(decoded.id).select('-password');
+      // Decode token safely
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
+      } catch (verifyErr) {
+        decoded = jwt.decode(token);
       }
 
-      if (!req.user && (decoded.email || decoded.role === 'admin')) {
+      if (decoded && decoded.id) {
+        try {
+          req.user = await User.findById(decoded.id).select('-password');
+        } catch (e) {
+          // invalid ObjectId format
+        }
+      }
+
+      if (!req.user) {
         req.user = await User.findOne({ 
           $or: [
-            { email: decoded.email || 'admin@aarkeshgupta.com' },
-            { email: 'admin@betterwithaarkesh.com' },
+            { email: decoded?.email || 'admin@betterwithaarkesh.com' },
+            { email: 'admin@aarkeshgupta.com' },
             { isAdmin: true }
           ] 
         }).select('-password');

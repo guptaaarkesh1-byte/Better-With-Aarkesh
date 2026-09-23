@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { CaretLeft, Plus, LockKey, MagnifyingGlass, CaretDown, X, Trash } from '@phosphor-icons/react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import bgImage from '../../assets/images/my-journey-bg.png';
+import bgImage from '../../assets/images/my-journey-bg.webp';
 import NoteEditorSidebar from './components/NoteEditorSidebar';
 
 import NoteViewModal from './components/NoteViewModal';
@@ -180,7 +180,7 @@ export default function Notes() {
             <input 
               type="text" 
               placeholder="Search your notes"
-              className="w-full bg-[#0a0a0a]/40 backdrop-blur-md border border-white/10 rounded-lg py-3 pl-11 pr-4 text-xs sm:text-sm font-sans text-white placeholder-white/40 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
+              className="w-full bg-[#0c0c0c] border border-white/10 rounded-lg py-3 pl-11 pr-4 text-xs sm:text-sm font-sans text-white placeholder-white/40 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
             />
           </div>
           
@@ -193,18 +193,18 @@ export default function Notes() {
         {/* Notes Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {loading ? (
-            <div className="col-span-full py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]/40 backdrop-blur-sm">
+            <div className="col-span-full py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]">
               <span className="font-sans text-white/40 text-sm tracking-wide">Loading notes...</span>
             </div>
           ) : notes.length === 0 ? (
-            <div className="col-span-full py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]/40 backdrop-blur-sm">
+            <div className="col-span-full py-16 flex flex-col items-center justify-center border border-white/5 rounded-2xl bg-[#050505]">
               <span className="font-sans text-white/40 text-sm tracking-wide">No notes found. Create your first one.</span>
             </div>
           ) : (
             notes.map((note) => (
               <div 
                 key={note._id} 
-                className="w-full rounded-xl sm:rounded-2xl border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-md hover:bg-[#0a0a0a]/70 hover:backdrop-blur-lg hover:border-[#c79c6e]/30 transition-all duration-500 p-4 sm:p-5 md:p-6 flex flex-col group overflow-hidden"
+                className="w-full rounded-xl sm:rounded-2xl border border-white/5 bg-[#0c0c0c] hover:bg-[#121212] hover:border-[#c79c6e]/30 transition-all duration-300 p-4 sm:p-5 md:p-6 flex flex-col group overflow-hidden"
               >
                 <div className="flex flex-col justify-between items-start gap-3 sm:gap-4 w-full h-full">
                   <div className="flex flex-col gap-1.5 w-full">

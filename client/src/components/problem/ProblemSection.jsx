@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -7,12 +7,26 @@ import ProblemContent from './ProblemContent';
 import WordCloud from './WordCloud';
 import TransitionIntro from './TransitionIntro';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 gsap.registerPlugin(ScrollTrigger);
 
 export default function ProblemSection() {
   const sectionRef = useRef(null);
   const containerRef = useRef(null);
   const dustContainerRef = useRef(null);
+  const [problemData, setProblemData] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch(`${API_URL}/api/home-settings/problem`)
+      .then(res => res.ok ? res.json() : null)
+      .then(d => {
+        if (d && isMounted) setProblemData(d);
+      })
+      .catch(err => console.error('Failed to load problem settings:', err));
+    return () => { isMounted = false; };
+  }, []);
 
   useGSAP(() => {
     // We create a master timeline that scrubs with scroll
@@ -27,63 +41,66 @@ export default function ProblemSection() {
       }
     });
 
-    const words = gsap.utils.toArray('.floating-word');
+    const tracks = gsap.utils.toArray('.word-track');
 
     // Stage 2: Slow motion & fade out (25-30% scroll progress approx)
-    // NOTE: Removed blur() filter to vastly improve scroll performance
-    tl.to(words, {
-      opacity: 0.15,
+    tl.to(tracks, {
+      opacity: 0.2,
       scale: 0.85,
       duration: 2,
       ease: 'power2.inOut',
-      stagger: { amount: 0.5, from: 'random' }
-    }, "stage2"); // Label for positioning
+      stagger: { amount: 0.5, from: 'random' },
+      force3D: true
+    }, "stage2");
 
     // Stage 3 & 4: Magnetic Convergence & Merge Effect
-    words.forEach((word) => {
-      // Random offsets for organic merge
-      const offsetX = gsap.utils.random(-30, 30);
-      const offsetY = gsap.utils.random(-30, 30);
-      const rot = gsap.utils.random(-45, 45);
+    tracks.forEach((track) => {
+      const offsetX = gsap.utils.random(-25, 25);
+      const offsetY = gsap.utils.random(-25, 25);
+      const rot = gsap.utils.random(-35, 35);
       
-      tl.to(word, {
-        top: '50%',
-        left: '50%',
-        xPercent: -50,
-        yPercent: -50,
-        x: offsetX,
-        y: offsetY,
+      const rect = track.getBoundingClientRect();
+      const parentRect = containerRef.current?.getBoundingClientRect() || { width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 };
+      const centerX = parentRect.width / 2;
+      const centerY = parentRect.height / 2;
+      const elemX = rect.left - parentRect.left + rect.width / 2;
+      const elemY = rect.top - parentRect.top + rect.height / 2;
+      const deltaX = (centerX - elemX) + offsetX;
+      const deltaY = (centerY - elemY) + offsetY;
+
+      tl.to(track, {
+        x: deltaX,
+        y: deltaY,
         rotation: rot,
         opacity: 0,
-        filter: 'blur(20px)',
-        scale: 0.5,
+        scale: 0.35,
         duration: 3,
-        ease: 'power3.inOut'
+        ease: 'power3.inOut',
+        force3D: true
       }, "stage3+=" + gsap.utils.random(0, 1));
     });
 
-    // Stage 5: Golden Energy Burst
+    // Stage 5: Golden Energy Burst (hardware accelerated)
     tl.fromTo('.golden-burst', 
-      { scale: 0, opacity: 0, filter: 'blur(0px)' },
+      { scale: 0, opacity: 0 },
       { 
-        scale: 1.5, 
+        scale: 1.6, 
         opacity: 1, 
-        filter: 'blur(40px)', 
         duration: 2, 
-        ease: 'expo.out' 
+        ease: 'expo.out',
+        force3D: true 
       }, 
       "stage5-=1"
     );
 
     // Stage 6: Ambient Dust starts appearing
-    // We'll control dust container opacity via scroll timeline
     tl.fromTo(dustContainerRef.current,
       { opacity: 0 },
-      { opacity: 1, duration: 1, ease: 'power2.inOut' },
+      { opacity: 1, duration: 1, ease: 'power2.inOut', force3D: true },
       "stage5"
     );
 
-    // Independent Dust Animation (Looping infinitely, not tied to scroll)
+    // Independent Dust Animation (Looping infinitely, only while in viewport)
     const dustParticles = gsap.utils.toArray('.dust-particle');
     const dustTweens = dustParticles.map((particle) => {
       return gsap.to(particle, {
@@ -95,7 +112,8 @@ export default function ProblemSection() {
         yoyo: true,
         ease: 'sine.inOut',
         delay: gsap.utils.random(0, 5),
-        paused: true
+        paused: true,
+        force3D: true
       });
     });
 
@@ -116,7 +134,7 @@ export default function ProblemSection() {
       
       {/* MOBILE HEADING & PARA */}
       <div className="block lg:hidden relative z-30 w-full px-6 pt-28 pb-4 bg-[#0a0a0a]">
-        <ProblemContent />
+        <ProblemContent problemData={problemData || {}} />
       </div>
 
       {/* THE PINNED CONTAINER */}
@@ -125,15 +143,16 @@ export default function ProblemSection() {
         {/* DESKTOP HEADING & PARA */}
         <Container className="hidden lg:grid relative z-30 w-full grid-cols-1 lg:grid-cols-12 gap-8 lg:items-center h-full pointer-events-none lg:absolute lg:inset-0">
           <div className="lg:col-span-5 relative z-40 mt-4 lg:mt-0">
-            <ProblemContent />
+            <ProblemContent problemData={problemData || {}} />
           </div>
         </Container>
 
         {/* Stage 5: Golden Energy Burst Element */}
         <div 
-          className="golden-burst absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full pointer-events-none z-20"
+          className="golden-burst absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full pointer-events-none z-20"
           style={{
-            background: 'radial-gradient(circle, rgba(185,138,86,0.6) 0%, rgba(185,138,86,0) 70%)',
+            background: 'radial-gradient(circle, rgba(185,138,86,0.85) 0%, rgba(185,138,86,0.4) 35%, rgba(185,138,86,0) 70%)',
+            willChange: 'transform, opacity'
           }}
         />
 
@@ -163,7 +182,7 @@ export default function ProblemSection() {
 
       {/* Transition Intro */}
       <div className="relative z-40 shrink-0 bg-[#0a0a0a]">
-        <TransitionIntro />
+        <TransitionIntro problemData={problemData || {}} />
       </div>
 
     </section>
