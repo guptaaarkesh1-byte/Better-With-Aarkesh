@@ -420,7 +420,7 @@ export default function Articles() {
     : null;
     
   const dbArticle = articleParam && publishedArticles.length > 0
-    ? publishedArticles.find(a => a._id === articleParam || a.slug === articleParam)
+    ? publishedArticles.find(a => a._id === articleParam || a.slug === articleParam || a.id === articleParam)
     : null;
 
   const activeEditorialArticle = dbArticle
@@ -428,9 +428,11 @@ export default function Articles() {
         ...curatedArticle,
         ...dbArticle,
         title: dbArticle.title,
-        subtitle: dbArticle.description || curatedArticle?.subtitle,
+        subtitle: dbArticle.description || dbArticle.subtitle || curatedArticle?.subtitle,
+        blocks: dbArticle.blocks && dbArticle.blocks.length > 0 ? dbArticle.blocks : curatedArticle?.blocks,
+        sections: dbArticle.sections && dbArticle.sections.length > 0 ? dbArticle.sections : curatedArticle?.sections,
         bodyHtml: dbArticle.bodyHtml || dbArticle.content,
-        image: dbArticle.featuredImage || curatedArticle?.image || '/library_preview_silhouette.jpg'
+        image: dbArticle.featuredImage || dbArticle.image || curatedArticle?.image || '/library_preview_silhouette.jpg'
       }
     : (curatedArticle || (articleParam ? getCuratedArticle('attention-feels-like-love') : null));
 

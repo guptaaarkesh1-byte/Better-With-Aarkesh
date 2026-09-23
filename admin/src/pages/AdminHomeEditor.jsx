@@ -196,7 +196,27 @@ function ImageEditorCard({
 }
 
 export default function AdminHomeEditor() {
-  const [activeTab, setActiveTab] = useState('hero');
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tabFromUrl = params.get('tab');
+      if (tabFromUrl) return tabFromUrl;
+      const savedTab = localStorage.getItem('bwa_admin_home_tab');
+      if (savedTab) return savedTab;
+    } catch (e) {}
+    return 'hero';
+  });
+
+  // Persist tab on change
+  useEffect(() => {
+    try {
+      localStorage.setItem('bwa_admin_home_tab', activeTab);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTab);
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {}
+  }, [activeTab]);
+
   const [allSections, setAllSections] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

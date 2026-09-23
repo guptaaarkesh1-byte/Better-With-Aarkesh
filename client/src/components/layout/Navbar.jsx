@@ -39,9 +39,18 @@ export default function Navbar() {
   const { openBookingModal } = useBooking();
   const showMyJourney = location.pathname === '/' || location.pathname === '/library' || location.pathname === '/my-journey';
 
-  // Re-check auth status when route changes (e.g., after login redirect)
+  // Re-check auth status when route changes or auth event fires
   useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem('token'));
+    const handleAuthChange = () => {
+      setIsLoggedIn(!!localStorage.getItem('token'));
+    };
+    handleAuthChange();
+    window.addEventListener('auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
   }, [location.pathname]);
 
   useEffect(() => {
@@ -151,65 +160,19 @@ export default function Navbar() {
       ref={navRef}
       className={cn(
         'fixed top-0 left-0 right-0 z-[100] transition-all duration-500',
-        scrolled ? 'py-4' : 'py-6'
+        scrolled 
+          ? 'py-2.5 sm:py-3 bg-black/65 backdrop-blur-xl shadow-lg shadow-black/30 border-b border-white/10' 
+          : 'py-3 sm:py-4 bg-gradient-to-b from-black/90 via-black/50 to-transparent'
       )}
     >
-      {/* Background blur layer */}
-      <div 
-        className={cn(
-          'absolute inset-0 transition-all duration-500',
-          scrolled ? 'bg-black/40 backdrop-blur-xl shadow-lg shadow-black/20 border-b border-white/10' : 'bg-transparent opacity-0'
-        )} 
-      />
-      
-      <Container className="relative flex items-center justify-between">
-        <div className="flex-shrink-0 pr-4">
-          <Link to="/" className="font-serif text-xl sm:text-2xl text-white tracking-tight relative z-10 flex items-center whitespace-nowrap">
-            BetterWith<span className="text-white/60">Aarkesh</span>
-          </Link>
-        </div>
-
-        <nav className="hidden xl:flex items-center justify-center space-x-8 relative">
-          {NAV_LINKS.map((link) => {
-            let active = false;
-            if (location.pathname === '/') {
-              const currentSection = activeSection !== null && activeSection !== undefined 
-                ? activeSection 
-                : (location.hash ? location.hash.replace('#', '') : '');
-
-              if (link.href === '/') {
-                active = currentSection === '';
-              } else if (link.href.includes('#')) {
-                active = currentSection === link.href.replace('/#', '');
-              }
-            } else {
-              active = location.pathname === link.href;
-            }
-
-            return (
-              <Link
-                key={link.label}
-                to={link.href}
-                onClick={() => handleNavClick(link.href)}
-                className={cn(
-                  'font-sans text-[0.82rem] uppercase tracking-[0.16em] transition-colors duration-300 relative py-1 px-0.5 flex items-center justify-center',
-                  active
-                    ? 'text-[#f5dfc6] font-medium'
-                    : 'text-white/70 hover:text-white font-normal'
-                )}
-              >
-                <span className="relative z-10">{link.label}</span>
-                {active && (
-                  <motion.div
-                    layoutId="activeNavUnderline"
-                    className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#c79c6e] shadow-[0_0_6px_rgba(199,156,110,0.5)] z-10"
-                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+      <Container className="relative flex flex-col gap-2.5">
+        {/* Top Row: Logo & Action Buttons */}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex-shrink-0">
+            <Link to="/" className="font-serif text-xl sm:text-2xl text-white tracking-tight relative z-10 flex items-center whitespace-nowrap">
+              BetterWith<span className="text-white/60">Aarkesh</span>
+            </Link>
+          </div>
 
           <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3">
             <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-2 lg:gap-2.5">
@@ -245,10 +208,17 @@ export default function Navbar() {
                       {/* Account Menu Dropdown */}
                       <div className="absolute top-full right-0 pt-4 w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0 flex flex-col pointer-events-none group-hover:pointer-events-auto z-[200]">
                         <div className="rounded-lg border border-[#c79c6e]/30 bg-[#0a0a0a]/95 backdrop-blur-xl p-2 shadow-[0_0_40px_rgba(199,156,110,0.15)] flex flex-col">
-                          <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white/50 mb-2 mt-2 px-3">
-                            AARKESH
+                          <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white/50 mb-2 mt-2 px-3 truncate">
+                            {JSON.parse(localStorage.getItem('userInfo') || '{}')?.fullName || 'MY ACCOUNT'}
                           </span>
                           
+                          <button 
+                            onClick={() => navigate('/my-journey')}
+                            className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/70 hover:text-white hover:bg-white/5 transition-colors w-full text-left px-3 py-2.5 rounded"
+                          >
+                            <BookmarkSimple size={15} /> SAVED LIBRARY
+                          </button>
+
                           <button 
                             onClick={() => navigate('/my-journey/settings')}
                             className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/70 hover:text-white hover:bg-white/5 transition-colors w-full text-left px-3 py-2.5 rounded"
@@ -270,6 +240,7 @@ export default function Navbar() {
                               localStorage.removeItem('token');
                               localStorage.removeItem('userInfo');
                               setIsLoggedIn(false);
+                              window.dispatchEvent(new Event('auth-change'));
                               navigate('/');
                             }}
                             className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] hover:text-white hover:bg-[#c79c6e]/10 transition-colors w-full text-left px-3 py-2.5 rounded mt-1"
@@ -298,7 +269,7 @@ export default function Navbar() {
             </div>
 
             {/* Mobile / Tablet Controls (Theme toggle & Hamburger) */}
-            <div className="xl:hidden flex items-center gap-2">
+            <div className="md:hidden flex items-center gap-2">
               <ThemeToggle size={16} />
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -309,12 +280,58 @@ export default function Navbar() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Bottom Row: Navigation Tabs */}
+        <div className="hidden md:flex items-center justify-center w-full pt-1.5 border-t border-white/[0.08]">
+          <nav className="flex items-center justify-center space-x-7 lg:space-x-10 relative">
+            {NAV_LINKS.map((link) => {
+              let active = false;
+              if (location.pathname === '/') {
+                const currentSection = activeSection !== null && activeSection !== undefined 
+                  ? activeSection 
+                  : (location.hash ? location.hash.replace('#', '') : '');
+
+                if (link.href === '/') {
+                  active = currentSection === '';
+                } else if (link.href.includes('#')) {
+                  active = currentSection === link.href.replace('/#', '');
+                }
+              } else {
+                active = location.pathname === link.href;
+              }
+
+              return (
+                <Link
+                  key={link.label}
+                  to={link.href}
+                  onClick={() => handleNavClick(link.href)}
+                  className={cn(
+                    'font-sans text-[0.78rem] lg:text-[0.82rem] uppercase tracking-[0.2em] transition-colors duration-300 relative py-1 px-1 flex items-center justify-center',
+                    active
+                      ? 'text-[#f5dfc6] font-semibold'
+                      : 'text-white/65 hover:text-white font-medium'
+                  )}
+                >
+                  <span className="relative z-10">{link.label}</span>
+                  {active && (
+                    <motion.div
+                      layoutId="activeNavUnderline"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#c79c6e] shadow-[0_0_8px_rgba(199,156,110,0.6)] z-10"
+                      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
       </Container>
 
       {/* Mobile / Tablet Menu Overlay */}
       <div 
         className={cn(
-          "fixed inset-0 z-[-1] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center xl:hidden w-full h-[100dvh] px-6 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] origin-top",
+          "fixed inset-0 z-[-1] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center md:hidden w-full h-[100dvh] px-6 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] origin-top",
           mobileMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-[10vh] scale-95 pointer-events-none"
         )}
       >

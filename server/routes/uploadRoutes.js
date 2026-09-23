@@ -46,9 +46,9 @@ const upload = multer({
 });
 
 // @desc    Upload image
-// @route   POST /api/upload
+// @route   POST /api/upload and POST /api/upload/image
 // @access  Private/Admin
-router.post('/', upload.single('image'), (req, res) => {
+const handleUpload = (req, res) => {
   if (!req.file) {
     return res.status(400).send('No image uploaded');
   }
@@ -57,6 +57,9 @@ router.post('/', upload.single('image'), (req, res) => {
     message: 'Image Uploaded',
     imageUrl: `/uploads/${req.file.filename}`,
   });
-});
+};
+
+router.post('/', upload.single('image'), handleUpload);
+router.post('/image', upload.single('image'), handleUpload);
 
 export default router;

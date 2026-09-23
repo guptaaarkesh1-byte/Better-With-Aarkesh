@@ -116,8 +116,8 @@ export default function TestimonialsSection() {
               {/* Header */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="h-[1px] w-4 bg-accent-gold" />
-                  <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-bold text-accent-gold">
+                  <div className="h-[1px] w-6 bg-accent-gold" />
+                  <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-accent-gold">
                     {eyebrow}
                   </span>
                 </div>
@@ -133,7 +133,7 @@ export default function TestimonialsSection() {
               </div>
 
               {/* Testimonials Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 mt-2">
                 {testimonials.map((t, index) => {
                   const initial = t.name ? t.name.charAt(0).toUpperCase() : 'C';
                   const colors = ['bg-blue-900', 'bg-purple-900', 'bg-green-900', 'bg-orange-900', 'bg-teal-900', 'bg-rose-900'];
@@ -142,48 +142,27 @@ export default function TestimonialsSection() {
                   return (
                     <div 
                       key={index} 
-                      className="flex flex-col bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg p-4 hover:border-accent-gold/40 transition-colors"
+                      className="flex flex-col bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg p-4 sm:p-5 hover:border-accent-gold/40 transition-colors"
                     >
-                      <Quotes className="text-accent-gold text-xl mb-2 opacity-80" weight="fill" />
+                      <Quotes className="text-accent-gold text-2xl mb-2.5 opacity-90" weight="fill" />
                       
-                      <p className="text-white/80 font-light text-[0.65rem] md:text-xs leading-relaxed mb-4 flex-grow">
+                      <p className="text-white/90 font-light text-xs sm:text-sm md:text-[0.92rem] leading-relaxed mb-4 flex-grow">
                         {t.quote}
                       </p>
                       
-                      <div className="flex items-center gap-3 mt-auto">
-                        <div className={`w-8 h-8 rounded-full ${color} flex items-center justify-center border border-white/20 shrink-0`}>
-                          <span className="font-serif text-white text-sm">{initial}</span>
+                      <div className="flex items-center gap-3.5 mt-auto">
+                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${color} flex items-center justify-center border border-white/20 shrink-0`}>
+                          <span className="font-serif text-white text-sm sm:text-base font-medium">{initial}</span>
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-sans text-accent-gold text-xs font-semibold">{t.name}</span>
-                          <span className="font-sans text-white/50 text-[0.55rem] uppercase tracking-wider">{t.role}</span>
+                          <span className="font-sans text-accent-gold text-sm sm:text-[0.92rem] font-semibold">{t.name}</span>
+                          <span className="font-sans text-white/60 text-xs sm:text-[0.72rem] uppercase tracking-wider mt-0.5">{t.role}</span>
                         </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
-
-              {/* Left Column CTA */}
-              <div className="mt-4 border border-white/5 bg-[#0f0f0f]/60 rounded-2xl p-5 md:p-6 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm">
-                <div className="flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-full border border-accent-gold flex items-center justify-center shrink-0">
-                    <ChatCenteredText className="text-accent-gold text-xl" weight="light" />
-                  </div>
-                  <div className="flex flex-col text-center md:text-left">
-                    <h3 className="font-serif text-xl md:text-2xl text-white mb-1">Your story could be next.</h3>
-                    <p className="font-sans text-xs text-white/60">Every transformation starts with a single honest conversation.</p>
-                  </div>
-                </div>
-
-                <Link to="/stories" className="flex items-center gap-3 border border-accent-gold/40 rounded-sm px-6 py-3 transition-colors hover:border-accent-gold hover:bg-accent-gold/10 shrink-0">
-                  <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-accent-gold">
-                    READ MORE STORIES
-                  </span>
-                  <ArrowRight className="text-accent-gold text-xs" />
-                </Link>
-              </div>
-
             </div>
           </div>
 

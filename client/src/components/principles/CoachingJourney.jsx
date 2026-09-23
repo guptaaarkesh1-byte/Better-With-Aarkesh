@@ -172,23 +172,23 @@ export default function CoachingJourney() {
             </p>
 
             {/* Vertical Steps (2 columns) */}
-            <div className="flex gap-x-6 xl:gap-x-10 mt-2 xl:mt-3 journey-fade">
+            <div className="flex gap-x-6 xl:gap-x-10 mt-3 xl:mt-4 journey-fade">
               {/* Left Column: Clarify & Connect */}
-              <div className="flex flex-col gap-y-2.5 xl:gap-y-3.5 flex-1">
+              <div className="flex flex-col gap-y-3 xl:gap-y-4 flex-1">
                 {leftSteps.slice(0, 2).map((step, i) => {
                   const Icon = step.icon;
                   return (
-                    <div key={i} className="flex gap-3 items-start group cursor-pointer p-2 xl:p-2.5 rounded-xl transition-all duration-500 hover:bg-white/[0.03] border border-transparent hover:border-white/5">
-                      <div className="w-8 h-8 xl:w-9 xl:h-9 rounded-full border border-accent-gold/40 bg-black/40 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                        <Icon className="text-accent-gold text-base xl:text-lg transition-transform duration-500 group-hover:scale-110" weight="light" />
+                    <div key={i} className="flex gap-3.5 items-start group cursor-pointer p-2.5 xl:p-3 rounded-xl transition-all duration-500 hover:bg-white/[0.04] border border-transparent hover:border-white/10">
+                      <div className="w-10 h-10 xl:w-11 xl:h-11 rounded-full border border-accent-gold/40 bg-black/50 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/15 shadow-sm">
+                        <Icon className="text-accent-gold text-lg xl:text-xl transition-transform duration-500 group-hover:scale-110" weight="regular" />
                       </div>
-                      <div className="flex flex-col justify-center min-h-[36px]">
-                        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block">
+                      <div className="flex flex-col justify-center min-h-[40px]">
+                        <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-accent-gold block">
                           {step.title}
                         </span>
                         <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
                           <div className="overflow-hidden">
-                            <p className="text-paragraph text-[11px] xl:text-xs font-light leading-relaxed opacity-0 group-hover:opacity-90 transition-opacity duration-500 delay-100 whitespace-pre-line pt-1.5">
+                            <p className="text-paragraph text-xs sm:text-[0.85rem] font-light leading-relaxed opacity-0 group-hover:opacity-95 transition-opacity duration-500 delay-100 whitespace-pre-line pt-1.5">
                               {step.text}
                             </p>
                           </div>
@@ -200,21 +200,21 @@ export default function CoachingJourney() {
               </div>
 
               {/* Right Column: Create & Commit */}
-              <div className="flex flex-col gap-y-2.5 xl:gap-y-3.5 flex-1">
+              <div className="flex flex-col gap-y-3 xl:gap-y-4 flex-1">
                 {leftSteps.slice(2, 4).map((step, i) => {
                   const Icon = step.icon;
                   return (
-                    <div key={i} className="flex gap-3 items-start group cursor-pointer p-2 xl:p-2.5 rounded-xl transition-all duration-500 hover:bg-white/[0.03] border border-transparent hover:border-white/5">
-                      <div className="w-8 h-8 xl:w-9 xl:h-9 rounded-full border border-accent-gold/40 bg-black/40 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                        <Icon className="text-accent-gold text-base xl:text-lg transition-transform duration-500 group-hover:scale-110" weight="light" />
+                    <div key={i} className="flex gap-3.5 items-start group cursor-pointer p-2.5 xl:p-3 rounded-xl transition-all duration-500 hover:bg-white/[0.04] border border-transparent hover:border-white/10">
+                      <div className="w-10 h-10 xl:w-11 xl:h-11 rounded-full border border-accent-gold/40 bg-black/50 backdrop-blur-sm flex items-center justify-center shrink-0 transition-colors duration-500 group-hover:border-accent-gold group-hover:bg-accent-gold/15 shadow-sm">
+                        <Icon className="text-accent-gold text-lg xl:text-xl transition-transform duration-500 group-hover:scale-110" weight="regular" />
                       </div>
-                      <div className="flex flex-col justify-center min-h-[36px]">
-                        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block">
+                      <div className="flex flex-col justify-center min-h-[40px]">
+                        <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-accent-gold block">
                           {step.title}
                         </span>
                         <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
                           <div className="overflow-hidden">
-                            <p className="text-paragraph text-[11px] xl:text-xs font-light leading-relaxed opacity-0 group-hover:opacity-90 transition-opacity duration-500 delay-100 whitespace-pre-line pt-1.5">
+                            <p className="text-paragraph text-xs sm:text-[0.85rem] font-light leading-relaxed opacity-0 group-hover:opacity-95 transition-opacity duration-500 delay-100 whitespace-pre-line pt-1.5">
                               {step.text}
                             </p>
                           </div>
@@ -244,31 +244,31 @@ export default function CoachingJourney() {
                 return (
                   <div 
                     key={`mob-${i}`} 
-                    className={`absolute flex items-center gap-2 z-20 group cursor-pointer ${node.flip ? 'flex-row-reverse' : ''} scale-[0.65] sm:scale-90 origin-center`}
+                    className={`absolute flex items-center gap-2.5 z-20 group cursor-pointer ${node.flip ? 'flex-row-reverse' : ''} scale-[0.75] sm:scale-100 origin-center`}
                     style={{ 
                       top: node.mobTop, 
                       left: node.mobLeft,
                       transform: 'translate(-50%, -50%)' // Center the node on its coordinate on mobile
                     }}
                   >
-                    <div className="w-10 h-10 rounded-full border border-accent-gold/40 bg-black/60 backdrop-blur-md flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(185,138,86,0.3)]">
-                      <Icon className="text-accent-gold text-lg" weight="light" />
+                    <div className="w-11 h-11 rounded-full border border-accent-gold/50 bg-black/70 backdrop-blur-md flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(185,138,86,0.35)]">
+                      <Icon className="text-accent-gold text-xl" weight="regular" />
                     </div>
-                    <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-lg p-2 w-max">
-                      <div className={`flex items-center gap-2 mb-0.5 ${node.flip ? 'justify-end' : ''}`}>
+                    <div className="bg-black/60 backdrop-blur-md border border-white/15 rounded-xl p-3 w-max shadow-xl">
+                      <div className={`flex items-center gap-2 mb-1 ${node.flip ? 'justify-end' : ''}`}>
                         {node.flip ? (
                           <>
-                            <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white">{node.title}</span>
-                            <span className="font-sans text-[0.6rem] tracking-widest text-accent-gold">{node.num}</span>
+                            <span className="font-sans text-[0.72rem] uppercase tracking-[0.2em] font-bold text-white">{node.title}</span>
+                            <span className="font-sans text-[0.72rem] tracking-widest font-semibold text-accent-gold">{node.num}</span>
                           </>
                         ) : (
                           <>
-                            <span className="font-sans text-[0.6rem] tracking-widest text-accent-gold">{node.num}</span>
-                            <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white">{node.title}</span>
+                            <span className="font-sans text-[0.72rem] tracking-widest font-semibold text-accent-gold">{node.num}</span>
+                            <span className="font-sans text-[0.72rem] uppercase tracking-[0.2em] font-bold text-white">{node.title}</span>
                           </>
                         )}
                       </div>
-                      <p className={`text-paragraph text-[0.65rem] font-light leading-tight whitespace-pre-line text-white/80 ${node.flip ? 'text-right' : ''}`}>
+                      <p className={`text-paragraph text-xs font-light leading-relaxed whitespace-pre-line text-white/90 ${node.flip ? 'text-right' : ''}`}>
                         {node.text}
                       </p>
                     </div>
@@ -287,27 +287,27 @@ export default function CoachingJourney() {
         return (
           <div 
             key={i} 
-            className={`hidden lg:flex absolute items-center gap-2 journey-node z-20 group cursor-pointer ${node.flip ? 'flex-row-reverse' : ''}`}
+            className={`hidden lg:flex absolute items-center gap-3 journey-node z-20 group cursor-pointer ${node.flip ? 'flex-row-reverse' : ''}`}
             style={{ top: node.top, left: node.left }}
           >
-            <div className="w-10 h-10 rounded-full border border-accent-gold/40 bg-black/60 backdrop-blur-md flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(185,138,86,0.3)] transition-all group-hover:border-accent-gold group-hover:scale-110">
-              <Icon className="text-accent-gold text-lg" weight="light" />
+            <div className="w-12 h-12 rounded-full border border-accent-gold/50 bg-black/70 backdrop-blur-md flex items-center justify-center shrink-0 shadow-[0_0_25px_rgba(185,138,86,0.35)] transition-all duration-300 group-hover:border-accent-gold group-hover:scale-110 group-hover:bg-black/90">
+              <Icon className="text-accent-gold text-xl" weight="regular" />
             </div>
-            <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-lg p-2 w-max transition-all group-hover:border-accent-gold/40 group-hover:bg-black/60">
-              <div className={`flex items-center gap-2 mb-0.5 ${node.flip ? 'justify-end' : ''}`}>
+            <div className="bg-black/60 backdrop-blur-xl border border-white/15 rounded-xl px-4 py-3 w-max shadow-2xl transition-all duration-300 group-hover:border-accent-gold/60 group-hover:bg-black/80">
+              <div className={`flex items-center gap-2.5 mb-1 ${node.flip ? 'justify-end' : ''}`}>
                 {node.flip ? (
                   <>
-                    <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white">{node.title}</span>
-                    <span className="font-sans text-[0.6rem] tracking-widest text-accent-gold">{node.num}</span>
+                    <span className="font-sans text-xs uppercase tracking-[0.2em] font-bold text-white">{node.title}</span>
+                    <span className="font-sans text-xs tracking-widest font-semibold text-accent-gold">{node.num}</span>
                   </>
                 ) : (
                   <>
-                    <span className="font-sans text-[0.6rem] tracking-widest text-accent-gold">{node.num}</span>
-                    <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white">{node.title}</span>
+                    <span className="font-sans text-xs tracking-widest font-semibold text-accent-gold">{node.num}</span>
+                    <span className="font-sans text-xs uppercase tracking-[0.2em] font-bold text-white">{node.title}</span>
                   </>
                 )}
               </div>
-              <p className={`text-paragraph text-[0.65rem] font-light leading-tight whitespace-pre-line text-white/80 ${node.flip ? 'text-right' : ''}`}>
+              <p className={`text-paragraph text-[0.82rem] font-light leading-relaxed whitespace-pre-line text-white/90 ${node.flip ? 'text-right' : ''}`}>
                 {node.text}
               </p>
             </div>
@@ -316,10 +316,10 @@ export default function CoachingJourney() {
       })}
 
       {/* Floating Quote */}
-      <div className="hidden lg:block absolute bottom-[200px] xl:bottom-[220px] right-12 max-w-[280px] journey-quote z-20">
-        <span className="font-serif text-4xl text-accent-gold leading-none block mb-2">"</span>
-        <p className="font-serif text-2xl text-white mb-2 leading-tight">{data.quoteLine1 || "Transformation isn't a moment."}</p>
-        <p className="font-serif text-2xl text-accent-gold italic leading-tight">{data.quoteAccent || "It's a journey you walk with the right guide."}</p>
+      <div className="hidden lg:block absolute bottom-[200px] xl:bottom-[220px] right-12 max-w-[320px] journey-quote z-20">
+        <span className="font-serif text-5xl text-accent-gold leading-none block mb-2 font-normal">“</span>
+        <p className="font-serif text-2xl xl:text-3xl text-white mb-2 leading-snug">{data.quoteLine1 || "Transformation isn't a moment."}</p>
+        <p className="font-serif text-2xl xl:text-3xl text-accent-gold italic leading-snug">{data.quoteAccent || "It's a journey you walk with the right guide."}</p>
       </div>
 
       {/* Bottom Banners */}
@@ -327,43 +327,43 @@ export default function CoachingJourney() {
         
         {/* HOW IT WORKS Row */}
         <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-md border-t border-white/10">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-5 flex items-center justify-between">
+          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-5 sm:py-6 flex items-center justify-between">
             
-            <div className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-bold text-accent-gold pr-8 shrink-0">
+            <div className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-accent-gold pr-8 shrink-0">
               HOW IT WORKS
             </div>
 
-            <div className="flex items-center gap-6 md:gap-12 flex-grow justify-between pl-8 border-l border-white/10">
-              <div className="flex items-center gap-4 group">
-                <CalendarBlank className="text-accent-gold text-2xl group-hover:scale-110 transition-transform" weight="light" />
-                <p className="text-white/80 text-xs font-light max-w-[140px] leading-relaxed">
+            <div className="flex items-center gap-6 md:gap-10 lg:gap-12 flex-grow justify-between pl-8 border-l border-white/10">
+              <div className="flex items-center gap-3.5 sm:gap-4 group">
+                <CalendarBlank className="text-accent-gold text-2xl lg:text-[1.75rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
+                <p className="text-white/90 text-sm md:text-[0.92rem] font-light max-w-[190px] leading-snug">
                   {howItWorks[0] || 'Personalized coaching sessions tailored to you.'}
                 </p>
               </div>
               
-              <div className="hidden md:block text-white/20 text-xl font-light">›</div>
+              <div className="hidden md:block text-white/30 text-2xl font-light">›</div>
 
-              <div className="flex items-center gap-4 group">
-                <ChatTeardropText className="text-accent-gold text-2xl group-hover:scale-110 transition-transform" weight="light" />
-                <p className="text-white/80 text-xs font-light max-w-[140px] leading-relaxed">
+              <div className="flex items-center gap-3.5 sm:gap-4 group">
+                <ChatTeardropText className="text-accent-gold text-2xl lg:text-[1.75rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
+                <p className="text-white/90 text-sm md:text-[0.92rem] font-light max-w-[190px] leading-snug">
                   {howItWorks[1] || 'Powerful conversations that create real shifts.'}
                 </p>
               </div>
 
-              <div className="hidden md:block text-white/20 text-xl font-light">›</div>
+              <div className="hidden md:block text-white/30 text-2xl font-light">›</div>
 
-              <div className="flex items-center gap-4 group">
-                <ListDashes className="text-accent-gold text-2xl group-hover:scale-110 transition-transform" weight="light" />
-                <p className="text-white/80 text-xs font-light max-w-[140px] leading-relaxed">
+              <div className="flex items-center gap-3.5 sm:gap-4 group">
+                <ListDashes className="text-accent-gold text-2xl lg:text-[1.75rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
+                <p className="text-white/90 text-sm md:text-[0.92rem] font-light max-w-[190px] leading-snug">
                   {howItWorks[2] || 'Practical tools and frameworks you can use.'}
                 </p>
               </div>
 
-              <div className="hidden md:block text-white/20 text-xl font-light">›</div>
+              <div className="hidden md:block text-white/30 text-2xl font-light">›</div>
 
-              <div className="flex items-center gap-4 group">
-                <TrendUp className="text-accent-gold text-2xl group-hover:scale-110 transition-transform" weight="light" />
-                <p className="text-white/80 text-xs font-light max-w-[140px] leading-relaxed">
+              <div className="flex items-center gap-3.5 sm:gap-4 group">
+                <TrendUp className="text-accent-gold text-2xl lg:text-[1.75rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
+                <p className="text-white/90 text-sm md:text-[0.92rem] font-light max-w-[190px] leading-snug">
                   {howItWorks[3] || 'Accountability that keeps you moving forward.'}
                 </p>
               </div>
@@ -374,26 +374,23 @@ export default function CoachingJourney() {
 
         {/* Transition Row */}
         <div className="w-full bg-black border-t border-white/10">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4 sm:py-5 flex flex-col md:flex-row items-center justify-between gap-4">
             
-            <div className="flex items-center gap-6">
-              <div className="w-10 h-10 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0">
-                <Sparkle className="text-accent-gold text-xl" weight="light" />
+            <div className="flex items-center gap-5 sm:gap-6">
+              <div className="w-11 h-11 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0 bg-black/40">
+                <Sparkle className="text-accent-gold text-2xl" weight="light" />
               </div>
               <div>
-                <p className="font-serif text-accent-gold text-lg mb-0.5 italic">{data.transitionAccent || 'Guided. Structured. Flexible.'}</p>
-                <p className="text-paragraph text-xs text-white/70">
+                <p className="font-serif text-accent-gold text-xl lg:text-[1.35rem] mb-0.5 italic font-medium">{data.transitionAccent || 'Guided. Structured. Flexible.'}</p>
+                <p className="text-white/80 text-sm md:text-[0.92rem] font-light leading-snug">
                   {data.transitionSubtext || 'A process that adapts to you—so you can create a life that lasts.'}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-4 cursor-pointer group">
-              <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-accent-gold font-semibold transition-colors group-hover:text-white">
-               
-              </span>
-              <div className="w-8 h-8 rounded-full border border-accent-gold/40 flex items-center justify-center transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                <ArrowDown className="text-accent-gold text-sm transition-transform group-hover:translate-y-1" />
+              <div className="w-10 h-10 rounded-full border border-accent-gold/50 flex items-center justify-center transition-all group-hover:border-accent-gold group-hover:bg-accent-gold/15 group-hover:scale-105">
+                <ArrowDown className="text-accent-gold text-base transition-transform group-hover:translate-y-1" />
               </div>
             </div>
 

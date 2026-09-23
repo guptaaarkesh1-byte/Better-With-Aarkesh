@@ -32,9 +32,17 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Article'
   }],
+  savedVideos: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Video'
+  }],
   completedArticles: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Article'
+  }],
+  completedVideos: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Video'
   }],
   freeSessions: {
     type: Number,

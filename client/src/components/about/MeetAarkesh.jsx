@@ -176,13 +176,13 @@ export default function MeetAarkesh() {
               )}
 
               <div className="relative z-10 flex flex-col items-center text-center transition-transform duration-700 ease-out group-hover:-translate-y-2">
-                <Icon className="text-accent-gold text-3xl mb-4 opacity-80" weight="light" />
-                <h3 className="font-serif text-3xl md:text-4xl tracking-widest text-white mb-6">{role.title}</h3>
+                <Icon className="text-accent-gold text-3xl md:text-4xl mb-3 sm:mb-4 opacity-90" weight="light" />
+                <h3 className="font-serif text-3xl md:text-4xl lg:text-[2.6rem] tracking-widest text-white mb-4 sm:mb-6">{role.title}</h3>
                 
-                <div className="flex flex-col items-center gap-2 opacity-0 transform translate-y-8 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible">
-                  <p className="text-white/80 font-light text-xs md:text-sm">{role.sub1}</p>
-                  <p className="text-white/80 font-light text-xs md:text-sm mb-2">{role.sub2}</p>
-                  <p className="text-accent-gold font-serif italic text-sm md:text-base">{role.highlight}</p>
+                <div className="flex flex-col items-center gap-1.5 sm:gap-2.5 opacity-0 transform translate-y-8 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible px-4">
+                  <p className="text-white/90 font-normal text-sm sm:text-base md:text-[1.12rem] leading-snug">{role.sub1}</p>
+                  <p className="text-white/90 font-normal text-sm sm:text-base md:text-[1.12rem] leading-snug mb-2">{role.sub2}</p>
+                  <p className="text-accent-gold font-serif italic text-base sm:text-lg md:text-xl lg:text-[1.35rem] font-medium leading-normal drop-shadow-sm">{role.highlight}</p>
                 </div>
               </div>
             </div>
@@ -192,64 +192,55 @@ export default function MeetAarkesh() {
 
       {/* Bottom Banner */}
       <div className="w-full bg-[#0a0a0a] border-b border-white/10 meet-footer shrink-0">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3 flex flex-col xl:flex-row items-center justify-between gap-6">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-5 sm:py-7 flex flex-col xl:flex-row items-center justify-between gap-6 lg:gap-8">
           
           {/* Left Side: Mission */}
           <div className="flex-1 shrink-0 flex flex-col items-start w-full xl:w-auto">
-            <div className="flex items-center gap-3 mb-1.5">
-              <div className="h-[1px] w-4 bg-accent-gold origin-left" />
-              <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-bold text-accent-gold">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-[1px] w-6 bg-accent-gold origin-left" />
+              <span className="font-sans text-xs sm:text-[0.75rem] uppercase tracking-[0.25em] font-bold text-accent-gold">
                 {aboutData?.missionEyebrow || 'BEYOND THE ROLES'}
               </span>
             </div>
             
-            <h3 className="font-serif text-lg md:text-xl text-white tracking-tight mb-1">
+            <h3 className="font-serif text-xl sm:text-2xl md:text-[1.65rem] text-white tracking-tight leading-tight mb-2">
               {missionHeading}
             </h3>
             
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <p className="text-white/70 font-light text-[0.65rem] max-w-sm leading-relaxed">
-                {missionDescription}
-              </p>
-              
-              <Link to={storyBtnLink} className="flex items-center gap-2 border border-accent-gold/40 rounded-sm px-4 py-1.5 transition-colors hover:border-accent-gold hover:bg-accent-gold/10 shrink-0">
-                <span className="font-sans text-[0.5rem] uppercase tracking-[0.2em] font-semibold text-accent-gold">
-                  {storyBtnText}
-                </span>
-                <ArrowRight className="text-accent-gold text-[0.6rem]" />
-              </Link>
-            </div>
+            <p className="text-white/75 font-light text-xs sm:text-sm md:text-[0.92rem] max-w-xl leading-relaxed mt-1">
+              {missionDescription}
+            </p>
           </div>
 
           {/* Right Side: Features */}
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 w-full xl:w-auto xl:border-l border-white/10 xl:pl-8">
-            <div className="flex items-start gap-3 group">
-              <div className="w-8 h-8 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0 transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                <Compass className="text-accent-gold text-base" weight="light" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-8 md:gap-10 w-full xl:w-auto xl:border-l border-white/10 xl:pl-10">
+            <div className="flex items-center gap-3.5 group">
+              <div className="w-11 h-11 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0 transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/15 bg-black/40">
+                <Compass size={20} className="text-accent-gold" weight="regular" />
               </div>
               <div className="flex flex-col">
-                <span className="font-sans text-xs text-white mb-0.5">Real experience</span>
-                <span className="text-paragraph text-[0.6rem] font-light text-white/60 leading-tight">Life in high-pressure<br/>environments.</span>
+                <span className="font-sans text-sm sm:text-base font-medium text-white mb-0.5">Real experience</span>
+                <span className="text-paragraph text-xs sm:text-[0.82rem] font-light text-white/70 leading-snug">Life in high-pressure<br/>environments.</span>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 group">
-              <div className="w-8 h-8 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0 transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                <Brain className="text-accent-gold text-base" weight="light" />
+            <div className="flex items-center gap-3.5 group">
+              <div className="w-11 h-11 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0 transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/15 bg-black/40">
+                <Brain size={20} className="text-accent-gold" weight="regular" />
               </div>
               <div className="flex flex-col">
-                <span className="font-sans text-xs text-white mb-0.5">Deep training</span>
-                <span className="text-paragraph text-[0.6rem] font-light text-white/60 leading-tight">Backed by science.<br/>Rooted in empathy.</span>
+                <span className="font-sans text-sm sm:text-base font-medium text-white mb-0.5">Deep training</span>
+                <span className="text-paragraph text-xs sm:text-[0.82rem] font-light text-white/70 leading-snug">Backed by science.<br/>Rooted in empathy.</span>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 group">
-              <div className="w-8 h-8 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0 transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-                <Users className="text-accent-gold text-base" weight="light" />
+            <div className="flex items-center gap-3.5 group">
+              <div className="w-11 h-11 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0 transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/15 bg-black/40">
+                <Users size={20} className="text-accent-gold" weight="regular" />
               </div>
               <div className="flex flex-col">
-                <span className="font-sans text-xs text-white mb-0.5">Relatable approach</span>
-                <span className="text-paragraph text-[0.6rem] font-light text-white/60 leading-tight">No jargon. No masks.<br/>Just real conversations.</span>
+                <span className="font-sans text-sm sm:text-base font-medium text-white mb-0.5">Relatable approach</span>
+                <span className="text-paragraph text-xs sm:text-[0.82rem] font-light text-white/70 leading-snug">No jargon. No masks.<br/>Just real conversations.</span>
               </div>
             </div>
           </div>

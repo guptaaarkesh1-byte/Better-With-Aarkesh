@@ -133,6 +133,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             freeSessions: data.freeSessions,
             courseSessionsGranted: data.courseSessionsGranted
           }));
+          window.dispatchEvent(new Event('auth-change'));
           onSuccess({ ...data, isRegister: isOtpStep });
         }
       } else {

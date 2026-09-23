@@ -112,7 +112,7 @@ export default function CoachingPrinciple() {
             {/* Header */}
             <div className="flex items-center gap-4 mb-4 coaching-fade">
               <div className="h-[1px] w-8 bg-accent-gold origin-left" />
-              <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-medium text-accent-gold">
+              <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-semibold text-accent-gold">
                 {data.eyebrowText || 'THE COACHING PROCESS'}
               </span>
             </div>

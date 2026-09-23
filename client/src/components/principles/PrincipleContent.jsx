@@ -94,7 +94,7 @@ export default function PrincipleContent({
       
       <div className="flex items-center gap-4 mb-6">
         <div className="phil-line h-[1px] w-8 bg-accent-gold origin-left" />
-        <span className="phil-eyebrow font-sans text-[0.65rem] uppercase tracking-[0.3em] font-medium" style={{ color: '#B98A56' }}>
+        <span className="phil-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-semibold" style={{ color: '#B98A56' }}>
           {eyebrow}
         </span>
       </div>
@@ -114,12 +114,12 @@ export default function PrincipleContent({
         ))}
       </div>
 
-      <div className="phil-button flex items-center gap-4 cursor-pointer group w-fit">
-        <div className="w-12 h-12 rounded-full border border-accent-gold/40 flex items-center justify-center transition-colors group-hover:border-accent-gold group-hover:bg-accent-gold/10">
-          <ArrowDown className="text-accent-gold text-lg transition-transform group-hover:translate-y-1" />
+      <div className="phil-button flex items-center gap-4 sm:gap-5 cursor-pointer group w-fit pt-2">
+        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full border border-accent-gold/50 flex items-center justify-center transition-all duration-300 group-hover:border-accent-gold group-hover:bg-accent-gold/15 group-hover:scale-105 shadow-md">
+          <ArrowDown size={22} weight="regular" className="text-accent-gold transition-transform group-hover:translate-y-1" />
         </div>
-        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-accent-gold font-medium">
-          {buttonText}
+        <span className="font-sans text-xs sm:text-sm md:text-[0.85rem] uppercase tracking-[0.25em] text-accent-gold font-semibold transition-colors group-hover:text-white">
+          {buttonText || 'SCROLL FOR NEXT PRINCIPLE'}
         </span>
       </div>
 

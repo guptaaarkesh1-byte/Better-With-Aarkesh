@@ -63,7 +63,7 @@ export default function TransitionIntro({ problemData = {} }) {
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center">
-        <span className="trans-eyebrow font-sans text-[0.65rem] uppercase tracking-[0.3em] text-accent-gold mb-2 inline-block">
+        <span className="trans-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-semibold text-accent-gold mb-2 inline-block">
           {transEyebrow}
         </span>
 

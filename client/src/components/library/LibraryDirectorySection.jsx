@@ -1,6 +1,8 @@
-import React, { useState, useRef } from 'react';
-import { ArrowRight, CaretRight, Sparkle } from '@phosphor-icons/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowRight, CaretRight, Sparkle, BookmarkSimple, X, MagnifyingGlass } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
+import { renderFormattedTitle, resolveImageUrl } from '../../pages/articles/ArticleReaderView';
+import LoginModal from '../layout/LoginModal';
 
 export const LIBRARY_CATEGORIES = [
   {
@@ -11,7 +13,7 @@ export const LIBRARY_CATEGORIES = [
     articles: [
       {
         id: 'rel-1',
-        title: "Attention Feels Like Love (But Isn't)",
+        title: "Attention Feels Like *Love* (But Isn't)",
         slug: 'attention-feels-like-love',
         category: 'RELATIONSHIPS',
         categoryNum: '01 / 03',
@@ -19,7 +21,7 @@ export const LIBRARY_CATEGORIES = [
         meta: 'IDEAS · RELATIONSHIPS · 6 MIN READ',
         badgeText: 'ATTENTION IS NOT ALWAYS AFFECTION',
         image: '/library_preview_silhouette.jpg',
-        excerpt: 'Why clarity often comes after action, not before — and how a kinder, braver you can take the next step,',
+        excerpt: 'Why attention can feel intimate — and how a kinder, braver you can take the next step,',
         highlightText: 'even in uncertainty.',
         quote: '“Not all attention is a promise. Sometimes it’s just a moment.”',
       },
@@ -307,205 +309,774 @@ export const LIBRARY_CATEGORIES = [
 
 export default function LibraryDirectorySection() {
   const navigate = useNavigate();
-  const [activeArticle, setActiveArticle] = useState(LIBRARY_CATEGORIES[0].articles[0]);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const cardRef = useRef(null);
+  const [directorySettings, setDirectorySettings] = useState(null);
+  const [categoriesData, setCategoriesData] = useState(LIBRARY_CATEGORIES);
+  const [savedArticleIds, setSavedArticleIds] = useState([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingSaveId, setPendingSaveId] = useState(null);
 
-  const handleArticleHover = (article) => {
-    if (activeArticle?.id === article.id) return;
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setActiveArticle(article);
-      setIsTransitioning(false);
-    }, 150);
+  const fetchSaved = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSavedArticleIds([]);
+      return;
+    }
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/users/saved-articles`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const ids = [];
+        (data || []).forEach(a => {
+          if (typeof a === 'object' && a) {
+            if (a._id) ids.push(a._id.toString());
+            if (a.id) ids.push(a.id.toString());
+            if (a.slug) ids.push(a.slug);
+            if (a.title) ids.push(a.title);
+          } else if (a) {
+            ids.push(a.toString());
+          }
+        });
+        setSavedArticleIds([...new Set(ids)]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch saved articles', err);
+    }
   };
+
+  useEffect(() => {
+    fetchSaved();
+    window.addEventListener('auth-change', fetchSaved);
+    window.addEventListener('storage', fetchSaved);
+    return () => {
+      window.removeEventListener('auth-change', fetchSaved);
+      window.removeEventListener('storage', fetchSaved);
+    };
+  }, []);
+
+  const isArtSaved = (art) => {
+    if (!art) return false;
+    const artId = art._id?.toString() || art.id?.toString() || art.slug || art.title;
+    return savedArticleIds.some(id => 
+      id === artId || 
+      id === art._id?.toString() || 
+      id === art.id?.toString() || 
+      id === art.slug || 
+      id === art.title
+    );
+  };
+
+  const handleToggleSave = async (article, e) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const token = localStorage.getItem('token');
+    const artObj = typeof article === 'object' && article ? article : (hoveredArticle || { id: article, title: article });
+    const articleId = artObj._id || artObj.id || artObj.slug || article;
+
+    if (!token) {
+      setPendingSaveId(artObj);
+      setShowLoginModal(true);
+      return;
+    }
+
+    const isCurrentlySaved = isArtSaved(artObj);
+
+    // Optimistic UI update
+    setSavedArticleIds(prev => {
+      if (isCurrentlySaved) {
+        return prev.filter(id => 
+          id !== articleId && 
+          id !== artObj._id?.toString() && 
+          id !== artObj.id?.toString() && 
+          id !== artObj.slug && 
+          id !== artObj.title
+        );
+      } else {
+        const toAdd = [articleId?.toString(), artObj._id?.toString(), artObj.id?.toString(), artObj.slug, artObj.title].filter(Boolean);
+        return [...new Set([...prev, ...toAdd])];
+      }
+    });
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/users/save-article`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          articleId,
+          title: artObj.title,
+          category: artObj.category || 'RELATIONSHIPS',
+          excerpt: artObj.excerpt || artObj.subtitle || artObj.description || '',
+          image: artObj.image || artObj.featuredImage || '/library_preview_silhouette.jpg',
+          slug: artObj.slug || ''
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.isSaved === false) {
+          setSavedArticleIds(prev => 
+            prev.filter(id => 
+              id !== articleId && 
+              id !== artObj._id?.toString() && 
+              id !== artObj.id?.toString() && 
+              id !== artObj.slug && 
+              id !== artObj.title &&
+              (data.articleId ? id !== data.articleId.toString() : true)
+            )
+          );
+        } else {
+          const idsToAdd = [
+            data.articleId?.toString(),
+            articleId?.toString(),
+            artObj._id?.toString(),
+            artObj.id?.toString(),
+            artObj.slug,
+            artObj.title
+          ].filter(Boolean);
+          setSavedArticleIds(prev => [...new Set([...prev, ...idsToAdd])]);
+        }
+      }
+    } catch (err) {
+      console.error('Save article error:', err);
+    }
+  };
+
+  const handleLoginSuccess = async (loginResult) => {
+    setShowLoginModal(false);
+    window.dispatchEvent(new Event('auth-change'));
+
+    if (pendingSaveId) {
+      const artObj = pendingSaveId;
+      setPendingSaveId(null);
+      const token = localStorage.getItem('token') || loginResult?.token;
+      if (token) {
+        const articleId = artObj._id || artObj.id || artObj.slug || (typeof artObj === 'string' ? artObj : artObj.title);
+        
+        // Optimistic UI update
+        const toAdd = [articleId?.toString(), artObj._id?.toString(), artObj.id?.toString(), artObj.slug, artObj.title].filter(Boolean);
+        setSavedArticleIds(prev => [...new Set([...prev, ...toAdd])]);
+
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const res = await fetch(`${apiUrl}/api/users/save-article`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ 
+              articleId,
+              title: artObj.title,
+              category: artObj.category || 'RELATIONSHIPS',
+              excerpt: artObj.excerpt || artObj.subtitle || artObj.description || '',
+              image: artObj.image || artObj.featuredImage || '/library_preview_silhouette.jpg',
+              slug: artObj.slug || ''
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const idsToAdd = [
+              data.articleId?.toString(),
+              articleId?.toString(),
+              artObj._id?.toString(),
+              artObj.id?.toString(),
+              artObj.slug,
+              artObj.title
+            ].filter(Boolean);
+            setSavedArticleIds(prev => [...new Set([...prev, ...idsToAdd])]);
+          }
+        } catch (err) {
+          console.error('Save article error after login:', err);
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/library-settings`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.directory) {
+            setDirectorySettings(data.directory);
+            if (data.directory.categories && Array.isArray(data.directory.categories) && data.directory.categories.length > 0) {
+              setCategoriesData(prev => {
+                return data.directory.categories.map((c, idx) => {
+                  const existing = prev.find(p => 
+                    (p.id || '').toLowerCase() === (c.id || '').toLowerCase() || 
+                    (p.id || '').toLowerCase() === (c.key || '').toLowerCase() ||
+                    (p.title || '').toLowerCase() === (c.title || '').toLowerCase()
+                  );
+                  return {
+                    num: c.num || (idx + 1 < 10 ? `0${idx + 1}` : `${idx + 1}`),
+                    id: c.id || existing?.id || `cat-${idx + 1}`,
+                    title: c.title || existing?.title || 'Category',
+                    subtitle: c.subtitle || existing?.subtitle || '',
+                    articles: existing ? existing.articles : []
+                  };
+                });
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load directory settings:', err);
+      }
+    };
+
+    const fetchCustomArticles = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/articles`);
+        if (res.ok) {
+          const dbArticles = await res.json();
+          if (Array.isArray(dbArticles) && dbArticles.length > 0) {
+            setCategoriesData(prev => {
+              const updated = prev.map(cat => ({ ...cat, articles: [...cat.articles] }));
+              dbArticles.forEach(dbA => {
+                const catId = (dbA.categoryId || dbA.category || '').toLowerCase();
+                const targetCat = updated.find(c => 
+                  (c.id || '').toLowerCase() === catId || 
+                  (c.title || '').toLowerCase() === catId
+                );
+                if (targetCat) {
+                  const existingIdx = targetCat.articles.findIndex(a => a.id === dbA._id || a.id === dbA.id || a.slug === dbA.slug);
+                  const articleObj = {
+                    id: dbA._id || dbA.id || dbA.slug,
+                    title: dbA.title,
+                    slug: dbA.slug || dbA.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                    category: targetCat.title.toUpperCase(),
+                    categoryNum: dbA.categoryNum || '01 / 03',
+                    readTime: dbA.readTime || '5 MIN READ',
+                    meta: `IDEAS · ${targetCat.title.toUpperCase()}`,
+                    badgeText: dbA.badgeText || 'ATTENTION IS NOT ALWAYS AFFECTION',
+                    image: dbA.featuredImage || dbA.image || '/library_preview_silhouette.jpg',
+                    excerpt: dbA.description || dbA.subtitle || dbA.excerpt || '',
+                    highlightText: dbA.highlightText || '',
+                    quote: dbA.quote || '',
+                    dropCap: dbA.dropCap,
+                    dropCapText: dbA.dropCapText,
+                    blocks: dbA.blocks,
+                    sections: dbA.sections,
+                    bodyHtml: dbA.bodyHtml
+                  };
+                  if (existingIdx !== -1) {
+                    targetCat.articles[existingIdx] = { ...targetCat.articles[existingIdx], ...articleObj };
+                  } else {
+                    targetCat.articles.unshift(articleObj);
+                  }
+                }
+              });
+
+              return updated;
+            });
+          }
+        }
+      } catch (err) {
+        console.log('Using default curated articles');
+      }
+    };
+
+    fetchSettings();
+    fetchCustomArticles();
+  }, []);
+
+  const [hoveredCategory, setHoveredCategory] = useState(null);
+  const [hoveredArticle, setHoveredArticle] = useState(null);
+  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
+  const closeTimeoutRef = useRef(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // All articles flattened for search
+  const allArticlesList = categoriesData.flatMap(c => c.articles);
+  const matchingArticles = searchQuery.trim()
+    ? allArticlesList.filter(a => {
+        const q = searchQuery.toLowerCase();
+        return (
+          (a.title || '').toLowerCase().includes(q) ||
+          (a.excerpt || '').toLowerCase().includes(q) ||
+          (a.category || '').toLowerCase().includes(q)
+        );
+      })
+    : [];
+
+  const handleSearchSubmit = (e) => {
+    e?.preventDefault();
+    if (!searchQuery.trim()) return;
+    if (matchingArticles.length > 0) {
+      handleArticleClick(matchingArticles[0]);
+    } else {
+      navigate(`/articles?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    let rafId = null;
+    const handleScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 50);
+        rafId = null;
+      });
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+
+  const isHoveringPopupRef = useRef(false);
 
   const handleArticleClick = (article) => {
     sessionStorage.setItem('library_scroll_position', window.scrollY.toString());
     navigate(`/articles?article=${article.slug || article.id}&title=${encodeURIComponent(article.title)}`);
   };
 
+  const handleArticleMouseEnter = (article, e) => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    isHoveringPopupRef.current = false;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const sectionContainer = document.getElementById('library-directory-container');
+    const containerRect = sectionContainer ? sectionContainer.getBoundingClientRect() : { top: 0, left: 0, height: 1000 };
+    
+    // Card height estimation (~460px)
+    const cardHeight = 460;
+    
+    // Viewport safe bounds (never go above navbar ~80px, never go below viewport bottom)
+    const minViewportTop = 85; // Below navbar
+    const maxViewportTop = Math.max(minViewportTop, window.innerHeight - cardHeight - 20);
+
+    // Desired top position (vertically centered on the hovered article item)
+    const desiredViewportTop = (rect.top + (rect.height / 2)) - (cardHeight / 2);
+    
+    // Clamp strictly within the visible viewport
+    const clampedViewportTop = Math.max(minViewportTop, Math.min(desiredViewportTop, maxViewportTop));
+    
+    // Convert to relative coordinate inside library directory container
+    const rawTopPos = clampedViewportTop - containerRect.top;
+    const topPos = Math.max(10, rawTopPos);
+    
+    const leftPos = rect.left - containerRect.left;
+    
+    setPopupPos({ top: topPos, left: leftPos });
+    setHoveredArticle(article);
+  };
+
+  const handleArticleMouseLeave = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    closeTimeoutRef.current = setTimeout(() => {
+      if (!isHoveringPopupRef.current) {
+        setHoveredArticle(null);
+      }
+    }, 300);
+  };
+
+  const handlePopupMouseEnter = () => {
+    isHoveringPopupRef.current = true;
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+  };
+
+  const handlePopupMouseLeave = () => {
+    isHoveringPopupRef.current = false;
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    closeTimeoutRef.current = setTimeout(() => {
+      setHoveredArticle(null);
+    }, 250);
+  };
+
   return (
-    <section className="relative w-full bg-[#050505] text-white py-20 lg:py-28 px-4 sm:px-6 md:px-10 lg:px-16 border-t border-white/5">
+    <section className="relative w-full bg-[#050505] text-white pt-20 lg:pt-[88px] pb-0 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 overflow-visible">
       
-      {/* Background Subtle Gradient Glow */}
-      <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-[#c79c6e]/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-[#c79c6e]/3 rounded-full blur-[120px] pointer-events-none" />
+      {/* Background Subtle Gradient Glow — lightweight, GPU-composited */}
+      <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-[#c79c6e]/[0.04] rounded-full blur-3xl pointer-events-none will-change-transform" />
+      <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-[#c79c6e]/[0.025] rounded-full blur-3xl pointer-events-none will-change-transform" />
 
-      <div className="max-w-[1500px] mx-auto flex flex-col gap-14 lg:gap-20 relative z-10">
-        
-        {/* =========================================================
-            HEADER AREA
-           ========================================================= */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/10">
-          <div className="flex flex-col gap-3 max-w-2xl">
+      {/* Main Section Flex Container (Constrains the sticky column within the 6 categories) */}
+      <div className="max-w-[1440px] mx-auto flex items-start justify-between gap-8 xl:gap-12 relative">
+
+        {/* Left / Main Content: Header + 6 Categories */}
+        <div id="library-directory-container" className="flex-1 min-w-0 flex flex-col gap-12 lg:gap-16 pt-6 sm:pt-10 lg:pt-12 relative z-30">
+          
+          {/* =========================================================
+              HEADER AREA
+             ========================================================= */}
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 lg:gap-10 pb-12 border-b border-white/10">
+          
+          {/* Left Column: Eyebrow + Large Title + Serif Description */}
+          <div className="flex flex-col gap-2.5 max-w-xl">
             <span className="font-sans text-[0.68rem] md:text-[0.72rem] uppercase tracking-[0.25em] font-semibold text-[#c79c6e]">
-              Ideas for a more thoughtful life
+              {directorySettings?.eyebrowText || 'IDEAS FOR A MORE THOUGHTFUL LIFE'}
             </span>
-            <h2 className="font-serif text-5xl sm:text-6xl lg:text-7xl font-light text-white tracking-tight leading-[1.05]">
-              Library
+            <h2 className="font-serif text-5xl sm:text-6xl lg:text-7xl font-normal text-white tracking-tight leading-[1.05]">
+              {directorySettings?.headingText || 'Library'}
             </h2>
-            <p className="font-sans text-white/60 text-base sm:text-lg font-light leading-relaxed mt-1">
-              A collection of ideas about how we think, relate, choose and change.
+            <p className="font-serif text-white/75 text-base sm:text-lg lg:text-[1.15rem] font-normal leading-relaxed mt-0.5">
+              {directorySettings?.description || 'A collection of ideas about how we think, relate, choose and change.'}
             </p>
           </div>
 
-          <div className="flex flex-col items-start lg:items-end text-left lg:text-right max-w-md">
-            <p className="font-serif text-lg sm:text-xl text-white/80 italic leading-snug">
-              “A quieter mind builds a braver, kinder life.”
-            </p>
-            <span className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-semibold text-[#c79c6e] mt-2">
-              — Aarkesh Gupta
-            </span>
+          {/* Right Group: Search Bar (on left) + Quote Block (on right) */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-6 lg:gap-8 shrink-0">
+            
+            {/* Ultra-Sleek Modern Luxury Search Bar */}
+            <div className="w-full sm:w-64 md:w-72 lg:w-80 relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#c79c6e]/0 via-[#c79c6e]/25 to-[#c79c6e]/0 rounded-full blur-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              
+              <form 
+                onSubmit={handleSearchSubmit} 
+                className="relative w-full flex items-center bg-[#110e0b]/90 hover:bg-[#17130e]/95 backdrop-blur-xl border border-white/10 group-hover:border-[#c79c6e]/40 group-focus-within:border-[#c79c6e] group-focus-within:ring-2 group-focus-within:ring-[#c79c6e]/20 rounded-full py-1.5 pl-3.5 sm:pl-4 pr-1.5 transition-all duration-300 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
+              >
+                <div className="text-white/40 group-focus-within:text-[#c79c6e] group-hover:text-white/70 transition-colors mr-2.5 shrink-0">
+                  <MagnifyingGlass size={16} weight="regular" />
+                </div>
+
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={directorySettings?.searchPlaceholder || "Describe what you're facing..."}
+                  className="w-full bg-transparent text-white placeholder:text-white/35 font-light text-xs sm:text-sm focus:outline-none tracking-wide"
+                />
+
+                <div className="flex items-center gap-1 shrink-0 ml-1">
+                  {searchQuery && (
+                    <button 
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="text-white/40 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+                      title="Clear search"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                  <button 
+                    type="submit"
+                    className="w-7 h-7 rounded-full bg-[#c79c6e]/15 hover:bg-[#c79c6e] text-[#c79c6e] hover:text-black group-focus-within:bg-[#c79c6e] group-focus-within:text-black flex items-center justify-center transition-all duration-300 cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                    title="Search"
+                  >
+                    <ArrowRight size={13} weight="bold" />
+                  </button>
+                </div>
+              </form>
+
+              {/* Floating Dynamic Search Dropdown Overlay */}
+              {searchQuery.trim() && (
+                <div className="absolute top-full left-0 right-0 mt-3 z-[100] bg-[#0d0a08]/95 backdrop-blur-2xl border border-[#c79c6e]/40 rounded-2xl p-3 sm:p-4 shadow-[0_20px_60px_rgba(0,0,0,0.9)] animate-in fade-in slide-in-from-top-2 duration-200 text-left">
+                  <div className="flex items-center justify-between mb-3 px-1 border-b border-white/5 pb-2">
+                    <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-1.5">
+                      <Sparkle size={13} weight="fill" />
+                      {matchingArticles.length > 0 
+                        ? `MATCHING (${matchingArticles.length})` 
+                        : 'NO MATCHES'
+                      }
+                    </span>
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="text-white/40 hover:text-white text-xs font-sans flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+
+                  {matchingArticles.length > 0 ? (
+                    <div className="flex flex-col gap-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1 overscroll-contain">
+                      {matchingArticles.slice(0, 5).map((art) => (
+                        <div
+                          key={art.id || art.slug}
+                          onClick={() => {
+                            setSearchQuery('');
+                            handleArticleClick(art);
+                          }}
+                          className="group/match p-2.5 rounded-xl border border-white/5 hover:border-[#c79c6e]/60 bg-white/[0.02] hover:bg-[#1a1510] transition-all duration-200 cursor-pointer flex flex-col gap-1 shadow-sm"
+                        >
+                          <span className="text-[0.6rem] uppercase tracking-widest font-semibold text-[#c79c6e]">
+                            {art.category}
+                          </span>
+                          <h4 className="font-serif text-xs sm:text-sm text-white font-normal group-hover/match:text-[#c79c6e] transition-colors leading-snug line-clamp-1">
+                            {renderFormattedTitle(art.title)}
+                          </h4>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-center">
+                      <p className="text-white/70 text-xs font-light">
+                        No articles matching "<span className="text-white">{searchQuery}</span>".
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Right Column: Quote with matching height vertical divider in 2 lines */}
+            <div className="flex flex-col justify-center border-l border-[#c79c6e]/50 pl-5 sm:pl-6 py-0.5 max-w-[280px] sm:max-w-xs shrink-0">
+              <p className="font-serif text-base sm:text-lg lg:text-[1.18rem] text-white/95 italic leading-[1.35] whitespace-pre-line">
+                {directorySettings?.quoteText 
+                  ? (directorySettings.quoteText.includes('\n') 
+                      ? directorySettings.quoteText 
+                      : directorySettings.quoteText.replace(/mind\s+/i, 'mind\n'))
+                  : '“A quieter mind\nbuilds a braver, kinder life.”'}
+              </p>
+              <span className="font-sans text-[0.65rem] md:text-[0.68rem] uppercase tracking-[0.25em] font-semibold text-[#c79c6e] mt-2.5">
+                {directorySettings?.quoteAuthor || '— AARKESH GUPTA'}
+              </span>
+            </div>
+
           </div>
+
         </div>
 
         {/* =========================================================
-            MAIN 2-COLUMN DIRECTORY + HOVER PREVIEW
+            6 SECTION CATEGORIES & HOVER ROWS (ENLARGED HEADINGS & NUMBERS)
            ========================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start relative">
-          
-          {/* LEFT COLUMN: 6 Section Categories & Article Rows */}
-          <div className="lg:col-span-7 flex flex-col">
-            {LIBRARY_CATEGORIES.map((cat, idx) => (
+        <div className="flex flex-col divide-y divide-white/10 relative">
+          {categoriesData.map((cat) => {
+            const isHovered = hoveredCategory === cat.id;
+            return (
               <div 
                 key={cat.id} 
-                className={`py-7 sm:py-8 lg:py-9 border-b border-white/10 ${idx === 0 ? 'pt-0' : ''} ${idx === LIBRARY_CATEGORIES.length - 1 ? 'border-b-0' : ''} grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-0 items-start group`}
+                onMouseEnter={() => setHoveredCategory(cat.id)}
+                onMouseLeave={() => setHoveredCategory(null)}
+                className={`py-9 sm:py-12 px-3 sm:px-6 rounded-2xl grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start relative transition-colors duration-300 ${
+                  isHovered 
+                    ? 'bg-[#c79c6e]/[0.08]' 
+                    : 'bg-transparent'
+                }`}
               >
-                {/* Category Number & Meta (Left Part with Vertical Divider) */}
-                <div className="md:col-span-5 md:pr-6 lg:pr-8 md:border-r md:border-white/10 flex items-start gap-4 sm:gap-6">
-                  <span className="font-serif text-3xl sm:text-4xl lg:text-[2.6rem] text-[#c79c6e] font-light leading-none shrink-0 select-none pt-0.5">
+                {/* Category Number & Title (Left Part - Enlarged) */}
+                <div className="md:col-span-5 flex items-start gap-5 sm:gap-7">
+                  <span className={`font-serif text-4xl sm:text-5xl lg:text-[3.5rem] font-light leading-none shrink-0 select-none pt-0.5 transition-colors duration-300 ${
+                    isHovered ? 'text-[#e6be94]' : 'text-[#c79c6e]'
+                  }`}>
                     {cat.num}
                   </span>
-                  <div className="flex flex-col gap-1.5">
-                    <h3 className="font-serif text-2xl sm:text-[1.65rem] text-white font-normal group-hover:text-[#c79c6e] transition-colors leading-tight">
+                  <div className="flex flex-col gap-2">
+                    <h3 className={`font-serif text-3xl sm:text-[2rem] lg:text-[2.25rem] font-normal leading-tight transition-colors duration-300 ${
+                      isHovered ? 'text-white' : 'text-white/95'
+                    }`}>
                       {cat.title}
                     </h3>
-                    <p className="font-sans text-xs sm:text-[0.78rem] text-white/50 leading-relaxed font-light pr-2">
+                    <p className="font-sans text-sm sm:text-[0.95rem] lg:text-[1.02rem] text-white/60 leading-relaxed font-light pr-2">
                       {cat.subtitle}
                     </p>
-                    <span className="font-sans text-[0.62rem] uppercase tracking-[0.25em] font-semibold text-[#c79c6e] mt-1">
-                      {cat.articles.length} Articles
-                    </span>
                   </div>
                 </div>
 
                 {/* Articles List (Right Part) */}
-                <div className="md:col-span-7 md:pl-6 lg:pl-8 flex flex-col justify-center gap-3.5 sm:gap-4 pt-1 sm:pt-0">
+                <div className="md:col-span-7 flex flex-col justify-center gap-4 sm:gap-5 pt-2 sm:pt-1">
                   {cat.articles.map((art) => {
-                    const isCurrent = activeArticle?.id === art.id;
+                    const saved = isArtSaved(art);
                     return (
                       <div
-                        key={art.id}
-                        onMouseEnter={() => handleArticleHover(art)}
+                        key={art.id || art.slug}
+                        onMouseEnter={(e) => handleArticleMouseEnter(art, e)}
+                        onMouseLeave={handleArticleMouseLeave}
                         onClick={() => handleArticleClick(art)}
-                        className="group/item flex items-center justify-between cursor-pointer transition-all duration-200 py-1"
+                        className="group/item flex items-center justify-between cursor-pointer py-1.5 transition-all duration-200 relative"
                       >
-                        <span className={`font-serif text-base sm:text-lg transition-all duration-200 line-clamp-1 pr-3 ${
-                          isCurrent 
-                            ? 'text-white underline underline-offset-4 decoration-[#c79c6e] font-normal' 
-                            : 'text-white/80 group-hover/item:text-white group-hover/item:underline group-hover/item:underline-offset-4 group-hover/item:decoration-white/30'
-                        }`}>
-                          {art.title}
+                        <span className="font-serif text-lg sm:text-xl lg:text-[1.2rem] text-white/85 group-hover/item:text-white group-hover/item:underline group-hover/item:underline-offset-4 group-hover/item:decoration-[#c79c6e]/70 transition-all duration-200 pr-3 leading-snug flex-1">
+                          {renderFormattedTitle(art.title)}
                         </span>
 
-                        <CaretRight 
-                          size={15} 
-                          weight={isCurrent ? 'bold' : 'regular'}
-                          className={`shrink-0 transition-all duration-300 ml-3 ${
-                            isCurrent 
-                              ? 'text-[#c79c6e] translate-x-1 scale-110' 
-                              : 'text-white/30 group-hover/item:text-[#c79c6e] group-hover/item:translate-x-1'
-                          }`}
-                        />
+                        <div className="flex items-center gap-1 shrink-0 ml-3">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              handleToggleSave(art, e);
+                            }}
+                            className={`p-1.5 rounded transition-all duration-200 ${
+                              saved 
+                                ? 'opacity-100 text-[#c79c6e]' 
+                                : 'opacity-0 group-hover/item:opacity-100 text-white/40 hover:text-[#c79c6e] hover:bg-white/5'
+                            }`}
+                            title={saved ? "Remove from Saved" : "Save Article"}
+                          >
+                            <BookmarkSimple 
+                              size={17} 
+                              weight={saved ? "fill" : "regular"} 
+                            />
+                          </button>
+                          
+                          <CaretRight 
+                            size={17} 
+                            className="text-white/30 group-hover/item:text-[#c79c6e] group-hover/item:translate-x-1 transition-all duration-200"
+                          />
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
-          {/* RIGHT COLUMN: Interactive Sticky Preview Card (Full Screen Height, Locked on Scroll) */}
-          <div className="lg:col-span-5 sticky top-20 lg:top-[5.5rem] h-[calc(100vh-6.5rem)] min-h-[580px] max-h-[calc(100vh-6.5rem)] self-start z-20">
-            <div 
-              ref={cardRef}
-              className={`w-full h-full rounded-2xl border border-[#c79c6e]/30 bg-gradient-to-b from-[#120e0a] via-[#090807] to-[#050505] p-6 sm:p-7 xl:p-8 flex flex-col justify-between shadow-[0_0_50px_rgba(199,156,110,0.15)] relative overflow-hidden transition-all duration-300 ${
-                isTransitioning ? 'opacity-40 scale-[0.98]' : 'opacity-100 scale-100'
-              }`}
-            >
-              {/* Outer Golden Border Accent Glow */}
-              <div className="absolute -top-24 -right-24 w-56 h-56 bg-[#c79c6e]/15 rounded-full blur-3xl pointer-events-none" />
-
-              {/* Card Header: Category Tag + Index */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-3 shrink-0">
-                <span className="font-sans text-[0.65rem] sm:text-[0.68rem] uppercase tracking-[0.25em] font-bold text-[#c79c6e]">
-                  {activeArticle.category}
-                </span>
-                <span className="font-mono text-xs text-white/50 font-medium">
-                  {activeArticle.categoryNum}
+        {/* =========================================================
+            DYNAMIC FLOATING POPUP PREVIEW CARD (VERTICALLY CENTERED ON HOVERED ITEM)
+           ========================================================= */}
+        {hoveredArticle && (
+          <div 
+            onMouseEnter={handlePopupMouseEnter}
+            onMouseLeave={handlePopupMouseLeave}
+            style={{
+              top: `${popupPos.top}px`,
+              right: window.innerWidth > 1024 ? '-150px' : '0px',
+              maxWidth: 'calc(100vw - 32px)'
+            }}
+            className="absolute z-50 w-[320px] sm:w-[350px] lg:w-[370px] rounded-2xl border border-[#c79c6e]/50 bg-[#0d0a08]/95 backdrop-blur-xl p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_25px_rgba(199,156,110,0.25)] animate-in fade-in zoom-in-95 duration-150 pointer-events-auto will-change-transform before:content-[''] before:absolute before:-left-12 before:top-0 before:w-12 before:h-full before:pointer-events-auto"
+          >
+            {/* Top Celestial Image Visual */}
+            <div className="w-full aspect-[16/10] rounded-xl overflow-hidden border border-[#c79c6e]/30 bg-black mb-4 relative shadow-inner group/pop">
+              <img 
+                src={resolveImageUrl(hoveredArticle.image, '/library_celestial_column.jpg')} 
+                alt={typeof hoveredArticle.title === 'string' ? hoveredArticle.title : 'Article Artwork'}
+                className="w-full h-full object-cover object-center group-hover/pop:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+              
+              {/* Category Tag pill */}
+              <div className="absolute bottom-2.5 left-3">
+                <span className="px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-[0.62rem] uppercase tracking-widest font-semibold text-[#c79c6e] border border-[#c79c6e]/30">
+                  {hoveredArticle.category}
                 </span>
               </div>
+            </div>
 
-              {/* Article Title */}
-              <h3 className="font-serif text-2xl sm:text-[1.75rem] xl:text-[2rem] font-normal text-white leading-tight shrink-0">
-                {activeArticle.title}
-              </h3>
+            {/* Article Title */}
+            <h4 className="font-serif text-xl sm:text-[1.4rem] font-normal text-white leading-snug mb-2.5">
+              {renderFormattedTitle(hoveredArticle.title)}
+            </h4>
 
-              {/* Artwork / Banner Illustration */}
-              <div className="w-full flex-1 min-h-[160px] max-h-[240px] aspect-[16/9] rounded-xl overflow-hidden relative border border-[#c79c6e]/20 bg-black group/art shadow-inner my-1">
-                <img 
-                  src={activeArticle.image} 
-                  alt={activeArticle.title}
-                  className="w-full h-full object-cover object-center group-hover/art:scale-105 transition-transform duration-700"
-                />
-                
-                {/* Badge text on artwork */}
-                {activeArticle.badgeText && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-end text-right pointer-events-none max-w-[130px]">
-                    <span className="font-sans text-[0.55rem] uppercase tracking-[0.2em] font-bold text-[#c79c6e] leading-snug drop-shadow-md">
-                      {activeArticle.badgeText}
-                    </span>
-                    <div className="w-6 h-[1.5px] bg-[#c79c6e] mt-1.5" />
-                  </div>
-                )}
-              </div>
+            {/* Excerpt with Gold Highlight */}
+            <p className="font-serif text-white/75 text-xs sm:text-[0.84rem] font-normal leading-relaxed mb-4">
+              {hoveredArticle.excerpt ? (
+                <>
+                  {renderFormattedTitle(hoveredArticle.excerpt)}
+                  {hoveredArticle.highlightText && (
+                    <>
+                      {' '}
+                      <span className="text-[#c79c6e] italic font-serif">
+                        {hoveredArticle.highlightText}
+                      </span>
+                    </>
+                  )}
+                </>
+              ) : (
+                renderFormattedTitle(hoveredArticle.subtitle || hoveredArticle.description || '')
+              )}
+            </p>
 
-              {/* Excerpt with Gold Highlight */}
-              <p className="font-sans text-white/70 text-xs sm:text-[0.88rem] font-light leading-relaxed shrink-0">
-                {activeArticle.excerpt}{' '}
-                {activeArticle.highlightText && (
-                  <span className="bg-[#c79c6e]/20 text-[#c79c6e] px-1.5 py-0.5 rounded font-normal">
-                    {activeArticle.highlightText}
-                  </span>
-                )}
-              </p>
-
-              {/* CTA Button */}
+            {/* CTA Action Row: Read Article + Bookmark */}
+            <div className="flex items-center justify-between pt-3 border-t border-white/10">
               <button
                 type="button"
-                onClick={() => handleArticleClick(activeArticle)}
-                className="w-fit inline-flex items-center gap-2.5 font-sans text-xs uppercase tracking-[0.2em] font-bold text-[#c79c6e] hover:text-white transition-colors cursor-pointer group/cta shrink-0"
+                onClick={() => handleArticleClick(hoveredArticle)}
+                className="inline-flex items-center gap-2 font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#c79c6e] hover:text-white transition-colors cursor-pointer group/cta"
               >
-                <span>Read Article</span>
-                <ArrowRight size={14} weight="bold" className="group-hover/cta:translate-x-1 transition-transform" />
+                <span>Read article</span>
+                <ArrowRight size={13} weight="bold" className="group-hover/cta:translate-x-1 transition-transform" />
               </button>
 
-              {/* Footer Italic Quote */}
-              <div className="pt-3 border-t border-white/10 flex flex-col gap-2 shrink-0">
-                <p className="font-serif text-xs sm:text-[0.85rem] text-white/80 italic leading-snug">
-                  {activeArticle.quote}
-                </p>
-
-                <div className="w-8 h-[1px] bg-[#c79c6e]/60 mt-0.5" />
-              </div>
-
+              <button
+                type="button"
+                onClick={(e) => {
+                  handleToggleSave(hoveredArticle, e);
+                }}
+                className={`px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer shadow-md flex items-center gap-1.5 hover:scale-105 active:scale-95 ${
+                  isArtSaved(hoveredArticle)
+                    ? 'bg-[#c79c6e] text-black border-[#c79c6e]'
+                    : 'bg-black/80 text-[#c79c6e] border-[#c79c6e]/50 hover:bg-[#c79c6e] hover:text-black'
+                }`}
+                title={isArtSaved(hoveredArticle) ? "Remove from Saved" : "Save Article"}
+              >
+                <BookmarkSimple 
+                  size={16} 
+                  weight={isArtSaved(hoveredArticle) ? "fill" : "regular"} 
+                />
+                <span className="font-sans text-[0.65rem] uppercase tracking-wider font-semibold">
+                  {isArtSaved(hoveredArticle) ? "Saved" : "Save"}
+                </span>
+              </button>
             </div>
           </div>
+        )}
 
         </div>
 
+        {/* =========================================================
+            STICKY FULL-HEIGHT CELESTIAL RIGHT BAR WITH LUMINOUS BORDER GLOW
+            (Stays fixed through Categories 01-06, then scrolls up naturally after Category 06)
+           ========================================================= */}
+        <aside className={`hidden lg:flex sticky self-start shrink-0 z-20 w-52 xl:w-60 border border-[#c79c6e]/50 ring-1 ring-[#c79c6e]/30 rounded-none flex-col justify-between items-center pb-10 px-4 overflow-hidden bg-[#070605] shadow-[0_0_30px_rgba(199,156,110,0.35),0_0_70px_rgba(199,156,110,0.18),0_15px_50px_rgba(0,0,0,0.95)] select-none pointer-events-none transition-all duration-500 ${
+          scrolled 
+            ? 'top-[72px] h-[calc(100vh-72px)] pt-6' 
+            : 'top-[88px] h-[calc(100vh-88px)] pt-8'
+        }`}>
+  
+          {/* Celestial Art Background Image */}
+          <div className="absolute inset-0 z-0 overflow-hidden opacity-85 mix-blend-screen flex items-center justify-center">
+            <img 
+              src="/library_celestial_column.jpg" 
+              alt="Celestial Sacred Geometry" 
+              className="w-full h-full object-cover object-center scale-105"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#070605]/95 via-transparent to-[#070605]/95" />
+          </div>
+
+          {/* Ambient Warm Golden Glow — GPU layer */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-[#c79c6e]/15 rounded-full blur-3xl will-change-transform" />
+
+          {/* Top Typography Header (Left Aligned as in reference) */}
+          <div className="w-full flex flex-col items-start text-left gap-3 z-10 pt-2 pl-2 sm:pl-3">
+            <div className="font-sans text-[0.68rem] tracking-[0.3em] font-medium text-[#c79c6e] leading-[2] uppercase">
+              CLEARER<br/>THINKING<br/>KINDER<br/>CHOICES<br/>A FULLER<br/>LIFE
+            </div>
+            <div className="w-7 h-[2px] bg-[#c79c6e]/80 mt-1" />
+          </div>
+
+          {/* Bottom Typography Footer (Left Aligned as in reference) */}
+          <div className="w-full flex flex-col items-start text-left gap-3 z-10 pb-6 pl-2 sm:pl-3">
+            <div className="w-7 h-[2px] bg-[#c79c6e]/80 mb-1" />
+            <div className="font-sans text-[0.68rem] tracking-[0.3em] font-semibold text-[#c79c6e] leading-[2] uppercase">
+              IDEAS<br/>PERSPECTIVE<br/>PROGRESS<br/>A CALMER YOU
+            </div>
+          </div>
+        </aside>
+
       </div>
+
+      {/* Auth / Login Modal when unauthenticated user clicks Save */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+        onSuccess={handleLoginSuccess} 
+      />
     </section>
   );
 }
+

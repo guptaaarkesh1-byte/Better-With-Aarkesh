@@ -72,7 +72,7 @@ export default function FinalCtaSection() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-4">
                 <div className="h-[1px] w-8 bg-accent-gold" />
-                <span className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-bold text-accent-gold">
+                <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-accent-gold">
                   {eyebrow}
                 </span>
               </div>

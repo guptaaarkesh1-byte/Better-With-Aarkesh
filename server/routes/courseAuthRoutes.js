@@ -187,7 +187,7 @@ router.post('/login', async (req, res) => {
         token: generateToken(user._id),
       });
     } else {
-      res.status(401).json({ message: 'Invalid email or password' });
+      res.status(401).json({ message: 'Wrong password' });
     }
   } catch (error) {
     console.error('Course Login Error:', error.message);

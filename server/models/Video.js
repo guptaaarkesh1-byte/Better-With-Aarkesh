@@ -27,6 +27,18 @@ const videoSchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    muxUploadId: {
+      type: String,
+      default: '',
+    },
+    muxAssetId: {
+      type: String,
+      default: '',
+    },
+    muxPlaybackId: {
+      type: String,
+      default: '',
+    },
 
     status: {
       type: String,

@@ -13,6 +13,38 @@ export const DEFAULT_LIBRARY_SECTIONS = {
     bottomPromptText: 'OR EXPLORE WHAT OTHERS OFTEN CARRY',
     bgImageUrl: '',
     overlayOpacity: 40,
+  },
+  directory: {
+    eyebrowText: 'IDEAS FOR A MORE THOUGHTFUL LIFE',
+    headingText: 'Library',
+    description: 'A collection of ideas about how we think, relate, choose and change.',
+    searchPlaceholder: "Describe what you're facing...",
+    quoteText: '“A quieter mind builds a braver, kinder life.”',
+    quoteAuthor: '— Aarkesh Gupta',
+    categories: [
+      { id: 'relationships', key: 'RELATIONSHIPS', num: '01', title: 'Relationships', subtitle: 'On love, friendship and what it means to stay close.' },
+      { id: 'self', key: 'SELF', num: '02', title: 'Self', subtitle: 'On identity, self-trust and becoming a steadier you.' },
+      { id: 'change', key: 'CHANGE', num: '03', title: 'Change', subtitle: 'On letting go, starting over and becoming who you want to be.' },
+      { id: 'decisions', key: 'DECISIONS', num: '04', title: 'Decisions', subtitle: 'On better thinking, trade-offs and choosing a life you mean.' },
+      { id: 'difficult-people', key: 'DIFFICULT PEOPLE', num: '05', title: 'Difficult People', subtitle: 'On boundaries, perspective and dealing with the hard ones.' },
+      { id: 'communication', key: 'COMMUNICATION', num: '06', title: 'Communication', subtitle: 'On saying what matters, listening and being understood.' }
+    ]
+  },
+  formatExplore: {
+    showSection: true,
+    eyebrowText: 'EXPLORE BY FORMAT',
+    headingLine1: 'Choose the form that',
+    headingLine2: 'meets you where you are.',
+    latestCardTitle: 'LATEST',
+    latestCardSubtitle: 'NEW ARRIVALS',
+    latestCardDesc: 'The most recent\narticles and videos.',
+    readCardTitle: 'READ',
+    readCardSubtitle: '12 ARTICLES',
+    readCardDesc: 'Ideas to sit with at\nyour own pace.',
+    watchCardTitle: 'WATCH',
+    watchCardSubtitle: '10 VIDEOS',
+    watchCardDesc: 'Perspectives spoken\nand explored.',
+    showWatchCard: true
   }
 };
 
@@ -26,7 +58,9 @@ router.get('/', async (req, res) => {
       return res.json(DEFAULT_LIBRARY_SECTIONS);
     }
     const result = {
-      hero: { ...DEFAULT_LIBRARY_SECTIONS.hero, ...(doc.value?.hero || {}) }
+      hero: { ...DEFAULT_LIBRARY_SECTIONS.hero, ...(doc.value?.hero || {}) },
+      directory: { ...DEFAULT_LIBRARY_SECTIONS.directory, ...(doc.value?.directory || {}) },
+      formatExplore: { ...DEFAULT_LIBRARY_SECTIONS.formatExplore, ...(doc.value?.formatExplore || {}) }
     };
     res.json(result);
   } catch (err) {

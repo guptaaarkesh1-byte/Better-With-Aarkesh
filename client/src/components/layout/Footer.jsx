@@ -110,34 +110,34 @@ export default function Footer() {
   }, [currentYear]);
 
   return (
-    <footer className="w-full bg-[#050505] border-t border-white/10 pt-16 sm:pt-20 pb-10 relative z-30 select-none overflow-hidden">
+    <footer className="w-full bg-[#050505] border-t border-white/10 pt-16 sm:pt-24 pb-12 relative z-30 select-none overflow-hidden">
       {/* Subtle Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-[#c79c6e]/5 rounded-full blur-[140px] pointer-events-none" />
 
       <Container className="relative z-10 flex flex-col gap-12 sm:gap-16">
         
         {/* Main Multi-Column Layout */}
-        <div className="flex flex-col lg:flex-row items-start justify-between gap-12 lg:gap-10">
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-12 lg:gap-14">
           
           {/* ─── COLUMN 1: Brand & Bio (Fixed comfortable width) ─── */}
-          <div className="w-full lg:w-[320px] shrink-0 flex flex-col items-start gap-4 sm:gap-5 pr-0 lg:pr-6">
-            <Link to="/" className="group inline-flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e] group-hover:scale-105 transition-transform">
-                <Sparkle size={18} weight="fill" />
+          <div className="w-full lg:w-[380px] shrink-0 flex flex-col items-start gap-5 pr-0 lg:pr-6">
+            <Link to="/" className="group inline-flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e] group-hover:scale-105 transition-transform">
+                <Sparkle size={20} weight="fill" />
               </div>
-              <span className="font-serif text-2xl sm:text-[1.7rem] text-white tracking-tight leading-none">
+              <span className="font-serif text-2xl sm:text-3xl text-white tracking-tight leading-none">
                 BetterWith<span className="text-[#c79c6e]">Aarkesh</span>
               </span>
             </Link>
 
-            <p className="font-sans text-xs sm:text-sm text-white/60 font-light leading-relaxed max-w-sm">
+            <p className="font-sans text-sm sm:text-[0.95rem] md:text-base text-white/70 font-light leading-relaxed max-w-md">
               {brandSettings.brandDescription}
             </p>
 
             {/* Direct Contact Email */}
             {brandSettings.brandEmail && (
-              <div className="flex items-center gap-2 text-xs font-sans text-white/70 pt-1">
-                <EnvelopeSimple size={16} className="text-[#c79c6e] shrink-0" />
+              <div className="flex items-center gap-2.5 text-sm sm:text-base font-sans text-white/80 pt-1">
+                <EnvelopeSimple size={18} className="text-[#c79c6e] shrink-0" />
                 <a 
                   href={`mailto:${brandSettings.brandEmail}`}
                   className="hover:text-[#c79c6e] transition-colors"
@@ -148,7 +148,7 @@ export default function Footer() {
             )}
 
             {/* Universal Social Media Icons */}
-            <div className="flex items-center gap-2.5 pt-2 flex-wrap">
+            <div className="flex items-center gap-3 pt-2 flex-wrap">
               {socialLinks.length > 0 ? (
                 socialLinks.map((s) => (
                   <a
@@ -156,11 +156,11 @@ export default function Footer() {
                     href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all text-base"
                     aria-label={s.label || s.platform}
                     title={s.label || s.platform}
                   >
-                    {getSocialIcon(s.platform)}
+                    {getSocialIcon(s.platform, 18)}
                   </a>
                 ))
               ) : (
@@ -169,37 +169,37 @@ export default function Footer() {
                     href="https://instagram.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all text-base"
                     aria-label="Instagram"
                   >
-                    <InstagramLogo size={16} weight="light" />
+                    <InstagramLogo size={18} weight="light" />
                   </a>
                   <a
                     href="https://youtube.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all text-base"
                     aria-label="YouTube"
                   >
-                    <YoutubeLogo size={16} weight="light" />
+                    <YoutubeLogo size={18} weight="light" />
                   </a>
                   <a
                     href="https://x.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all text-base"
                     aria-label="X (Twitter)"
                   >
-                    <XLogo size={16} weight="light" />
+                    <XLogo size={18} weight="light" />
                   </a>
                   <a
                     href="https://linkedin.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#c79c6e] hover:border-[#c79c6e]/40 hover:bg-[#c79c6e]/10 transition-all text-base"
                     aria-label="LinkedIn"
                   >
-                    <LinkedinLogo size={16} weight="light" />
+                    <LinkedinLogo size={18} weight="light" />
                   </a>
                 </>
               )}
@@ -207,17 +207,17 @@ export default function Footer() {
           </div>
 
           {/* ─── COLUMNS CONTAINER (Quick Links, Company, Legal, + Any Custom Columns) ─── */}
-          <div className="flex-1 flex flex-wrap sm:flex-nowrap gap-12 sm:gap-16 md:gap-24 lg:justify-end items-start w-full">
+          <div className="flex-1 flex flex-wrap sm:flex-nowrap gap-10 sm:gap-14 md:gap-20 lg:justify-end items-start w-full">
             {columns.map((col) => (
               <div 
                 key={col.title} 
-                className="flex flex-col items-start gap-4 min-w-[140px] sm:min-w-[160px]"
+                className="flex flex-col items-start gap-4 min-w-[150px] sm:min-w-[180px]"
               >
-                <h3 className="font-sans text-[0.72rem] uppercase tracking-[0.2em] font-semibold text-[#c79c6e] truncate w-full">
+                <h3 className="font-sans text-xs sm:text-[0.82rem] md:text-sm uppercase tracking-[0.22em] font-semibold text-[#c79c6e] truncate w-full">
                   {col.title}
                 </h3>
                 
-                <ul className="flex flex-col gap-2.5 font-sans text-xs sm:text-[0.8rem] text-white/70 font-light w-full">
+                <ul className="flex flex-col gap-3 font-sans text-sm sm:text-[0.95rem] md:text-base text-white/75 font-light w-full">
                   {(col.links || []).map((link) => {
                     const isExternalHttp = link.url?.startsWith('http://') || link.url?.startsWith('https://');
                     const isMailto = link.url?.startsWith('mailto:');
@@ -230,7 +230,7 @@ export default function Footer() {
                             href={link.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hover:text-white transition-colors block truncate"
+                            className="hover:text-[#c79c6e] hover:underline underline-offset-4 transition-colors block truncate"
                           >
                             {link.label}
                           </a>
@@ -243,7 +243,7 @@ export default function Footer() {
                         <li key={link.label || link.url} className="truncate">
                           <a 
                             href={link.url}
-                            className="hover:text-white transition-colors block truncate"
+                            className="hover:text-[#c79c6e] hover:underline underline-offset-4 transition-colors block truncate"
                           >
                             {link.label}
                           </a>
@@ -256,7 +256,7 @@ export default function Footer() {
                       <li key={link.label || link.url} className="truncate">
                         <Link 
                           to={link.url} 
-                          className="hover:text-white transition-colors block truncate"
+                          className="hover:text-[#c79c6e] hover:underline underline-offset-4 transition-colors block truncate"
                         >
                           {link.label}
                         </Link>
@@ -271,8 +271,8 @@ export default function Footer() {
         </div>
 
         {/* ─── BOTTOM BAR: Clean Copyright Only (No duplicate links) ─── */}
-        <div className="pt-8 border-t border-white/10 flex items-center justify-center text-center text-xs font-sans text-white/50">
-          <p className="text-[0.75rem] text-white/60">
+        <div className="pt-8 sm:pt-10 border-t border-white/10 flex items-center justify-center text-center font-sans">
+          <p className="text-xs sm:text-sm text-white/65">
             {brandSettings.copyrightText || `© ${currentYear} Better With Aarkesh. All rights reserved.`}
           </p>
         </div>

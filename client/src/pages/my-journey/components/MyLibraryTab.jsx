@@ -1,50 +1,83 @@
 import React, { useState, useEffect } from 'react';
-import { BookmarkSimple, PlayCircle, Faders } from '@phosphor-icons/react';
+import { BookmarkSimple, PlayCircle, Play, X } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
+import UniversalVideoModal from '../../../components/ui/UniversalVideoModal';
+import { renderFormattedTitle, resolveImageUrl } from '../../../pages/articles/ArticleReaderView';
 
 export default function MyLibraryTab() {
   const [mainTab, setMainTab] = useState('BOOKMARKED');
-  const [subTab, setSubTab] = useState('ALL');
+  const [subTab, setSubTab] = useState('ARTICLES');
+  const [showWatchCard, setShowWatchCard] = useState(true);
   const [savedArticles, setSavedArticles] = useState([]);
+  const [savedVideos, setSavedVideos] = useState([]);
   const [completedArticles, setCompletedArticles] = useState([]);
+  const [completedVideos, setCompletedVideos] = useState([]);
+  const [activeModalVideo, setActiveModalVideo] = useState(null);
   const navigate = useNavigate();
 
   const mainTabs = ['CONTINUE', 'BOOKMARKED', 'COMPLETED'];
-  const subTabs = ['ALL', 'ARTICLES', 'VIDEOS'];
+  const subTabs = showWatchCard ? ['ARTICLES', 'VIDEOS'] : ['ARTICLES'];
+
+  const fetchSavedAndCompleted = async () => {
+    const token = localStorage.getItem('token');
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+    // Fetch library settings to know if Watch/Video card is enabled
+    try {
+      const settingsRes = await fetch(`${API_URL}/api/library-settings/formatExplore`);
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        if (settingsData && settingsData.showWatchCard === false) {
+          setShowWatchCard(false);
+          setSubTab('ARTICLES');
+        } else {
+          setShowWatchCard(true);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch formatExplore settings', err);
+    }
+
+    if (!token) return;
+    try {
+      const [savedArtRes, savedVidRes, completedArtRes, completedVidRes] = await Promise.all([
+        fetch(`${API_URL}/api/users/saved-articles`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/users/saved-videos`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/users/completed-articles`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/users/completed-videos`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      
+      if (savedArtRes.ok) {
+        const savedArtData = await savedArtRes.json();
+        setSavedArticles(Array.isArray(savedArtData) ? savedArtData.filter(Boolean) : []);
+      }
+      if (savedVidRes.ok) {
+        const savedVidData = await savedVidRes.json();
+        setSavedVideos(Array.isArray(savedVidData) ? savedVidData.filter(Boolean) : []);
+      }
+      if (completedArtRes.ok) {
+        const completedArtData = await completedArtRes.json();
+        setCompletedArticles(Array.isArray(completedArtData) ? completedArtData.filter(Boolean) : []);
+      }
+      if (completedVidRes.ok) {
+        const completedVidData = await completedVidRes.json();
+        setCompletedVideos(Array.isArray(completedVidData) ? completedVidData.filter(Boolean) : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch library items', err);
+    }
+  };
 
   useEffect(() => {
-    const fetchSavedAndCompleted = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      try {
-        const [savedRes, completedRes] = await Promise.all([
-          fetch(`${API_URL}/api/users/saved-articles`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/api/users/completed-articles`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-        
-        if (savedRes.ok) {
-          const savedData = await savedRes.json();
-          setSavedArticles(savedData);
-        }
-        if (completedRes.ok) {
-          const completedData = await completedRes.json();
-          setCompletedArticles(completedData);
-        }
-      } catch (err) {
-        console.error('Failed to fetch articles', err);
-      }
-    };
     fetchSavedAndCompleted();
   }, []);
 
-  const handleRemove = async (articleId, e) => {
+  const handleRemoveArticle = async (articleId, e) => {
     e?.stopPropagation();
     const token = localStorage.getItem('token');
     if (!token) return;
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     
-    // Optimistic update
     const previous = [...savedArticles];
     setSavedArticles(prev => prev.filter(a => a._id !== articleId));
     
@@ -66,13 +99,39 @@ export default function MyLibraryTab() {
     }
   };
 
-  const handleComplete = async (articleId, e) => {
+  const handleRemoveVideo = async (videoId, e) => {
     e?.stopPropagation();
     const token = localStorage.getItem('token');
     if (!token) return;
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     
-    // Optimistic update
+    const previous = [...savedVideos];
+    setSavedVideos(prev => prev.filter(v => v._id !== videoId));
+    
+    try {
+      const res = await fetch(`${API_URL}/api/users/save-video`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ videoId }),
+      });
+      if (!res.ok) {
+        setSavedVideos(previous);
+      }
+    } catch (err) {
+      console.error(err);
+      setSavedVideos(previous);
+    }
+  };
+
+  const handleCompleteArticle = async (articleId, e) => {
+    e?.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    
     const previousSaved = [...savedArticles];
     const previousCompleted = [...completedArticles];
     
@@ -106,9 +165,61 @@ export default function MyLibraryTab() {
     }
   };
 
+  const handleCompleteVideo = async (videoId, e) => {
+    e?.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    
+    const previousSaved = [...savedVideos];
+    const previousCompleted = [...completedVideos];
+    
+    const videoToComplete = savedVideos.find(v => v._id === videoId) || completedVideos.find(v => v._id === videoId);
+    
+    if (savedVideos.some(v => v._id === videoId)) {
+      setSavedVideos(prev => prev.filter(v => v._id !== videoId));
+      if (videoToComplete) setCompletedVideos(prev => [...prev, videoToComplete]);
+    } else {
+      setCompletedVideos(prev => prev.filter(v => v._id !== videoId));
+      if (videoToComplete) setSavedVideos(prev => [...prev, videoToComplete]);
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/users/complete-video`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ videoId }),
+      });
+      if (!res.ok) {
+        setSavedVideos(previousSaved);
+        setCompletedVideos(previousCompleted);
+      }
+    } catch (err) {
+      console.error(err);
+      setSavedVideos(previousSaved);
+      setCompletedVideos(previousCompleted);
+    }
+  };
+
+  const currentArticles = mainTab === 'COMPLETED' ? completedArticles : savedArticles;
+  const currentVideos = mainTab === 'COMPLETED' ? completedVideos : savedVideos;
+
+  const getEmptyMessage = () => {
+    if (mainTab === 'COMPLETED') {
+      if (subTab === 'VIDEOS') return "You haven't completed any videos yet.";
+      return "You haven't completed any articles yet.";
+    }
+    if (subTab === 'VIDEOS') return "You haven't saved any videos yet.";
+    return "You haven't saved any articles yet.";
+  };
+
   return (
     <div className="w-full h-full min-h-[400px] rounded-2xl border border-[#c79c6e]/40 bg-[#080808] p-4 sm:p-6 md:p-10 lg:p-12 flex flex-col animate-in fade-in duration-500 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_40px_rgba(199,156,110,0.1)]">
       <div className="absolute top-0 right-0 w-64 h-64 bg-[#c79c6e]/5 rounded-full blur-[100px] pointer-events-none" />
+      
       {/* Header */}
       <div className="mb-6 md:mb-10">
         <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white mb-2 tracking-tight">My Library</h2>
@@ -133,13 +244,13 @@ export default function MyLibraryTab() {
         ))}
       </div>
 
-      {/* Sub Tabs */}
+      {/* Sub Tabs: ARTICLES & VIDEOS */}
       <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {subTabs.map(tab => (
           <button
             key={tab}
             onClick={() => setSubTab(tab)}
-            className={`font-sans text-xs sm:text-xs uppercase tracking-[0.16em] font-semibold transition-colors shrink-0 ${
+            className={`font-sans text-xs uppercase tracking-[0.16em] font-semibold transition-colors shrink-0 ${
               subTab === tab ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white/80'
             }`}
           >
@@ -148,27 +259,137 @@ export default function MyLibraryTab() {
         ))}
       </div>
 
-      {/* List */}
-      <div className="flex flex-col gap-3 sm:gap-4">
-        {mainTab === 'BOOKMARKED' && (
-          <>
-            {savedArticles.length === 0 ? (
-              <div className="text-white/40 font-sans text-xs sm:text-sm py-10 border border-dashed border-white/10 rounded text-center">
-                You haven't saved any articles yet.
-              </div>
-            ) : (
-              savedArticles.map(article => {
-                const dateSaved = new Date(article.updatedAt || article.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      {/* Content Rendering */}
+      <div>
+        {subTab === 'VIDEOS' ? (
+          /* VIDEO GRID CARDS WITH THUMBNAIL (IDENTICAL TO FORMAT EXPLORE PREVIEW CARDS) */
+          currentVideos.length === 0 ? (
+            <div className="text-white/40 font-sans text-xs sm:text-sm py-10 border border-dashed border-white/10 rounded text-center">
+              {getEmptyMessage()}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+              {currentVideos.map(video => {
+                const dateStr = new Date(video.updatedAt || video.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+                const thumbSrc = resolveImageUrl(video.thumbnailUrl || video.image, '/library_preview_silhouette.jpg');
+
+                return (
+                  <div 
+                    key={video._id} 
+                    className="group/vid cursor-pointer flex flex-col bg-[#0c0c0c] border border-white/10 hover:border-[#c79c6e]/60 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-lg hover:shadow-[0_0_30px_rgba(199,156,110,0.15)]"
+                    onClick={() => {
+                      if (video.videoUrl && video.videoUrl.includes('instagram.com')) {
+                        window.open(video.videoUrl, '_blank');
+                      } else {
+                        setActiveModalVideo(video);
+                      }
+                    }}
+                  >
+                    {/* Thumbnail Frame */}
+                    <div className="w-full aspect-[16/10] bg-black overflow-hidden relative">
+                      <img 
+                        src={thumbSrc} 
+                        alt={video.title} 
+                        className="w-full h-full object-cover opacity-70 group-hover/vid:opacity-90 group-hover/vid:scale-105 transition-all duration-700" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                      
+                      {/* Center Play Icon */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-black/60 border border-white/20 flex items-center justify-center group-hover/vid:bg-[#c79c6e] group-hover/vid:border-[#c79c6e] group-hover/vid:text-black text-white/90 group-hover/vid:scale-110 transition-all duration-300 shadow-xl">
+                          <Play size={22} weight="fill" className="ml-0.5" />
+                        </div>
+                      </div>
+
+                      {/* Duration Tag */}
+                      <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/80 backdrop-blur-md rounded text-[0.65rem] font-sans font-bold tracking-widest text-[#c79c6e] border border-white/10">
+                        {video.duration || 'VIDEO'}
+                      </div>
+                    </div>
+
+                    {/* Video Info & Controls */}
+                    <div className="p-5 flex flex-col flex-1 justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <PlayCircle size={14} className="text-[#c79c6e]" weight="bold" />
+                          <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-[#c79c6e]/90">
+                            VIDEO
+                          </span>
+                        </div>
+                        <h3 className="font-serif text-lg sm:text-xl text-white font-normal leading-snug group-hover/vid:text-[#c79c6e] transition-colors line-clamp-2">
+                          {renderFormattedTitle(video.title)}
+                        </h3>
+                        <span className="font-sans text-[0.7rem] text-white/40 block mt-2">
+                          {mainTab === 'COMPLETED' ? `Completed ${dateStr}` : `Saved ${dateStr}`}
+                        </span>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2 pt-3 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveModalVideo(video);
+                          }}
+                          className="flex-1 py-2 px-3 rounded border border-[#c79c6e]/70 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black font-sans text-xs uppercase tracking-[0.14em] font-semibold transition-all text-center flex items-center justify-center gap-1.5"
+                        >
+                          <Play size={12} weight="bold" />
+                          WATCH
+                        </button>
+
+                        {mainTab !== 'COMPLETED' && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemoveVideo(video._id, e)}
+                            className="py-2 px-3 rounded border border-white/10 text-white/50 hover:text-white hover:border-white/30 font-sans text-xs uppercase tracking-[0.14em] font-semibold transition-colors"
+                            title="Remove from Saved"
+                          >
+                            REMOVE
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleCompleteVideo(video._id, e)}
+                          className="py-2 px-3 rounded border border-white/10 text-white/50 hover:text-white hover:border-white/30 font-sans text-xs uppercase tracking-[0.14em] font-semibold transition-colors"
+                        >
+                          {mainTab === 'COMPLETED' ? 'UNMARK' : 'COMPLETE'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          /* ARTICLES LIST */
+          currentArticles.length === 0 ? (
+            <div className="text-white/40 font-sans text-xs sm:text-sm py-10 border border-dashed border-white/10 rounded text-center">
+              {getEmptyMessage()}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:gap-4">
+              {currentArticles.map(article => {
+                const dateStr = new Date(article.updatedAt || article.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
                 
                 let readPercentage = 0;
                 let hasLegacyProgress = false;
-                const progressData = localStorage.getItem(`article_progress_${article._id}`);
+                const keys = [article._id, article.id, article.slug].filter(Boolean);
+                let progressData = null;
+                for (const k of keys) {
+                  const stored = localStorage.getItem(`article_progress_${k}`);
+                  if (stored) {
+                    progressData = stored;
+                    break;
+                  }
+                }
                 if (progressData) {
                   try {
                     const parsed = JSON.parse(progressData);
-                    readPercentage = parsed.percentage || 0;
+                    readPercentage = typeof parsed.percentage === 'number' ? parsed.percentage : 0;
                   } catch (e) {
-                    // Ignore legacy string formats but mark as in progress
                     if (parseInt(progressData) > 200) {
                       hasLegacyProgress = true;
                     }
@@ -185,15 +406,23 @@ export default function MyLibraryTab() {
                           <BookmarkSimple size={16} weight="light" />
                           <span className="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#c79c6e]/80">ARTICLE</span>
                         </div>
-                        <h3 className="font-serif text-xl sm:text-2xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
+                        <h3 className="font-serif text-xl sm:text-2xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">
+                          {renderFormattedTitle(article.title)}
+                        </h3>
                       </div>
 
                       <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1.5 pt-2 sm:pt-0 border-t border-white/5 sm:border-0">
-                        <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold text-[#c79c6e]">
-                          {hasLegacyProgress && readPercentage === 0 ? 'IN PROGRESS' : `${readPercentage}% READ`}
-                        </div>
-                        <span className="font-sans text-xs sm:text-sm text-white/90 font-medium">{article.categoryTitle || 'Article'}</span>
-                        <span className="font-sans text-xs text-white/50 hidden sm:block">Saved {dateSaved}</span>
+                        {mainTab !== 'COMPLETED' && (
+                          <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold text-[#c79c6e]">
+                            {hasLegacyProgress && readPercentage === 0 ? 'IN PROGRESS' : `${readPercentage}% READ`}
+                          </div>
+                        )}
+                        <span className="font-sans text-xs sm:text-sm text-white/90 font-medium">
+                          {article.categoryTitle || article.category || 'Article'}
+                        </span>
+                        <span className="font-sans text-xs text-white/50 hidden sm:block">
+                          {mainTab === 'COMPLETED' ? `Completed ${dateStr}` : `Saved ${dateStr}`}
+                        </span>
                       </div>
                     </div>
 
@@ -204,80 +433,42 @@ export default function MyLibraryTab() {
                           onClick={(e) => { e.stopPropagation(); navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`); }}
                           className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
                         >
-                          CONTINUE
+                          {mainTab === 'COMPLETED' ? 'REVISIT' : 'CONTINUE'}
                         </button>
+
+                        {mainTab !== 'COMPLETED' && (
+                          <button 
+                            onClick={(e) => handleRemoveArticle(article._id, e)}
+                            className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-white/10 text-white/50 hover:border-white/25 hover:text-white font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
+                          >
+                            REMOVE
+                          </button>
+                        )}
+
                         <button 
-                          onClick={(e) => handleRemove(article._id, e)}
-                          className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-white/10 text-white/50 hover:border-white/25 hover:text-white font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
-                        >
-                          REMOVE
-                        </button>
-                        <button 
-                          onClick={(e) => handleComplete(article._id, e)}
+                          onClick={(e) => handleCompleteArticle(article._id, e)}
                           className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-white/10 text-white/50 hover:border-white/25 hover:text-white font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
                         >
-                          MARK COMPLETE
+                          {mainTab === 'COMPLETED' ? 'MARK INCOMPLETE' : 'MARK COMPLETE'}
                         </button>
                       </div>
                     </div>
 
                   </div>
                 );
-              })
-            )}
-          </>
-        )}
-        {mainTab === 'COMPLETED' && (
-          <>
-            {completedArticles.length === 0 ? (
-              <div className="text-white/40 font-sans text-xs sm:text-sm py-10 border border-dashed border-white/10 rounded text-center">
-                You haven't completed any articles yet.
-              </div>
-            ) : (
-              completedArticles.map(article => {
-                const dateCompleted = new Date(article.updatedAt || article.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-                return (
-                  <div key={article._id} className="group/card w-full rounded-xl border border-white/10 bg-[#0c0c0c] p-5 sm:p-6 md:p-7 flex flex-col hover:border-[#c79c6e]/40 transition-all duration-300 ease-out">
-                    
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
-                      <div className="flex flex-col gap-2 sm:gap-3">
-                        <div className="flex items-center gap-2 text-white/50">
-                          <BookmarkSimple size={16} weight="light" />
-                          <span className="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#c79c6e]/80">ARTICLE</span>
-                        </div>
-                        <h3 className="font-serif text-xl sm:text-2xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">{article.title}</h3>
-                      </div>
-
-                      <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1.5 pt-2 sm:pt-0 border-t border-white/5 sm:border-0">
-                        <span className="font-sans text-xs sm:text-sm text-white/90 font-medium">{article.categoryTitle || 'Article'}</span>
-                        <span className="font-sans text-xs text-white/50">Completed {dateCompleted}</span>
-                      </div>
-                    </div>
-
-                    <div className="block md:max-h-0 md:overflow-hidden md:opacity-0 md:group-hover/card:max-h-[150px] md:group-hover/card:opacity-100 md:group-hover/card:mt-6 transition-all duration-500 ease-in-out mt-4 md:mt-0">
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t border-white/5 pt-4 md:pt-6">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`); }}
-                          className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
-                        >
-                          REVISIT
-                        </button>
-                        <button 
-                          onClick={(e) => handleComplete(article._id, e)}
-                          className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-white/10 text-white/50 hover:border-white/25 hover:text-white font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
-                        >
-                          MARK INCOMPLETE
-                        </button>
-                      </div>
-                    </div>
-
-                  </div>
-                );
-              })
-            )}
-          </>
+              })}
+            </div>
+          )
         )}
       </div>
+
+      {/* Video Playback Modal */}
+      {activeModalVideo && (
+        <UniversalVideoModal
+          video={activeModalVideo}
+          onClose={() => setActiveModalVideo(null)}
+        />
+      )}
     </div>
   );
 }

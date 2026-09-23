@@ -1,8 +1,117 @@
 import express from 'express';
+import dotenv from 'dotenv';
+import Mux from '@mux/mux-node';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import Video from '../models/Video.js';
+import Settings from '../models/Settings.js';
 
 const router = express.Router();
+
+// Helper to get Mux client from env or Settings
+const getMuxClient = async () => {
+  dotenv.config();
+  let tokenId = process.env.MUX_TOKEN_ID;
+  let tokenSecret = process.env.MUX_TOKEN_SECRET;
+
+  if (!tokenId || !tokenSecret) {
+    const muxSettings = await Settings.findOne({ key: 'mux' });
+    if (muxSettings?.value?.tokenId && muxSettings?.value?.tokenSecret) {
+      tokenId = muxSettings.value.tokenId;
+      tokenSecret = muxSettings.value.tokenSecret;
+    }
+  }
+
+  if (!tokenId || !tokenSecret) {
+    throw new Error('Mux API credentials not configured. Please set MUX_TOKEN_ID and MUX_TOKEN_SECRET in .env or Admin Settings.');
+  }
+
+  return new Mux({
+    tokenId,
+    tokenSecret,
+  });
+};
+
+// @route   POST /api/videos/mux-upload-url
+// @desc    Generate a secure Direct Upload URL from Mux
+// @access  Private/Admin
+router.post('/mux-upload-url', protect, admin, async (req, res) => {
+  try {
+    const mux = await getMuxClient();
+
+    const upload = await mux.video.uploads.create({
+      new_asset_settings: {
+        playback_policy: ['public'],
+        video_quality: 'basic',
+      },
+      cors_origin: '*',
+    });
+
+    res.json({
+      uploadUrl: upload.url,
+      uploadId: upload.id,
+    });
+  } catch (error) {
+    console.error('Error creating Mux upload URL:', error);
+    res.status(500).json({
+      message: error.message || 'Failed to initialize Mux direct upload. Check Mux API credentials.',
+    });
+  }
+});
+
+// @route   GET /api/videos/mux-asset-status/:identifier
+// @desc    Check and sync Mux Asset Status for videos
+// @access  Private/Admin
+router.get('/mux-asset-status/:identifier', protect, admin, async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    const mux = await getMuxClient();
+
+    let asset = null;
+    let upload = null;
+
+    try {
+      upload = await mux.video.uploads.retrieve(identifier);
+      if (upload && upload.asset_id) {
+        asset = await mux.video.assets.retrieve(upload.asset_id);
+      }
+    } catch (e) {
+      try {
+        asset = await mux.video.assets.retrieve(identifier);
+      } catch (assetErr) {}
+    }
+
+    if (!asset && upload) {
+      return res.json({
+        status: upload.status,
+        uploadStatus: upload.status,
+        assetId: upload.asset_id || null,
+        playbackId: null,
+      });
+    }
+
+    if (asset) {
+      const playbackId = asset.playback_ids?.[0]?.id || null;
+      let durationStr = '8 MIN';
+      if (asset.duration) {
+        const mins = Math.max(1, Math.round(asset.duration / 60));
+        durationStr = `${mins} MIN`;
+      }
+
+      return res.json({
+        status: asset.status,
+        assetId: asset.id,
+        playbackId,
+        duration: durationStr,
+        thumbnailUrl: playbackId ? `https://image.mux.com/${playbackId}/thumbnail.jpg` : '',
+      });
+    }
+
+    res.json({ status: 'unknown' });
+  } catch (error) {
+    console.error('Error checking Mux asset status:', error);
+    res.status(500).json({ message: error.message || 'Error checking Mux status' });
+  }
+});
 
 // @route   POST /api/videos/cloudflare-upload
 // @desc    Create a one-time Cloudflare Stream upload URL
@@ -70,16 +179,30 @@ router.get('/published', async (req, res) => {
 // @access  Private/Admin
 router.post('/', protect, admin, async (req, res) => {
   try {
-    const { title, videoUrl, thumbnailUrl, description, duration, streamUid, status } = req.body;
+    const { title, videoUrl, thumbnailUrl, description, duration, streamUid, muxUploadId, muxAssetId, muxPlaybackId, status } = req.body;
+
+    let finalVideoUrl = videoUrl;
+    let finalThumbnailUrl = thumbnailUrl;
+
+    if (streamUid) {
+      finalVideoUrl = `https://iframe.videodelivery.net/${streamUid}`;
+      if (!finalThumbnailUrl) finalThumbnailUrl = `https://videodelivery.net/${streamUid}/thumbnails/thumbnail.jpg`;
+    } else if (muxPlaybackId) {
+      finalVideoUrl = `https://stream.mux.com/${muxPlaybackId}.m3u8`;
+      if (!finalThumbnailUrl) finalThumbnailUrl = `https://image.mux.com/${muxPlaybackId}/thumbnail.jpg`;
+    }
 
     const video = new Video({
       title,
-      videoUrl: streamUid ? `https://iframe.videodelivery.net/${streamUid}` : videoUrl,
-      thumbnailUrl: streamUid ? `https://videodelivery.net/${streamUid}/thumbnails/thumbnail.jpg` : thumbnailUrl,
-      description,
-      duration,
-      streamUid,
-      status,
+      videoUrl: finalVideoUrl,
+      thumbnailUrl: finalThumbnailUrl,
+      description: description || '',
+      duration: duration || '8 MIN',
+      streamUid: streamUid || '',
+      muxUploadId: muxUploadId || '',
+      muxAssetId: muxAssetId || '',
+      muxPlaybackId: muxPlaybackId || '',
+      status: status || 'Published',
     });
 
     const createdVideo = await video.save();
@@ -95,17 +218,31 @@ router.post('/', protect, admin, async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', protect, admin, async (req, res) => {
   try {
-    const { title, videoUrl, thumbnailUrl, description, duration, streamUid, status } = req.body;
+    const { title, videoUrl, thumbnailUrl, description, duration, streamUid, muxUploadId, muxAssetId, muxPlaybackId, status } = req.body;
 
     const video = await Video.findById(req.params.id);
 
     if (video) {
+      let finalVideoUrl = videoUrl !== undefined ? videoUrl : video.videoUrl;
+      let finalThumbnailUrl = thumbnailUrl !== undefined ? thumbnailUrl : video.thumbnailUrl;
+
+      if (streamUid) {
+        finalVideoUrl = `https://iframe.videodelivery.net/${streamUid}`;
+        if (!finalThumbnailUrl) finalThumbnailUrl = `https://videodelivery.net/${streamUid}/thumbnails/thumbnail.jpg`;
+      } else if (muxPlaybackId) {
+        finalVideoUrl = `https://stream.mux.com/${muxPlaybackId}.m3u8`;
+        if (!finalThumbnailUrl) finalThumbnailUrl = `https://image.mux.com/${muxPlaybackId}/thumbnail.jpg`;
+      }
+
       video.title = title || video.title;
-      video.videoUrl = streamUid ? `https://iframe.videodelivery.net/${streamUid}` : (videoUrl || video.videoUrl);
-      video.thumbnailUrl = streamUid ? `https://videodelivery.net/${streamUid}/thumbnails/thumbnail.jpg` : (thumbnailUrl || video.thumbnailUrl);
-      video.description = description ?? video.description;
-      video.duration = duration ?? video.duration;
-      video.streamUid = streamUid || video.streamUid;
+      video.videoUrl = finalVideoUrl;
+      video.thumbnailUrl = finalThumbnailUrl;
+      video.description = description !== undefined ? description : video.description;
+      video.duration = duration !== undefined ? duration : video.duration;
+      video.streamUid = streamUid !== undefined ? streamUid : video.streamUid;
+      video.muxUploadId = muxUploadId !== undefined ? muxUploadId : video.muxUploadId;
+      video.muxAssetId = muxAssetId !== undefined ? muxAssetId : video.muxAssetId;
+      video.muxPlaybackId = muxPlaybackId !== undefined ? muxPlaybackId : video.muxPlaybackId;
       video.status = status || video.status;
 
       const updatedVideo = await video.save();

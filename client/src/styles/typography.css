@@ -11,6 +11,6 @@
       @apply font-sans text-sm uppercase tracking-widest text-heading/80 hover:text-heading transition-colors duration-300;
     }
     .eyebrow-text {
-      @apply font-sans text-[0.78rem] uppercase tracking-[0.3em] text-accent-gold;
+      @apply font-sans text-xs sm:text-[0.82rem] font-bold uppercase tracking-[0.25em] text-accent-gold;
     }
   }
