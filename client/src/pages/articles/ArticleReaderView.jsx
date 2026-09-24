@@ -249,10 +249,23 @@ export default function ArticleReaderView({ article, onBack }) {
 
   if (!article) return null;
 
-  const handleGoBack = () => {
-    saveCurrentProgress();
-    if (onBack) {
-      onBack();
+  const handleGoBack = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      saveCurrentProgress();
+    } catch (err) {
+      console.warn('Progress save failed on back navigation:', err);
+    }
+    
+    if (typeof onBack === 'function') {
+      try {
+        onBack();
+      } catch (err) {
+        navigate('/library');
+      }
     } else {
       navigate('/library');
     }
@@ -284,7 +297,7 @@ export default function ArticleReaderView({ article, onBack }) {
   };
 
   return (
-    <article className="w-full min-h-screen bg-[#050505] text-white pt-24 pb-16 px-4 sm:px-6 md:px-10 lg:px-16 animate-in fade-in duration-500 select-none relative">
+    <article className="w-full min-h-screen bg-[#050505] text-white pt-[118px] sm:pt-[122px] lg:pt-[124px] pb-16 px-4 sm:px-6 md:px-10 lg:px-16 animate-in fade-in duration-500 select-none relative">
       
       {/* Top Reading Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-[3px] z-[9999] bg-white/5 pointer-events-none">
@@ -538,6 +551,41 @@ export default function ArticleReaderView({ article, onBack }) {
               className="prose prose-invert prose-lg max-w-none font-serif text-white/80 prose-headings:font-serif prose-headings:text-white/90 prose-p:leading-[1.85] prose-p:my-6 [&_strong]:text-inherit [&_strong]:font-bold [&_b]:text-inherit [&_b]:font-bold prose-li:text-white/80"
               dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
             />
+          )}
+
+          {/* Graceful Editorial Fallback for Curated Directory Articles */}
+          {!article.blocks?.length && !article.sections?.length && !article.dropCap && !article.bodyHtml && (
+            <div className="flex flex-col gap-6 font-serif text-lg sm:text-xl text-white/80 leading-[1.85]">
+              <p className="font-serif text-xl sm:text-2xl text-white/95 leading-relaxed font-normal mb-4">
+                <span className="float-left text-6xl sm:text-7xl font-serif text-[#c79c6e] leading-none pr-3 pt-1 select-none font-normal">
+                  {(article.excerpt || article.description || article.title || 'W').charAt(0)}
+                </span>
+                {renderFormattedTitle((article.excerpt || article.description || article.title || '').slice(1))}
+                {article.highlightText && (
+                  <span className="text-[#c79c6e] italic font-serif"> {article.highlightText}</span>
+                )}
+              </p>
+
+              {article.quote && (
+                <div className="border-l-2 border-[#c79c6e] pl-6 py-3 my-8 bg-white/[0.02] rounded-r-xl">
+                  <p className="font-serif text-xl sm:text-2xl text-[#f6cb90] italic font-normal leading-relaxed">
+                    {renderFormattedTitle(article.quote)}
+                  </p>
+                </div>
+              )}
+
+              <p className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85]">
+                Most meaningful transformations begin not with a loud public declaration, but with a quiet internal shift. When we slow down enough to examine our default patterns of thinking, relating, and choosing, we create space for a kinder and braver reality to emerge.
+              </p>
+
+              <h2 className="font-serif text-3xl sm:text-4xl text-white font-normal mt-10 mb-4 leading-snug">
+                The Anatomy of <span className="italic text-[#c79c6e]">Quiet Clarity</span>
+              </h2>
+
+              <p className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85]">
+                True progress is rarely linear. It is verified in daily, unremarkable choices when no one is watching. By returning to first principles and honoring your emotional sovereignty, the confusion dissolves into purposeful momentum.
+              </p>
+            </div>
           )}
 
         </div>

@@ -29,6 +29,12 @@ export default function AdminCourse() {
     if (location.pathname.startsWith('/course-faq')) return 'faq';
     if (location.pathname.startsWith('/course-fee') || location.pathname.startsWith('/course-pricing')) return 'fee';
     if (location.pathname.startsWith('/upload-videos') || location.pathname.startsWith('/course-curriculum')) return 'curriculum';
+
+    try {
+      const saved = localStorage.getItem('bwa_admin_course_tab');
+      if (saved && ['students', 'control', 'faq', 'fee', 'curriculum'].includes(saved)) return saved;
+    } catch (e) {}
+
     return 'students';
   };
 
@@ -58,6 +64,16 @@ export default function AdminCourse() {
       setActiveTab('curriculum');
     }
   }, [searchParams, location.pathname]);
+
+  // Persist tab to localStorage and sync URL
+  useEffect(() => {
+    try {
+      localStorage.setItem('bwa_admin_course_tab', activeTab);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTab);
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {}
+  }, [activeTab]);
 
   const handleTabSwitch = (tab) => {
     setActiveTab(tab);

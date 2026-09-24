@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useToast } from '../context/ToastContext';
 import { 
   GraduationCap, 
   Plus, 
@@ -51,11 +52,11 @@ const extractYoutubeVideoId = (url) => {
 
 export default function AdminCourseCurriculum() {
   const [courses, setCourses] = useState([]);
+  const { showSuccess, showError, showInfo } = useToast();
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [notification, setNotification] = useState(null);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -121,8 +122,9 @@ export default function AdminCourseCurriculum() {
   const pollingRef = useRef(null);
 
   const showNotification = (msg, type = 'success') => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 4000);
+    if (type === 'error') showError(msg);
+    else if (type === 'info') showInfo(msg);
+    else showSuccess(msg);
   };
 
   // Fetch comment summaries across lessons to power unread red dot indicators
@@ -1004,17 +1006,6 @@ export default function AdminCourseCurriculum() {
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto font-sans text-white">
-      {/* Toast Notification */}
-      {notification && (
-        <div className={`fixed bottom-8 right-8 z-[250] px-5 py-3.5 rounded-xl border flex items-center gap-3 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-200 ${
-          notification.type === 'error' 
-            ? 'bg-red-500/15 border-red-500/30 text-red-300' 
-            : 'bg-[#c79c6e]/15 border-[#c79c6e]/40 text-[#c79c6e]'
-        }`}>
-          {notification.type === 'error' ? <WarningCircle size={20} /> : <CheckCircle size={20} />}
-          <span className="text-sm font-medium">{notification.msg}</span>
-        </div>
-      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/10">

@@ -211,13 +211,6 @@ export default function Navbar() {
                           <span className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-medium text-white/50 mb-2 mt-2 px-3 truncate">
                             {JSON.parse(localStorage.getItem('userInfo') || '{}')?.fullName || 'MY ACCOUNT'}
                           </span>
-                          
-                          <button 
-                            onClick={() => navigate('/my-journey')}
-                            className="flex items-center gap-3 font-sans text-[0.65rem] uppercase tracking-[0.2em] text-white/70 hover:text-white hover:bg-white/5 transition-colors w-full text-left px-3 py-2.5 rounded"
-                          >
-                            <BookmarkSimple size={15} /> SAVED LIBRARY
-                          </button>
 
                           <button 
                             onClick={() => navigate('/my-journey/settings')}
@@ -284,7 +277,7 @@ export default function Navbar() {
 
         {/* Bottom Row: Navigation Tabs */}
         <div className="hidden md:flex items-center justify-center w-full pt-1.5 border-t border-white/[0.08]">
-          <nav className="flex items-center justify-center space-x-7 lg:space-x-10 relative">
+          <nav className="flex items-center justify-center space-x-6 lg:space-x-8 xl:space-x-10 relative">
             {NAV_LINKS.map((link) => {
               let active = false;
               if (location.pathname === '/') {
@@ -307,7 +300,7 @@ export default function Navbar() {
                   to={link.href}
                   onClick={() => handleNavClick(link.href)}
                   className={cn(
-                    'font-sans text-[0.78rem] lg:text-[0.82rem] uppercase tracking-[0.2em] transition-colors duration-300 relative py-1 px-1 flex items-center justify-center',
+                    'font-sans text-[0.78rem] lg:text-[0.82rem] uppercase tracking-[0.22em] transition-colors duration-300 relative py-1 px-1.5 flex items-center justify-center',
                     active
                       ? 'text-[#f5dfc6] font-semibold'
                       : 'text-white/65 hover:text-white font-medium'

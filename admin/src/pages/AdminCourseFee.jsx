@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import { 
   CurrencyInr, 
   Percent, 
@@ -24,10 +25,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const GST_PRESETS = [0, 5, 12, 18, 28];
 
 export default function AdminCourseFee() {
+  const { showSuccess, showError, showInfo } = useToast();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [notification, setNotification] = useState(null);
 
   // Form State
   const [courseTitle, setCourseTitle] = useState('The Better Man™');
@@ -44,8 +45,9 @@ export default function AdminCourseFee() {
   const [isGstIncluded, setIsGstIncluded] = useState(false);
 
   const showNotification = (msg, type = 'success') => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 4000);
+    if (type === 'error') showError(msg);
+    else if (type === 'info') showInfo(msg);
+    else showSuccess(msg);
   };
 
   // Fetch Course details to get current pricing and invoice naming
@@ -196,17 +198,6 @@ export default function AdminCourseFee() {
 
   return (
     <div className="w-full max-w-6xl mx-auto px-6 py-8">
-      {/* Toast Notification */}
-      {notification && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center gap-2 shadow-2xl transition-all duration-300 animate-in fade-in slide-in-from-top-4 ${
-          notification.type === 'error' 
-            ? 'bg-rose-500 text-white shadow-rose-500/20' 
-            : 'bg-[#c79c6e] text-black shadow-[#c79c6e]/20'
-        }`}>
-          <CheckCircle size={16} weight="bold" />
-          <span>{notification.msg}</span>
-        </div>
-      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/10">

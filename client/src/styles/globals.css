@@ -21,6 +21,10 @@
   --color-gold-subtle: rgba(199, 156, 110, 0.12);
   --color-gold-border: rgba(199, 156, 110, 0.35);
   --overlay-opacity: 0.40;
+  --site-contrast: 100%;
+  --site-brightness: 100%;
+  --site-saturation: 100%;
+  --site-font-scale: 100%;
 
   color-scheme: dark;
 }
@@ -46,7 +50,8 @@
 
 @layer base {
   html {
-    font-size: 16px;
+    font-size: calc(16px * (var(--site-font-scale, 100) / 100));
+    transition: font-size 200ms ease;
   }
 
   body {
@@ -64,6 +69,12 @@
   /* Hide scrollbar for Chrome, Safari and Opera */
   ::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Universal Master Contrast & Brightness Controller */
+  img:not(.no-filter), video:not(.no-filter), .bg-visual, .hero-bg, [data-visual-layer] {
+    filter: contrast(var(--site-contrast, 100%)) brightness(var(--site-brightness, 100%)) saturate(var(--site-saturation, 100%));
+    transition: filter 300ms ease;
   }
 }
 

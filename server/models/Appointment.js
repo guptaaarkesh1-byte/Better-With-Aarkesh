@@ -84,6 +84,10 @@ const appointmentSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  questionnaireAnswers: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
+  },
   rescheduleRequest: {
     date: String,
     time: String,

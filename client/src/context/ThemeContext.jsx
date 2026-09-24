@@ -33,6 +33,49 @@ export function ThemeProvider({ children }) {
     }
   }, [theme]);
 
+  const [visualSettings, setVisualSettings] = useState(() => {
+    try {
+      const cached = localStorage.getItem('bwa_visual_settings');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return { contrast: 100, brightness: 100, overlayDarkness: 40, saturation: 100, fontScale: 100 };
+  });
+
+  const applyVisualSettings = (settings) => {
+    if (!settings) return;
+    const root = document.documentElement;
+    const contrast = settings.contrast ?? 100;
+    const brightness = settings.brightness ?? 100;
+    const overlayDarkness = settings.overlayDarkness ?? 40;
+    const saturation = settings.saturation ?? 100;
+    const fontScale = settings.fontScale ?? 100;
+
+    root.style.setProperty('--site-contrast', `${contrast}%`);
+    root.style.setProperty('--site-brightness', `${brightness}%`);
+    root.style.setProperty('--overlay-opacity', `${overlayDarkness / 100}`);
+    root.style.setProperty('--site-saturation', `${saturation}%`);
+    root.style.setProperty('--site-font-scale', `${fontScale}`);
+  };
+
+  useEffect(() => {
+    // Initial apply from cache
+    applyVisualSettings(visualSettings);
+
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    fetch(`${apiUrl}/api/visual-settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data.contrast === 'number') {
+          setVisualSettings(data);
+          applyVisualSettings(data);
+          try {
+            localStorage.setItem('bwa_visual_settings', JSON.stringify(data));
+          } catch (e) {}
+        }
+      })
+      .catch(err => console.error('Failed to load visual settings:', err));
+  }, []);
+
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === 'dark' ? 'light' : 'dark'));
   };

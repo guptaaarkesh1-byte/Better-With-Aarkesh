@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useToast } from '../context/ToastContext';
 import { 
   Sparkle, 
   Image as ImageIcon, 
@@ -222,20 +223,44 @@ export default function AdminHomeEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadTargetField, setUploadTargetField] = useState(null);
-  const [toast, setToast] = useState(null);
+  const { showToast: showGlobalToast, showSuccess, showError } = useToast();
 
   const fileInputRef = useRef(null);
 
-  // Show Toast Helper
+  // Show Toast Helper (routed to global ToastContext)
   const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    if (type === 'error') showError(message);
+    else if (type === 'info') showGlobalToast(message, 'info');
+    else showSuccess(message);
   };
 
-  // Fetch All Home Settings on Load
+  const [globalVisuals, setGlobalVisuals] = useState({
+    contrast: 100,
+    brightness: 100,
+    overlayDarkness: 40,
+    saturation: 100,
+  });
+
+  // Fetch All Home Settings & Global Visuals on Load
   useEffect(() => {
     fetchAllHomeSettings();
+    fetchGlobalVisuals();
   }, []);
+
+  const fetchGlobalVisuals = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/visual-settings`);
+      if (res.ok) {
+        const data = await res.json();
+        setGlobalVisuals({
+          contrast: data.contrast ?? 100,
+          brightness: data.brightness ?? 100,
+          overlayDarkness: data.overlayDarkness ?? 40,
+          saturation: data.saturation ?? 100,
+        });
+      }
+    } catch (e) {}
+  };
 
   const fetchAllHomeSettings = async () => {
     try {
@@ -473,9 +498,10 @@ export default function AdminHomeEditor() {
   const currentFaq = allSections.faq || {};
   const currentCta = allSections.cta || {};
 
-  const currentGlobalOverlayOpacity = currentHero.overlayOpacity ?? 40;
+  const currentGlobalOverlayOpacity = globalVisuals.overlayDarkness ?? (currentHero.overlayOpacity ?? 40);
 
   const handleGlobalOverlayChange = (val) => {
+    setGlobalVisuals(prev => ({ ...prev, overlayDarkness: val }));
     setAllSections(prev => ({
       ...prev,
       hero: {
@@ -483,6 +509,31 @@ export default function AdminHomeEditor() {
         overlayOpacity: val
       }
     }));
+    saveGlobalVisuals({ ...globalVisuals, overlayDarkness: val });
+  };
+
+  const handleGlobalContrastChange = (val) => {
+    setGlobalVisuals(prev => ({ ...prev, contrast: val }));
+    saveGlobalVisuals({ ...globalVisuals, contrast: val });
+  };
+
+  const handleGlobalBrightnessChange = (val) => {
+    setGlobalVisuals(prev => ({ ...prev, brightness: val }));
+    saveGlobalVisuals({ ...globalVisuals, brightness: val });
+  };
+
+  const saveGlobalVisuals = async (newVisuals) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      await fetch(`${API_URL}/api/visual-settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newVisuals)
+      });
+    } catch (e) {}
   };
 
   return (
@@ -496,24 +547,6 @@ export default function AdminHomeEditor() {
         accept="image/*"
         className="hidden"
       />
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-lg border backdrop-blur-xl shadow-2xl flex items-center gap-3 transition-all animate-in fade-in slide-in-from-top-4 ${
-          toast.type === 'error'
-            ? 'bg-red-950/90 border-red-500/30 text-red-200'
-            : toast.type === 'info'
-            ? 'bg-blue-950/90 border-blue-500/30 text-blue-200'
-            : 'bg-[#0e0e0e]/95 border-[#c79c6e]/40 text-[#c79c6e]'
-        }`}>
-          {toast.type === 'error' ? (
-            <WarningCircle size={20} className="text-red-400" />
-          ) : (
-            <CheckCircle size={20} className="text-[#c79c6e]" />
-          )}
-          <span className="text-xs font-medium uppercase tracking-wider">{toast.message}</span>
-        </div>
-      )}
 
       {/* Header Bar */}
       <div className="w-full bg-[#0a0a0a] border-b border-white/5 px-6 lg:px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20">
@@ -753,27 +786,76 @@ export default function AdminHomeEditor() {
                     tip="Keep coach portrait focused towards the right half so left-side typography remains crisp."
                     overlayOpacity={currentGlobalOverlayOpacity}
                     extraControls={
-                      <div className="pt-3 border-t border-white/5 flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-medium text-white flex items-center gap-1.5">
-                            <SlidersHorizontal size={14} className="text-[#c79c6e]" />
-                            <span>Global Contrast Overlay Darkness</span>
-                          </label>
-                          <span className="text-xs font-mono text-[#c79c6e] font-semibold">
-                            {currentGlobalOverlayOpacity}%
-                          </span>
+                      <div className="pt-3 border-t border-white/5 flex flex-col gap-4">
+                        
+                        {/* Overlay Darkness Bar */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-medium text-white flex items-center gap-1.5">
+                              <SlidersHorizontal size={14} className="text-[#c79c6e]" />
+                              <span>Global Contrast Overlay Darkness</span>
+                            </label>
+                            <span className="text-xs font-mono text-[#c79c6e] font-semibold">
+                              {globalVisuals.overlayDarkness}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="90"
+                            step="1"
+                            value={globalVisuals.overlayDarkness}
+                            onChange={(e) => handleGlobalOverlayChange(Number(e.target.value))}
+                            className="w-full accent-[#c79c6e] cursor-pointer"
+                          />
                         </div>
-                        <input
-                          type="range"
-                          min="10"
-                          max="90"
-                          step="5"
-                          value={currentGlobalOverlayOpacity}
-                          onChange={(e) => handleGlobalOverlayChange(Number(e.target.value))}
-                          className="w-full accent-[#c79c6e] cursor-pointer"
-                        />
+
+                        {/* Master Contrast Bar */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-medium text-white flex items-center gap-1.5">
+                              <Sun size={14} className="text-[#c79c6e]" weight="bold" />
+                              <span>Master Image Contrast</span>
+                            </label>
+                            <span className="text-xs font-mono text-[#c79c6e] font-semibold">
+                              {globalVisuals.contrast}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="50"
+                            max="150"
+                            step="1"
+                            value={globalVisuals.contrast}
+                            onChange={(e) => handleGlobalContrastChange(Number(e.target.value))}
+                            className="w-full accent-[#c79c6e] cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Master Brightness Bar */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-medium text-white flex items-center gap-1.5">
+                              <Sun size={14} className="text-amber-400" weight="fill" />
+                              <span>Master Image Brightness</span>
+                            </label>
+                            <span className="text-xs font-mono text-[#c79c6e] font-semibold">
+                              {globalVisuals.brightness}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="50"
+                            max="150"
+                            step="1"
+                            value={globalVisuals.brightness}
+                            onChange={(e) => handleGlobalBrightnessChange(Number(e.target.value))}
+                            className="w-full accent-[#c79c6e] cursor-pointer"
+                          />
+                        </div>
+
                         <p className="text-[0.68rem] text-white/50 leading-relaxed bg-black/40 p-2.5 rounded border border-white/5">
-                          ⚡ <strong>Global Controller:</strong> Adjusting this bar sets the background contrast darkness on <strong>ALL images & sections</strong> across the entire website simultaneously.
+                          ⚡ <strong>Universal Master Controller:</strong> Adjusting these sliders sets the contrast, brightness, and background darkening on <strong>ALL images &amp; sections</strong> across the entire website simultaneously.
                         </p>
                       </div>
                     }

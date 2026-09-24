@@ -461,7 +461,7 @@ export default function Articles() {
       )}
 
       <div className="relative z-10 flex flex-col w-full h-full flex-1">
-        <main className="flex-1 flex flex-col items-center justify-center pt-24 pb-12 px-6" ref={containerRef}>
+        <main className="flex-1 flex flex-col items-center justify-center pt-20 sm:pt-24 lg:pt-28 pb-12 px-6" ref={containerRef}>
           <div className="w-full md:w-[80%] max-w-6xl relative min-h-[400px] flex items-center justify-center">
             {step === 0 && (
               <div className="step-content w-full mx-auto flex flex-col pt-8">
@@ -692,9 +692,7 @@ export default function Articles() {
                             <button
                               onClick={() => {
                                 if (sessionStorage.getItem('library_scroll_position')) {
-                                  // Skip the save prompt logic if they just want to go back to the library? 
-                                  // The handleBack logic has the save prompt. We can just call handleBack!
-                                  handleBack();
+                                  navigate('/library');
                                 } else {
                                   handleCollapseArticle();
                                 }

@@ -48,6 +48,114 @@ export default function Booking() {
     isCoursePurchaser: false,
     courseUserName: ''
   });
+  const [bookingSettings, setBookingSettings] = useState({
+    general: {
+      bgImageUrl: '',
+      overlayOpacity: 60,
+      privacyNoteLine1: 'Your information is private and only visible to me.',
+      privacyNoteLine2: 'It helps me show up better for you.'
+    },
+    step1: {
+      chapterTag: 'CHAPTER 1 OF 3',
+      title: "Let's Find a Time That Works",
+      subtitleLine1: "You don't need to have everything figured out before you begin.",
+      subtitleLine2: "This is a space for honest conversation and real clarity.",
+      dateHeading: "CHOOSE A DATE",
+      timeHeading: "CHOOSE A TIME",
+      noSlotsText: "No slots available on this date. Please pick another date.",
+      morningLabel: "Morning",
+      morningSub: "Before 12:00 PM",
+      afternoonLabel: "Afternoon",
+      afternoonSub: "12:00 PM – 5:00 PM",
+      eveningLabel: "Evening",
+      eveningSub: "5:00 PM Onwards",
+    },
+    step2: {
+      chapterTag: 'CHAPTER 2 OF 3',
+      title: "A Little About You",
+      subtitleLine1: "This helps me understand you better before we meet.",
+      subtitleLine2: "Share only what you're comfortable with.",
+      nameLabel: "YOUR NAME",
+      namePlaceholder: "What should I call you?",
+      sourceLabel: "HOW DID YOU HEAR ABOUT ME? (OPTIONAL)",
+      sourcePlaceholder: "Select an option",
+      otherSourcePlaceholder: "Please specify (e.g. YouTube, Podcast, Friend, Book...)",
+      emailLabel: "EMAIL",
+      emailPlaceholder: "your.email@example.com",
+      phoneLabel: "PHONE NUMBER",
+      phonePlaceholder: "Enter 10-digit number",
+      reasonLabel: "WHAT BRINGS YOU HERE?",
+      reasonPlaceholder: "Tell me a little about where you are right now and what you're hoping to get out of our time together...",
+      extraLabel: "ANYTHING ELSE I SHOULD KNOW? (OPTIONAL)",
+      extraPlaceholder: "Any specific questions, concerns, or background context...",
+      continueButtonText: "CONTINUE TO CONFIRMATION",
+      backButtonText: "BACK",
+    },
+    step3: {
+      chapterTag: 'CHAPTER 3 OF 3',
+      title: "Confirm & Secure Your Session",
+      subtitleLine1: "Almost there. Review your session details",
+      subtitleLine2: "and let's make it official.",
+      sessionDetailsHeading: "SESSION DETAILS",
+      dateLabel: "Date",
+      timeLabel: "Time",
+      sessionTypeLabel: "Session Type",
+      durationLabel: "Duration",
+      whereLabel: "Where",
+      whereValue: "Google Meet",
+      whereNote: "(Link will be shared after booking)",
+      totalAmountLabel: "Total Amount",
+      whatHappensNextHeading: "WHAT HAPPENS NEXT",
+      nextSteps: [
+        {
+          title: "You'll receive a confirmation email",
+          description: "With all the details and next steps."
+        },
+        {
+          title: "A reminder before our session",
+          description: "So you can show up fully."
+        },
+        {
+          title: "A private, confidential space",
+          description: "Built for honest conversations."
+        },
+        {
+          title: "This is your time",
+          description: "To reflect, gain clarity, and move forward."
+        }
+      ],
+      rescheduleHeading: "NEED TO RESCHEDULE?",
+      rescheduleText: "You can reschedule or cancel up to 24 hours before the session.",
+      reschedulePolicyLinkText: "View Rescheduling Policy",
+      agreementPrefix: "I agree to the",
+      agreementLinkText: "terms and conditions",
+      agreementSuffix: "and understand that the amount above is the total payment shown in this summary.",
+      confirmButtonText: "CONFIRM & BOOK",
+      confirmFreeButtonText: "CONFIRM FREE SESSION",
+      backButtonText: "BACK",
+    }
+  });
+
+  // Fetch live booking settings from backend
+  useEffect(() => {
+    const fetchBookingSettings = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/booking-settings`);
+        if (res.ok) {
+          const data = await res.json();
+          setBookingSettings(prev => ({
+            general: { ...prev.general, ...(data.general || {}) },
+            step1: { ...prev.step1, ...(data.step1 || {}) },
+            step2: { ...prev.step2, ...(data.step2 || {}) },
+            step3: { ...prev.step3, ...(data.step3 || {}) },
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch booking settings:', err);
+      }
+    };
+    fetchBookingSettings();
+  }, []);
 
   // Handle openAuth query param and auth modal pre-fill
   useEffect(() => {
@@ -397,7 +505,7 @@ export default function Booking() {
 
   // Step 4 is the success screen
   if (step === 4) {
-    return <BookingSuccess data={bookingData} fee={currentFee} />;
+    return <BookingSuccess data={bookingData} fee={currentFee} settings={bookingSettings.success} generalSettings={bookingSettings.general} />;
   }
 
   // Step 5 is the cancelled screen
@@ -406,14 +514,15 @@ export default function Booking() {
   }
 
   return (
-    <div className="flex-grow w-full relative flex flex-col pt-16 md:pt-20 pb-8 md:pb-12">
+    <div className="flex-grow w-full relative flex flex-col pt-28 md:pt-36 lg:pt-40 pb-8 md:pb-12">
       
       {/* Background Image Layer */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
-          src={bookingBg} 
+          src={bookingSettings.general.bgImageUrl || bookingBg} 
           alt="Desk lamp" 
-          className="w-full h-full object-cover object-left opacity-60"
+          className="w-full h-full object-cover object-left"
+          style={{ opacity: (bookingSettings.general.overlayOpacity ? (100 - bookingSettings.general.overlayOpacity) / 100 : 0.6) }}
         />
         {/* Gradients to fade the image into black so text stays readable */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/40 via-[#0a0a0a]/80 to-[#0a0a0a]" />
@@ -424,7 +533,7 @@ export default function Booking() {
         
         {/* Top Left Back Button */}
         {step === 1 && (
-          <div className="flex w-full mt-4 sm:mt-6 md:mt-8 mb-4">
+          <div className="flex w-full mb-4">
             <button 
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 font-sans text-[0.65rem] uppercase tracking-widest text-white/60 hover:text-white hover:text-accent-gold transition-colors"
@@ -465,34 +574,48 @@ export default function Booking() {
         {/* Header section based on step */}
         <div className="text-center mb-6">
           <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-medium text-accent-gold block mb-2">
-            CHAPTER {step} OF 3
+            {step === 1 && (bookingSettings.step1.chapterTag || 'CHAPTER 1 OF 3')}
+            {step === 2 && (bookingSettings.step2.chapterTag || 'CHAPTER 2 OF 3')}
+            {step === 3 && (bookingSettings.step3.chapterTag || 'CHAPTER 3 OF 3')}
           </span>
           <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.15] text-white mb-3 sm:mb-4">
-            {step === 1 && "Let's Find a Time That Works"}
-            {step === 2 && "A Little About You"}
-            {step === 3 && "Confirm & Secure Your Session"}
+            {step === 1 && (bookingSettings.step1.title || "Let's Find a Time That Works")}
+            {step === 2 && (bookingSettings.step2.title || "A Little About You")}
+            {step === 3 && (bookingSettings.step3.title || "Confirm & Secure Your Session")}
           </h1>
           <div className="h-[1px] w-8 bg-accent-gold mx-auto mb-3 sm:mb-4" />
           <p className="text-paragraph text-xs sm:text-sm font-light tracking-wide text-white/80 max-w-lg mx-auto px-2">
             {step === 1 && (
               <>
-                You don't need to have everything figured out before you begin.
-                <br className="hidden md:block" />
-                {" "}This is a space for honest conversation and real clarity.
+                {bookingSettings.step1.subtitleLine1 || "You don't need to have everything figured out before you begin."}
+                {bookingSettings.step1.subtitleLine2 && (
+                  <>
+                    <br className="hidden md:block" />
+                    {" "}{bookingSettings.step1.subtitleLine2}
+                  </>
+                )}
               </>
             )}
             {step === 2 && (
               <>
-                This helps me understand you better before we meet.
-                <br className="hidden md:block" />
-                {" "}Share only what you're comfortable with.
+                {bookingSettings.step2.subtitleLine1 || "This helps me understand you better before we meet."}
+                {bookingSettings.step2.subtitleLine2 && (
+                  <>
+                    <br className="hidden md:block" />
+                    {" "}{bookingSettings.step2.subtitleLine2}
+                  </>
+                )}
               </>
             )}
             {step === 3 && (
               <>
-                Almost there. Review your session details
-                <br className="hidden md:block" />
-                {" "}and let's make it official.
+                {bookingSettings.step3.subtitleLine1 || "Almost there. Review your session details"}
+                {bookingSettings.step3.subtitleLine2 && (
+                  <>
+                    <br className="hidden md:block" />
+                    {" "}{bookingSettings.step3.subtitleLine2}
+                  </>
+                )}
               </>
             )}
           </p>
@@ -515,6 +638,7 @@ export default function Booking() {
                   onNext={nextStep} 
                   onBack={prevStep}
                   freeSessionInfo={freeSessionInfo}
+                  settings={bookingSettings.step1}
                 />
               )}
               {step === 2 && (
@@ -524,6 +648,7 @@ export default function Booking() {
                   onNext={nextStep} 
                   isAuthenticated={!!localStorage.getItem('token')}
                   freeSessionInfo={freeSessionInfo}
+                  settings={bookingSettings.step2}
                 />
               )}
               {step === 3 && (
@@ -535,6 +660,7 @@ export default function Booking() {
                   onBack={prevStep} 
                   isLoading={isLoading}
                   error={error}
+                  settings={bookingSettings.step3}
                 />
               )}
             </div>
@@ -549,9 +675,15 @@ export default function Booking() {
               <path d="M11.6667 7.33333H2.33333C1.59695 7.33333 1 7.93029 1 8.66667V13.3333C1 14.0697 1.59695 14.6667 2.33333 14.6667H11.6667C12.403 14.6667 13 14.0697 13 13.3333V8.66667C13 7.93029 12.403 7.33333 11.6667 7.33333Z" stroke="#B98A56" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M4.3335 7.33333V4.66667C4.3335 3.95942 4.61445 3.28115 5.11455 2.78105C5.61465 2.28095 6.29292 2 7.00016 2C7.70741 2 8.38568 2.28095 8.88578 2.78105C9.38588 3.28115 9.66683 3.95942 9.66683 4.66667V7.33333" stroke="#B98A56" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="font-sans text-xs text-white">Your information is private and only visible to me.</span>
+            <span className="font-sans text-xs text-white">
+              {bookingSettings.general.privacyNoteLine1 || 'Your information is private and only visible to me.'}
+            </span>
           </div>
-          <span className="font-sans text-xs text-white">It helps me show up better for you.</span>
+          {bookingSettings.general.privacyNoteLine2 && (
+            <span className="font-sans text-xs text-white">
+              {bookingSettings.general.privacyNoteLine2}
+            </span>
+          )}
         </div>
 
       </div>

@@ -7,10 +7,15 @@ import {
   GraduationCap,
   SignOut,
   House,
-  Books
+  Books,
+  CalendarBlank,
+  SlidersHorizontal,
+  Sun
 } from '@phosphor-icons/react';
+import GlobalVisualSettingsModal from '../components/GlobalVisualSettingsModal';
 
 export default function AdminLayout({ children, onLogout }) {
+  const [showVisualModal, setShowVisualModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
@@ -19,6 +24,7 @@ export default function AdminLayout({ children, onLogout }) {
   const getActiveTab = () => {
     if (currentPath.startsWith('/home') || currentPath.startsWith('/home-editor')) return 'home';
     if (currentPath.startsWith('/library')) return 'library';
+    if (currentPath.startsWith('/booking') || currentPath.startsWith('/book-editor') || currentPath.startsWith('/booking-editor')) return 'booking';
     if (currentPath.startsWith('/coaching') || currentPath.startsWith('/appointments') || currentPath.startsWith('/profile') || currentPath.startsWith('/journey')) return 'coaching';
     if (currentPath.startsWith('/course') || currentPath.startsWith('/admin/courses') || currentPath.startsWith('/upload-videos')) return 'course';
     if (currentPath.startsWith('/footer-documents')) return 'footer';
@@ -29,9 +35,10 @@ export default function AdminLayout({ children, onLogout }) {
 
   const topTabs = [
     { id: 'overview', label: 'Overview', icon: <SquaresFour size={18} />, path: '/' },
+    { id: 'coaching', label: 'Appointments', icon: <Users size={18} />, path: '/coaching' },
     { id: 'home', label: 'Home', icon: <House size={18} />, path: '/home-editor' },
     { id: 'library', label: 'Library', icon: <Books size={18} />, path: '/library' },
-    { id: 'coaching', label: 'Coaching', icon: <Users size={18} />, path: '/coaching' },
+    { id: 'booking', label: 'Book a Session', icon: <CalendarBlank size={18} />, path: '/booking-editor' },
     { id: 'course', label: 'Course', icon: <GraduationCap size={18} />, path: '/course' },
     { id: 'footer', label: 'Footer', icon: <FolderOpen size={18} />, path: '/footer-documents' },
   ];
@@ -47,14 +54,31 @@ export default function AdminLayout({ children, onLogout }) {
             </div>
             <h2 className="font-serif text-xl text-[#c79c6e]">BWA Admin</h2>
           </div>
-          <button 
-            onClick={onLogout}
-            className="flex items-center gap-2 px-4 py-2 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors text-sm"
-          >
-            <SignOut size={16} />
-            <span className="hidden md:inline tracking-wide">Logout</span>
-          </button>
+          
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowVisualModal(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-[#c79c6e]/10 border border-white/10 hover:border-[#c79c6e]/40 text-white/80 hover:text-[#c79c6e] text-xs font-semibold uppercase tracking-wider transition-all shadow-sm"
+              title="Global Master Controls (Font Size, Contrast, Brightness & Overlay)"
+            >
+              <SlidersHorizontal size={16} className="text-[#c79c6e]" weight="bold" />
+              <span className="hidden sm:inline">Master Controls</span>
+            </button>
+
+            <button 
+              onClick={onLogout}
+              className="flex items-center gap-2 px-4 py-2 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors text-sm"
+            >
+              <SignOut size={16} />
+              <span className="hidden md:inline tracking-wide">Logout</span>
+            </button>
+          </div>
         </div>
+
+        <GlobalVisualSettingsModal
+          isOpen={showVisualModal}
+          onClose={() => setShowVisualModal(false)}
+        />
         
         {/* Horizontal Tabs */}
         <div className="px-6 flex items-center gap-1 overflow-x-auto scrollbar-hide border-t border-white/5 bg-[#050505]/50">

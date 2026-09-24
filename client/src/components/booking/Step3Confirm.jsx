@@ -5,11 +5,13 @@ import {
 } from '@phosphor-icons/react';
 import PolicyModal from '../ui/PolicyModal';
 
-export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, error, freeSessionInfo }) {
+export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, error, freeSessionInfo, settings = {} }) {
   const [agreed, setAgreed] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
 
   const isFreeSession = freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0;
+
+  const nextStepIcons = [EnvelopeSimple, CalendarBlank, Lock, User];
 
   return (
     <div className="flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -19,7 +21,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
         {/* Left Column - Details */}
         <div className="flex-1">
           <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-3 sm:mb-6">
-            SESSION DETAILS
+            {settings.sessionDetailsHeading || 'SESSION DETAILS'}
           </h3>
           
           <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-4 sm:p-6 md:p-8 flex flex-col gap-5 sm:gap-7">
@@ -27,7 +29,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
             <div className="flex items-start gap-3 sm:gap-4">
               <CalendarBlank className="text-accent-gold text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div>
-                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">Date</p>
+                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">{settings.dateLabel || 'Date'}</p>
                 <p className="text-white text-base sm:text-lg">{data.date || 'Friday, October 4, 2024'}</p>
               </div>
             </div>
@@ -35,7 +37,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
             <div className="flex items-start gap-3 sm:gap-4">
               <Clock className="text-accent-gold text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div>
-                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">Time</p>
+                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">{settings.timeLabel || 'Time'}</p>
                 <p className="text-white text-base sm:text-lg">
                   {data.time ? (
                     (() => {
@@ -72,7 +74,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
             <div className="flex items-start gap-3 sm:gap-4">
               <User className="text-accent-gold text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div>
-                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">Session Type</p>
+                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">{settings.sessionTypeLabel || 'Session Type'}</p>
                 <p className="text-white text-base sm:text-lg">
                   {data.sessionDuration === 90 || data.isFirstSession === false 
                     ? '1-on-1 Follow-up Coaching Session' 
@@ -84,7 +86,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
             <div className="flex items-start gap-3 sm:gap-4">
               <Clock className="text-accent-gold text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div>
-                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">Duration</p>
+                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">{settings.durationLabel || 'Duration'}</p>
                 <p className="text-white text-base sm:text-lg">
                   {data.sessionDuration || (data.isFirstSession === false ? 90 : 60)} minutes
                 </p>
@@ -94,15 +96,15 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
             <div className="flex items-start gap-3 sm:gap-4">
               <VideoCamera className="text-accent-gold text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div>
-                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">Where</p>
-                <p className="text-white text-base sm:text-lg">Google Meet <span className="text-white/40 text-xs sm:text-sm block sm:inline">(Link will be shared after booking)</span></p>
+                <p className="font-sans text-[0.65rem] text-white/50 mb-0.5">{settings.whereLabel || 'Where'}</p>
+                <p className="text-white text-base sm:text-lg">{settings.whereValue || 'Google Meet'} <span className="text-white/40 text-xs sm:text-sm block sm:inline">{settings.whereNote || '(Link will be shared after booking)'}</span></p>
               </div>
             </div>
 
             <div className="flex items-start gap-3 sm:gap-4">
               <div className="w-5 sm:w-6 flex justify-center text-accent-gold text-xl sm:text-2xl shrink-0">₹</div>
               <div className="flex flex-col gap-1">
-                <span className="font-sans text-[0.65rem] uppercase tracking-widest text-white/40">Total Amount</span>
+                <span className="font-sans text-[0.65rem] uppercase tracking-widest text-white/40">{settings.totalAmountLabel || 'Total Amount'}</span>
                 {isFreeSession ? (
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <span className="font-sans text-xl sm:text-2xl font-semibold text-accent-gold">₹0</span>
@@ -123,60 +125,46 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
         {/* Right Column - Info */}
         <div className="flex-1 mt-6 lg:mt-0">
           <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-3 sm:mb-6">
-            WHAT HAPPENS NEXT
+            {settings.whatHappensNextHeading || 'WHAT HAPPENS NEXT'}
           </h3>
           
           <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-4 sm:p-6 md:p-8 flex flex-col gap-4 sm:gap-6">
             
-            <div className="flex items-start gap-3 sm:gap-4">
-              <EnvelopeSimple className="text-accent-gold text-lg sm:text-xl shrink-0 mt-0.5" weight="light" />
-              <div>
-                <p className="text-white text-xs sm:text-sm font-medium mb-0.5">You'll receive a confirmation email</p>
-                <p className="text-white/50 text-[0.72rem] sm:text-xs font-light">With all the details and next steps.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 sm:gap-4">
-              <CalendarBlank className="text-accent-gold text-lg sm:text-xl shrink-0 mt-0.5" weight="light" />
-              <div>
-                <p className="text-white text-xs sm:text-sm font-medium mb-0.5">A reminder before our session</p>
-                <p className="text-white/50 text-[0.72rem] sm:text-xs font-light">So you can show up fully.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 sm:gap-4">
-              <Lock className="text-accent-gold text-lg sm:text-xl shrink-0 mt-0.5" weight="light" />
-              <div>
-                <p className="text-white text-xs sm:text-sm font-medium mb-0.5">A private, confidential space</p>
-                <p className="text-white/50 text-[0.72rem] sm:text-xs font-light">Built for honest conversations.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 sm:gap-4">
-              <User className="text-accent-gold text-lg sm:text-xl shrink-0 mt-0.5" weight="light" />
-              <div>
-                <p className="text-white text-xs sm:text-sm font-medium mb-0.5">This is your time</p>
-                <p className="text-white/50 text-[0.72rem] sm:text-xs font-light">To reflect, gain clarity, and move forward.</p>
-              </div>
-            </div>
+            {(settings.nextSteps && settings.nextSteps.length > 0 ? settings.nextSteps : [
+              { title: "You'll receive a confirmation email", description: "With all the details and next steps." },
+              { title: "A reminder before our session", description: "So you can show up fully." },
+              { title: "A private, confidential space", description: "Built for honest conversations." },
+              { title: "This is your time", description: "To reflect, gain clarity, and move forward." }
+            ]).map((stepItem, idx) => {
+              const IconComp = nextStepIcons[idx % nextStepIcons.length] || EnvelopeSimple;
+              return (
+                <div key={idx} className="flex items-start gap-3 sm:gap-4">
+                  <IconComp className="text-accent-gold text-lg sm:text-xl shrink-0 mt-0.5" weight="light" />
+                  <div>
+                    <p className="text-white text-xs sm:text-sm font-medium mb-0.5">{stepItem.title}</p>
+                    <p className="text-white/50 text-[0.72rem] sm:text-xs font-light">{stepItem.description}</p>
+                  </div>
+                </div>
+              );
+            })}
 
           </div>
 
           <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-3 sm:mb-4 mt-6 sm:mt-8">
-            NEED TO RESCHEDULE?
+            {settings.rescheduleHeading || 'NEED TO RESCHEDULE?'}
           </h3>
           
           <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-4 sm:p-6 flex gap-3 sm:gap-4 items-start">
             <ClockCounterClockwise className="text-accent-gold text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
             <div>
               <p className="text-white/60 text-xs font-light leading-relaxed mb-2">
-                You can reschedule or cancel up to 24 hours before the session.
+                {settings.rescheduleText || 'You can reschedule or cancel up to 24 hours before the session.'}
               </p>
               <button 
                 onClick={() => setActiveModal('rescheduling-policy')}
                 className="text-accent-gold text-xs underline hover:text-white transition-colors"
               >
-                View Rescheduling Policy
+                {settings.reschedulePolicyLinkText || 'View Rescheduling Policy'}
               </button>
             </div>
           </div>
@@ -198,7 +186,11 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
               <Square className="text-white/30 text-xl sm:text-2xl shrink-0 mt-0.5 group-hover:text-white/60 transition-colors" weight="regular" />
             )}
             <p className="text-white/80 text-xs sm:text-sm font-light leading-snug">
-              I agree to the <button type="button" className="text-accent-gold hover:underline font-medium cursor-pointer inline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveModal('terms-and-conditions'); }}>terms and conditions</button> and understand that the amount above is the total payment shown in this summary.
+              {settings.agreementPrefix || 'I agree to the'}{' '}
+              <button type="button" className="text-accent-gold hover:underline font-medium cursor-pointer inline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveModal('terms-and-conditions'); }}>
+                {settings.agreementLinkText || 'terms and conditions'}
+              </button>{' '}
+              {settings.agreementSuffix || 'and understand that the amount above is the total payment shown in this summary.'}
             </p>
           </div>
         </div>
@@ -209,7 +201,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
             className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-white/10 font-sans text-xs sm:text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all w-full md:w-auto"
           >
             <ArrowLeft className="text-base sm:text-lg" />
-            BACK
+            {settings.backButtonText || 'BACK'}
           </button>
           
           <div className="flex flex-col gap-2 w-full md:w-auto">
@@ -223,7 +215,10 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
                 }
               `}
             >
-              {isLoading ? (isFreeSession ? 'RESERVING SESSION...' : 'BOOKING...') : (isFreeSession ? 'CONFIRM FREE SESSION' : 'CONFIRM & BOOK')}
+              {isLoading 
+                ? (isFreeSession ? 'RESERVING SESSION...' : 'BOOKING...') 
+                : (isFreeSession ? (settings.confirmFreeButtonText || 'CONFIRM FREE SESSION') : (settings.confirmButtonText || 'CONFIRM & BOOK'))
+              }
               {!isLoading && <LockKey className="text-base sm:text-lg" weight="bold" />}
             </button>
             {error && <p className="text-red-400 font-sans text-xs text-center">{error}</p>}

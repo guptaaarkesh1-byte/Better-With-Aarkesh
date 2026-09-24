@@ -28,6 +28,9 @@ import contactSettingsRoutes from './routes/contactSettingsRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import homeSettingsRoutes from './routes/homeSettingsRoutes.js';
 import librarySettingsRoutes from './routes/librarySettingsRoutes.js';
+import bookingSettingsRoutes from './routes/bookingSettingsRoutes.js';
+import questionnaireRoutes from './routes/questionnaireRoutes.js';
+import visualSettingsRoutes from './routes/visualSettingsRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +69,9 @@ app.use('/api/contact-settings', contactSettingsRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/home-settings', homeSettingsRoutes);
 app.use('/api/library-settings', librarySettingsRoutes);
+app.use('/api/booking-settings', bookingSettingsRoutes);
+app.use('/api/questionnaire', questionnaireRoutes);
+app.use('/api/visual-settings', visualSettingsRoutes);
 
 // Make uploads folder static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

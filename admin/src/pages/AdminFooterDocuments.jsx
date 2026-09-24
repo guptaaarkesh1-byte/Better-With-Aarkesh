@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import { 
   Plus, 
   Trash, 
@@ -91,7 +92,30 @@ export const getSocialIcon = (platform, size = 18) => {
 };
 
 export default function AdminFooterDocuments() {
-  const [activeTab, setActiveTab] = useState('pages');
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tabFromUrl = params.get('tab');
+      if (tabFromUrl && ['pages', 'brand'].includes(tabFromUrl)) {
+        return tabFromUrl;
+      }
+      const savedTab = localStorage.getItem('bwa_admin_footer_tab');
+      if (savedTab && ['pages', 'brand'].includes(savedTab)) {
+        return savedTab;
+      }
+    } catch (e) {}
+    return 'pages';
+  });
+
+  // Persist tab to localStorage and URL on change
+  useEffect(() => {
+    try {
+      localStorage.setItem('bwa_admin_footer_tab', activeTab);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTab);
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {}
+  }, [activeTab]);
   
   // Data States
   const [documents, setDocuments] = useState([]);
@@ -407,10 +431,7 @@ export default function AdminFooterDocuments() {
     }
   };
 
-  const showSuccess = (msg) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3500);
-  };
+  const { showSuccess, showError, showInfo } = useToast();
 
   // ─── 1. FETCH APIS ──────────────────────────────────────────────
   const fetchDocuments = async () => {
@@ -943,13 +964,6 @@ export default function AdminFooterDocuments() {
     <div className="flex flex-col flex-1 bg-[#050505] p-6 text-white min-h-0 overflow-y-auto">
       <div className="max-w-6xl w-full mx-auto space-y-8">
         
-        {/* Toast Notification */}
-        {notification && (
-          <div className="fixed top-20 right-6 z-50 bg-[#121212] border border-[#c79c6e]/60 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in duration-200">
-            <CheckCircle size={20} className="text-[#c79c6e]" weight="fill" />
-            <span className="text-sm font-sans font-medium">{notification}</span>
-          </div>
-        )}
 
         {/* Global Error */}
         {error && (

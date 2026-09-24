@@ -117,7 +117,7 @@ router.post('/check-session-type', optionalAuth, async (req, res) => {
 // POST /api/appointments - Create a new appointment
 router.post('/', optionalAuth, async (req, res) => {
   try {
-    const { date, time, name, email, countryCode, phoneNumber, source, reason, extra, paymentId, orderId, signature, useFreeSession } = req.body;
+    const { date, time, name, email, countryCode, phoneNumber, source, reason, extra, questionnaireAnswers, paymentId, orderId, signature, useFreeSession } = req.body;
 
     // --- Free session booking (3 free sessions included with course purchase) ---
     if (useFreeSession) {
@@ -170,6 +170,7 @@ router.post('/', optionalAuth, async (req, res) => {
         source,
         reason,
         extra,
+        questionnaireAnswers: questionnaireAnswers || null,
         status: 'UPCOMING',
         duration,
         isFirstSession,
@@ -260,6 +261,7 @@ router.post('/', optionalAuth, async (req, res) => {
       source,
       reason,
       extra,
+      questionnaireAnswers: questionnaireAnswers || null,
       status: 'UPCOMING',
       duration,
       isFirstSession,

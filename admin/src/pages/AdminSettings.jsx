@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import { Gear, Key, FloppyDisk, LockKey, Eye, EyeSlash } from '@phosphor-icons/react';
 import AdminBreadcrumb from '../components/ui/AdminBreadcrumb';
 import AdminCardPills from '../components/ui/AdminCardPills';
 
 export default function AdminSettings() {
+  const { showSuccess, showError } = useToast();
   const [activePill, setActivePill] = useState('password');
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
@@ -62,12 +64,15 @@ export default function AdminSettings() {
       });
 
       if (res.ok) {
+        showSuccess('Payment gateway credentials saved successfully!');
         setMessage('Settings saved successfully!');
       } else {
+        showError('Failed to save settings.');
         setMessage('Failed to save settings.');
       }
     } catch (error) {
       console.error(error);
+      showError('Network error while saving settings.');
       setMessage('Network error while saving settings.');
     } finally {
       setIsLoading(false);
@@ -77,6 +82,7 @@ export default function AdminSettings() {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
+      showError('New passwords do not match.');
       setPasswordMessage('New passwords do not match.');
       return;
     }
@@ -96,21 +102,26 @@ export default function AdminSettings() {
       });
 
       if (res.ok) {
+        showSuccess('Admin password changed successfully!');
         setPasswordMessage('Password changed successfully!');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
         const data = await res.json();
-        setPasswordMessage(data.message || 'Failed to change password.');
+        const err = data.message || 'Failed to change password.';
+        showError(err);
+        setPasswordMessage(err);
       }
     } catch (error) {
       console.error(error);
+      showError('Network error while changing password.');
       setPasswordMessage('Network error while changing password.');
     } finally {
       setIsPasswordLoading(false);
     }
   };
+
 
   return (
     <div className="p-8 md:p-12 w-full max-w-5xl mx-auto flex flex-col gap-8 animate-in fade-in duration-500 font-sans">

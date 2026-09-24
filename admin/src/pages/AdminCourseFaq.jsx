@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import { 
   Question, 
   Plus, 
@@ -47,10 +48,10 @@ const INITIAL_DEFAULT_FAQS = [
 ];
 
 export default function AdminCourseFaq() {
+  const { showSuccess, showError, showInfo } = useToast();
   const [faqs, setFaqs] = useState(INITIAL_DEFAULT_FAQS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [notification, setNotification] = useState(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,8 +64,9 @@ export default function AdminCourseFaq() {
   });
 
   const showNotification = (msg, type = 'success') => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 4000);
+    if (type === 'error') showError(msg);
+    else if (type === 'info') showInfo(msg);
+    else showSuccess(msg);
   };
 
   // Fetch FAQs
@@ -273,17 +275,6 @@ export default function AdminCourseFaq() {
 
   return (
     <div className="w-full max-w-6xl mx-auto px-6 py-8">
-      {/* Toast Notification */}
-      {notification && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center gap-2 shadow-2xl transition-all duration-300 animate-in fade-in slide-in-from-top-4 ${
-          notification.type === 'error' 
-            ? 'bg-rose-500 text-white shadow-rose-500/20' 
-            : 'bg-[#c79c6e] text-black shadow-[#c79c6e]/20'
-        }`}>
-          <CheckCircle size={16} weight="bold" />
-          <span>{notification.msg}</span>
-        </div>
-      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/10">

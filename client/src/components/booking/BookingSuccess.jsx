@@ -9,11 +9,13 @@ import LoginModal from '../layout/LoginModal';
 import PolicyModal from '../ui/PolicyModal';
 import { generateGoogleCalendarLink } from '../../utils/calendar';
 
-export default function BookingSuccess({ data, fee }) {
+export default function BookingSuccess({ data, fee, settings = {}, generalSettings = {} }) {
   const navigate = useNavigate();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
   const isAuthenticated = !!localStorage.getItem('token');
+
+  const nextStepIcons = [EnvelopeSimple, CalendarBlank, VideoCamera, User];
 
   useEffect(() => {
     if (!isAuthenticated && data.appointmentId) {
@@ -42,14 +44,15 @@ export default function BookingSuccess({ data, fee }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] relative pt-16 sm:pt-20 md:pt-28 pb-12 sm:pb-16 px-3 sm:px-4 md:px-8 animate-in fade-in zoom-in-95 duration-1000">
+    <div className="min-h-screen bg-[#0a0a0a] relative pt-28 md:pt-36 lg:pt-40 pb-12 sm:pb-16 px-3 sm:px-4 md:px-8 animate-in fade-in zoom-in-95 duration-1000">
       
       {/* Background Image Layer */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
-          src={bookingBg} 
+          src={generalSettings?.bgImageUrl || bookingBg} 
           alt="Desk lamp" 
-          className="w-full h-full object-cover object-left opacity-60"
+          className="w-full h-full object-cover object-left"
+          style={{ opacity: (generalSettings?.overlayOpacity ? (100 - generalSettings.overlayOpacity) / 100 : 0.6) }}
         />
         {/* Gradients to fade the image into black so text stays readable */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/40 via-[#0a0a0a]/80 to-[#0a0a0a]" />
@@ -65,7 +68,7 @@ export default function BookingSuccess({ data, fee }) {
             className="flex items-center gap-2 font-sans text-[0.65rem] uppercase tracking-widest text-white/60 hover:text-white hover:text-accent-gold transition-colors"
           >
             <ArrowLeft className="text-base" />
-            RETURN TO HOME
+            {settings.backButtonText || 'RETURN TO HOME'}
           </Link>
         </div>
 
@@ -75,17 +78,22 @@ export default function BookingSuccess({ data, fee }) {
             <Check className="text-accent-gold text-lg" weight="bold" />
           </div>
           <span className="font-sans text-[0.6rem] uppercase tracking-[0.3em] font-medium text-accent-gold block mb-2 sm:mb-3">
-            YOUR SESSION IS RESERVED
+            {settings.badgeTag || 'YOUR SESSION IS RESERVED'}
           </span>
           <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.15] text-white mb-3 sm:mb-4 max-w-2xl mx-auto">
-            Thank you for trusting me<br/>with a part of your story.
+            {settings.titleLine1 || 'Thank you for trusting me'}<br/>{settings.titleLine2 || 'with a part of your story.'}
           </h1>
           <p className="text-paragraph text-xs md:text-sm font-light tracking-wide text-white/80 max-w-lg mx-auto">
-            I've sent a confirmation email with everything you'll need.
-            <br className="hidden md:block" />
-            Until then, don't worry about preparing the "right" answers.
-            <br className="hidden md:block" />
-            <span className="italic text-accent-gold mt-1 block">Just bring yourself.</span>
+            {settings.subtitleLine1 || "I've sent a confirmation email with everything you'll need."}
+            {settings.subtitleLine2 && (
+              <>
+                <br className="hidden md:block" />
+                {settings.subtitleLine2}
+              </>
+            )}
+            {settings.subtitleHighlight && (
+              <span className="italic text-accent-gold mt-1 block">{settings.subtitleHighlight}</span>
+            )}
           </p>
         </div>
 
@@ -96,7 +104,9 @@ export default function BookingSuccess({ data, fee }) {
             <div className="flex items-start gap-3 mb-5">
               <CalendarBlank className="text-accent-gold text-3xl shrink-0" weight="light" />
               <div>
-                <p className="font-sans text-[0.55rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-1">YOUR APPOINTMENT</p>
+                <p className="font-sans text-[0.55rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-1">
+                  {settings.appointmentCardBadge || 'YOUR APPOINTMENT'}
+                </p>
                 <div className="flex flex-col">
                 <span className="text-white text-base font-medium">{data.date || 'Friday, October 4, 2024'}</span>
                 <p className="text-white/60 text-sm font-light mt-0.5">
@@ -176,8 +186,8 @@ export default function BookingSuccess({ data, fee }) {
                 <VideoCamera className="text-accent-gold text-2xl shrink-0" weight="light" />
                 <div>
                   <p className="font-sans text-[0.65rem] text-white/50 mb-1">Where</p>
-                  <p className="text-white text-sm">Google Meet</p>
-                  <p className="text-white/40 text-xs">(Link shared in confirmation email)</p>
+                  <p className="text-white text-sm">{settings.whereValue || 'Google Meet'}</p>
+                  <p className="text-white/40 text-xs">{settings.whereNote || '(Link shared in confirmation email)'}</p>
                 </div>
               </div>
             </div>
@@ -186,7 +196,7 @@ export default function BookingSuccess({ data, fee }) {
           <div className="relative h-64 md:h-auto md:col-span-3 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-[#0f0f0f] to-transparent z-10" />
             <img 
-              src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1287&auto=format&fit=crop" 
+              src={settings.cardImageUrl || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1287&auto=format&fit=crop"} 
               alt="Peaceful desk" 
               className="absolute inset-0 w-full h-full object-cover object-center opacity-70 scale-105 filter contrast-[1.05] brightness-90 saturate-[0.85]"
             />
@@ -196,43 +206,27 @@ export default function BookingSuccess({ data, fee }) {
 
         {/* What Happens Next Grid */}
         <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.3em] font-medium text-accent-gold text-center mb-6 mt-16">
-          WHAT HAPPENS NEXT
+          {settings.whatHappensNextHeading || 'WHAT HAPPENS NEXT'}
         </h3>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          
-          <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-6 text-center flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-4 text-accent-gold">
-              <EnvelopeSimple size={24} weight="light" />
-            </div>
-            <h4 className="text-white text-sm font-semibold tracking-wide uppercase mb-2">CONFIRMATION EMAIL</h4>
-            <p className="text-white/50 text-xs font-light leading-relaxed">You'll receive a confirmation email with all the details and next steps.</p>
-          </div>
-
-          <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-6 text-center flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-4 text-accent-gold">
-              <CalendarBlank size={24} weight="light" />
-            </div>
-            <h4 className="text-white text-sm font-semibold tracking-wide uppercase mb-2">CALENDAR INVITE</h4>
-            <p className="text-white/50 text-xs font-light leading-relaxed">A calendar invite has been sent. Add it to your calendar.</p>
-          </div>
-
-          <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-6 text-center flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-4 text-accent-gold">
-              <VideoCamera size={24} weight="light" />
-            </div>
-            <h4 className="text-white text-sm font-semibold tracking-wide uppercase mb-2">MEETING LINK</h4>
-            <p className="text-white/50 text-xs font-light leading-relaxed">Your Google Meet link is included in the email. Check your spam folder if you don't see it.</p>
-          </div>
-
-          <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-6 text-center flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-4 text-accent-gold">
-              <User size={24} weight="light" />
-            </div>
-            <h4 className="text-white text-sm font-semibold tracking-wide uppercase mb-2">BE YOURSELF</h4>
-            <p className="text-white/50 text-xs font-light leading-relaxed">This is a space for honesty, clarity, and real conversations. You don't have to have it all figured out.</p>
-          </div>
-
+          {(settings.nextSteps && settings.nextSteps.length > 0 ? settings.nextSteps : [
+            { title: "CONFIRMATION EMAIL", description: "You'll receive a confirmation email with all the details and next steps." },
+            { title: "CALENDAR INVITE", description: "A calendar invite has been sent. Add it to your calendar." },
+            { title: "MEETING LINK", description: "Your Google Meet link is included in the email. Check your spam folder if you don't see it." },
+            { title: "BE YOURSELF", description: "This is a space for honesty, clarity, and real conversations. You don't have to have it all figured out." }
+          ]).map((card, idx) => {
+            const IconComp = nextStepIcons[idx % nextStepIcons.length] || EnvelopeSimple;
+            return (
+              <div key={idx} className="bg-[#0f0f0f] border border-white/5 rounded-xl p-6 text-center flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-4 text-accent-gold">
+                  <IconComp size={24} weight="light" />
+                </div>
+                <h4 className="text-white text-sm font-semibold tracking-wide uppercase mb-2">{card.title}</h4>
+                <p className="text-white/50 text-xs font-light leading-relaxed">{card.description}</p>
+              </div>
+            );
+          })}
         </div>
 
         {/* Action Buttons */}
@@ -245,24 +239,24 @@ export default function BookingSuccess({ data, fee }) {
             className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/80 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all w-full sm:w-auto text-center"
           >
             <CalendarBlank className="text-lg text-accent-gold" />
-            ADD TO CALENDAR
+            {settings.addToCalendarButtonText || 'ADD TO CALENDAR'}
           </a>
           
           {isAuthenticated ? (
             <>
               <Link to="/my-journey" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-accent-gold text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all w-full sm:w-auto">
-                MY JOURNEY
+                {settings.myJourneyButtonText || 'MY JOURNEY'}
                 <User className="text-lg" />
               </Link>
 
               <Link to="/library" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 font-sans text-sm font-light tracking-wide text-white/80 hover:text-white hover:border-white/30 transition-all w-full sm:w-auto">
                 <BookOpen className="text-lg text-accent-gold" />
-                EXPLORE LIBRARY
+                {settings.exploreLibraryButtonText || 'EXPLORE LIBRARY'}
               </Link>
             </>
           ) : (
             <button onClick={() => setIsLoginModalOpen(true)} className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-accent-gold text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all w-full sm:w-auto">
-              CREATE ACCOUNT TO VIEW JOURNEY
+              {settings.createAccountButtonText || 'CREATE ACCOUNT TO VIEW JOURNEY'}
               <User className="text-lg" />
             </button>
           )}
@@ -274,10 +268,10 @@ export default function BookingSuccess({ data, fee }) {
           <Quotes className="text-accent-gold/20 text-8xl absolute left-8 top-8" weight="fill" />
           <div className="relative z-10 text-center">
             <p className="text-white text-xl md:text-2xl font-serif font-light mb-2">
-              Clarity doesn't come from having all the answers.
+              {settings.quoteLine1 || "Clarity doesn't come from having all the answers."}
             </p>
             <p className="text-accent-gold text-xl md:text-2xl font-serif italic">
-              It comes from asking better questions.
+              {settings.quoteLine2 || "It comes from asking better questions."}
             </p>
           </div>
         </div>
@@ -286,15 +280,19 @@ export default function BookingSuccess({ data, fee }) {
         <div className="flex flex-col items-center justify-center gap-2">
           <div className="flex items-center gap-2">
             <ChatCenteredText className="text-accent-gold text-lg" />
-            <span className="font-sans text-xs uppercase tracking-[0.2em] font-medium text-accent-gold">NEED TO MAKE A CHANGE?</span>
+            <span className="font-sans text-xs uppercase tracking-[0.2em] font-medium text-accent-gold">
+              {settings.changeHeading || 'NEED TO MAKE A CHANGE?'}
+            </span>
           </div>
-          <span className="font-sans text-xs text-white/40">You can reschedule or cancel up to 24 hours before the session.</span>
+          <span className="font-sans text-xs text-white/40">
+            {settings.changeText || 'You can reschedule or cancel up to 24 hours before the session.'}
+          </span>
           <button 
             type="button"
             onClick={() => setIsPolicyModalOpen(true)} 
             className="font-sans text-xs text-accent-gold underline hover:text-white transition-colors mt-1 cursor-pointer"
           >
-            View Rescheduling Policy &rarr;
+            {settings.changePolicyLinkText || 'View Rescheduling Policy →'}
           </button>
         </div>
 

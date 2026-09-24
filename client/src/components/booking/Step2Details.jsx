@@ -1,12 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Clock, ArrowLeft, ArrowRight, ArrowUpRight, Sparkle, CheckCircle } from '@phosphor-icons/react';
 import { COUNTRY_CODES } from '../../utils/countryCodes';
+import QuestionnaireModal from './QuestionnaireModal';
 
-export default function Step2Details({ data, updateData, onNext, onBack, isAuthenticated, freeSessionInfo }) {
-  
+export default function Step2Details({ data, updateData, onNext, onBack, isAuthenticated, freeSessionInfo, settings = {} }) {
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
+  const [questionnaireAnswers, setQuestionnaireAnswers] = useState({});
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     updateData({ [name]: value });
+  };
+
+  const handleQuestionnaireComplete = (answers) => {
+    setQuestionnaireAnswers(answers);
+    setQuestionnaireCompleted(true);
+    // Store answers in booking data
+    updateData({ questionnaireAnswers: answers });
   };
 
   const isValidEmail = (email) => {
@@ -53,14 +64,14 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
         {/* Name */}
         <div>
           <label className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-2 sm:mb-3">
-            YOUR NAME
+            {settings.nameLabel || 'YOUR NAME'}
           </label>
           <input
             type="text"
             name="name"
             value={data.name}
             onChange={handleInputChange}
-            placeholder="What should I call you?"
+            placeholder={settings.namePlaceholder || "What should I call you?"}
             className="w-full bg-transparent border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 text-sm text-white placeholder-white/30 font-light focus:outline-none focus:border-accent-gold/50 transition-colors"
           />
         </div>
@@ -68,7 +79,7 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
         {/* Source */}
         <div>
           <label className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-2 sm:mb-3">
-            HOW DID YOU HEAR ABOUT ME? (OPTIONAL)
+            {settings.sourceLabel || 'HOW DID YOU HEAR ABOUT ME? (OPTIONAL)'}
           </label>
           <div className="flex flex-col gap-2.5">
             <select
@@ -78,7 +89,7 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
               className="w-full bg-transparent border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 text-sm text-white/80 font-light focus:outline-none focus:border-accent-gold/50 transition-colors appearance-none cursor-pointer"
               style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.2rem top 50%', backgroundSize: '0.65rem auto' }}
             >
-              <option value="" disabled className="bg-[#0f0f0f] text-white/50">Select an option</option>
+              <option value="" disabled className="bg-[#0f0f0f] text-white/50">{settings.sourcePlaceholder || 'Select an option'}</option>
               <option value="social" className="bg-[#0f0f0f]">Social Media</option>
               <option value="referral" className="bg-[#0f0f0f]">Referral</option>
               <option value="search" className="bg-[#0f0f0f]">Search Engine</option>
@@ -92,7 +103,7 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
                   name="otherSource"
                   value={data.otherSource || ''}
                   onChange={handleInputChange}
-                  placeholder="Please specify (e.g. YouTube, Podcast, Friend, Book...)"
+                  placeholder={settings.otherSourcePlaceholder || "Please specify (e.g. YouTube, Podcast, Friend, Book...)"}
                   className="w-full bg-[#121212] border border-accent-gold/40 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-white placeholder-white/30 font-light focus:outline-none focus:border-accent-gold transition-colors"
                   autoFocus
                 />
@@ -104,14 +115,14 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
         {/* Email */}
         <div>
           <label className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-2 sm:mb-3">
-            EMAIL
+            {settings.emailLabel || 'EMAIL'}
           </label>
           <input
             type="email"
             name="email"
             value={data.email}
             onChange={handleInputChange}
-            placeholder="your.email@example.com"
+            placeholder={settings.emailPlaceholder || "your.email@example.com"}
             className="w-full bg-transparent border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 text-sm text-white placeholder-white/30 font-light focus:outline-none focus:border-accent-gold/50 transition-colors"
           />
         </div>
@@ -120,7 +131,7 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
         {!isAuthenticated && (
           <div>
             <label className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-2 sm:mb-3">
-              PHONE NUMBER
+              {settings.phoneLabel || 'PHONE NUMBER'}
             </label>
             <div className="flex items-center border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 transition-colors focus-within:border-accent-gold/50 bg-transparent">
               <select 
@@ -143,7 +154,7 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
                 onChange={(e) => updateData({ phoneNumber: e.target.value.replace(/\D/g, '') })}
                 maxLength={10}
                 className="w-full bg-transparent text-white font-sans text-sm focus:outline-none placeholder-white/30"
-                placeholder="0000000000"
+                placeholder={settings.phonePlaceholder || "0000000000"}
               />
             </div>
           </div>
@@ -152,14 +163,14 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
         {/* Reason */}
         <div className={isAuthenticated ? "md:col-span-2" : ""}>
           <label className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-2 sm:mb-3">
-            WHAT BRINGS YOU HERE?
+            {settings.reasonLabel || 'WHAT BRINGS YOU HERE?'}
           </label>
           <div className="relative">
             <textarea
               name="reason"
               value={data.reason}
               onChange={handleInputChange}
-              placeholder="A few words are enough."
+              placeholder={settings.reasonPlaceholder || "A few words are enough."}
               rows={4}
               maxLength={500}
               className="w-full bg-transparent border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 text-sm text-white placeholder-white/30 font-light focus:outline-none focus:border-accent-gold/50 transition-colors resize-none"
@@ -175,14 +186,14 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
       {/* Extra Textarea */}
       <div className="mt-5 sm:mt-6">
         <label className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold block mb-2 sm:mb-3">
-          ANYTHING ELSE YOU WANT ME TO KNOW? (OPTIONAL)
+          {settings.extraLabel || 'ANYTHING ELSE I SHOULD KNOW? (OPTIONAL)'}
         </label>
         <div className="relative">
           <textarea
             name="extra"
             value={data.extra}
             onChange={handleInputChange}
-            placeholder="Share anything that feels important."
+            placeholder={settings.extraPlaceholder || "Share anything that feels important."}
             rows={3}
             maxLength={500}
             className="w-full bg-transparent border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 text-sm text-white placeholder-white/30 font-light focus:outline-none focus:border-accent-gold/50 transition-colors resize-none"
@@ -194,21 +205,59 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
       </div>
 
       {/* Questionnaire Banner */}
-      <div className="mt-6 sm:mt-8 border border-white/5 bg-[#140e09] rounded-xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+      <div
+        className={`mt-6 sm:mt-8 border rounded-xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 transition-all duration-300 ${
+          questionnaireCompleted
+            ? 'border-[#c79c6e]/30 bg-gradient-to-r from-[#c79c6e]/10 to-transparent'
+            : 'border-white/5 bg-[#140e09]'
+        }`}
+      >
         <div className="flex gap-3 sm:gap-4 items-start">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-accent-gold/40 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
-            <Clock className="text-accent-gold text-lg sm:text-xl" weight="light" />
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 transition-all duration-300 ${
+            questionnaireCompleted ? 'border-[#c79c6e]/60 bg-[#c79c6e]/15' : 'border-accent-gold/40'
+          }`}>
+            {questionnaireCompleted
+              ? <CheckCircle className="text-accent-gold" size={20} weight="fill" />
+              : <Clock className="text-accent-gold text-lg sm:text-xl" weight="light" />
+            }
           </div>
           <div>
-            <h4 className="text-accent-gold text-base sm:text-lg mb-1">Want to go deeper? (Optional – ~30 mins)</h4>
-            <p className="text-white/60 text-xs sm:text-sm font-light">A short questionnaire to help us make the most of our time together.</p>
+            <h4 className="text-accent-gold text-base sm:text-lg mb-1">
+              {questionnaireCompleted
+                ? (settings.questionnaireCompletedText || 'Questionnaire Completed')
+                : (settings.questionnaireBannerTitle || 'Want to go deeper? (Optional – ~30 mins)')
+              }
+            </h4>
+            <p className="text-white/60 text-xs sm:text-sm font-light">
+              {questionnaireCompleted
+                ? 'Your answers have been saved. They\'ll help make our session more meaningful.'
+                : (settings.questionnaireBannerSubtitle || 'A short questionnaire to help us make the most of our time together.')
+              }
+            </p>
           </div>
         </div>
-        <button className="flex items-center gap-2 text-accent-gold font-sans text-xs tracking-widest font-semibold uppercase hover:text-white transition-colors shrink-0">
-          TAKE QUESTIONNAIRE
-          <ArrowUpRight />
+        <button
+          onClick={() => setShowQuestionnaire(true)}
+          className={`flex items-center gap-2 font-sans text-xs tracking-widest font-semibold uppercase transition-colors shrink-0 ${
+            questionnaireCompleted
+              ? 'text-white/50 hover:text-white'
+              : 'text-accent-gold hover:text-white'
+          }`}
+        >
+          {questionnaireCompleted ? 'RETAKE' : (settings.questionnaireBannerButtonText || 'TAKE QUESTIONNAIRE')}
+          <ArrowUpRight size={16} />
         </button>
       </div>
+
+      {/* Questionnaire Modal */}
+      <QuestionnaireModal
+        isOpen={showQuestionnaire}
+        onClose={() => setShowQuestionnaire(false)}
+        onComplete={(answers) => {
+          handleQuestionnaireComplete(answers);
+          setShowQuestionnaire(false);
+        }}
+      />
 
       {/* Bottom Action Bar */}
       <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-white/10 flex flex-col-reverse md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4 md:gap-6">
@@ -218,7 +267,7 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
             className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-white/10 font-sans text-xs sm:text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all w-full md:w-auto"
           >
             <ArrowLeft className="text-base sm:text-lg" />
-            BACK
+            {settings.backButtonText || 'BACK'}
           </button>
         ) : (
           <div></div>
@@ -234,7 +283,7 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
             }
           `}
         >
-          CONTINUE TO CONFIRM
+          {settings.continueButtonText || 'CONTINUE TO CONFIRMATION'}
           <ArrowRight className="text-base sm:text-lg" />
         </button>
       </div>

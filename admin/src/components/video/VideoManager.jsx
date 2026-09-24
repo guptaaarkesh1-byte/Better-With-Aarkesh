@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 import { 
   Play, 
   Plus, 
@@ -24,6 +25,7 @@ const emptyForm = {
 };
 
 export default function VideoManager() {
+  const { showSuccess, showError, showInfo } = useToast();
   const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -186,10 +188,12 @@ export default function VideoManager() {
         return [savedVideo, ...current];
       });
 
+      showSuccess(`Video ${form.id ? 'updated' : 'created'} successfully!`);
       setMessage(`Video ${form.id ? 'updated' : 'created'} successfully!`);
       closeEditor();
     } catch (err) {
       console.error(err);
+      showError(err.message || 'Failed to save video.');
       setMessage(err.message || 'Failed to save video.');
     } finally {
       setIsSaving(false);

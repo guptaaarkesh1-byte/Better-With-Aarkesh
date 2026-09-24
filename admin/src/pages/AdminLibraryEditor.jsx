@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useToast } from '../context/ToastContext';
 import { 
   Desktop,
   Image as ImageIcon,
@@ -771,15 +772,15 @@ export default function AdminLibraryEditor() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadTargetField, setUploadTargetField] = useState(null);
-  const [toast, setToast] = useState(null);
+  const { showToast: showGlobalToast, showSuccess, showError } = useToast();
 
   const fileInputRef = useRef(null);
 
-  // Show Toast Helper
+  // Show Toast Helper (routed to global ToastContext)
   const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    if (type === 'error') showError(message);
+    else if (type === 'info') showGlobalToast(message, 'info');
+    else showSuccess(message);
   };
 
   // Fetch Library Settings on Mount
@@ -1606,24 +1607,6 @@ export default function AdminLibraryEditor() {
         accept="image/*"
         className="hidden"
       />
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-lg border backdrop-blur-xl shadow-2xl flex items-center gap-3 transition-all animate-in fade-in slide-in-from-top-4 ${
-          toast.type === 'error'
-            ? 'bg-red-950/90 border-red-500/30 text-red-200'
-            : toast.type === 'info'
-            ? 'bg-[#18140e]/95 border-[#c79c6e]/40 text-[#c79c6e]'
-            : 'bg-[#0e0e0e]/95 border-[#c79c6e]/40 text-[#c79c6e]'
-        }`}>
-          {toast.type === 'error' ? (
-            <WarningCircle size={20} className="text-red-400" />
-          ) : (
-            <CheckCircle size={20} className="text-[#c79c6e]" />
-          )}
-          <span className="text-xs font-medium uppercase tracking-wider">{toast.message}</span>
-        </div>
-      )}
 
       {/* Header Bar */}
       <div className="w-full bg-[#0a0a0a] border-b border-white/5 px-6 lg:px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20">

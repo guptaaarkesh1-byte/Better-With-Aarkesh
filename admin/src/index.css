@@ -120,4 +120,26 @@ body {
   color: rgba(255, 255, 255, 0.75);
 }
 
+@keyframes adminToastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+@keyframes adminSavePulse {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+
 

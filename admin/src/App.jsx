@@ -305,6 +305,8 @@ import AdminCourse from './pages/AdminCourse';
 import AdminCourseCurriculum from './pages/AdminCourseCurriculum';
 import AdminCoaching from './pages/AdminCoaching';
 import AdminHomeEditor from './pages/AdminHomeEditor';
+import AdminBookingEditor from './pages/AdminBookingEditor';
+import { ToastProvider } from './context/ToastContext';
 
 // --- Main App Route Setup ---
 function App() {
@@ -328,42 +330,46 @@ function App() {
   if (loading) return <div className="min-h-screen bg-[#050505]" />; // blank while checking
 
   return (
-    <Router>
-      <Routes>
-        <Route 
-          path="/login" 
-          element={
-            isAuthenticated ? <Navigate to="/" replace /> : <AdminLogin onLogin={setIsAuthenticated} />
-          } 
-        />
-        
-        <Route 
-          element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <AdminLayout onLogout={handleLogout} />
-            </ProtectedRoute>
-          } 
-        >
-          <Route path="/" element={<AdminDashboard />} />
-          <Route path="/home-editor" element={<AdminHomeEditor />} />
-          <Route path="/home" element={<AdminHomeEditor />} />
-          <Route path="/library" element={<AdminLibraryEditor />} />
-          <Route path="/library/content" element={<AdminLibraryEditor />} />
-          <Route path="/coaching" element={<AdminCoaching />} />
-          <Route path="/appointments" element={<AdminCoaching />} />
-          <Route path="/profile" element={<AdminCoaching />} />
-          <Route path="/profile/settings" element={<AdminCoaching />} />
-          <Route path="/journey" element={<AdminCoaching />} />
-          <Route path="/journey/settings" element={<AdminCoaching />} />
-          <Route path="/course" element={<AdminCourse />} />
-          <Route path="/upload-videos" element={<AdminCourse />} />
-          <Route path="/course-curriculum" element={<AdminCourse />} />
-          <Route path="/admin/courses" element={<AdminCourse />} />
-          <Route path="/course-students" element={<AdminCourse />} />
-          <Route path="/footer-documents" element={<AdminFooterDocuments />} />
-        </Route>
-      </Routes>
-    </Router>
+    <ToastProvider>
+      <Router>
+        <Routes>
+          <Route 
+            path="/login" 
+            element={
+              isAuthenticated ? <Navigate to="/" replace /> : <AdminLogin onLogin={setIsAuthenticated} />
+            } 
+          />
+          
+          <Route 
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <AdminLayout onLogout={handleLogout} />
+              </ProtectedRoute>
+            } 
+          >
+            <Route path="/" element={<AdminDashboard />} />
+            <Route path="/home-editor" element={<AdminHomeEditor />} />
+            <Route path="/home" element={<AdminHomeEditor />} />
+            <Route path="/library" element={<AdminLibraryEditor />} />
+            <Route path="/library/content" element={<AdminLibraryEditor />} />
+            <Route path="/booking-editor" element={<AdminBookingEditor />} />
+            <Route path="/booking" element={<AdminBookingEditor />} />
+            <Route path="/coaching" element={<AdminCoaching />} />
+            <Route path="/appointments" element={<AdminCoaching />} />
+            <Route path="/profile" element={<AdminCoaching />} />
+            <Route path="/profile/settings" element={<AdminCoaching />} />
+            <Route path="/journey" element={<AdminCoaching />} />
+            <Route path="/journey/settings" element={<AdminCoaching />} />
+            <Route path="/course" element={<AdminCourse />} />
+            <Route path="/upload-videos" element={<AdminCourse />} />
+            <Route path="/course-curriculum" element={<AdminCourse />} />
+            <Route path="/admin/courses" element={<AdminCourse />} />
+            <Route path="/course-students" element={<AdminCourse />} />
+            <Route path="/footer-documents" element={<AdminFooterDocuments />} />
+          </Route>
+        </Routes>
+      </Router>
+    </ToastProvider>
   )
 }
 

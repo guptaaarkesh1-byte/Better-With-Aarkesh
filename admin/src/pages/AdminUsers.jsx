@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from '../context/ToastContext';
 import { 
   MagnifyingGlass, 
   CaretDown, 
@@ -15,7 +16,10 @@ import {
   Clock,
   CurrencyCircleDollar,
   GraduationCap,
-  Megaphone
+  Megaphone,
+  Question,
+  CheckCircle,
+  Sparkle
 } from '@phosphor-icons/react';
 
 const formatSource = (src) => {
@@ -57,6 +61,7 @@ const formatTimeRange = (timeStr, duration = 60) => {
 };
 
 export default function AdminUsers() {
+  const { showSuccess, showError, showInfo } = useToast();
   const [expandedUser, setExpandedUser] = useState(() => {
     const saved = sessionStorage.getItem('admin_users_expanded');
     return saved ? parseInt(saved, 10) : 1;
@@ -137,6 +142,7 @@ export default function AdminUsers() {
 
       if (res.ok) {
         const updated = await res.json();
+        showSuccess('Session notes saved successfully!');
         setNotesSuccessMessage(true);
         setTimeout(() => setNotesSuccessMessage(false), 3000);
 
@@ -154,11 +160,11 @@ export default function AdminUsers() {
           return u;
         }));
       } else {
-        alert('Failed to save session notes');
+        showError('Failed to save session notes');
       }
     } catch (err) {
       console.error('Save session notes error:', err);
-      alert('An error occurred while saving notes.');
+      showError('An error occurred while saving notes.');
     } finally {
       setIsSavingNotes(false);
     }
@@ -205,8 +211,10 @@ export default function AdminUsers() {
         
         if (!res.ok) {
           console.error('Failed to update status in backend', res.status);
-          alert('Failed to update status on the server. Please ensure the backend is running with the latest code.');
+          showError('Failed to update status on the server.');
           return;
+        } else {
+          showSuccess(`Appointment status changed to ${newStatus}`);
         }
       }
 
@@ -226,7 +234,7 @@ export default function AdminUsers() {
       }));
     } catch (err) {
       console.error('Failed to update status:', err);
-      alert('An error occurred while communicating with the server.');
+      showError('An error occurred while communicating with the server.');
     } finally {
       setStatusDropdownOpenId(null);
     }
@@ -278,10 +286,11 @@ export default function AdminUsers() {
            rescheduleRequest: updatedAppointment.rescheduleRequest
         }));
       }
-      
+
+      showSuccess(`Reschedule request ${action === 'approve' ? 'approved' : 'declined'} successfully!`);
     } catch (err) {
       console.error(err);
-      alert(`Failed to ${action} reschedule request`);
+      showError(`Failed to ${action} reschedule request`);
     }
   };
 
@@ -358,7 +367,8 @@ export default function AdminUsers() {
               isFreeSession: isFreeSession,
               isCourseMember: isCourseMember,
               amount: app.amount,
-              coachNotes: app.coachNotes || ''
+              coachNotes: app.coachNotes || '',
+              questionnaireAnswers: app.questionnaireAnswers || null
             });
             userMap[uId].appointmentsCount++;
           });
@@ -417,13 +427,16 @@ export default function AdminUsers() {
         body: JSON.stringify(feeSettings)
       });
       if (res.ok) {
+        showSuccess('Booking fee configuration saved successfully!');
         setFeeMessage('Fees updated successfully!');
         setTimeout(() => setFeeMessage(''), 3000);
       } else {
+        showError('Failed to update fees.');
         setFeeMessage('Failed to update fees.');
       }
     } catch (err) {
       console.error(err);
+      showError('Error communicating with server.');
       setFeeMessage('Error communicating with server.');
     } finally {
       setIsSavingFees(false);
@@ -1161,6 +1174,80 @@ export default function AdminUsers() {
                           <p className="text-white/30 italic text-xs">No additional information provided.</p>
                         )}
                       </div>
+                    </div>
+
+                    {/* Questionnaire Responses */}
+                    <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
+                      <div className="flex items-center justify-between text-[#c79c6e]/80">
+                        <div className="flex items-center gap-1.5">
+                          <Question size={15} className="text-[#c79c6e]" weight="bold" />
+                          <span className="text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
+                            Questionnaire Responses
+                          </span>
+                        </div>
+                        {selectedSession.questionnaireAnswers && (
+                          <span className="text-[0.62rem] px-2 py-0.5 rounded bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] font-mono font-semibold">
+                            {Array.isArray(selectedSession.questionnaireAnswers) 
+                              ? `${selectedSession.questionnaireAnswers.length} Answered` 
+                              : `${Object.keys(selectedSession.questionnaireAnswers).length} Answered`}
+                          </span>
+                        )}
+                      </div>
+
+                      {selectedSession.questionnaireAnswers && (
+                        (Array.isArray(selectedSession.questionnaireAnswers) && selectedSession.questionnaireAnswers.length > 0) ||
+                        (typeof selectedSession.questionnaireAnswers === 'object' && Object.keys(selectedSession.questionnaireAnswers).length > 0)
+                      ) ? (
+                        <div className="flex flex-col gap-2.5">
+                          {Array.isArray(selectedSession.questionnaireAnswers) ? (
+                            selectedSession.questionnaireAnswers.map((item, idx) => (
+                              <div key={idx} className="bg-[#111] border border-white/8 rounded-xl p-3.5 flex flex-col gap-2 hover:border-[#c79c6e]/30 transition-colors">
+                                <div className="flex items-start gap-2">
+                                  <span className="text-[0.65rem] font-mono px-1.5 py-0.5 rounded bg-white/5 text-[#c79c6e] shrink-0 mt-0.5">
+                                    Q{idx + 1}
+                                  </span>
+                                  <p className="font-serif text-white/90 text-sm leading-snug">
+                                    {item.question || item.questionText || `Question ${idx + 1}`}
+                                  </p>
+                                </div>
+                                <div className="pl-7">
+                                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-xs font-sans text-[#c79c6e] font-medium">
+                                    <CheckCircle size={14} weight="fill" className="text-[#c79c6e] shrink-0" />
+                                    <span>{item.answer || item.answerText || item.optionId || 'Selected'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            Object.entries(selectedSession.questionnaireAnswers).map(([qKey, val], idx) => {
+                              const qText = typeof val === 'object' ? (val.question || val.questionText || qKey) : qKey;
+                              const aText = typeof val === 'object' ? (val.answer || val.answerText || val.optionId || '') : String(val);
+                              return (
+                                <div key={idx} className="bg-[#111] border border-white/8 rounded-xl p-3.5 flex flex-col gap-2 hover:border-[#c79c6e]/30 transition-colors">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-[0.65rem] font-mono px-1.5 py-0.5 rounded bg-white/5 text-[#c79c6e] shrink-0 mt-0.5">
+                                      Q{idx + 1}
+                                    </span>
+                                    <p className="font-serif text-white/90 text-sm leading-snug">
+                                      {qText}
+                                    </p>
+                                  </div>
+                                  <div className="pl-7">
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-xs font-sans text-[#c79c6e] font-medium">
+                                      <CheckCircle size={14} weight="fill" className="text-[#c79c6e] shrink-0" />
+                                      <span>{aText}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      ) : (
+                        <div className="bg-[#111] border border-white/5 rounded-xl p-4 text-white/30 italic text-xs font-sans">
+                          No questionnaire submitted for this session (skipped or not filled).
+                        </div>
+                      )}
                     </div>
                   </div>
 

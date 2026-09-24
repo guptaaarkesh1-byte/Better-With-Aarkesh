@@ -19,6 +19,12 @@ export default function AdminCoaching() {
     if (tabParam === 'profile' || tabParam === 'journey' || tabParam === 'settings') return 'profile';
     if (location.pathname.startsWith('/profile') || location.pathname.startsWith('/journey')) return 'profile';
     if (location.pathname.startsWith('/appointments')) return 'appointments';
+    
+    try {
+      const saved = localStorage.getItem('bwa_admin_coaching_tab');
+      if (saved && ['appointments', 'profile'].includes(saved)) return saved;
+    } catch (e) {}
+
     return 'appointments';
   };
 
@@ -36,6 +42,16 @@ export default function AdminCoaching() {
       setActiveTab('appointments');
     }
   }, [searchParams, location.pathname]);
+
+  // Persist tab to localStorage and sync URL
+  useEffect(() => {
+    try {
+      localStorage.setItem('bwa_admin_coaching_tab', activeTab);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTab);
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {}
+  }, [activeTab]);
 
   const handleTabSwitch = (tab) => {
     setActiveTab(tab);

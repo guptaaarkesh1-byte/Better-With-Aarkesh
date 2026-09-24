@@ -225,6 +225,8 @@ router.get('/', async (req, res) => {
       hero: { ...DEFAULT_SECTIONS.hero, ...(doc.value?.hero || {}) },
       problem: { ...DEFAULT_SECTIONS.problem, ...(doc.value?.problem || {}) },
       principles: { ...DEFAULT_SECTIONS.principles, ...(doc.value?.principles || {}) },
+      coachingProcess: { ...DEFAULT_SECTIONS.coachingProcess, ...(doc.value?.coachingProcess || {}) },
+      coachingJourney: { ...DEFAULT_SECTIONS.coachingJourney, ...(doc.value?.coachingJourney || {}) },
       about: { ...DEFAULT_SECTIONS.about, ...(doc.value?.about || {}) },
       testimonials: { ...DEFAULT_SECTIONS.testimonials, ...(doc.value?.testimonials || {}) },
       faq: { ...DEFAULT_SECTIONS.faq, ...(doc.value?.faq || {}) },

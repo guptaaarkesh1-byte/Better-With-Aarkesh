@@ -4,27 +4,6 @@ import {
   ArrowRight, CaretDown, SunHorizon, Sun, Moon, Clock 
 } from '@phosphor-icons/react';
 
-const PERIOD_CONFIG = {
-  morning: {
-    label: 'Morning',
-    sub: 'Before 12:00 PM',
-    icon: SunHorizon,
-    iconColor: 'text-amber-400',
-  },
-  afternoon: {
-    label: 'Afternoon',
-    sub: '12:00 PM – 5:00 PM',
-    icon: Sun,
-    iconColor: 'text-accent-gold',
-  },
-  evening: {
-    label: 'Evening',
-    sub: '5:00 PM Onwards',
-    icon: Moon,
-    iconColor: 'text-indigo-300',
-  }
-};
-
 const getGroupedSlots = (slots) => {
   const groups = {
     morning: [],
@@ -55,7 +34,28 @@ const getGroupedSlots = (slots) => {
   return groups;
 };
 
-export default function Step1Time({ data, updateData, onNext, onBack }) {
+export default function Step1Time({ data, updateData, onNext, onBack, settings = {} }) {
+  const PERIOD_CONFIG = {
+    morning: {
+      label: settings?.morningLabel || 'Morning',
+      sub: settings?.morningSub || 'Before 12:00 PM',
+      icon: SunHorizon,
+      iconColor: 'text-amber-400',
+    },
+    afternoon: {
+      label: settings?.afternoonLabel || 'Afternoon',
+      sub: settings?.afternoonSub || '12:00 PM – 5:00 PM',
+      icon: Sun,
+      iconColor: 'text-accent-gold',
+    },
+    evening: {
+      label: settings?.eveningLabel || 'Evening',
+      sub: settings?.eveningSub || '5:00 PM Onwards',
+      icon: Moon,
+      iconColor: 'text-indigo-300',
+    }
+  };
+
   // Initialize date parsing
   const initialDate = data.date ? new Date(data.date) : new Date();
   const isDateValid = !isNaN(initialDate.getTime());
@@ -194,7 +194,7 @@ export default function Step1Time({ data, updateData, onNext, onBack }) {
         {/* Left Column - Calendar */}
         <div className="flex-1" onClick={(e) => e.stopPropagation()}>
           <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-2.5 sm:mb-3">
-            CHOOSE A DATE
+            {settings?.dateHeading || 'CHOOSE A DATE'}
           </h3>
           
           <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-3.5 sm:p-5">
@@ -342,7 +342,7 @@ export default function Step1Time({ data, updateData, onNext, onBack }) {
         <div className="flex-1 mt-4 sm:mt-6 lg:mt-0">
           <div className="flex items-center justify-between mb-2.5 sm:mb-3">
             <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold">
-              CHOOSE A TIME
+              {settings?.timeHeading || 'CHOOSE A TIME'}
             </h3>
             {times.length > 0 && !isLoadingSlots && (
               <span className="font-sans text-[0.6rem] uppercase tracking-wider text-white/40">
@@ -376,7 +376,7 @@ export default function Step1Time({ data, updateData, onNext, onBack }) {
             
             {!isLoadingSlots && !slotsError && selectedDay && times.length === 0 && (
               <div className="text-white/40 text-xs sm:text-sm font-light italic p-6 text-center border border-white/5 rounded-xl bg-white/[0.01]">
-                No slots available on this date. Please pick another date.
+                {settings?.noSlotsText || 'No slots available on this date. Please pick another date.'}
               </div>
             )}
 
