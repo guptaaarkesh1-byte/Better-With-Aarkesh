@@ -325,7 +325,9 @@ function ImageEditorCard({
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div className="flex flex-col">
             <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">Dimensions</span>
-            <span className="text-white font-mono font-medium text-xs truncate">{dimensions.split(' ')[0]} px</span>
+            <span className="text-white font-mono font-medium text-xs truncate">
+              {dimensions.includes('(') ? dimensions.split('(')[0].trim() : dimensions}
+            </span>
           </div>
           <div className="flex flex-col">
             <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">Orientation</span>
@@ -359,7 +361,7 @@ function ImageEditorCard({
                 {imageUrl ? 'Custom Upload / URL' : 'Default Asset'}
               </span>
               <span className="px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[0.6rem] font-mono text-white/80 border border-white/10">
-                {dimensions.split(' ')[0]}
+                {dimensions.includes('(') ? dimensions.split('(')[0].trim() : dimensions}
               </span>
             </div>
           </>
@@ -1647,7 +1649,26 @@ export default function AdminLibraryEditor() {
             <span>Reload</span>
           </button>
 
-          {!isEditingArticle && (
+          {isEditingArticle ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditingArticle(false)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-colors cursor-pointer"
+              >
+                <ArrowLeft size={15} />
+                <span>Back to Catalog</span>
+              </button>
+              <button
+                onClick={handleSaveArticle}
+                disabled={isSaving}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-[#c79c6e] hover:bg-[#b0885e] text-black font-semibold text-xs uppercase tracking-wider shadow-lg shadow-[#c79c6e]/20 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <FloppyDisk size={16} weight="bold" />
+                <span>Save & Publish</span>
+              </button>
+            </div>
+          ) : (
             <button
               onClick={handleSaveSection}
               disabled={isSaving}
@@ -2944,12 +2965,12 @@ export default function AdminLibraryEditor() {
             <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
               
               {/* Studio Header Bar */}
-              <div className="flex items-center justify-between gap-4 pb-4 border-b border-white/10 sticky top-[77px] bg-[#050505]/95 backdrop-blur-md z-10 py-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setIsEditingArticle(false)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-colors cursor-pointer shrink-0"
                   >
                     <ArrowLeft size={15} />
                     <span>Back to Catalog</span>
@@ -2962,7 +2983,7 @@ export default function AdminLibraryEditor() {
                 <button
                   type="button"
                   onClick={handleSaveArticle}
-                  className="px-6 py-2.5 rounded-lg bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-wider hover:bg-[#b0885e] transition-all cursor-pointer shadow-lg shadow-[#c79c6e]/20 flex items-center gap-1.5"
+                  className="px-6 py-2.5 rounded-lg bg-[#c79c6e] text-black font-semibold text-xs uppercase tracking-wider hover:bg-[#b0885e] transition-all cursor-pointer shadow-lg shadow-[#c79c6e]/20 flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
                 >
                   <FloppyDisk size={16} weight="bold" />
                   <span>Save & Publish</span>
@@ -3318,9 +3339,9 @@ export default function AdminLibraryEditor() {
                         // Auto-extract starting letter if not manually set
                         const extractedLetter = rawText ? rawText.charAt(0).toUpperCase() : '';
                         const displayLetter = block.letter || extractedLetter || '—';
-                        const displayRemainingText = block.letter && rawText.startsWith(block.letter)
+                        const displayRemainingText = block.letter && rawText.toUpperCase().startsWith(block.letter.toUpperCase())
                           ? rawText.slice(block.letter.length)
-                          : (rawText.length > 1 ? rawText.slice(1) : '');
+                          : rawText;
 
                         return (
                           <div className="flex flex-col gap-4">
@@ -3362,9 +3383,9 @@ export default function AdminLibraryEditor() {
                             {/* Live Golden Drop Cap Preview */}
                             <div className="p-4 rounded-xl bg-[#050505] border border-[#c79c6e]/20">
                               <span className="text-[0.62rem] uppercase tracking-wider text-white/40 font-mono block mb-1">Live Drop Cap Preview:</span>
-                              <p className="font-serif text-base sm:text-lg text-white/85 leading-relaxed font-normal">
+                              <p className="font-serif text-base sm:text-lg text-white/85 leading-relaxed font-normal clear-both">
                                 {displayLetter !== '—' && (
-                                  <span className="float-left text-4xl sm:text-5xl font-serif text-[#c79c6e] leading-none pr-2.5 select-none font-normal">
+                                  <span className="float-left text-[2.8rem] sm:text-[3.2rem] font-serif text-[#c79c6e] leading-[0.76] mr-3 mt-0.5 select-none font-normal">
                                     {displayLetter}
                                   </span>
                                 )}

@@ -17,8 +17,8 @@ const NAV_LINKS = [
   { label: 'Coaching', href: '/#coaching' },
   { label: 'About', href: '/#meet-aarkesh' },
   { label: 'Testimonials', href: '/#testimonials' },
-  { label: 'FAQ', href: '/#faq' },
   { label: 'LIBRARY', href: '/library' },
+  { label: 'FAQ', href: '/#faq' },
 ];
 
 export default function Navbar() {

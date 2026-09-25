@@ -28,6 +28,29 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Signature Editorial Drop Cap (2-line drop cap aligned with cap height) */
+.editorial-dropcap {
+  float: left;
+  font-family: 'Playfair Display', Georgia, serif;
+  color: #c79c6e;
+  font-weight: 400;
+  line-height: 0.78;
+  font-size: 3.6rem;
+  padding-right: 0.75rem;
+  padding-top: 0.2rem;
+  margin-bottom: -0.1rem;
+  user-select: none;
+}
+
+@media (min-width: 640px) {
+  .editorial-dropcap {
+    font-size: 4.2rem;
+    line-height: 0.78;
+    padding-right: 0.85rem;
+    padding-top: 0.22rem;
+  }
+}
+
 [data-theme="light"], .light-theme {
   --color-bg-primary: #ffffff;       /* Pure white background for light mode */
   --color-bg-secondary: #f8f8f9;     /* Subtle secondary background */

@@ -4,7 +4,7 @@ import defaultBgImg from '../../assets/Page5/ChatGPT Image Jul 24, 2026, 03_00_0
 import { Sparkle, GitFork, Spiral, Target, SlidersHorizontal, ArrowRight } from '@phosphor-icons/react';
 
 const DEFAULT_DECIDE_DATA = {
-  eyebrow: 'MY PHILOSOPHY',
+  eyebrow: 'PRINCIPLE 03',
   title: 'DECIDE',
   subtitle: 'INTENTIONALLY.',
   highlight: 'Clarity without decision is just expensive loop.',
@@ -18,7 +18,7 @@ export default function DecidePrinciple() {
   const customData = usePrinciplesData('decide');
   const data = { ...DEFAULT_DECIDE_DATA, ...customData };
 
-  const eyebrow = data.eyebrow || 'MY PHILOSOPHY';
+  const eyebrow = data.eyebrow || 'PRINCIPLE 03';
   const headlineWhite = data.title || 'DECIDE';
   const headlineGold = data.subtitle || 'INTENTIONALLY.';
   const paragraphs = [

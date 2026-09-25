@@ -4,7 +4,7 @@ import defaultBgImg from '../../assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_1
 import { Sparkle, SunDim, TextT, Coffee, Circle } from '@phosphor-icons/react';
 
 const DEFAULT_THINK_DATA = {
-  eyebrow: 'MY PHILOSOPHY',
+  eyebrow: 'PRINCIPLE 01',
   title: 'THINK',
   subtitle: 'CLEARLY.',
   highlight: 'Clarity is the bridge between intention and action.',
@@ -17,7 +17,7 @@ export default function ThinkPrinciple() {
   const customData = usePrinciplesData('think');
   const data = { ...DEFAULT_THINK_DATA, ...customData };
 
-  const eyebrow = data.eyebrow || 'MY PHILOSOPHY';
+  const eyebrow = data.eyebrow || 'PRINCIPLE 01';
   const headlineWhite = data.title || 'THINK';
   const headlineGold = data.subtitle || 'CLEARLY.';
   const paragraphs = [

@@ -4,7 +4,7 @@ import defaultBgImg from '../../assets/Page4/ChatGPT Image Jul 24, 2026, 02_41_2
 import { Sparkle, CloudRain, Waves, Heart, SunDim } from '@phosphor-icons/react';
 
 const DEFAULT_FEEL_DATA = {
-  eyebrow: 'MY PHILOSOPHY',
+  eyebrow: 'PRINCIPLE 02',
   title: 'Feel honestly.',
   subtitle: 'Heal deeply.',
   highlight: "You can't move forward, running from what you feel.",
@@ -17,7 +17,7 @@ export default function FeelPrinciple() {
   const customData = usePrinciplesData('feel');
   const data = { ...DEFAULT_FEEL_DATA, ...customData };
 
-  const eyebrow = data.eyebrow || 'MY PHILOSOPHY';
+  const eyebrow = data.eyebrow || 'PRINCIPLE 02';
   const headlineWhite = data.title || 'Feel honestly.';
   const headlineGold = data.subtitle || 'Heal deeply.';
   const paragraphs = [

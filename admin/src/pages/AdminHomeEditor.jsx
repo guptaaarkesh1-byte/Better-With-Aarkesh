@@ -60,8 +60,8 @@ const SIDEBAR_TABS = [
   { id: 'coachingJourney', label: 'Coaching Journey', icon: <Mountains size={18} />, description: 'Mountain path, 4 journey nodes & pillars' },
   { id: 'about', label: 'Meet Aarkesh', icon: <ChatCircleText size={18} />, description: 'Coach 3 roles & story' },
   { id: 'testimonials', label: 'Testimonials', icon: <Quotes size={18} />, description: 'Client reviews & words' },
-  { id: 'faq', label: 'FAQ Section', icon: <Question size={18} />, description: 'Frequently asked questions' },
   { id: 'cta', label: 'Final Call to Action', icon: <MegaphoneSimple size={18} />, description: 'Bottom booking banner' },
+  { id: 'faq', label: 'FAQ Section', icon: <Question size={18} />, description: 'Frequently asked questions' },
 ];
 
 // Reusable Image Editor Component with Prominent Dimensions & < 200 KB Enforcement
@@ -100,7 +100,9 @@ function ImageEditorCard({
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div className="flex flex-col">
             <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">Dimensions</span>
-            <span className="text-white font-mono font-medium text-xs truncate">{dimensions.split(' ')[0]} px</span>
+            <span className="text-white font-mono font-medium text-xs truncate">
+              {dimensions.includes('(') ? dimensions.split('(')[0].trim() : dimensions}
+            </span>
           </div>
           <div className="flex flex-col">
             <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">Orientation</span>
@@ -135,7 +137,7 @@ function ImageEditorCard({
                 {imageUrl ? 'Custom Upload / URL' : 'Default Asset'}
               </span>
               <span className="px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[0.6rem] font-mono text-white/80 border border-white/10">
-                {dimensions.split(' ')[0]}
+                {dimensions.includes('(') ? dimensions.split('(')[0].trim() : dimensions}
               </span>
             </div>
           </>
@@ -1042,7 +1044,7 @@ export default function AdminHomeEditor() {
                             type="text"
                             value={p.eyebrow || ''}
                             onChange={(e) => handlePrincipleChange('think', 'eyebrow', e.target.value)}
-                            placeholder="MY PHILOSOPHY"
+                            placeholder="PRINCIPLE 01"
                             className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
                           />
                         </div>
@@ -1157,7 +1159,7 @@ export default function AdminHomeEditor() {
                             type="text"
                             value={p.eyebrow || ''}
                             onChange={(e) => handlePrincipleChange('feel', 'eyebrow', e.target.value)}
-                            placeholder="MY PHILOSOPHY"
+                            placeholder="PRINCIPLE 02"
                             className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
                           />
                         </div>
@@ -1261,7 +1263,7 @@ export default function AdminHomeEditor() {
                             type="text"
                             value={p.eyebrow || ''}
                             onChange={(e) => handlePrincipleChange('decide', 'eyebrow', e.target.value)}
-                            placeholder="MY PHILOSOPHY"
+                            placeholder="PRINCIPLE 03"
                             className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
                           />
                         </div>
@@ -1815,6 +1817,7 @@ export default function AdminHomeEditor() {
                         <ImageEditorCard
                           title={`${name} Card Portrait`}
                           dimensions="800 × 1200 px (2:3)"
+                          orientation="Portrait (Vertical)"
                           maxSize="Under 200 KB"
                           aspectRatio="aspect-[2/3]"
                           imageUrl={roleData.bgImg}
@@ -2101,125 +2104,7 @@ export default function AdminHomeEditor() {
           )}
 
           {/* =========================================================
-              6. FAQ SECTION
-             ========================================================= */}
-          {activeTab === 'faq' && (
-            <div className="flex flex-col gap-8 max-w-5xl">
-              <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
-                <h2 className="font-serif text-2xl text-white">Frequently Asked Questions</h2>
-                <p className="text-xs text-white/50">
-                  Manage FAQ items, answers, category headlines, and optional ambient visual (<strong className="text-[#c79c6e]">1200 × 800 px, under 200 KB</strong>).
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-7 flex flex-col gap-6">
-                  {/* Header Box */}
-                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Header Details</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Heading Line</label>
-                        <input
-                          type="text"
-                          value={currentFaq.headingLine1 || ''}
-                          onChange={(e) => handleSectionChange('headingLine1', e.target.value)}
-                          className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-[#c79c6e]">Heading Accent (Gold)</label>
-                        <input
-                          type="text"
-                          value={currentFaq.headingAccent || ''}
-                          onChange={(e) => handleSectionChange('headingAccent', e.target.value)}
-                          className="w-full bg-[#050505] border border-[#c79c6e]/30 rounded-lg px-4 py-3 text-sm text-[#c79c6e] italic"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* FAQ Questions List */}
-                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
-                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Questions & Answers ({(currentFaq.items || []).length})</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = [...(currentFaq.items || []), { question: 'New Question?', answer: 'Detailed helpful answer...' }];
-                          handleSectionChange('items', updated);
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 hover:bg-[#c79c6e]/20 text-[#c79c6e] text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Plus size={14} />
-                        <span>Add Question</span>
-                      </button>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                      {(currentFaq.items || []).map((faq, idx) => (
-                        <div key={idx} className="p-4 rounded-xl bg-[#050505] border border-white/10 flex flex-col gap-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <input
-                              type="text"
-                              value={faq.question}
-                              onChange={(e) => {
-                                const copy = [...currentFaq.items];
-                                copy[idx].question = e.target.value;
-                                handleSectionChange('items', copy);
-                              }}
-                              placeholder="Question..."
-                              className="flex-1 bg-white/5 rounded px-3 py-2 text-xs text-white font-semibold"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const copy = currentFaq.items.filter((_, i) => i !== idx);
-                                handleSectionChange('items', copy);
-                              }}
-                              className="text-red-400/60 hover:text-red-400 p-1 cursor-pointer"
-                            >
-                              <Trash size={16} />
-                            </button>
-                          </div>
-                          <textarea
-                            rows={3}
-                            value={faq.answer}
-                            onChange={(e) => {
-                              const copy = [...currentFaq.items];
-                              copy[idx].answer = e.target.value;
-                              handleSectionChange('items', copy);
-                            }}
-                            placeholder="Answer..."
-                            className="w-full bg-white/5 rounded px-3 py-2 text-xs text-white/80 leading-relaxed resize-none"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* FAQ Section Image Editor */}
-                <div className="lg:col-span-5">
-                  <ImageEditorCard
-                    title="FAQ Ambient / Visual Image"
-                    dimensions="1200 × 800 px (3:2)"
-                    maxSize="Under 200 KB"
-                    aspectRatio="aspect-[3/2]"
-                    imageUrl={currentFaq.bgImg}
-                    fallbackUrl={defaultTestimonialsImg}
-                    onUpload={() => triggerImageUpload('bgImg')}
-                    onUrlChange={(url) => handleSectionChange('bgImg', url)}
-                    isUploading={isUploading}
-                    tip="Soft ambient reflection or study background behind FAQ section."
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* =========================================================
-              7. FINAL CALL TO ACTION
+              6. FINAL CALL TO ACTION
              ========================================================= */}
           {activeTab === 'cta' && (
             <div className="flex flex-col gap-8 max-w-5xl">
@@ -2334,6 +2219,124 @@ export default function AdminHomeEditor() {
                     isUploading={isUploading}
                     tip="Cinematic coffee cup on wooden table with warm cafe lighting."
                     overlayOpacity={currentGlobalOverlayOpacity}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================
+              7. FAQ SECTION
+             ========================================================= */}
+          {activeTab === 'faq' && (
+            <div className="flex flex-col gap-8 max-w-5xl">
+              <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
+                <h2 className="font-serif text-2xl text-white">Frequently Asked Questions</h2>
+                <p className="text-xs text-white/50">
+                  Manage FAQ items, answers, category headlines, and optional ambient visual (<strong className="text-[#c79c6e]">1200 × 800 px, under 200 KB</strong>).
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-7 flex flex-col gap-6">
+                  {/* Header Box */}
+                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Header Details</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Heading Line</label>
+                        <input
+                          type="text"
+                          value={currentFaq.headingLine1 || ''}
+                          onChange={(e) => handleSectionChange('headingLine1', e.target.value)}
+                          className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-[#c79c6e]">Heading Accent (Gold)</label>
+                        <input
+                          type="text"
+                          value={currentFaq.headingAccent || ''}
+                          onChange={(e) => handleSectionChange('headingAccent', e.target.value)}
+                          className="w-full bg-[#050505] border border-[#c79c6e]/30 rounded-lg px-4 py-3 text-sm text-[#c79c6e] italic"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* FAQ Questions List */}
+                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Questions & Answers ({(currentFaq.items || []).length})</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = [...(currentFaq.items || []), { question: 'New Question?', answer: 'Detailed helpful answer...' }];
+                          handleSectionChange('items', updated);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 hover:bg-[#c79c6e]/20 text-[#c79c6e] text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus size={14} />
+                        <span>Add Question</span>
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                      {(currentFaq.items || []).map((faq, idx) => (
+                        <div key={idx} className="p-4 rounded-xl bg-[#050505] border border-white/10 flex flex-col gap-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <input
+                              type="text"
+                              value={faq.question}
+                              onChange={(e) => {
+                                const copy = [...currentFaq.items];
+                                copy[idx].question = e.target.value;
+                                handleSectionChange('items', copy);
+                              }}
+                              placeholder="Question..."
+                              className="flex-1 bg-white/5 rounded px-3 py-2 text-xs text-white font-semibold"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const copy = currentFaq.items.filter((_, i) => i !== idx);
+                                handleSectionChange('items', copy);
+                              }}
+                              className="text-red-400/60 hover:text-red-400 p-1 cursor-pointer"
+                            >
+                              <Trash size={16} />
+                            </button>
+                          </div>
+                          <textarea
+                            rows={3}
+                            value={faq.answer}
+                            onChange={(e) => {
+                              const copy = [...currentFaq.items];
+                              copy[idx].answer = e.target.value;
+                              handleSectionChange('items', copy);
+                            }}
+                            placeholder="Answer..."
+                            className="w-full bg-white/5 rounded px-3 py-2 text-xs text-white/80 leading-relaxed resize-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* FAQ Section Image Editor */}
+                <div className="lg:col-span-5">
+                  <ImageEditorCard
+                    title="FAQ Ambient / Visual Image"
+                    dimensions="1200 × 800 px (3:2)"
+                    maxSize="Under 200 KB"
+                    aspectRatio="aspect-[3/2]"
+                    imageUrl={currentFaq.bgImg}
+                    fallbackUrl={defaultTestimonialsImg}
+                    onUpload={() => triggerImageUpload('bgImg')}
+                    onUrlChange={(url) => handleSectionChange('bgImg', url)}
+                    isUploading={isUploading}
+                    tip="Soft ambient reflection or study background behind FAQ section."
                   />
                 </div>
               </div>

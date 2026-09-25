@@ -30,7 +30,7 @@ const DEFAULT_SECTIONS = {
   },
   principles: {
     think: {
-      eyebrow: 'MY PHILOSOPHY',
+      eyebrow: 'PRINCIPLE 01',
       title: 'THINK',
       subtitle: 'CLEARLY.',
       highlight: 'Clarity is the bridge between intention and action.',
@@ -39,7 +39,7 @@ const DEFAULT_SECTIONS = {
       bgImg: '',
     },
     feel: {
-      eyebrow: 'MY PHILOSOPHY',
+      eyebrow: 'PRINCIPLE 02',
       title: 'Feel honestly.',
       subtitle: 'Heal deeply.',
       highlight: "You can't move forward, running from what you feel.",
@@ -48,7 +48,7 @@ const DEFAULT_SECTIONS = {
       bgImg: '',
     },
     decide: {
-      eyebrow: 'MY PHILOSOPHY',
+      eyebrow: 'PRINCIPLE 03',
       title: 'DECIDE',
       subtitle: 'INTENTIONALLY.',
       highlight: 'Clarity without decision is just expensive loop.',

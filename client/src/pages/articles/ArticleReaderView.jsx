@@ -436,14 +436,28 @@ export default function ArticleReaderView({ article, onBack }) {
                 if (block.type === 'dropCap') {
                   const rawText = (block.text || block.dropCapText || '').trimStart();
                   const letter = block.letter || (rawText ? rawText.charAt(0).toUpperCase() : '');
-                  const remainingText = block.letter && rawText.startsWith(block.letter)
-                    ? rawText.slice(block.letter.length)
-                    : (rawText.length > 1 && !block.dropCapText ? rawText.slice(1) : rawText);
+                  let remainingText = rawText;
+                  if (letter && rawText) {
+                    if (rawText.toUpperCase().startsWith(letter.toUpperCase())) {
+                      remainingText = rawText.slice(letter.length);
+                    }
+                  }
 
                   return (
                     <p key={block.id || bIdx} className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 font-normal">
                       {letter && (
-                        <span className="float-left text-6xl sm:text-7xl font-serif text-[#c79c6e] leading-none pr-3 pt-1 select-none font-normal">
+                        <span style={{
+                          float: 'left',
+                          fontFamily: '"Playfair Display", Georgia, serif',
+                          color: '#c79c6e',
+                          fontWeight: '400',
+                          lineHeight: '0.78',
+                          fontSize: '4.2rem',
+                          paddingRight: '0.75rem',
+                          paddingTop: '0.15rem',
+                          userSelect: 'none',
+                          display: 'block'
+                        }}>
                           {letter}
                         </span>
                       )}
@@ -487,14 +501,32 @@ export default function ArticleReaderView({ article, onBack }) {
             <>
               {/* 2. Structured Sections / Drop Cap Legacy Format */}
               {/* First Paragraph with Large Gold Drop Cap */}
-              {article.dropCap ? (
-                <p className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 font-normal">
-                  <span className="float-left text-6xl sm:text-7xl font-serif text-[#c79c6e] leading-none pr-3 pt-1 select-none font-normal">
-                    {article.dropCap}
-                  </span>
-                  {renderFormattedTitle(article.dropCapText)}
-                </p>
-              ) : null}
+              {article.dropCap ? (() => {
+                const dcLetter = article.dropCap;
+                const dcText = article.dropCapText || '';
+                const cleanDcText = (dcLetter && dcText.toUpperCase().startsWith(dcLetter.toUpperCase()))
+                  ? dcText.slice(dcLetter.length)
+                  : dcText;
+                return (
+                  <p className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 font-normal">
+                    <span style={{
+                      float: 'left',
+                      fontFamily: '"Playfair Display", Georgia, serif',
+                      color: '#c79c6e',
+                      fontWeight: '400',
+                      lineHeight: '0.78',
+                      fontSize: '4.2rem',
+                      paddingRight: '0.75rem',
+                      paddingTop: '0.15rem',
+                      userSelect: 'none',
+                      display: 'block'
+                    }}>
+                      {dcLetter}
+                    </span>
+                    {renderFormattedTitle(cleanDcText)}
+                  </p>
+                );
+              })() : null}
 
               {/* Paragraphs right after Drop Cap */}
               {article.paragraphsAfterDropCap && article.paragraphsAfterDropCap.map((p, idx) => (
@@ -566,7 +598,18 @@ export default function ArticleReaderView({ article, onBack }) {
           {!article.blocks?.length && !article.sections?.length && !article.dropCap && !article.bodyHtml && (
             <div className="flex flex-col gap-6 font-serif text-lg sm:text-xl text-white/80 leading-[1.85]">
               <p className="font-serif text-xl sm:text-2xl text-white/95 leading-relaxed font-normal mb-4">
-                <span className="float-left text-6xl sm:text-7xl font-serif text-[#c79c6e] leading-none pr-3 pt-1 select-none font-normal">
+                <span style={{
+                  float: 'left',
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  color: '#c79c6e',
+                  fontWeight: '400',
+                  lineHeight: '0.78',
+                  fontSize: '4.2rem',
+                  paddingRight: '0.75rem',
+                  paddingTop: '0.15rem',
+                  userSelect: 'none',
+                  display: 'block'
+                }}>
                   {(article.excerpt || article.description || article.title || 'W').charAt(0)}
                 </span>
                 {renderFormattedTitle((article.excerpt || article.description || article.title || '').slice(1))}
