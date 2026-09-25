@@ -1460,39 +1460,32 @@ export default function LibraryDirectorySection() {
         <div className="flex flex-col relative">
           {categoriesData.map((cat, index) => {
             const isHovered = hoveredCategory === cat.id;
-            const isFaded = hoveredCategory !== null && !isHovered;
 
             return (
               <div 
                 key={cat.id} 
                 onMouseEnter={() => setHoveredCategory(cat.id)}
                 onMouseLeave={() => setHoveredCategory(null)}
-                className={`py-6 sm:py-7 px-4 sm:px-8 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-0 items-start relative transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-default rounded-none border-x-0 will-change-transform ${
+                className={`py-6 sm:py-7 px-4 sm:px-8 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-0 items-start relative transition-colors duration-200 cursor-default rounded-none border-x-0 ${
                   isHovered 
-                    ? 'bg-gradient-to-r from-[#c79c6e]/[0.08] via-[#c79c6e]/[0.03] to-transparent border-y border-[#c79c6e]/70 -translate-y-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.85),0_0_20px_rgba(199,156,110,0.15)] z-30 opacity-100' 
-                    : isFaded 
-                      ? 'opacity-25 translate-y-0 border-t border-white/10 border-b-transparent z-10'
-                      : `bg-transparent opacity-100 translate-y-0 border-t border-white/10 border-b-transparent z-10 ${index === categoriesData.length - 1 ? 'border-b border-b-white/10' : ''}`
+                    ? 'bg-gradient-to-r from-[#c79c6e]/[0.08] via-[#c79c6e]/[0.03] to-transparent border-y border-[#c79c6e]/70 shadow-[0_12px_36px_rgba(0,0,0,0.85)] z-30 opacity-100' 
+                    : `bg-transparent opacity-100 border-t border-white/10 border-b-transparent z-10 ${index === categoriesData.length - 1 ? 'border-b border-b-white/10' : ''}`
                 }`}
               >
                 {/* Category Number & Title (Left Part) */}
                 <div className="md:col-span-5 flex items-start gap-5 sm:gap-7 md:pr-8 lg:pr-12">
-                  <span className={`font-serif text-4xl sm:text-5xl lg:text-[3.5rem] font-light leading-none shrink-0 select-none pt-0.5 transition-all duration-200 ${
+                  <span className={`font-serif text-4xl sm:text-5xl lg:text-[3.5rem] font-light leading-none shrink-0 select-none pt-0.5 transition-colors duration-200 ${
                     isHovered 
-                      ? 'text-[#f6cb90] [text-shadow:0_0_18px_rgba(246,203,144,0.6)]' 
+                      ? 'text-[#f6cb90]' 
                       : 'text-[#c79c6e]'
                   }`}>
                     {cat.num}
                   </span>
                   <div className="flex flex-col gap-2">
-                    <h3 className={`font-serif text-3xl sm:text-[2rem] lg:text-[2.25rem] font-normal leading-tight transition-colors duration-200 ${
-                      isHovered ? 'text-white' : 'text-white/95'
-                    }`}>
+                    <h3 className="font-serif text-3xl sm:text-[2rem] lg:text-[2.25rem] font-normal leading-tight text-white transition-colors duration-200">
                       {cat.title}
                     </h3>
-                    <p className={`font-sans text-sm sm:text-[0.95rem] lg:text-[1.02rem] leading-relaxed font-light pr-2 transition-colors duration-200 ${
-                      isHovered ? 'text-white/90' : 'text-white/60'
-                    }`}>
+                    <p className="font-sans text-sm sm:text-[0.95rem] lg:text-[1.02rem] leading-relaxed font-light pr-2 text-white/75 transition-colors duration-200">
                       {cat.subtitle}
                     </p>
                   </div>
@@ -1514,10 +1507,10 @@ export default function LibraryDirectorySection() {
                         onClick={() => handleArticleClick(art)}
                         className="group/item flex items-center justify-between cursor-pointer py-0.5 relative"
                       >
-                        <span className={`font-serif text-lg sm:text-xl lg:text-[1.18rem] transition-all duration-150 pr-3 leading-snug flex-1 ${
+                        <span className={`font-serif text-lg sm:text-xl lg:text-[1.18rem] transition-colors duration-150 pr-3 leading-snug flex-1 ${
                           isArtActive
-                            ? 'text-[#fce0a6] [text-shadow:0_0_12px_rgba(252,224,166,0.9),0_0_24px_rgba(235,178,110,0.6)] underline underline-offset-4 decoration-[#fce0a6] [&_*]:text-[#fce0a6] [&_*]:[text-shadow:inherit]'
-                            : 'text-white group-hover/item:text-[#fce0a6] group-hover/item:[text-shadow:0_0_12px_rgba(252,224,166,0.9),0_0_24px_rgba(235,178,110,0.6)] group-hover/item:underline group-hover/item:underline-offset-4 group-hover/item:decoration-[#fce0a6] [&_*]:text-white group-hover/item:[&_*]:text-[#fce0a6] group-hover/item:[&_*]:[text-shadow:inherit]'
+                            ? 'text-[#fce0a6] underline underline-offset-4 decoration-[#c79c6e] [&_*]:text-[#fce0a6]'
+                            : 'text-white/95 group-hover/item:text-[#fce0a6] group-hover/item:underline group-hover/item:underline-offset-4 group-hover/item:decoration-[#c79c6e] [&_*]:text-white/95 group-hover/item:[&_*]:text-[#fce0a6]'
                         }`}>
                           {renderFormattedTitle(art.title)}
                         </span>
@@ -1545,8 +1538,8 @@ export default function LibraryDirectorySection() {
                             size={17} 
                             className={`transition-all duration-150 ${
                               isArtActive
-                                ? 'text-[#fce0a6] translate-x-1 [filter:drop-shadow(0_0_6px_rgba(252,224,166,0.8))]'
-                                : 'text-white/30 group-hover/item:text-[#fce0a6] group-hover/item:translate-x-1 group-hover/item:[filter:drop-shadow(0_0_6px_rgba(252,224,166,0.8))]'
+                                ? 'text-[#fce0a6] translate-x-1'
+                                : 'text-white/30 group-hover/item:text-[#fce0a6] group-hover/item:translate-x-1'
                             }`}
                           />
                         </div>
