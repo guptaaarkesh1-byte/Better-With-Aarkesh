@@ -313,23 +313,31 @@ export default function AdminUsers() {
             const uId = (app.userId && app.userId._id) ? app.userId._id : 'guest_' + app._id;
             const isFreeSession = !!app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION';
             const isCourseMember = !!app.isCourseMember || isFreeSession;
+            const isUserDeleted = !!app.isUserDeleted || (app.userId && !!app.userId.isDeleted);
+            const userDeletedAt = app.userDeletedAt || (app.userId ? app.userId.deletedAt : null);
 
             if (!userMap[uId]) {
               userMap[uId] = {
                 id: uId,
-                name: (app.userId && app.userId.name) ? app.userId.name : app.name || 'Unknown User',
+                name: (app.userId && (app.userId.fullName || app.userId.name)) ? (app.userId.fullName || app.userId.name) : app.name || 'Unknown User',
                 email: (app.userId && app.userId.email) ? app.userId.email : app.email || 'No Email',
-                phone: (app.userId && app.userId.phone) ? app.userId.phone : '+1 000-0000',
+                phone: (app.userId && (app.userId.phoneNumber || app.userId.phone)) ? (app.userId.phoneNumber || app.userId.phone) : '+1 000-0000',
                 joined: new Date((app.userId && app.userId.createdAt) ? app.userId.createdAt : Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
                 appointmentsCount: 0,
                 nextAppointmentDate: null,
                 nextAppointmentTime: null,
                 nextAppointmentStatus: null,
                 isCourseMember: isCourseMember,
+                isDeleted: isUserDeleted,
+                deletedAt: userDeletedAt,
                 source: app.source || '',
                 history: []
               };
             } else {
+              if (isUserDeleted) {
+                userMap[uId].isDeleted = true;
+                userMap[uId].deletedAt = userDeletedAt;
+              }
               if (isCourseMember) {
                 userMap[uId].isCourseMember = true;
               }
@@ -701,7 +709,14 @@ export default function AdminUsers() {
                       {user.name.charAt(0)}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-white/90 text-sm font-medium">{user.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/90 text-sm font-medium">{user.name}</span>
+                        {user.isDeleted && (
+                          <span className="text-[0.6rem] px-2 py-0.5 rounded bg-red-950/80 text-red-400 border border-red-800/40 uppercase tracking-widest font-semibold font-sans">
+                            DELETED
+                          </span>
+                        )}
+                      </div>
                       {user.isCourseMember && (
                         <span className="text-[0.65rem] text-[#c79c6e] flex items-center gap-1 font-sans">
                           <GraduationCap size={11} /> Course Member

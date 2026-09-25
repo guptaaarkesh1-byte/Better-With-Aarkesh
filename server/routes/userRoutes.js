@@ -1,12 +1,16 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { Resend } from 'resend';
 import { protect } from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
 import Article from '../models/Article.js';
 import Video from '../models/Video.js';
 
 const router = express.Router();
+
+const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
+const deleteAccountOTPs = new Map();
 
 // @route   GET /api/users/saved-articles
 // @desc    Get user's saved articles
@@ -447,6 +451,119 @@ router.put('/preferences', protect, async (req, res) => {
   } catch (error) {
     console.error('Error saving preferences:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/users/delete-account-init
+// @desc    Initiate account deletion and send OTP to user's registered email
+// @access  Private
+router.post('/delete-account-init', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const otp = generateOTP();
+    const userIdStr = user._id.toString();
+    const cleanEmail = (user.email || '').trim().toLowerCase();
+
+    deleteAccountOTPs.set(userIdStr, {
+      otp,
+      expires: Date.now() + 10 * 60 * 1000
+    });
+
+    console.log(`\n========================================`);
+    console.log(`⚠️ [DELETE ACCOUNT OTP] ${cleanEmail} -> OTP: ${otp}`);
+    console.log(`========================================\n`);
+
+    try {
+      if (process.env.RESEND_API_KEY && cleanEmail) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const emailHtmlTemplate = `
+          <table width="100%" bgcolor="#090909" cellpadding="0" cellspacing="0" style="background-color: #090909; margin: 0; padding: 40px 0; width: 100%;">
+            <tr>
+              <td align="center">
+                <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #090909; color: #B8B1A7; text-align: left;">
+                  <div style="border: 1px solid #333333; border-radius: 10px; background-color: #111111; padding: 30px;">
+                    <h2 style="color: #ef4444; text-align: center; margin-bottom: 20px;">Account Deletion Request</h2>
+                    <p style="font-size: 16px; line-height: 1.5;">Hi ${user.fullName || 'there'},</p>
+                    <p style="font-size: 16px; line-height: 1.5;">We received a request to permanently delete your Better With Aarkesh account. To confirm this action, please enter the following verification code:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                      <span style="display: inline-block; font-size: 32px; font-weight: bold; color: #ffffff; background-color: #7f1d1d; padding: 12px 28px; border-radius: 6px; letter-spacing: 6px;">${otp}</span>
+                    </div>
+                    <p style="font-size: 14px; text-align: center; color: #ef4444;">Warning: This action will deactivate your account and sessions access.</p>
+                    <p style="font-size: 13px; text-align: center; color: #888888; margin-top: 20px;">This code is valid for 10 minutes. If you did not request this, please change your password immediately.</p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </table>
+        `;
+
+        const { data, error } = await resend.emails.send({
+          from: process.env.EMAIL_FROM || 'Better With Aarkesh <support@yashrajtech.online>',
+          to: cleanEmail,
+          subject: 'Security Verification: OTP to Delete Your Account',
+          html: emailHtmlTemplate,
+        });
+
+        if (error) {
+          console.warn('⚠️ Resend Warning:', error.message || error);
+        } else {
+          console.log(`✅ Delete OTP email sent via Resend to ${cleanEmail}:`, data);
+        }
+      }
+
+      res.json({ message: 'OTP sent to your registered email' });
+    } catch (emailError) {
+      console.warn('⚠️ Email send exception:', emailError.message);
+      res.json({ message: 'OTP generated', devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined });
+    }
+  } catch (error) {
+    console.error('Delete Account Init Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/users/delete-account-verify
+// @desc    Verify OTP and soft-delete user account
+// @access  Private
+router.post('/delete-account-verify', protect, async (req, res) => {
+  try {
+    const { otp } = req.body;
+    const userIdStr = req.user._id.toString();
+
+    const storedData = deleteAccountOTPs.get(userIdStr);
+    if (!storedData) {
+      return res.status(400).json({ message: 'Session expired or OTP not requested. Please request a new OTP.' });
+    }
+
+    if (storedData.expires < Date.now()) {
+      deleteAccountOTPs.delete(userIdStr);
+      return res.status(400).json({ message: 'OTP expired. Please request a new code.' });
+    }
+
+    if (storedData.otp !== (otp || '').trim()) {
+      return res.status(400).json({ message: 'Invalid OTP. Please check the code and try again.' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Soft delete: Keep record in DB for admin records with isDeleted flag
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    await user.save();
+
+    deleteAccountOTPs.delete(userIdStr);
+
+    res.json({ message: 'Your account has been deleted successfully.' });
+  } catch (error) {
+    console.error('Delete Account Verify Error:', error);
+    res.status(500).json({ message: 'Server error deleting account' });
   }
 });
 

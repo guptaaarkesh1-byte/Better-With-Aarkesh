@@ -445,7 +445,7 @@ router.put('/:id/link', protect, async (req, res) => {
 router.get('/admin', protect, admin, async (req, res) => {
   try {
     const appointments = await Appointment.find()
-      .populate('userId', 'name email phone createdAt')
+      .populate('userId', 'name fullName email phone phoneNumber createdAt isDeleted deletedAt')
       .sort({ createdAt: -1 });
 
     // Fetch fee settings to ensure accurate fallback
@@ -472,7 +472,9 @@ router.get('/admin', protect, admin, async (req, res) => {
         ...appObj,
         amount: calculatedAmount,
         isCourseMember: isCoursePurchaser || isFree,
-        isFreeSession: isFree
+        isFreeSession: isFree,
+        isUserDeleted: Boolean(app.userId && app.userId.isDeleted),
+        userDeletedAt: app.userId ? app.userId.deletedAt : null
       };
     });
 

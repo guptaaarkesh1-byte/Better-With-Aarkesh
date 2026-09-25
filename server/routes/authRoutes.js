@@ -224,6 +224,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'User account does not exist, please register first' });
     }
 
+    if (user.isDeleted) {
+      return res.status(403).json({ message: 'This account has been deleted. Please contact support if you need assistance.' });
+    }
+
     // Match password
     const isMatch = await bcrypt.compare(password, user.password);
 
