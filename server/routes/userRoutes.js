@@ -410,4 +410,44 @@ router.post('/change-password', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/users/preferences
+// @desc    Get user's notification preferences
+// @access  Private
+router.get('/preferences', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('notificationPreferences');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user.notificationPreferences || { emailReminders: true, emailChanges: true });
+  } catch (error) {
+    console.error('Error fetching preferences:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PUT /api/users/preferences
+// @desc    Update user's notification preferences
+// @access  Private
+router.put('/preferences', protect, async (req, res) => {
+  try {
+    const { emailReminders, emailChanges } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.notificationPreferences = {
+      emailReminders: typeof emailReminders === 'boolean' ? emailReminders : true,
+      emailChanges: typeof emailChanges === 'boolean' ? emailChanges : true,
+    };
+
+    await user.save();
+    res.json({ message: 'Preferences saved successfully', notificationPreferences: user.notificationPreferences });
+  } catch (error) {
+    console.error('Error saving preferences:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 export default router;

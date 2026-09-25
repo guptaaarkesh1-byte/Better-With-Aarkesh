@@ -55,6 +55,16 @@ const userSchema = new mongoose.Schema({
   isAdmin: {
     type: Boolean,
     default: false,
+  },
+  notificationPreferences: {
+    emailReminders: {
+      type: Boolean,
+      default: true,
+    },
+    emailChanges: {
+      type: Boolean,
+      default: true,
+    },
   }
 }, { timestamps: true });
 

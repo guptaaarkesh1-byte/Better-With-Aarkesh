@@ -670,20 +670,30 @@ router.post('/admin/:id/approve-reschedule', protect, admin, async (req, res) =>
           </div>
         `;
 
-        await Promise.all([
-          resend.emails.send({
-            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-            to: appointment.email,
-            subject: 'Your session has been rescheduled',
-            html: emailHtmlTemplate,
-          }),
+        const clientUser = await User.findOne({ email: appointment.email });
+        const allowChangesEmail = clientUser?.notificationPreferences?.emailChanges ?? true;
+
+        const emailPromises = [
           resend.emails.send({
             from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
             to: process.env.ADMIN_EMAIL || 'support@yashrajtech.online',
             subject: `Reschedule confirmed for ${appointment.name}`,
             html: coachEmailTemplate,
           })
-        ]);
+        ];
+
+        if (allowChangesEmail) {
+          emailPromises.push(
+            resend.emails.send({
+              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+              to: appointment.email,
+              subject: 'Your session has been rescheduled',
+              html: emailHtmlTemplate,
+            })
+          );
+        }
+
+        await Promise.all(emailPromises);
       } catch (emailErr) {
         console.error("Failed to send reschedule email", emailErr);
       }
@@ -795,20 +805,30 @@ router.put('/:id/cancel', optionalAuth, async (req, res) => {
           </div>
         `;
 
-        await Promise.all([
-          resend.emails.send({
-            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-            to: appointment.email,
-            subject: 'Appointment Cancelled',
-            html: clientEmailHtml,
-          }),
+        const clientUser = await User.findOne({ email: appointment.email });
+        const allowChangesEmail = clientUser?.notificationPreferences?.emailChanges ?? true;
+
+        const cancelEmailPromises = [
           resend.emails.send({
             from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
             to: process.env.ADMIN_EMAIL || 'support@yashrajtech.online',
             subject: `Session Cancelled: ${appointment.name}`,
             html: coachEmailHtml,
           })
-        ]);
+        ];
+
+        if (allowChangesEmail) {
+          cancelEmailPromises.push(
+            resend.emails.send({
+              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+              to: appointment.email,
+              subject: 'Appointment Cancelled',
+              html: clientEmailHtml,
+            })
+          );
+        }
+
+        await Promise.all(cancelEmailPromises);
       } catch (emailErr) {
         console.error("Failed to send cancellation emails", emailErr);
       }
