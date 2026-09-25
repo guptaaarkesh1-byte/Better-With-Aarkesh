@@ -1367,21 +1367,7 @@ export default function AdminUsers() {
                     </div>
                   </div>
 
-                  {/* Coach's Private Notes */}
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-2 text-[#c79c6e] border-b border-white/5 pb-2">
-                      <FileText size={18} />
-                      <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Coach's General Notes</h3>
-                    </div>
-                    <textarea 
-                      className="w-full h-40 bg-[#111] border border-white/5 rounded-xl p-4 text-white/80 font-sans text-sm resize-none focus:outline-none focus:border-[#c79c6e]/50 transition-colors placeholder-white/20"
-                      placeholder="Write your general private notes about this client here... These are only visible to you."
-                      defaultValue={selectedUser.notes || ''}
-                    />
-                    <button className="self-end px-4 py-2 mt-2 rounded bg-white/5 text-white hover:bg-white/10 font-sans text-xs uppercase tracking-widest transition-colors">
-                      Save Notes
-                    </button>
-                  </div>
+
                 </div>
               )}
             </div>
