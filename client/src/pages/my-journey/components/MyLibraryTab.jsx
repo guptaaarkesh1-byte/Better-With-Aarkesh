@@ -15,7 +15,7 @@ export default function MyLibraryTab() {
   const [activeModalVideo, setActiveModalVideo] = useState(null);
   const navigate = useNavigate();
 
-  const mainTabs = ['CONTINUE', 'BOOKMARKED', 'COMPLETED'];
+  const mainTabs = ['BOOKMARKED', 'COMPLETED'];
   const subTabs = showWatchCard ? ['ARTICLES', 'VIDEOS'] : ['ARTICLES'];
 
   const fetchSavedAndCompleted = async () => {
@@ -430,7 +430,10 @@ export default function MyLibraryTab() {
                     <div className="block md:max-h-0 md:overflow-hidden md:opacity-0 md:group-hover/card:max-h-[150px] md:group-hover/card:opacity-100 md:group-hover/card:mt-6 transition-all duration-500 ease-in-out mt-4 md:mt-0">
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t border-white/5 pt-4 md:pt-6">
                         <button 
-                          onClick={(e) => { e.stopPropagation(); navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`); }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}&from=my-journey`, { state: { from: 'my-journey' } }); 
+                          }}
                           className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
                         >
                           {mainTab === 'COMPLETED' ? 'REVISIT' : 'CONTINUE'}

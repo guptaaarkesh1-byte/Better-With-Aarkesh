@@ -433,7 +433,10 @@ export default function MyLibrarySection() {
                       <div className="flex items-center gap-4 shrink-0 justify-start md:justify-end">
                         <div className={`flex gap-4 transition-all duration-300 ${isExpanded ? 'opacity-0 invisible pointer-events-none' : 'group-hover:opacity-0 group-hover:invisible group-hover:pointer-events-none'}`}>
                           <button 
-                            onClick={(e) => { e.stopPropagation(); navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`); }}
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}&from=my-journey`, { state: { from: 'my-journey' } }); 
+                            }}
                             className="px-5 py-2 border border-[#c79c6e] text-[#c79c6e] rounded text-[0.6rem] uppercase tracking-[0.2em] font-medium"
                           >
                             {libraryTab === 'COMPLETED' ? 'REVISIT' : 'CONTINUE'}

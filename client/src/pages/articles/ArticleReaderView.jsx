@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, BookmarkSimple, Check } from '@phosphor-icons/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -96,6 +96,10 @@ export function renderFormattedTitle(text) {
 
 export default function ArticleReaderView({ article, onBack }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const isFromMyJourney = searchParams.get('from') === 'my-journey' || location.state?.from === 'my-journey';
+
   const [isSaved, setIsSaved] = useState(false);
   const [progress, setProgress] = useState(0);
   const [resumeToast, setResumeToast] = useState(false);
@@ -260,6 +264,11 @@ export default function ArticleReaderView({ article, onBack }) {
       console.warn('Progress save failed on back navigation:', err);
     }
     
+    if (isFromMyJourney) {
+      navigate('/my-journey', { state: { activeTab: 'MY LIBRARY' } });
+      return;
+    }
+
     if (typeof onBack === 'function') {
       try {
         onBack();
@@ -317,7 +326,7 @@ export default function ArticleReaderView({ article, onBack }) {
             className="inline-flex items-center gap-2.5 font-sans text-xs uppercase tracking-[0.25em] font-semibold text-[#c79c6e] hover:text-white transition-colors cursor-pointer group"
           >
             <ArrowLeft size={16} weight="bold" className="group-hover:-translate-x-1 transition-transform" />
-            <span>BACK TO LIBRARY</span>
+            <span>{isFromMyJourney ? 'BACK TO MY JOURNEY' : 'BACK TO LIBRARY'}</span>
           </button>
 
           <div className="flex items-center gap-4">
