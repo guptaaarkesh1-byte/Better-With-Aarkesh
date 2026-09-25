@@ -160,9 +160,9 @@ export default function Navbar() {
     <header
       ref={navRef}
       className={cn(
-        'fixed top-0 left-0 right-0 z-[100] transition-all duration-500',
-        scrolled 
-          ? 'py-2.5 sm:py-3 bg-black/65 backdrop-blur-xl shadow-lg shadow-black/30 border-b border-white/10' 
+        'fixed top-0 left-0 right-0 z-[100] transition-all duration-300',
+        scrolled || location.pathname === '/my-journey'
+          ? 'py-2.5 sm:py-3 bg-[#060606]/95 backdrop-blur-xl shadow-lg shadow-black/30 border-b border-white/10' 
           : 'py-3 sm:py-4 bg-gradient-to-b from-black/90 via-black/50 to-transparent'
       )}
     >
