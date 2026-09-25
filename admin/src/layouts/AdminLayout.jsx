@@ -47,9 +47,9 @@ export default function AdminLayout({ children, onLogout }) {
   ];
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white font-sans flex flex-col">
+    <div className="w-full h-screen bg-[#050505] text-white font-sans flex flex-col overflow-hidden">
       {/* Top Bar (Header + Tabs) */}
-      <header className="w-full bg-[#0a0a0a] border-b border-white/5 flex flex-col z-30 sticky top-0">
+      <header className="w-full bg-[#0a0a0a] border-b border-white/5 flex flex-col z-30 shrink-0">
         <div className="px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-8 h-8 rounded bg-[#c79c6e]/10 border border-[#c79c6e]/30 flex items-center justify-center">
@@ -106,9 +106,9 @@ export default function AdminLayout({ children, onLogout }) {
       </header>
 
       {/* Main Layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden w-full">
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-[#050505] relative">
+        <main className="flex-1 overflow-y-auto bg-[#050505] relative flex flex-col">
           {children || <Outlet />}
         </main>
       </div>

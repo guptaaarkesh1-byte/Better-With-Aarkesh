@@ -132,9 +132,9 @@ export default function TestimonialsSection() {
                 </p>
               </div>
 
-              {/* Testimonials Grid */}
+              {/* Testimonials Grid (Latest 6 on Homepage) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 mt-2">
-                {testimonials.map((t, index) => {
+                {testimonials.slice(0, 6).map((t, index) => {
                   const initial = t.name ? t.name.charAt(0).toUpperCase() : 'C';
                   const colors = ['bg-blue-900', 'bg-purple-900', 'bg-green-900', 'bg-orange-900', 'bg-teal-900', 'bg-rose-900'];
                   const color = t.color || colors[index % colors.length];
@@ -151,9 +151,15 @@ export default function TestimonialsSection() {
                       </p>
                       
                       <div className="flex items-center gap-3.5 mt-auto">
-                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${color} flex items-center justify-center border border-white/20 shrink-0`}>
-                          <span className="font-serif text-white text-sm sm:text-base font-medium">{initial}</span>
-                        </div>
+                        {t.image ? (
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#c79c6e]/40 shrink-0 bg-black shadow-inner">
+                            <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${color} flex items-center justify-center border border-white/20 shrink-0`}>
+                            <span className="font-serif text-white text-sm sm:text-base font-medium">{initial}</span>
+                          </div>
+                        )}
                         <div className="flex flex-col">
                           <span className="font-sans text-accent-gold text-sm sm:text-[0.92rem] font-semibold">{t.name}</span>
                           <span className="font-sans text-white/60 text-xs sm:text-[0.72rem] uppercase tracking-wider mt-0.5">{t.role}</span>
@@ -162,6 +168,17 @@ export default function TestimonialsSection() {
                     </div>
                   );
                 })}
+              </div>
+
+              {/* View More Testimonials Button */}
+              <div className="pt-2 flex items-center">
+                <Link
+                  to="/testimonials"
+                  className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full border border-[#c79c6e]/60 bg-[#c79c6e]/10 hover:bg-[#c79c6e] text-[#f4eedf] hover:text-black text-xs uppercase tracking-[0.2em] font-semibold transition-all duration-300 shadow-[0_2px_15px_rgba(199,156,110,0.15)] group"
+                >
+                  <span>View More Testimonials</span>
+                  <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform duration-200" />
+                </Link>
               </div>
             </div>
           </div>

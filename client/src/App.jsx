@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Booking from './pages/Booking';
 import Library from './pages/library/Library';
 import Stories from './pages/Stories';
+import TestimonialsPage from './pages/TestimonialsPage';
 import MyJourney from './pages/my-journey/MyJourney';
 import Settings from './pages/my-journey/Settings';
 import Notes from './pages/my-journey/Notes';
@@ -30,6 +31,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/book" element={<Booking />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/testimonials" element={<TestimonialsPage />} />
             <Route path="/stories" element={<Stories />} />
             <Route path="/my-journey" element={<MyJourney />} />
             <Route path="/my-journey/settings" element={<Settings />} />

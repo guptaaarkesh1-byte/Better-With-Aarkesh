@@ -25,6 +25,7 @@ import {
   Crosshair,
   Heart,
   Brain,
+  CaretUp,
   CaretDown,
   LockKey,
   Mountains,
@@ -424,7 +425,16 @@ export default function AdminHomeEditor() {
         : `${API_URL}${data.imageUrl}`;
 
       if (uploadTargetField) {
-        if (uploadTargetField.startsWith('principles.')) {
+        if (uploadTargetField.startsWith('testimonials.items.')) {
+          const parts = uploadTargetField.split('.');
+          const itemIdx = parseInt(parts[2], 10);
+          const propName = parts[3] || 'image';
+          const copy = [...(allSections.testimonials?.items || [])];
+          if (copy[itemIdx]) {
+            copy[itemIdx] = { ...copy[itemIdx], [propName]: finalUrl };
+            handleSectionChange('items', copy);
+          }
+        } else if (uploadTargetField.startsWith('principles.')) {
           const [, principleKey, field] = uploadTargetField.split('.');
           handlePrincipleChange(principleKey, field, finalUrl);
         } else if (uploadTargetField.includes('.')) {
@@ -538,7 +548,7 @@ export default function AdminHomeEditor() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white flex flex-col font-sans">
+    <div className="w-full flex-1 flex flex-col font-sans bg-[#050505] text-white">
       
       {/* Hidden Global File Input */}
       <input
@@ -550,7 +560,7 @@ export default function AdminHomeEditor() {
       />
 
       {/* Header Bar */}
-      <div className="w-full bg-[#0a0a0a] border-b border-white/5 px-6 lg:px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20">
+      <div className="w-full bg-[#0a0a0a] border-b border-white/5 px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-serif text-2xl text-white">Home Page Editor</h1>
@@ -558,7 +568,7 @@ export default function AdminHomeEditor() {
               {SIDEBAR_TABS.find(t => t.id === activeTab)?.label}
             </span>
           </div>
-          <p className="text-xs text-white/50 mt-1">
+          <p className="text-xs text-white/50 mt-0.5">
             Customize content and images. All image uploads must be <strong className="text-[#c79c6e]">under 200 KB</strong> for maximum performance.
           </p>
         </div>
@@ -606,10 +616,10 @@ export default function AdminHomeEditor() {
       </div>
 
       {/* Main Layout: Left Sidebar + Right Editor Body */}
-      <div className="flex-1 flex flex-col md:flex-row w-full max-w-[1600px] mx-auto">
+      <div className="flex-1 flex flex-col md:flex-row w-full max-w-[1600px] mx-auto items-start">
         
-        {/* ─── LEFT SIDEBAR TABS ─── */}
-        <aside className="w-full md:w-72 lg:w-80 bg-[#080808] border-r border-white/5 p-4 lg:p-6 shrink-0 flex flex-col gap-2">
+        {/* ─── LEFT SIDEBAR TABS (PERMANENTLY FIXED/STICKY) ─── */}
+        <aside className="w-full md:w-72 lg:w-80 bg-[#080808] border-r border-white/5 p-4 lg:p-6 shrink-0 flex flex-col gap-2 md:sticky md:top-[73px] md:h-[calc(100vh-190px)] md:overflow-y-auto custom-scrollbar">
           <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/40 px-3 py-1">
             PAGE SECTIONS
           </span>
@@ -1863,6 +1873,18 @@ export default function AdminHomeEditor() {
                 <div className="lg:col-span-7 flex flex-col gap-6">
                   <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
                     <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Section Header</span>
+                    
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-[#c79c6e]">Eyebrow Text</label>
+                      <input
+                        type="text"
+                        value={currentTestimonials.eyebrowText || ''}
+                        onChange={(e) => handleSectionChange('eyebrowText', e.target.value)}
+                        placeholder="REAL STORIES. REAL CHANGE."
+                        className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
+                      />
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Heading Line 1</label>
@@ -1870,7 +1892,8 @@ export default function AdminHomeEditor() {
                           type="text"
                           value={currentTestimonials.headingLine1 || ''}
                           onChange={(e) => handleSectionChange('headingLine1', e.target.value)}
-                          className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white"
+                          placeholder="Their words."
+                          className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
@@ -1879,9 +1902,21 @@ export default function AdminHomeEditor() {
                           type="text"
                           value={currentTestimonials.headingAccent || ''}
                           onChange={(e) => handleSectionChange('headingAccent', e.target.value)}
-                          className="w-full bg-[#050505] border border-[#c79c6e]/30 rounded-lg px-4 py-3 text-sm text-[#c79c6e] italic"
+                          placeholder="Their transformation."
+                          className="w-full bg-[#050505] border border-[#c79c6e]/30 rounded-lg px-4 py-3 text-sm text-[#c79c6e] italic focus:border-[#c79c6e]"
                         />
                       </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Description Paragraph</label>
+                      <textarea
+                        rows={3}
+                        value={currentTestimonials.description || ''}
+                        onChange={(e) => handleSectionChange('description', e.target.value)}
+                        placeholder="What happens when you decide to do the work."
+                        className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e] resize-none"
+                      />
                     </div>
                   </div>
 
@@ -1892,7 +1927,8 @@ export default function AdminHomeEditor() {
                       <button
                         type="button"
                         onClick={() => {
-                          const updated = [...(currentTestimonials.items || []), { quote: 'New inspiring testimonial quote...', name: 'Client Name, 30', role: 'Profession' }];
+                          const newReview = { quote: '', name: '', role: '', category: 'Clarity & Direction' };
+                          const updated = [newReview, ...(currentTestimonials.items || [])];
                           handleSectionChange('items', updated);
                         }}
                         className="px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 hover:bg-[#c79c6e]/20 text-[#c79c6e] text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
@@ -1905,9 +1941,59 @@ export default function AdminHomeEditor() {
                     <div className="flex flex-col gap-4">
                       {(currentTestimonials.items || []).map((item, idx) => (
                         <div key={idx} className="p-4 rounded-xl bg-[#050505] border border-white/10 flex flex-col gap-3">
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                            <span className="text-xs font-semibold text-white/50 uppercase tracking-widest">Review #{idx + 1}</span>
+                            <div className="flex items-center gap-1">
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const copy = [...currentTestimonials.items];
+                                    const temp = copy[idx - 1];
+                                    copy[idx - 1] = copy[idx];
+                                    copy[idx] = temp;
+                                    handleSectionChange('items', copy);
+                                  }}
+                                  className="p-1 rounded text-white/40 hover:text-white hover:bg-white/5"
+                                  title="Move Up"
+                                >
+                                  <CaretUp size={14} />
+                                </button>
+                              )}
+                              {idx < (currentTestimonials.items || []).length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const copy = [...currentTestimonials.items];
+                                    const temp = copy[idx + 1];
+                                    copy[idx + 1] = copy[idx];
+                                    copy[idx] = temp;
+                                    handleSectionChange('items', copy);
+                                  }}
+                                  className="p-1 rounded text-white/40 hover:text-white hover:bg-white/5"
+                                  title="Move Down"
+                                >
+                                  <CaretDown size={14} />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const copy = currentTestimonials.items.filter((_, i) => i !== idx);
+                                  handleSectionChange('items', copy);
+                                }}
+                                className="text-red-400/60 hover:text-red-400 p-1 cursor-pointer ml-1"
+                                title="Delete Review"
+                              >
+                                <Trash size={15} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[0.68rem] font-semibold uppercase tracking-widest text-white/50">Testimonial Quote</label>
                             <textarea
-                              rows={2}
+                              rows={3}
                               value={item.quote}
                               onChange={(e) => {
                                 const copy = [...currentTestimonials.items];
@@ -1915,42 +2001,78 @@ export default function AdminHomeEditor() {
                                 handleSectionChange('items', copy);
                               }}
                               placeholder="Quote content..."
-                              className="flex-1 bg-transparent border-0 text-sm text-white/90 focus:outline-none resize-none font-serif italic"
+                              className="w-full bg-white/[0.02] border border-white/10 rounded-lg p-3 text-sm text-white/90 focus:border-[#c79c6e] focus:outline-none resize-none font-serif italic"
                             />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const copy = currentTestimonials.items.filter((_, i) => i !== idx);
-                                handleSectionChange('items', copy);
-                              }}
-                              className="text-red-400/60 hover:text-red-400 p-1 cursor-pointer"
-                            >
-                              <Trash size={16} />
-                            </button>
                           </div>
-                          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
-                            <input
-                              type="text"
-                              value={item.name}
-                              onChange={(e) => {
-                                const copy = [...currentTestimonials.items];
-                                copy[idx].name = e.target.value;
-                                handleSectionChange('items', copy);
-                              }}
-                              placeholder="Name, Age"
-                              className="bg-white/5 rounded px-3 py-1.5 text-xs text-white"
-                            />
-                            <input
-                              type="text"
-                              value={item.role}
-                              onChange={(e) => {
-                                const copy = [...currentTestimonials.items];
-                                copy[idx].role = e.target.value;
-                                handleSectionChange('items', copy);
-                              }}
-                              placeholder="Profession"
-                              className="bg-white/5 rounded px-3 py-1.5 text-xs text-white"
-                            />
+
+                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1 items-end">
+                            <div className="sm:col-span-4 flex flex-col gap-1">
+                              <label className="text-[0.65rem] font-semibold uppercase tracking-widest text-white/40">Name & Age</label>
+                              <input
+                                type="text"
+                                value={item.name}
+                                onChange={(e) => {
+                                  const copy = [...currentTestimonials.items];
+                                  copy[idx].name = e.target.value;
+                                  handleSectionChange('items', copy);
+                                }}
+                                placeholder="Rohit, 32"
+                                className="bg-white/5 border border-white/10 rounded px-3 py-2 text-xs text-white focus:border-[#c79c6e]"
+                              />
+                            </div>
+                            <div className="sm:col-span-4 flex flex-col gap-1">
+                              <label className="text-[0.65rem] font-semibold uppercase tracking-widest text-white/40">Profession / Role</label>
+                              <input
+                                type="text"
+                                value={item.role}
+                                onChange={(e) => {
+                                  const copy = [...currentTestimonials.items];
+                                  copy[idx].role = e.target.value;
+                                  handleSectionChange('items', copy);
+                                }}
+                                placeholder="Entrepreneur"
+                                className="bg-white/5 border border-white/10 rounded px-3 py-2 text-xs text-white focus:border-[#c79c6e]"
+                              />
+                            </div>
+                            <div className="sm:col-span-4 flex flex-col gap-1">
+                              <label className="text-[0.65rem] font-semibold uppercase tracking-widest text-[#c79c6e]">Profile Picture</label>
+                              <div className="flex items-center gap-2">
+                                {item.image ? (
+                                  <div className="w-8 h-8 rounded-full overflow-hidden border border-[#c79c6e]/40 shrink-0 bg-black">
+                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                  </div>
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-white/40 text-xs font-serif font-medium">
+                                    {item.name ? item.name.charAt(0).toUpperCase() : 'C'}
+                                  </div>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => triggerImageUpload(`testimonials.items.${idx}.image`)}
+                                  className="flex-1 py-1.5 px-2 rounded bg-white/5 hover:bg-[#c79c6e]/15 border border-white/10 hover:border-[#c79c6e]/40 text-[0.72rem] text-white/80 hover:text-[#c79c6e] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                                  title="Upload Profile Photo (Under 200 KB)"
+                                >
+                                  <UploadSimple size={13} />
+                                  <span className="truncate">{item.image ? 'Change' : 'Upload Photo'}</span>
+                                </button>
+
+                                {item.image && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const copy = [...currentTestimonials.items];
+                                      copy[idx] = { ...copy[idx], image: '' };
+                                      handleSectionChange('items', copy);
+                                    }}
+                                    className="p-1.5 rounded text-red-400/60 hover:text-red-400 hover:bg-red-400/10 cursor-pointer"
+                                    title="Remove Photo"
+                                  >
+                                    <Trash size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
