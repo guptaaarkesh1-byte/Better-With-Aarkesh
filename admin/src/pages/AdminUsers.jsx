@@ -183,6 +183,7 @@ export default function AdminUsers() {
   const [paymentFilter, setPaymentFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [bookingFilter, setBookingFilter] = useState('All');
+  const [accountFilter, setAccountFilter] = useState('All');
 
   // Dropdown UI states
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -481,6 +482,7 @@ export default function AdminUsers() {
     setPaymentFilter('All');
     setStatusFilter('All');
     setBookingFilter('All');
+    setAccountFilter('All');
   };
 
   // Filtering Logic
@@ -500,7 +502,11 @@ export default function AdminUsers() {
     if (bookingFilter === 'Booked') matchesBooking = user.appointmentsCount > 0;
     if (bookingFilter === 'No Bookings') matchesBooking = user.appointmentsCount === 0;
 
-    return matchesSearch && matchesPayment && matchesStatus && matchesBooking;
+    let matchesAccount = true;
+    if (accountFilter === 'Active') matchesAccount = !user.isDeleted;
+    if (accountFilter === 'Deleted') matchesAccount = !!user.isDeleted;
+
+    return matchesSearch && matchesPayment && matchesStatus && matchesBooking && matchesAccount;
   });
 
   return (
@@ -594,7 +600,7 @@ export default function AdminUsers() {
           />
         </div>
         
-        {(searchQuery || paymentFilter !== 'All' || statusFilter !== 'All' || bookingFilter !== 'All') && (
+        {(searchQuery || paymentFilter !== 'All' || statusFilter !== 'All' || bookingFilter !== 'All' || accountFilter !== 'All') && (
           <button 
             onClick={clearFilters}
             className="text-[#c79c6e] hover:text-white text-xs uppercase tracking-widest font-semibold transition-colors px-2"
@@ -665,6 +671,45 @@ export default function AdminUsers() {
                 {['All', 'Booked', 'No Bookings'].map(opt => (
                   <button key={opt} onClick={() => { setBookingFilter(opt); setActiveDropdown(null); }} className="px-4 py-2 text-left text-xs text-white/70 hover:text-white hover:bg-white/5 transition-colors">
                     {opt}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Account Status Filter (All / Active / Deleted) */}
+          <div className="relative">
+            <button 
+              onClick={() => setActiveDropdown(activeDropdown === 'account' ? null : 'account')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs transition-colors ${accountFilter === 'Deleted' ? 'border-red-500/50 bg-red-950/20 text-red-400' : 'border-white/10 bg-[#050505] text-white/70 hover:text-white'}`}
+            >
+              <span className="text-white/40 uppercase tracking-widest text-[0.65rem] mr-2">Account</span>
+              <span className={accountFilter === 'Deleted' ? 'text-red-400 font-semibold' : (accountFilter === 'Active' ? 'text-emerald-400 font-semibold' : '')}>
+                {accountFilter}
+              </span>
+              <CaretDown size={12} className="ml-2" />
+            </button>
+            {activeDropdown === 'account' && (
+              <div className="absolute top-full left-0 mt-2 w-44 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
+                {[
+                  { label: 'All', value: 'All' },
+                  { label: 'Active', value: 'Active' },
+                  { label: 'Deleted Accounts', value: 'Deleted' }
+                ].map(opt => (
+                  <button 
+                    key={opt.value} 
+                    onClick={() => { setAccountFilter(opt.value); setActiveDropdown(null); }} 
+                    className={`px-4 py-2 text-left text-xs transition-colors hover:bg-white/5 flex items-center justify-between ${
+                      accountFilter === opt.value 
+                        ? 'text-[#c79c6e] font-semibold bg-white/[0.03]' 
+                        : opt.value === 'Deleted' 
+                          ? 'text-red-400 hover:text-red-300' 
+                          : 'text-white/70 hover:text-white'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {opt.value === 'Deleted' && <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>}
+                    {opt.value === 'Active' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
                   </button>
                 ))}
               </div>
