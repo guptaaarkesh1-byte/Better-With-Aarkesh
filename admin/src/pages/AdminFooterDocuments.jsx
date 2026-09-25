@@ -979,23 +979,6 @@ export default function AdminFooterDocuments() {
         <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setActiveTab('pages')}
-              className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                activeTab === 'pages'
-                  ? 'bg-[#c79c6e] text-black shadow-md font-semibold'
-                  : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <FileText size={18} weight={activeTab === 'pages' ? 'fill' : 'regular'} />
-              <span>Static Pages &amp; Footer</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                activeTab === 'pages' ? 'bg-black/20 text-black' : 'bg-white/10 text-white/70'
-              }`}>
-                {documents.length}
-              </span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('brand')}
               className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                 activeTab === 'brand'
@@ -1009,6 +992,23 @@ export default function AdminFooterDocuments() {
                 activeTab === 'brand' ? 'bg-black/20 text-black' : 'bg-white/10 text-white/70'
               }`}>
                 {socialLinks.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('pages')}
+              className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                activeTab === 'pages'
+                  ? 'bg-[#c79c6e] text-black shadow-md font-semibold'
+                  : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <FileText size={18} weight={activeTab === 'pages' ? 'fill' : 'regular'} />
+              <span>Static Pages &amp; Footer</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'pages' ? 'bg-black/20 text-black' : 'bg-white/10 text-white/70'
+              }`}>
+                {documents.length}
               </span>
             </button>
           </div>

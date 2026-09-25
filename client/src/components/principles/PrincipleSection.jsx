@@ -143,16 +143,7 @@ export default function PrincipleSection({
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/90" />
         </div>
 
-        {/* Sunlight Overlay (Animated) */}
-        {isThinkPage && (
-          <div 
-            className="sunlight-overlay absolute inset-0 opacity-0 pointer-events-none"
-            style={{
-              background: 'radial-gradient(ellipse at 80% 40%, rgba(255, 230, 180, 0.15) 0%, rgba(255, 230, 180, 0) 50%)',
-              willChange: 'opacity'
-            }}
-          />
-        )}
+
 
         {/* Dust Particles Container */}
         {isThinkPage && (() => {

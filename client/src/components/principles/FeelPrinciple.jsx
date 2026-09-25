@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
 import defaultBgImg from '../../assets/Page4/ChatGPT Image Jul 24, 2026, 02_41_22 PM.webp';
 import { Sparkle, CloudRain, Waves, Heart, SunDim } from '@phosphor-icons/react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const DEFAULT_FEEL_DATA = {
   eyebrow: 'MY PHILOSOPHY',
@@ -16,16 +14,8 @@ const DEFAULT_FEEL_DATA = {
 };
 
 export default function FeelPrinciple() {
-  const [data, setData] = useState(DEFAULT_FEEL_DATA);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/home-settings/principles`)
-      .then(res => res.ok ? res.json() : null)
-      .then(d => {
-        if (d?.feel) setData(prev => ({ ...prev, ...d.feel }));
-      })
-      .catch(() => {});
-  }, []);
+  const customData = usePrinciplesData('feel');
+  const data = { ...DEFAULT_FEEL_DATA, ...customData };
 
   const eyebrow = data.eyebrow || 'MY PHILOSOPHY';
   const headlineWhite = data.title || 'Feel honestly.';

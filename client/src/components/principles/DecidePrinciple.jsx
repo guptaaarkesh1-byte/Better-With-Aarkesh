@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
 import defaultBgImg from '../../assets/Page5/ChatGPT Image Jul 24, 2026, 03_00_05 PM.webp';
 import { Sparkle, GitFork, Spiral, Target, SlidersHorizontal, ArrowRight } from '@phosphor-icons/react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const DEFAULT_DECIDE_DATA = {
   eyebrow: 'MY PHILOSOPHY',
@@ -17,16 +15,8 @@ const DEFAULT_DECIDE_DATA = {
 };
 
 export default function DecidePrinciple() {
-  const [data, setData] = useState(DEFAULT_DECIDE_DATA);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/home-settings/principles`)
-      .then(res => res.ok ? res.json() : null)
-      .then(d => {
-        if (d?.decide) setData(prev => ({ ...prev, ...d.decide }));
-      })
-      .catch(() => {});
-  }, []);
+  const customData = usePrinciplesData('decide');
+  const data = { ...DEFAULT_DECIDE_DATA, ...customData };
 
   const eyebrow = data.eyebrow || 'MY PHILOSOPHY';
   const headlineWhite = data.title || 'DECIDE';

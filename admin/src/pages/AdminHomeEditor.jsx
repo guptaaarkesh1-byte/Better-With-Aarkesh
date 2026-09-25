@@ -29,11 +29,12 @@ import {
   LockKey,
   Mountains,
   Path,
-  Kanban
+  Kanban,
+  Sun
 } from '@phosphor-icons/react';
 
 // Exact Default Assets from Frontend Website
-const defaultHeroImg = 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1287&auto=format&fit=crop';
+import defaultHeroImg from '../../../client/src/assets/hero.webp';
 import defaultTransImg from '../../../client/src/assets/Page2/bottom.webp';
 import defaultThinkImg from '../../../client/src/assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.webp';
 import defaultFeelImg from '../../../client/src/assets/Page4/ChatGPT Image Jul 24, 2026, 02_41_22 PM.webp';

@@ -32,15 +32,14 @@ export default function WordCloud() {
   useGSAP(() => {
     const words = gsap.utils.toArray('.floating-word');
     
-    // Parallax floating effect for the words
-    words.forEach((word) => {
-      // Randomize movement per word for a visible medium-paced floating effect
+    // Parallax floating effect for the words - paused by default until scrolled into view
+    const tweens = words.map((word) => {
       const xMove = gsap.utils.random(-25, 25);
       const yMove = gsap.utils.random(-25, 25);
       const rot = gsap.utils.random(-2, 2);
       const dur = gsap.utils.random(4, 8);
 
-      gsap.to(word, {
+      return gsap.to(word, {
         x: xMove,
         y: yMove,
         rotation: rot,
@@ -48,7 +47,19 @@ export default function WordCloud() {
         ease: 'sine.inOut',
         yoyo: true,
         repeat: -1,
+        paused: true,
+        force3D: true,
       });
+    });
+
+    ScrollTrigger.create({
+      trigger: container.current,
+      start: 'top bottom',
+      end: 'bottom top',
+      onEnter: () => tweens.forEach(t => t.play()),
+      onLeave: () => tweens.forEach(t => t.pause()),
+      onEnterBack: () => tweens.forEach(t => t.play()),
+      onLeaveBack: () => tweens.forEach(t => t.pause()),
     });
 
   }, { scope: container });

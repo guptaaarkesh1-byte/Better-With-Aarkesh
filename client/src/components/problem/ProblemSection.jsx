@@ -54,15 +54,16 @@ export default function ProblemSection() {
     }, "stage2");
 
     // Stage 3 & 4: Magnetic Convergence & Merge Effect
+    const parentRect = containerRef.current?.getBoundingClientRect() || { width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 };
+    const centerX = parentRect.width / 2;
+    const centerY = parentRect.height / 2;
+
     tracks.forEach((track) => {
       const offsetX = gsap.utils.random(-25, 25);
       const offsetY = gsap.utils.random(-25, 25);
       const rot = gsap.utils.random(-35, 35);
       
       const rect = track.getBoundingClientRect();
-      const parentRect = containerRef.current?.getBoundingClientRect() || { width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 };
-      const centerX = parentRect.width / 2;
-      const centerY = parentRect.height / 2;
       const elemX = rect.left - parentRect.left + rect.width / 2;
       const elemY = rect.top - parentRect.top + rect.height / 2;
       const deltaX = (centerX - elemX) + offsetX;

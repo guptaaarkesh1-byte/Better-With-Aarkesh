@@ -16,14 +16,13 @@ export default function MainLayout({ children }) {
       window.history.scrollRestoration = 'manual';
     }
     lenisRef.current = new Lenis({
-      duration: 1.2,
+      duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      direction: 'vertical',
-      gestureDirection: 'vertical',
-      smooth: true,
-      mouseMultiplier: 1,
-      smoothTouch: false,
-      touchMultiplier: 2,
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 1.5,
       infinite: false,
     });
 
@@ -38,7 +37,7 @@ export default function MainLayout({ children }) {
     };
 
     gsap.ticker.add(updateLenis);
-    gsap.ticker.lagSmoothing(500, 33);
+    gsap.ticker.lagSmoothing(0);
 
     return () => {
       gsap.ticker.remove(updateLenis);

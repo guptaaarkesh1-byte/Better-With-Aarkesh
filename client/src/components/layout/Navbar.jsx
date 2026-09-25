@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import { BookmarkSimple, List, X, User, LockKey, SignOut, ArrowRight, Play } from '@phosphor-icons/react';
 import { useBooking } from '../../context/BookingContext';
 import LoginModal from './LoginModal';
-import ThemeToggle from '../ui/ThemeToggle';
+
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -33,6 +33,7 @@ export default function Navbar() {
   const navRef = useRef(null);
   const isManualNavRef = useRef(false);
   const manualNavTimerRef = useRef(null);
+  const hasAnimated = useRef(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -122,18 +123,18 @@ export default function Navbar() {
     return () => observer.disconnect();
   }, [location.pathname, location.hash]);
 
-  useGSAP(() => {
-    gsap.fromTo(navRef.current, 
-      { y: -100, opacity: 0 },
-      {
-        y: 0,
-        opacity: 1,
-        duration: 1.2,
-        ease: 'power3.out',
-        delay: 0.5,
-      }
-    );
-  });
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    gsap.set(el, { y: -60, opacity: 0 });
+    gsap.to(el, {
+      y: 0,
+      opacity: 1,
+      duration: 0.9,
+      ease: 'power2.out',
+      delay: 0.2,
+    });
+  }, []);
 
   if (location.pathname.startsWith('/course')) return null;
 
@@ -169,40 +170,40 @@ export default function Navbar() {
         {/* Top Row: Logo & Action Buttons */}
         <div className="flex items-center justify-between w-full">
           <div className="flex-shrink-0">
-            <Link to="/" className="font-serif text-xl sm:text-2xl text-white tracking-tight relative z-10 flex items-center whitespace-nowrap">
-              BetterWith<span className="text-white/60">Aarkesh</span>
+            <Link to="/" className="font-serif text-3xl sm:text-4xl text-white tracking-tight relative z-10 flex items-center whitespace-nowrap">
+              BetterWith<span className="text-[#c79c6e]">Aarkesh</span>
             </Link>
           </div>
 
-          <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3">
-            <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-2 lg:gap-2.5">
+          <div className="flex-shrink-0 flex items-center gap-3 sm:gap-4">
+            <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-6 lg:gap-8">
               <Button 
                 variant="outline" 
-                className="text-[0.62rem] px-3.5 lg:px-4 py-1.5 lg:py-2 flex items-center gap-1.5 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505] tracking-[0.14em]"
+                className="text-[0.75rem] px-5 lg:px-6 py-2 lg:py-2.5 flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505] tracking-[0.18em]"
                 onClick={() => navigate('/course')}
               >
-                <Play size={13} weight="light" /> COURSE
+                <Play size={14} weight="light" /> COURSE
               </Button>
               {showMyJourney && (
                 <>
                   {!isLoggedIn ? (
                     <Button 
                       variant="outline" 
-                      className="text-[0.62rem] px-3.5 lg:px-4 py-1.5 lg:py-2 flex items-center gap-1.5 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505] tracking-[0.14em]"
+                      className="text-[0.75rem] px-5 lg:px-6 py-2 lg:py-2.5 flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505] tracking-[0.18em]"
                       onClick={() => setShowLoginModal(true)}
                     >
-                      <User size={13} weight="light" /> LOGIN
+                      <User size={14} weight="light" /> LOGIN
                     </Button>
                   ) : (
                     <div className="relative group">
                       <Button 
                         variant="outline" 
-                        className="text-[0.62rem] px-3.5 lg:px-4 py-1.5 lg:py-2 flex items-center gap-1.5 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505] tracking-[0.14em]"
+                        className="text-[0.75rem] px-5 lg:px-6 py-2 lg:py-2.5 flex items-center gap-2 border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-[#050505] tracking-[0.18em]"
                         onClick={() => {
                           navigate('/my-journey');
                         }}
                       >
-                        <BookmarkSimple size={13} weight="light" /> MY JOURNEY
+                        <BookmarkSimple size={14} weight="light" /> MY JOURNEY
                       </Button>
                       
                       {/* Account Menu Dropdown */}
@@ -249,21 +250,19 @@ export default function Navbar() {
               <Button 
                 variant="outline" 
                 className={cn(
-                  "text-[0.62rem] transition-all flex items-center gap-1.5 tracking-[0.14em]",
+                  "text-[0.75rem] transition-all flex items-center gap-2 tracking-[0.18em]",
                   scrolled 
-                    ? "bg-[#c79c6e] text-black border-transparent px-3.5 lg:px-4.5 py-1.5 lg:py-2 hover:bg-[#b0885e]" 
-                    : "border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black bg-transparent px-3 lg:px-4 py-1.5 lg:py-2"
+                    ? "bg-[#c79c6e] text-black border-transparent px-5 lg:px-6 py-2 lg:py-2.5 hover:bg-[#b0885e]" 
+                    : "border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black bg-transparent px-5 lg:px-6 py-2 lg:py-2.5"
                 )}
                 onClick={() => navigate('/book')}
               >
-                BOOK A SESSION {scrolled && <ArrowRight size={13} weight="bold" />}
+                BOOK A SESSION {scrolled && <ArrowRight size={14} weight="bold" />}
               </Button>
-              <ThemeToggle />
             </div>
 
-            {/* Mobile / Tablet Controls (Theme toggle & Hamburger) */}
+            {/* Mobile / Tablet Controls (Hamburger) */}
             <div className="md:hidden flex items-center gap-2">
-              <ThemeToggle size={16} />
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="text-white focus:outline-none p-1 transition-transform active:scale-95 cursor-pointer"
@@ -277,7 +276,7 @@ export default function Navbar() {
 
         {/* Bottom Row: Navigation Tabs */}
         <div className="hidden md:flex items-center justify-center w-full pt-1.5 border-t border-white/[0.08]">
-          <nav className="flex items-center justify-center space-x-6 lg:space-x-8 xl:space-x-10 relative">
+          <nav className="flex items-center justify-center space-x-16 lg:space-x-20 xl:space-x-24 relative">
             {NAV_LINKS.map((link) => {
               let active = false;
               if (location.pathname === '/') {
@@ -310,7 +309,7 @@ export default function Navbar() {
                   {active && (
                     <motion.div
                       layoutId="activeNavUnderline"
-                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#c79c6e] shadow-[0_0_8px_rgba(199,156,110,0.6)] z-10"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#c79c6e] z-10"
                       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                     />
                   )}
@@ -364,7 +363,7 @@ export default function Navbar() {
                 {active && (
                   <motion.div
                     layoutId="activeNavUnderlineMobile"
-                    className="absolute bottom-0 left-2 right-2 h-[1.5px] bg-[#c79c6e] shadow-[0_0_6px_rgba(199,156,110,0.5)]"
+                    className="absolute bottom-0 left-2 right-2 h-[1.5px] bg-[#c79c6e]"
                     transition={{ type: "spring", stiffness: 400, damping: 35 }}
                   />
                 )}
@@ -418,10 +417,6 @@ export default function Navbar() {
             >
               BOOK A SESSION
             </Button>
-            
-            <div className="pt-2 flex items-center justify-center">
-              <ThemeToggle showLabel size={18} />
-            </div>
           </div>
         </nav>
       </div>

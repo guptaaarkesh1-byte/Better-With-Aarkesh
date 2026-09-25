@@ -1404,26 +1404,10 @@ export default function LibraryDirectorySection() {
 
               {/* Floating Dynamic Search Dropdown Overlay */}
               {searchQuery.trim() && (
-                <div className="absolute top-full left-0 right-0 mt-3 z-[100] bg-[#0d0a08]/95 backdrop-blur-2xl border border-[#c79c6e]/40 rounded-2xl p-3 sm:p-4 shadow-[0_20px_60px_rgba(0,0,0,0.9)] animate-in fade-in slide-in-from-top-2 duration-200 text-left">
-                  <div className="flex items-center justify-between mb-3 px-1 border-b border-white/5 pb-2">
-                    <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-1.5">
-                      <Sparkle size={13} weight="fill" />
-                      {matchingArticles.length > 0 
-                        ? `MATCHING (${matchingArticles.length})` 
-                        : 'NO MATCHES'
-                      }
-                    </span>
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="text-white/40 hover:text-white text-xs font-sans flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-
+                <div className="absolute top-full left-0 right-0 mt-2.5 z-[100] bg-[#0d0a08]/95 backdrop-blur-2xl border border-[#c79c6e]/40 rounded-2xl p-2.5 sm:p-3 shadow-[0_20px_60px_rgba(0,0,0,0.9)] animate-in fade-in slide-in-from-top-2 duration-200 text-left">
                   {matchingArticles.length > 0 ? (
-                    <div className="flex flex-col gap-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1 overscroll-contain">
-                      {matchingArticles.slice(0, 5).map((art) => (
+                    <div className="flex flex-col gap-2">
+                      {matchingArticles.slice(0, 4).map((art) => (
                         <div
                           key={art.id || art.slug}
                           onClick={() => {

@@ -14,6 +14,8 @@ import {
   Quotes
 } from '@phosphor-icons/react';
 
+import heroPreviewImg from '../../../client/src/assets/hero.webp';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const FONT_PRESETS = [
@@ -468,7 +470,7 @@ export default function GlobalVisualSettingsModal({ isOpen, onClose }) {
                 </span>
                 <div className="relative h-24 rounded-lg overflow-hidden border border-white/10">
                   <img
-                    src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600&auto=format&fit=crop"
+                    src={heroPreviewImg}
                     alt="Preview"
                     className="w-full h-full object-cover"
                     style={{

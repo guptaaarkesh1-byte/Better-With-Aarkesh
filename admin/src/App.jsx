@@ -356,10 +356,9 @@ function App() {
             <Route path="/booking" element={<AdminBookingEditor />} />
             <Route path="/coaching" element={<AdminCoaching />} />
             <Route path="/appointments" element={<AdminCoaching />} />
-            <Route path="/profile" element={<AdminCoaching />} />
-            <Route path="/profile/settings" element={<AdminCoaching />} />
-            <Route path="/journey" element={<AdminCoaching />} />
-            <Route path="/journey/settings" element={<AdminCoaching />} />
+            <Route path="/profile" element={<AdminSettings />} />
+            <Route path="/profile/settings" element={<AdminSettings />} />
+            <Route path="/settings" element={<AdminSettings />} />
             <Route path="/course" element={<AdminCourse />} />
             <Route path="/upload-videos" element={<AdminCourse />} />
             <Route path="/course-curriculum" element={<AdminCourse />} />

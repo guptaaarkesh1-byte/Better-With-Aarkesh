@@ -71,8 +71,12 @@
     display: none;
   }
 
-  /* Universal Master Contrast & Brightness Controller */
-  img:not(.no-filter), video:not(.no-filter), .bg-visual, .hero-bg, [data-visual-layer] {
+  /* Universal Master Contrast & Brightness Controller (only active when adjusted to save GPU rasterization) */
+  [data-custom-filter="true"] img:not(.no-filter),
+  [data-custom-filter="true"] video:not(.no-filter),
+  [data-custom-filter="true"] .bg-visual,
+  [data-custom-filter="true"] .hero-bg,
+  [data-custom-filter="true"] [data-visual-layer] {
     filter: contrast(var(--site-contrast, 100%)) brightness(var(--site-brightness, 100%)) saturate(var(--site-saturation, 100%));
     transition: filter 300ms ease;
   }

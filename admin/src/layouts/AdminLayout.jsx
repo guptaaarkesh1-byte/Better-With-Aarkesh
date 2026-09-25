@@ -10,7 +10,8 @@ import {
   Books,
   CalendarBlank,
   SlidersHorizontal,
-  Sun
+  Sun,
+  UserCircle
 } from '@phosphor-icons/react';
 import GlobalVisualSettingsModal from '../components/GlobalVisualSettingsModal';
 
@@ -25,8 +26,9 @@ export default function AdminLayout({ children, onLogout }) {
     if (currentPath.startsWith('/home') || currentPath.startsWith('/home-editor')) return 'home';
     if (currentPath.startsWith('/library')) return 'library';
     if (currentPath.startsWith('/booking') || currentPath.startsWith('/book-editor') || currentPath.startsWith('/booking-editor')) return 'booking';
-    if (currentPath.startsWith('/coaching') || currentPath.startsWith('/appointments') || currentPath.startsWith('/profile') || currentPath.startsWith('/journey')) return 'coaching';
-    if (currentPath.startsWith('/course') || currentPath.startsWith('/admin/courses') || currentPath.startsWith('/upload-videos')) return 'course';
+    if (currentPath.startsWith('/profile') || currentPath.startsWith('/settings')) return 'profile';
+    if (currentPath.startsWith('/coaching') || currentPath.startsWith('/appointments')) return 'coaching';
+    if (currentPath.startsWith('/course') || currentPath.startsWith('/admin/courses') || currentPath.startsWith('/upload-videos') || currentPath.startsWith('/course-curriculum') || currentPath.startsWith('/course-students')) return 'course';
     if (currentPath.startsWith('/footer-documents')) return 'footer';
     return 'overview';
   };
@@ -35,10 +37,11 @@ export default function AdminLayout({ children, onLogout }) {
 
   const topTabs = [
     { id: 'overview', label: 'Overview', icon: <SquaresFour size={18} />, path: '/' },
-    { id: 'coaching', label: 'Appointments', icon: <Users size={18} />, path: '/coaching' },
+    { id: 'coaching', label: 'Appointments', icon: <Users size={18} />, path: '/appointments' },
     { id: 'home', label: 'Home', icon: <House size={18} />, path: '/home-editor' },
     { id: 'library', label: 'Library', icon: <Books size={18} />, path: '/library' },
     { id: 'booking', label: 'Book a Session', icon: <CalendarBlank size={18} />, path: '/booking-editor' },
+    { id: 'profile', label: 'Profile', icon: <UserCircle size={18} />, path: '/profile' },
     { id: 'course', label: 'Course', icon: <GraduationCap size={18} />, path: '/course' },
     { id: 'footer', label: 'Footer', icon: <FolderOpen size={18} />, path: '/footer-documents' },
   ];

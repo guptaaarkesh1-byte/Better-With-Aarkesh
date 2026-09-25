@@ -55,6 +55,12 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--overlay-opacity', `${overlayDarkness / 100}`);
     root.style.setProperty('--site-saturation', `${saturation}%`);
     root.style.setProperty('--site-font-scale', `${fontScale}`);
+
+    if (contrast !== 100 || brightness !== 100 || saturation !== 100) {
+      root.setAttribute('data-custom-filter', 'true');
+    } else {
+      root.removeAttribute('data-custom-filter');
+    }
   };
 
   useEffect(() => {

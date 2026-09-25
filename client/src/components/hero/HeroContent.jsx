@@ -31,7 +31,7 @@ export default function HeroContent({ heroData = {} }) {
       { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
       "-=0.4"
     )
-    .fromTo('.hero-buttons button',
+    .fromTo('.hero-buttons a, .hero-buttons button',
       { opacity: 0, y: 20 },
       { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power3.out' },
       "-=0.4"

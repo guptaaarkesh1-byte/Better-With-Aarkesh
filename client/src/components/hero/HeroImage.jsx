@@ -12,16 +12,10 @@ export default function HeroImage({
   const imageRef = useRef(null);
 
   useGSAP(() => {
-    // Reveal animation
+    // Simple smooth fade-in — no scale movement
     gsap.fromTo(container.current,
-      { clipPath: 'polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)' },
-      { clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)', duration: 1.5, ease: 'power4.inOut', delay: 0.2 }
-    );
-
-    // Initial scale down effect for the image inside the reveal
-    gsap.fromTo(imageRef.current,
-      { scale: 1.2 },
-      { scale: 1, duration: 2, ease: 'power3.out', delay: 0.2 }
+      { opacity: 0 },
+      { opacity: 1, duration: 1.2, ease: 'power1.inOut', delay: 0 }
     );
   }, { scope: container, dependencies: [bgImageUrl] });
 
@@ -38,7 +32,7 @@ export default function HeroImage({
         ref={imageRef}
         src={bgImageUrl || DEFAULT_HERO_IMG}
         alt="Aarkesh - Life Coach"
-        className="w-full h-full object-cover object-center filter contrast-[1.05] brightness-90 saturate-[0.85] will-change-transform"
+        className="w-full h-full object-cover object-center filter contrast-[1.05] brightness-90 saturate-[0.85]"
       />
 
       {/* Heavy gradient on the left side so text is readable */}

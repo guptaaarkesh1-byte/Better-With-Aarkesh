@@ -5,6 +5,7 @@ import {
 } from '@phosphor-icons/react';
 import { Link, useNavigate } from 'react-router-dom';
 import bookingBg from '../../assets/images/booking_bg_lamp.webp';
+import defaultHeroImg from '../../assets/hero.webp';
 import LoginModal from '../layout/LoginModal';
 import PolicyModal from '../ui/PolicyModal';
 import { generateGoogleCalendarLink } from '../../utils/calendar';
@@ -196,9 +197,9 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
           <div className="relative h-64 md:h-auto md:col-span-3 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-[#0f0f0f] to-transparent z-10" />
             <img 
-              src={settings.cardImageUrl || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1287&auto=format&fit=crop"} 
+              src={(!settings.cardImageUrl || settings.cardImageUrl.includes('images.unsplash.com/photo-1506794778202-cad84cf45f1d')) ? defaultHeroImg : settings.cardImageUrl} 
               alt="Peaceful desk" 
-              className="absolute inset-0 w-full h-full object-cover object-center opacity-70 scale-105 filter contrast-[1.05] brightness-90 saturate-[0.85]"
+              className="absolute inset-0 w-full h-full object-cover object-center opacity-70 scale-105"
             />
           </div>
 

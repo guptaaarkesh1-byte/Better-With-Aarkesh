@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
 import defaultBgImg from '../../assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.webp';
 import { Sparkle, SunDim, TextT, Coffee, Circle } from '@phosphor-icons/react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const DEFAULT_THINK_DATA = {
   eyebrow: 'MY PHILOSOPHY',
@@ -16,16 +14,8 @@ const DEFAULT_THINK_DATA = {
 };
 
 export default function ThinkPrinciple() {
-  const [data, setData] = useState(DEFAULT_THINK_DATA);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/home-settings/principles`)
-      .then(res => res.ok ? res.json() : null)
-      .then(d => {
-        if (d?.think) setData(prev => ({ ...prev, ...d.think }));
-      })
-      .catch(() => {});
-  }, []);
+  const customData = usePrinciplesData('think');
+  const data = { ...DEFAULT_THINK_DATA, ...customData };
 
   const eyebrow = data.eyebrow || 'MY PHILOSOPHY';
   const headlineWhite = data.title || 'THINK';
