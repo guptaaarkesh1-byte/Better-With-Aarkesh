@@ -16,8 +16,6 @@ export default function NotificationsTab() {
   const [toggles, setToggles] = useState({
     emailReminders: true,
     emailChanges: true,
-    emailNotes: true,
-    emailUpdates: false,
   });
 
   const toggleHandler = (key) => {
@@ -44,14 +42,6 @@ export default function NotificationsTab() {
           <div className="flex items-center justify-between">
             <span className="font-serif text-white/90">Changes to an appointment</span>
             <Toggle isOn={toggles.emailChanges} onToggle={() => toggleHandler('emailChanges')} />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="font-serif text-white/90">Coach's Notes added</span>
-            <Toggle isOn={toggles.emailNotes} onToggle={() => toggleHandler('emailNotes')} />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="font-serif text-white/90">New Perspectives and occasional updates</span>
-            <Toggle isOn={toggles.emailUpdates} onToggle={() => toggleHandler('emailUpdates')} />
           </div>
         </div>
       </div>
