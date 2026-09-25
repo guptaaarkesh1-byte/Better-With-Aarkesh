@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Info } from '@phosphor-icons/react';
 
 // Reusable toggle switch component
 const Toggle = ({ isOn, onToggle }) => (
@@ -19,9 +18,6 @@ export default function NotificationsTab() {
     emailChanges: true,
     emailNotes: true,
     emailUpdates: false,
-    waReminders: true,
-    waChanges: true,
-    waNotes: false,
   });
 
   const toggleHandler = (key) => {
@@ -58,46 +54,6 @@ export default function NotificationsTab() {
             <Toggle isOn={toggles.emailUpdates} onToggle={() => toggleHandler('emailUpdates')} />
           </div>
         </div>
-      </div>
-
-      {/* WHATSAPP SECTION */}
-      <div className="mb-10">
-        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-6 block">
-          WHATSAPP
-        </span>
-        <div className="flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <span className="font-serif text-white/90">Upcoming conversation reminders</span>
-            <Toggle isOn={toggles.waReminders} onToggle={() => toggleHandler('waReminders')} />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="font-serif text-white/90">Changes to an appointment</span>
-            <Toggle isOn={toggles.waChanges} onToggle={() => toggleHandler('waChanges')} />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="font-serif text-white/90">Coach's Notes added</span>
-            <Toggle isOn={toggles.waNotes} onToggle={() => toggleHandler('waNotes')} />
-          </div>
-        </div>
-      </div>
-
-      {/* Reminder Timing */}
-      <div className="flex flex-col md:flex-row md:items-center gap-6 mb-6">
-        <span className="font-serif text-white/70">Reminder timing</span>
-        <div className="flex gap-4">
-          <button className="px-6 py-2 border border-[#c79c6e] text-[#c79c6e] bg-[#c79c6e]/10 rounded text-[0.7rem] uppercase tracking-widest font-medium transition-colors">
-            24 hours before
-          </button>
-          <button className="px-6 py-2 border border-white/20 text-white/60 hover:text-white rounded text-[0.7rem] uppercase tracking-widest font-medium transition-colors">
-            2 hours before
-          </button>
-        </div>
-      </div>
-
-      {/* Info Message */}
-      <div className="flex items-start gap-3 text-white/60 font-sans text-xs leading-relaxed mb-10">
-        <Info size={16} className="shrink-0 mt-0.5" />
-        <p>Essential booking confirmations may still be sent when required.</p>
       </div>
 
       {/* Action Buttons */}
