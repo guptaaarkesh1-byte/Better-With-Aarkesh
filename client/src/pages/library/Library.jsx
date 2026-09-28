@@ -66,7 +66,7 @@ export default function Library() {
       case 'relationships': return { bg: '#faebf7', color: '#3d1b37' };
       case 'self': return { bg: '#f0eee8', color: '#111010' };
       case 'change': return { bg: '#e5f2e8', color: '#2f4a34' };
-      case 'decisions': return { bg: '#faece6', color: '#802673' };
+      case 'decisions': return { bg: '#faece6', color: '#c85628' };
       case 'difficult-people': return { bg: '#f6eaf4', color: '#a64117' };
       case 'communication': return { bg: '#e8e6e8', color: '#141314' };
       default: return { bg: '#f0eee8', color: '#111010' };
@@ -127,8 +127,8 @@ export default function Library() {
           --self-ink: #111010;
           --change: #2f4a34;
           --change-ink: #e9f0e6;
-          --dec: #802673;
-          --dec-ink: #2b1208;
+          --dec: #c85628;
+          --dec-ink: #ffffff;
           --diff: #f0d9c9;
           --diff-ink: #2b1208;
           --comm: #141314;
@@ -577,13 +577,13 @@ export default function Library() {
         .library-root .cat-cloud-pill.p-dec {
           background: #f0ded6;
           color: #2b1208;
-          border-color: rgba(128, 38, 115, 0.3);
+          border-color: rgba(200, 86, 40, 0.3);
         }
         .library-root .cat-cloud-pill.p-dec:hover {
           background: var(--dec);
           color: #fff;
           transform: scale(1.06) translateY(-3px);
-          box-shadow: 0 10px 22px -4px rgba(128, 38, 115, 0.4);
+          box-shadow: 0 10px 22px -4px rgba(200, 86, 40, 0.4);
         }
 
         .library-root .cat-cloud-pill.p-diff {
