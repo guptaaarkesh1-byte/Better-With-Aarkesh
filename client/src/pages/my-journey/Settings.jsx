@@ -27,19 +27,8 @@ export default function Settings() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white select-none relative font-sans overflow-x-hidden pt-24 sm:pt-32 pb-16 sm:pb-24">
+    <div className="w-full min-h-screen bg-[#f5f1e8] text-[#111010] select-none relative font-sans overflow-x-hidden pt-28 sm:pt-36 pb-16 sm:pb-24">
       
-      {/* Background - Fixed while scrolling */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <img 
-          src={bgImage} 
-          alt="Dark Library Background" 
-          className="w-full h-full object-cover object-center opacity-40"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/80 to-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10" />
-      </div>
-
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col md:flex-row gap-8 md:gap-12 lg:gap-24">
         
         {/* Sidebar */}
@@ -47,19 +36,19 @@ export default function Settings() {
           <div className="mb-6 md:mb-12">
             <button 
               onClick={() => navigate('/my-journey')}
-              className="flex items-center gap-2 text-white/60 hover:text-white font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium transition-colors mb-4 sm:mb-8"
+              className="flex items-center gap-2 text-[#7a756b] hover:text-[#802673] font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold transition-colors mb-4 sm:mb-8 cursor-pointer"
             >
               <CaretLeft size={14} weight="bold" /> BACK
             </button>
-            <div className="flex items-center gap-2 text-white/50 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-medium mb-3 sm:mb-4">
-              <span className="text-[#c79c6e]">MY JOURNEY</span>
+            <div className="flex items-center gap-2 text-[#7a756b] font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-bold mb-3 sm:mb-4">
+              <span className="text-[#802673]">MY JOURNEY</span>
               <span>/</span>
-              <span className="text-white">SETTINGS</span>
+              <span className="text-[#111010]">SETTINGS</span>
             </div>
-            <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white tracking-tight leading-[1.15] mb-2">
+            <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-[#111010] tracking-tight leading-[1.15] mb-2 font-medium">
               Profile & Settings
             </h1>
-            <p className="font-sans text-white/60 text-xs tracking-wide">
+            <p className="font-sans text-[#555047] text-xs sm:text-sm tracking-wide font-light">
               {activeTab === 'PROFILE' && "Manage your details, preferences and account."}
               {activeTab === 'NOTIFICATIONS' && "Manage how and when you would like to hear from us."}
               {activeTab === 'SECURITY' && "Contribute to your account and understand what remains private."}
@@ -69,33 +58,33 @@ export default function Settings() {
           <div className="flex flex-row md:flex-col overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden gap-2 pb-2 md:pb-0">
             <button 
               onClick={() => handleTabChange('PROFILE')}
-              className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-all shrink-0 md:shrink ${
+              className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shrink-0 md:shrink cursor-pointer ${
                 activeTab === 'PROFILE' 
-                  ? 'border border-[#c79c6e] text-[#c79c6e] bg-[#c79c6e]/5 shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
-                  : 'border border-transparent text-white/50 hover:text-white hover:bg-white/5'
+                  ? 'border border-[#802673] text-[#802673] bg-[#f6eaf4] shadow-xs' 
+                  : 'border border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5'
               }`}
             >
-              <User size={16} weight={activeTab === 'PROFILE' ? 'regular' : 'light'} /> PROFILE
+              <User size={16} weight={activeTab === 'PROFILE' ? 'bold' : 'regular'} /> PROFILE
             </button>
             <button 
               onClick={() => handleTabChange('NOTIFICATIONS')}
-              className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-all shrink-0 md:shrink ${
+              className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shrink-0 md:shrink cursor-pointer ${
                 activeTab === 'NOTIFICATIONS' 
-                  ? 'border border-[#c79c6e] text-[#c79c6e] bg-[#c79c6e]/5 shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
-                  : 'border border-transparent text-white/50 hover:text-white hover:bg-white/5'
+                  ? 'border border-[#802673] text-[#802673] bg-[#f6eaf4] shadow-xs' 
+                  : 'border border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5'
               }`}
             >
-              <Bell size={16} weight={activeTab === 'NOTIFICATIONS' ? 'regular' : 'light'} /> NOTIFICATIONS
+              <Bell size={16} weight={activeTab === 'NOTIFICATIONS' ? 'bold' : 'regular'} /> NOTIFICATIONS
             </button>
             <button 
               onClick={() => handleTabChange('SECURITY')}
-              className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-medium transition-all shrink-0 md:shrink ${
+              className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shrink-0 md:shrink cursor-pointer ${
                 activeTab === 'SECURITY' 
-                  ? 'border border-[#c79c6e] text-[#c79c6e] bg-[#c79c6e]/5 shadow-[0_0_20px_rgba(199,156,110,0.1)]' 
-                  : 'border border-transparent text-white/50 hover:text-white hover:bg-white/5'
+                  ? 'border border-[#802673] text-[#802673] bg-[#f6eaf4] shadow-xs' 
+                  : 'border border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5'
               }`}
             >
-              <LockKey size={16} weight={activeTab === 'SECURITY' ? 'regular' : 'light'} /> SECURITY & PRIVACY
+              <LockKey size={16} weight={activeTab === 'SECURITY' ? 'bold' : 'regular'} /> SECURITY & PRIVACY
             </button>
           </div>
         </div>

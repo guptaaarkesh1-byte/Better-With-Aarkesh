@@ -112,7 +112,7 @@ export default function Footer() {
   return (
     <footer className="w-full bg-[#ede7d8] border-t border-black/10 pt-16 sm:pt-24 pb-12 relative z-30 select-none overflow-hidden">
       {/* Subtle Background Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-[#c9542f]/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-[#802673]/5 rounded-full blur-[140px] pointer-events-none" />
 
       <Container className="relative z-10 flex flex-col gap-12 sm:gap-16">
         
@@ -122,11 +122,11 @@ export default function Footer() {
           {/* ─── COLUMN 1: Brand & Bio ─── */}
           <div className="w-full lg:w-[380px] shrink-0 flex flex-col items-start gap-5 pr-0 lg:pr-6">
             <Link to="/" className="group inline-flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#faede4] border border-[#f0c8b8] flex items-center justify-center text-[#c9542f] group-hover:scale-105 transition-transform shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-[#f6eaf4] border border-[#e8c4e2] flex items-center justify-center text-[#802673] group-hover:scale-105 transition-transform shadow-xs">
                 <Sparkle size={18} weight="fill" />
               </div>
               <span className="font-serif text-2xl sm:text-3xl text-[#111010] tracking-tight leading-none">
-                BetterWith<em className="text-[#c9542f] not-italic font-normal italic">Aarkesh</em>
+                BetterWith<em className="text-[#802673] not-italic font-normal italic">Aarkesh</em>
               </span>
             </Link>
 
@@ -137,10 +137,10 @@ export default function Footer() {
             {/* Direct Contact Email */}
             {brandSettings.brandEmail && (
               <div className="flex items-center gap-2.5 text-sm sm:text-base font-sans text-[#2b2723] pt-1">
-                <EnvelopeSimple size={18} className="text-[#c9542f] shrink-0" weight="bold" />
+                <EnvelopeSimple size={18} className="text-[#802673] shrink-0" weight="bold" />
                 <a 
                   href={`mailto:${brandSettings.brandEmail}`}
-                  className="hover:text-[#c9542f] transition-colors font-medium"
+                  className="hover:text-[#802673] transition-colors font-medium"
                 >
                   {brandSettings.brandEmail}
                 </a>
@@ -156,7 +156,7 @@ export default function Footer() {
                     href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#c9542f] hover:border-[#c9542f]/40 hover:bg-[#faede4] transition-all text-base shadow-xs"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#802673] hover:border-[#802673]/40 hover:bg-[#f6eaf4] transition-all text-base shadow-xs"
                     aria-label={s.label || s.platform}
                     title={s.label || s.platform}
                   >
@@ -169,7 +169,7 @@ export default function Footer() {
                     href="https://instagram.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#c9542f] hover:border-[#c9542f]/40 hover:bg-[#faede4] transition-all text-base shadow-xs"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#802673] hover:border-[#802673]/40 hover:bg-[#f6eaf4] transition-all text-base shadow-xs"
                     aria-label="Instagram"
                   >
                     <InstagramLogo size={18} weight="light" />
@@ -178,7 +178,7 @@ export default function Footer() {
                     href="https://youtube.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#c9542f] hover:border-[#c9542f]/40 hover:bg-[#faede4] transition-all text-base shadow-xs"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#802673] hover:border-[#802673]/40 hover:bg-[#f6eaf4] transition-all text-base shadow-xs"
                     aria-label="YouTube"
                   >
                     <YoutubeLogo size={18} weight="light" />
@@ -187,7 +187,7 @@ export default function Footer() {
                     href="https://x.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#c9542f] hover:border-[#c9542f]/40 hover:bg-[#faede4] transition-all text-base shadow-xs"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#802673] hover:border-[#802673]/40 hover:bg-[#f6eaf4] transition-all text-base shadow-xs"
                     aria-label="X (Twitter)"
                   >
                     <XLogo size={18} weight="light" />
@@ -196,7 +196,7 @@ export default function Footer() {
                     href="https://linkedin.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#c9542f] hover:border-[#c9542f]/40 hover:bg-[#faede4] transition-all text-base shadow-xs"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-black/10 flex items-center justify-center text-[#111010] hover:text-[#802673] hover:border-[#802673]/40 hover:bg-[#f6eaf4] transition-all text-base shadow-xs"
                     aria-label="LinkedIn"
                   >
                     <LinkedinLogo size={18} weight="light" />
@@ -213,7 +213,7 @@ export default function Footer() {
                 key={col.title} 
                 className="flex flex-col items-start gap-4 min-w-[150px] sm:min-w-[180px]"
               >
-                <h3 className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.22em] font-bold text-[#c9542f] truncate w-full">
+                <h3 className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.22em] font-bold text-[#802673] truncate w-full">
                   {col.title}
                 </h3>
                 
@@ -230,7 +230,7 @@ export default function Footer() {
                             href={link.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hover:text-[#c9542f] hover:underline underline-offset-4 transition-colors block truncate"
+                            className="hover:text-[#802673] hover:underline underline-offset-4 transition-colors block truncate"
                           >
                             {link.label}
                           </a>
@@ -243,7 +243,7 @@ export default function Footer() {
                         <li key={link.label || link.url} className="truncate">
                           <a 
                             href={link.url}
-                            className="hover:text-[#c9542f] hover:underline underline-offset-4 transition-colors block truncate"
+                            className="hover:text-[#802673] hover:underline underline-offset-4 transition-colors block truncate"
                           >
                             {link.label}
                           </a>
@@ -255,7 +255,7 @@ export default function Footer() {
                       <li key={link.label || link.url} className="truncate">
                         <Link 
                           to={link.url} 
-                          className="hover:text-[#c9542f] hover:underline underline-offset-4 transition-colors block truncate"
+                          className="hover:text-[#802673] hover:underline underline-offset-4 transition-colors block truncate"
                         >
                           {link.label}
                         </Link>

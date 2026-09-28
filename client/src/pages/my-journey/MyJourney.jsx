@@ -10,18 +10,17 @@ import ClosingNavigation from './components/ClosingNavigation';
 
 export default function MyJourney() {
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white select-none relative font-sans">
+    <div className="w-full min-h-screen bg-[#f5f1e8] text-[#111010] select-none relative font-sans">
       
-      {/* Background - Fixed while scrolling */}
-      <div className="fixed inset-0 z-0 pointer-events-none transform-gpu will-change-transform">
+      {/* Background - Clean warm ambient layer */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <img 
           src={bgImage} 
           alt="Library Background" 
-          className="w-full h-full object-cover object-center opacity-70"
+          className="w-full h-full object-cover object-center opacity-15"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[#f5f1e8]/85" />
       </div>
 
       <OverviewSection />

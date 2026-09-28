@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Container from '../components/ui/Container';
 import { 
   Quotes, 
@@ -78,37 +78,42 @@ export default function TestimonialsPage() {
   // ONLY show exact testimonials saved in admin / database (fallback to initial only before fetch)
   const testimonials = (data?.items && Array.isArray(data.items)) ? data.items : DEFAULT_TESTIMONIALS;
 
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/#testimonials');
-    }
-  };
 
   return (
-    <div className="min-h-screen bg-[#060606] text-white pt-28 pb-20 relative overflow-hidden">
+    <div className="min-h-screen bg-[#f5f1e8] text-[#111010] pt-28 pb-20 relative overflow-hidden">
       
       {/* Background ambient lighting */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#c79c6e]/[0.04] rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute bottom-40 right-10 w-[500px] h-[500px] bg-[#c79c6e]/[0.03] rounded-full blur-[180px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#802673]/[0.03] rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute bottom-40 right-10 w-[500px] h-[500px] bg-[#ede7d8] rounded-full blur-[180px] pointer-events-none" />
 
       <Container className="relative z-10">
         
         {/* Navigation / Back Button Row & Heading */}
         <div className="mb-10 sm:mb-12 flex flex-col gap-6">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-white/10 hover:border-[#c79c6e]/60 bg-white/[0.03] hover:bg-[#c79c6e]/10 text-white/80 hover:text-[#f4eedf] text-xs uppercase tracking-[0.18em] font-medium transition-all duration-300 group w-fit"
+          <Link
+            to="/#testimonials"
+            className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-black/10 hover:border-[#802673]/40 bg-white/90 hover:bg-white text-[#111010] hover:text-[#802673] text-xs uppercase tracking-[0.18em] font-medium transition-all duration-300 shadow-xs group w-fit cursor-pointer"
           >
-            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-200 text-[#c79c6e]" />
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-200 text-[#802673]" />
             <span>Back to Home</span>
-          </button>
+          </Link>
 
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-white font-normal tracking-tight">
-            Testimonials
-          </h1>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <div className="h-[1.5px] w-6 bg-[#802673]" />
+              <span className="font-sans text-xs uppercase tracking-[0.25em] font-bold text-[#802673]">
+                REAL STORIES. REAL CHANGE.
+              </span>
+            </div>
+            
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#111010] font-medium tracking-tight">
+              Testimonials & <span className="text-[#802673] italic font-light">Stories</span>
+            </h1>
+            
+            <p className="text-[#555047] font-serif text-lg sm:text-xl font-light max-w-xl mt-1 leading-relaxed">
+              Real reflections and transformative journeys from people who decided to do the work.
+            </p>
+          </div>
         </div>
 
         {/* Testimonials Grid */}
@@ -116,46 +121,46 @@ export default function TestimonialsPage() {
           {testimonials.map((t, index) => {
             const initial = t.name ? t.name.charAt(0).toUpperCase() : 'C';
             const colors = [
-              'bg-blue-900/80', 
-              'bg-purple-900/80', 
-              'bg-green-900/80', 
-              'bg-orange-900/80', 
-              'bg-teal-900/80', 
-              'bg-rose-900/80'
+              'bg-[#802673]', 
+              'bg-[#3d1b37]', 
+              'bg-[#2f4a34]', 
+              'bg-[#a64117]', 
+              'bg-[#111010]', 
+              'bg-[#802673]'
             ];
             const color = t.color || colors[index % colors.length];
 
             return (
               <div 
                 key={index}
-                className="flex flex-col justify-between bg-[#0e0c0a] border border-white/10 hover:border-[#c79c6e]/50 rounded-xl p-6 sm:p-7 transition-all duration-300 group hover:shadow-[0_12px_36px_rgba(0,0,0,0.7)]"
+                className="flex flex-col justify-between bg-white/95 border border-black/8 hover:border-[#802673]/35 rounded-2xl p-6 sm:p-7 transition-all duration-300 group hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_32px_rgba(128,38,115,0.08)] hover:-translate-y-1"
               >
                 <div>
                   {/* Top Row: Quote Icon */}
-                  <div className="mb-4">
-                    <Quotes className="text-[#c79c6e] text-2xl opacity-90" weight="fill" />
+                  <div className="mb-3">
+                    <Quotes className="text-[#802673] text-2xl opacity-90 group-hover:scale-110 transition-transform duration-300" weight="fill" />
                   </div>
 
                   {/* Quote Body */}
-                  <p className="font-serif text-white/90 font-light text-base sm:text-[1.02rem] leading-relaxed mb-6">
+                  <p className="font-serif text-[#2b2723] font-light text-base sm:text-[1.02rem] leading-relaxed mb-6">
                     "{t.quote}"
                   </p>
                 </div>
 
                 {/* Author Info */}
-                <div className="flex items-center gap-3.5 pt-4 border-t border-white/10 mt-auto">
+                <div className="flex items-center gap-3.5 pt-4 border-t border-black/6 mt-auto">
                   {t.image ? (
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[#c79c6e]/40 shrink-0 bg-black shadow-inner">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[#802673]/30 shrink-0 bg-white shadow-xs">
                       <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center border border-white/20 shrink-0 shadow-inner`}>
+                    <div className={`w-10 h-10 rounded-full ${color} text-white flex items-center justify-center shrink-0 shadow-xs`}>
                       <span className="font-serif text-white text-base font-medium">{initial}</span>
                     </div>
                   )}
                   <div className="flex flex-col">
-                    <span className="font-sans text-[#f6cb90] text-sm font-semibold">{t.name}</span>
-                    <span className="font-sans text-white/55 text-xs uppercase tracking-wider mt-0.5">{t.role}</span>
+                    <span className="font-sans text-[#111010] text-sm sm:text-[0.94rem] font-bold">{t.name}</span>
+                    <span className="font-sans text-[#7a756b] text-xs uppercase tracking-wider mt-0.5">{t.role}</span>
                   </div>
                 </div>
               </div>

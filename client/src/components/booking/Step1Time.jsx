@@ -193,7 +193,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
         
         {/* Left Column - Calendar */}
         <div className="flex-1" onClick={(e) => e.stopPropagation()}>
-          <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-3">
+          <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-3">
             {settings?.dateHeading || 'CHOOSE A DATE'}
           </h3>
           
@@ -206,10 +206,10 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                 <div className="relative">
                   <button 
                     onClick={() => setActiveDropdown(activeDropdown === 'month' ? null : 'month')}
-                    className="flex items-center gap-1.5 text-[#111010] hover:text-[#c9542f] transition-colors text-base sm:text-lg font-serif font-medium focus:outline-none cursor-pointer"
+                    className="flex items-center gap-1.5 text-[#111010] hover:text-[#802673] transition-colors text-base sm:text-lg font-serif font-medium focus:outline-none cursor-pointer"
                   >
                     {monthNames[currentMonth]}
-                    <CaretDown size={14} className={`text-[#c9542f] transition-transform ${activeDropdown === 'month' ? 'rotate-180' : ''}`} />
+                    <CaretDown size={14} className={`text-[#802673] transition-transform ${activeDropdown === 'month' ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {activeDropdown === 'month' && (
@@ -229,7 +229,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                             disabled={isPast}
                             className={`px-4 py-2 text-left text-xs sm:text-sm font-sans transition-colors ${
                               isPast ? 'text-black/20 cursor-not-allowed' : 
-                              currentMonth === idx ? 'text-[#c9542f] bg-[#faede4] font-semibold' : 'text-[#111010] hover:bg-[#faede4]/60'
+                              currentMonth === idx ? 'text-[#802673] bg-[#f6eaf4] font-semibold' : 'text-[#111010] hover:bg-[#f6eaf4]/60'
                             }`}
                           >
                             {m}
@@ -244,10 +244,10 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                 <div className="relative">
                   <button 
                     onClick={() => setActiveDropdown(activeDropdown === 'year' ? null : 'year')}
-                    className="flex items-center gap-1.5 text-[#111010] hover:text-[#c9542f] transition-colors text-base sm:text-lg font-serif font-medium focus:outline-none cursor-pointer"
+                    className="flex items-center gap-1.5 text-[#111010] hover:text-[#802673] transition-colors text-base sm:text-lg font-serif font-medium focus:outline-none cursor-pointer"
                   >
                     {currentYear}
-                    <CaretDown size={14} className={`text-[#c9542f] transition-transform ${activeDropdown === 'year' ? 'rotate-180' : ''}`} />
+                    <CaretDown size={14} className={`text-[#802673] transition-transform ${activeDropdown === 'year' ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {activeDropdown === 'year' && (
@@ -264,7 +264,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                             setActiveDropdown(null);
                           }}
                           className={`px-4 py-2 text-left text-xs sm:text-sm font-sans transition-colors ${
-                            currentYear === y ? 'text-[#c9542f] bg-[#faede4] font-semibold' : 'text-[#111010] hover:bg-[#faede4]/60'
+                            currentYear === y ? 'text-[#802673] bg-[#f6eaf4] font-semibold' : 'text-[#111010] hover:bg-[#f6eaf4]/60'
                           }`}
                         >
                           {y}
@@ -275,13 +275,13 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 text-[#c9542f]">
+              <div className="flex items-center gap-3 text-[#802673]">
                 <CaretLeft 
-                  className={`p-1 text-xl transition-colors rounded-lg ${currentYear === today.getFullYear() && currentMonth === today.getMonth() ? 'text-black/15 cursor-not-allowed' : 'cursor-pointer hover:bg-[#faede4] hover:text-[#111010]'}`} 
+                  className={`p-1 text-xl transition-colors rounded-lg ${currentYear === today.getFullYear() && currentMonth === today.getMonth() ? 'text-black/15 cursor-not-allowed' : 'cursor-pointer hover:bg-[#f6eaf4] hover:text-[#111010]'}`} 
                   onClick={handlePrevMonth} 
                 />
                 <CaretRight 
-                  className="p-1 text-xl cursor-pointer hover:bg-[#faede4] hover:text-[#111010] transition-colors rounded-lg" 
+                  className="p-1 text-xl cursor-pointer hover:bg-[#f6eaf4] hover:text-[#111010] transition-colors rounded-lg" 
                   onClick={handleNextMonth} 
                 />
               </div>
@@ -318,8 +318,8 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                       disabled={isPast}
                       className={`w-8 h-8 rounded-lg flex items-center justify-center font-sans text-xs sm:text-sm transition-all cursor-pointer
                         ${isPast ? 'text-black/20 cursor-not-allowed' : ''}
-                        ${!isPast && isSelected ? 'bg-[#c9542f] text-white font-bold shadow-xs' : ''}
-                        ${!isPast && !isSelected ? 'text-[#111010] hover:bg-[#faede4] hover:text-[#c9542f] font-normal' : ''}
+                        ${!isPast && isSelected ? 'bg-[#802673] text-white font-bold shadow-xs' : ''}
+                        ${!isPast && !isSelected ? 'text-[#111010] hover:bg-[#f6eaf4] hover:text-[#802673] font-normal' : ''}
                       `}
                     >
                       {day}
@@ -341,7 +341,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
         {/* Right Column - Times */}
         <div className="flex-1 mt-4 sm:mt-6 lg:mt-0">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f]">
+            <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673]">
               {settings?.timeHeading || 'CHOOSE A TIME'}
             </h3>
             {times.length > 0 && !isLoadingSlots && (
@@ -362,8 +362,8 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
             )}
             
             {isLoadingSlots && (
-              <div className="text-[#c9542f] text-xs sm:text-sm font-medium p-8 text-center border border-black/10 rounded-2xl bg-white/60 flex flex-col items-center gap-2">
-                <div className="w-5 h-5 border-2 border-[#c9542f]/20 border-t-[#c9542f] rounded-full animate-spin mb-1" />
+              <div className="text-[#802673] text-xs sm:text-sm font-medium p-8 text-center border border-black/10 rounded-2xl bg-white/60 flex flex-col items-center gap-2">
+                <div className="w-5 h-5 border-2 border-[#802673]/20 border-t-[#802673] rounded-full animate-spin mb-1" />
                 Finding available time slots...
               </div>
             )}
@@ -396,7 +396,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                           {/* Period Header */}
                           <div className="flex items-center justify-between px-1 pb-1 border-b border-black/10">
                             <div className="flex items-center gap-1.5 sm:gap-2">
-                              <Icon className={`text-sm sm:text-base text-[#c9542f]`} weight="bold" />
+                              <Icon className={`text-sm sm:text-base text-[#802673]`} weight="bold" />
                               <span className="font-sans text-[0.68rem] sm:text-[0.72rem] uppercase tracking-[0.16em] font-bold text-[#111010]">
                                 {config.label}
                               </span>
@@ -404,7 +404,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                                 • {config.sub}
                               </span>
                             </div>
-                            <span className="text-[0.58rem] uppercase tracking-wider text-[#c9542f] bg-[#faede4] px-2 py-0.5 rounded-md border border-[#f0c8b8] font-bold">
+                            <span className="text-[0.58rem] uppercase tracking-wider text-[#802673] bg-[#f6eaf4] px-2 py-0.5 rounded-md border border-[#e8c4e2] font-bold">
                               {periodSlots.length} {periodSlots.length === 1 ? 'slot' : 'slots'}
                             </span>
                           </div>
@@ -420,19 +420,19 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                                   onClick={() => setSelectedTime(time)}
                                   className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-left transition-all flex items-center justify-between group cursor-pointer
                                     ${isSelected 
-                                      ? 'bg-[#faede4] border-2 border-[#c9542f] text-[#c9542f] shadow-xs' 
-                                      : 'bg-white border-black/10 text-[#111010] hover:border-[#c9542f] hover:bg-[#faede4]/50'
+                                      ? 'bg-[#f6eaf4] border-2 border-[#802673] text-[#802673] shadow-xs' 
+                                      : 'bg-white border-black/10 text-[#111010] hover:border-[#802673] hover:bg-[#f6eaf4]/50'
                                     }
                                   `}
                                 >
                                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                                    <Clock className={`text-xs shrink-0 ${isSelected ? 'text-[#c9542f]' : 'text-[#7a756b] group-hover:text-[#c9542f] transition-colors'}`} />
-                                    <span className={`text-xs sm:text-sm font-sans tracking-wide truncate ${isSelected ? 'font-bold text-[#c9542f]' : 'font-medium'}`}>
+                                    <Clock className={`text-xs shrink-0 ${isSelected ? 'text-[#802673]' : 'text-[#7a756b] group-hover:text-[#802673] transition-colors'}`} />
+                                    <span className={`text-xs sm:text-sm font-sans tracking-wide truncate ${isSelected ? 'font-bold text-[#802673]' : 'font-medium'}`}>
                                       {time}
                                     </span>
                                   </div>
                                   {isSelected && (
-                                    <CheckCircle className="text-[#c9542f] text-base shrink-0 ml-1" weight="fill" />
+                                    <CheckCircle className="text-[#802673] text-base shrink-0 ml-1" weight="fill" />
                                   )}
                                 </button>
                               );
@@ -453,7 +453,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
       <div className="mt-8 pt-6 border-t border-black/10 flex flex-col-reverse md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
         
         <div className="flex items-center justify-center md:justify-start gap-2.5 sm:gap-3 text-[#555047]">
-          <CalendarBlank className="text-xl sm:text-2xl shrink-0 text-[#c9542f]" weight="light" />
+          <CalendarBlank className="text-xl sm:text-2xl shrink-0 text-[#802673]" weight="light" />
           <span className="font-sans text-[0.72rem] sm:text-[0.78rem] font-light text-center md:text-left">
             All sessions are 1-on-1 and last {data.sessionDuration || 60} minutes.
           </span>
@@ -463,9 +463,9 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
           {onBack && (
             <button
               onClick={onBack}
-              className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-black/15 font-sans text-xs sm:text-sm font-semibold tracking-wide text-[#111010] hover:bg-black/5 transition-all w-full md:w-auto cursor-pointer"
+              className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-black/10 hover:border-[#802673]/40 bg-white/90 hover:bg-white font-sans text-xs sm:text-sm font-semibold tracking-wide text-[#111010] transition-all w-full md:w-auto shadow-xs cursor-pointer"
             >
-              <CaretLeft className="text-base sm:text-lg" />
+              <CaretLeft className="text-base sm:text-lg text-[#802673]" />
               BACK
             </button>
           )}
@@ -476,7 +476,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
             className={`flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-bold tracking-wider uppercase transition-all w-full md:w-auto cursor-pointer
               ${(!selectedDay || !selectedTime) 
                 ? 'bg-black/5 text-black/30 border border-black/10 cursor-not-allowed' 
-                : 'bg-[#111010] text-white hover:bg-[#c9542f] shadow-md hover:-translate-y-0.5'
+                : 'bg-[#111010] text-white hover:bg-[#802673] shadow-md hover:-translate-y-0.5'
               }
             `}
           >

@@ -11,7 +11,7 @@ const DEFAULT_DECIDE_DATA = {
   description: "We help you align your values, weigh what matters, and choose the path you're willing to walk.",
   closingLine: '....Then we help you walk it.',
   buttonText: '',
-  bgImg: '/images/decide-intentionally.jpg'
+  bgImg: ''
 };
 
 export default function DecidePrinciple() {
@@ -24,7 +24,7 @@ export default function DecidePrinciple() {
   const paragraphs = [
     `<span class='italic text-xl lg:text-2xl leading-relaxed text-[#111010]'>${data?.highlight || 'Clarity without decision is just expensive loop.'}</span>`,
     `<span class='text-lg lg:text-xl leading-relaxed text-[#3d3832]'>${data?.description || "We help you align your values, weigh what matters, and choose the path you're willing to walk."}</span>`,
-    `<span class='text-[#c9542f] text-xl lg:text-2xl font-medium'>${data?.closingLine || '....Then we help you walk it.'}</span>`
+    `<span class='text-[#802673] text-xl lg:text-2xl font-medium'>${data?.closingLine || '....Then we help you walk it.'}</span>`
   ];
   const buttonText = data?.buttonText || '';
   const bgImg = data?.bgImg || defaultBgImg;

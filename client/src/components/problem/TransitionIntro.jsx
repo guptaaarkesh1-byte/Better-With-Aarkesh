@@ -48,11 +48,11 @@ export default function TransitionIntro({ problemData = {} }) {
       
       {/* Clean light background with subtle warm radial highlight */}
       <div className="absolute inset-0 z-0 pointer-events-none bg-[#f5f1e8]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(201,84,47,0.04)_0%,transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(128, 38, 115,0.04)_0%,transparent_70%)]" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center">
-        <span className="trans-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] mb-3 inline-block">
+        <span className="trans-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#802673] mb-3 inline-block">
           {transEyebrow}
         </span>
 
@@ -62,11 +62,11 @@ export default function TransitionIntro({ problemData = {} }) {
             <AnimatedText 
               text={transAccent} 
               tag="span" 
-              className="inline-block text-[#c9542f] italic font-light" 
+              className="inline-block text-[#802673] italic font-light" 
               delay={0.4} 
             />
             {/* Subtle underline for emphasis */}
-            <span className="absolute bottom-1 left-0 w-full h-[1.5px] bg-[#c9542f]/40" />
+            <span className="absolute bottom-1 left-0 w-full h-[1.5px] bg-[#802673]/40" />
           </span>
         </h2>
 

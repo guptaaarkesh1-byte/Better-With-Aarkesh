@@ -8,7 +8,7 @@ import Step3Confirm from '../components/booking/Step3Confirm';
 import BookingSuccess from '../components/booking/BookingSuccess';
 import BookingCancelled from '../components/booking/BookingCancelled';
 import LoginModal from '../components/layout/LoginModal';
-import bookingBg from '../assets/images/booking_bg_lamp.webp';
+import bookingBg from '../assets/images/booking_bg_lamp.png';
 
 export default function Booking() {
   const navigate = useNavigate();
@@ -516,15 +516,16 @@ export default function Booking() {
   return (
     <div className="flex-grow w-full relative flex flex-col pt-28 md:pt-36 lg:pt-40 pb-12 md:pb-16 bg-[#f5f1e8] text-[#111010]">
       
-      {/* Background Image Layer with Warm Cream Gradients */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-25">
+      {/* Background Image Layer with Warm Lamp Atmosphere */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <img 
           src={bookingSettings.general.bgImageUrl || bookingBg} 
-          alt="Desk lamp" 
-          className="w-full h-full object-cover object-left mix-blend-multiply"
-          style={{ opacity: (bookingSettings.general.overlayOpacity ? (100 - bookingSettings.general.overlayOpacity) / 100 : 0.4) }}
+          alt="Warm desk lamp coaching atmosphere" 
+          className="w-full h-full object-cover object-left md:object-left-top opacity-85 transition-opacity duration-700"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8]/60 via-transparent to-[#f5f1e8]/90" />
+        {/* Soft edge washes to blend seamlessly with theme while keeping lamp crystal clear */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f5f1e8]/20 to-[#f5f1e8]/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8]/30 via-transparent to-[#f5f1e8]/60" />
       </div>
 
       <div className="relative z-10 px-3 sm:px-6 md:px-8 w-full max-w-5xl mx-auto">
@@ -534,7 +535,7 @@ export default function Booking() {
           <div className="flex w-full mb-4">
             <button 
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 font-sans text-[0.68rem] uppercase tracking-widest text-[#7a756b] hover:text-[#c9542f] transition-colors cursor-pointer font-semibold"
+              className="flex items-center gap-2 font-sans text-[0.68rem] uppercase tracking-widest text-[#7a756b] hover:text-[#802673] transition-colors cursor-pointer font-semibold"
             >
               <ArrowLeft className="text-base" />
               BACK
@@ -544,9 +545,9 @@ export default function Booking() {
 
         {/* Course Student Free Sessions Active Banner */}
         {isLoggedIn && freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0 && (
-          <div className="mb-6 sm:mb-8 p-4 sm:p-5 rounded-2xl border border-[#f0c8b8] bg-[#faede4] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 shadow-sm">
+          <div className="mb-6 sm:mb-8 p-4 sm:p-5 rounded-2xl border border-[#e8c4e2] bg-[#f6eaf4] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 shadow-xs">
             <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-[#f0c8b8] flex items-center justify-center text-[#c9542f] shrink-0 mt-0.5 sm:mt-0 shadow-xs">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-[#e8c4e2] flex items-center justify-center text-[#802673] shrink-0 mt-0.5 sm:mt-0 shadow-xs">
                 <Sparkle size={18} weight="fill" className="sm:w-5 sm:h-5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -562,7 +563,7 @@ export default function Booking() {
               </div>
             </div>
             <div className="w-full sm:w-auto shrink-0 flex items-center justify-center sm:justify-end">
-              <span className="w-full sm:w-auto text-center text-[#c9542f] font-bold text-xs tracking-wider uppercase bg-white px-3.5 py-2 rounded-xl border border-[#f0c8b8] shadow-xs">
+              <span className="w-full sm:w-auto text-center text-[#802673] font-bold text-xs tracking-wider uppercase bg-white px-3.5 py-2 rounded-xl border border-[#e8c4e2] shadow-xs">
                 ₹0 Free Booking
               </span>
             </div>
@@ -571,7 +572,7 @@ export default function Booking() {
 
         {/* Header section based on step */}
         <div className="text-center mb-6 sm:mb-8">
-          <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] block mb-2">
+          <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#802673] block mb-2">
             {step === 1 && (bookingSettings.step1.chapterTag || 'CHAPTER 1 OF 3')}
             {step === 2 && (bookingSettings.step2.chapterTag || 'CHAPTER 2 OF 3')}
             {step === 3 && (bookingSettings.step3.chapterTag || 'CHAPTER 3 OF 3')}
@@ -581,7 +582,7 @@ export default function Booking() {
             {step === 2 && (bookingSettings.step2.title || "A Little About You")}
             {step === 3 && (bookingSettings.step3.title || "Confirm & Secure Your Session")}
           </h1>
-          <div className="h-[2px] w-10 bg-[#c9542f] mx-auto mb-3 sm:mb-4 rounded-full" />
+          <div className="h-[2px] w-10 bg-[#802673] mx-auto mb-3 sm:mb-4 rounded-full" />
           <p className="text-[#555047] text-sm sm:text-[0.95rem] font-light leading-relaxed max-w-lg mx-auto px-2">
             {step === 1 && (
               <>
@@ -620,10 +621,10 @@ export default function Booking() {
         </div>
 
         {/* Main Booking Card */}
-        <div className="bg-[#ede7d8]/70 backdrop-blur-md border border-black/10 rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-xl">
+        <div className="bg-[#f5f1e8]/95 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-[0_10px_35px_rgba(0,0,0,0.04)]">
           
           {/* Subtle top warm glow */}
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#c9542f]/40 to-transparent" />
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#802673]/40 to-transparent" />
           
           <div className="p-4 sm:p-6 md:p-10">
             <BookingStepper currentStep={step} />
@@ -671,8 +672,8 @@ export default function Booking() {
           <div className="flex items-center gap-2">
             {/* Lock Icon */}
             <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M11.6667 7.33333H2.33333C1.59695 7.33333 1 7.93029 1 8.66667V13.3333C1 14.0697 1.59695 14.6667 2.33333 14.6667H11.6667C12.403 14.6667 13 14.0697 13 13.3333V8.66667C13 7.93029 12.403 7.33333 11.6667 7.33333Z" stroke="#c9542f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M4.3335 7.33333V4.66667C4.3335 3.95942 4.61445 3.28115 5.11455 2.78105C5.61465 2.28095 6.29292 2 7.00016 2C7.70741 2 8.38568 2.28095 8.88578 2.78105C9.38588 3.28115 9.66683 3.95942 9.66683 4.66667V7.33333" stroke="#c9542f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M11.6667 7.33333H2.33333C1.59695 7.33333 1 7.93029 1 8.66667V13.3333C1 14.0697 1.59695 14.6667 2.33333 14.6667H11.6667C12.403 14.6667 13 14.0697 13 13.3333V8.66667C13 7.93029 12.403 7.33333 11.6667 7.33333Z" stroke="#802673" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4.3335 7.33333V4.66667C4.3335 3.95942 4.61445 3.28115 5.11455 2.78105C5.61465 2.28095 6.29292 2 7.00016 2C7.70741 2 8.38568 2.28095 8.88578 2.78105C9.38588 3.28115 9.66683 3.95942 9.66683 4.66667V7.33333" stroke="#802673" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             <span className="font-sans text-xs text-[#555047] font-medium">
               {bookingSettings.general.privacyNoteLine1 || 'Your information is private and only visible to me.'}

@@ -17,13 +17,14 @@ export default function MainLayout({ children }) {
     }
     
     lenisRef.current = new Lenis({
-      duration: 1.1,
+      duration: 0.85,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 1.5,
+      wheelMultiplier: 1.05,
+      touchMultiplier: 1.2,
+      autoRaf: false, // Critical to avoid dual ticker conflict with GSAP ticker
       infinite: false,
     });
 
@@ -38,7 +39,7 @@ export default function MainLayout({ children }) {
     };
 
     gsap.ticker.add(updateLenis);
-    gsap.ticker.lagSmoothing(0);
+    gsap.ticker.lagSmoothing(500, 33);
 
     return () => {
       gsap.ticker.remove(updateLenis);
@@ -47,12 +48,37 @@ export default function MainLayout({ children }) {
     };
   }, []);
 
-  // Handle route change scroll position and hash scrolling cleanly
+  // Handle route change and cross-page hash navigation accurately
   useEffect(() => {
-    // Kill stale ScrollTriggers from unmounted page to prevent detached pin spacers
-    ScrollTrigger.getAll().forEach(t => t.kill());
+    if (location.hash) {
+      const targetHash = location.hash;
+      const scrollToTarget = (immediate = false) => {
+        const element = document.querySelector(targetHash);
+        if (element) {
+          ScrollTrigger.refresh();
+          if (lenisRef.current) {
+            lenisRef.current.scrollTo(element, { 
+              offset: 0, 
+              duration: immediate ? 0 : 0.9, 
+              immediate: immediate 
+            });
+          } else {
+            element.scrollIntoView({ behavior: immediate ? 'auto' : 'smooth' });
+          }
+        }
+      };
 
-    if (!location.hash) {
+      // Multi-stage alignment ensuring accuracy after dynamic mounts & image layouts
+      const t1 = setTimeout(() => scrollToTarget(false), 80);
+      const t2 = setTimeout(() => scrollToTarget(false), 300);
+      const t3 = setTimeout(() => scrollToTarget(false), 650);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    } else {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
@@ -60,19 +86,6 @@ export default function MainLayout({ children }) {
         lenisRef.current.scrollTo(0, { immediate: true });
       }
       setTimeout(() => ScrollTrigger.refresh(), 100);
-    } else {
-      // Hash navigation with clean delay for DOM layout
-      setTimeout(() => {
-        ScrollTrigger.refresh();
-        const element = document.querySelector(location.hash);
-        if (element) {
-          if (lenisRef.current) {
-            lenisRef.current.scrollTo(element, { offset: -20, duration: 1.2 });
-          } else {
-            element.scrollIntoView({ behavior: 'smooth' });
-          }
-        }
-      }, 300);
     }
   }, [location.pathname, location.hash]);
 

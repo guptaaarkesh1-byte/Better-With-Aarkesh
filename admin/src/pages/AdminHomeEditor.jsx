@@ -1492,6 +1492,61 @@ export default function AdminHomeEditor() {
                       tip="Warm modern luxury consultation lounge. Subject on right."
                       overlayOpacity={currentGlobalOverlayOpacity}
                     />
+
+                    {/* Desktop Positioning & Zoom Controls */}
+                    <div className="bg-[#111111] border border-white/10 rounded-xl p-5 flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Desktop Image View Controls</span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between text-xs text-white/70">
+                          <span>Zoom (Scale)</span>
+                          <span className="text-[#c79c6e] font-mono">{currentCoachingProcess.imgScale || 105}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="70"
+                          max="180"
+                          step="1"
+                          value={currentCoachingProcess.imgScale || 105}
+                          onChange={(e) => handleSectionChange('imgScale', Number(e.target.value))}
+                          className="w-full accent-[#c79c6e] cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between text-xs text-white/70">
+                          <span>Horizontal Position (Left ↔ Right)</span>
+                          <span className="text-[#c79c6e] font-mono">{currentCoachingProcess.imgPositionX || 68}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={currentCoachingProcess.imgPositionX || 68}
+                          onChange={(e) => handleSectionChange('imgPositionX', Number(e.target.value))}
+                          className="w-full accent-[#c79c6e] cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between text-xs text-white/70">
+                          <span>Vertical Position (Top ↕ Bottom)</span>
+                          <span className="text-[#c79c6e] font-mono">{currentCoachingProcess.imgPositionY || 50}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={currentCoachingProcess.imgPositionY || 50}
+                          onChange={(e) => handleSectionChange('imgPositionY', Number(e.target.value))}
+                          className="w-full accent-[#c79c6e] cursor-pointer"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1708,6 +1763,61 @@ export default function AdminHomeEditor() {
                       tip="Majestic mountain summit with dramatic clouds and golden sunset rim light."
                       overlayOpacity={currentGlobalOverlayOpacity}
                     />
+
+                    {/* Desktop Positioning & Zoom Controls */}
+                    <div className="bg-[#111111] border border-white/10 rounded-xl p-5 flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Desktop Image View Controls</span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between text-xs text-white/70">
+                          <span>Zoom (Scale)</span>
+                          <span className="text-[#c79c6e] font-mono">{currentCoachingJourney.imgScale || 105}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="70"
+                          max="180"
+                          step="1"
+                          value={currentCoachingJourney.imgScale || 105}
+                          onChange={(e) => handleSectionChange('imgScale', Number(e.target.value))}
+                          className="w-full accent-[#c79c6e] cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between text-xs text-white/70">
+                          <span>Horizontal Position (Left ↔ Right)</span>
+                          <span className="text-[#c79c6e] font-mono">{currentCoachingJourney.imgPositionX || 80}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={currentCoachingJourney.imgPositionX || 80}
+                          onChange={(e) => handleSectionChange('imgPositionX', Number(e.target.value))}
+                          className="w-full accent-[#c79c6e] cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between text-xs text-white/70">
+                          <span>Vertical Position (Top ↕ Bottom)</span>
+                          <span className="text-[#c79c6e] font-mono">{currentCoachingJourney.imgPositionY || 35}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={currentCoachingJourney.imgPositionY || 35}
+                          onChange={(e) => handleSectionChange('imgPositionY', Number(e.target.value))}
+                          className="w-full accent-[#c79c6e] cursor-pointer"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

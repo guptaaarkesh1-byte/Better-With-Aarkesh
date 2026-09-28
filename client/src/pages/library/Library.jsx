@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
-import { List, X } from '@phosphor-icons/react';
+import { List, X, ArrowDown } from '@phosphor-icons/react';
 import { CURATED_LIBRARY_ARTICLES } from '../../constants/libraryArticlesData';
 
 export default function Library() {
@@ -66,8 +66,8 @@ export default function Library() {
       case 'relationships': return { bg: '#faebf7', color: '#3d1b37' };
       case 'self': return { bg: '#f0eee8', color: '#111010' };
       case 'change': return { bg: '#e5f2e8', color: '#2f4a34' };
-      case 'decisions': return { bg: '#faece6', color: '#c9542f' };
-      case 'difficult-people': return { bg: '#faede4', color: '#a64117' };
+      case 'decisions': return { bg: '#faece6', color: '#802673' };
+      case 'difficult-people': return { bg: '#f6eaf4', color: '#a64117' };
       case 'communication': return { bg: '#e8e6e8', color: '#141314' };
       default: return { bg: '#f0eee8', color: '#111010' };
     }
@@ -127,7 +127,7 @@ export default function Library() {
           --self-ink: #111010;
           --change: #2f4a34;
           --change-ink: #e9f0e6;
-          --dec: #c9542f;
+          --dec: #802673;
           --dec-ink: #2b1208;
           --diff: #f0d9c9;
           --diff-ink: #2b1208;
@@ -320,15 +320,13 @@ export default function Library() {
           to { transform: translateX(-50%); }
         }
 
-        /* ---------- HERO (FITS 100VH VIEWPORT) ---------- */
+        /* ---------- HERO (BALANCED TO SHOW PREVIEW OF FIRST SECTION) ---------- */
         .library-root .hero {
-          min-height: calc(100vh - 125px);
-          min-height: calc(100dvh - 125px);
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          padding: 24px 24px 36px;
+          padding: clamp(24px, 3.8vh, 40px) 20px clamp(16px, 2.4vh, 26px);
           text-align: center;
           max-width: 920px;
           margin: 0 auto;
@@ -345,7 +343,7 @@ export default function Library() {
           transform: translate(-50%, -50%);
           width: 500px;
           height: 240px;
-          background: radial-gradient(circle, rgba(201, 84, 47, 0.08) 0%, rgba(245, 241, 232, 0) 70%);
+          background: radial-gradient(circle, rgba(128, 38, 115, 0.08) 0%, rgba(245, 241, 232, 0) 70%);
           filter: blur(60px);
           pointer-events: none;
           z-index: 0;
@@ -361,8 +359,8 @@ export default function Library() {
           letter-spacing: 0.14em;
           text-transform: uppercase;
           color: var(--rel);
-          background: rgba(201, 84, 47, 0.08);
-          border: 1px solid rgba(201, 84, 47, 0.2);
+          background: rgba(128, 38, 115, 0.08);
+          border: 1px solid rgba(128, 38, 115, 0.2);
           padding: 5px 14px;
           border-radius: 100px;
           margin-bottom: 14px;
@@ -403,118 +401,220 @@ export default function Library() {
           z-index: 1;
         }
 
-        /* Hero Quick Category Jumps (All 6 Exact) */
-        .library-root .hero-cat-pills {
+        /* ---------- HERO (CREATIVE FLOATING CLOUD HERO) ---------- */
+        .library-root .hero {
           display: flex;
-          flex-wrap: wrap;
+          flex-direction: column;
           justify-content: center;
           align-items: center;
-          gap: 8px;
-          margin-bottom: 22px;
+          padding: clamp(20px, 3vh, 32px) 16px clamp(16px, 2vh, 24px);
+          text-align: center;
+          max-width: 1080px;
+          margin: 0 auto;
           position: relative;
-          z-index: 1;
-          max-width: 820px;
+          z-index: 80;
+          overflow: visible;
+          box-sizing: border-box;
         }
 
-        .library-root .cat-jump-pill {
+        .library-root .hero-cloud-stage {
+          position: relative;
+          width: 100%;
+          max-width: 900px;
+          min-height: 270px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 24px 16px;
+          margin: 0 auto;
+        }
+
+        .library-root .hero-cloud-stage h1 {
+          font-size: clamp(30px, 4.4vw, 52px);
+          margin: 0;
+          line-height: 1.2;
+          letter-spacing: -0.01em;
+          position: relative;
+          z-index: 5;
+          max-width: 640px;
+          text-align: center;
+        }
+
+        /* Floating Cloud Pills */
+        .library-root .cat-cloud-pill {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          padding: 7px 14px;
+          padding: 7px 18px;
           border-radius: 40px;
           font-family: 'Inter', sans-serif;
           font-size: 11px;
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
-          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           border: 1px solid rgba(0, 0, 0, 0.1);
           cursor: pointer;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+          white-space: nowrap;
+          user-select: none;
         }
 
-        .library-root .cat-jump-pill.p-rel {
+        /* Desktop: Floating Cloud Coordinates Directly Above, Below, and Around Title */
+        @media (min-width: 860px) {
+          .library-root .cat-cloud-pill {
+            position: absolute;
+            z-index: 10;
+          }
+          /* Top Left & Top Right - Floating directly above heading */
+          .library-root .cat-cloud-pill.p-rel {
+            top: 2%;
+            left: 20%;
+            animation: cloudDrift1 5.2s ease-in-out infinite;
+          }
+          .library-root .cat-cloud-pill.p-self {
+            top: 0%;
+            right: 22%;
+            animation: cloudDrift2 6.0s ease-in-out infinite 0.7s;
+          }
+          /* Mid Left & Mid Right - Flanking heading */
+          .library-root .cat-cloud-pill.p-change {
+            top: 50%;
+            left: 2%;
+            transform: translateY(-50%);
+            animation: cloudDrift3 5.6s ease-in-out infinite 1.3s;
+          }
+          .library-root .cat-cloud-pill.p-dec {
+            top: 48%;
+            right: 2%;
+            transform: translateY(-50%);
+            animation: cloudDrift1 6.4s ease-in-out infinite 1.9s;
+          }
+          /* Bottom Left & Bottom Right - Floating directly below heading */
+          .library-root .cat-cloud-pill.p-diff {
+            bottom: 2%;
+            left: 18%;
+            animation: cloudDrift2 5.4s ease-in-out infinite 1.0s;
+          }
+          .library-root .cat-cloud-pill.p-comm {
+            bottom: 0%;
+            right: 20%;
+            animation: cloudDrift3 6.2s ease-in-out infinite 1.6s;
+          }
+        }
+
+        /* Mobile / Tablet: Graceful Floating Wrap */
+        @media (max-width: 859px) {
+          .library-root .hero-cloud-stage {
+            min-height: auto;
+            gap: 16px;
+          }
+          .library-root .cat-cloud-cluster {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            max-width: 480px;
+          }
+          .library-root .cat-cloud-pill {
+            position: static;
+          }
+        }
+
+        @keyframes cloudDrift1 {
+          0%, 100% { transform: translateY(0px) rotate(-1.5deg); }
+          50% { transform: translateY(-8px) rotate(1.5deg); }
+        }
+
+        @keyframes cloudDrift2 {
+          0%, 100% { transform: translateY(0px) rotate(2deg); }
+          50% { transform: translateY(-10px) rotate(-1deg); }
+        }
+
+        @keyframes cloudDrift3 {
+          0%, 100% { transform: translateY(-50%) rotate(-1deg); }
+          50% { transform: translateY(calc(-50% - 7px)) rotate(1.5deg); }
+        }
+
+        .library-root .cat-cloud-pill.p-rel {
           background: #ece0ea;
           color: #3d1b37;
           border-color: rgba(61, 27, 55, 0.3);
         }
-        .library-root .cat-jump-pill.p-rel:hover {
+        .library-root .cat-cloud-pill.p-rel:hover {
           background: var(--rel);
           color: #fff;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 18px -6px rgba(61, 27, 55, 0.4);
+          transform: scale(1.06) translateY(-3px);
+          box-shadow: 0 10px 22px -4px rgba(61, 27, 55, 0.4);
         }
 
-        .library-root .cat-jump-pill.p-self {
+        .library-root .cat-cloud-pill.p-self {
           background: #ffffff;
           color: #111010;
           border-color: rgba(0, 0, 0, 0.22);
         }
-        .library-root .cat-jump-pill.p-self:hover {
+        .library-root .cat-cloud-pill.p-self:hover {
           background: #111010;
           color: #ffffff;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.3);
+          transform: scale(1.06) translateY(-3px);
+          box-shadow: 0 10px 22px -4px rgba(0, 0, 0, 0.3);
         }
 
-        .library-root .cat-jump-pill.p-change {
+        .library-root .cat-cloud-pill.p-change {
           background: #e2ebe3;
           color: #1a2f1e;
           border-color: rgba(47, 74, 52, 0.3);
         }
-        .library-root .cat-jump-pill.p-change:hover {
+        .library-root .cat-cloud-pill.p-change:hover {
           background: var(--change);
           color: var(--change-ink);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 18px -6px rgba(47, 74, 52, 0.4);
+          transform: scale(1.06) translateY(-3px);
+          box-shadow: 0 10px 22px -4px rgba(47, 74, 52, 0.4);
         }
 
-        .library-root .cat-jump-pill.p-dec {
+        .library-root .cat-cloud-pill.p-dec {
           background: #f0ded6;
           color: #2b1208;
-          border-color: rgba(201, 84, 47, 0.3);
+          border-color: rgba(128, 38, 115, 0.3);
         }
-        .library-root .cat-jump-pill.p-dec:hover {
+        .library-root .cat-cloud-pill.p-dec:hover {
           background: var(--dec);
           color: #fff;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 18px -6px rgba(201, 84, 47, 0.4);
+          transform: scale(1.06) translateY(-3px);
+          box-shadow: 0 10px 22px -4px rgba(128, 38, 115, 0.4);
         }
 
-        .library-root .cat-jump-pill.p-diff {
+        .library-root .cat-cloud-pill.p-diff {
           background: #faeae0;
           color: #2b1208;
           border-color: rgba(138, 106, 74, 0.3);
         }
-        .library-root .cat-jump-pill.p-diff:hover {
+        .library-root .cat-cloud-pill.p-diff:hover {
           background: #d4b096;
           color: #2b1208;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 18px -6px rgba(138, 106, 74, 0.3);
+          transform: scale(1.06) translateY(-3px);
+          box-shadow: 0 10px 22px -4px rgba(138, 106, 74, 0.3);
         }
 
-        .library-root .cat-jump-pill.p-comm {
+        .library-root .cat-cloud-pill.p-comm {
           background: #e6e3dd;
           color: #141314;
           border-color: rgba(20, 19, 20, 0.25);
         }
-        .library-root .cat-jump-pill.p-comm:hover {
+        .library-root .cat-cloud-pill.p-comm:hover {
           background: var(--comm);
           color: var(--comm-ink);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 18px -6px rgba(20, 19, 20, 0.4);
+          transform: scale(1.06) translateY(-3px);
+          box-shadow: 0 10px 22px -4px rgba(20, 19, 20, 0.4);
         }
 
-        .library-root .cat-jump-pill span.num {
-          font-family: 'Archivo Black', sans-serif;
-          font-size: 10px;
-          opacity: 0.65;
-        }
-
-        /* Reflective Search Exploration Bar */
+        /* Reflective Search Exploration Bar - Compact Width */
         .library-root .hero-search-wrap {
-          max-width: 540px;
+          max-width: 380px;
           width: 100%;
-          margin: 0 auto;
+          margin: 10px auto 0;
           position: relative;
           z-index: 100;
         }
@@ -533,7 +633,7 @@ export default function Library() {
 
         .library-root .hero-search-bar:focus-within {
           border-color: var(--rel);
-          box-shadow: 0 12px 35px -8px rgba(201, 84, 47, 0.18);
+          box-shadow: 0 12px 35px -8px rgba(128, 38, 115, 0.18);
         }
 
         .library-root .hero-search-bar input {
@@ -570,6 +670,64 @@ export default function Library() {
         .library-root .hero-search-btn:hover {
           background: var(--rel);
           transform: scale(1.03);
+        }
+
+        /* Animated Scroll Indicator */
+        .library-root .scroll-indicator {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 20px;
+          color: #555047;
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          background: rgba(255, 255, 255, 0.7);
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          padding: 6px 14px 6px 16px;
+          border-radius: 30px;
+          position: relative;
+          z-index: 10;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        }
+
+        .library-root .scroll-indicator:hover {
+          color: var(--rel);
+          background: #ffffff;
+          border-color: rgba(128, 38, 115, 0.3);
+          transform: translateY(2px);
+          box-shadow: 0 6px 18px rgba(128, 38, 115, 0.12);
+        }
+
+        .library-root .scroll-indicator .arrow-icon-wrap {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          background: var(--ink);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ffffff;
+          animation: floatBounce 1.8s ease-in-out infinite;
+          transition: all 0.2s ease;
+        }
+
+        .library-root .scroll-indicator:hover .arrow-icon-wrap {
+          background: var(--rel);
+          transform: translateY(2px);
+        }
+
+        @keyframes floatBounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(4px);
+          }
         }
 
         /* Search Dropdown Menu */
@@ -694,7 +852,7 @@ export default function Library() {
           top: 0;
           width: 100%;
           min-height: 100vh;
-          padding: clamp(45px, 6vh, 75px) 40px clamp(100px, 14vh, 150px);
+          padding: clamp(45px, 6vh, 75px) 40px clamp(80px, 12vh, 120px);
           border-top-left-radius: 36px;
           border-top-right-radius: 36px;
           box-shadow: 0 -22px 48px rgba(0, 0, 0, 0.22);
@@ -703,6 +861,10 @@ export default function Library() {
           justify-content: flex-start;
           overflow: hidden;
           box-sizing: border-box;
+          transform: translate3d(0, 0, 0);
+          will-change: transform;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
         }
 
         .library-root .cat-inner {
@@ -710,6 +872,7 @@ export default function Library() {
           width: 100%;
           margin: 0 auto;
           position: relative;
+          transform: translate3d(0, 0, 0);
         }
 
         .library-root .cat-top {
@@ -950,24 +1113,42 @@ export default function Library() {
           z-index: 6;
         }
 
-        /* ---------- CTA SECTION (TRANSITIONS INTO FOOTER) ---------- */
+        /* ---------- CTA SECTION (FINAL STACKED CARD TRANSITION) ---------- */
         .library-root .cta-wrapper {
-          position: relative;
+          position: sticky;
+          top: 0;
           z-index: 7;
           width: 100%;
-          min-height: auto;
-          background: var(--ink);
+          min-height: 100vh;
+          background: radial-gradient(circle at 50% 40%, #1c1722 0%, #0d0c0e 100%);
           color: var(--cream);
           border-top-left-radius: 36px;
           border-top-right-radius: 36px;
-          box-shadow: 0 -25px 50px rgba(0, 0, 0, 0.45);
+          box-shadow: 0 -28px 60px rgba(0, 0, 0, 0.55);
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          padding: 80px 24px 70px;
+          padding: clamp(60px, 10vh, 100px) 24px;
           box-sizing: border-box;
           overflow: hidden;
+          transform: translate3d(0, 0, 0);
+          will-change: transform;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+        }
+
+        .library-root .cta-ambient-glow {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 580px;
+          height: 320px;
+          background: radial-gradient(circle, rgba(128, 38, 115, 0.2) 0%, rgba(13, 12, 14, 0) 70%);
+          filter: blur(80px);
+          pointer-events: none;
+          z-index: 0;
         }
 
         .library-root .cta-nav {
@@ -1217,43 +1398,32 @@ export default function Library() {
         </div>
       </div>
 
-      {/* ---------- HERO (CREATIVE & INTERACTIVE) ---------- */}
+      {/* ---------- HERO (CREATIVE & INTERACTIVE FLOATING CLOUD) ---------- */}
       <section className="hero">
         <div className="hero-ambient-glow" />
         
-        <div className="hero-badge">
-          <span className="dot" />
-          <span>The Knowledge Archive · 6 Curated Topics</span>
-        </div>
+        {/* Center Stage: Title with 6 Floating Category Cloud Pills around it */}
+        <div className="hero-cloud-stage">
+          <button type="button" onClick={() => handleScrollTo('rel')} className="cat-cloud-pill p-rel">
+            Relationships
+          </button>
+          <button type="button" onClick={() => handleScrollTo('self')} className="cat-cloud-pill p-self">
+            Self
+          </button>
+          
+          <h1 className="serif-i">What are you trying to <em>understand</em>?</h1>
 
-        <h1 className="serif-i">What are you trying to <em>understand</em>?</h1>
-        <p className="lead">Articles, videos and reflective tools for the parts of life that are difficult to see clearly while you're living through them.</p>
-
-        {/* Quick-Jump Category Navigation Pills (Exact 6 Order) */}
-        <div className="hero-cat-pills">
-          <button type="button" onClick={() => handleScrollTo('rel')} className="cat-jump-pill p-rel">
-            <span className="num">01</span>
-            <span>Relationships</span>
+          <button type="button" onClick={() => handleScrollTo('change')} className="cat-cloud-pill p-change">
+            Change
           </button>
-          <button type="button" onClick={() => handleScrollTo('self')} className="cat-jump-pill p-self">
-            <span className="num">02</span>
-            <span>Self</span>
+          <button type="button" onClick={() => handleScrollTo('dec')} className="cat-cloud-pill p-dec">
+            Decisions
           </button>
-          <button type="button" onClick={() => handleScrollTo('change')} className="cat-jump-pill p-change">
-            <span className="num">03</span>
-            <span>Change</span>
+          <button type="button" onClick={() => handleScrollTo('diff')} className="cat-cloud-pill p-diff">
+            Difficult People
           </button>
-          <button type="button" onClick={() => handleScrollTo('dec')} className="cat-jump-pill p-dec">
-            <span className="num">04</span>
-            <span>Decisions</span>
-          </button>
-          <button type="button" onClick={() => handleScrollTo('diff')} className="cat-jump-pill p-diff">
-            <span className="num">05</span>
-            <span>Difficult People</span>
-          </button>
-          <button type="button" onClick={() => handleScrollTo('comm')} className="cat-jump-pill p-comm">
-            <span className="num">06</span>
-            <span>Communication</span>
+          <button type="button" onClick={() => handleScrollTo('comm')} className="cat-cloud-pill p-comm">
+            Communication
           </button>
         </div>
 
@@ -1342,6 +1512,19 @@ export default function Library() {
             </div>
           )}
         </div>
+
+        {/* Animated Scroll Down Indicator Button */}
+        <button 
+          type="button" 
+          onClick={() => handleScrollTo('rel')} 
+          className="scroll-indicator"
+          aria-label="Scroll down to explore categories"
+        >
+          <span>Scroll to explore</span>
+          <div className="arrow-icon-wrap">
+            <ArrowDown size={12} weight="bold" />
+          </div>
+        </button>
       </section>
 
       {/* ---------- (01) RELATIONSHIPS (WORD LEFT, SPHERE RIGHT) ---------- */}
@@ -1604,6 +1787,7 @@ export default function Library() {
 
       {/* ---------- CTA SECTION (READY TO GO DEEPER) ---------- */}
       <section className="cta-wrapper">
+        <div className="cta-ambient-glow"></div>
         <div className="cta-content">
           <h2 className="disp">Ready to go<br />deeper?</h2>
           <p>Reading is a start. A session helps you actually apply it to your life.</p>

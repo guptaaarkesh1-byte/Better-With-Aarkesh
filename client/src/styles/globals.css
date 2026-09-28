@@ -16,10 +16,10 @@
   --color-text-muted: #7a756b;
   --color-border: rgba(0, 0, 0, 0.1);
   --color-border-subtle: rgba(0, 0, 0, 0.05);
-  --color-gold: #c9542f;
+  --color-gold: #802673;
   --color-gold-hover: #a64117;
-  --color-gold-subtle: rgba(201, 84, 47, 0.12);
-  --color-gold-border: rgba(201, 84, 47, 0.35);
+  --color-gold-subtle: rgba(128, 38, 115, 0.12);
+  --color-gold-border: rgba(128, 38, 115, 0.35);
   --overlay-opacity: 0.20;
   --site-contrast: 100%;
   --site-brightness: 100%;
@@ -340,7 +340,7 @@ body .ql-editor.ql-blank::before {
 }
 
 /* ==========================================================================
-   BROWSER AUTOFILL OVERRIDE (Dark vs Light)
+   BROWSER AUTOFILL OVERRIDE (Clean White / Light Luxury Theme)
    ========================================================================== */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -353,30 +353,30 @@ textarea:-webkit-autofill:active,
 select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
-  -webkit-text-fill-color: #F5F2EB !important;
-  -webkit-box-shadow: 0 0 0px 1000px #0a0a0a inset !important;
-  box-shadow: 0 0 0px 1000px #0a0a0a inset !important;
-  transition: background-color 5000000s ease-in-out 0s !important;
-  caret-color: #c79c6e !important;
-  color: #F5F2EB !important;
-}
-
-[data-theme="light"] input:-webkit-autofill,
-[data-theme="light"] input:-webkit-autofill:hover,
-[data-theme="light"] input:-webkit-autofill:focus,
-[data-theme="light"] input:-webkit-autofill:active,
-[data-theme="light"] textarea:-webkit-autofill,
-[data-theme="light"] textarea:-webkit-autofill:hover,
-[data-theme="light"] textarea:-webkit-autofill:focus,
-[data-theme="light"] textarea:-webkit-autofill:active,
-[data-theme="light"] select:-webkit-autofill,
-[data-theme="light"] select:-webkit-autofill:hover,
-[data-theme="light"] select:-webkit-autofill:focus {
-  -webkit-text-fill-color: #111111 !important;
+  -webkit-text-fill-color: #111010 !important;
   -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
   box-shadow: 0 0 0px 1000px #ffffff inset !important;
-  caret-color: #a06e3b !important;
-  color: #111111 !important;
+  transition: background-color 5000000s ease-in-out 0s !important;
+  caret-color: #802673 !important;
+  color: #111010 !important;
+}
+
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill:hover,
+[data-theme="dark"] input:-webkit-autofill:focus,
+[data-theme="dark"] input:-webkit-autofill:active,
+[data-theme="dark"] textarea:-webkit-autofill,
+[data-theme="dark"] textarea:-webkit-autofill:hover,
+[data-theme="dark"] textarea:-webkit-autofill:focus,
+[data-theme="dark"] textarea:-webkit-autofill:active,
+[data-theme="dark"] select:-webkit-autofill,
+[data-theme="dark"] select:-webkit-autofill:hover,
+[data-theme="dark"] select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #F5F2EB !important;
+  -webkit-box-shadow: 0 0 0px 1000px #1a1a1a inset !important;
+  box-shadow: 0 0 0px 1000px #1a1a1a inset !important;
+  caret-color: #802673 !important;
+  color: #F5F2EB !important;
 }
 
 /* ==========================================================================

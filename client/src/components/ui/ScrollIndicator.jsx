@@ -29,7 +29,7 @@ export default function ScrollIndicator({ className }) {
     <div ref={containerRef} className={`flex flex-col items-center gap-3 ${className}`}>
       <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] text-[#111010]/60 font-semibold">SCROLL</span>
       <div className="w-[1px] h-10 bg-black/15 relative overflow-hidden">
-        <div ref={arrowRef} className="absolute top-0 text-[#c9542f] text-sm left-1/2 -translate-x-1/2">
+        <div ref={arrowRef} className="absolute top-0 text-[#802673] text-sm left-1/2 -translate-x-1/2">
           <FiArrowDown strokeWidth={2.5} />
         </div>
       </div>

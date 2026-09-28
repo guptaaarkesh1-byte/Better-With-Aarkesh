@@ -7,10 +7,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const Toggle = ({ isOn, onToggle }) => (
   <div 
     onClick={onToggle}
-    className={`w-10 h-5 rounded-full flex items-center p-0.5 cursor-pointer transition-colors duration-300 ${isOn ? 'bg-[#c79c6e]' : 'bg-white/20'}`}
+    className={`w-11 h-6 rounded-full flex items-center p-0.5 cursor-pointer transition-colors duration-300 ${isOn ? 'bg-[#802673]' : 'bg-black/15'}`}
   >
     <div 
-      className={`w-4 h-4 rounded-full bg-black shadow-sm transform transition-transform duration-300 ${isOn ? 'translate-x-5' : 'translate-x-0'}`} 
+      className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${isOn ? 'translate-x-5' : 'translate-x-0'}`} 
     />
   </div>
 );
@@ -82,24 +82,24 @@ export default function NotificationsTab() {
   };
 
   return (
-    <div className="w-full max-w-2xl border border-white/10 rounded-xl p-8 md:p-10 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col animate-in fade-in duration-500">
-      <h2 className="font-serif text-3xl text-white mb-2">Notifications</h2>
-      <p className="font-sans text-white/70 text-sm mb-10">
+    <div className="w-full max-w-2xl border border-black/10 rounded-2xl p-6 sm:p-8 md:p-10 bg-white shadow-xs flex flex-col animate-in fade-in duration-500">
+      <h2 className="font-serif text-2xl sm:text-3xl text-[#111010] mb-2 font-medium">Notifications</h2>
+      <p className="font-sans text-[#555047] text-sm mb-8 sm:mb-10 font-light">
         Choose how and when you would like to hear from us.
       </p>
 
       {/* EMAIL SECTION */}
       <div className="mb-10">
-        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] mb-6 block">
+        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-6 block">
           EMAIL
         </span>
         <div className="flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <span className="font-serif text-white/90">Upcoming conversation reminders</span>
+          <div className="flex items-center justify-between p-4 rounded-xl border border-black/5 bg-[#fcfbfa]">
+            <span className="font-serif text-[#111010] text-base">Upcoming conversation reminders</span>
             <Toggle isOn={toggles.emailReminders} onToggle={() => toggleHandler('emailReminders')} />
           </div>
-          <div className="flex items-center justify-between">
-            <span className="font-serif text-white/90">Changes to an appointment</span>
+          <div className="flex items-center justify-between p-4 rounded-xl border border-black/5 bg-[#fcfbfa]">
+            <span className="font-serif text-[#111010] text-base">Changes to an appointment</span>
             <Toggle isOn={toggles.emailChanges} onToggle={() => toggleHandler('emailChanges')} />
           </div>
         </div>
@@ -110,14 +110,14 @@ export default function NotificationsTab() {
         <button 
           onClick={handleSave}
           disabled={loading}
-          className="px-6 py-2.5 border border-[#c79c6e] text-[#c79c6e] rounded text-[0.65rem] uppercase tracking-[0.2em] font-medium hover:bg-[#c79c6e] hover:text-black transition-colors cursor-pointer disabled:opacity-50"
+          className="px-6 py-3 bg-[#802673] text-white rounded-xl text-xs uppercase tracking-[0.16em] font-bold hover:bg-[#962e87] transition-all shadow-md cursor-pointer disabled:opacity-50"
         >
           {loading ? 'SAVING...' : 'SAVE PREFERENCES'}
         </button>
 
         {saveSuccess && (
-          <span className="flex items-center gap-1.5 text-xs text-[#c79c6e] font-sans font-medium animate-in fade-in">
-            <Check size={14} weight="bold" /> Preferences saved
+          <span className="flex items-center gap-1.5 text-xs text-[#802673] font-sans font-bold animate-in fade-in">
+            <Check size={16} weight="bold" /> Preferences saved
           </span>
         )}
       </div>

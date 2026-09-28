@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Container from '../ui/Container';
-import defaultBgImg from '../../assets/Page9/ChatGPT Image Jul 24, 2026, 04_56_37 PM.webp';
+import defaultBgImg from '../../assets/Page9/testimonials-doorway.webp';
 import { 
   Quotes, 
   ArrowRight, 
@@ -15,6 +15,17 @@ import { Link } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// =========================================================================
+// 🎛️ DESKTOP IMAGE CONTROLS (Adjust zoom & position here!)
+// =========================================================================
+export const DESKTOP_IMAGE_CONTROLS = {
+  zoom: 1.0,              // 🔍 Zoom / Scale: 1.0 (100%), 1.05 (105%), 1.15 (115%)
+  posX: '85%',            // ↔️ Horizontal Position: '50%' (Center), '80%' (Right), '85%' (Right focused)
+  posY: '35%',            // ↕️ Vertical Position: '0%' (Top), '35%' (Upper Center), '50%' (Center)
+  translateX: '0px',      // 🎯 Fine-tune Left/Right pixel nudge: e.g. '+20px', '-30px'
+  translateY: '0px',      // 🎯 Fine-tune Up/Down pixel nudge: e.g. '+10px', '-20px'
+};
+
 const DEFAULT_TESTIMONIALS = [
   {
     quote: "Aarkesh helped me see the patterns I was too close to notice. For the first time, I feel in control of my choices.",
@@ -28,7 +39,7 @@ const DEFAULT_TESTIMONIALS = [
     name: "Megha, 28",
     role: "Marketing Manager",
     initial: "M",
-    color: "bg-[#c9542f]"
+    color: "bg-[#802673]"
   },
   {
     quote: "Practical. Honest. No fluff. The sessions challenge you—in the best way possible. Highly recommend.",
@@ -91,14 +102,22 @@ export default function TestimonialsSection() {
     <section id="testimonials" className="relative w-full min-h-screen bg-[#f5f1e8] overflow-hidden flex flex-col snap-section">
       
       {/* Background Image & Soft Cream Overlays */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <img 
           src={bgImg} 
           alt="Glowing Doorway" 
-          className="absolute right-0 top-0 h-full w-full md:w-[65%] object-cover object-right opacity-35"
+          className="w-full h-full object-cover opacity-100 contrast-[1.05] saturate-[1.05] will-change-transform"
+          style={{
+            objectPosition: `${DESKTOP_IMAGE_CONTROLS.posX} ${DESKTOP_IMAGE_CONTROLS.posY}`,
+            transform: `scale(${DESKTOP_IMAGE_CONTROLS.zoom}) translate(${DESKTOP_IMAGE_CONTROLS.translateX}, ${DESKTOP_IMAGE_CONTROLS.translateY}) translateZ(0)`
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/90 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/30 to-transparent" />
+        {/* Soft cream gradient only on the left for text and cards, leaving the glowing doorway and mountain 100% crystal clear */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/85 via-35% md:via-[#f5f1e8]/45 md:via-50% to-transparent w-full lg:w-[50%]" />
+        
+        {/* Minimal edge blends */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#f5f1e8]/50 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#f5f1e8]/40 to-transparent" />
       </div>
 
       <div className="relative z-10 flex-grow flex flex-col pt-24 pb-8 w-full">
@@ -111,15 +130,15 @@ export default function TestimonialsSection() {
               {/* Header */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="h-[1.5px] w-6 bg-[#c9542f]" />
-                  <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+                  <div className="h-[1.5px] w-6 bg-[#802673]" />
+                  <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
                     {eyebrow}
                   </span>
                 </div>
                 
                 <h2 className="font-serif text-4xl md:text-5xl text-[#111010] font-medium tracking-tight leading-tight">
                   {heading1}<br/>
-                  <span className="text-[#c9542f] italic">{headingAccent}</span>
+                  <span className="text-[#802673] italic">{headingAccent}</span>
                 </h2>
                 
                 <p className="text-[#2b2723] text-lg lg:text-xl font-serif font-light tracking-wide leading-relaxed max-w-lg mt-1">
@@ -131,15 +150,15 @@ export default function TestimonialsSection() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                 {testimonials.slice(0, 6).map((t, index) => {
                   const initial = t.name ? t.name.charAt(0).toUpperCase() : 'C';
-                  const colors = ['bg-[#3d1b37]', 'bg-[#c9542f]', 'bg-[#2f4a34]', 'bg-[#a64117]', 'bg-[#111010]', 'bg-[#3d1b37]'];
+                  const colors = ['bg-[#3d1b37]', 'bg-[#802673]', 'bg-[#2f4a34]', 'bg-[#a64117]', 'bg-[#111010]', 'bg-[#3d1b37]'];
                   const color = t.color || colors[index % colors.length];
 
                   return (
                     <div 
                       key={index} 
-                      className="flex flex-col bg-white/90 backdrop-blur-sm border border-black/8 rounded-2xl p-5 hover:border-[#c9542f]/35 hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300"
+                      className="flex flex-col bg-white/95 border border-black/8 rounded-2xl p-5 hover:border-[#802673]/35 hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-colors duration-200"
                     >
-                      <Quotes className="text-[#c9542f] text-2xl mb-2.5 opacity-90" weight="fill" />
+                      <Quotes className="text-[#802673] text-2xl mb-2.5 opacity-90" weight="fill" />
                       
                       <p className="text-[#2b2723] font-light text-xs sm:text-sm md:text-[0.92rem] leading-relaxed mb-4 flex-grow">
                         "{t.quote}"
@@ -147,7 +166,7 @@ export default function TestimonialsSection() {
                       
                       <div className="flex items-center gap-3 mt-auto pt-2 border-t border-black/5">
                         {t.image ? (
-                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#c9542f]/30 shrink-0 bg-white shadow-xs">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#802673]/30 shrink-0 bg-white shadow-xs">
                             <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
                           </div>
                         ) : (
@@ -181,19 +200,19 @@ export default function TestimonialsSection() {
           {/* Bottom Trust Pillars */}
           <div className="mt-12 pt-6 border-t border-black/10 flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <ShieldCheck size={20} className="text-[#c9542f]" weight="bold" />
+              <ShieldCheck size={20} className="text-[#802673]" weight="bold" />
               <span className="text-xs font-medium text-[#555047]">100% Confidential</span>
             </div>
             <div className="flex items-center gap-3">
-              <User size={20} className="text-[#c9542f]" weight="bold" />
+              <User size={20} className="text-[#802673]" weight="bold" />
               <span className="text-xs font-medium text-[#555047]">Tailored 1-on-1 Sessions</span>
             </div>
             <div className="flex items-center gap-3">
-              <Handshake size={20} className="text-[#c9542f]" weight="bold" />
+              <Handshake size={20} className="text-[#802673]" weight="bold" />
               <span className="text-xs font-medium text-[#555047]">Evidence-Based Coaching</span>
             </div>
             <div className="flex items-center gap-3">
-              <Heart size={20} className="text-[#c9542f]" weight="bold" />
+              <Heart size={20} className="text-[#802673]" weight="bold" />
               <span className="text-xs font-medium text-[#555047]">Empathetic & Non-Judgmental</span>
             </div>
           </div>

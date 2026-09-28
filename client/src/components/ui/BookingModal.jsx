@@ -87,7 +87,7 @@ export default function BookingModal() {
         </button>
 
         {/* Header */}
-        <span className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-2.5">
+        <span className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-2.5">
           BEGIN A CONVERSATION
         </span>
         <h2 className="font-serif text-2xl md:text-3xl text-[#111010] font-normal tracking-tight leading-[1.15] mb-3">
@@ -104,7 +104,7 @@ export default function BookingModal() {
           </span>
           <div className="w-full h-[3px] bg-black/10 rounded-full relative overflow-hidden">
             <div 
-              className="absolute left-0 top-0 h-full bg-[#c9542f] transition-all duration-500 ease-out rounded-full"
+              className="absolute left-0 top-0 h-full bg-[#802673] transition-all duration-500 ease-out rounded-full"
               style={{ width: `${((currentStep + 1) / 5) * 100}%` }}
             />
           </div>
@@ -115,7 +115,7 @@ export default function BookingModal() {
           "flex flex-col flex-1 transition-all duration-300",
           isAnimating ? "opacity-0 -translate-x-4" : "opacity-100 translate-x-0"
         )}>
-          <span className="font-sans text-[0.68rem] uppercase tracking-wider font-bold text-[#c9542f] mb-3">
+          <span className="font-sans text-[0.68rem] uppercase tracking-wider font-bold text-[#802673] mb-3">
             {QUESTIONS[currentStep].title}
           </span>
           
@@ -123,7 +123,7 @@ export default function BookingModal() {
             value={answers[currentStep]}
             onChange={handleAnswerChange}
             placeholder={QUESTIONS[currentStep].placeholder}
-            className="w-full h-32 bg-white border border-black/15 rounded-xl p-4 text-[#111010] text-sm font-normal font-sans resize-none focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] placeholder:text-[#9c9689] mb-6 transition-colors shadow-xs"
+            className="w-full h-32 bg-white border border-black/15 rounded-xl p-4 text-[#111010] text-sm font-normal font-sans resize-none focus:outline-none focus:border-[#802673] focus:ring-1 focus:ring-[#802673] placeholder:text-[#9c9689] mb-6 transition-colors shadow-xs"
           />
         </div>
 
@@ -131,7 +131,7 @@ export default function BookingModal() {
         <div className="flex flex-col gap-3 mt-auto">
           <button 
             onClick={handleNext}
-            className="w-full py-4 rounded-xl bg-[#c9542f] hover:bg-[#111010] text-white font-sans text-xs uppercase tracking-widest font-bold transition-all duration-300 shadow-md cursor-pointer"
+            className="w-full py-4 rounded-xl bg-[#802673] hover:bg-[#111010] text-white font-sans text-xs uppercase tracking-widest font-bold transition-all duration-300 shadow-md cursor-pointer"
           >
             CONTINUE
           </button>
@@ -141,7 +141,7 @@ export default function BookingModal() {
               closeBookingModal();
               navigate('/book');
             }}
-            className="w-full py-2 font-sans text-[0.65rem] uppercase tracking-widest font-bold text-[#7a756b] hover:text-[#c9542f] transition-colors cursor-pointer"
+            className="w-full py-2 font-sans text-[0.65rem] uppercase tracking-widest font-bold text-[#7a756b] hover:text-[#802673] transition-colors cursor-pointer"
           >
             BOOK A CONVERSATION DIRECTLY →
           </button>

@@ -72,7 +72,7 @@ export const THEMES_MAP = {
     id: 'decisions',
     num: '04',
     name: 'Decisions',
-    bg: '#c9542f',
+    bg: '#802673',
     ink: '#2b1208',
     inkMuted: 'rgba(43, 18, 8, 0.85)',
     inkFaint: 'rgba(43, 18, 8, 0.5)',

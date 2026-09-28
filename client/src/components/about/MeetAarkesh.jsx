@@ -73,7 +73,7 @@ export default function MeetAarkesh() {
       sub2: coachData.sub2 || 'Evidence-based. Human-first.',
       highlight: coachData.highlight || 'I walk beside you, not ahead of you.',
       bgImg: coachData.bgImg || coachImg,
-      imgPos: 'object-top'
+      imgPos: 'object-[center_85%]'
     },
     {
       title: humanData.title || 'HUMAN',
@@ -90,22 +90,24 @@ export default function MeetAarkesh() {
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: container.current,
-        start: 'top 75%',
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+        once: true,
       }
     });
 
     tl.fromTo('.meet-header',
-      { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.1 }
+      { opacity: 0, y: 25 },
+      { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1 }
     )
     .fromTo('.role-pane',
-      { opacity: 0, scale: 0.95 },
-      { opacity: 1, scale: 1, duration: 0.8, ease: 'power3.out', stagger: 0.15 },
-      "-=0.4"
+      { opacity: 0, scale: 0.98 },
+      { opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out', stagger: 0.12 },
+      "-=0.3"
     )
     .fromTo('.meet-footer',
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' },
+      { opacity: 0, y: 15 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' },
       "-=0.2"
     );
   }, { scope: container, dependencies: [aboutData] });
@@ -116,11 +118,11 @@ export default function MeetAarkesh() {
       {/* Mobile Header (Hidden on Desktop) */}
       <div className="flex md:hidden flex-col items-center justify-center text-center z-20 px-6 pb-8 meet-header">
         <div className="flex items-center gap-4 mb-4">
-          <div className="h-[1.5px] w-6 bg-[#c9542f]" />
-          <span className="font-sans text-[0.68rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+          <div className="h-[1.5px] w-6 bg-[#802673]" />
+          <span className="font-sans text-[0.68rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
             {eyebrowText}
           </span>
-          <div className="h-[1.5px] w-6 bg-[#c9542f]" />
+          <div className="h-[1.5px] w-6 bg-[#802673]" />
         </div>
 
         <h2 className="font-serif text-4xl font-medium tracking-tight mb-2 text-[#111010]">
@@ -140,49 +142,52 @@ export default function MeetAarkesh() {
           return (
             <div 
               key={i} 
-              className="role-pane relative h-[45vh] md:h-auto md:flex-1 min-h-0 flex flex-col items-center justify-end pb-12 md:pb-16 p-6 group overflow-hidden border-b md:border-b-0 md:border-r border-black/10 last:border-none cursor-pointer"
+              className="role-pane relative h-[45vh] md:h-auto md:flex-1 min-h-0 flex flex-col items-center justify-end pb-12 md:pb-16 p-6 group overflow-hidden border-b md:border-b-0 md:border-r border-black/10 last:border-none cursor-pointer bg-[#f5f1e8]"
             >
-              {/* Background Image */}
+              {/* Background Image - Full Visibility */}
               <div className="absolute inset-0 z-0 overflow-hidden">
                 <img 
                   src={role.bgImg} 
                   alt={role.title} 
-                  className={`w-full h-full object-cover ${role.imgPos} opacity-80 transition-transform duration-[1.5s] ease-out group-hover:scale-105 group-hover:opacity-100`} 
+                  className={`w-full h-full object-cover ${role.imgPos || 'object-center'} opacity-100 contrast-[1.02] will-change-transform transition-transform duration-[1.2s] ease-out group-hover:scale-105`} 
                 />
               </div>
 
-              {/* Gradient Overlay for Text Readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#111010] via-[#111010]/60 to-transparent opacity-90 z-0 transition-opacity duration-700 group-hover:opacity-75" />
+              {/* Clean bottom gradient only on hover for legible text - No glow, no full-card fog */}
+              <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/70 to-transparent opacity-0 group-hover:opacity-100 z-0 pointer-events-none transition-opacity duration-300 ease-out" />
               
               {/* Conditional Top Header (Only in the Middle Column on Desktop) */}
               {i === 1 && (
-                <div className="hidden md:flex absolute top-12 inset-x-0 flex-col items-center justify-center text-center z-20 px-6 transition-opacity duration-500 ease-out group-hover:opacity-0 meet-header pointer-events-none">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="h-[1.5px] w-6 bg-[#c9542f]" />
-                    <span className="font-sans text-[0.68rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+                <div className="hidden md:flex absolute top-6 inset-x-0 flex-col items-center justify-center text-center z-20 px-6 transition-opacity duration-400 ease-out group-hover:opacity-0 meet-header pointer-events-none">
+                  <div className="flex items-center gap-4 mb-2.5">
+                    <div className="h-[1.5px] w-6 bg-[#802673]" />
+                    <span className="font-sans text-[0.68rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
                       {eyebrowText}
                     </span>
-                    <div className="h-[1.5px] w-6 bg-[#c9542f]" />
+                    <div className="h-[1.5px] w-6 bg-[#802673]" />
                   </div>
 
-                  <h2 className="font-serif text-4xl md:text-5xl lg:text-5xl font-medium tracking-tight mb-2 text-white">
+                  <h2 className="font-serif text-3xl md:text-4xl lg:text-[2.6rem] font-medium tracking-tight mb-1.5 text-[#111010]">
                     {headingLine}
                   </h2>
                   
-                  <p className="text-white/80 text-sm md:text-base font-light tracking-wide">
+                  <p className="text-[#2b2723] text-xs md:text-sm font-normal tracking-wide">
                     {subheading}
                   </p>
                 </div>
               )}
 
-              <div className="relative z-10 flex flex-col items-center text-center transition-transform duration-700 ease-out group-hover:-translate-y-2">
-                <Icon className="text-[#e27d5b] text-3xl md:text-4xl mb-3 sm:mb-4 opacity-95" weight="light" />
-                <h3 className="font-serif text-3xl md:text-4xl lg:text-[2.6rem] tracking-widest text-white mb-4 sm:mb-6">{role.title}</h3>
+              <div className="relative z-10 flex flex-col items-center text-center transition-transform duration-500 ease-out group-hover:-translate-y-2">
+                <div className="w-12 h-12 rounded-full border border-[#802673]/30 bg-white/95 shadow-md flex items-center justify-center mb-3 sm:mb-4 group-hover:border-[#802673] group-hover:bg-[#802673] group-hover:text-white transition-colors duration-300">
+                  <Icon className="text-[#802673] group-hover:text-white text-2xl transition-colors duration-300" weight="regular" />
+                </div>
                 
-                <div className="flex flex-col items-center gap-1.5 sm:gap-2.5 opacity-0 transform translate-y-8 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible px-4">
-                  <p className="text-white/95 font-normal text-sm sm:text-base md:text-[1.12rem] leading-snug">{role.sub1}</p>
-                  <p className="text-white/95 font-normal text-sm sm:text-base md:text-[1.12rem] leading-snug mb-2">{role.sub2}</p>
-                  <p className="text-[#faede4] font-serif italic text-base sm:text-lg md:text-xl lg:text-[1.35rem] font-medium leading-normal drop-shadow-sm">{role.highlight}</p>
+                <h3 className="font-serif text-3xl md:text-4xl lg:text-[2.5rem] tracking-widest text-[#111010] mb-3 sm:mb-4 font-semibold">{role.title}</h3>
+                
+                <div className="flex flex-col items-center gap-1.5 sm:gap-2 opacity-0 transform translate-y-6 transition-all duration-400 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible px-4">
+                  <p className="text-[#111010] font-semibold text-sm sm:text-base md:text-[1.05rem] leading-snug">{role.sub1}</p>
+                  <p className="text-[#2b2723] font-medium text-sm sm:text-base md:text-[0.98rem] leading-snug mb-2">{role.sub2}</p>
+                  <p className="text-[#802673] font-serif italic text-base sm:text-lg md:text-xl lg:text-[1.25rem] font-bold leading-normal">{role.highlight}</p>
                 </div>
               </div>
             </div>
@@ -197,8 +202,8 @@ export default function MeetAarkesh() {
           {/* Left Side: Mission */}
           <div className="flex-1 shrink-0 flex flex-col items-start w-full xl:w-auto">
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-[1.5px] w-6 bg-[#c9542f] origin-left" />
-              <span className="font-sans text-xs sm:text-[0.75rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+              <div className="h-[1.5px] w-6 bg-[#802673] origin-left" />
+              <span className="font-sans text-xs sm:text-[0.75rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
                 {aboutData?.missionEyebrow || 'BEYOND THE ROLES'}
               </span>
             </div>
@@ -215,8 +220,8 @@ export default function MeetAarkesh() {
           {/* Right Side: Features */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-8 md:gap-10 w-full xl:w-auto xl:border-l border-black/10 xl:pl-10">
             <div className="flex items-center gap-3.5 group">
-              <div className="w-11 h-11 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#faede4] bg-white shadow-xs">
-                <Compass size={20} className="text-[#c9542f]" weight="regular" />
+              <div className="w-11 h-11 rounded-full border border-[#802673]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#802673] group-hover:bg-[#f6eaf4] bg-white shadow-xs">
+                <Compass size={20} className="text-[#802673]" weight="regular" />
               </div>
               <div className="flex flex-col">
                 <span className="font-sans text-sm sm:text-base font-semibold text-[#111010] mb-0.5">Real experience</span>
@@ -225,8 +230,8 @@ export default function MeetAarkesh() {
             </div>
 
             <div className="flex items-center gap-3.5 group">
-              <div className="w-11 h-11 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#faede4] bg-white shadow-xs">
-                <Brain size={20} className="text-[#c9542f]" weight="regular" />
+              <div className="w-11 h-11 rounded-full border border-[#802673]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#802673] group-hover:bg-[#f6eaf4] bg-white shadow-xs">
+                <Brain size={20} className="text-[#802673]" weight="regular" />
               </div>
               <div className="flex flex-col">
                 <span className="font-sans text-sm sm:text-base font-semibold text-[#111010] mb-0.5">Deep training</span>
@@ -235,8 +240,8 @@ export default function MeetAarkesh() {
             </div>
 
             <div className="flex items-center gap-3.5 group">
-              <div className="w-11 h-11 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#faede4] bg-white shadow-xs">
-                <Users size={20} className="text-[#c9542f]" weight="regular" />
+              <div className="w-11 h-11 rounded-full border border-[#802673]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#802673] group-hover:bg-[#f6eaf4] bg-white shadow-xs">
+                <Users size={20} className="text-[#802673]" weight="regular" />
               </div>
               <div className="flex flex-col">
                 <span className="font-sans text-sm sm:text-base font-semibold text-[#111010] mb-0.5">Relatable approach</span>

@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import defaultHeroImg from '../../assets/hero-coach.jpg';
+import defaultHeroImg from '../../assets/hero-coach.webp';
 
 export default function HeroImage({ 
   bgImageUrl = '',

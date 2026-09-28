@@ -93,16 +93,16 @@ export default function PrincipleSection({
           <img 
             src={bgImg} 
             alt="Principle Background"
-            className={`w-full h-full object-cover opacity-95 md:opacity-100 ${imagePosition || 'object-[75%_center] lg:object-[78%_center]'}`}
+            className={`w-full h-full object-cover opacity-100 contrast-[1.08] saturate-[1.05] ${imagePosition || 'object-[75%_center] lg:object-[78%_center]'}`}
           />
           {/* Subtle left-to-right fade so text remains 100% readable while the image on the right is crystal clear */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/85 md:via-[#f5f1e8]/50 to-transparent w-[60%] md:w-[50%]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/75 md:via-[#f5f1e8]/40 via-35% to-transparent w-[52%] md:w-[44%]" />
           
-          {/* Soft bottom edge blend */}
-          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/40 to-transparent" />
+          {/* Minimal bottom edge blend */}
+          <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#f5f1e8]/50 to-transparent" />
           
           {/* Soft top edge blend */}
-          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#f5f1e8]/60 to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-[#f5f1e8]/40 to-transparent" />
         </div>
 
 

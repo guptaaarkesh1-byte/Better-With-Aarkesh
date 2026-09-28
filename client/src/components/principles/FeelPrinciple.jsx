@@ -1,6 +1,6 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
-import defaultBgImg from '../../assets/Page4/feel-honestly.jpg';
+import defaultBgImg from '../../assets/Page4/feel-honestly.webp';
 import { Sparkle, CloudRain, Waves, Heart, SunDim } from '@phosphor-icons/react';
 
 const DEFAULT_FEEL_DATA = {
@@ -10,7 +10,7 @@ const DEFAULT_FEEL_DATA = {
   highlight: "You can't move forward, running from what you feel.",
   description: 'We create the safe space to feel it all - without judgement',
   buttonText: '',
-  bgImg: '/images/feel-honestly.jpg'
+  bgImg: ''
 };
 
 export default function FeelPrinciple() {

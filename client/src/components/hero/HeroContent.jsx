@@ -48,8 +48,8 @@ export default function HeroContent({ heroData = {} }) {
     <div ref={container} className="max-w-3xl mt-4 sm:mt-8">
       
       <div className="flex items-center gap-4 mb-4 lg:mb-6">
-        <div className="hero-line h-[1.5px] w-10 bg-[#c9542f] origin-left" />
-        <span className="hero-eyebrow text-[0.72rem] sm:text-[0.75rem] font-bold uppercase tracking-[0.25em] text-[#c9542f]">
+        <div className="hero-line h-[1.5px] w-10 bg-[#802673] origin-left" />
+        <span className="hero-eyebrow text-[0.72rem] sm:text-[0.75rem] font-bold uppercase tracking-[0.25em] text-[#802673]">
           {eyebrow}
         </span>
       </div>
@@ -59,7 +59,7 @@ export default function HeroContent({ heroData = {} }) {
         style={{ fontFamily: 'Fraunces, Georgia, serif' }}
       >
         {heading1}{' '}
-        <em className="italic text-[#c9542f] font-normal not-italic" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+        <em className="italic text-[#802673] font-normal not-italic" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
           {headingAccent}
         </em>
       </h1>
@@ -71,7 +71,7 @@ export default function HeroContent({ heroData = {} }) {
       <div className="hero-btn flex items-center gap-5">
         <Link 
           to={ctaLink}
-          className="inline-flex items-center gap-3 bg-[#111010] text-[#f5f1e8] hover:bg-[#c9542f] px-8 py-4 rounded-full font-sans text-[12.5px] font-bold uppercase tracking-[0.08em] transition-all duration-300 shadow-lg shadow-black/10 hover:shadow-xl hover:translate-y-[-2px] cursor-pointer"
+          className="inline-flex items-center gap-3 bg-[#111010] text-[#f5f1e8] hover:bg-[#802673] px-8 py-4 rounded-full font-sans text-[12.5px] font-bold uppercase tracking-[0.08em] transition-all duration-300 shadow-lg shadow-black/10 hover:shadow-xl hover:translate-y-[-2px] cursor-pointer"
         >
           <span>{ctaText}</span>
           <ArrowRight size={16} weight="bold" />

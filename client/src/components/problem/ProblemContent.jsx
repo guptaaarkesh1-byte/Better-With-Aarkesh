@@ -26,8 +26,8 @@ export default function ProblemContent({ problemData = {} }) {
     <div ref={container} className="max-w-md pt-0 relative z-50">
       
       <div className="flex items-center gap-4 mb-4">
-        <div className="prob-line h-[1.5px] w-8 bg-[#c9542f] origin-left" />
-        <span className="prob-eyebrow font-sans text-[0.72rem] font-bold uppercase tracking-[0.25em] text-[#c9542f]">
+        <div className="prob-line h-[1.5px] w-8 bg-[#802673] origin-left" />
+        <span className="prob-eyebrow font-sans text-[0.72rem] font-bold uppercase tracking-[0.25em] text-[#802673]">
           {eyebrow}
         </span>
       </div>
@@ -37,12 +37,12 @@ export default function ProblemContent({ problemData = {} }) {
         style={{ fontFamily: 'Fraunces, Georgia, serif' }}
       >
         {heading1}{' '}
-        <span className="italic text-[#c9542f] font-normal not-italic" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+        <span className="italic text-[#802673] font-normal not-italic" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
           {headingAccent}
         </span>
       </h2>
 
-      <div className="prob-divider h-[2px] w-10 bg-[#c9542f] origin-left mb-6" />
+      <div className="prob-divider h-[2px] w-10 bg-[#802673] origin-left mb-6" />
 
       <p className="prob-paragraph text-[#4a463e] text-lg lg:text-xl font-serif font-normal tracking-wide leading-relaxed">
         <span className="italic text-xl lg:text-2xl text-[#111010]">{quoteItalic}</span><br />

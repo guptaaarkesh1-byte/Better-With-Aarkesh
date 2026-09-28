@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
-import silhouetteImg from '../../assets/Page2/ChatGPT Image Jul 24, 2026, 01_49_09 PM.webp';
+import silhouetteImg from '../../assets/Page2/problem_silhouette.png';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -32,34 +32,25 @@ export default function WordCloud() {
   useGSAP(() => {
     const words = gsap.utils.toArray('.floating-word');
     
-    // Parallax floating effect for the words - paused by default until scrolled into view
-    const tweens = words.map((word) => {
-      const xMove = gsap.utils.random(-25, 25);
-      const yMove = gsap.utils.random(-25, 25);
-      const rot = gsap.utils.random(-2, 2);
-      const dur = gsap.utils.random(4, 8);
+    // Continuous natural floating effect for all words
+    words.forEach((word) => {
+      const xMove = gsap.utils.random(-22, 22);
+      const yMove = gsap.utils.random(-22, 22);
+      const rot = gsap.utils.random(-4, 4);
+      const dur = gsap.utils.random(3.5, 6.5);
+      const delay = gsap.utils.random(0, 2);
 
-      return gsap.to(word, {
+      gsap.to(word, {
         x: xMove,
         y: yMove,
         rotation: rot,
         duration: dur,
+        delay: delay,
         ease: 'sine.inOut',
         yoyo: true,
         repeat: -1,
-        paused: true,
         force3D: true,
       });
-    });
-
-    ScrollTrigger.create({
-      trigger: container.current,
-      start: 'top bottom',
-      end: 'bottom top',
-      onEnter: () => tweens.forEach(t => t.play()),
-      onLeave: () => tweens.forEach(t => t.pause()),
-      onEnterBack: () => tweens.forEach(t => t.play()),
-      onLeaveBack: () => tweens.forEach(t => t.pause()),
     });
 
   }, { scope: container });
@@ -67,20 +58,13 @@ export default function WordCloud() {
   return (
     <div ref={container} className="relative w-full h-full min-h-[60vh] flex items-center justify-center overflow-hidden">
       
-      {/* Silhouette Image Full Background with light blend */}
+      {/* Silhouette Image Full Background - 100% Clear & High Contrast */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
           src={silhouetteImg} 
           alt="Silhouette" 
-          className="w-full h-full object-cover object-top lg:object-center opacity-65"
-          style={{
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)'
-          }}
+          className="w-full h-full object-cover object-center opacity-100 contrast-[1.2] saturate-[1.15]"
         />
-        {/* Warm cream soft gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/40 to-[#f5f1e8]/60" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8] via-transparent to-[#f5f1e8]" />
       </div>
 
       {/* Words Container - shifted left on mobile to prevent right edge clipping */}
@@ -116,7 +100,7 @@ export default function WordCloud() {
             }}
           >
             <span 
-              className={`floating-word inline-block font-serif text-[#111010] font-medium ${word.size} ${word.opacity} whitespace-nowrap z-10 drop-shadow-xs`}
+              className={`floating-word inline-block font-serif text-[#111010] font-medium ${word.size} ${word.opacity} whitespace-nowrap z-10`}
             >
               {word.text}
             </span>

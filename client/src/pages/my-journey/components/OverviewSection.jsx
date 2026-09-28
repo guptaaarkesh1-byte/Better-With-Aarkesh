@@ -8,6 +8,21 @@ import MyNotesTab from './MyNotesTab';
 export default function OverviewSection() {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'COACHING');
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('userInfo');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.fullName) {
+          setUserName(parsed.fullName.split(' ')[0]);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   // Listen to changes in location state (e.g. going forward/back)
   useEffect(() => {
@@ -17,86 +32,84 @@ export default function OverviewSection() {
   }, [location.state]);
 
   return (
-    <section className="relative z-10 w-full min-h-[100dvh] flex flex-col px-4 sm:px-6 md:px-8 pt-48 sm:pt-52 md:pt-56 pb-16 mx-auto border-b border-white/5">
+    <div className="relative z-10 w-full flex flex-col pt-[62px] md:pt-[109px]">
       
-      {/* ─── FIXED SUBNAV TABS STRIP (Directly joined flush under Navbar with zero gap, perfectly Y-centered) ─── */}
-      <div className="fixed top-[62px] md:top-[109px] left-0 right-0 z-40 bg-[#060606]/95 backdrop-blur-2xl border-b border-white/10 shadow-[0_12px_30px_rgba(0,0,0,0.9)] h-14 md:h-15 flex items-center">
+      {/* ─── STICKY SUBNAV TABS STRIP (Cleanly pinned below navbar, scrolls away with section) ─── */}
+      <div className="sticky top-[62px] md:top-[109px] left-0 right-0 z-30 bg-[#f5f1e8] border-b border-black/10 shadow-xs h-14 md:h-16 flex items-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 w-full flex items-center justify-center">
           <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 w-full max-w-2xl mx-auto">
             {/* Tab 1: MY LIBRARY */}
             <button 
               onClick={() => setActiveTab('MY LIBRARY')}
-              className={`flex-1 h-9 sm:h-10 flex justify-center items-center gap-2 px-3 sm:px-5 rounded-lg transition-all duration-200 border cursor-pointer ${
+              className={`flex-1 h-9 sm:h-10 flex justify-center items-center gap-2 px-3 sm:px-5 rounded-xl transition-all duration-200 border cursor-pointer ${
                 activeTab === 'MY LIBRARY' 
-                  ? 'border-[#c79c6e] bg-[#14120e] text-[#c79c6e] shadow-[0_0_15px_rgba(199,156,110,0.15)] font-semibold' 
-                  : 'border-transparent text-white/60 hover:text-white hover:bg-white/5 font-medium'
+                  ? 'border-[#802673] bg-[#f6eaf4] text-[#802673] shadow-xs font-semibold' 
+                  : 'border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5 font-medium'
               }`}
             >
-              <BookmarkSimple size={18} weight="light" className={`shrink-0 ${activeTab === 'MY LIBRARY' ? 'text-[#c79c6e]' : ''}`} />
+              <BookmarkSimple size={18} weight={activeTab === 'MY LIBRARY' ? 'fill' : 'regular'} className={`shrink-0 ${activeTab === 'MY LIBRARY' ? 'text-[#802673]' : ''}`} />
               <span className="font-sans text-[0.68rem] sm:text-xs md:text-sm uppercase tracking-[0.15em] md:tracking-[0.2em] whitespace-nowrap leading-none">MY LIBRARY</span>
             </button>
 
             {/* Tab 2: COACHING */}
             <button 
               onClick={() => setActiveTab('COACHING')}
-              className={`flex-1 h-9 sm:h-10 flex justify-center items-center gap-2 px-3 sm:px-5 rounded-lg transition-all duration-200 border cursor-pointer ${
+              className={`flex-1 h-9 sm:h-10 flex justify-center items-center gap-2 px-3 sm:px-5 rounded-xl transition-all duration-200 border cursor-pointer ${
                 activeTab === 'COACHING' 
-                  ? 'border-[#c79c6e] bg-[#14120e] text-[#c79c6e] shadow-[0_0_15px_rgba(199,156,110,0.15)] font-semibold' 
-                  : 'border-transparent text-white/60 hover:text-white hover:bg-white/5 font-medium'
+                  ? 'border-[#802673] bg-[#f6eaf4] text-[#802673] shadow-xs font-semibold' 
+                  : 'border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5 font-medium'
               }`}
             >
-              <ChatCircleText size={18} weight="light" className={`shrink-0 ${activeTab === 'COACHING' ? 'text-[#c79c6e]' : ''}`} />
+              <ChatCircleText size={18} weight={activeTab === 'COACHING' ? 'fill' : 'regular'} className={`shrink-0 ${activeTab === 'COACHING' ? 'text-[#802673]' : ''}`} />
               <span className="font-sans text-[0.68rem] sm:text-xs md:text-sm uppercase tracking-[0.15em] md:tracking-[0.2em] whitespace-nowrap leading-none">COACHING</span>
             </button>
 
             {/* Tab 3: MY NOTES */}
             <button 
               onClick={() => setActiveTab('MY NOTES')}
-              className={`flex-1 h-9 sm:h-10 flex justify-center items-center gap-2 px-3 sm:px-5 rounded-lg transition-all duration-200 border cursor-pointer ${
+              className={`flex-1 h-9 sm:h-10 flex justify-center items-center gap-2 px-3 sm:px-5 rounded-xl transition-all duration-200 border cursor-pointer ${
                 activeTab === 'MY NOTES' 
-                  ? 'border-[#c79c6e] bg-[#14120e] text-[#c79c6e] shadow-[0_0_15px_rgba(199,156,110,0.15)] font-semibold' 
-                  : 'border-transparent text-white/60 hover:text-white hover:bg-white/5 font-medium'
+                  ? 'border-[#802673] bg-[#f6eaf4] text-[#802673] shadow-xs font-semibold' 
+                  : 'border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5 font-medium'
               }`}
             >
-              <Notebook size={18} weight="light" className={`shrink-0 ${activeTab === 'MY NOTES' ? 'text-[#c79c6e]' : ''}`} />
+              <Notebook size={18} weight={activeTab === 'MY NOTES' ? 'fill' : 'regular'} className={`shrink-0 ${activeTab === 'MY NOTES' ? 'text-[#802673]' : ''}`} />
               <span className="font-sans text-[0.68rem] sm:text-xs md:text-sm uppercase tracking-[0.15em] md:tracking-[0.2em] whitespace-nowrap leading-none">MY NOTES</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Header Section */}
-      <div className="w-full max-w-2xl flex flex-col items-start justify-center mb-8 md:mb-10">
-        <span className="font-sans text-[0.65rem] sm:text-[0.7rem] md:text-[0.8rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-medium text-[#c79c6e] mb-2 md:mb-3 block">
-          MY JOURNEY
-        </span>
-        <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white tracking-tight leading-[1.15] mb-2 md:mb-3">
-          Welcome back, Aarkesh.
-        </h1>
-        <p className="font-sans text-white/70 text-sm sm:text-base md:text-lg font-light leading-relaxed max-w-lg">
-          Your Perspectives, conversations and private reflections — gathered in one place.
-        </p>
-      </div>
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-8 sm:pt-10 md:pt-12 pb-16 flex flex-col flex-1">
+        {/* Header Section */}
+        <div className="w-full max-w-2xl flex flex-col items-start justify-center mb-8 md:mb-10">
+          <span className="font-sans text-[0.65rem] sm:text-[0.7rem] md:text-[0.75rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-bold text-[#802673] mb-2 md:mb-3 block">
+            MY JOURNEY
+          </span>
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#111010] tracking-tight leading-[1.15] mb-2 md:mb-3 font-medium">
+            Welcome back{userName ? `, ${userName}` : ''}.
+          </h1>
+          <p className="font-sans text-[#555047] text-sm sm:text-base md:text-lg font-light leading-relaxed max-w-lg">
+            Your perspectives, conversations and private reflections — gathered in one place.
+          </p>
+        </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 w-full">
-        {activeTab === 'COACHING' && (
-          <CoachingTab />
-        )}
-        
-        {activeTab === 'MY LIBRARY' && (
-          <MyLibraryTab />
-        )}
+        {/* Main Content Area */}
+        <div className="flex-1 w-full">
+          {activeTab === 'COACHING' && (
+            <CoachingTab />
+          )}
+          
+          {activeTab === 'MY LIBRARY' && (
+            <MyLibraryTab />
+          )}
 
-        {activeTab === 'MY NOTES' && (
-          <MyNotesTab />
-        )}
-      </div>
+          {activeTab === 'MY NOTES' && (
+            <MyNotesTab />
+          )}
+        </div>
+      </section>
 
-      {/* Footer Text */}
-      <div className="mt-auto pt-6 text-white/40 font-serif text-base md:text-xl italic tracking-wide pb-4 text-center sm:text-left">
-        Scroll down to continue where you left off.
-      </div>
-    </section>
+    </div>
   );
 }

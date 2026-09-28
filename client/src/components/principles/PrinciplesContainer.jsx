@@ -7,70 +7,52 @@ export default function PrinciplesContainer({ children }) {
   const [isProgressVisible, setIsProgressVisible] = useState(true);
 
   useEffect(() => {
-    const stepMap = [
-      { step: 1, ids: ['think-principle'] },
-      { step: 2, ids: ['feel-principle'] },
-      { step: 3, ids: ['decide-principle'] },
-      { step: 4, ids: ['coaching', 'coaching-journey'] },
-      { step: 5, ids: ['testimonials'] },
-    ];
-
-    const updateActiveStep = () => {
-      const scrollY = window.scrollY;
-      const viewportMid = scrollY + window.innerHeight * 0.45;
-
-      // Check if user is currently inside the "About" (Meet Aarkesh) section
-      const aboutEl = document.getElementById('meet-aarkesh');
-      if (aboutEl) {
-        const rect = aboutEl.getBoundingClientRect();
-        const top = rect.top + scrollY;
-        const bottom = top + rect.height;
-
-        if (viewportMid >= top && viewportMid < bottom) {
-          setIsProgressVisible(false);
-          return;
-        }
-      }
-
-      // Check if within principles or testimonials
-      let matchedStep = null;
-
-      for (const item of stepMap) {
-        for (const id of item.ids) {
-          const el = document.getElementById(id);
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            const top = rect.top + scrollY;
-            const bottom = top + rect.height;
-
-            if (viewportMid >= top && viewportMid < bottom) {
-              matchedStep = item.step;
-              break;
-            }
-          }
-        }
-        if (matchedStep !== null) break;
-      }
-
-      if (matchedStep !== null) {
-        setActiveStep(matchedStep);
-        setIsProgressVisible(true);
-      }
+    const stepMap = {
+      'think-principle': 1,
+      'feel-principle': 2,
+      'decide-principle': 3,
+      'coaching': 4,
+      'coaching-journey': 4,
+      'testimonials': 5,
     };
 
-    window.addEventListener('scroll', updateActiveStep, { passive: true });
-    window.addEventListener('resize', updateActiveStep, { passive: true });
-    
-    // Initial calls after DOM stabilizes
-    updateActiveStep();
-    const t1 = setTimeout(updateActiveStep, 300);
-    const t2 = setTimeout(updateActiveStep, 1000);
+    const targetIds = [
+      'think-principle',
+      'feel-principle',
+      'decide-principle',
+      'coaching',
+      'coaching-journey',
+      'meet-aarkesh',
+      'testimonials'
+    ];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            if (id === 'meet-aarkesh') {
+              setIsProgressVisible(false);
+            } else if (stepMap[id] !== undefined) {
+              setActiveStep(stepMap[id]);
+              setIsProgressVisible(true);
+            }
+          }
+        });
+      },
+      {
+        rootMargin: '-25% 0px -45% 0px',
+        threshold: 0.1
+      }
+    );
+
+    targetIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
 
     return () => {
-      window.removeEventListener('scroll', updateActiveStep);
-      window.removeEventListener('resize', updateActiveStep);
-      clearTimeout(t1);
-      clearTimeout(t2);
+      observer.disconnect();
     };
   }, []);
 
@@ -82,12 +64,10 @@ export default function PrinciplesContainer({ children }) {
         and stays fixed on the screen while scrolling through them.
       */}
       <div className="absolute inset-0 pointer-events-none z-50">
-        <div className="sticky top-0 h-screen w-full">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-full flex items-center justify-end">
-            <div className={`hidden lg:flex w-full justify-end pr-8 transition-all duration-500 ${isProgressVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6 pointer-events-none'}`}>
-              <div className="pointer-events-auto">
-                <PrincipleProgress activeStep={activeStep} />
-              </div>
+        <div className="sticky top-0 h-screen w-full flex items-center justify-end pr-6 md:pr-8 xl:pr-10 pointer-events-none">
+          <div className={`hidden lg:flex transition-all duration-500 ${isProgressVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6 pointer-events-none'}`}>
+            <div className="pointer-events-auto">
+              <PrincipleProgress activeStep={activeStep} />
             </div>
           </div>
         </div>

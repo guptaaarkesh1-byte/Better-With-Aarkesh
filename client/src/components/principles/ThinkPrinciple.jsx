@@ -1,6 +1,6 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
-import defaultBgImg from '../../assets/Page3/think-clearly.jpg';
+import defaultBgImg from '../../assets/Page3/think-clearly.webp';
 import { Sparkle, SunDim, TextT, Coffee, Circle } from '@phosphor-icons/react';
 
 const DEFAULT_THINK_DATA = {
@@ -10,7 +10,7 @@ const DEFAULT_THINK_DATA = {
   highlight: 'Clarity is the bridge between intention and action.',
   description: 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.',
   buttonText: 'SCROLL FOR NEXT PRINCIPLE',
-  bgImg: '/images/think-clearly.jpg'
+  bgImg: ''
 };
 
 export default function ThinkPrinciple() {

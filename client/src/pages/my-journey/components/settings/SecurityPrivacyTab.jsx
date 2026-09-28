@@ -247,25 +247,25 @@ export default function SecurityPrivacyTab() {
   };
 
   return (
-    <div className="w-full max-w-2xl border border-white/10 rounded-xl p-8 md:p-10 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col animate-in fade-in duration-500">
-      <h2 className="font-serif text-3xl text-white mb-2">Security & Privacy</h2>
-      <p className="font-sans text-white/70 text-sm mb-10">
+    <div className="w-full max-w-2xl border border-black/10 rounded-2xl p-6 sm:p-8 md:p-10 bg-white shadow-xs flex flex-col animate-in fade-in duration-500">
+      <h2 className="font-serif text-2xl sm:text-3xl text-[#111010] mb-2 font-medium">Security & Privacy</h2>
+      <p className="font-sans text-[#555047] text-sm mb-8 sm:mb-10 font-light">
         Contribute to your account and understand what remains private.
       </p>
 
       <div className="flex flex-col gap-4 mb-8">
         
         {/* Password Card */}
-        <div className={`flex flex-col border border-white/10 rounded-lg p-6 hover:border-[#c79c6e]/40 transition-colors ${!isEditingPassword ? 'group md:flex-row md:items-center justify-between' : ''}`}>
+        <div className={`flex flex-col border border-black/10 rounded-2xl p-5 sm:p-6 bg-[#fcfbfa] hover:border-[#802673]/40 transition-colors ${!isEditingPassword ? 'group md:flex-row md:items-center justify-between' : ''}`}>
           {!isEditingPassword ? (
             <>
-              <div className="flex flex-col gap-2">
-                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e]">PASSWORD</span>
-                <span className="font-mono text-white tracking-widest mt-1">•••••••••••••••</span>
+              <div className="flex flex-col gap-1.5">
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673]">PASSWORD</span>
+                <span className="font-mono text-[#111010] tracking-widest mt-1">•••••••••••••••</span>
               </div>
               <button 
                 onClick={() => setIsEditingPassword(true)}
-                className="mt-4 md:mt-0 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e] flex items-center gap-2 cursor-pointer"
+                className="mt-4 md:mt-0 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673] flex items-center gap-2 cursor-pointer hover:text-[#962e87]"
               >
                 CHANGE PASSWORD <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </button>
@@ -273,7 +273,7 @@ export default function SecurityPrivacyTab() {
           ) : (
             <div className="w-full animate-in fade-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between mb-6">
-                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-[#c79c6e]">CHANGE PASSWORD</span>
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673]">CHANGE PASSWORD</span>
                 <button 
                   onClick={() => {
                     setIsEditingPassword(false);
@@ -282,9 +282,9 @@ export default function SecurityPrivacyTab() {
                     setNewPassword('');
                     setConfirmPassword('');
                   }}
-                  className="text-white/50 hover:text-white transition-colors p-1 cursor-pointer"
+                  className="text-[#7a756b] hover:text-[#111010] transition-colors p-1 cursor-pointer"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
               </div>
               <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
@@ -293,7 +293,7 @@ export default function SecurityPrivacyTab() {
                   placeholder="Current Password" 
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="bg-black/50 border border-white/10 rounded px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]/50 font-sans"
+                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] font-sans placeholder-[#7a756b]/40"
                   required
                 />
                 <input 
@@ -301,7 +301,7 @@ export default function SecurityPrivacyTab() {
                   placeholder="New Password (min 6 characters)" 
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="bg-black/50 border border-white/10 rounded px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]/50 font-sans"
+                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] font-sans placeholder-[#7a756b]/40"
                   required
                 />
                 <input 
@@ -309,12 +309,12 @@ export default function SecurityPrivacyTab() {
                   placeholder="Confirm New Password" 
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="bg-black/50 border border-white/10 rounded px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]/50 font-sans"
+                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] font-sans placeholder-[#7a756b]/40"
                   required
                 />
                 
                 {passwordStatus.message && (
-                  <div className={`text-xs p-3 rounded font-sans flex items-center gap-2 ${passwordStatus.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                  <div className={`text-xs p-3 rounded-xl font-sans flex items-center gap-2 ${passwordStatus.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
                     {passwordStatus.type === 'success' && <Check size={14} />}
                     {passwordStatus.message}
                   </div>
@@ -323,7 +323,7 @@ export default function SecurityPrivacyTab() {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="mt-2 bg-[#c79c6e] text-black font-medium text-[0.7rem] tracking-[0.2em] uppercase py-3 rounded hover:bg-[#b58b5d] transition-colors flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer"
+                  className="mt-2 bg-[#802673] text-white font-bold text-[0.7rem] tracking-[0.2em] uppercase py-3.5 rounded-xl hover:bg-[#962e87] transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer shadow-md"
                 >
                   {isSubmitting ? <SpinnerGap size={16} className="animate-spin" /> : 'SAVE PASSWORD'}
                 </button>
@@ -333,16 +333,16 @@ export default function SecurityPrivacyTab() {
         </div>
 
         {/* Delete Account Trigger Card */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between border border-red-900/60 bg-red-950/20 rounded-lg p-6 hover:border-red-500/60 transition-colors group shadow-[0_0_20px_rgba(239,68,68,0.05)]">
-          <div className="flex flex-col gap-2 max-w-md">
-            <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-red-400">DELETE ACCOUNT</span>
-            <p className="font-serif text-white/80 text-sm leading-relaxed">
+        <div className="flex flex-col md:flex-row md:items-center justify-between border border-red-200 bg-red-50/50 rounded-2xl p-5 sm:p-6 hover:border-red-300 transition-colors group">
+          <div className="flex flex-col gap-1.5 max-w-md">
+            <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-red-600">DELETE ACCOUNT</span>
+            <p className="font-serif text-[#555047] text-sm leading-relaxed">
               Permanently deactivate your account and access.
             </p>
           </div>
           <button 
             onClick={openDeleteModal}
-            className="mt-4 md:mt-0 px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-sans text-xs uppercase tracking-widest font-bold flex items-center gap-2 shrink-0 shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all cursor-pointer"
+            className="mt-4 md:mt-0 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-xs"
           >
             <Trash size={15} weight="bold" /> DELETE ACCOUNT
           </button>

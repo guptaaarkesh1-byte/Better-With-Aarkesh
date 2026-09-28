@@ -55,8 +55,8 @@ export default function PrincipleContent({
     <div ref={container} className="max-w-xl text-left relative z-20">
       
       <div className="flex items-center gap-4 mb-6">
-        <div className="phil-line h-[1.5px] w-8 bg-[#c9542f] origin-left" />
-        <span className="phil-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+        <div className="phil-line h-[1.5px] w-8 bg-[#802673] origin-left" />
+        <span className="phil-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
           {eyebrow}
         </span>
       </div>
@@ -65,7 +65,7 @@ export default function PrincipleContent({
         <span className={`phil-heading-word text-[#111010] overflow-hidden pb-1 ${headlineWhite === headlineWhite?.toUpperCase() ? 'uppercase' : ''}`}>
           {headlineWhite}
         </span>
-        <span className={`phil-heading-word text-[#c9542f] overflow-hidden pb-1 ${headlineGoldItalic ? 'italic font-light' : ''} ${headlineGold === headlineGold?.toUpperCase() ? 'uppercase' : ''}`}>
+        <span className={`phil-heading-word text-[#802673] overflow-hidden pb-1 ${headlineGoldItalic ? 'italic font-light' : ''} ${headlineGold === headlineGold?.toUpperCase() ? 'uppercase' : ''}`}>
           {headlineGold}
         </span>
       </h2>
@@ -81,10 +81,10 @@ export default function PrincipleContent({
       </div>
 
       <div className="phil-button flex items-center gap-4 sm:gap-5 cursor-pointer group w-fit pt-2">
-        <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-full border border-black/20 bg-white/60 flex items-center justify-center transition-all duration-300 group-hover:border-[#c9542f] group-hover:bg-[#faede4] group-hover:scale-105 shadow-xs">
-          <ArrowDown size={20} weight="bold" className="text-[#111010] transition-transform group-hover:text-[#c9542f] group-hover:translate-y-1" />
+        <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-full border border-black/20 bg-white/60 flex items-center justify-center transition-all duration-300 group-hover:border-[#802673] group-hover:bg-[#f6eaf4] group-hover:scale-105 shadow-xs">
+          <ArrowDown size={20} weight="bold" className="text-[#111010] transition-transform group-hover:text-[#802673] group-hover:translate-y-1" />
         </div>
-        <span className="font-sans text-xs sm:text-sm md:text-[0.82rem] uppercase tracking-[0.25em] text-[#111010] font-bold transition-colors group-hover:text-[#c9542f]">
+        <span className="font-sans text-xs sm:text-sm md:text-[0.82rem] uppercase tracking-[0.25em] text-[#111010] font-bold transition-colors group-hover:text-[#802673]">
           {buttonText || 'SCROLL FOR NEXT PRINCIPLE'}
         </span>
       </div>

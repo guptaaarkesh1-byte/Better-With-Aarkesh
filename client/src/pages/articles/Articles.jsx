@@ -84,7 +84,7 @@ const CATEGORY_CONFIGS = {
     displayWords: ['DECISIONS'],
     wordClass: 'right',
     sphereClass: 'g4',
-    bg: '#c9542f',
+    bg: '#802673',
     ink: '#2b1208',
     borderLine: 'rgba(43, 18, 8, 0.18)',
     cardBg: 'rgba(43, 18, 8, 0.06)',

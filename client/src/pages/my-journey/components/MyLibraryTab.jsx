@@ -217,41 +217,40 @@ export default function MyLibraryTab() {
   };
 
   return (
-    <div className="w-full h-full min-h-[400px] rounded-2xl border border-[#c79c6e]/40 bg-[#080808] p-4 sm:p-6 md:p-10 lg:p-12 flex flex-col animate-in fade-in duration-500 mb-20 relative overflow-hidden group hover:border-[#c79c6e]/60 transition-colors duration-500 hover:shadow-[0_0_40px_rgba(199,156,110,0.1)]">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-[#c79c6e]/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="w-full h-full min-h-[400px] rounded-2xl border border-black/10 bg-[#f5f1e8] p-4 sm:p-6 md:p-10 lg:p-12 flex flex-col mb-20 relative overflow-hidden shadow-xs">
       
       {/* Header */}
-      <div className="mb-6 md:mb-10">
-        <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white mb-2 tracking-tight">My Library</h2>
-        <p className="font-sans text-white/60 font-light text-sm sm:text-base">The Articles and videos you chose to return to.</p>
+      <div className="mb-6 md:mb-8 relative z-10">
+        <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-[#111010] mb-2 tracking-tight">My Library</h2>
+        <p className="font-sans text-[#555047] font-light text-sm sm:text-base">The Articles and videos you chose to return to.</p>
       </div>
 
       {/* Main Tabs */}
-      <div className="flex items-center gap-5 sm:gap-8 border-b border-white/10 mb-5 sm:mb-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex items-center gap-5 sm:gap-8 border-b border-black/10 mb-5 sm:mb-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden relative z-10">
         {mainTabs.map(tab => (
           <button
             key={tab}
             onClick={() => setMainTab(tab)}
-            className={`pb-3 sm:pb-4 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors relative shrink-0 ${
-              mainTab === tab ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white/80'
+            className={`pb-3 sm:pb-4 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors relative shrink-0 cursor-pointer ${
+              mainTab === tab ? 'text-[#802673]' : 'text-[#7a756b] hover:text-[#111010]'
             }`}
           >
             {tab}
             {mainTab === tab && (
-              <span className="absolute bottom-[-1px] left-0 w-full h-[1.5px] bg-[#c79c6e]" />
+              <span className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-[#802673]" />
             )}
           </button>
         ))}
       </div>
 
       {/* Sub Tabs: ARTICLES & VIDEOS */}
-      <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden relative z-10">
         {subTabs.map(tab => (
           <button
             key={tab}
             onClick={() => setSubTab(tab)}
-            className={`font-sans text-xs uppercase tracking-[0.16em] font-semibold transition-colors shrink-0 ${
-              subTab === tab ? 'text-[#c79c6e]' : 'text-white/40 hover:text-white/80'
+            className={`font-sans text-xs uppercase tracking-[0.16em] font-bold transition-colors shrink-0 cursor-pointer pb-1 ${
+              subTab === tab ? 'text-[#802673] border-b border-[#802673]' : 'text-[#7a756b] hover:text-[#111010]'
             }`}
           >
             {tab}
@@ -260,11 +259,11 @@ export default function MyLibraryTab() {
       </div>
 
       {/* Content Rendering */}
-      <div>
+      <div className="relative z-10">
         {subTab === 'VIDEOS' ? (
           /* VIDEO GRID CARDS WITH THUMBNAIL (IDENTICAL TO FORMAT EXPLORE PREVIEW CARDS) */
           currentVideos.length === 0 ? (
-            <div className="text-white/40 font-sans text-xs sm:text-sm py-10 border border-dashed border-white/10 rounded text-center">
+            <div className="text-[#7a756b] font-sans text-xs sm:text-sm py-16 border border-black/10 rounded-2xl bg-white text-center shadow-xs">
               {getEmptyMessage()}
             </div>
           ) : (
@@ -276,7 +275,7 @@ export default function MyLibraryTab() {
                 return (
                   <div 
                     key={video._id} 
-                    className="group/vid cursor-pointer flex flex-col bg-[#0c0c0c] border border-white/10 hover:border-[#c79c6e]/60 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-lg hover:shadow-[0_0_30px_rgba(199,156,110,0.15)]"
+                    className="group/vid cursor-pointer flex flex-col bg-white border border-black/10 hover:border-[#802673]/40 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-xs hover:shadow-md"
                     onClick={() => {
                       if (video.videoUrl && video.videoUrl.includes('instagram.com')) {
                         window.open(video.videoUrl, '_blank');
@@ -286,23 +285,23 @@ export default function MyLibraryTab() {
                     }}
                   >
                     {/* Thumbnail Frame */}
-                    <div className="w-full aspect-[16/10] bg-black overflow-hidden relative">
+                    <div className="w-full aspect-[16/10] bg-[#111010] overflow-hidden relative">
                       <img 
                         src={thumbSrc} 
                         alt={video.title} 
-                        className="w-full h-full object-cover opacity-70 group-hover/vid:opacity-90 group-hover/vid:scale-105 transition-all duration-700" 
+                        className="w-full h-full object-cover opacity-85 group-hover/vid:opacity-100 group-hover/vid:scale-105 transition-all duration-700" 
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                       
                       {/* Center Play Icon */}
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-black/60 border border-white/20 flex items-center justify-center group-hover/vid:bg-[#c79c6e] group-hover/vid:border-[#c79c6e] group-hover/vid:text-black text-white/90 group-hover/vid:scale-110 transition-all duration-300 shadow-xl">
+                        <div className="w-12 h-12 rounded-full bg-white/90 border border-black/10 flex items-center justify-center group-hover/vid:bg-[#802673] group-hover/vid:border-[#802673] text-[#111010] group-hover/vid:text-white group-hover/vid:scale-110 transition-all duration-300 shadow-lg">
                           <Play size={22} weight="fill" className="ml-0.5" />
                         </div>
                       </div>
 
                       {/* Duration Tag */}
-                      <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/80 backdrop-blur-md rounded text-[0.65rem] font-sans font-bold tracking-widest text-[#c79c6e] border border-white/10">
+                      <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/75 backdrop-blur-md rounded-lg text-[0.65rem] font-sans font-bold tracking-widest text-white border border-white/10">
                         {video.duration || 'VIDEO'}
                       </div>
                     </div>
@@ -311,28 +310,28 @@ export default function MyLibraryTab() {
                     <div className="p-5 flex flex-col flex-1 justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <PlayCircle size={14} className="text-[#c79c6e]" weight="bold" />
-                          <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-[#c79c6e]/90">
+                          <PlayCircle size={14} className="text-[#802673]" weight="bold" />
+                          <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673]">
                             VIDEO
                           </span>
                         </div>
-                        <h3 className="font-serif text-lg sm:text-xl text-white font-normal leading-snug group-hover/vid:text-[#c79c6e] transition-colors line-clamp-2">
+                        <h3 className="font-serif text-lg sm:text-xl text-[#111010] font-medium leading-snug group-hover/vid:text-[#802673] transition-colors line-clamp-2">
                           {renderFormattedTitle(video.title)}
                         </h3>
-                        <span className="font-sans text-[0.7rem] text-white/40 block mt-2">
+                        <span className="font-sans text-[0.7rem] text-[#7a756b] block mt-2">
                           {mainTab === 'COMPLETED' ? `Completed ${dateStr}` : `Saved ${dateStr}`}
                         </span>
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex items-center gap-2 pt-3 border-t border-white/10">
+                      <div className="flex items-center gap-2 pt-3 border-t border-black/10">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveModalVideo(video);
                           }}
-                          className="flex-1 py-2 px-3 rounded border border-[#c79c6e]/70 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black font-sans text-xs uppercase tracking-[0.14em] font-semibold transition-all text-center flex items-center justify-center gap-1.5"
+                          className="flex-1 py-2.5 px-3 rounded-xl border border-black/15 hover:border-[#802673] hover:bg-[#f6eaf4] text-[#802673] font-sans text-xs uppercase tracking-[0.14em] font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                         >
                           <Play size={12} weight="bold" />
                           WATCH
@@ -342,7 +341,7 @@ export default function MyLibraryTab() {
                           <button
                             type="button"
                             onClick={(e) => handleRemoveVideo(video._id, e)}
-                            className="py-2 px-3 rounded border border-white/10 text-white/50 hover:text-white hover:border-white/30 font-sans text-xs uppercase tracking-[0.14em] font-semibold transition-colors"
+                            className="py-2.5 px-3 rounded-xl border border-black/10 text-[#7a756b] hover:text-[#111010] hover:bg-black/5 font-sans text-xs uppercase tracking-[0.14em] font-bold transition-colors cursor-pointer"
                             title="Remove from Saved"
                           >
                             REMOVE
@@ -352,7 +351,7 @@ export default function MyLibraryTab() {
                         <button
                           type="button"
                           onClick={(e) => handleCompleteVideo(video._id, e)}
-                          className="py-2 px-3 rounded border border-white/10 text-white/50 hover:text-white hover:border-white/30 font-sans text-xs uppercase tracking-[0.14em] font-semibold transition-colors"
+                          className="py-2.5 px-3 rounded-xl border border-black/10 text-[#7a756b] hover:text-[#111010] hover:bg-black/5 font-sans text-xs uppercase tracking-[0.14em] font-bold transition-colors cursor-pointer"
                         >
                           {mainTab === 'COMPLETED' ? 'UNMARK' : 'COMPLETE'}
                         </button>
@@ -366,7 +365,7 @@ export default function MyLibraryTab() {
         ) : (
           /* ARTICLES LIST */
           currentArticles.length === 0 ? (
-            <div className="text-white/40 font-sans text-xs sm:text-sm py-10 border border-dashed border-white/10 rounded text-center">
+            <div className="text-[#7a756b] font-sans text-xs sm:text-sm py-16 border border-black/10 rounded-2xl bg-white text-center shadow-xs">
               {getEmptyMessage()}
             </div>
           ) : (
@@ -397,64 +396,62 @@ export default function MyLibraryTab() {
                 }
 
                 return (
-                  <div key={article._id} className="group/card w-full rounded-xl border border-white/10 bg-[#0c0c0c] p-5 sm:p-6 md:p-7 flex flex-col hover:border-[#c79c6e]/40 transition-all duration-300 ease-out">
+                  <div key={article._id} className="group/card w-full rounded-2xl border border-black/10 bg-white p-5 sm:p-6 md:p-7 flex flex-col justify-between hover:border-[#802673]/40 transition-all duration-200 shadow-xs hover:shadow-md">
                     
                     {/* Main Visible Content */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
                       <div className="flex flex-col gap-2 sm:gap-3">
-                        <div className="flex items-center gap-2 text-white/50">
-                          <BookmarkSimple size={16} weight="light" />
-                          <span className="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#c79c6e]/80">ARTICLE</span>
+                        <div className="flex items-center gap-2 text-[#7a756b]">
+                          <BookmarkSimple size={16} weight="bold" className="text-[#802673]" />
+                          <span className="font-sans text-xs uppercase tracking-[0.2em] font-bold text-[#802673]">ARTICLE</span>
                         </div>
-                        <h3 className="font-serif text-xl sm:text-2xl md:text-2xl text-white/90 transition-colors group-hover/card:text-white leading-snug">
+                        <h3 className="font-serif text-xl sm:text-2xl md:text-2xl text-[#111010] transition-colors group-hover/card:text-[#802673] leading-snug font-medium">
                           {renderFormattedTitle(article.title)}
                         </h3>
                       </div>
 
-                      <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1.5 pt-2 sm:pt-0 border-t border-white/5 sm:border-0">
+                      <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1.5 pt-2 sm:pt-0 border-t border-black/5 sm:border-0">
                         {mainTab !== 'COMPLETED' && (
-                          <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold text-[#c79c6e]">
+                          <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold text-[#802673]">
                             {hasLegacyProgress && readPercentage === 0 ? 'IN PROGRESS' : `${readPercentage}% READ`}
                           </div>
                         )}
-                        <span className="font-sans text-xs sm:text-sm text-white/90 font-medium">
+                        <span className="font-sans text-xs sm:text-sm text-[#111010] font-semibold">
                           {article.categoryTitle || article.category || 'Article'}
                         </span>
-                        <span className="font-sans text-xs text-white/50 hidden sm:block">
+                        <span className="font-sans text-xs text-[#7a756b] hidden sm:block">
                           {mainTab === 'COMPLETED' ? `Completed ${dateStr}` : `Saved ${dateStr}`}
                         </span>
                       </div>
                     </div>
 
-                    {/* Actions: Always visible on mobile, expandable on desktop hover */}
-                    <div className="block md:max-h-0 md:overflow-hidden md:opacity-0 md:group-hover/card:max-h-[150px] md:group-hover/card:opacity-100 md:group-hover/card:mt-6 transition-all duration-500 ease-in-out mt-4 md:mt-0">
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t border-white/5 pt-4 md:pt-6">
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}&from=my-journey`, { state: { from: 'my-journey' } }); 
-                          }}
-                          className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-[#c79c6e]/60 text-[#c79c6e] hover:bg-[#c79c6e]/10 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
-                        >
-                          {mainTab === 'COMPLETED' ? 'REVISIT' : 'CONTINUE'}
-                        </button>
+                    {/* Actions: Clean direct footer buttons with zero hover lag */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t border-black/10 pt-4 mt-5">
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}&from=my-journey`, { state: { from: 'my-journey' } }); 
+                        }}
+                        className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-black/15 hover:border-[#802673] hover:bg-[#f6eaf4] text-[#802673] font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-all text-center cursor-pointer shadow-2xs"
+                      >
+                        {mainTab === 'COMPLETED' ? 'REVISIT' : 'CONTINUE'}
+                      </button>
 
-                        {mainTab !== 'COMPLETED' && (
-                          <button 
-                            onClick={(e) => handleRemoveArticle(article._id, e)}
-                            className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-white/10 text-white/50 hover:border-white/25 hover:text-white font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
-                          >
-                            REMOVE
-                          </button>
-                        )}
-
+                      {mainTab !== 'COMPLETED' && (
                         <button 
-                          onClick={(e) => handleCompleteArticle(article._id, e)}
-                          className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded border border-white/10 text-white/50 hover:border-white/25 hover:text-white font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors text-center"
+                          onClick={(e) => handleRemoveArticle(article._id, e)}
+                          className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-black/10 text-[#7a756b] hover:text-[#111010] hover:bg-black/5 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-colors text-center cursor-pointer"
                         >
-                          {mainTab === 'COMPLETED' ? 'MARK INCOMPLETE' : 'MARK COMPLETE'}
+                          REMOVE
                         </button>
-                      </div>
+                      )}
+
+                      <button 
+                        onClick={(e) => handleCompleteArticle(article._id, e)}
+                        className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-black/10 text-[#7a756b] hover:text-[#111010] hover:bg-black/5 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-colors text-center cursor-pointer"
+                      >
+                        {mainTab === 'COMPLETED' ? 'MARK INCOMPLETE' : 'MARK COMPLETE'}
+                      </button>
                     </div>
 
                   </div>

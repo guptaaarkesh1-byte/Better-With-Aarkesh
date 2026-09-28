@@ -170,7 +170,7 @@ export default function Navbar() {
                 className="text-[26px] sm:text-[32px] md:text-[36px] font-semibold text-[#111010] tracking-tight relative z-10 flex items-center whitespace-nowrap leading-tight"
                 style={{ fontFamily: 'Fraunces, Georgia, serif' }}
               >
-                BetterWith<em className="text-[#c9542f] font-normal not-italic italic ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>
+                BetterWith<em className="text-[#802673] font-normal not-italic italic ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>
               </Link>
             </div>
 
@@ -180,7 +180,7 @@ export default function Navbar() {
                 {/* Course Button */}
                 <button
                   onClick={() => navigate('/course')}
-                  className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] hover:border-[#802673] hover:text-[#802673] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Play size={13} weight="fill" /> COURSE
                 </button>
@@ -189,7 +189,7 @@ export default function Navbar() {
                 {!isLoggedIn ? (
                   <button 
                     onClick={() => setShowLoginModal(true)}
-                    className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] hover:border-[#802673] hover:text-[#802673] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <User size={14} weight="regular" /> LOGIN
                   </button>
@@ -197,7 +197,7 @@ export default function Navbar() {
                   <div className="relative group">
                     <button
                       onClick={() => navigate('/my-journey')}
-                      className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] group-hover:border-[#c9542f] group-hover:text-[#c9542f] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] group-hover:border-[#802673] group-hover:text-[#802673] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <BookmarkSimple size={14} weight="regular" /> MY JOURNEY
                     </button>
@@ -233,7 +233,7 @@ export default function Navbar() {
                             window.dispatchEvent(new Event('auth-change'));
                             navigate('/');
                           }}
-                          className="flex items-center gap-3 font-sans text-[0.7rem] uppercase tracking-[0.15em] font-bold text-[#c9542f] hover:bg-[#c9542f]/10 transition-colors w-full text-left px-3 py-2 rounded-lg mt-1"
+                          className="flex items-center gap-3 font-sans text-[0.7rem] uppercase tracking-[0.15em] font-bold text-[#802673] hover:bg-[#802673]/10 transition-colors w-full text-left px-3 py-2 rounded-lg mt-1"
                         >
                           <SignOut size={14} weight="bold" /> LOG OUT
                         </button>
@@ -245,7 +245,7 @@ export default function Navbar() {
                 {/* Book a Session Button */}
                 <button 
                   onClick={() => navigate('/book')}
-                  className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] hover:bg-[#faede4] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                  className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] hover:border-[#802673] hover:text-[#802673] hover:bg-[#f6eaf4] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   BOOK A SESSION
                 </button>
@@ -342,7 +342,7 @@ export default function Navbar() {
                 className={cn(
                   "text-2xl font-serif transition-colors duration-300 relative py-1 px-4 flex items-center justify-center",
                   active 
-                    ? "text-[#c9542f] font-semibold underline underline-offset-8" 
+                    ? "text-[#802673] font-semibold underline underline-offset-8" 
                     : "text-[#111010]/80 hover:text-[#111010]"
                 )}
                 onClick={() => {
@@ -411,7 +411,7 @@ export default function Navbar() {
       {toastMessage && createPortal(
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-white/95 backdrop-blur-xl border border-black/10 px-6 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] rounded-lg transition-all duration-300">
           <p className="font-sans text-[0.68rem] uppercase tracking-[0.2em] text-[#111010] flex items-center gap-3 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#c9542f] animate-pulse"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#802673] animate-pulse"></span>
             {toastMessage}
           </p>
         </div>,
