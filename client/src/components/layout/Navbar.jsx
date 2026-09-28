@@ -136,7 +136,7 @@ export default function Navbar() {
     });
   }, []);
 
-  if (location.pathname.startsWith('/course')) return null;
+  if (location.pathname.startsWith('/course') || location.pathname === '/library' || location.pathname.startsWith('/articles')) return null;
 
   const handleNavClick = (href) => {
     let target = null;

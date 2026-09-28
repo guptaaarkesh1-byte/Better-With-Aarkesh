@@ -1,185 +1,213 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ArrowLeft, BookmarkSimple, X } from '@phosphor-icons/react';
-import gsap from 'gsap';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { topics } from '../../constants/articleTaxonomy';
-import savedDecisionsImg from '../../assets/PerspectivePage/saved_decisions.webp';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, BookmarkSimple, List, X, Sparkle } from '@phosphor-icons/react';
+import { useBooking } from '../../context/BookingContext';
 import ArticleReaderView from './ArticleReaderView';
-import { getCuratedArticle } from '../../constants/libraryArticlesData';
+import { CURATED_LIBRARY_ARTICLES, getCuratedArticle } from '../../constants/libraryArticlesData';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const ExpandedArticle = ({ article, isExpanded, onBack }) => {
-  const contentRef = useRef(null);
-  const [progress, setProgress] = useState(0);
-  const maxProgressRef = useRef(0);
+const CATEGORY_CONFIGS = {
+  relationships: {
+    id: 'relationships',
+    num: '01',
+    name: 'Relationships',
+    displayWords: ['RELATION', 'SHIPS'],
+    wordClass: 'left',
+    sphereClass: 'g1',
+    bg: '#3d1b37',
+    ink: '#f7eef5',
+    borderLine: 'rgba(255, 255, 255, 0.16)',
+    cardBg: 'rgba(255, 255, 255, 0.05)',
+    cardBorder: 'rgba(255, 255, 255, 0.14)',
+    accent: '#d97fc8',
+    aarkeshColor: '#f3a8e2',
+    btnBg: '#f7eef5',
+    btnInk: '#3d1b37',
+    btnHoverBg: '#ffffff',
+    btnHoverInk: '#3d1b37',
+    pillBg: '#ece0ea',
+    pillColor: '#3d1b37',
+    sphereGrad: 'radial-gradient(circle at 35% 25%, #c87ab9 0%, #7d2c72 35%, #481541 70%, #1c061a 100%)',
+    tagline: 'Essays on connection, boundaries, projection, and the quiet courage of honest intimacy.'
+  },
+  self: {
+    id: 'self',
+    num: '02',
+    name: 'Self',
+    displayWords: ['SELF'],
+    wordClass: 'right',
+    sphereClass: 'g2',
+    bg: '#ffffff',
+    ink: '#111010',
+    borderLine: 'rgba(0, 0, 0, 0.12)',
+    cardBg: '#f6f3eb',
+    cardBorder: 'rgba(0, 0, 0, 0.12)',
+    accent: '#111010',
+    aarkeshColor: '#111010',
+    btnBg: '#111010',
+    btnInk: '#ffffff',
+    btnHoverBg: '#2b1208',
+    btnHoverInk: '#ffffff',
+    pillBg: '#111010',
+    pillColor: '#ffffff',
+    sphereGrad: 'radial-gradient(circle at 35% 25%, #ffffff 0%, #e2e2ec 35%, #9fa0b5 70%, #4a4b60 100%)',
+    tagline: 'Perspectives on inner alignment, silencing the need for approval, and returning home to who you are.'
+  },
+  change: {
+    id: 'change',
+    num: '03',
+    name: 'Change',
+    displayWords: ['CHANGE'],
+    wordClass: 'left',
+    sphereClass: 'g3',
+    bg: '#2f4a34',
+    ink: '#e9f0e6',
+    borderLine: 'rgba(255, 255, 255, 0.16)',
+    cardBg: 'rgba(255, 255, 255, 0.05)',
+    cardBorder: 'rgba(255, 255, 255, 0.14)',
+    accent: '#63d17e',
+    aarkeshColor: '#8ee09f',
+    btnBg: '#e9f0e6',
+    btnInk: '#1d3321',
+    btnHoverBg: '#ffffff',
+    btnHoverInk: '#1d3321',
+    pillBg: '#e2ebe3',
+    pillColor: '#1a2f1e',
+    sphereGrad: 'radial-gradient(circle at 35% 25%, #8fca9c 0%, #3d6b46 35%, #1e3a24 70%, #0a1c0e 100%)',
+    tagline: 'Navigating life transitions, the grief of outgrowing old spaces, and starting before you feel ready.'
+  },
+  decisions: {
+    id: 'decisions',
+    num: '04',
+    name: 'Decisions',
+    displayWords: ['DECISIONS'],
+    wordClass: 'right',
+    sphereClass: 'g4',
+    bg: '#c9542f',
+    ink: '#2b1208',
+    borderLine: 'rgba(43, 18, 8, 0.18)',
+    cardBg: 'rgba(43, 18, 8, 0.06)',
+    cardBorder: 'rgba(43, 18, 8, 0.16)',
+    accent: '#f2734b',
+    aarkeshColor: '#2b1208',
+    btnBg: '#2b1208',
+    btnInk: '#fceade',
+    btnHoverBg: '#140803',
+    btnHoverInk: '#ffffff',
+    pillBg: '#f0ded6',
+    pillColor: '#2b1208',
+    sphereGrad: 'radial-gradient(circle at 35% 25%, #fca283 0%, #d85c35 35%, #8a2e12 70%, #3e1205 100%)',
+    tagline: 'Tools for cutting through analysis paralysis, weighing trade-offs, and committing wholeheartedly.'
+  },
+  'difficult-people': {
+    id: 'difficult-people',
+    num: '05',
+    name: 'Difficult People',
+    displayWords: ['DIFFICULT', 'PEOPLE'],
+    wordClass: 'left',
+    sphereClass: 'g5',
+    bg: '#f0d9c9',
+    ink: '#2b1208',
+    borderLine: 'rgba(43, 18, 8, 0.14)',
+    cardBg: 'rgba(43, 18, 8, 0.05)',
+    cardBorder: 'rgba(43, 18, 8, 0.14)',
+    accent: '#f2ba8f',
+    aarkeshColor: '#a64117',
+    btnBg: '#2b1208',
+    btnInk: '#fceade',
+    btnHoverBg: '#140803',
+    btnHoverInk: '#ffffff',
+    pillBg: '#faeae0',
+    pillColor: '#2b1208',
+    sphereGrad: 'radial-gradient(circle at 35% 25%, #fceade 0%, #d9aa86 35%, #8f5c35 70%, #462812 100%)',
+    tagline: 'Holding unwavering boundaries without guilt, distinguishing empathy from excusing, and preserving peace.'
+  },
+  communication: {
+    id: 'communication',
+    num: '06',
+    name: 'Communication',
+    displayWords: ['COMMUNI', 'CATION'],
+    wordClass: 'right',
+    sphereClass: 'g6',
+    bg: '#141314',
+    ink: '#f5f1e8',
+    borderLine: 'rgba(255, 255, 255, 0.14)',
+    cardBg: 'rgba(255, 255, 255, 0.05)',
+    cardBorder: 'rgba(255, 255, 255, 0.12)',
+    accent: '#a4abb8',
+    aarkeshColor: '#ffffff',
+    btnBg: '#f5f1e8',
+    btnInk: '#141314',
+    btnHoverBg: '#ffffff',
+    btnHoverInk: '#141314',
+    pillBg: '#e6e3dd',
+    pillColor: '#141314',
+    sphereGrad: 'radial-gradient(circle at 35% 25%, #5a5a5a 0%, #323232 35%, #181818 70%, #080808 100%)',
+    tagline: 'The art of honest conversation, speaking hard truths with gentle hands, and naming repeating patterns.'
+  }
+};
 
-  useEffect(() => {
-    if (!isExpanded || !article) {
-      return undefined;
-    }
-
-    // Initialize max progress from localStorage
-    const savedScroll = localStorage.getItem(`article_progress_${article._id}`);
-    if (savedScroll) {
-      try {
-        const parsed = JSON.parse(savedScroll);
-        if (parsed.percentage) {
-          setProgress(parsed.percentage);
-          maxProgressRef.current = parsed.percentage;
-        }
-      } catch (e) {}
-    }
-
-    let timeoutId;
-    const handleScroll = () => {
-      if (!contentRef.current) {
-        return;
-      }
-
-      const { top, height } = contentRef.current.getBoundingClientRect();
-      const startTrigger = window.innerHeight / 2;
-      const scrolled = startTrigger - top;
-      const nextProgress = Math.max(0, Math.min(100, (scrolled / Math.max(height, 1)) * 100));
-      
-      if (nextProgress > maxProgressRef.current) {
-        maxProgressRef.current = nextProgress;
-        setProgress(nextProgress);
-      }
-
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        if (maxProgressRef.current > 2 && window.scrollY > 200) {
-          localStorage.setItem(`article_progress_${article._id}`, JSON.stringify({
-            scrollY: window.scrollY,
-            percentage: Math.round(maxProgressRef.current)
-          }));
-        }
-      }, 500);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll();
-
-    // Restore scroll position if it exists
-    if (savedScroll) {
-      try {
-        const parsed = JSON.parse(savedScroll);
-        if (parsed.scrollY && parsed.scrollY > 200) {
-          setTimeout(() => {
-            if (window.lenis) {
-              window.lenis.scrollTo(parsed.scrollY, { duration: 1.5 });
-            } else {
-              window.scrollTo({ top: parsed.scrollY, behavior: 'smooth' });
-            }
-            window.dispatchEvent(new CustomEvent('article-restored'));
-          }, 1000); // Wait for the transition to finish expanding
-        }
-      } catch (e) {
-        if (parseInt(savedScroll) > 200) {
-          setTimeout(() => {
-            if (window.lenis) {
-              window.lenis.scrollTo(parseInt(savedScroll), { duration: 1.5 });
-            } else {
-              window.scrollTo({ top: parseInt(savedScroll), behavior: 'smooth' });
-            }
-            window.dispatchEvent(new CustomEvent('article-restored'));
-          }, 1000);
-        }
-      }
-    }
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearTimeout(timeoutId);
-    };
-  }, [article, isExpanded]);
-
-  return (
-    <div className={`transition-all duration-1000 ease-in-out px-4 ml-4 ${isExpanded ? 'max-h-[20000px] opacity-100 pb-8' : 'max-h-0 opacity-0 pb-0'}`}>
-      
-      {/* Fixed Back Button that appears after scrolling */}
-      {progress > 2 && (
-        <button
-          onClick={onBack}
-          className="fixed top-32 left-4 md:left-8 z-[150] flex items-center gap-2 p-3 pr-4 rounded-full bg-[#050505]/80 backdrop-blur-md border border-[#c79c6e]/30 hover:border-[#c79c6e] text-[#c79c6e] hover:text-white transition-all shadow-[0_0_20px_rgba(199,156,110,0.1)] group animate-in fade-in duration-500"
-        >
-          <ArrowLeft size={18} weight="bold" className="group-hover:-translate-x-1 transition-transform" />
-          <span className="font-sans text-[0.6rem] tracking-[0.2em] uppercase font-bold hidden md:block">Back</span>
-        </button>
-      )}
-
-      <div className="relative pl-6 flex flex-col gap-8" ref={contentRef}>
-        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#c79c6e]/30" />
-        <div
-          className="absolute left-0 top-0 w-[2px] bg-[#c79c6e] shadow-[0_0_10px_rgba(199,156,110,0.8)]"
-          style={{ height: `${progress}%`, transition: 'none' }}
-        >
-          {progress > 2 && (
-            <div className="absolute right-3 bottom-0 translate-y-1/2 text-[#c79c6e] font-sans text-[0.65rem] font-medium tracking-widest select-none pointer-events-none bg-[#0a0a0a] px-1 opacity-80">
-              {Math.round(progress)}%
-            </div>
-          )}
-        </div>
-
-        {article.featuredImage && (
-          <img
-            src={article.featuredImage}
-            alt={article.title}
-            className="w-full max-h-[420px] object-cover rounded-sm border border-white/10"
-          />
-        )}
-
-        {article.description && (
-          <p className="font-sans text-lg text-white/60 leading-relaxed font-light">
-            {article.description}
-          </p>
-        )}
-
-        <div
-          className="prose prose-invert prose-lg max-w-none font-serif text-white/80 prose-headings:font-serif prose-headings:text-white/90 prose-headings:font-semibold prose-p:leading-[1.8] prose-p:my-6 prose-li:text-white/80"
-          dangerouslySetInnerHTML={{
-            __html:
-              article.bodyHtml ||
-              '<p>This article has been published, but the body content is still empty.</p>',
-          }}
-        />
-      </div>
-    </div>
-  );
+// Curated category fallback covers
+const FALLBACK_COVERS = {
+  relationships: [
+    '/library_preview_silhouette.jpg',
+    '/library_celestial_column.jpg',
+    '/course_hero_bg.jpg'
+  ],
+  self: [
+    '/library_celestial_column.jpg',
+    '/library_preview_silhouette.jpg',
+    '/course_hero_bg.jpg'
+  ],
+  change: [
+    '/library_preview_silhouette.jpg',
+    '/library_celestial_column.jpg',
+    '/course_hero_bg.jpg'
+  ],
+  decisions: [
+    '/library_preview_silhouette.jpg',
+    '/course_hero_bg.jpg',
+    '/library_celestial_column.jpg'
+  ],
+  'difficult-people': [
+    '/library_preview_silhouette.jpg',
+    '/library_celestial_column.jpg',
+    '/course_hero_bg.jpg'
+  ],
+  communication: [
+    '/library_celestial_column.jpg',
+    '/library_preview_silhouette.jpg',
+    '/course_hero_bg.jpg'
+  ]
 };
 
 export default function Articles() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { openBookingModal } = useBooking();
+
   const [publishedArticles, setPublishedArticles] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const viewParam = searchParams.get('view');
-  const categoryParam = searchParams.get('category');
-  const initialCategory = topics.find((topic) => topic.id === categoryParam) || topics[0];
-
-  const [step, setStep] = useState(viewParam === 'all' ? 0 : 1);
-  const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
-  const [hoveredSubPoint, setHoveredSubPoint] = useState(null);
-  const [expandedArticleId, setExpandedArticleId] = useState(null);
   const [savedArticleIds, setSavedArticleIds] = useState([]);
-  const [showSavePrompt, setShowSavePrompt] = useState(null);
-  const [resumeToast, setResumeToast] = useState(false);
-  const containerRef = useRef(null);
-  const lastScrollY = useRef(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const rawCat = searchParams.get('category')?.toLowerCase().trim();
+  const categoryKey = CATEGORY_CONFIGS[rawCat] ? rawCat : 'relationships';
+  const currentCat = CATEGORY_CONFIGS[categoryKey];
+
+  const articleParam = searchParams.get('article');
+  const searchQuery = searchParams.get('search')?.toLowerCase().trim() || '';
+
+  // Scroll to top on category change
   useEffect(() => {
-    const handleRestore = () => {
-      setResumeToast(true);
-      setTimeout(() => setResumeToast(false), 4000);
-    };
-    window.addEventListener('article-restored', handleRestore);
-    return () => window.removeEventListener('article-restored', handleRestore);
-  }, []);
+    if (window.lenis) {
+      window.lenis.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [categoryKey, articleParam]);
 
+  // Fetch saved articles from user profile
   useEffect(() => {
     const fetchSaved = async () => {
       const token = localStorage.getItem('token');
@@ -199,8 +227,25 @@ export default function Articles() {
     fetchSaved();
   }, []);
 
+  // Fetch published articles from backend API
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/articles/published`);
+        if (res.ok) {
+          const data = await res.json();
+          setPublishedArticles(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch published articles', err);
+      }
+    };
+    fetchArticles();
+  }, []);
+
   const handleToggleSave = async (articleId, e) => {
     e?.stopPropagation();
+    e?.preventDefault();
     const token = localStorage.getItem('token');
     if (!token) {
       alert("Please log in to save articles to your library.");
@@ -213,7 +258,7 @@ export default function Articles() {
     );
 
     try {
-      const res = await fetch(`${API_URL}/api/users/save-article`, {
+      await fetch(`${API_URL}/api/users/save-article`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -221,590 +266,724 @@ export default function Articles() {
         },
         body: JSON.stringify({ articleId }),
       });
-      if (!res.ok) {
-        setSavedArticleIds(prev => 
-          isCurrentlySaved ? [...prev, articleId] : prev.filter(id => id !== articleId)
-        );
-      }
     } catch (err) {
       console.error(err);
-      setSavedArticleIds(prev => 
-        isCurrentlySaved ? [...prev, articleId] : prev.filter(id => id !== articleId)
-      );
     }
   };
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      setIsLoading(true);
-
-      try {
-        const res = await fetch(`${API_URL}/api/articles/published`);
-        if (!res.ok) {
-          throw new Error('Failed to fetch published articles');
-        }
-
-        const data = await res.json();
-        setPublishedArticles(data);
-      } catch (fetchError) {
-        console.error(fetchError);
-        setError('Unable to load articles right now.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchArticles();
-  }, []);
-
-  useEffect(() => {
-    if (searchParams.get('view') === 'all') {
-      setStep(0);
-      setSelectedSubCategory(null);
-      setExpandedArticleId(null);
-      return;
-    }
-
-    const nextCategory = topics.find((topic) => topic.id === searchParams.get('category'));
-    const subCategoryParam = searchParams.get('subCategory');
-    const articleParam = searchParams.get('article');
-
-    if (nextCategory) {
-      setActiveCategory(nextCategory);
-      
-      if (subCategoryParam && articleParam) {
-        const nextSubCategory = nextCategory.subItems.find(si => si.id === subCategoryParam);
-        if (nextSubCategory) {
-          setSelectedSubCategory(nextSubCategory);
-          setExpandedArticleId(articleParam);
-          setStep(2);
-          return;
-        }
-      }
-
-      setSelectedSubCategory(null);
-      setExpandedArticleId(null);
-      setStep(1);
-    } else if (articleParam && publishedArticles.length > 0) {
-      const found = publishedArticles.find(a => a._id === articleParam);
-      if (found) {
-        const autoCat = topics.find(t => t.id === found.categoryId);
-        if (autoCat) {
-          const autoSub = autoCat.subItems.find(si => si.id === found.headingId);
-          if (autoSub) {
-            setActiveCategory(autoCat);
-            setSelectedSubCategory(autoSub);
-            setExpandedArticleId(articleParam);
-            setStep(2);
-            return;
-          }
-        }
-      }
-    }
-  }, [searchParams, publishedArticles]);
-
-  const getArticlesForSubCategory = (categoryId, subCategoryId) =>
-    publishedArticles.filter(
-      (article) => article.categoryId === categoryId && article.headingId === subCategoryId
-    );
-
-  const handleNextStep = (subCategory) => {
-    lastScrollY.current = window.scrollY;
-    gsap.to('.step-content', {
-      opacity: 0,
-      y: -20,
-      duration: 0.3,
-      onComplete: () => {
-        setSelectedSubCategory(subCategory);
-        setExpandedArticleId(null);
-        setStep(2);
-        window.scrollTo(0, 0);
-        gsap.fromTo(
-          '.step-content',
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
-        );
-      },
-    });
+  const handleBookClick = (e) => {
+    e?.preventDefault();
+    navigate('/book');
   };
 
-  const handleSelectFromMaster = (category, subCategory, articleId = null) => {
-    lastScrollY.current = window.scrollY;
-    gsap.to('.step-content', {
-      opacity: 0,
-      y: -20,
-      duration: 0.3,
-      onComplete: () => {
-        setActiveCategory(category);
-        setSelectedSubCategory(subCategory);
-        setExpandedArticleId(articleId);
-        setStep(2);
-        window.scrollTo(0, 0);
-        gsap.fromTo(
-          '.step-content',
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
-        );
-      },
-    });
-  };
+  // If viewing a specific article, show Reader View
+  if (articleParam) {
+    const curated = getCuratedArticle(articleParam);
+    const dbMatch = publishedArticles.find(a => a._id === articleParam || a.slug === articleParam);
+    const mergedArticle = dbMatch ? { ...curated, ...dbMatch, image: dbMatch.featuredImage || curated.image } : curated;
 
-  const executeBack = () => {
-    if (step === 0 || step === 1 || sessionStorage.getItem('library_scroll_position')) {
-      navigate('/library');
-      return;
-    }
-
-    gsap.to('.step-content', {
-      opacity: 0,
-      y: 20,
-      duration: 0.3,
-      onComplete: () => {
-        setSelectedSubCategory(null);
-        setExpandedArticleId(null);
-        setStep(searchParams.get('view') === 'all' ? 0 : 1);
-
-        setTimeout(() => {
-          if (window.lenis) {
-            window.lenis.scrollTo(lastScrollY.current, { immediate: true });
-          } else {
-            window.scrollTo({ top: lastScrollY.current, behavior: 'instant' });
-          }
-        }, 10);
-
-        gsap.fromTo(
-          '.step-content',
-          { opacity: 0, y: -20 },
-          { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
-        );
-      },
-    });
-  };
-
-  const handleBack = () => {
-    if (expandedArticleId && step === 2) {
-      const isSaved = savedArticleIds.includes(expandedArticleId);
-      if (!isSaved) {
-        const article = publishedArticles.find(a => a._id === expandedArticleId);
-        if (article && localStorage.getItem('token')) {
-          setShowSavePrompt({ ...article, isCollapseOnly: false });
-          return;
-        }
-      }
-    }
-    executeBack();
-  };
-
-  const handleCollapseArticle = () => {
-    if (expandedArticleId) {
-      const isSaved = savedArticleIds.includes(expandedArticleId);
-      if (!isSaved) {
-        const article = publishedArticles.find(a => a._id === expandedArticleId);
-        if (article && localStorage.getItem('token')) {
-          setShowSavePrompt({ ...article, isCollapseOnly: true });
-          return;
-        }
-      }
-    }
-    setExpandedArticleId(null);
-  };
-
-  const selectedArticles = selectedSubCategory
-    ? getArticlesForSubCategory(activeCategory.id, selectedSubCategory.id)
-    : [];
-  const articleParam = searchParams.get('article');
-  const titleParam = searchParams.get('title');
-
-  const curatedArticle = (articleParam || titleParam) 
-    ? getCuratedArticle(articleParam || titleParam) 
-    : null;
-    
-  const dbArticle = articleParam && publishedArticles.length > 0
-    ? publishedArticles.find(a => a._id === articleParam || a.slug === articleParam || a.id === articleParam)
-    : null;
-
-  const activeEditorialArticle = dbArticle
-    ? {
-        ...curatedArticle,
-        ...dbArticle,
-        title: dbArticle.title,
-        subtitle: dbArticle.description || dbArticle.subtitle || curatedArticle?.subtitle,
-        blocks: dbArticle.blocks && dbArticle.blocks.length > 0 ? dbArticle.blocks : curatedArticle?.blocks,
-        sections: dbArticle.sections && dbArticle.sections.length > 0 ? dbArticle.sections : curatedArticle?.sections,
-        bodyHtml: dbArticle.bodyHtml || dbArticle.content,
-        image: dbArticle.featuredImage || dbArticle.image || curatedArticle?.image || '/library_preview_silhouette.jpg'
-      }
-    : (curatedArticle || (articleParam ? getCuratedArticle('attention-feels-like-love') : null));
-
-  if (articleParam && activeEditorialArticle) {
     return (
-      <ArticleReaderView 
-        article={activeEditorialArticle} 
+      <ArticleReaderView
+        article={mergedArticle}
+        categoryConfig={currentCat}
         onBack={() => {
-          navigate('/library');
-        }} 
+          searchParams.delete('article');
+          setSearchParams(searchParams);
+        }}
       />
     );
   }
 
+  // Filter curated articles for current category
+  const curatedCategoryArticles = CURATED_LIBRARY_ARTICLES.filter(
+    a => a.category.toLowerCase().replace('_', ' ').replace('-', ' ') === currentCat.name.toLowerCase()
+  );
+
+  // Combine with matching published articles from backend
+  const apiMatchingArticles = publishedArticles.filter(
+    a => (a.categoryId?.toLowerCase() === currentCat.id || a.category?.toLowerCase() === currentCat.name.toLowerCase())
+  );
+
+  // Unified list of articles
+  const allCategoryArticles = curatedCategoryArticles.map((curated, idx) => {
+    const fallbackImage = FALLBACK_COVERS[currentCat.id]?.[idx] || '/library_preview_silhouette.jpg';
+    const apiMatch = apiMatchingArticles.find(a => a.slug === curated.slug || a.title?.toLowerCase() === curated.title?.toLowerCase());
+    return {
+      ...curated,
+      ...(apiMatch || {}),
+      id: apiMatch?._id || curated.id || `curated-${idx}`,
+      slug: curated.slug || apiMatch?.slug || curated.id,
+      image: apiMatch?.featuredImage || curated.image || fallbackImage,
+      readTime: curated.readTime || `${5 + (idx * 2)} MIN`,
+      date: curated.date || 'MAY 2026'
+    };
+  });
+
+  // Apply search filtering if user came from search query
+  const displayedArticles = searchQuery
+    ? allCategoryArticles.filter(a =>
+        a.title?.toLowerCase().includes(searchQuery) ||
+        a.subtitle?.toLowerCase().includes(searchQuery) ||
+        a.titleMain?.toLowerCase().includes(searchQuery)
+      )
+    : allCategoryArticles;
+
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col font-sans text-white relative">
-      {(step === 1 || step === 2) && activeCategory?.id === 'relationships' && (
-        <div className="fixed inset-0 z-0 pointer-events-none animate-in fade-in duration-1000">
-          <img
-            src={savedDecisionsImg}
-            alt="Relationships Background"
-            className="w-full h-full object-cover object-center opacity-40"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-[#050505]/40" />
+    <div className="themed-category-root" style={{ background: currentCat.bg, color: currentCat.ink }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@400;500;600;700;800&display=swap');
+
+        .themed-category-root {
+          width: 100%;
+          min-height: 100vh;
+          margin: 0;
+          font-family: 'Inter', sans-serif;
+          -webkit-font-smoothing: antialiased;
+          overflow-x: clip;
+          transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        .themed-category-root * {
+          box-sizing: border-box;
+        }
+
+        .themed-category-root a {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .themed-category-root .disp {
+          font-family: 'Archivo Black', sans-serif;
+          text-transform: uppercase;
+          line-height: 0.92;
+          letter-spacing: -0.01em;
+        }
+
+        .themed-category-root .serif-i {
+          font-family: 'Fraunces', serif;
+          font-style: italic;
+        }
+
+        /* Top Nav (Matching Main Navbar) */
+        .themed-category-root header.cat-page-nav {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 22px 40px;
+          border-bottom: 1px solid ${currentCat.borderLine};
+          position: sticky;
+          top: 0;
+          z-index: 90;
+          background: ${currentCat.bg};
+        }
+
+        .themed-category-root .logo {
+          font-family: 'Fraunces', serif;
+          font-size: 21px;
+          font-weight: 600;
+          letter-spacing: -0.01em;
+          color: ${currentCat.ink};
+        }
+
+        .themed-category-root .logo em {
+          font-style: italic;
+          color: ${currentCat.aarkeshColor};
+          font-family: 'Fraunces', serif;
+        }
+
+        .themed-category-root .navlinks {
+          display: flex;
+          gap: 28px;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .themed-category-root .navlinks a {
+          color: ${currentCat.ink};
+          opacity: 0.85;
+          transition: opacity 0.2s;
+        }
+
+        .themed-category-root .navlinks a:hover {
+          opacity: 0.6;
+        }
+
+        .themed-category-root .navlinks a.active {
+          text-decoration: underline;
+          text-underline-offset: 5px;
+          opacity: 1;
+        }
+
+        .themed-category-root .navcta {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+
+        .themed-category-root .navcta .my-journey-btn {
+          color: ${currentCat.ink};
+          opacity: 0.85;
+          transition: opacity 0.2s;
+        }
+
+        .themed-category-root .navcta .my-journey-btn:hover {
+          opacity: 0.6;
+        }
+
+        .themed-category-root .navcta .book-pill {
+          background: ${currentCat.btnBg};
+          color: ${currentCat.btnInk};
+          padding: 11px 20px;
+          border-radius: 2px;
+          transition: transform 0.2s, background-color 0.2s, color 0.2s;
+          cursor: pointer;
+          border: none;
+          font-family: 'Inter', sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          display: inline-block;
+        }
+
+        .themed-category-root .navcta .book-pill:hover {
+          background: ${currentCat.btnHoverBg};
+          color: ${currentCat.btnHoverInk};
+          transform: translateY(-1px);
+        }
+
+        .themed-category-root .mobile-toggle {
+          display: none;
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: ${currentCat.ink};
+          padding: 4px;
+        }
+
+        .themed-category-root .mobile-drawer {
+          display: none;
+        }
+
+        @media (max-width: 980px) {
+          .themed-category-root .navlinks { display: none; }
+          .themed-category-root header.cat-page-nav { padding: 16px 20px; }
+          .themed-category-root .mobile-toggle { display: block; }
+          .themed-category-root .navcta .my-journey-btn { display: none; }
+          .themed-category-root .mobile-drawer {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 24px 20px 30px;
+            background: ${currentCat.bg};
+            border-bottom: 1px solid ${currentCat.borderLine};
+          }
+          .themed-category-root .mobile-drawer a {
+            font-size: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+        }
+
+        /* Category Hero Banner */
+        .themed-category-root .category-hero {
+          padding: 70px 40px 50px;
+          max-width: 1280px;
+          margin: 0 auto;
+        }
+
+        .themed-category-root .cat-header-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 30px;
+        }
+
+        .themed-category-root .cat-header-top .idx {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: 14px;
+          letter-spacing: 0.05em;
+        }
+
+        /* 3-Column Alternating Showcase */
+        .themed-category-root .cat-showcase-layout {
+          display: grid;
+          grid-template-columns: 1fr 320px 1fr;
+          align-items: center;
+          gap: 20px;
+          min-height: 300px;
+          margin-bottom: 40px;
+        }
+
+        .themed-category-root .cat-big-word {
+          font-size: clamp(60px, 9vw, 140px);
+          margin: 0;
+          line-height: 0.92;
+        }
+
+        .themed-category-root .cat-big-word.left { text-align: right; }
+        .themed-category-root .cat-big-word.right { text-align: left; }
+
+        .themed-category-root .cat-sphere {
+          width: 300px;
+          height: 300px;
+          border-radius: 50%;
+          margin: 0 auto;
+          box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.4);
+          background: ${currentCat.sphereGrad};
+          display: block;
+          position: relative;
+        }
+
+        /* Topic Switcher Bar */
+        .themed-category-root .topic-switcher-bar {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 24px 0 36px;
+          border-top: 1px solid ${currentCat.borderLine};
+          border-bottom: 1px solid ${currentCat.borderLine};
+          margin-bottom: 60px;
+          align-items: center;
+          justify-content: flex-start;
+        }
+
+        .themed-category-root .topic-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          border-radius: 40px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          border: 1px solid ${currentCat.borderLine};
+          transition: all 0.25s ease;
+          cursor: pointer;
+          color: inherit;
+        }
+
+        .themed-category-root .topic-pill:hover,
+        .themed-category-root .topic-pill.active {
+          background: ${currentCat.ink};
+          color: ${currentCat.bg};
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .themed-category-root .topic-pill span.num {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: 10px;
+          opacity: 0.7;
+        }
+
+        /* Section Total Articles Header */
+        .themed-category-root .cards-section-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 28px;
+        }
+
+        .themed-category-root .cards-count-label {
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          opacity: 0.7;
+        }
+
+        /* 3-Column Articles Card Grid */
+        .themed-category-root .articles-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 28px;
+          margin-bottom: 100px;
+        }
+
+        .themed-category-root .article-card {
+          display: flex;
+          flex-direction: column;
+          background: ${currentCat.cardBg};
+          border: 1px solid ${currentCat.cardBorder};
+          border-radius: 16px;
+          overflow: hidden;
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+          position: relative;
+          cursor: pointer;
+        }
+
+        .themed-category-root .article-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.3);
+          border-color: ${currentCat.ink};
+        }
+
+        /* Card Image Container */
+        .themed-category-root .card-image-wrap {
+          width: 100%;
+          height: 220px;
+          position: relative;
+          overflow: hidden;
+          background: rgba(0, 0, 0, 0.1);
+        }
+
+        .themed-category-root .card-image-wrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .themed-category-root .article-card:hover .card-image-wrap img {
+          transform: scale(1.06);
+        }
+
+        .themed-category-root .card-badge {
+          position: absolute;
+          top: 14px;
+          left: 14px;
+          background: rgba(0, 0, 0, 0.65);
+          backdrop-filter: blur(8px);
+          color: #ffffff;
+          font-family: 'Inter', sans-serif;
+          font-size: 9.5px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          padding: 5px 10px;
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .themed-category-root .card-save-btn {
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.65);
+          backdrop-filter: blur(8px);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          cursor: pointer;
+          transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .themed-category-root .card-save-btn:hover {
+          transform: scale(1.1);
+          background: #ffffff;
+          color: #111010;
+        }
+
+        /* Card Content Body */
+        .themed-category-root .card-body {
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+        }
+
+        .themed-category-root .card-meta-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          opacity: 0.65;
+        }
+
+        .themed-category-root .card-title {
+          font-family: 'Fraunces', serif;
+          font-style: italic;
+          font-size: 20px;
+          font-weight: 400;
+          line-height: 1.3;
+          margin: 0 0 12px;
+          color: inherit;
+        }
+
+        .themed-category-root .card-excerpt {
+          font-family: 'Inter', sans-serif;
+          font-size: 13px;
+          line-height: 1.6;
+          opacity: 0.75;
+          margin: 0 0 20px;
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          flex: 1;
+        }
+
+        .themed-category-root .card-read-action {
+          font-family: 'Inter', sans-serif;
+          font-size: 11.5px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          border-top: 1px solid ${currentCat.borderLine};
+          padding-top: 14px;
+          margin-top: auto;
+          transition: gap 0.2s ease;
+        }
+
+        .themed-category-root .article-card:hover .card-read-action {
+          gap: 10px;
+        }
+
+        /* Footer */
+        .themed-category-root footer.cat-page-footer {
+          border-top: 1px solid ${currentCat.borderLine};
+          padding: 30px 40px 40px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 11.5px;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+          opacity: 0.75;
+          max-width: 1280px;
+          margin: 0 auto;
+        }
+
+        @media (max-width: 1024px) {
+          .themed-category-root .articles-cards-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .themed-category-root .cat-showcase-layout {
+            grid-template-columns: 1fr;
+            text-align: center;
+          }
+          .themed-category-root .cat-big-word.left,
+          .themed-category-root .cat-big-word.right {
+            text-align: center;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .themed-category-root header.cat-page-nav { padding: 16px 20px; }
+          .themed-category-root .category-hero { padding: 40px 20px; }
+          .themed-category-root .articles-cards-grid { grid-template-columns: 1fr; }
+          .themed-category-root footer.cat-page-footer { flex-direction: column; gap: 14px; text-align: center; padding: 24px 20px; }
+          .themed-category-root .cat-sphere { width: 200px; height: 200px; }
+        }
+      `}</style>
+
+      {/* ---------- TOP NAVIGATION (MAIN NAVBAR WITH THEMED AARKESH & BUTTON) ---------- */}
+      <header className="cat-page-nav">
+        <div className="logo">
+          <Link to="/">BetterWith<em>Aarkesh</em></Link>
+        </div>
+
+        <nav className="navlinks">
+          <Link to="/">Home</Link>
+          <Link to="/#coaching">Coaching</Link>
+          <Link to="/#meet-aarkesh">About</Link>
+          <Link to="/#testimonials">Testimonials</Link>
+          <Link to="/library" className="active">Library</Link>
+          <Link to="/#faq">FAQ</Link>
+        </nav>
+
+        <div className="navcta">
+          <Link to="/my-journey" className="my-journey-btn">My Journey</Link>
+          <button onClick={handleBookClick} className="book-pill">Book a Session</button>
+
+          <button 
+            className="mobile-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <List size={24} />}
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="mobile-drawer">
+          <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+          <Link to="/#coaching" onClick={() => setMobileMenuOpen(false)}>Coaching</Link>
+          <Link to="/#meet-aarkesh" onClick={() => setMobileMenuOpen(false)}>About</Link>
+          <Link to="/#testimonials" onClick={() => setMobileMenuOpen(false)}>Testimonials</Link>
+          <Link to="/library" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'underline' }}>Library</Link>
+          <Link to="/#faq" onClick={() => setMobileMenuOpen(false)}>FAQ</Link>
+          <Link to="/my-journey" onClick={() => setMobileMenuOpen(false)}>My Journey</Link>
+          <Link to="/course" onClick={() => setMobileMenuOpen(false)}>Course</Link>
         </div>
       )}
 
-      <div className="relative z-10 flex flex-col w-full h-full flex-1">
-        <main className="flex-1 flex flex-col items-center justify-center pt-20 sm:pt-24 lg:pt-28 pb-12 px-6" ref={containerRef}>
-          <div className="w-full md:w-[80%] max-w-6xl relative min-h-[400px] flex items-center justify-center">
-            {step === 0 && (
-              <div className="step-content w-full mx-auto flex flex-col pt-8">
-                <div className="mb-12 w-full flex flex-col items-center text-center pb-8 border-b border-white/10 relative">
-                  <button
-                    onClick={handleBack}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center p-2 rounded-full hover:bg-white/5 transition-colors text-white/60 hover:text-white"
-                  >
-                    <ArrowLeft size={20} weight="light" />
-                  </button>
-                  <span className="font-sans text-[0.7rem] uppercase tracking-[0.25em] font-medium text-[#c79c6e] mb-4">
-                    THE COMPLETE LIBRARY
-                  </span>
-                  <h1 className="font-serif text-4xl text-white font-light">Published Perspectives</h1>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
-                  {topics.map((category) => (
-                    <div key={category.id} className="flex flex-col">
-                      <div className="flex items-center gap-3 mb-6">
-                        <category.icon size={24} className="text-[#c79c6e]" weight="light" />
-                        <h2 className="font-sans text-[0.85rem] uppercase tracking-[0.25em] font-medium text-[#c79c6e]">
-                          {category.title}
-                        </h2>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        {category.subItems.map((subCategory, idx) => {
-                          const isHovered = hoveredSubPoint === `${category.id}-${idx}`;
-                          const articles = getArticlesForSubCategory(category.id, subCategory.id);
-
-                          return (
-                            <div
-                              key={subCategory.id}
-                              className="w-full flex flex-col border-b border-white/5 group cursor-pointer"
-                              onMouseEnter={() => setHoveredSubPoint(`${category.id}-${idx}`)}
-                              onMouseLeave={() => setHoveredSubPoint(null)}
-                            >
-                              <button
-                                onClick={() => handleSelectFromMaster(category, subCategory)}
-                                className="w-full flex items-center justify-between py-5 text-left transition-colors"
-                              >
-                                <span className="font-sans text-base md:text-lg font-light transition-colors text-white/80 group-hover:text-[#c79c6e]">
-                                  {subCategory.title}
-                                </span>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-white/30 text-xs uppercase tracking-[0.2em]">
-                                    {articles.length} Live
-                                  </span>
-                                  <ArrowRight size={18} className="text-white/20 transition-all duration-300 group-hover:text-[#c79c6e] group-hover:translate-x-2" weight="light" />
-                                </div>
-                              </button>
-
-                              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isHovered ? 'max-h-[240px] opacity-100 mb-5' : 'max-h-0 opacity-0'}`}>
-                                <div className="flex flex-col gap-3 pl-5 border-l-2 border-[#c79c6e]/30 ml-2">
-                                  {articles.length > 0 ? (
-                                    articles.map((article) => (
-                                      <span
-                                        key={article._id}
-                                        onClick={(event) => {
-                                          event.stopPropagation();
-                                          handleSelectFromMaster(category, subCategory, article._id);
-                                        }}
-                                        className="font-sans text-sm text-white/60 font-light leading-relaxed hover:text-white transition-colors cursor-pointer"
-                                      >
-                                        {article.title}
-                                      </span>
-                                    ))
-                                  ) : (
-                                    <span className="font-sans text-sm text-white/35 font-light leading-relaxed">
-                                      No published articles in this chapter yet.
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {step === 1 && (
-              <div className="step-content w-full max-w-4xl mx-auto flex flex-col">
-                <div className="mb-8 w-full flex items-center gap-4 border-b border-white/10 pb-6">
-                  <button
-                    onClick={handleBack}
-                    className="flex items-center justify-center p-2 rounded-full hover:bg-white/5 transition-colors text-white/60 hover:text-white"
-                  >
-                    <ArrowLeft size={20} weight="light" />
-                  </button>
-                  <div className="flex flex-col">
-                    <span className="font-sans text-[0.7rem] uppercase tracking-[0.25em] font-medium text-[#c79c6e] mb-2 flex items-center gap-2">
-                      <activeCategory.icon size={16} /> {activeCategory.title}
-                    </span>
-                    <h2 className="font-sans text-base text-white/90 font-light">
-                      Choose the chapter where you want to read.
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="flex flex-col w-full">
-                  {activeCategory.subItems.map((subCategory) => {
-                    const articles = getArticlesForSubCategory(activeCategory.id, subCategory.id);
-
-                    return (
-                      <button
-                        key={subCategory.id}
-                        onClick={() => handleNextStep(subCategory)}
-                        className="w-full flex items-center gap-4 py-5 border-b border-white/5 hover:border-[#c79c6e]/30 group transition-colors text-left"
-                      >
-                        <ArrowRight size={16} className="text-white/30 group-hover:text-[#c79c6e] transition-colors" weight="light" />
-                        <div className="flex-1 flex items-center justify-between gap-4">
-                          <span className="font-sans text-sm font-light text-white/80 group-hover:text-white transition-colors">
-                            {subCategory.title}
-                          </span>
-                          <span className="text-[0.65rem] uppercase tracking-[0.25em] text-white/30">
-                            {articles.length} Published
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {step === 2 && selectedSubCategory && (
-              <div className="step-content w-full max-w-5xl mx-auto flex flex-col">
-                <div className={`mb-8 w-full items-center gap-4 pb-4 border-b border-white/10 ${expandedArticle ? 'hidden' : 'flex'}`}>
-                  <button
-                    onClick={handleBack}
-                    className="flex items-center justify-center p-2 rounded-full hover:bg-white/5 transition-colors text-white/60 hover:text-white"
-                  >
-                    <ArrowLeft size={20} weight="light" />
-                  </button>
-                  <div className="flex flex-col">
-                    <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-medium text-white/50 mb-1">
-                      {activeCategory.title}
-                    </span>
-                    <h2 className="font-sans text-[0.7rem] uppercase tracking-[0.25em] font-medium text-[#c79c6e]">
-                      {selectedSubCategory.title}
-                    </h2>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="mb-6 p-4 rounded border border-red-500/20 bg-red-500/10 text-red-300 text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {isLoading ? (
-                  <div className="py-20 text-center text-white/40">Loading articles...</div>
-                ) : selectedArticles.length === 0 ? (
-                  <div className="py-20 text-center border border-dashed border-white/10 rounded-sm text-white/35">
-                    No published articles found here yet.
-                  </div>
-                ) : (
-                  <>
-                    <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 w-full pt-4 transition-all duration-500 ${expandedArticle ? 'hidden' : 'block'}`}>
-                      {selectedArticles.map((article) => (
-                        <div
-                          key={article._id}
-                          className="flex flex-col h-full transition-all duration-500 overflow-hidden cursor-pointer group hover:-translate-y-2"
-                          onClick={() => {
-                            setExpandedArticleId(article._id);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                        >
-                          <div className="flex flex-col bg-[#111111] border border-white/5 text-white w-full relative h-full rounded-sm">
-                            <div className="p-6 md:p-8 flex flex-col flex-1">
-                              <div className="flex justify-between items-center mb-6">
-                                <div className="bg-white/10 border border-white/5 px-3 py-1.5 rounded-sm text-[0.65rem] font-bold tracking-widest text-white/80 shadow-sm uppercase">
-                                  {article.readTime || 'Article'}
-                                </div>
-                                <div className="flex items-center gap-4">
-                                  <button 
-                                    onClick={(e) => handleToggleSave(article._id, e)}
-                                    className="text-[#c79c6e] hover:text-white transition-colors p-1"
-                                  >
-                                    <BookmarkSimple size={18} weight={savedArticleIds.includes(article._id) ? "fill" : "regular"} />
-                                  </button>
-                                  <div className="text-[0.7rem] font-bold text-[#c79c6e] uppercase tracking-wider">
-                                    Read
-                                  </div>
-                                </div>
-                              </div>
-                              <h3 className="font-serif text-2xl md:text-3xl font-bold uppercase leading-[1.1] mb-4 text-white/90">
-                                {article.title}
-                              </h3>
-                              <p className="font-sans text-sm text-white/50 font-light leading-relaxed mt-auto">
-                                {article.description || 'Open the article to read the full perspective.'}
-                              </p>
-                            </div>
-
-                            <div className="relative h-8 w-full bg-[#111111] flex items-center justify-center z-10 border-x border-white/5">
-                              <div className="w-[calc(100%-32px)] border-t-[2px] border-dashed border-white/10"></div>
-                              <div className="absolute left-[-16px] w-8 h-8 bg-[#050505] rounded-full border border-white/5"></div>
-                              <div className="absolute right-[-16px] w-8 h-8 bg-[#050505] rounded-full border border-white/5"></div>
-                            </div>
-
-                            <div className="w-full h-[200px] md:h-[240px] bg-[#111111] overflow-hidden p-4 pt-0 border-x border-b border-white/5 rounded-b-sm">
-                              {article.featuredImage ? (
-                                <img
-                                  src={article.featuredImage}
-                                  className="w-full h-full object-cover rounded-sm grayscale-[0.2] contrast-[1.1] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-                                  alt={article.title}
-                                />
-                              ) : (
-                                <div className="w-full h-full rounded-sm border border-dashed border-white/10 flex items-center justify-center text-white/25 text-xs uppercase tracking-[0.25em]">
-                                  No image
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {expandedArticle && (
-                      <div className="w-full mt-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                        <div className="mb-12 flex flex-col md:flex-row md:items-start justify-between gap-6 border-b border-white/10 pb-8">
-                          <div className="flex flex-col gap-4">
-                            <button
-                              onClick={() => {
-                                if (sessionStorage.getItem('library_scroll_position')) {
-                                  navigate('/library');
-                                } else {
-                                  handleCollapseArticle();
-                                }
-                              }}
-                              className="flex items-center gap-2 text-white/50 hover:text-white text-sm font-sans tracking-widest uppercase transition-colors w-fit group"
-                            >
-                              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                              {sessionStorage.getItem('library_scroll_position') ? 'BACK TO LIBRARY' : 'BACK TO ARTICLES'}
-                            </button>
-                            <div>
-                              <div className="flex items-center gap-3 text-[#c79c6e] text-xs uppercase tracking-widest font-sans mb-4 mt-4">
-                                <span>{activeCategory.title}</span>
-                                <span className="opacity-50">/</span>
-                                <span>{selectedSubCategory.title}</span>
-                                {expandedArticle.readTime && (
-                                  <>
-                                    <span className="opacity-50">/</span>
-                                    <span>{expandedArticle.readTime}</span>
-                                  </>
-                                )}
-                                <span className="opacity-50">/</span>
-                                <button 
-                                  onClick={() => handleToggleSave(expandedArticle._id)}
-                                  className="hover:text-white transition-colors ml-2"
-                                  title={savedArticleIds.includes(expandedArticle._id) ? "Remove from Library" : "Save to Library"}
-                                >
-                                  <BookmarkSimple size={18} weight={savedArticleIds.includes(expandedArticle._id) ? "fill" : "regular"} />
-                                </button>
-                              </div>
-                              <h2 className="font-serif text-4xl md:text-5xl text-white font-light">
-                                {expandedArticle.title}
-                              </h2>
-                            </div>
-                          </div>
-                        </div>
-                        <ExpandedArticle 
-                          article={expandedArticle} 
-                          isExpanded={true} 
-                          onBack={() => {
-                            if (sessionStorage.getItem('library_scroll_position')) {
-                              handleBack();
-                            } else {
-                              handleCollapseArticle();
-                            }
-                          }}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent pointer-events-none z-40" />
-
-      {showSavePrompt && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-          <div className="relative w-full max-w-md bg-[#0a0a0a] border border-[#c79c6e]/30 p-8 shadow-[0_0_40px_rgba(199,156,110,0.15)] flex flex-col items-center text-center">
-            <button 
-              onClick={() => setShowSavePrompt(null)}
-              className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
+      {/* ---------- CATEGORY SHOWCASE & HERO ---------- */}
+      <main className="category-hero">
+        <div className="cat-header-top">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Link 
+              to="/library" 
+              style={{ 
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                opacity: 0.85,
+                padding: '6px 14px',
+                borderRadius: '20px',
+                border: `1px solid ${currentCat.borderLine}`,
+                transition: 'all 0.2s ease',
+                color: 'inherit'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'translateX(-3px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '0.85';
+                e.currentTarget.style.transform = 'translateX(0)';
+              }}
             >
-              <X size={24} />
-            </button>
-            <div className="w-12 h-12 rounded-full bg-[#c79c6e]/10 flex items-center justify-center mb-6 border border-[#c79c6e]/30">
-              <BookmarkSimple size={24} className="text-[#c79c6e]" weight="regular" />
-            </div>
-            <h3 className="font-serif text-2xl text-white mb-2">Are you leaving?</h3>
-            <p className="font-sans text-sm text-white/60 mb-8 font-light leading-relaxed">
-              You can effortlessly continue from your My Library page right where you left off. Would you like to save "{showSavePrompt.title}" to your library before you go?
-            </p>
-            <div className="flex flex-col gap-3 w-full">
-              <button 
-                onClick={() => {
-                  handleToggleSave(showSavePrompt._id);
-                  const collapseOnly = showSavePrompt.isCollapseOnly;
-                  setShowSavePrompt(null);
-                  if (collapseOnly) setExpandedArticleId(null);
-                  else executeBack();
-                }}
-                className="w-full py-3 bg-[#c79c6e] text-black font-sans text-xs uppercase tracking-widest font-bold transition-all hover:bg-white"
-              >
-                Save to Library
-              </button>
-              <button 
-                onClick={() => {
-                  const collapseOnly = showSavePrompt.isCollapseOnly;
-                  setShowSavePrompt(null);
-                  if (collapseOnly) setExpandedArticleId(null);
-                  else executeBack();
-                }}
-                className="w-full py-3 border border-white/10 text-white/60 font-sans text-xs uppercase tracking-widest font-medium transition-all hover:text-white hover:border-white/30"
-              >
-                No Thanks, Leave
-              </button>
-            </div>
+              <ArrowLeft size={14} weight="bold" />
+              <span>BACK</span>
+            </Link>
+            <span className="idx">({currentCat.num}) {currentCat.name.toUpperCase()}</span>
           </div>
+          <div></div>
         </div>
-      )}
 
-      {/* Resume Toast */}
-      <div 
-        className={`fixed bottom-8 right-8 z-[300] bg-[#0a0a0a]/95 backdrop-blur-xl border border-[#c79c6e]/30 px-6 py-4 shadow-[0_0_40px_rgba(199,156,110,0.15)] transition-all duration-500 ease-out transform ${resumeToast ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}
-      >
-        <p className="font-sans text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] flex items-center gap-3">
-          <BookmarkSimple size={16} weight="regular" />
-          Resumed where you left off
-        </p>
-      </div>
+        {/* 3-Column Alternating Layout matching Library section exactly without side tagline texts */}
+        <div className="cat-showcase-layout">
+          {currentCat.wordClass === 'left' ? (
+            <>
+              <h1 className="disp cat-big-word left">
+                {currentCat.displayWords.map((w, i) => (
+                  <React.Fragment key={i}>
+                    {w}
+                    {i < currentCat.displayWords.length - 1 && <br />}
+                  </React.Fragment>
+                ))}
+              </h1>
+              <div className={`cat-sphere ${currentCat.sphereClass}`} />
+              <div></div>
+            </>
+          ) : (
+            <>
+              <div></div>
+              <div className={`cat-sphere ${currentCat.sphereClass}`} />
+              <h1 className="disp cat-big-word right">
+                {currentCat.displayWords.map((w, i) => (
+                  <React.Fragment key={i}>
+                    {w}
+                    {i < currentCat.displayWords.length - 1 && <br />}
+                  </React.Fragment>
+                ))}
+              </h1>
+            </>
+          )}
+        </div>
+
+        {/* Topic Switcher Pills */}
+        <div className="topic-switcher-bar">
+          {Object.values(CATEGORY_CONFIGS).map((cat) => (
+            <Link
+              key={cat.id}
+              to={`/articles?category=${cat.id}`}
+              className={`topic-pill ${cat.id === currentCat.id ? 'active' : ''}`}
+            >
+              <span className="num">{cat.num}</span>
+              <span>{cat.name}</span>
+            </Link>
+          ))}
+        </div>
+
+        {/* Section Count Header */}
+        <div className="cards-section-head">
+          <span className="cards-count-label">
+            {displayedArticles.length} ARTICLES
+          </span>
+        </div>
+
+        {/* ---------- ARTICLES CARD GRID ---------- */}
+        <div className="articles-cards-grid">
+          {displayedArticles.map((article, index) => {
+            const isSaved = savedArticleIds.includes(article.id) || savedArticleIds.includes(article._id);
+
+            return (
+              <div
+                key={article.id || article.slug || index}
+                className="article-card"
+                onClick={() => {
+                  setSearchParams({ category: currentCat.id, article: article.slug || article.id });
+                }}
+              >
+                <div className="card-image-wrap">
+                  <img
+                    src={article.image || '/library_preview_silhouette.jpg'}
+                    alt={article.title}
+                    loading="lazy"
+                  />
+                  <div className="card-badge">
+                    {article.readTime || '6 MIN READ'}
+                  </div>
+                  <button
+                    className="card-save-btn"
+                    onClick={(e) => handleToggleSave(article.id || article._id, e)}
+                    aria-label="Save article"
+                  >
+                    <BookmarkSimple size={16} weight={isSaved ? "fill" : "regular"} />
+                  </button>
+                </div>
+
+                <div className="card-body">
+                  <div className="card-meta-row">
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    <span>{article.date || 'MAY 2026'}</span>
+                  </div>
+
+                  <h3 className="card-title">
+                    {article.title}
+                  </h3>
+
+                  <p className="card-excerpt">
+                    {article.subtitle || article.description || 'A reflective perspective exploring deeper emotional understanding and self-clarity.'}
+                  </p>
+
+                  <div className="card-read-action">
+                    <span>Read Essay</span>
+                    <span>→</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </main>
+
+      {/* ---------- FOOTER ---------- */}
+      <footer className="cat-page-footer">
+        <span>© {new Date().getFullYear()} BetterWithAarkesh · {currentCat.name}</span>
+        <span>
+          <Link to="/privacy-policy">Privacy</Link> · <Link to="/terms-and-conditions">Terms &amp; Cookies</Link>
+        </span>
+        <span>Made with care</span>
+      </footer>
     </div>
   );
 }

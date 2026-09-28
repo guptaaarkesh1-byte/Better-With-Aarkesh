@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Container from '../ui/Container';
 import { 
   InstagramLogo, 
@@ -62,6 +62,7 @@ export const getSocialIcon = (platform, size = 16) => {
 };
 
 export default function Footer() {
+  const location = useLocation();
   const currentYear = new Date().getFullYear();
   const [columns, setColumns] = useState(DEFAULT_FOOTER_COLUMNS);
   const [socialLinks, setSocialLinks] = useState([]);
@@ -70,6 +71,8 @@ export default function Footer() {
     brandEmail: 'coaching@betterwithaarkesh.com',
     copyrightText: `© ${currentYear} Better With Aarkesh. All rights reserved.`,
   });
+
+  if (location.pathname === '/library' || location.pathname.startsWith('/articles')) return null;
 
   useEffect(() => {
     // Fetch dynamic footer columns

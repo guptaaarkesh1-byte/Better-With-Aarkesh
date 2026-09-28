@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, BookmarkSimple, Check } from '@phosphor-icons/react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -18,15 +18,113 @@ export function resolveImageUrl(url, fallback = '') {
   return url;
 }
 
-// Helper function to render gold italic highlight, bold, and larger text formatting
-export function renderFormattedTitle(text) {
+// Category theme palette definitions
+export const THEMES_MAP = {
+  relationships: {
+    id: 'relationships',
+    num: '01',
+    name: 'Relationships',
+    bg: '#3d1b37',
+    ink: '#f7eef5',
+    inkMuted: 'rgba(247, 238, 245, 0.82)',
+    inkFaint: 'rgba(247, 238, 245, 0.45)',
+    borderLine: 'rgba(255, 255, 255, 0.16)',
+    accent: '#f3a8e2',
+    accentLight: '#fcdcf4',
+    cardBg: 'rgba(255, 255, 255, 0.06)',
+    aarkeshColor: '#f3a8e2',
+    btnBg: '#f7eef5',
+    btnInk: '#3d1b37',
+  },
+  self: {
+    id: 'self',
+    num: '02',
+    name: 'Self',
+    bg: '#ffffff',
+    ink: '#111010',
+    inkMuted: 'rgba(17, 16, 16, 0.82)',
+    inkFaint: 'rgba(17, 16, 16, 0.45)',
+    borderLine: 'rgba(0, 0, 0, 0.12)',
+    accent: '#111010',
+    accentLight: '#444444',
+    cardBg: '#f6f3eb',
+    aarkeshColor: '#111010',
+    btnBg: '#111010',
+    btnInk: '#ffffff',
+  },
+  change: {
+    id: 'change',
+    num: '03',
+    name: 'Change',
+    bg: '#2f4a34',
+    ink: '#e9f0e6',
+    inkMuted: 'rgba(233, 240, 230, 0.82)',
+    inkFaint: 'rgba(233, 240, 230, 0.45)',
+    borderLine: 'rgba(255, 255, 255, 0.16)',
+    accent: '#8ee09f',
+    accentLight: '#cbf5d4',
+    cardBg: 'rgba(255, 255, 255, 0.06)',
+    aarkeshColor: '#8ee09f',
+    btnBg: '#e9f0e6',
+    btnInk: '#1d3321',
+  },
+  decisions: {
+    id: 'decisions',
+    num: '04',
+    name: 'Decisions',
+    bg: '#c9542f',
+    ink: '#2b1208',
+    inkMuted: 'rgba(43, 18, 8, 0.85)',
+    inkFaint: 'rgba(43, 18, 8, 0.5)',
+    borderLine: 'rgba(43, 18, 8, 0.18)',
+    accent: '#2b1208',
+    accentLight: '#fceade',
+    cardBg: 'rgba(43, 18, 8, 0.06)',
+    aarkeshColor: '#2b1208',
+    btnBg: '#2b1208',
+    btnInk: '#fceade',
+  },
+  'difficult-people': {
+    id: 'difficult-people',
+    num: '05',
+    name: 'Difficult People',
+    bg: '#f0d9c9',
+    ink: '#2b1208',
+    inkMuted: 'rgba(43, 18, 8, 0.85)',
+    inkFaint: 'rgba(43, 18, 8, 0.45)',
+    borderLine: 'rgba(43, 18, 8, 0.14)',
+    accent: '#a64117',
+    accentLight: '#faeae0',
+    cardBg: 'rgba(43, 18, 8, 0.05)',
+    aarkeshColor: '#a64117',
+    btnBg: '#2b1208',
+    btnInk: '#fceade',
+  },
+  communication: {
+    id: 'communication',
+    num: '06',
+    name: 'Communication',
+    bg: '#141314',
+    ink: '#f5f1e8',
+    inkMuted: 'rgba(245, 241, 232, 0.82)',
+    inkFaint: 'rgba(245, 241, 232, 0.45)',
+    borderLine: 'rgba(255, 255, 255, 0.14)',
+    accent: '#ffffff',
+    accentLight: '#e6ba94',
+    cardBg: 'rgba(255, 255, 255, 0.05)',
+    aarkeshColor: '#ffffff',
+    btnBg: '#f5f1e8',
+    btnInk: '#141314',
+  }
+};
+
+// Helper function to render italic highlight, bold, and larger text formatting with dynamic accent color
+export function renderFormattedTitle(text, accentColor = '#f3a8e2') {
   if (!text || typeof text !== 'string') return text;
 
-  // Function to recursively parse formatting tokens
   const parseTokens = (str, keyPrefix = 'rt') => {
     if (!str) return [];
     
-    // Match bold (**...**), extra large (++...++), large (+...+), gold italic (*...* or [...]), italic (_..._)
     const tokenRegex = /(\*\*(.+?)\*\*|\+\+([^+]+?)\+\+|\+([^+]+?)\+|\*([^*]+?)\*|\[([^\]]+?)\]|_([^_]+?)_)/g;
     
     const elements = [];
@@ -46,35 +144,35 @@ export function renderFormattedTitle(text) {
       if (raw.startsWith('**') && raw.endsWith('**')) {
         const inner = raw.slice(2, -2);
         elements.push(
-          <strong key={key} className="text-white font-bold font-serif">
+          <strong key={key} className="font-bold font-serif" style={{ color: 'inherit' }}>
             {parseTokens(inner, key)}
           </strong>
         );
       } else if (raw.startsWith('++') && raw.endsWith('++')) {
         const inner = raw.slice(2, -2);
         elements.push(
-          <span key={key} className="text-2xl sm:text-3xl text-white font-serif leading-relaxed font-normal">
+          <span key={key} className="text-2xl sm:text-3xl font-serif leading-relaxed font-normal" style={{ color: 'inherit' }}>
             {parseTokens(inner, key)}
           </span>
         );
       } else if (raw.startsWith('+') && raw.endsWith('+')) {
         const inner = raw.slice(1, -1);
         elements.push(
-          <span key={key} className="text-xl sm:text-2xl text-white font-serif leading-relaxed font-normal">
+          <span key={key} className="text-xl sm:text-2xl font-serif leading-relaxed font-normal" style={{ color: 'inherit' }}>
             {parseTokens(inner, key)}
           </span>
         );
       } else if ((raw.startsWith('*') && raw.endsWith('*')) || (raw.startsWith('[') && raw.endsWith(']'))) {
         const inner = raw.slice(1, -1);
         elements.push(
-          <span key={key} className="italic text-[#c79c6e] font-serif font-normal">
+          <span key={key} className="italic font-serif font-normal" style={{ color: accentColor }}>
             {parseTokens(inner, key)}
           </span>
         );
       } else if (raw.startsWith('_') && raw.endsWith('_')) {
         const inner = raw.slice(1, -1);
         elements.push(
-          <em key={key} className="italic text-white/95 font-serif font-normal">
+          <em key={key} className="italic font-serif font-normal" style={{ opacity: 0.95 }}>
             {parseTokens(inner, key)}
           </em>
         );
@@ -94,11 +192,17 @@ export function renderFormattedTitle(text) {
 }
 
 
-export default function ArticleReaderView({ article, onBack }) {
+export default function ArticleReaderView({ article, categoryConfig, onBack }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const isFromMyJourney = searchParams.get('from') === 'my-journey' || location.state?.from === 'my-journey';
+
+  // Compute active theme from prop, query parameter, or article category
+  const rawCat = searchParams.get('category')?.toLowerCase().trim() ||
+    (article?.category ? article.category.toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-') : '') ||
+    'relationships';
+  const theme = categoryConfig || THEMES_MAP[rawCat] || THEMES_MAP.relationships;
 
   const [isSaved, setIsSaved] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -149,61 +253,45 @@ export default function ArticleReaderView({ article, onBack }) {
     if (maxScroll > 0) {
       currentPct = Math.min(100, Math.max(0, Math.round((scrollTop / maxScroll) * 100)));
     }
-
-    if (currentPct > maxProgressRef.current) {
-      maxProgressRef.current = currentPct;
-    }
-
-    const effectivePct = Math.max(maxProgressRef.current, currentPct);
-
+    
+    const maxPct = Math.max(currentPct, maxProgressRef.current || 0);
     const keys = getArticleKeys();
-    const payload = JSON.stringify({
-      scrollY: scrollTop,
-      percentage: effectivePct,
-      updatedAt: Date.now()
+    keys.forEach(key => {
+      localStorage.setItem(`article_progress_${key}`, JSON.stringify({
+        scrollY: scrollTop,
+        percentage: maxPct,
+        lastRead: new Date().toISOString()
+      }));
     });
-
-    keys.forEach(k => {
-      localStorage.setItem(`article_progress_${k}`, payload);
-    });
-
-    setProgress(effectivePct);
   };
 
-  // Restore scroll position or scroll top on load
+  // Restore reading progress on mount
   useEffect(() => {
-    hasRestoredRef.current = false;
     const saved = getSavedProgress();
-
-    if (saved && (saved.percentage > 0 || saved.scrollY > 80)) {
-      const initialMax = saved.percentage || 0;
-      maxProgressRef.current = initialMax;
-      setProgress(initialMax);
-
-      if (saved.scrollY > 80) {
-        const timer = setTimeout(() => {
-          if (window.lenis) {
-            window.lenis.scrollTo(saved.scrollY, { duration: 1.2 });
-          } else {
-            window.scrollTo({ top: saved.scrollY, behavior: 'smooth' });
-          }
-          hasRestoredRef.current = true;
-          setToastMessage(`Resumed where you left off (${initialMax}% read)`);
-          setResumeToast(true);
-          setTimeout(() => setResumeToast(false), 4000);
-        }, 250);
-
-        return () => clearTimeout(timer);
-      }
+    if (saved && saved.scrollY > 100 && !hasRestoredRef.current) {
+      hasRestoredRef.current = true;
+      maxProgressRef.current = saved.percentage || 0;
+      setProgress(saved.percentage || 0);
+      
+      const targetY = saved.scrollY;
+      setTimeout(() => {
+        if (window.lenis) {
+          window.lenis.scrollTo(targetY, { immediate: false, duration: 1.2 });
+        } else {
+          window.scrollTo({ top: targetY, behavior: 'smooth' });
+        }
+        setToastMessage(`Resumed reading from ${saved.percentage || 0}%`);
+        setResumeToast(true);
+        setTimeout(() => setResumeToast(false), 4000);
+      }, 300);
     } else {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       maxProgressRef.current = 0;
       setProgress(0);
       hasRestoredRef.current = true;
     }
   }, [article?._id, article?.id, article?.slug]);
 
-  // Track scroll and compute reading percentage accurately without decreasing on scroll up
+  // Track scroll and compute reading percentage
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -273,10 +361,10 @@ export default function ArticleReaderView({ article, onBack }) {
       try {
         onBack();
       } catch (err) {
-        navigate('/library');
+        navigate(`/articles?category=${theme.id}`);
       }
     } else {
-      navigate('/library');
+      navigate(`/articles?category=${theme.id}`);
     }
   };
 
@@ -306,94 +394,171 @@ export default function ArticleReaderView({ article, onBack }) {
   };
 
   return (
-    <article className="w-full min-h-screen bg-[#050505] text-white pt-[118px] sm:pt-[122px] lg:pt-[124px] pb-16 px-4 sm:px-6 md:px-10 lg:px-16 animate-in fade-in duration-500 select-none relative">
+    <article 
+      className="themed-reader-view w-full min-h-screen select-none relative transition-colors duration-400"
+      style={{ backgroundColor: theme.bg, color: theme.ink }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@400;500;600;700;800&display=swap');
+
+        .themed-reader-view {
+          font-family: 'Inter', sans-serif;
+          -webkit-font-smoothing: antialiased;
+        }
+
+        .themed-reader-view h1,
+        .themed-reader-view h2,
+        .themed-reader-view h3,
+        .themed-reader-view h4 {
+          font-family: 'Fraunces', serif;
+        }
+
+        .themed-reader-view .editorial-body p,
+        .themed-reader-view .editorial-body li {
+          font-family: 'Fraunces', serif;
+          font-size: 1.18rem;
+          line-height: 1.85;
+          color: ${theme.inkMuted};
+        }
+
+        .themed-reader-view .editorial-body blockquote {
+          font-family: 'Fraunces', serif;
+          font-style: italic;
+          border-left: 2px solid ${theme.accent};
+          padding-left: 1.5rem;
+          margin: 2.5rem 0;
+          color: ${theme.ink};
+        }
+      `}</style>
       
       {/* Top Reading Progress Bar */}
-      <div className="fixed top-0 left-0 w-full h-[3px] z-[9999] bg-white/5 pointer-events-none">
+      <div className="fixed top-0 left-0 w-full h-[3px] z-[9999] bg-black/10 pointer-events-none">
         <div 
-          className="h-full bg-gradient-to-r from-[#c79c6e]/60 via-[#c79c6e] to-[#e8caa4] transition-[width] duration-150 ease-out shadow-[0_0_10px_rgba(199,156,110,0.8)]"
-          style={{ width: `${progress}%` }}
+          className="h-full transition-[width] duration-150 ease-out shadow-sm"
+          style={{ width: `${progress}%`, backgroundColor: theme.accent }}
         />
       </div>
 
-      <div className="max-w-[1280px] mx-auto flex flex-col">
-        
-        {/* Top Back & Save Navigation */}
-        <div className="mb-10 flex items-center justify-between">
+      {/* Top Themed Header Bar */}
+      <header 
+        className="sticky top-0 z-50 backdrop-blur-md px-6 sm:px-12 py-5 flex items-center justify-between transition-colors duration-300"
+        style={{ 
+          backgroundColor: `${theme.bg}ee`, 
+          borderBottom: `1px solid ${theme.borderLine}` 
+        }}
+      >
+        <button
+          type="button"
+          onClick={handleGoBack}
+          className="inline-flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] font-bold transition-opacity hover:opacity-60 cursor-pointer group"
+          style={{ color: theme.ink }}
+        >
+          <ArrowLeft size={16} weight="bold" className="group-hover:-translate-x-1 transition-transform" />
+          <span>{isFromMyJourney ? 'BACK TO MY JOURNEY' : `BACK TO ${theme.name.toUpperCase()}`}</span>
+        </button>
+
+        <div className="text-lg font-semibold tracking-tight hidden md:block" style={{ fontFamily: 'Fraunces, serif' }}>
+          <Link to="/" style={{ color: theme.ink }}>
+            BetterWith<em style={{ color: theme.aarkeshColor, fontStyle: 'italic', fontFamily: 'Fraunces, serif' }}>Aarkesh</em>
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {progress > 0 && (
+            <span 
+              className="text-xs uppercase tracking-[0.15em] font-bold px-3 py-1.5 rounded-full border hidden sm:inline-block"
+              style={{ 
+                borderColor: theme.borderLine, 
+                backgroundColor: theme.cardBg, 
+                color: theme.ink 
+              }}
+            >
+              {progress}% READ
+            </span>
+          )}
+          {/* Bookmark / Save Button */}
           <button
             type="button"
-            onClick={handleGoBack}
-            className="inline-flex items-center gap-2.5 font-sans text-xs uppercase tracking-[0.25em] font-semibold text-[#c79c6e] hover:text-white transition-colors cursor-pointer group"
+            onClick={handleToggleSave}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 cursor-pointer text-xs uppercase tracking-widest font-semibold shadow-sm"
+            style={{
+              borderColor: theme.borderLine,
+              backgroundColor: isSaved ? theme.ink : theme.cardBg,
+              color: isSaved ? theme.bg : theme.ink
+            }}
+            title={isSaved ? 'Saved in My Journey' : 'Save to My Journey'}
           >
-            <ArrowLeft size={16} weight="bold" className="group-hover:-translate-x-1 transition-transform" />
-            <span>{isFromMyJourney ? 'BACK TO MY JOURNEY' : 'BACK TO LIBRARY'}</span>
+            <BookmarkSimple size={16} weight={isSaved ? "fill" : "regular"} />
+            <span>{isSaved ? 'SAVED' : 'SAVE ARTICLE'}</span>
           </button>
-
-          <div className="flex items-center gap-4">
-            {progress > 0 && (
-              <span className="font-sans text-xs uppercase tracking-[0.15em] font-bold text-[#c79c6e]/90 bg-[#121212] px-3 py-1.5 rounded-full border border-white/10 hidden sm:inline-block">
-                {progress}% READ
-              </span>
-            )}
-            {/* Bookmark / Save Button */}
-            <button
-              type="button"
-              onClick={handleToggleSave}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 cursor-pointer text-xs uppercase tracking-widest font-medium shadow-md ${
-                isSaved
-                  ? 'border-[#c79c6e] bg-[#c79c6e]/15 text-[#c79c6e]'
-                  : 'border-white/15 bg-black/40 text-white/70 hover:text-white hover:border-white/30'
-              }`}
-              title={isSaved ? 'Saved in My Journey' : 'Save to My Journey'}
-            >
-              <BookmarkSimple size={16} weight={isSaved ? "fill" : "regular"} className={isSaved ? "text-[#c79c6e]" : ""} />
-              <span>{isSaved ? 'SAVED' : 'SAVE ARTICLE'}</span>
-            </button>
-          </div>
         </div>
+      </header>
+
+      <div className="max-w-[1240px] mx-auto pt-12 pb-24 px-6 sm:px-10 lg:px-14 flex flex-col">
 
         {/* =========================================================
             HERO HEADER AREA (2-COLUMN EDITORIAL MATCHING REFERENCE)
            ========================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center pb-16 border-b border-white/10">
+        <div 
+          className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center pb-16"
+          style={{ borderBottom: `1px solid ${theme.borderLine}` }}
+        >
           
           {/* Left Column: Category, Heading, Subtitle & Meta */}
           <div className="lg:col-span-7 flex flex-col items-start justify-center">
             
-            <span className="font-sans text-[0.68rem] sm:text-[0.72rem] uppercase tracking-[0.28em] font-semibold text-[#c79c6e] mb-3 block">
-              {article.category || 'RELATIONSHIPS'}
+            <span 
+              className="text-[0.72rem] uppercase tracking-[0.28em] font-bold mb-4 block"
+              style={{ color: theme.accent }}
+            >
+              ({theme.num}) {article.category || theme.name.toUpperCase()}
             </span>
 
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.8rem] text-white font-normal leading-[1.1] mb-5 tracking-tight">
-              {renderFormattedTitle(article.title)}
+            <h1 
+              className="text-4xl sm:text-5xl lg:text-[3.8rem] font-normal leading-[1.12] mb-6 tracking-tight"
+              style={{ color: theme.ink }}
+            >
+              {renderFormattedTitle(article.title, theme.accent)}
             </h1>
 
-            <p className="font-serif text-white/75 text-base sm:text-lg font-normal leading-relaxed mb-6 max-w-xl">
+            <p 
+              className="text-base sm:text-lg font-normal leading-relaxed mb-8 max-w-xl"
+              style={{ color: theme.inkMuted, fontFamily: 'Fraunces, serif' }}
+            >
               {renderFormattedTitle(
                 article.subtitle || 
                 (article.excerpt ? `${article.excerpt}${article.highlightText ? ` *${article.highlightText}*` : ''}` : '') ||
-                article.description || ''
+                article.description || '',
+                theme.accent
               )}
             </p>
 
             <div className="flex flex-col gap-3.5">
-              <span className="font-sans text-xs uppercase tracking-[0.2em] text-white/50 font-medium">
-                {article.date || '12 SEP 2026'}
+              <span 
+                className="text-xs uppercase tracking-[0.2em] font-semibold"
+                style={{ color: theme.inkFaint }}
+              >
+                {article.date || 'MAY 2026'} · {article.readTime || '6 MIN READ'}
               </span>
-              <div className="w-12 h-[2px] bg-[#c79c6e]" />
+              <div className="w-12 h-[2px]" style={{ backgroundColor: theme.accent }} />
             </div>
 
           </div>
 
           {/* Right Column: Framed Dual-Silhouette Glowing Artwork */}
           <div className="lg:col-span-5 flex justify-center lg:justify-end">
-            <div className="w-full max-w-[500px] aspect-[16/11] rounded-none overflow-hidden border border-[#c79c6e]/40 bg-black shadow-[0_0_60px_rgba(199,156,110,0.22)] relative group">
+            <div 
+              className="w-full max-w-[500px] aspect-[16/11] rounded-2xl overflow-hidden border shadow-2xl relative group"
+              style={{ 
+                borderColor: theme.borderLine,
+                backgroundColor: theme.cardBg 
+              }}
+            >
               <img 
                 src={resolveImageUrl(article.image || article.featuredImage, '/library_preview_silhouette.jpg')} 
                 alt={article.title}
                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
             </div>
           </div>
 
@@ -402,7 +567,7 @@ export default function ArticleReaderView({ article, onBack }) {
         {/* =========================================================
             ARTICLE BODY CONTENT (CENTERED LUXURY READING)
            ========================================================= */}
-        <div className="w-full max-w-3xl mx-auto pt-16 pb-20 px-2 sm:px-4">
+        <div className="editorial-body w-full max-w-3xl mx-auto pt-16 pb-20 px-2 sm:px-4">
           
           {/* 1. Modular Blocks Renderer (If article has custom block sequence) */}
           {article.blocks && article.blocks.length > 0 ? (
@@ -410,22 +575,33 @@ export default function ArticleReaderView({ article, onBack }) {
               {article.blocks.map((block, bIdx) => {
                 if (block.type === 'heading') {
                   return (
-                    <h2 key={block.id || bIdx} className="font-serif text-3xl sm:text-4xl text-white font-normal mt-12 mb-6 leading-snug">
-                      {renderFormattedTitle(block.text || block.heading)}
+                    <h2 
+                      key={block.id || bIdx} 
+                      className="text-3xl sm:text-4xl font-normal mt-14 mb-6 leading-snug"
+                      style={{ color: theme.ink }}
+                    >
+                      {renderFormattedTitle(block.text || block.heading, theme.accent)}
                     </h2>
                   );
                 }
 
                 if (block.type === 'callout') {
                   return (
-                    <div key={block.id || bIdx} className="border-l-2 border-[#c79c6e] pl-6 py-2 my-10 flex flex-col gap-2">
+                    <div 
+                      key={block.id || bIdx} 
+                      className="pl-6 py-4 my-10 flex flex-col gap-2 rounded-r-xl"
+                      style={{ 
+                        borderLeft: `3px solid ${theme.accent}`,
+                        backgroundColor: theme.cardBg 
+                      }}
+                    >
                       {block.line1 && (
-                        <p className="font-serif text-xl sm:text-2xl text-white/90 italic font-normal">
+                        <p className="text-xl sm:text-2xl italic font-normal" style={{ color: theme.ink }}>
                           {block.line1}
                         </p>
                       )}
                       {block.line2 && (
-                        <p className="font-serif text-xl sm:text-2xl text-[#c79c6e] italic font-normal">
+                        <p className="text-xl sm:text-2xl italic font-normal" style={{ color: theme.accent }}>
                           {block.line2}
                         </p>
                       )}
@@ -444,12 +620,12 @@ export default function ArticleReaderView({ article, onBack }) {
                   }
 
                   return (
-                    <p key={block.id || bIdx} className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 font-normal">
+                    <p key={block.id || bIdx} className="mb-8 font-normal">
                       {letter && (
                         <span style={{
                           float: 'left',
-                          fontFamily: '"Playfair Display", Georgia, serif',
-                          color: '#c79c6e',
+                          fontFamily: '"Fraunces", "Playfair Display", Georgia, serif',
+                          color: theme.accent,
                           fontWeight: '400',
                           lineHeight: '0.78',
                           fontSize: '4.2rem',
@@ -461,7 +637,7 @@ export default function ArticleReaderView({ article, onBack }) {
                           {letter}
                         </span>
                       )}
-                      {renderFormattedTitle(remainingText || rawText)}
+                      {renderFormattedTitle(remainingText || rawText, theme.accent)}
                     </p>
                   );
                 }
@@ -474,7 +650,8 @@ export default function ArticleReaderView({ article, onBack }) {
                     return (
                       <div 
                         key={block.id || bIdx}
-                        className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 space-y-4 prose prose-invert max-w-none prose-headings:font-serif prose-headings:text-white prose-p:my-3 [&_strong]:text-inherit [&_strong]:font-bold [&_b]:text-inherit [&_b]:font-bold [&_[data-gold]]:!text-[#c79c6e] [&_.text-gold]:!text-[#c79c6e] prose-ul:list-disc prose-ul:pl-6 prose-ol:list-decimal prose-ol:pl-6 prose-li:my-1.5 prose-blockquote:border-l-2 prose-blockquote:border-[#c79c6e] prose-blockquote:pl-4 prose-blockquote:italic clear-both after:content-[''] after:table after:clear-both"
+                        className="mb-8 space-y-4 prose max-w-none clear-both after:content-[''] after:table after:clear-both"
+                        style={{ color: theme.inkMuted }}
                         dangerouslySetInnerHTML={{ __html: text }}
                       />
                     );
@@ -486,8 +663,8 @@ export default function ArticleReaderView({ article, onBack }) {
                   return (
                     <React.Fragment key={block.id || bIdx}>
                       {pList.map((p, pIdx) => p?.trim() ? (
-                        <p key={pIdx} className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 font-normal">
-                          {renderFormattedTitle(p)}
+                        <p key={pIdx} className="mb-8 font-normal">
+                          {renderFormattedTitle(p, theme.accent)}
                         </p>
                       ) : null)}
                     </React.Fragment>
@@ -500,7 +677,6 @@ export default function ArticleReaderView({ article, onBack }) {
           ) : (
             <>
               {/* 2. Structured Sections / Drop Cap Legacy Format */}
-              {/* First Paragraph with Large Gold Drop Cap */}
               {article.dropCap ? (() => {
                 const dcLetter = article.dropCap;
                 const dcText = article.dropCapText || '';
@@ -508,11 +684,11 @@ export default function ArticleReaderView({ article, onBack }) {
                   ? dcText.slice(dcLetter.length)
                   : dcText;
                 return (
-                  <p className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 font-normal">
+                  <p className="mb-8 font-normal">
                     <span style={{
                       float: 'left',
-                      fontFamily: '"Playfair Display", Georgia, serif',
-                      color: '#c79c6e',
+                      fontFamily: '"Fraunces", "Playfair Display", Georgia, serif',
+                      color: theme.accent,
                       fontWeight: '400',
                       lineHeight: '0.78',
                       fontSize: '4.2rem',
@@ -523,15 +699,15 @@ export default function ArticleReaderView({ article, onBack }) {
                     }}>
                       {dcLetter}
                     </span>
-                    {renderFormattedTitle(cleanDcText)}
+                    {renderFormattedTitle(cleanDcText, theme.accent)}
                   </p>
                 );
               })() : null}
 
               {/* Paragraphs right after Drop Cap */}
               {article.paragraphsAfterDropCap && article.paragraphsAfterDropCap.map((p, idx) => (
-                <p key={idx} className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 font-normal">
-                  {renderFormattedTitle(p)}
+                <p key={idx} className="mb-8 font-normal">
+                  {renderFormattedTitle(p, theme.accent)}
                 </p>
               ))}
 
@@ -541,35 +717,44 @@ export default function ArticleReaderView({ article, onBack }) {
                   
                   {/* Section Subheading */}
                   {(sec.heading || sec.headingMain) && (
-                    <h2 className="font-serif text-3xl sm:text-4xl text-white font-normal mt-12 mb-6 leading-snug">
+                    <h2 
+                      className="text-3xl sm:text-4xl font-normal mt-14 mb-6 leading-snug"
+                      style={{ color: theme.ink }}
+                    >
                       {sec.headingMain ? (
                         <>
-                          {sec.headingMain} <span className="italic text-[#c79c6e] font-serif font-normal">{sec.headingItalic || ''}</span> {sec.headingSuffix || ''}
+                          {sec.headingMain} <span className="italic font-normal" style={{ color: theme.accent }}>{sec.headingItalic || ''}</span> {sec.headingSuffix || ''}
                         </>
                       ) : (
-                        renderFormattedTitle(sec.heading)
+                        renderFormattedTitle(sec.heading, theme.accent)
                       )}
                     </h2>
                   )}
 
                   {/* Section Paragraphs */}
                   {sec.paragraphs && sec.paragraphs.map((p, pIdx) => (
-                    <p key={pIdx} className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 font-normal">
-                      {renderFormattedTitle(p)}
+                    <p key={pIdx} className="mb-8 font-normal">
+                      {renderFormattedTitle(p, theme.accent)}
                     </p>
                   ))}
 
                   {/* Highlighted Callout Box */}
                   {sec.callout && (
-                    <div className="border-l-2 border-[#c79c6e] pl-6 py-2 my-10 flex flex-col gap-2">
+                    <div 
+                      className="pl-6 py-4 my-10 flex flex-col gap-2 rounded-r-xl"
+                      style={{ 
+                        borderLeft: `3px solid ${theme.accent}`,
+                        backgroundColor: theme.cardBg 
+                      }}
+                    >
                       {sec.callout.line1 && (
-                        <p className="font-serif text-xl sm:text-2xl text-white/90 italic font-normal">
-                          {renderFormattedTitle(sec.callout.line1)}
+                        <p className="text-xl sm:text-2xl italic font-normal" style={{ color: theme.ink }}>
+                          {renderFormattedTitle(sec.callout.line1, theme.accent)}
                         </p>
                       )}
                       {sec.callout.line2 && (
-                        <p className="font-serif text-xl sm:text-2xl text-[#c79c6e] italic font-normal">
-                          {renderFormattedTitle(sec.callout.line2)}
+                        <p className="text-xl sm:text-2xl italic font-normal" style={{ color: theme.accent }}>
+                          {renderFormattedTitle(sec.callout.line2, theme.accent)}
                         </p>
                       )}
                     </div>
@@ -577,8 +762,8 @@ export default function ArticleReaderView({ article, onBack }) {
 
                   {/* Follow-up Paragraphs */}
                   {sec.followUpParagraphs && sec.followUpParagraphs.map((p, fIdx) => (
-                    <p key={fIdx} className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85] mb-8 font-normal">
-                      {renderFormattedTitle(p)}
+                    <p key={fIdx} className="mb-8 font-normal">
+                      {renderFormattedTitle(p, theme.accent)}
                     </p>
                   ))}
                 </div>
@@ -589,19 +774,20 @@ export default function ArticleReaderView({ article, onBack }) {
           {/* Fallback for standard HTML or database articles */}
           {!article.blocks?.length && !article.sections?.length && !article.dropCap && article.bodyHtml && (
             <div
-              className="prose prose-invert prose-lg max-w-none font-serif text-white/80 prose-headings:font-serif prose-headings:text-white/90 prose-p:leading-[1.85] prose-p:my-6 [&_strong]:text-inherit [&_strong]:font-bold [&_b]:text-inherit [&_b]:font-bold prose-li:text-white/80"
+              className="prose max-w-none mb-8 leading-[1.85]"
+              style={{ color: theme.inkMuted }}
               dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
             />
           )}
 
           {/* Graceful Editorial Fallback for Curated Directory Articles */}
           {!article.blocks?.length && !article.sections?.length && !article.dropCap && !article.bodyHtml && (
-            <div className="flex flex-col gap-6 font-serif text-lg sm:text-xl text-white/80 leading-[1.85]">
-              <p className="font-serif text-xl sm:text-2xl text-white/95 leading-relaxed font-normal mb-4">
+            <div className="flex flex-col gap-6">
+              <p className="text-xl sm:text-2xl leading-relaxed font-normal mb-4" style={{ color: theme.ink }}>
                 <span style={{
                   float: 'left',
-                  fontFamily: '"Playfair Display", Georgia, serif',
-                  color: '#c79c6e',
+                  fontFamily: '"Fraunces", "Playfair Display", Georgia, serif',
+                  color: theme.accent,
                   fontWeight: '400',
                   lineHeight: '0.78',
                   fontSize: '4.2rem',
@@ -612,33 +798,67 @@ export default function ArticleReaderView({ article, onBack }) {
                 }}>
                   {(article.excerpt || article.description || article.title || 'W').charAt(0)}
                 </span>
-                {renderFormattedTitle((article.excerpt || article.description || article.title || '').slice(1))}
+                {renderFormattedTitle((article.excerpt || article.description || article.title || '').slice(1), theme.accent)}
                 {article.highlightText && (
-                  <span className="text-[#c79c6e] italic font-serif"> {article.highlightText}</span>
+                  <span className="italic" style={{ color: theme.accent }}> {article.highlightText}</span>
                 )}
               </p>
 
               {article.quote && (
-                <div className="border-l-2 border-[#c79c6e] pl-6 py-3 my-8 bg-white/[0.02] rounded-r-xl">
-                  <p className="font-serif text-xl sm:text-2xl text-[#f6cb90] italic font-normal leading-relaxed">
-                    {renderFormattedTitle(article.quote)}
+                <div 
+                  className="pl-6 py-4 my-8 rounded-r-xl"
+                  style={{ 
+                    borderLeft: `3px solid ${theme.accent}`,
+                    backgroundColor: theme.cardBg 
+                  }}
+                >
+                  <p className="text-xl sm:text-2xl italic font-normal leading-relaxed" style={{ color: theme.accent }}>
+                    {renderFormattedTitle(article.quote, theme.accent)}
                   </p>
                 </div>
               )}
 
-              <p className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85]">
+              <p className="mb-8 font-normal">
                 Most meaningful transformations begin not with a loud public declaration, but with a quiet internal shift. When we slow down enough to examine our default patterns of thinking, relating, and choosing, we create space for a kinder and braver reality to emerge.
               </p>
 
-              <h2 className="font-serif text-3xl sm:text-4xl text-white font-normal mt-10 mb-4 leading-snug">
-                The Anatomy of <span className="italic text-[#c79c6e]">Quiet Clarity</span>
+              <h2 className="text-3xl sm:text-4xl font-normal mt-10 mb-4 leading-snug" style={{ color: theme.ink }}>
+                The Anatomy of <span className="italic" style={{ color: theme.accent }}>Quiet Clarity</span>
               </h2>
 
-              <p className="font-serif text-lg sm:text-xl text-white/80 leading-[1.85]">
+              <p className="mb-8 font-normal">
                 True progress is rarely linear. It is verified in daily, unremarkable choices when no one is watching. By returning to first principles and honoring your emotional sovereignty, the confusion dissolves into purposeful momentum.
               </p>
             </div>
           )}
+
+          {/* Bottom Complete Reading Action Bar */}
+          <div 
+            className="mt-16 pt-10 flex flex-col sm:flex-row items-center justify-between gap-6"
+            style={{ borderTop: `1px solid ${theme.borderLine}` }}
+          >
+            <button
+              type="button"
+              onClick={handleGoBack}
+              className="inline-flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] font-bold transition-opacity hover:opacity-60 cursor-pointer"
+              style={{ color: theme.ink }}
+            >
+              <ArrowLeft size={16} weight="bold" />
+              <span>RETURN TO {theme.name.toUpperCase()} ARTICLES</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleSave}
+              className="px-6 py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-md cursor-pointer"
+              style={{
+                backgroundColor: isSaved ? theme.ink : theme.btnBg,
+                color: isSaved ? theme.bg : theme.btnInk
+              }}
+            >
+              {isSaved ? 'ARTICLE SAVED IN MY JOURNEY' : 'SAVE ARTICLE TO MY JOURNEY'}
+            </button>
+          </div>
 
         </div>
 
@@ -646,12 +866,17 @@ export default function ArticleReaderView({ article, onBack }) {
 
       {/* Resumed Toast */}
       <div 
-        className={`fixed bottom-8 right-8 z-[300] bg-[#0a0a0a]/95 backdrop-blur-xl border border-[#c79c6e]/40 px-6 py-4 rounded-xl shadow-[0_0_40px_rgba(199,156,110,0.2)] transition-all duration-500 ease-out transform ${
+        className={`fixed bottom-8 right-8 z-[300] backdrop-blur-xl px-6 py-4 rounded-xl shadow-2xl transition-all duration-500 ease-out transform ${
           resumeToast ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'
         }`}
+        style={{
+          backgroundColor: theme.bg,
+          border: `1px solid ${theme.borderLine}`,
+          color: theme.ink
+        }}
       >
-        <p className="font-sans text-xs uppercase tracking-[0.2em] text-[#c79c6e] flex items-center gap-3 font-semibold">
-          <BookmarkSimple size={18} weight="fill" className="text-[#c79c6e]" />
+        <p className="text-xs uppercase tracking-[0.2em] flex items-center gap-3 font-semibold" style={{ color: theme.accent }}>
+          <BookmarkSimple size={18} weight="fill" />
           {toastMessage}
         </p>
       </div>

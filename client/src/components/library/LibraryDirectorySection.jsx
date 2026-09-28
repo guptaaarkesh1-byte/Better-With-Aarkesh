@@ -1180,6 +1180,7 @@ export default function LibraryDirectorySection() {
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [hoveredArticle, setHoveredArticle] = useState(null);
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
+  const [popupSide, setPopupSide] = useState('right');
   const closeTimeoutRef = useRef(null);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -1207,29 +1208,34 @@ export default function LibraryDirectorySection() {
     }
   };
 
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    let rafId = null;
-    const handleScroll = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        setScrolled(window.scrollY > 50);
-        rafId = null;
-      });
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, []);
-
-
   const isHoveringPopupRef = useRef(false);
   const rafRef = useRef(null);
-  const enterTimeoutRef = useRef(null);
+  const isScrollingRef = useRef(false);
+  const scrollStopTimerRef = useRef(null);
+
+  // Dismiss only preview popup during scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      isScrollingRef.current = true;
+      if (!isHoveringPopupRef.current && hoveredArticle) {
+        setHoveredArticle(null);
+      }
+
+      if (scrollStopTimerRef.current) {
+        clearTimeout(scrollStopTimerRef.current);
+      }
+
+      scrollStopTimerRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 100);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollStopTimerRef.current) clearTimeout(scrollStopTimerRef.current);
+    };
+  }, [hoveredArticle]);
 
   const handleArticleClick = (article) => {
     sessionStorage.setItem('library_scroll_position', window.scrollY.toString());
@@ -1237,62 +1243,72 @@ export default function LibraryDirectorySection() {
   };
 
   const handleArticleMouseEnter = (article, e) => {
+    if (isScrollingRef.current) return;
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
-    }
-    if (enterTimeoutRef.current) {
-      clearTimeout(enterTimeoutRef.current);
     }
     isHoveringPopupRef.current = false;
     const currentTarget = e.currentTarget;
 
-    enterTimeoutRef.current = setTimeout(() => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
-      rafRef.current = requestAnimationFrame(() => {
-        const rect = currentTarget.getBoundingClientRect();
-        const sectionContainer = document.getElementById('library-directory-container');
-        const containerRect = sectionContainer 
-          ? sectionContainer.getBoundingClientRect() 
-          : { top: 0, left: 0, height: 1000 };
-        
-        const cardHeight = 440;
-        const itemOffsetInContainer = rect.top - containerRect.top;
-        let desiredTop = itemOffsetInContainer + (rect.height / 2) - (cardHeight / 2);
-        
-        // Calculate where the card would land in the current viewport
-        let cardViewportTop = rect.top + (rect.height / 2) - (cardHeight / 2);
-        let cardViewportBottom = cardViewportTop + cardHeight;
-        const minViewportTop = 126; // Buffer below extended top navbar
-        const maxViewportBottom = window.innerHeight - 20; // Buffer above screen bottom
-        
-        // 1. If overflowing below the screen bottom, pull it up
-        if (cardViewportBottom > maxViewportBottom) {
-          const bottomOverflow = cardViewportBottom - maxViewportBottom;
-          desiredTop -= bottomOverflow;
-          cardViewportTop -= bottomOverflow;
-        }
-        
-        // 2. If pushed too high above the navbar, push it down
-        if (cardViewportTop < minViewportTop) {
-          const topOverflow = minViewportTop - cardViewportTop;
-          desiredTop += topOverflow;
-        }
-        
-        // 3. Keep within container bounds
-        const topPos = Math.max(10, desiredTop);
-        const leftPos = rect.left - containerRect.left;
-        
-        setPopupPos({ top: topPos, left: leftPos });
-        setHoveredArticle(article);
-      });
-    }, 40);
+    rafRef.current = requestAnimationFrame(() => {
+      const rect = currentTarget.getBoundingClientRect();
+      const sectionContainer = document.getElementById('library-directory-container');
+      const containerRect = sectionContainer 
+        ? sectionContainer.getBoundingClientRect() 
+        : { top: 0, left: 0, width: 1000, height: 1000 };
+      
+      // Determine if item is in the left column or right column
+      const isLeft = (rect.left + (rect.width / 2)) < (containerRect.left + (containerRect.width / 2));
+
+      const cardWidth = 350;
+      const cardHeight = 440;
+      const itemOffsetInContainer = rect.top - containerRect.top;
+      let desiredTop = itemOffsetInContainer + (rect.height / 2) - (cardHeight / 2);
+      
+      // Calculate where the card would land in the current viewport
+      let cardViewportTop = rect.top + (rect.height / 2) - (cardHeight / 2);
+      let cardViewportBottom = cardViewportTop + cardHeight;
+      const minViewportTop = 126; // Buffer below extended top navbar
+      const maxViewportBottom = window.innerHeight - 20; // Buffer above screen bottom
+      
+      // 1. If overflowing below the screen bottom, pull it up
+      if (cardViewportBottom > maxViewportBottom) {
+        const bottomOverflow = cardViewportBottom - maxViewportBottom;
+        desiredTop -= bottomOverflow;
+        cardViewportTop -= bottomOverflow;
+      }
+      
+      // 2. If pushed too high above the navbar, push it down
+      if (cardViewportTop < minViewportTop) {
+        const topOverflow = minViewportTop - cardViewportTop;
+        desiredTop += topOverflow;
+      }
+      
+      // 3. Keep within container bounds
+      const topPos = Math.max(10, desiredTop);
+      
+      // Calculate Left position: start right at the end of the hovered title row
+      let calculatedLeft;
+      if (isLeft) {
+        // Starts immediately after the left title row ends
+        const titleEnd = (rect.right - containerRect.left) + 12;
+        const maxLeft = containerRect.width - cardWidth + (window.innerWidth >= 1280 ? 60 : 0);
+        calculatedLeft = Math.min(titleEnd, maxLeft);
+      } else {
+        // For right column, align to right side
+        calculatedLeft = containerRect.width - cardWidth + (window.innerWidth >= 1280 ? 60 : 0);
+      }
+      
+      const leftPos = Math.max(10, calculatedLeft);
+      
+      setPopupPos({ top: topPos, left: leftPos });
+      setHoveredArticle(article);
+    });
   };
 
   const handleArticleMouseLeave = () => {
-    if (enterTimeoutRef.current) {
-      clearTimeout(enterTimeoutRef.current);
-    }
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
@@ -1301,7 +1317,7 @@ export default function LibraryDirectorySection() {
       if (!isHoveringPopupRef.current) {
         setHoveredArticle(null);
       }
-    }, 220);
+    }, 180);
   };
 
   const handlePopupMouseEnter = () => {
@@ -1318,21 +1334,27 @@ export default function LibraryDirectorySection() {
     }
     closeTimeoutRef.current = setTimeout(() => {
       setHoveredArticle(null);
-    }, 250);
+    }, 180);
   };
 
   return (
-    <section className="relative w-full bg-[#080706] text-white pt-[118px] sm:pt-[122px] lg:pt-[124px] pb-0 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 overflow-visible">
+    <section className="relative w-full bg-[#080706] text-white pt-[118px] sm:pt-[122px] lg:pt-[124px] pb-0 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 overflow-visible contain-paint">
       
-      {/* Background Soft, Seamless Golden Ambient Lighting */}
+      {/* Background Soft, Seamless Golden Ambient Lighting (High Performance, 0 paint cost) */}
       <div 
-        className="absolute inset-0 pointer-events-none z-0 overflow-hidden" 
+        className="absolute inset-0 pointer-events-none z-0 overflow-hidden transform-gpu" 
         style={{
           background: 'radial-gradient(ellipse at 75% 25%, rgba(199, 156, 110, 0.07) 0%, rgba(140, 95, 50, 0.02) 45%, transparent 70%), radial-gradient(ellipse at 25% 60%, rgba(199, 156, 110, 0.04) 0%, transparent 60%)'
         }}
       />
-      <div className="absolute top-10 right-1/4 w-[600px] h-[400px] bg-[#c79c6e]/[0.05] rounded-full blur-[180px] pointer-events-none will-change-transform" />
-      <div className="absolute bottom-20 left-10 w-[500px] h-[500px] bg-[#c79c6e]/[0.03] rounded-full blur-[180px] pointer-events-none will-change-transform" />
+      <div 
+        className="absolute top-10 right-1/4 w-[600px] h-[400px] rounded-full pointer-events-none transform-gpu" 
+        style={{ background: 'radial-gradient(circle, rgba(199, 156, 110, 0.05) 0%, transparent 70%)' }}
+      />
+      <div 
+        className="absolute bottom-20 left-10 w-[500px] h-[500px] rounded-full pointer-events-none transform-gpu" 
+        style={{ background: 'radial-gradient(circle, rgba(199, 156, 110, 0.03) 0%, transparent 70%)' }}
+      />
 
       {/* Main Section Flex Container */}
       <div className="max-w-[1440px] mx-auto flex items-start justify-between gap-8 xl:gap-12 relative z-10">
@@ -1457,44 +1479,47 @@ export default function LibraryDirectorySection() {
         {/* =========================================================
             6 SECTION CATEGORIES & HOVER ROWS (UNIFIED SEAMLESS BLEND)
            ========================================================= */}
-        <div className="flex flex-col relative">
+        <div className="flex flex-col gap-6 sm:gap-8 relative">
           {categoriesData.map((cat, index) => {
             const isHovered = hoveredCategory === cat.id;
+            const hasHoveredCategory = Boolean(hoveredCategory);
 
             return (
               <div 
                 key={cat.id} 
                 onMouseEnter={() => setHoveredCategory(cat.id)}
                 onMouseLeave={() => setHoveredCategory(null)}
-                className={`py-6 sm:py-7 px-4 sm:px-8 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-0 items-start relative transition-colors duration-200 cursor-default rounded-none border-x-0 ${
+                className={`py-3.5 sm:py-4 px-4 sm:px-8 flex flex-col gap-1.5 sm:gap-2 relative transition-all duration-300 ease-out cursor-default rounded-2xl border-x-0 ${
                   isHovered 
-                    ? 'bg-gradient-to-r from-[#c79c6e]/[0.08] via-[#c79c6e]/[0.03] to-transparent border-y border-[#c79c6e]/70 shadow-[0_12px_36px_rgba(0,0,0,0.85)] z-30 opacity-100' 
-                    : `bg-transparent opacity-100 border-t border-white/10 border-b-transparent z-10 ${index === categoriesData.length - 1 ? 'border-b border-b-white/10' : ''}`
+                    ? 'bg-gradient-to-r from-[#c79c6e]/[0.09] via-[#c79c6e]/[0.03] to-transparent border-y border-[#c79c6e]/70 shadow-[0_12px_36px_rgba(0,0,0,0.85)] z-30 opacity-100 scale-[1.002]' 
+                    : hasHoveredCategory
+                      ? 'bg-transparent opacity-20 blur-[0.2px] border-t border-white/5 z-10'
+                      : `bg-transparent opacity-100 border-t border-white/10 border-b-transparent z-10 ${index === categoriesData.length - 1 ? 'border-b border-b-white/10' : ''}`
                 }`}
               >
-                {/* Category Number & Title (Left Part) */}
-                <div className="md:col-span-5 flex items-start gap-5 sm:gap-7 md:pr-8 lg:pr-12">
-                  <span className={`font-serif text-4xl sm:text-5xl lg:text-[3.5rem] font-light leading-none shrink-0 select-none pt-0.5 transition-colors duration-200 ${
-                    isHovered 
-                      ? 'text-[#f6cb90]' 
-                      : 'text-[#c79c6e]'
-                  }`}>
-                    {cat.num}
-                  </span>
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-serif text-3xl sm:text-[2rem] lg:text-[2.25rem] font-normal leading-tight text-white transition-colors duration-200">
+                {/* Category Number, Title & Subtitle (Placed on Top) */}
+                <div className="flex flex-col sm:flex-row sm:items-baseline gap-1.5 sm:gap-4 pb-1.5 border-b border-white/10">
+                  <div className="flex items-baseline gap-2.5 sm:gap-3 shrink-0">
+                    <span className={`font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-light leading-none shrink-0 select-none transition-colors duration-200 ${
+                      isHovered 
+                        ? 'text-[#f6cb90]' 
+                        : 'text-[#c79c6e]'
+                    }`}>
+                      {cat.num}
+                    </span>
+                    <h3 className="font-serif text-lg sm:text-xl lg:text-[1.55rem] font-normal leading-tight text-white transition-colors duration-200">
                       {cat.title}
                     </h3>
-                    <p className="font-sans text-sm sm:text-[0.95rem] lg:text-[1.02rem] leading-relaxed font-light pr-2 text-white/75 transition-colors duration-200">
+                  </div>
+                  {cat.subtitle && (
+                    <p className="font-sans text-xs sm:text-[0.84rem] leading-tight font-light text-white/70 sm:border-l sm:border-white/15 sm:pl-3.5">
                       {cat.subtitle}
                     </p>
-                  </div>
+                  )}
                 </div>
 
-                {/* Articles List (Right Part) - Simple Clean Vertical Separator Line */}
-                <div className={`md:col-span-7 flex flex-col gap-1 sm:gap-1.5 pt-1 md:pt-0 md:pl-8 lg:pl-12 md:border-l transition-colors duration-200 ${
-                  isHovered ? 'md:border-[#c79c6e]/60' : 'md:border-[#c79c6e]/30'
-                }`}>
+                {/* Articles List (2 Columns Grid Below Category Header) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 lg:gap-x-12 gap-y-0">
                   {cat.articles.map((art) => {
                     const saved = isArtSaved(art);
                     const isArtActive = hoveredArticle?.id === art.id || hoveredArticle?.slug === art.slug;
@@ -1505,41 +1530,45 @@ export default function LibraryDirectorySection() {
                         onMouseEnter={(e) => handleArticleMouseEnter(art, e)}
                         onMouseLeave={handleArticleMouseLeave}
                         onClick={() => handleArticleClick(art)}
-                        className="group/item flex items-center justify-between cursor-pointer py-0.5 relative"
-                      >
-                        <span className={`font-serif text-lg sm:text-xl lg:text-[1.18rem] transition-colors duration-150 pr-3 leading-snug flex-1 ${
+                        className={`group/item flex items-center justify-between cursor-pointer py-0.5 px-2 -mx-2 rounded-lg transition-all duration-200 ease-out relative ${
                           isArtActive
-                            ? 'text-[#fce0a6] underline underline-offset-4 decoration-[#c79c6e] [&_*]:text-[#fce0a6]'
-                            : 'text-white/95 group-hover/item:text-[#fce0a6] group-hover/item:underline group-hover/item:underline-offset-4 group-hover/item:decoration-[#c79c6e] [&_*]:text-white/95 group-hover/item:[&_*]:text-[#fce0a6]'
+                            ? 'bg-white/[0.04]'
+                            : 'hover:bg-white/[0.03]'
+                        }`}
+                      >
+                        <span className={`font-serif text-[0.92rem] sm:text-[0.98rem] lg:text-[1.02rem] transition-all duration-200 pr-2.5 leading-tight flex-1 ${
+                          isArtActive
+                            ? 'text-[#fce0a6] translate-x-1 underline underline-offset-4 decoration-[#c79c6e] [&_*]:text-[#fce0a6]'
+                            : 'text-white/95 group-hover/item:text-[#fce0a6] group-hover/item:translate-x-1 group-hover/item:underline group-hover/item:underline-offset-4 group-hover/item:decoration-[#c79c6e] [&_*]:text-white/95 group-hover/item:[&_*]:text-[#fce0a6]'
                         }`}>
                           {renderFormattedTitle(art.title)}
                         </span>
 
-                        <div className="flex items-center gap-1 shrink-0 ml-3">
+                        <div className="flex items-center gap-1 shrink-0 ml-1.5">
                           <button
                             type="button"
                             onClick={(e) => {
                               handleToggleSave(art, e);
                             }}
-                            className={`p-1.5 rounded transition-opacity duration-150 ${
+                            className={`p-1 rounded transition-all duration-200 ${
                               saved 
-                                ? 'opacity-100 text-[#c79c6e]' 
-                                : 'opacity-0 group-hover/item:opacity-100 text-white/40 hover:text-[#c79c6e] hover:bg-white/5'
+                                ? 'opacity-100 text-[#c79c6e] scale-105' 
+                                : 'opacity-0 group-hover/item:opacity-100 text-white/40 hover:text-[#c79c6e] hover:bg-white/10 hover:scale-110 active:scale-95'
                             }`}
                             title={saved ? "Remove from Saved" : "Save Article"}
                           >
                             <BookmarkSimple 
-                              size={17} 
+                              size={14} 
                               weight={saved ? "fill" : "regular"} 
                             />
                           </button>
                           
                           <CaretRight 
-                            size={17} 
-                            className={`transition-all duration-150 ${
+                            size={14} 
+                            className={`transition-all duration-200 ${
                               isArtActive
-                                ? 'text-[#fce0a6] translate-x-1'
-                                : 'text-white/30 group-hover/item:text-[#fce0a6] group-hover/item:translate-x-1'
+                                ? 'text-[#fce0a6] translate-x-1 opacity-100'
+                                : 'text-white/30 group-hover/item:text-[#fce0a6] group-hover/item:translate-x-1 group-hover/item:opacity-100'
                             }`}
                           />
                         </div>
@@ -1560,11 +1589,19 @@ export default function LibraryDirectorySection() {
             onMouseEnter={handlePopupMouseEnter}
             onMouseLeave={handlePopupMouseLeave}
             style={{
-              top: `${popupPos.top}px`,
-              right: window.innerWidth >= 1280 ? '-80px' : window.innerWidth >= 1024 ? '0px' : '0px',
+              transform: `translate3d(0, ${popupPos.top}px, 0)`,
+              top: 0,
+              ...(popupSide === 'left' 
+                ? { left: window.innerWidth >= 1280 ? '-80px' : '0px', right: 'auto' }
+                : { right: window.innerWidth >= 1280 ? '-80px' : '0px', left: 'auto' }
+              ),
               maxWidth: 'calc(100vw - 32px)'
             }}
-            className="absolute z-50 w-[320px] sm:w-[350px] lg:w-[370px] max-h-[calc(100vh-140px)] overflow-y-auto custom-scrollbar rounded-2xl border border-[#c79c6e]/50 bg-[#0e0c0a] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_20px_rgba(199,156,110,0.2)] animate-in fade-in zoom-in-95 duration-100 pointer-events-auto transform-gpu will-change-transform before:content-[''] before:absolute before:-left-12 before:top-0 before:w-12 before:h-full before:pointer-events-auto"
+            className={`absolute z-50 w-[320px] sm:w-[350px] lg:w-[370px] max-h-[calc(100vh-140px)] overflow-y-auto custom-scrollbar rounded-2xl border border-[#c79c6e]/50 bg-[#0e0c0a] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_20px_rgba(199,156,110,0.2)] transition-all duration-300 ease-out pointer-events-auto transform-gpu will-change-transform animate-in fade-in duration-150 ${
+              popupSide === 'left' 
+                ? "before:content-[''] before:absolute before:-right-12 before:top-0 before:w-12 before:h-full before:pointer-events-auto" 
+                : "before:content-[''] before:absolute before:-left-12 before:top-0 before:w-12 before:h-full before:pointer-events-auto"
+            }`}
           >
             {/* Top Celestial Image Visual - Normal / Static */}
             <div className="w-full aspect-[16/10] rounded-xl overflow-hidden border border-[#c79c6e]/30 bg-black mb-4 relative shadow-inner">
@@ -1648,10 +1685,10 @@ export default function LibraryDirectorySection() {
             STICKY FIXED CELESTIAL RIGHT BAR
             (Stays fixed in viewport through Categories 01-06, then scrolls off before footer)
            ========================================================= */}
-        <aside className="hidden lg:flex sticky top-[125px] self-start shrink-0 z-20 w-52 xl:w-60 h-[calc(100vh-135px)] border-l border-[#c79c6e]/25 rounded-none flex-col justify-between items-center py-8 px-4 overflow-hidden bg-transparent select-none pointer-events-none transition-all duration-300">
+        <aside className="hidden lg:flex sticky top-[125px] self-start shrink-0 z-20 w-52 xl:w-60 h-[calc(100vh-135px)] border-l border-[#c79c6e]/25 rounded-none flex-col justify-between items-center py-8 px-4 overflow-hidden bg-transparent select-none pointer-events-none transform-gpu">
   
           {/* Celestial Art Background Image - Natural Proportion */}
-          <div className="absolute inset-0 z-0 overflow-hidden opacity-85 mix-blend-screen flex items-center justify-center">
+          <div className="absolute inset-0 z-0 overflow-hidden opacity-75 flex items-center justify-center transform-gpu">
             <img 
               src="/library_celestial_column.jpg" 
               alt="Celestial Sacred Geometry" 
@@ -1662,7 +1699,10 @@ export default function LibraryDirectorySection() {
           </div>
 
           {/* Ambient Warm Golden Glow — GPU layer */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-[#c79c6e]/15 rounded-full blur-3xl will-change-transform" />
+          <div 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full pointer-events-none transform-gpu" 
+            style={{ background: 'radial-gradient(circle, rgba(199, 156, 110, 0.15) 0%, transparent 70%)' }}
+          />
 
           {/* Top Typography Header (Left Aligned as in reference) */}
           <div className="w-full flex flex-col items-start text-left gap-3 z-10 pt-2 pl-2 sm:pl-3">
