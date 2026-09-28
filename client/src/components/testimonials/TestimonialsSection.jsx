@@ -21,42 +21,42 @@ const DEFAULT_TESTIMONIALS = [
     name: "Rohit, 32",
     role: "Entrepreneur",
     initial: "R",
-    color: "bg-blue-900"
+    color: "bg-[#3d1b37]"
   },
   {
     quote: "I came in feeling lost and overwhelmed. Now I have clarity, confidence, and a life that actually feels like mine.",
     name: "Megha, 28",
     role: "Marketing Manager",
     initial: "M",
-    color: "bg-purple-900"
+    color: "bg-[#c9542f]"
   },
   {
     quote: "Practical. Honest. No fluff. The sessions challenge you—in the best way possible. Highly recommend.",
     name: "Vikram, 35",
     role: "Senior Pilot",
     initial: "V",
-    color: "bg-green-900"
+    color: "bg-[#2f4a34]"
   },
   {
     quote: "I used to overthink everything. Aarkesh helped me quiet the noise and focus on what truly matters.",
     name: "Ananya, 30",
     role: "Product Designer",
     initial: "A",
-    color: "bg-orange-900"
+    color: "bg-[#a64117]"
   },
   {
     quote: "The accountability and structure I got changed the game for me. I follow through now. In life and at work.",
     name: "Kunal, 29",
     role: "Software Engineer",
     initial: "K",
-    color: "bg-teal-900"
+    color: "bg-[#111010]"
   },
   {
     quote: "He doesn't just listen, he understands. And somehow, he knows exactly what you need to hear.",
     name: "Pooja, 33",
     role: "HR Leader",
     initial: "P",
-    color: "bg-rose-900"
+    color: "bg-[#3d1b37]"
   }
 ];
 
@@ -88,81 +88,76 @@ export default function TestimonialsSection() {
   const testimonials = (data?.items && data.items.length > 0) ? data.items : DEFAULT_TESTIMONIALS;
 
   return (
-    <section id="testimonials" className="relative w-full min-h-screen bg-black overflow-hidden flex flex-col snap-section">
+    <section id="testimonials" className="relative w-full min-h-screen bg-[#f5f1e8] overflow-hidden flex flex-col snap-section">
       
-      {/* Background Image & Gradient Overlays */}
+      {/* Background Image & Soft Cream Overlays */}
       <div className="absolute inset-0 z-0">
         <img 
           src={bgImg} 
           alt="Glowing Doorway" 
-          className="absolute right-0 top-0 h-full w-full md:w-[70%] object-cover object-right opacity-80"
+          className="absolute right-0 top-0 h-full w-full md:w-[65%] object-cover object-right opacity-35"
         />
-        {/* Global contrast overlay layer */}
-        <div 
-          className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" 
-          style={{ opacity: 'var(--overlay-opacity, 0.4)' }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/90 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/30 to-transparent" />
       </div>
 
-      <div className="relative z-10 flex-grow flex flex-col pt-24 pb-6 w-full">
+      <div className="relative z-10 flex-grow flex flex-col pt-24 pb-8 w-full">
         <Container className="flex-grow flex flex-col justify-between">
           
           <div className="flex w-full">
             {/* Left Content (Text & Grid) */}
-            <div className="w-full lg:w-[65%] xl:w-[60%] flex flex-col gap-6">
+            <div className="w-full lg:w-[68%] xl:w-[62%] flex flex-col gap-6">
               
               {/* Header */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="h-[1px] w-6 bg-accent-gold" />
-                  <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-accent-gold">
+                  <div className="h-[1.5px] w-6 bg-[#c9542f]" />
+                  <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
                     {eyebrow}
                   </span>
                 </div>
                 
-                <h2 className="font-serif text-4xl md:text-5xl text-white font-medium tracking-tight leading-tight">
+                <h2 className="font-serif text-4xl md:text-5xl text-[#111010] font-medium tracking-tight leading-tight">
                   {heading1}<br/>
-                  <span className="text-accent-gold italic">{headingAccent}</span>
+                  <span className="text-[#c9542f] italic">{headingAccent}</span>
                 </h2>
                 
-                <p className="text-white text-lg lg:text-xl font-serif font-light tracking-wide leading-relaxed max-w-lg mt-1">
+                <p className="text-[#2b2723] text-lg lg:text-xl font-serif font-light tracking-wide leading-relaxed max-w-lg mt-1">
                   {description}
                 </p>
               </div>
 
               {/* Testimonials Grid (Latest 6 on Homepage) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                 {testimonials.slice(0, 6).map((t, index) => {
                   const initial = t.name ? t.name.charAt(0).toUpperCase() : 'C';
-                  const colors = ['bg-blue-900', 'bg-purple-900', 'bg-green-900', 'bg-orange-900', 'bg-teal-900', 'bg-rose-900'];
+                  const colors = ['bg-[#3d1b37]', 'bg-[#c9542f]', 'bg-[#2f4a34]', 'bg-[#a64117]', 'bg-[#111010]', 'bg-[#3d1b37]'];
                   const color = t.color || colors[index % colors.length];
 
                   return (
                     <div 
                       key={index} 
-                      className="flex flex-col bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg p-4 sm:p-5 hover:border-accent-gold/40 transition-colors"
+                      className="flex flex-col bg-white/90 backdrop-blur-sm border border-black/8 rounded-2xl p-5 hover:border-[#c9542f]/35 hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300"
                     >
-                      <Quotes className="text-accent-gold text-2xl mb-2.5 opacity-90" weight="fill" />
+                      <Quotes className="text-[#c9542f] text-2xl mb-2.5 opacity-90" weight="fill" />
                       
-                      <p className="text-white/90 font-light text-xs sm:text-sm md:text-[0.92rem] leading-relaxed mb-4 flex-grow">
-                        {t.quote}
+                      <p className="text-[#2b2723] font-light text-xs sm:text-sm md:text-[0.92rem] leading-relaxed mb-4 flex-grow">
+                        "{t.quote}"
                       </p>
                       
-                      <div className="flex items-center gap-3.5 mt-auto">
+                      <div className="flex items-center gap-3 mt-auto pt-2 border-t border-black/5">
                         {t.image ? (
-                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#c79c6e]/40 shrink-0 bg-black shadow-inner">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#c9542f]/30 shrink-0 bg-white shadow-xs">
                             <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
                           </div>
                         ) : (
-                          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${color} flex items-center justify-center border border-white/20 shrink-0`}>
-                            <span className="font-serif text-white text-sm sm:text-base font-medium">{initial}</span>
+                          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${color} text-white flex items-center justify-center shrink-0 shadow-xs`}>
+                            <span className="font-serif text-sm sm:text-base font-medium">{initial}</span>
                           </div>
                         )}
                         <div className="flex flex-col">
-                          <span className="font-sans text-accent-gold text-sm sm:text-[0.92rem] font-semibold">{t.name}</span>
-                          <span className="font-sans text-white/60 text-xs sm:text-[0.72rem] uppercase tracking-wider mt-0.5">{t.role}</span>
+                          <span className="font-sans text-[#111010] text-sm sm:text-[0.92rem] font-bold">{t.name}</span>
+                          <span className="font-sans text-[#7a756b] text-xs sm:text-[0.72rem] uppercase tracking-wider">{t.role}</span>
                         </div>
                       </div>
                     </div>
@@ -171,35 +166,35 @@ export default function TestimonialsSection() {
               </div>
 
               {/* View More Testimonials Button */}
-              <div className="pt-2 flex items-center">
+              <div className="pt-3 flex items-center">
                 <Link
                   to="/testimonials"
-                  className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full border border-[#c79c6e]/60 bg-[#c79c6e]/10 hover:bg-[#c79c6e] text-[#f4eedf] hover:text-black text-xs uppercase tracking-[0.2em] font-semibold transition-all duration-300 shadow-[0_2px_15px_rgba(199,156,110,0.15)] group"
+                  className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[#111010] hover:bg-[#2b2723] text-[#f5f1e8] text-xs uppercase tracking-[0.2em] font-semibold transition-all duration-300 shadow-[0_4px_16px_rgba(17,16,16,0.15)] group"
                 >
                   <span>View More Testimonials</span>
-                  <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform duration-200" />
+                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
                 </Link>
               </div>
             </div>
           </div>
 
           {/* Bottom Trust Pillars */}
-          <div className="mt-12 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-6">
+          <div className="mt-12 pt-6 border-t border-black/10 flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <ShieldCheck size={20} className="text-[#c79c6e]" />
-              <span className="text-xs text-white/70">100% Confidential</span>
+              <ShieldCheck size={20} className="text-[#c9542f]" weight="bold" />
+              <span className="text-xs font-medium text-[#555047]">100% Confidential</span>
             </div>
             <div className="flex items-center gap-3">
-              <User size={20} className="text-[#c79c6e]" />
-              <span className="text-xs text-white/70">Tailored 1-on-1 Sessions</span>
+              <User size={20} className="text-[#c9542f]" weight="bold" />
+              <span className="text-xs font-medium text-[#555047]">Tailored 1-on-1 Sessions</span>
             </div>
             <div className="flex items-center gap-3">
-              <Handshake size={20} className="text-[#c79c6e]" />
-              <span className="text-xs text-white/70">Evidence-Based Coaching</span>
+              <Handshake size={20} className="text-[#c9542f]" weight="bold" />
+              <span className="text-xs font-medium text-[#555047]">Evidence-Based Coaching</span>
             </div>
             <div className="flex items-center gap-3">
-              <Heart size={20} className="text-[#c79c6e]" />
-              <span className="text-xs text-white/70">Empathetic & Non-Judgmental</span>
+              <Heart size={20} className="text-[#c9542f]" weight="bold" />
+              <span className="text-xs font-medium text-[#555047]">Empathetic & Non-Judgmental</span>
             </div>
           </div>
 

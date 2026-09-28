@@ -33,15 +33,17 @@ export default function PrincipleSection({
     // === THINK PAGE ANIMATIONS ===
     if (isThinkPage) {
       // 1. SUNLIGHT ANIMATION
-    gsap.to('.sunlight-overlay', {
-      scrollTrigger: {
-        trigger: sectionRef.current,
-        start: 'top 10%',
-      },
-      opacity: 1,
-      duration: 1.5,
-      ease: 'power2.out',
-    });
+      if (document.querySelector('.sunlight-overlay')) {
+        gsap.to('.sunlight-overlay', {
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 10%',
+          },
+          opacity: 1,
+          duration: 1.5,
+          ease: 'power2.out',
+        });
+      }
 
     // 3. DUST PARTICLE ANIMATION
     const dustParticles = gsap.utils.toArray('.phil-dust');
@@ -78,46 +80,10 @@ export default function PrincipleSection({
     });
     }
 
-    // === DECIDE PAGE ANIMATIONS ===
-    if (isDecidePage) {
-      const decideParticles = gsap.utils.toArray('.decide-dust');
-      const decideTweens = decideParticles.map((particle) => {
-        return gsap.fromTo(particle, 
-          {
-            opacity: gsap.utils.random(0.1, 0.4),
-            scale: gsap.utils.random(0.5, 1)
-          },
-          {
-            y: `-=${gsap.utils.random(40, 120)}`, // Drift straight up
-            x: `+=${gsap.utils.random(-15, 15)}`,  // Very slight waver to stay in column
-            opacity: gsap.utils.random(0.6, 1),
-            scale: gsap.utils.random(1, 1.5),
-            duration: gsap.utils.random(4, 7),
-            repeat: -1,
-            yoyo: true,
-            ease: 'sine.inOut',
-            delay: gsap.utils.random(0, 2),
-            force3D: true,
-            paused: true
-          }
-        );
-      });
-
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top bottom',
-        end: 'bottom top',
-        onEnter: () => decideTweens.forEach(t => t.play()),
-        onLeave: () => decideTweens.forEach(t => t.pause()),
-        onEnterBack: () => decideTweens.forEach(t => t.play()),
-        onLeaveBack: () => decideTweens.forEach(t => t.pause()),
-      });
-    }
-
   }, { scope: sectionRef });
 
   return (
-    <section ref={sectionRef} id={id} className="principle-panel relative w-full h-screen flex flex-col overflow-hidden bg-black snap-section">
+    <section ref={sectionRef} id={id} className="principle-panel relative w-full h-screen flex flex-col overflow-hidden bg-[#f5f1e8] snap-section">
       
       {/* Main Content Area */}
       <div className={`relative flex-grow flex items-center justify-center pb-48 ${contentClassName}`}>
@@ -127,20 +93,16 @@ export default function PrincipleSection({
           <img 
             src={bgImg} 
             alt="Principle Background"
-            className={`w-full h-full object-cover lg:object-contain opacity-100 ${imagePosition}`}
-            style={{
-              maskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 75%, transparent 95%)',
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 75%, transparent 95%)'
-            }}
+            className={`w-full h-full object-cover opacity-95 md:opacity-100 ${imagePosition || 'object-[75%_center] lg:object-[78%_center]'}`}
           />
-          {/* Global contrast overlay layer */}
-          <div 
-            className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" 
-            style={{ opacity: 'var(--overlay-opacity, 0.4)' }}
-          />
-          {/* Subtle gradient to darken the image for text readability and blend with edges */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/90" />
+          {/* Subtle left-to-right fade so text remains 100% readable while the image on the right is crystal clear */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/85 md:via-[#f5f1e8]/50 to-transparent w-[60%] md:w-[50%]" />
+          
+          {/* Soft bottom edge blend */}
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/40 to-transparent" />
+          
+          {/* Soft top edge blend */}
+          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#f5f1e8]/60 to-transparent" />
         </div>
 
 
@@ -171,47 +133,6 @@ export default function PrincipleSection({
                     left: `${Math.random() * DUST_SPREAD_X + DUST_OFFSET_X}%`,
                     opacity: 0.5,
                     willChange: 'transform, opacity' // Hint for GPU
-                  }}
-                />
-              ))}
-            </div>
-          );
-        })()}
-
-        {/* Decide Particles Container (For the Glowing Path) */}
-        {isDecidePage && (() => {
-          // ==========================================
-          // 🛠️ GLOWING PATH PARTICLE CONTROLS
-          // Adjust these values to align the particles exactly over the glowing path!
-          // ==========================================
-          const PATH_OFFSET_X = 40; // Move left/right (in %)
-          const PATH_OFFSET_Y = 10; // Move up/down (in %)
-          const PATH_SPREAD_X = 13;  // How wide the path particles spread out (NARROW COLUMN)
-          const PATH_SPREAD_Y = 80; // How tall the path particles spread out (TALL COLUMN)
-          const PATH_PARTICLE_COUNT = 30; // Reduced from 75 for performance
-          const PATH_BEND_ANGLE = 29; // Degrees to bend the column to the right (bottom stays fixed)
-
-          return (
-            <div 
-              className="absolute inset-0 z-[100] pointer-events-none hidden lg:block"
-              style={{ 
-                transform: `rotate(${PATH_BEND_ANGLE}deg)`,
-                transformOrigin: `${PATH_OFFSET_X}% 100%` // Anchor the rotation to the bottom of the column
-              }}
-            >
-              {[...Array(PATH_PARTICLE_COUNT)].map((_, i) => (
-                <div
-                  key={i}
-                  className="decide-dust absolute rounded-full"
-                  style={{
-                    width: `${Math.random() * 2 + 1.5}px`,
-                    height: `${Math.random() * 2 + 1.5}px`,
-                    backgroundColor: '#FFFFFF', // Bright white/gold for the path
-                    // boxShadow: '0 0 6px 2px rgba(255, 230, 180, 0.6)', // Removed for performance
-                    top: `${Math.random() * PATH_SPREAD_Y + PATH_OFFSET_Y}%`,
-                    left: `${Math.random() * PATH_SPREAD_X + PATH_OFFSET_X}%`,
-                    opacity: 0,
-                    willChange: 'transform, opacity'
                   }}
                 />
               ))}

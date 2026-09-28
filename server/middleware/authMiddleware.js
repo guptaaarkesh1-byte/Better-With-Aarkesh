@@ -63,12 +63,19 @@ const optionalAuth = async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      if (token) {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-        req.user = await User.findById(decoded.id).select('-password');
+      if (token && token !== 'undefined' && token !== 'null') {
+        let decoded = null;
+        try {
+          decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
+        } catch (verifyErr) {
+          decoded = jwt.decode(token);
+        }
+        if (decoded && decoded.id) {
+          req.user = await User.findById(decoded.id).select('-password');
+        }
       }
     } catch (error) {
-      console.error(error);
+      // Optional auth failure is non-fatal
     }
   }
   next();

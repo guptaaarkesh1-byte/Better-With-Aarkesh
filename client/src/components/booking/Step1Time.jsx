@@ -189,31 +189,31 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
   return (
     <div className="flex flex-col" onClick={() => activeDropdown && setActiveDropdown(null)}>
       
-      <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 lg:gap-16">
+      <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 lg:gap-14">
         
         {/* Left Column - Calendar */}
         <div className="flex-1" onClick={(e) => e.stopPropagation()}>
-          <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold mb-2.5 sm:mb-3">
+          <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-3">
             {settings?.dateHeading || 'CHOOSE A DATE'}
           </h3>
           
-          <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-3.5 sm:p-5">
+          <div className="bg-white/90 border border-black/10 rounded-2xl p-4 sm:p-5 shadow-sm">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-3 sm:mb-4 relative z-20">
+            <div className="flex items-center justify-between mb-4 relative z-20">
               
               <div className="flex items-center gap-2">
                 {/* Month Dropdown */}
                 <div className="relative">
                   <button 
                     onClick={() => setActiveDropdown(activeDropdown === 'month' ? null : 'month')}
-                    className="flex items-center gap-1 text-white hover:text-accent-gold transition-colors text-sm sm:text-base font-medium focus:outline-none"
+                    className="flex items-center gap-1.5 text-[#111010] hover:text-[#c9542f] transition-colors text-base sm:text-lg font-serif font-medium focus:outline-none cursor-pointer"
                   >
                     {monthNames[currentMonth]}
-                    <CaretDown size={14} className={`transition-transform ${activeDropdown === 'month' ? 'rotate-180' : ''}`} />
+                    <CaretDown size={14} className={`text-[#c9542f] transition-transform ${activeDropdown === 'month' ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {activeDropdown === 'month' && (
-                    <div className="absolute top-full left-0 mt-2 w-32 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 z-30 max-h-48 overflow-y-auto overscroll-contain">
+                    <div className="absolute top-full left-0 mt-2 w-36 bg-white border border-black/10 rounded-xl shadow-xl flex flex-col py-1.5 z-30 max-h-48 overflow-y-auto overscroll-contain">
                       {monthNames.map((m, idx) => {
                         const isPast = currentYear === today.getFullYear() && idx < today.getMonth();
                         return (
@@ -227,9 +227,9 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                               }
                             }}
                             disabled={isPast}
-                            className={`px-4 py-2 text-left text-xs sm:text-sm transition-colors ${
-                              isPast ? 'text-white/20 cursor-not-allowed' : 
-                              currentMonth === idx ? 'text-accent-gold bg-white/5' : 'text-white/70 hover:text-white hover:bg-white/5'
+                            className={`px-4 py-2 text-left text-xs sm:text-sm font-sans transition-colors ${
+                              isPast ? 'text-black/20 cursor-not-allowed' : 
+                              currentMonth === idx ? 'text-[#c9542f] bg-[#faede4] font-semibold' : 'text-[#111010] hover:bg-[#faede4]/60'
                             }`}
                           >
                             {m}
@@ -244,14 +244,14 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                 <div className="relative">
                   <button 
                     onClick={() => setActiveDropdown(activeDropdown === 'year' ? null : 'year')}
-                    className="flex items-center gap-1 text-white hover:text-accent-gold transition-colors text-sm sm:text-base font-medium focus:outline-none"
+                    className="flex items-center gap-1.5 text-[#111010] hover:text-[#c9542f] transition-colors text-base sm:text-lg font-serif font-medium focus:outline-none cursor-pointer"
                   >
                     {currentYear}
-                    <CaretDown size={14} className={`transition-transform ${activeDropdown === 'year' ? 'rotate-180' : ''}`} />
+                    <CaretDown size={14} className={`text-[#c9542f] transition-transform ${activeDropdown === 'year' ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {activeDropdown === 'year' && (
-                    <div className="absolute top-full left-0 mt-2 w-24 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 z-30 max-h-48 overflow-y-auto overscroll-contain">
+                    <div className="absolute top-full left-0 mt-2 w-28 bg-white border border-black/10 rounded-xl shadow-xl flex flex-col py-1.5 z-30 max-h-48 overflow-y-auto overscroll-contain">
                       {years.map(y => (
                         <button 
                           key={y} 
@@ -263,8 +263,8 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                             setSelectedDay(null);
                             setActiveDropdown(null);
                           }}
-                          className={`px-4 py-2 text-left text-xs sm:text-sm transition-colors ${
-                            currentYear === y ? 'text-accent-gold bg-white/5' : 'text-white/70 hover:text-white hover:bg-white/5'
+                          className={`px-4 py-2 text-left text-xs sm:text-sm font-sans transition-colors ${
+                            currentYear === y ? 'text-[#c9542f] bg-[#faede4] font-semibold' : 'text-[#111010] hover:bg-[#faede4]/60'
                           }`}
                         >
                           {y}
@@ -275,22 +275,22 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 sm:gap-4 text-accent-gold">
+              <div className="flex items-center gap-3 text-[#c9542f]">
                 <CaretLeft 
-                  className={`p-0.5 text-base sm:text-lg transition-colors ${currentYear === today.getFullYear() && currentMonth === today.getMonth() ? 'text-white/20 cursor-not-allowed' : 'cursor-pointer hover:text-white'}`} 
+                  className={`p-1 text-xl transition-colors rounded-lg ${currentYear === today.getFullYear() && currentMonth === today.getMonth() ? 'text-black/15 cursor-not-allowed' : 'cursor-pointer hover:bg-[#faede4] hover:text-[#111010]'}`} 
                   onClick={handlePrevMonth} 
                 />
                 <CaretRight 
-                  className="p-0.5 text-base sm:text-lg cursor-pointer hover:text-white transition-colors" 
+                  className="p-1 text-xl cursor-pointer hover:bg-[#faede4] hover:text-[#111010] transition-colors rounded-lg" 
                   onClick={handleNextMonth} 
                 />
               </div>
             </div>
 
             {/* Days of Week */}
-            <div className="grid grid-cols-7 gap-y-1.5 sm:gap-y-2 mb-2 sm:mb-3">
+            <div className="grid grid-cols-7 gap-y-1.5 mb-2">
               {['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map(day => (
-                <div key={day} className="text-center font-sans text-[0.6rem] sm:text-[0.65rem] tracking-wider text-white/40 mb-1">
+                <div key={day} className="text-center font-sans text-[0.62rem] tracking-wider text-[#7a756b] font-bold mb-1">
                   {day}
                 </div>
               ))}
@@ -299,7 +299,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
               {[...Array(startingDayOfWeek)].map((_, i) => {
                 const prevMonthDays = getDaysInMonth(currentMonth === 0 ? 11 : currentMonth - 1, currentMonth === 0 ? currentYear - 1 : currentYear);
                 return (
-                  <div key={`empty-${i}`} className="text-center text-white/10 font-light text-xs sm:text-sm flex items-center justify-center h-7 sm:h-8">
+                  <div key={`empty-${i}`} className="text-center text-black/15 font-light text-xs sm:text-sm flex items-center justify-center h-8">
                     {prevMonthDays - startingDayOfWeek + i + 1}
                   </div>
                 );
@@ -316,10 +316,10 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                     <button
                       onClick={() => !isPast && setSelectedDay(day)}
                       disabled={isPast}
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-md flex items-center justify-center font-light text-xs sm:text-sm transition-all
-                        ${isPast ? 'text-white/10 cursor-not-allowed' : ''}
-                        ${!isPast && isSelected ? 'bg-transparent border border-accent-gold text-accent-gold' : ''}
-                        ${!isPast && !isSelected ? 'text-white hover:bg-white/5' : ''}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center font-sans text-xs sm:text-sm transition-all cursor-pointer
+                        ${isPast ? 'text-black/20 cursor-not-allowed' : ''}
+                        ${!isPast && isSelected ? 'bg-[#c9542f] text-white font-bold shadow-xs' : ''}
+                        ${!isPast && !isSelected ? 'text-[#111010] hover:bg-[#faede4] hover:text-[#c9542f] font-normal' : ''}
                       `}
                     >
                       {day}
@@ -330,7 +330,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
               
               {/* Empty slots after month ends */}
               {[...Array(42 - (daysInMonth + startingDayOfWeek))].map((_, i) => (
-                <div key={`empty-end-${i}`} className="text-center text-white/10 font-light text-xs sm:text-sm flex items-center justify-center h-7 sm:h-8">
+                <div key={`empty-end-${i}`} className="text-center text-black/15 font-light text-xs sm:text-sm flex items-center justify-center h-8">
                   {i + 1}
                 </div>
               ))}
@@ -340,12 +340,12 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
 
         {/* Right Column - Times */}
         <div className="flex-1 mt-4 sm:mt-6 lg:mt-0">
-          <div className="flex items-center justify-between mb-2.5 sm:mb-3">
-            <h3 className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium text-accent-gold">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f]">
               {settings?.timeHeading || 'CHOOSE A TIME'}
             </h3>
             {times.length > 0 && !isLoadingSlots && (
-              <span className="font-sans text-[0.6rem] uppercase tracking-wider text-white/40">
+              <span className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold">
                 {times.length} {times.length === 1 ? 'Slot Available' : 'Slots Available'}
               </span>
             )}
@@ -356,26 +356,26 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
             data-lenis-prevent="true"
           >
             {!selectedDay && (
-              <div className="text-white/40 text-xs sm:text-sm font-light italic p-6 text-center border border-white/5 rounded-xl bg-white/[0.01]">
+              <div className="text-[#7a756b] text-xs sm:text-sm font-light italic p-6 text-center border border-black/10 rounded-2xl bg-white/60">
                 Select a date from the calendar to view available times.
               </div>
             )}
             
             {isLoadingSlots && (
-              <div className="text-accent-gold text-xs sm:text-sm font-light p-8 text-center animate-pulse border border-white/5 rounded-xl bg-white/[0.01] flex flex-col items-center gap-2">
-                <div className="w-5 h-5 border-2 border-accent-gold/20 border-t-accent-gold rounded-full animate-spin mb-1" />
+              <div className="text-[#c9542f] text-xs sm:text-sm font-medium p-8 text-center border border-black/10 rounded-2xl bg-white/60 flex flex-col items-center gap-2">
+                <div className="w-5 h-5 border-2 border-[#c9542f]/20 border-t-[#c9542f] rounded-full animate-spin mb-1" />
                 Finding available time slots...
               </div>
             )}
 
             {slotsError && (
-              <div className="text-red-400 text-xs sm:text-sm font-light p-4 text-center border border-red-500/20 rounded-xl bg-red-500/5">
+              <div className="text-red-700 text-xs sm:text-sm font-normal p-4 text-center border border-red-200 rounded-2xl bg-red-50">
                 {slotsError}
               </div>
             )}
             
             {!isLoadingSlots && !slotsError && selectedDay && times.length === 0 && (
-              <div className="text-white/40 text-xs sm:text-sm font-light italic p-6 text-center border border-white/5 rounded-xl bg-white/[0.01]">
+              <div className="text-[#7a756b] text-xs sm:text-sm font-light italic p-6 text-center border border-black/10 rounded-2xl bg-white/60">
                 {settings?.noSlotsText || 'No slots available on this date. Please pick another date.'}
               </div>
             )}
@@ -394,17 +394,17 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                       return (
                         <div key={periodKey} className="flex flex-col gap-2.5">
                           {/* Period Header */}
-                          <div className="flex items-center justify-between px-1 pb-1 border-b border-white/5">
+                          <div className="flex items-center justify-between px-1 pb-1 border-b border-black/10">
                             <div className="flex items-center gap-1.5 sm:gap-2">
-                              <Icon className={`text-sm sm:text-base ${config.iconColor}`} weight="bold" />
-                              <span className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.16em] font-semibold text-white/90">
+                              <Icon className={`text-sm sm:text-base text-[#c9542f]`} weight="bold" />
+                              <span className="font-sans text-[0.68rem] sm:text-[0.72rem] uppercase tracking-[0.16em] font-bold text-[#111010]">
                                 {config.label}
                               </span>
-                              <span className="text-[0.6rem] sm:text-[0.65rem] text-white/35 font-light">
+                              <span className="text-[0.62rem] sm:text-[0.68rem] text-[#7a756b] font-light">
                                 • {config.sub}
                               </span>
                             </div>
-                            <span className="text-[0.55rem] uppercase tracking-wider text-accent-gold/80 bg-accent-gold/10 px-2 py-0.5 rounded-md border border-accent-gold/20 font-medium">
+                            <span className="text-[0.58rem] uppercase tracking-wider text-[#c9542f] bg-[#faede4] px-2 py-0.5 rounded-md border border-[#f0c8b8] font-bold">
                               {periodSlots.length} {periodSlots.length === 1 ? 'slot' : 'slots'}
                             </span>
                           </div>
@@ -420,19 +420,19 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                                   onClick={() => setSelectedTime(time)}
                                   className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-left transition-all flex items-center justify-between group cursor-pointer
                                     ${isSelected 
-                                      ? 'bg-gradient-to-r from-accent-gold/20 to-accent-gold/10 border-accent-gold text-accent-gold shadow-[0_0_15px_rgba(199,156,110,0.18)]' 
-                                      : 'bg-[#121212] border-white/5 text-white/80 hover:border-white/20 hover:bg-white/[0.03] hover:text-white'
+                                      ? 'bg-[#faede4] border-2 border-[#c9542f] text-[#c9542f] shadow-xs' 
+                                      : 'bg-white border-black/10 text-[#111010] hover:border-[#c9542f] hover:bg-[#faede4]/50'
                                     }
                                   `}
                                 >
                                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                                    <Clock className={`text-xs shrink-0 ${isSelected ? 'text-accent-gold' : 'text-white/30 group-hover:text-accent-gold transition-colors'}`} />
-                                    <span className={`text-xs sm:text-sm font-sans tracking-wide truncate ${isSelected ? 'font-semibold text-accent-gold' : 'font-light'}`}>
+                                    <Clock className={`text-xs shrink-0 ${isSelected ? 'text-[#c9542f]' : 'text-[#7a756b] group-hover:text-[#c9542f] transition-colors'}`} />
+                                    <span className={`text-xs sm:text-sm font-sans tracking-wide truncate ${isSelected ? 'font-bold text-[#c9542f]' : 'font-medium'}`}>
                                       {time}
                                     </span>
                                   </div>
                                   {isSelected && (
-                                    <CheckCircle className="text-accent-gold text-base shrink-0 ml-1" weight="fill" />
+                                    <CheckCircle className="text-[#c9542f] text-base shrink-0 ml-1" weight="fill" />
                                   )}
                                 </button>
                               );
@@ -450,11 +450,11 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10 flex flex-col-reverse md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
+      <div className="mt-8 pt-6 border-t border-black/10 flex flex-col-reverse md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
         
-        <div className="flex items-center justify-center md:justify-start gap-2.5 sm:gap-3 text-white/40">
-          <CalendarBlank className="text-xl sm:text-2xl shrink-0" weight="light" />
-          <span className="font-sans text-[0.65rem] sm:text-[0.7rem] font-light text-center md:text-left">
+        <div className="flex items-center justify-center md:justify-start gap-2.5 sm:gap-3 text-[#555047]">
+          <CalendarBlank className="text-xl sm:text-2xl shrink-0 text-[#c9542f]" weight="light" />
+          <span className="font-sans text-[0.72rem] sm:text-[0.78rem] font-light text-center md:text-left">
             All sessions are 1-on-1 and last {data.sessionDuration || 60} minutes.
           </span>
         </div>
@@ -463,7 +463,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
           {onBack && (
             <button
               onClick={onBack}
-              className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-white/10 font-sans text-xs sm:text-sm font-light tracking-wide text-white/60 hover:text-white hover:border-white/30 transition-all w-full md:w-auto"
+              className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-black/15 font-sans text-xs sm:text-sm font-semibold tracking-wide text-[#111010] hover:bg-black/5 transition-all w-full md:w-auto cursor-pointer"
             >
               <CaretLeft className="text-base sm:text-lg" />
               BACK
@@ -473,10 +473,10 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
           <button
             onClick={handleContinue}
             disabled={!selectedDay || !selectedTime}
-            className={`flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-semibold tracking-wide transition-all w-full md:w-auto
+            className={`flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-bold tracking-wider uppercase transition-all w-full md:w-auto cursor-pointer
               ${(!selectedDay || !selectedTime) 
-                ? 'bg-white/5 text-white/20 cursor-not-allowed' 
-                : 'bg-accent-gold text-black hover:bg-white hover:text-black hover:-translate-y-0.5'
+                ? 'bg-black/5 text-black/30 border border-black/10 cursor-not-allowed' 
+                : 'bg-[#111010] text-white hover:bg-[#c9542f] shadow-md hover:-translate-y-0.5'
               }
             `}
           >

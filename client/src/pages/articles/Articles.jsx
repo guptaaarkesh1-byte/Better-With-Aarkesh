@@ -975,15 +975,6 @@ export default function Articles() {
           })}
         </div>
       </main>
-
-      {/* ---------- FOOTER ---------- */}
-      <footer className="cat-page-footer">
-        <span>© {new Date().getFullYear()} BetterWithAarkesh · {currentCat.name}</span>
-        <span>
-          <Link to="/privacy-policy">Privacy</Link> · <Link to="/terms-and-conditions">Terms &amp; Cookies</Link>
-        </span>
-        <span>Made with care</span>
-      </footer>
     </div>
   );
 }

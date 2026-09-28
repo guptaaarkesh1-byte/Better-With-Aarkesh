@@ -1,6 +1,6 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
-import defaultBgImg from '../../assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.webp';
+import defaultBgImg from '../../assets/Page3/think-clearly.jpg';
 import { Sparkle, SunDim, TextT, Coffee, Circle } from '@phosphor-icons/react';
 
 const DEFAULT_THINK_DATA = {
@@ -10,7 +10,7 @@ const DEFAULT_THINK_DATA = {
   highlight: 'Clarity is the bridge between intention and action.',
   description: 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.',
   buttonText: 'SCROLL FOR NEXT PRINCIPLE',
-  bgImg: ''
+  bgImg: '/images/think-clearly.jpg'
 };
 
 export default function ThinkPrinciple() {
@@ -21,8 +21,8 @@ export default function ThinkPrinciple() {
   const headlineWhite = data.title || 'THINK';
   const headlineGold = data.subtitle || 'CLEARLY.';
   const paragraphs = [
-    `<span class='italic text-lg'>${data?.highlight || 'Clarity is the bridge between intention and action.'}</span>`,
-    `<span class='text-white text-lg'>....${data?.description || 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.'}</span>`
+    `<span class='italic text-lg text-[#111010]'>${data?.highlight || 'Clarity is the bridge between intention and action.'}</span>`,
+    `<span class='text-[#3d3832] text-lg'>....${data?.description || 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.'}</span>`
   ];
   const buttonText = data?.buttonText || 'SCROLL FOR NEXT PRINCIPLE';
   const bgImg = data?.bgImg || defaultBgImg;
@@ -31,6 +31,7 @@ export default function ThinkPrinciple() {
     <PrincipleSection 
       id="think-principle"
       bgImg={bgImg}
+      imagePosition="object-[70%_center] md:object-[74%_center] lg:object-[78%_center]"
       eyebrow={eyebrow}
       headlineWhite={headlineWhite}
       headlineGold={headlineGold}

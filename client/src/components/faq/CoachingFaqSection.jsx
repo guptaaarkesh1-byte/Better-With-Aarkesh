@@ -62,24 +62,24 @@ export default function CoachingFaqSection() {
   };
 
   return (
-    <section id="faq" className="relative w-full bg-[#050505] text-white py-24 md:py-32 border-t border-white/5 overflow-hidden">
-      {/* Subtle Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#c79c6e]/5 rounded-full blur-[140px] pointer-events-none" />
+    <section id="faq" className="relative w-full bg-[#f5f1e8] text-[#111010] py-24 md:py-32 border-t border-black/8 overflow-hidden">
+      {/* Subtle Background Warm Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#c9542f]/5 rounded-full blur-[140px] pointer-events-none" />
 
       <Container className="relative z-10 max-w-5xl mx-auto px-6">
         {/* Section Header */}
         <div className="flex flex-col items-center text-center mb-14 md:mb-18">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/20 text-[#c79c6e] text-xs sm:text-[0.82rem] font-sans font-bold uppercase tracking-[0.25em] mb-4">
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#faede4] border border-[#f0c8b8] text-[#c9542f] text-xs sm:text-[0.82rem] font-sans font-bold uppercase tracking-[0.25em] mb-4 shadow-xs">
             <Sparkle size={15} weight="fill" />
             <span>{badgeText}</span>
           </div>
 
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-white tracking-tight leading-tight max-w-3xl">
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-[#111010] tracking-tight leading-tight max-w-3xl">
             {heading1}<br />
-            <span className="text-[#c79c6e] italic font-light">{headingAccent}</span>
+            <span className="text-[#c9542f] italic font-light">{headingAccent}</span>
           </h2>
 
-          <p className="font-sans text-base sm:text-lg md:text-[1.1rem] text-white/75 max-w-2xl mt-4 leading-relaxed font-light">
+          <p className="font-sans text-base sm:text-lg md:text-[1.05rem] text-[#555047] max-w-2xl mt-4 leading-relaxed font-light">
             Have questions about starting your coaching journey? Here are straightforward answers to help you take the first step with complete confidence.
           </p>
         </div>
@@ -93,8 +93,8 @@ export default function CoachingFaqSection() {
                 key={index}
                 className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
                   isOpen
-                    ? 'bg-[#0c0c0c] border-[#c79c6e]/40 shadow-[0_4px_30px_rgba(199,156,110,0.08)]'
-                    : 'bg-[#080808] border-white/10 hover:border-white/20'
+                    ? 'bg-[#faede4] border-[#c9542f]/40 shadow-[0_4px_24px_rgba(201,84,47,0.08)]'
+                    : 'bg-white/90 border-black/8 hover:border-black/20 shadow-xs'
                 }`}
               >
                 <button
@@ -103,23 +103,23 @@ export default function CoachingFaqSection() {
                   className="w-full text-left px-6 sm:px-8 py-5 sm:py-6 flex items-center justify-between gap-5 cursor-pointer select-none group"
                   aria-expanded={isOpen}
                 >
-                  <span className={`font-serif text-xl sm:text-2xl md:text-[1.4rem] transition-colors leading-snug ${
-                    isOpen ? 'text-[#c79c6e]' : 'text-white/90 group-hover:text-white'
+                  <span className={`font-serif text-xl sm:text-2xl md:text-[1.35rem] transition-colors leading-snug ${
+                    isOpen ? 'text-[#c9542f]' : 'text-[#111010] group-hover:text-[#c9542f]'
                   }`}>
                     {faq.question}
                   </span>
 
                   <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 border transition-all duration-300 ${
                     isOpen
-                      ? 'bg-[#c79c6e] text-black border-[#c79c6e] rotate-180'
-                      : 'bg-white/5 text-white/60 border-white/10 group-hover:text-white group-hover:bg-white/10'
+                      ? 'bg-[#c9542f] text-white border-[#c9542f] rotate-180 shadow-xs'
+                      : 'bg-[#f5f1e8] text-[#111010] border-black/10 group-hover:border-[#c9542f]/40 group-hover:text-[#c9542f]'
                   }`}>
                     <CaretDown size={17} weight="bold" />
                   </div>
                 </button>
 
                 {isOpen && (
-                  <div className="px-6 sm:px-8 pb-6 sm:pb-7 pt-2 text-sm sm:text-base md:text-[1.05rem] font-sans text-white/75 leading-relaxed font-light border-t border-white/5 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="px-6 sm:px-8 pb-6 sm:pb-7 pt-2 text-sm sm:text-base md:text-[1rem] font-sans text-[#2b2723] leading-relaxed font-light border-t border-black/5 animate-in fade-in slide-in-from-top-2 duration-300">
                     <p>{faq.answer}</p>
                   </div>
                 )}

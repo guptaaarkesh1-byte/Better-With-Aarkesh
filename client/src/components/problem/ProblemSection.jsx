@@ -81,12 +81,12 @@ export default function ProblemSection() {
       }, "stage3+=" + gsap.utils.random(0, 1));
     });
 
-    // Stage 5: Golden Energy Burst (hardware accelerated)
+    // Stage 5: Warm Terracotta Energy Burst
     tl.fromTo('.golden-burst', 
       { scale: 0, opacity: 0 },
       { 
         scale: 1.6, 
-        opacity: 1, 
+        opacity: 0.9, 
         duration: 2, 
         ease: 'expo.out',
         force3D: true 
@@ -107,7 +107,7 @@ export default function ProblemSection() {
       return gsap.to(particle, {
         y: `-=${gsap.utils.random(50, 150)}`,
         x: `+=${gsap.utils.random(-50, 50)}`,
-        opacity: gsap.utils.random(0.2, 0.8),
+        opacity: gsap.utils.random(0.3, 0.8),
         duration: gsap.utils.random(5, 10),
         repeat: -1,
         yoyo: true,
@@ -131,10 +131,10 @@ export default function ProblemSection() {
   }, { scope: sectionRef });
 
   return (
-    <section ref={sectionRef} className="relative w-full bg-[#0a0a0a] h-auto lg:h-screen flex flex-col overflow-hidden snap-section">
+    <section ref={sectionRef} className="relative w-full bg-[#f5f1e8] h-auto lg:h-screen flex flex-col overflow-hidden snap-section">
       
       {/* MOBILE HEADING & PARA */}
-      <div className="block lg:hidden relative z-30 w-full px-6 pt-28 pb-4 bg-[#0a0a0a]">
+      <div className="block lg:hidden relative z-30 w-full px-6 pt-28 pb-4 bg-[#f5f1e8]">
         <ProblemContent problemData={problemData || {}} />
       </div>
 
@@ -148,11 +148,11 @@ export default function ProblemSection() {
           </div>
         </Container>
 
-        {/* Stage 5: Golden Energy Burst Element */}
+        {/* Stage 5: Energy Burst Element */}
         <div 
           className="golden-burst absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full pointer-events-none z-20"
           style={{
-            background: 'radial-gradient(circle, rgba(185,138,86,0.85) 0%, rgba(185,138,86,0.4) 35%, rgba(185,138,86,0) 70%)',
+            background: 'radial-gradient(circle, rgba(201,84,47,0.7) 0%, rgba(201,84,47,0.25) 35%, rgba(201,84,47,0) 70%)',
             willChange: 'transform, opacity'
           }}
         />
@@ -162,7 +162,7 @@ export default function ProblemSection() {
           {[...Array(30)].map((_, i) => (
             <div
               key={i}
-              className="dust-particle absolute rounded-full bg-[#B98A56]"
+              className="dust-particle absolute rounded-full bg-[#c9542f]"
               style={{
                 width: `${Math.random() * 3 + 1}px`,
                 height: `${Math.random() * 3 + 1}px`,
@@ -182,7 +182,7 @@ export default function ProblemSection() {
       </div>
 
       {/* Transition Intro */}
-      <div className="relative z-40 shrink-0 bg-[#0a0a0a]">
+      <div className="relative z-40 shrink-0 bg-[#f5f1e8]">
         <TransitionIntro problemData={problemData || {}} />
       </div>
 

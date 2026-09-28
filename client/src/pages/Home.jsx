@@ -22,9 +22,9 @@ export default function Home() {
         <DecidePrinciple />
         <CoachingPrinciple />
         <CoachingJourney />
+        <MeetAarkesh />
+        <TestimonialsSection />
       </PrinciplesContainer>
-      <MeetAarkesh />
-      <TestimonialsSection />
       <FinalCtaSection />
       <CoachingFaqSection />
     </>

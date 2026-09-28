@@ -514,19 +514,17 @@ export default function Booking() {
   }
 
   return (
-    <div className="flex-grow w-full relative flex flex-col pt-28 md:pt-36 lg:pt-40 pb-8 md:pb-12">
+    <div className="flex-grow w-full relative flex flex-col pt-28 md:pt-36 lg:pt-40 pb-12 md:pb-16 bg-[#f5f1e8] text-[#111010]">
       
-      {/* Background Image Layer */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      {/* Background Image Layer with Warm Cream Gradients */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-25">
         <img 
           src={bookingSettings.general.bgImageUrl || bookingBg} 
           alt="Desk lamp" 
-          className="w-full h-full object-cover object-left"
-          style={{ opacity: (bookingSettings.general.overlayOpacity ? (100 - bookingSettings.general.overlayOpacity) / 100 : 0.6) }}
+          className="w-full h-full object-cover object-left mix-blend-multiply"
+          style={{ opacity: (bookingSettings.general.overlayOpacity ? (100 - bookingSettings.general.overlayOpacity) / 100 : 0.4) }}
         />
-        {/* Gradients to fade the image into black so text stays readable */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/40 via-[#0a0a0a]/80 to-[#0a0a0a]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/50 via-transparent to-[#0a0a0a]/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8]/60 via-transparent to-[#f5f1e8]/90" />
       </div>
 
       <div className="relative z-10 px-3 sm:px-6 md:px-8 w-full max-w-5xl mx-auto">
@@ -536,7 +534,7 @@ export default function Booking() {
           <div className="flex w-full mb-4">
             <button 
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 font-sans text-[0.65rem] uppercase tracking-widest text-white/60 hover:text-white hover:text-accent-gold transition-colors"
+              className="flex items-center gap-2 font-sans text-[0.68rem] uppercase tracking-widest text-[#7a756b] hover:text-[#c9542f] transition-colors cursor-pointer font-semibold"
             >
               <ArrowLeft className="text-base" />
               BACK
@@ -546,25 +544,25 @@ export default function Booking() {
 
         {/* Course Student Free Sessions Active Banner */}
         {isLoggedIn && freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0 && (
-          <div className="mb-6 sm:mb-8 p-3.5 sm:p-5 rounded-2xl border border-accent-gold/40 bg-gradient-to-r from-accent-gold/20 via-[#15120d] to-[#0a0a0a] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 shadow-[0_0_35px_rgba(199,156,110,0.18)]">
+          <div className="mb-6 sm:mb-8 p-4 sm:p-5 rounded-2xl border border-[#f0c8b8] bg-[#faede4] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 shadow-sm">
             <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-accent-gold/20 border border-accent-gold/40 flex items-center justify-center text-accent-gold shrink-0 mt-0.5 sm:mt-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-[#f0c8b8] flex items-center justify-center text-[#c9542f] shrink-0 mt-0.5 sm:mt-0 shadow-xs">
                 <Sparkle size={18} weight="fill" className="sm:w-5 sm:h-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <span className="text-white text-xs sm:text-sm font-medium">Mastery Course Benefit Active</span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-wider">
+                  <span className="text-[#111010] text-xs sm:text-sm font-semibold">Mastery Course Benefit Active</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#e5f2e8] border border-[#a8d5b1] text-[#2f4a34] text-[0.6rem] sm:text-[0.65rem] font-bold uppercase tracking-wider">
                     {freeSessionInfo.freeSessions} of 3 Free Sessions Available
                   </span>
                 </div>
-                <p className="text-white/70 text-[0.72rem] sm:text-xs font-light mt-1 break-words">
-                  Account: <span className="text-white font-normal">{bookingData.email || 'Course Student'}</span> • Your session is 100% complimentary (₹0 at checkout).
+                <p className="text-[#555047] text-[0.72rem] sm:text-xs font-normal mt-1 break-words">
+                  Account: <span className="text-[#111010] font-medium">{bookingData.email || 'Course Student'}</span> • Your session is 100% complimentary (₹0 at checkout).
                 </p>
               </div>
             </div>
             <div className="w-full sm:w-auto shrink-0 flex items-center justify-center sm:justify-end">
-              <span className="w-full sm:w-auto text-center text-accent-gold font-semibold text-xs tracking-wider uppercase bg-accent-gold/10 px-3.5 py-2 rounded-xl border border-accent-gold/30">
+              <span className="w-full sm:w-auto text-center text-[#c9542f] font-bold text-xs tracking-wider uppercase bg-white px-3.5 py-2 rounded-xl border border-[#f0c8b8] shadow-xs">
                 ₹0 Free Booking
               </span>
             </div>
@@ -572,19 +570,19 @@ export default function Booking() {
         )}
 
         {/* Header section based on step */}
-        <div className="text-center mb-6">
-          <span className="font-sans text-[0.55rem] uppercase tracking-[0.3em] font-medium text-accent-gold block mb-2">
+        <div className="text-center mb-6 sm:mb-8">
+          <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] block mb-2">
             {step === 1 && (bookingSettings.step1.chapterTag || 'CHAPTER 1 OF 3')}
             {step === 2 && (bookingSettings.step2.chapterTag || 'CHAPTER 2 OF 3')}
             {step === 3 && (bookingSettings.step3.chapterTag || 'CHAPTER 3 OF 3')}
           </span>
-          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight leading-[1.15] text-white mb-3 sm:mb-4">
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight leading-[1.15] text-[#111010] mb-3 sm:mb-4">
             {step === 1 && (bookingSettings.step1.title || "Let's Find a Time That Works")}
             {step === 2 && (bookingSettings.step2.title || "A Little About You")}
             {step === 3 && (bookingSettings.step3.title || "Confirm & Secure Your Session")}
           </h1>
-          <div className="h-[1px] w-8 bg-accent-gold mx-auto mb-3 sm:mb-4" />
-          <p className="text-paragraph text-xs sm:text-sm font-light tracking-wide text-white/80 max-w-lg mx-auto px-2">
+          <div className="h-[2px] w-10 bg-[#c9542f] mx-auto mb-3 sm:mb-4 rounded-full" />
+          <p className="text-[#555047] text-sm sm:text-[0.95rem] font-light leading-relaxed max-w-lg mx-auto px-2">
             {step === 1 && (
               <>
                 {bookingSettings.step1.subtitleLine1 || "You don't need to have everything figured out before you begin."}
@@ -622,12 +620,12 @@ export default function Booking() {
         </div>
 
         {/* Main Booking Card */}
-        <div className="bg-[#0f0f0f] border border-white/5 rounded-2xl overflow-hidden relative shadow-2xl">
+        <div className="bg-[#ede7d8]/70 backdrop-blur-md border border-black/10 rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-xl">
           
-          {/* Subtle top glow */}
-          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-accent-gold/20 to-transparent" />
+          {/* Subtle top warm glow */}
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#c9542f]/40 to-transparent" />
           
-          <div className="p-4 sm:p-6 md:p-8">
+          <div className="p-4 sm:p-6 md:p-10">
             <BookingStepper currentStep={step} />
 
             <div className="mt-8">
@@ -646,6 +644,7 @@ export default function Booking() {
                   data={bookingData} 
                   updateData={updateData} 
                   onNext={nextStep} 
+                  onBack={prevStep}
                   isAuthenticated={!!localStorage.getItem('token')}
                   freeSessionInfo={freeSessionInfo}
                   settings={bookingSettings.step2}
@@ -668,19 +667,19 @@ export default function Booking() {
         </div>
 
         {/* Footer Note */}
-        <div className="mt-6 flex flex-col items-center justify-center gap-1">
+        <div className="mt-6 sm:mt-8 flex flex-col items-center justify-center gap-1 text-center">
           <div className="flex items-center gap-2">
             {/* Lock Icon */}
             <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M11.6667 7.33333H2.33333C1.59695 7.33333 1 7.93029 1 8.66667V13.3333C1 14.0697 1.59695 14.6667 2.33333 14.6667H11.6667C12.403 14.6667 13 14.0697 13 13.3333V8.66667C13 7.93029 12.403 7.33333 11.6667 7.33333Z" stroke="#B98A56" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M4.3335 7.33333V4.66667C4.3335 3.95942 4.61445 3.28115 5.11455 2.78105C5.61465 2.28095 6.29292 2 7.00016 2C7.70741 2 8.38568 2.28095 8.88578 2.78105C9.38588 3.28115 9.66683 3.95942 9.66683 4.66667V7.33333" stroke="#B98A56" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M11.6667 7.33333H2.33333C1.59695 7.33333 1 7.93029 1 8.66667V13.3333C1 14.0697 1.59695 14.6667 2.33333 14.6667H11.6667C12.403 14.6667 13 14.0697 13 13.3333V8.66667C13 7.93029 12.403 7.33333 11.6667 7.33333Z" stroke="#c9542f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4.3335 7.33333V4.66667C4.3335 3.95942 4.61445 3.28115 5.11455 2.78105C5.61465 2.28095 6.29292 2 7.00016 2C7.70741 2 8.38568 2.28095 8.88578 2.78105C9.38588 3.28115 9.66683 3.95942 9.66683 4.66667V7.33333" stroke="#c9542f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="font-sans text-xs text-white">
+            <span className="font-sans text-xs text-[#555047] font-medium">
               {bookingSettings.general.privacyNoteLine1 || 'Your information is private and only visible to me.'}
             </span>
           </div>
           {bookingSettings.general.privacyNoteLine2 && (
-            <span className="font-sans text-xs text-white">
+            <span className="font-sans text-xs text-[#7a756b]">
               {bookingSettings.general.privacyNoteLine2}
             </span>
           )}

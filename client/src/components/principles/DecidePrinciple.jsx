@@ -1,6 +1,6 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
-import defaultBgImg from '../../assets/Page5/ChatGPT Image Jul 24, 2026, 03_00_05 PM.webp';
+import defaultBgImg from '../../assets/Page5/decide-intentionally.jpg';
 import { Sparkle, GitFork, Spiral, Target, SlidersHorizontal, ArrowRight } from '@phosphor-icons/react';
 
 const DEFAULT_DECIDE_DATA = {
@@ -11,7 +11,7 @@ const DEFAULT_DECIDE_DATA = {
   description: "We help you align your values, weigh what matters, and choose the path you're willing to walk.",
   closingLine: '....Then we help you walk it.',
   buttonText: '',
-  bgImg: ''
+  bgImg: '/images/decide-intentionally.jpg'
 };
 
 export default function DecidePrinciple() {
@@ -22,9 +22,9 @@ export default function DecidePrinciple() {
   const headlineWhite = data.title || 'DECIDE';
   const headlineGold = data.subtitle || 'INTENTIONALLY.';
   const paragraphs = [
-    `<span class='italic text-xl lg:text-2xl leading-relaxed'>${data?.highlight || 'Clarity without decision is just expensive loop.'}</span>`,
-    `<span class='text-lg lg:text-xl leading-relaxed'>${data?.description || "We help you align your values, weigh what matters, and choose the path you're willing to walk."}</span>`,
-    `<span class='text-accent-gold text-xl lg:text-2xl font-medium'>${data?.closingLine || '....Then we help you walk it.'}</span>`
+    `<span class='italic text-xl lg:text-2xl leading-relaxed text-[#111010]'>${data?.highlight || 'Clarity without decision is just expensive loop.'}</span>`,
+    `<span class='text-lg lg:text-xl leading-relaxed text-[#3d3832]'>${data?.description || "We help you align your values, weigh what matters, and choose the path you're willing to walk."}</span>`,
+    `<span class='text-[#c9542f] text-xl lg:text-2xl font-medium'>${data?.closingLine || '....Then we help you walk it.'}</span>`
   ];
   const buttonText = data?.buttonText || '';
   const bgImg = data?.bgImg || defaultBgImg;
@@ -59,7 +59,7 @@ export default function DecidePrinciple() {
       transitionText="As you scroll past the illuminated path, the scene moves you forward on your journey."
       customTransitionFlow={customFlow}
       contentClassName="pt-20"
-      imagePosition="object-center"
+      imagePosition="object-[65%_center] md:object-[70%_center] lg:object-[75%_center]"
     />
   );
 }

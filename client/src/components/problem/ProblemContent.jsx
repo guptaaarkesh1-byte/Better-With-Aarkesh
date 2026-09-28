@@ -53,22 +53,28 @@ export default function ProblemContent({ problemData = {} }) {
     <div ref={container} className="max-w-md pt-0 relative z-50">
       
       <div className="flex items-center gap-4 mb-4">
-        <div className="prob-line h-[1px] w-8 bg-accent-gold origin-left" />
-        <span className="prob-eyebrow eyebrow-text" style={{ color: '#B98A56' }}>
+        <div className="prob-line h-[1.5px] w-8 bg-[#c9542f] origin-left" />
+        <span className="prob-eyebrow font-sans text-[0.72rem] font-bold uppercase tracking-[0.25em] text-[#c9542f]">
           {eyebrow}
         </span>
       </div>
 
-      <h2 className="prob-heading font-serif text-4xl lg:text-5xl font-thin tracking-tight leading-[1.1] mb-6 text-heading">
-        {heading1} <span className="italic" style={{ color: '#B98A56' }}>{headingAccent}</span>
+      <h2 
+        className="prob-heading font-serif text-4xl lg:text-5xl font-normal tracking-tight leading-[1.12] mb-6 text-[#111010]"
+        style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+      >
+        {heading1}{' '}
+        <span className="italic text-[#c9542f] font-normal not-italic" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+          {headingAccent}
+        </span>
       </h2>
 
-      <div className="prob-divider h-[1px] w-8 bg-white/20 origin-left mb-6" />
+      <div className="prob-divider h-[2px] w-10 bg-[#c9542f] origin-left mb-6" />
 
-      <p className="prob-paragraph text-paragraph text-lg lg:text-xl font-serif font-light tracking-wide leading-relaxed">
-        <span className="italic text-xl lg:text-2xl">{quoteItalic}</span><br />
+      <p className="prob-paragraph text-[#4a463e] text-lg lg:text-xl font-serif font-normal tracking-wide leading-relaxed">
+        <span className="italic text-xl lg:text-2xl text-[#111010]">{quoteItalic}</span><br />
         <br />
-        <span className="text-white text-lg lg:text-xl">{quoteSubtext}</span>
+        <span className="font-sans text-sm lg:text-base font-medium text-[#7a756b]">{quoteSubtext}</span>
       </p>
 
     </div>

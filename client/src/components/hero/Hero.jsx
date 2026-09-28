@@ -13,8 +13,8 @@ const DEFAULT_HERO_DATA = {
   description: 'A space to think clearly, feel honestly and decide intentionally.',
   ctaText: 'Book a Session',
   ctaLink: '/book',
-  bgImageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1287&auto=format&fit=crop',
-  overlayOpacity: 40,
+  bgImageUrl: '/images/hero-coach.jpg',
+  overlayOpacity: 0,
   showScrollIndicator: true,
 };
 

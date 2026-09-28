@@ -2,25 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-:root, [data-theme="dark"] {
-  --color-bg-primary: #070707;
-  --color-bg-secondary: #0f0f0f;
-  --color-bg-card: #121212;
-  --color-text-primary: #f5f2eb;
-  --color-text-secondary: rgba(255, 255, 255, 0.72);
-  --color-text-muted: rgba(255, 255, 255, 0.45);
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-border-subtle: rgba(255, 255, 255, 0.05);
-  --color-gold: #c79c6e;
-  --color-gold-hover: #b0885e;
-  --color-gold-subtle: rgba(199, 156, 110, 0.12);
-  --color-gold-border: rgba(199, 156, 110, 0.35);
+:root, [data-theme="dark"], [data-theme="light"], .light-theme {
+  --color-bg-primary: #f5f1e8;
+  --color-bg-secondary: #ede7d8;
+  --color-bg-card: #ffffff;
+  --color-text-primary: #111010;
+  --color-text-secondary: #4a463e;
+  --color-text-muted: #7a756b;
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-border-subtle: rgba(0, 0, 0, 0.05);
+  --color-gold: #c9542f;
+  --color-gold-hover: #a64117;
+  --color-gold-subtle: rgba(201, 84, 47, 0.1);
+  --color-gold-border: rgba(201, 84, 47, 0.35);
 
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --heading: 'Playfair Display', Georgia, serif;
+  --heading: 'Fraunces', Georgia, serif;
+  --disp: 'Archivo Black', sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  color-scheme: dark;
+  color-scheme: light;
   color: var(--color-text-primary);
   background-color: var(--color-bg-primary);
   text-rendering: optimizeLegibility;
@@ -31,8 +32,8 @@
 /* Signature Editorial Drop Cap (2-line drop cap aligned with cap height) */
 .editorial-dropcap {
   float: left;
-  font-family: 'Playfair Display', Georgia, serif;
-  color: #c79c6e;
+  font-family: 'Fraunces', Georgia, serif;
+  color: #c9542f;
   font-weight: 400;
   line-height: 0.78;
   font-size: 3.6rem;
@@ -49,25 +50,6 @@
     padding-right: 0.85rem;
     padding-top: 0.22rem;
   }
-}
-
-[data-theme="light"], .light-theme {
-  --color-bg-primary: #ffffff;       /* Pure white background for light mode */
-  --color-bg-secondary: #f8f8f9;     /* Subtle secondary background */
-  --color-bg-card: #ffffff;          /* White card surface */
-  --color-text-primary: #111111;     /* High-contrast crisp black heading */
-  --color-text-secondary: #374151;   /* High-contrast body text */
-  --color-text-muted: #6b7280;       /* Crisp muted text */
-  --color-border: rgba(0, 0, 0, 0.1);
-  --color-border-subtle: rgba(0, 0, 0, 0.05);
-  --color-gold: #a06e3b;             /* Elegant bronze gold with strong readability on white */
-  --color-gold-hover: #895b2c;
-  --color-gold-subtle: rgba(160, 110, 59, 0.1);
-  --color-gold-border: rgba(160, 110, 59, 0.35);
-
-  color-scheme: light;
-  color: var(--color-text-primary);
-  background-color: var(--color-bg-primary);
 }
 
 /* Smooth theme transitions */

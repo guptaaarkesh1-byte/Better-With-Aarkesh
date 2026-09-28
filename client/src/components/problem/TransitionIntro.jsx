@@ -44,48 +44,37 @@ export default function TransitionIntro({ problemData = {} }) {
   }, { scope: container, dependencies: [transEyebrow, transHeading, transAccent] });
 
   return (
-    <div ref={container} className="relative flex flex-col items-center justify-center text-center px-4 py-4 lg:py-6 overflow-hidden">
+    <div ref={container} className="relative flex flex-col items-center justify-center text-center px-4 py-8 lg:py-12 overflow-hidden bg-[#f5f1e8]">
       
-      {/* Background Image */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <img 
-          src={transBg} 
-          alt="Dust and light particles"
-          className="w-full h-full object-cover object-bottom opacity-80"
-        />
-        {/* Global contrast overlay layer */}
-        <div 
-          className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" 
-          style={{ opacity: 'var(--overlay-opacity, 0.4)' }}
-        />
-        {/* Subtle gradient to blend edges if needed */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-50" />
+      {/* Clean light background with subtle warm radial highlight */}
+      <div className="absolute inset-0 z-0 pointer-events-none bg-[#f5f1e8]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(201,84,47,0.04)_0%,transparent_70%)]" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center">
-        <span className="trans-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-semibold text-accent-gold mb-2 inline-block">
+        <span className="trans-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] mb-3 inline-block">
           {transEyebrow}
         </span>
 
-        <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-thin tracking-tight text-heading mb-4">
+        <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-normal tracking-tight text-[#111010] mb-4">
           <AnimatedText text={`${transHeading} `} tag="span" className="inline-block" delay={0.2} />
           <span className="relative inline-block overflow-hidden">
             <AnimatedText 
               text={transAccent} 
               tag="span" 
-              className="inline-block text-accent-gold italic" 
+              className="inline-block text-[#c9542f] italic font-light" 
               delay={0.4} 
             />
-            {/* Subtle underline for emphasis as seen in design */}
-            <span className="absolute bottom-1 left-0 w-full h-[1px] bg-accent-gold/40" />
+            {/* Subtle underline for emphasis */}
+            <span className="absolute bottom-1 left-0 w-full h-[1.5px] bg-[#c9542f]/40" />
           </span>
         </h2>
 
-        <div className="trans-scroll flex items-center gap-3 opacity-0 mt-2">
-          <div className="w-5 h-8 rounded-full border border-white/30 flex justify-center p-1">
-            <div ref={mouseRef} className="w-1 h-2 bg-white/50 rounded-full" />
+        <div className="trans-scroll flex items-center gap-3 opacity-0 mt-3">
+          <div className="w-5 h-8 rounded-full border border-black/20 flex justify-center p-1 bg-white/60">
+            <div ref={mouseRef} className="w-1.5 h-2.5 bg-[#111010] rounded-full" />
           </div>
-          <span className="font-sans text-xs tracking-widest text-paragraph">Scroll to continue</span>
+          <span className="font-sans text-xs tracking-widest text-[#555047] font-medium uppercase">Scroll to continue</span>
         </div>
       </div>
 

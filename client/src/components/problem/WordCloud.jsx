@@ -7,23 +7,23 @@ import silhouetteImg from '../../assets/Page2/ChatGPT Image Jul 24, 2026, 01_49_
 gsap.registerPlugin(ScrollTrigger);
 
 const WORDS = [
-  { text: 'Overthinking', top: '15%', left: '40%', size: 'text-2xl', opacity: 'opacity-70' },
-  { text: 'Regret', top: '10%', left: '60%', size: 'text-lg', opacity: 'opacity-40' },
-  { text: 'Self doubt', top: '7%', left: '25%', size: 'text-xl', opacity: 'opacity-60' },
-  { text: 'Guilt', top: '25%', left: '55%', size: 'text-2xl', opacity: 'opacity-80' },
-  { text: 'Family', top: '22%', left: '75%', size: 'text-xl', opacity: 'opacity-60' },
-  { text: 'Uncertainty', top: '22%', left: '88%', size: 'text-sm', opacity: 'opacity-30' },
-  { text: 'Breakup', top: '35%', left: '32%', size: 'text-xl', opacity: 'opacity-90' },
-  { text: 'Career pressure', top: '35%', left: '65%', size: 'text-xl', opacity: 'opacity-80' },
-  { text: 'Failing', top: '35%', left: '92%', size: 'text-sm', opacity: 'opacity-20' },
-  { text: 'People pleasing', top: '85%', left: '25%', size: 'text-lg', opacity: 'opacity-60' },
-  { text: 'Loneliness', top: '45%', left: '80%', size: 'text-3xl', opacity: 'opacity-90' },
-  { text: 'Not enough', top: '55%', left: '35%', size: 'text-lg', opacity: 'opacity-50' },
-  { text: 'Past mistakes', top: '55%', left: '65%', size: 'text-lg', opacity: 'opacity-70' },
-  { text: 'Judgement', top: '55%', left: '90%', size: 'text-sm', opacity: 'opacity-30' },
-  { text: 'Financial stress', top: '78%', left: '30%', size: 'text-xl', opacity: 'opacity-60' },
-  { text: 'Comparison', top: '70%', left: '75%', size: 'text-xl', opacity: 'opacity-50' },
-  { text: 'What if?', top: '12%', left: '30%', size: 'text-sm', opacity: 'opacity-40' },
+  { text: 'Overthinking', top: '15%', left: '40%', size: 'text-2xl', opacity: 'opacity-85' },
+  { text: 'Regret', top: '10%', left: '60%', size: 'text-lg', opacity: 'opacity-55' },
+  { text: 'Self doubt', top: '7%', left: '25%', size: 'text-xl', opacity: 'opacity-70' },
+  { text: 'Guilt', top: '25%', left: '55%', size: 'text-2xl', opacity: 'opacity-90' },
+  { text: 'Family', top: '22%', left: '75%', size: 'text-xl', opacity: 'opacity-70' },
+  { text: 'Uncertainty', top: '22%', left: '88%', size: 'text-sm', opacity: 'opacity-45' },
+  { text: 'Breakup', top: '35%', left: '32%', size: 'text-xl', opacity: 'opacity-95' },
+  { text: 'Career pressure', top: '35%', left: '65%', size: 'text-xl', opacity: 'opacity-85' },
+  { text: 'Failing', top: '35%', left: '92%', size: 'text-sm', opacity: 'opacity-40' },
+  { text: 'People pleasing', top: '85%', left: '25%', size: 'text-lg', opacity: 'opacity-70' },
+  { text: 'Loneliness', top: '45%', left: '80%', size: 'text-3xl', opacity: 'opacity-95' },
+  { text: 'Not enough', top: '55%', left: '35%', size: 'text-lg', opacity: 'opacity-65' },
+  { text: 'Past mistakes', top: '55%', left: '65%', size: 'text-lg', opacity: 'opacity-80' },
+  { text: 'Judgement', top: '55%', left: '90%', size: 'text-sm', opacity: 'opacity-50' },
+  { text: 'Financial stress', top: '78%', left: '30%', size: 'text-xl', opacity: 'opacity-70' },
+  { text: 'Comparison', top: '70%', left: '75%', size: 'text-xl', opacity: 'opacity-65' },
+  { text: 'What if?', top: '12%', left: '30%', size: 'text-sm', opacity: 'opacity-55' },
 ];
 
 export default function WordCloud() {
@@ -67,19 +67,21 @@ export default function WordCloud() {
   return (
     <div ref={container} className="relative w-full h-full min-h-[60vh] flex items-center justify-center overflow-hidden">
       
-      {/* Silhouette Image Full Background */}
+      {/* Silhouette Image Full Background with light blend */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
           src={silhouetteImg} 
-          alt="Silhouette"
-          className="w-full h-full object-cover object-top lg:object-center"
+          alt="Silhouette" 
+          className="w-full h-full object-cover object-top lg:object-center opacity-65"
+          style={{
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)'
+          }}
         />
-        {/* Dark overlay to ensure text readability if needed */}
-        <div className="absolute inset-0 bg-black/30" />
+        {/* Warm cream soft gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/40 to-[#f5f1e8]/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8] via-transparent to-[#f5f1e8]" />
       </div>
-
-      {/* Background Gradient / Haze */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/[0.03] via-transparent to-transparent opacity-50 z-0 pointer-events-none" />
 
       {/* Words Container - shifted left on mobile to prevent right edge clipping */}
       <div className="absolute inset-0 -translate-x-20 md:translate-x-0 pointer-events-none">
@@ -95,7 +97,7 @@ export default function WordCloud() {
             }}
           >
             <span 
-              className={`floating-word inline-block font-serif text-heading ${word.size} opacity-20 whitespace-nowrap z-0 blur-sm scale-75`}
+              className={`floating-word inline-block font-serif text-[#111010] ${word.size} opacity-25 whitespace-nowrap z-0 blur-sm scale-75`}
             >
               {word.text}
             </span>
@@ -114,15 +116,13 @@ export default function WordCloud() {
             }}
           >
             <span 
-              className={`floating-word inline-block font-serif text-heading ${word.size} ${word.opacity} whitespace-nowrap z-10`}
+              className={`floating-word inline-block font-serif text-[#111010] font-medium ${word.size} ${word.opacity} whitespace-nowrap z-10 drop-shadow-xs`}
             >
               {word.text}
             </span>
           </div>
         ))}
       </div>
-
-
 
     </div>
   );

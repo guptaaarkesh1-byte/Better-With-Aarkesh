@@ -15,6 +15,7 @@ export default function MainLayout({ children }) {
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
+    
     lenisRef.current = new Lenis({
       duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -26,7 +27,7 @@ export default function MainLayout({ children }) {
       infinite: false,
     });
 
-    // Expose lenis globally for scroll locking in modals
+    // Expose lenis globally for scroll locking in modals & manual scrolling
     window.lenis = lenisRef.current;
 
     // Sync Lenis scroll with GSAP ScrollTrigger
@@ -46,27 +47,37 @@ export default function MainLayout({ children }) {
     };
   }, []);
 
+  // Handle route change scroll position and hash scrolling cleanly
   useEffect(() => {
-    if (!location.hash && lenisRef.current) {
-      // Snap to top immediately on route change if no hash
-      lenisRef.current.scrollTo(0, { immediate: true });
-      // Still refresh GSAP after a short delay to ensure correct layout
+    // Kill stale ScrollTriggers from unmounted page to prevent detached pin spacers
+    ScrollTrigger.getAll().forEach(t => t.kill());
+
+    if (!location.hash) {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      if (lenisRef.current) {
+        lenisRef.current.scrollTo(0, { immediate: true });
+      }
       setTimeout(() => ScrollTrigger.refresh(), 100);
-    } else if (location.hash && lenisRef.current) {
-      // For hash navigation, wait for GSAP to finish pinning and padding
-      // otherwise it calculates the wrong scroll destination.
+    } else {
+      // Hash navigation with clean delay for DOM layout
       setTimeout(() => {
         ScrollTrigger.refresh();
         const element = document.querySelector(location.hash);
         if (element) {
-          lenisRef.current.scrollTo(element, { offset: 0, duration: 1.5 });
+          if (lenisRef.current) {
+            lenisRef.current.scrollTo(element, { offset: -20, duration: 1.2 });
+          } else {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
         }
-      }, 500);
+      }, 300);
     }
   }, [location.pathname, location.hash]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-paragraph relative selection:bg-accent-gold selection:text-black">
+    <div className="min-h-screen flex flex-col bg-[#f5f1e8] text-paragraph relative selection:bg-accent-gold selection:text-black">
       <Navbar />
       <main className="flex-grow flex flex-col">
         {children}

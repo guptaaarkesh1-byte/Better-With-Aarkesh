@@ -13,8 +13,8 @@ const DEFAULT_SECTIONS = {
     ctaLink: '/book',
     secondaryCtaText: '',
     secondaryCtaLink: '',
-    bgImageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1287&auto=format&fit=crop',
-    overlayOpacity: 40,
+    bgImageUrl: '/images/hero-coach.jpg',
+    overlayOpacity: 0,
     showScrollIndicator: true,
   },
   problem: {
@@ -36,7 +36,7 @@ const DEFAULT_SECTIONS = {
       highlight: 'Clarity is the bridge between intention and action.',
       description: 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.',
       buttonText: 'SCROLL FOR NEXT PRINCIPLE',
-      bgImg: '',
+      bgImg: '/images/think-clearly.jpg',
     },
     feel: {
       eyebrow: 'PRINCIPLE 02',
@@ -45,7 +45,7 @@ const DEFAULT_SECTIONS = {
       highlight: "You can't move forward, running from what you feel.",
       description: 'We create the safe space to feel it all - without judgement',
       buttonText: '',
-      bgImg: '',
+      bgImg: '/images/feel-honestly.jpg',
     },
     decide: {
       eyebrow: 'PRINCIPLE 03',
@@ -55,7 +55,7 @@ const DEFAULT_SECTIONS = {
       description: "We help you align your values, weigh what matters, and choose the path you're willing to walk.",
       closingLine: '....Then we help you walk it.',
       buttonText: '',
-      bgImg: '',
+      bgImg: '/images/decide-intentionally.jpg',
     }
   },
   coachingProcess: {
@@ -64,7 +64,7 @@ const DEFAULT_SECTIONS = {
     headingAccent: 'built around you.',
     subtitle: 'A clear path from where you are, to where you want to be.',
     subnote: 'Simple. Effective.',
-    bgImg: '',
+    bgImg: '/images/coaching-process.jpg',
     steps: [
       { num: '01', title: 'CONNECT', text: 'We start with a meaningful conversation to understand what matters to you.' },
       { num: '02', title: 'CLARIFY', text: "We dig deep to bring clarity to your thoughts, patterns, and what's keeping you stuck." },

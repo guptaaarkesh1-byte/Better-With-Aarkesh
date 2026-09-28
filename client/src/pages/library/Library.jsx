@@ -950,13 +950,12 @@ export default function Library() {
           z-index: 6;
         }
 
-        /* ---------- CTA & FOOTER CARD (FULL STACKED DECK) ---------- */
+        /* ---------- CTA SECTION (TRANSITIONS INTO FOOTER) ---------- */
         .library-root .cta-wrapper {
-          position: sticky;
-          top: 0;
+          position: relative;
           z-index: 7;
           width: 100%;
-          min-height: 100vh;
+          min-height: auto;
           background: var(--ink);
           color: var(--cream);
           border-top-left-radius: 36px;
@@ -964,9 +963,9 @@ export default function Library() {
           box-shadow: 0 -25px 50px rgba(0, 0, 0, 0.45);
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
-          padding: 24px 40px 24px;
+          padding: 80px 24px 70px;
           box-sizing: border-box;
           overflow: hidden;
         }
@@ -1603,41 +1602,15 @@ export default function Library() {
         </div>
       </section>
 
-      {/* ---------- CTA & FOOTER (FULL STACKED DECK WITH TOP NAVBAR) ---------- */}
+      {/* ---------- CTA SECTION (READY TO GO DEEPER) ---------- */}
       <section className="cta-wrapper">
-        <header className="cta-nav">
-          <div className="logo">
-            <Link to="/">BetterWith<em>Aarkesh</em></Link>
-          </div>
-          <nav className="navlinks">
-            <Link to="/">Home</Link>
-            <Link to="/#coaching">Coaching</Link>
-            <Link to="/#meet-aarkesh">About</Link>
-            <Link to="/#testimonials">Testimonials</Link>
-            <Link to="/library" className="active">Library</Link>
-            <Link to="/#faq">FAQ</Link>
-          </nav>
-          <div className="navcta">
-            <Link to="/my-journey" className="my-journey-btn">My Journey</Link>
-            <button onClick={handleBookClick} className="nav-book-btn">Book a Session</button>
-          </div>
-        </header>
-
         <div className="cta-content">
           <h2 className="disp">Ready to go<br />deeper?</h2>
           <p>Reading is a start. A session helps you actually apply it to your life.</p>
-          <button onClick={handleBookClick} className="book" style={{ border: 'none' }}>
+          <button onClick={handleBookClick} className="book" style={{ border: 'none', cursor: 'pointer' }}>
             Book a 1:1 →
           </button>
         </div>
-
-        <footer>
-          <span>© {new Date().getFullYear()} BetterWithAarkesh</span>
-          <span>
-            <Link to="/privacy-policy">Privacy</Link> · <Link to="/terms-and-conditions">Terms &amp; Cookies</Link>
-          </span>
-          <span>Made with care</span>
-        </footer>
       </section>
     </div>
   );

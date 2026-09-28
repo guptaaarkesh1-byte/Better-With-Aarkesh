@@ -1,6 +1,6 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
-import defaultBgImg from '../../assets/Page4/ChatGPT Image Jul 24, 2026, 02_41_22 PM.webp';
+import defaultBgImg from '../../assets/Page4/feel-honestly.jpg';
 import { Sparkle, CloudRain, Waves, Heart, SunDim } from '@phosphor-icons/react';
 
 const DEFAULT_FEEL_DATA = {
@@ -10,7 +10,7 @@ const DEFAULT_FEEL_DATA = {
   highlight: "You can't move forward, running from what you feel.",
   description: 'We create the safe space to feel it all - without judgement',
   buttonText: '',
-  bgImg: ''
+  bgImg: '/images/feel-honestly.jpg'
 };
 
 export default function FeelPrinciple() {
@@ -21,8 +21,8 @@ export default function FeelPrinciple() {
   const headlineWhite = data.title || 'Feel honestly.';
   const headlineGold = data.subtitle || 'Heal deeply.';
   const paragraphs = [
-    `<span class='italic text-xl lg:text-2xl leading-relaxed'>${data?.highlight || "You can't move forward, running from what you feel."}</span>`,
-    `<span class='text-white text-lg lg:text-xl leading-relaxed'>....${data?.description || "We create the safe space to feel it all - without judgement"}</span>`
+    `<span class='italic text-xl lg:text-2xl leading-relaxed text-[#111010]'>${data?.highlight || "You can't move forward, running from what you feel."}</span>`,
+    `<span class='text-[#3d3832] text-lg lg:text-xl leading-relaxed'>....${data?.description || "We create the safe space to feel it all - without judgement"}</span>`
   ];
   const buttonText = data?.buttonText || '';
   const bgImg = data?.bgImg || defaultBgImg;
@@ -31,6 +31,7 @@ export default function FeelPrinciple() {
     <PrincipleSection 
       id="feel-principle"
       bgImg={bgImg}
+      imagePosition="object-[70%_center] md:object-[75%_center] lg:object-[80%_center]"
       eyebrow={eyebrow}
       headlineWhite={headlineWhite}
       headlineGold={headlineGold}
