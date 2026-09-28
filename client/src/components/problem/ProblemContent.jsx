@@ -15,38 +15,11 @@ export default function ProblemContent({ problemData = {} }) {
   const quoteSubtext = problemData.quoteSubtext || "....Until you learn to see clearly";
 
   useGSAP(() => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container.current,
-        start: 'top 80%',
-      }
-    });
-
-    tl.fromTo('.prob-eyebrow', 
-      { opacity: 0, x: -20 }, 
-      { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' }
-    )
-    .fromTo('.prob-line',
-      { scaleX: 0 },
-      { scaleX: 1, duration: 0.8, ease: 'power3.out' },
-      "<"
-    )
-    .fromTo('.prob-heading',
-      { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 1, ease: 'power3.out' },
-      "-=0.4"
-    )
-    .fromTo('.prob-divider',
-      { scaleX: 0 },
-      { scaleX: 1, duration: 0.8, ease: 'power3.out' },
-      "-=0.6"
-    )
-    .fromTo('.prob-paragraph',
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
-      "-=0.6"
+    // Smooth reveal when section is viewed
+    gsap.fromTo(container.current, 
+      { opacity: 0, y: 15 }, 
+      { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', delay: 0.1 }
     );
-
   }, { scope: container, dependencies: [eyebrow, heading1, headingAccent, quoteItalic, quoteSubtext] });
 
   return (
