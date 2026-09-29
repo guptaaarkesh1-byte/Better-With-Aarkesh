@@ -38,8 +38,10 @@ function App() {
             <Route path="/my-journey/notes" element={<Notes />} />
             <Route path="/prepare" element={<Prepare />} />
             <Route path="/articles" element={<Articles />} />
-            <Route path="/videos" element={<Videos />} />
             <Route path="/course" element={<Course />} />
+            <Route path="/course/:slug" element={<Course />} />
+            <Route path="/courses" element={<Course />} />
+            <Route path="/courses/:slug" element={<Course />} />
             <Route path="/course/profile" element={<CourseProfile />} />
 
             {/* Direct Static & Policy Pages */}

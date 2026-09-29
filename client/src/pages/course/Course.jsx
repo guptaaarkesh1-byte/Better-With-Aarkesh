@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import PolicyModal from '../../components/ui/PolicyModal';
 import { 
   Play, 
@@ -44,6 +44,7 @@ import Button from '../../components/ui/Button';
 import LessonComments from '../../components/course/LessonComments';
 import ProtectedYouTubePlayer from '../../components/course/ProtectedYouTubePlayer';
 import CoursePaymentSuccess from './CoursePaymentSuccess';
+import './course-landing.css';
 
 const renderSocialIcon = (platform, size = 16) => {
   switch (platform?.toLowerCase()) {
@@ -109,6 +110,8 @@ const MODULES = [
 
 export default function Course() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { slug } = useParams();
+  const isDetailPage = Boolean(slug);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showDashboard, setShowDashboard] = useState(() => {
     const isPurchasedStored = localStorage.getItem('isCoursePurchased') === 'true';
@@ -129,6 +132,8 @@ export default function Course() {
   });
   const [checkoutAgreed, setCheckoutAgreed] = useState(false);
   const [showPreRegSuccessModal, setShowPreRegSuccessModal] = useState(false);
+  const [showSyllabusModal, setShowSyllabusModal] = useState(false);
+  const [isNavDarkText, setIsNavDarkText] = useState(false);
   const profileMenuRef = useRef(null);
   const leftColumnRef = useRef(null);
 
@@ -341,7 +346,169 @@ export default function Course() {
     fetchCourseFaqs();
   }, []);
 
+  // Dynamically detect when floating navbar crosses light/white sections
+  useEffect(() => {
+    const handleScroll = () => {
+      const lightElements = document.querySelectorAll('.stack-sec, .light-sec, [data-theme="light"], .curriculum-section, footer');
+      if (!lightElements || lightElements.length === 0) {
+        setIsNavDarkText(false);
+        return;
+      }
+      
+      const navCheckLine = 40; // Pixels from top of viewport where navbar buttons sit
+      let isDark = false;
+
+      lightElements.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= navCheckLine && rect.bottom >= navCheckLine) {
+          isDark = true;
+        }
+      });
+
+      setIsNavDarkText(isDark);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    handleScroll();
+    const timer = setTimeout(handleScroll, 150);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      clearTimeout(timer);
+    };
+  }, [slug]);
+
   const [pendingCheckout, setPendingCheckout] = useState(false);
+  const [activeToc, setActiveToc] = useState('p1');
+
+  const coursesList = useMemo(() => [
+    {
+      slug: "better-man",
+      n: "01",
+      chips: ["Calm Authority", "Self-Command"],
+      soon: false,
+      cls: "",
+      title: "The Better Man",
+      lede: "Master the psychology of calm authority, magnetic communication and effortless self-command.",
+      d: "Calm authority, magnetic communication and self-command, taught in eight modules with three private sessions.",
+      sidebarChips: [
+        ["Schedule", "Self-Paced"],
+        ["Certificate", "Yes"],
+        ["Language", "Hinglish / English"],
+        ["Mentorship", "1-on-1 Live"]
+      ],
+      hl: [
+        ["Build Real Presence", "(Not Just Theory)"],
+        ["3 Private Sessions", "with Aarkesh"]
+      ],
+      inside: [
+        "8 HD video modules & frameworks",
+        "Downloadable workbooks and mental models",
+        "3 private 1-on-1 coaching sessions with Aarkesh",
+        "Lifetime access with all future updates",
+        "30-day money-back guarantee"
+      ],
+      facts: [["8", "Modules"], ["Yes", "Certified"], ["1-on-1", "Coaching"]],
+      price: `₹${basePrice.toLocaleString('en-IN')}`,
+      was: `₹${comparePrice.toLocaleString('en-IN')}`,
+      cta: "Check Course"
+    },
+    {
+      slug: "difficult-people",
+      n: "02",
+      chips: ["Boundaries", "Conflict"],
+      soon: true,
+      cls: "v2",
+      title: "Difficult People",
+      lede: "Stay steady with the boss, partner or parent who pushes every button you have.",
+      d: "Stay steady with the boss, partner or parent who pushes every button you have.",
+      sidebarChips: [
+        ["Schedule", "Self-Paced"],
+        ["Certificate", "Yes"],
+        ["Language", "Hinglish / English"],
+        ["Access", "Lifetime"]
+      ],
+      hl: [
+        ["Hold Your Ground", "(Without a Fight)"],
+        ["2 Private Sessions", "with Aarkesh"]
+      ],
+      inside: [
+        "6 HD video modules",
+        "Downloadable conflict frameworks",
+        "2 private 1-on-1 coaching sessions",
+        "Lifetime access",
+        "Early-access price for waitlist members"
+      ],
+      facts: [["6", "Modules"], ["Yes", "Certified"], ["1-on-1", "Coaching"]],
+      price: "₹3,999",
+      was: "₹7,999",
+      cta: "Check Course"
+    },
+    {
+      slug: "decisions",
+      n: "03",
+      chips: ["Clarity", "Choice"],
+      soon: true,
+      cls: "v3",
+      title: "Decisions",
+      lede: "A clear method for the choices you keep putting off, and for living with them once made.",
+      d: "A clear method for the choices you keep putting off, and for living with them once made.",
+      sidebarChips: [
+        ["Schedule", "Self-Paced"],
+        ["Certificate", "Yes"],
+        ["Language", "Hinglish / English"],
+        ["Access", "Lifetime"]
+      ],
+      hl: [
+        ["Decide With Clarity", "(Not Certainty)"],
+        ["2 Private Sessions", "with Aarkesh"]
+      ],
+      inside: [
+        "5 HD video modules",
+        "Downloadable decision matrix workbooks",
+        "2 private 1-on-1 coaching sessions",
+        "Lifetime access",
+        "Early-access price for waitlist members"
+      ],
+      facts: [["5", "Modules"], ["Yes", "Certified"], ["1-on-1", "Coaching"]],
+      price: "₹3,499",
+      was: "₹6,999",
+      cta: "Check Course"
+    }
+  ], [basePrice, comparePrice]);
+
+  const activeCourse = useMemo(() => {
+    if (!slug) return coursesList[0];
+    return coursesList.find((c) => c.slug === slug) || coursesList[0];
+  }, [coursesList, slug]);
+
+  const handleSelectCourse = (c) => {
+    navigate(`/course/${c.slug}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (showDashboard) return;
+    const ids = ['p1', 'p2', 'p3', 'curriculum', 'faq'];
+    const elements = ids.map((id) => document.getElementById(id)).filter(Boolean);
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveToc(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: '-20% 0px -70% 0px' }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [showDashboard]);
 
   // Group published course documents dynamically by columnHeading
   const groupedColumns = React.useMemo(() => {
@@ -1122,328 +1289,511 @@ export default function Course() {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // LANDING PAGE (non-purchased / non-logged-in users)
-  // ═══════════════════════════════════════════════════════════════
   return (
-    <main className="w-full bg-[#050505] text-white min-h-screen flex flex-col">
-      <CourseNavbar
-        isLoggedIn={isLoggedIn}
-        isPurchased={isPurchased}
-        showDashboard={showDashboard}
-        setShowDashboard={setShowDashboard}
-        profileMenuRef={profileMenuRef}
-        showProfileMenu={showProfileMenu}
-        setShowProfileMenu={setShowProfileMenu}
-        handleLogout={handleLogout}
-        setShowCourseLogin={setShowCourseLogin}
-      />
-
-      {/* ─── HERO ───────────────────────────────────────────────── */}
-      <section id="hero" className={`relative w-full flex-1 min-h-[calc(100vh-76px)] flex flex-col justify-center items-center overflow-hidden px-6 py-20 ${
-        isComingSoon 
-          ? 'bg-gradient-to-b from-[#080808] via-[#050505] to-[#020202]' 
-          : 'bg-[#050505]'
-      }`}>
-        {/* Ambient Backgrounds */}
-        {isComingSoon ? (
-          /* Luxury Gradient & Radial Ambient Lighting for Coming Soon */
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {/* Soft top ambient spotlight */}
-            <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[850px] h-[550px] bg-gradient-to-b from-[#c79c6e]/20 via-[#c79c6e]/8 to-transparent rounded-full blur-[140px]" />
-            {/* Center golden radial core */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#c79c6e]/14 rounded-full blur-[160px]" />
-            {/* Bottom depth vignette */}
-            <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-[#c79c6e]/10 rounded-full blur-[150px]" />
-            {/* Delicate subtle mesh lines/vignette */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(5,5,5,0.85)_100%)]" />
-          </div>
-        ) : (
-          /* Background Image & Vignettes for Live Masterclass Mode */
-          <div className="absolute inset-0 pointer-events-none">
-            <img src="/course_hero_bg.jpg" alt="" className="w-full h-full object-cover object-center opacity-85" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/80 via-transparent to-[#050505]" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/85 via-transparent to-[#050505]/85" />
-            {/* Ambient center gold glow behind the figure */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-[#c79c6e]/12 rounded-full blur-[150px]" />
-          </div>
-        )}
-
-        {/* Center Hero Content */}
-        <div className="relative z-10 text-center max-w-3xl mx-auto flex flex-col items-center justify-center my-auto">
-          {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] mb-6 shadow-sm">
-            <Sparkle size={12} weight="fill" />
-            <span>THE OFFICIAL MASTERCLASS</span>
-          </div>
-
-          {/* Clean Grand Title */}
-          {isComingSoon ? (
-            <h1 className="font-serif text-6xl sm:text-7xl md:text-8xl lg:text-[6.5rem] leading-[1.05] mb-6 font-normal tracking-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white via-[#faeedf] to-[#c79c6e] drop-shadow-[0_10px_35px_rgba(199,156,110,0.25)]">
-                Coming Soon
-              </span>
-            </h1>
+    <div className="course-landing-scope">
+      {/* ── Top Fixed Nav ── */}
+      <header className={`course-nav ${isNavDarkText ? 'nav-dark-text' : ''}`}>
+        <Link className="course-logo" to="/course">
+          BetterWith<b>Aarkesh</b>
+        </Link>
+        <div className="nav-r">
+          <Link to="/" className="course-nav-back-btn" title="Back to Main Website">
+            <ArrowLeft size={16} weight="bold" />
+            <span>Back to Home</span>
+          </Link>
+          {isPurchased ? (
+            <button
+              type="button"
+              className="sign-in-btn font-semibold"
+              onClick={() => setShowDashboard(true)}
+            >
+              Go to Dashboard →
+            </button>
+          ) : isLoggedIn ? (
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="course-profile-btn w-9 h-9 rounded-full border border-[#C878BE]/50 bg-[#111] flex items-center justify-center text-[#C878BE] hover:bg-[#C878BE] hover:text-black transition-all shadow-[0_0_20px_rgba(200,120,190,0.2)] shrink-0 cursor-pointer"
+                title="Student Profile"
+              >
+                <User size={16} weight="bold" />
+              </button>
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-3 w-48 rounded-xl border border-white/10 bg-[#0C0C0E] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                  <Link
+                    to="/course/profile"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  >
+                    <User size={18} className="text-[#C878BE]" /> Profile
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3"
+                  >
+                    <SignOut size={18} /> Log Out
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
-            <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] text-white leading-[1.05] mb-6 font-normal tracking-tight">
-              The Better<br />
-              <span className="text-[#c79c6e]">Man</span>
-            </h1>
+            <button
+              type="button"
+              className="sign-in-btn"
+              onClick={() => {
+                setLoginMode('login');
+                setShowCourseLogin(true);
+              }}
+            >
+              Sign In
+            </button>
           )}
+        </div>
+      </header>
 
-          {/* Minimal Subtitle */}
-          <p className="font-sans text-white/75 text-sm sm:text-base md:text-lg leading-relaxed max-w-xl mx-auto mb-10">
-            Master the psychology of calm authority, magnetic communication, and effortless self-command.
-          </p>
+      <main id="top">
+        {!isDetailPage ? (
+          /* ═══════════════════════════════════════════════════════════════
+             MAIN COURSES LISTING PAGE (/course or /courses)
+             ═══════════════════════════════════════════════════════════════ */
+          <>
+            {/* ── Hero Section ── */}
+            <section className="hero">
+              <div className="wrap">
+                <p className="tag">Learn. Practise. Lead.</p>
+                <h1>
+                  THE <span className="sel">BETTER</span> MAN
+                </h1>
+                <p className="sub">
+                  Masterclasses in calm authority, magnetic communication and self-command, taught by Aarkesh.
+                </p>
+                <div className="proof">
+                  <span><b>3 private</b> 1-on-1 sessions with Aarkesh</span>
+                  <span><b>Lifetime</b> access, no recurring charges</span>
+                </div>
+                <div>
+                  {isPurchased ? (
+                    <button type="button" className="btn" onClick={() => setShowDashboard(true)}>
+                      Go to Dashboard <span aria-hidden="true">→</span>
+                    </button>
+                  ) : (
+                    <button type="button" className="btn" onClick={handleEnroll}>
+                      Register Now <span aria-hidden="true">→</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </section>
 
-          {/* CTA Action */}
-          <div className="flex flex-col items-center gap-3.5 mb-12">
-            {isComingSoon ? (
+            {/* ── Dashboard Metrics Strip ── */}
+            <div className="strip">
+              <div className="strip-in">
+                <div className="stat">
+                  <strong>8</strong>
+                  <span>video modules with workbooks</span>
+                </div>
+                <div className="stat">
+                  <strong>3</strong>
+                  <span>private coaching sessions</span>
+                </div>
+                <div className="peek">
+                  <small>Start with Module 1</small>
+                  <b>The Foundation of Presence</b>
+                </div>
+              </div>
+            </div>
+
+            {/* ── More Masterclasses Stacked Section (Directly Below Hero Section) ── */}
+            <section className="stack-sec" id="courses">
+              <div className="stack">
+                <h2>More Masterclasses</h2>
+                <p className="lead">Each one is a standalone course with its own private sessions.</p>
+                <div id="cards">
+                  {coursesList.map((c, i) => {
+                    const btnClass = i === 0 ? 'btn dark' : i === 1 ? 'btn light' : 'btn';
+                    return (
+                      <article className="sc" key={c.n}>
+                        <div className={`vis ${c.cls}`} aria-hidden="true">
+                          <span className="no">{c.n}</span>
+                          <i>{c.chips[0]}</i>
+                          <i>{c.chips[1]}</i>
+                        </div>
+                        <div>
+                          {c.soon ? (
+                            <span className="soon">Coming soon</span>
+                          ) : (
+                            <span className="soon">Live now</span>
+                          )}
+                          <h3>{c.title}</h3>
+                          <p className="d">{c.d}</p>
+                          <div className="facts">
+                            {c.facts.map((f, fi) => (
+                              <div key={fi}>
+                                <em>{f[0]}</em>
+                                <div><b>{f[1]}</b></div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="price">
+                            Price <b>{c.price}</b><s>{c.was}</s><small>(+GST)</small>
+                          </div>
+                          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className={btnClass}
+                              onClick={() => handleSelectCourse(c)}
+                            >
+                              Check Course <span aria-hidden="true">→</span>
+                            </button>
+                            {c.soon ? (
+                              <button
+                                type="button"
+                                className="btn line sm"
+                                onClick={() => {
+                                  if (!isLoggedIn) {
+                                    setShowCourseLogin(true);
+                                  } else {
+                                    setShowPreRegSuccessModal(true);
+                                  }
+                                }}
+                              >
+                                Waitlist
+                              </button>
+                            ) : !isPurchased && (
+                              <button
+                                type="button"
+                                className="btn line sm"
+                                onClick={handleEnroll}
+                              >
+                                Enroll Now
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* ── Editorial Philosophy Deep-Dive Section ── */}
+            <section className="light-sec" id="philosophy">
+              <div className="wrap">
+                <div className="card">
+                  <div className="rd">
+                    <nav className="toc" aria-label="Table of contents">
+                      <p>IN THIS MASTERCLASS</p>
+                      <a href="#p1" className={activeToc === 'p1' ? 'on' : ''}>01. Presence Under Pressure</a>
+                      <a href="#p2" className={activeToc === 'p2' ? 'on' : ''}>02. Breaking Reaction</a>
+                      <a href="#p3" className={activeToc === 'p3' ? 'on' : ''}>03. Calm Gravitas</a>
+                      <a href="#curriculum" className={activeToc === 'curriculum' ? 'on' : ''}>04. Full Curriculum</a>
+                      <a href="#faq" className={activeToc === 'faq' ? 'on' : ''}>05. Frequently Asked</a>
+                    </nav>
+
+                    <article className="prose">
+                      <span className="chip">CORE METHODOLOGY</span>
+                      <h2 id="p1">Most Men Were Never Taught How to Hold Ground</h2>
+                      <p className="lede">
+                        True charisma is not loud. It is the unhurried certainty of a man who does not need permission to take up space.
+                      </p>
+                      <p>
+                        When pressure spikes in a meeting, negotiation, or relationship, the natural reflex is either to collapse inward or become combative. Both responses signal the same underlying weakness: emotional reactivity.
+                      </p>
+                      <blockquote>
+                        "A room doesn't respond to volume. It responds to certainty."
+                      </blockquote>
+                      <p>
+                        In <b>The Better Man</b> masterclass, we dismantle the nervous system habits that cause rushing, stammering, and over-explaining. You learn how to anchor your physical presence, lower your vocal register under stress, and command respectful silence before uttering a single sentence.
+                      </p>
+
+                      <div className="finding">
+                        <b>Key Distinction:</b> Reactive men seek approval through fast speech and excessive validation. Anchored men lead through stillness, calibrated pauses, and clear boundaries.
+                      </div>
+
+                      <h2 id="p2">From Seeking Approval to Setting Direction</h2>
+                      <p>
+                        Authority is communicated in the micro-moments: the half-second pause before replying, the stillness of your shoulders, the refusal to laugh at nervous tension.
+                      </p>
+                      <p>
+                        Through 8 structured modules, you will develop a repeatable internal framework that replaces performance anxiety with quiet, magnetic self-command.
+                      </p>
+
+                      <h2 id="p3">3 Private 1-on-1 Sessions With Aarkesh</h2>
+                      <p>
+                        Video courses alone don't transform behavior — feedback does. That is why every student receives <b>3 personalized private sessions</b> directly with Aarkesh to analyze your unique communication style, deconstruct your real-life situations, and lock in lasting transformation.
+                      </p>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ── Curriculum Syllabus Section ── */}
+            <section className="sec center" id="curriculum">
+              <div className="wrap">
+                <span className="label">SYLLABUS</span>
+                <h2>Eight Modules To Total Self-Command</h2>
+                <p className="lead">
+                  A comprehensive, step-by-step roadmap from baseline nervousness to unshakeable gravitas.
+                </p>
+
+                <div className="acc">
+                  {[
+                    { n: '01', t: 'The Foundation of Presence', d: 'Grounding techniques, diaphragmatic breathing under tension, and mastering the crucial first 10 seconds in any room.' },
+                    { n: '02', t: 'Breaking the Reactive Cycle', d: 'Identifying personal emotional triggers, pausing between impulse and response, and eliminating defensive habits.' },
+                    { n: '03', t: 'Mastering Vocal Gravitas & Tone', d: 'Lowering resonance, eliminating filler words, pacing your delivery, and speaking with magnetic, effortless weight.' },
+                    { n: '04', t: 'Non-Verbal Dominance & Spatial Calibration', d: 'Unwavering eye contact, open posture mechanics, micro-expression control, and physical composure.' },
+                    { n: '05', t: 'High-Stakes Conversations & Holding Frame', d: 'Navigating demanding bosses, aggressive negotiations, or emotionally volatile conversations without yielding.' },
+                    { n: '06', t: 'Decision Making & Decisive Action', d: 'Eliminating second-guessing, owning difficult outcomes, and leading team members or family with unhesitating clarity.' },
+                    { n: '07', t: 'Conflict Resolution Without Compromise', d: 'De-escalating heated confrontation while maintaining firm boundaries and achieving win-win outcomes.' },
+                    { n: '08', t: 'Integration & Lifetime Standard', d: 'Building your daily self-command rituals, maintaining high standards, and solidifying permanent personal gravitas.' }
+                  ].map((m, idx) => (
+                    <details className="a" key={m.n} open={idx === 0}>
+                      <summary>
+                        <span className="n">{m.n}</span>
+                        <span className="t">{m.t}</span>
+                      </summary>
+                      <p>{m.d}</p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ── What Is Included Banner ── */}
+            <div className="orange">
+              <div className="wrap">
+                <h2>Everything Included In Your Lifetime Membership</h2>
+                <div className="inc">
+                  <div>
+                    <strong>8</strong>
+                    <b>HD Video Modules</b>
+                    <span>Self-paced video curriculum with downloadable workbooks & frameworks.</span>
+                  </div>
+                  <div>
+                    <strong>3</strong>
+                    <b>Private Coaching Calls</b>
+                    <span>Direct 1-on-1 private mentorship sessions with Aarkesh.</span>
+                  </div>
+                  <div>
+                    <strong>∞</strong>
+                    <b>Lifetime Access</b>
+                    <span>Continuous access to all current & future curriculum updates.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── FAQ Section ── */}
+            <section className="faq center" id="faq">
+              <div className="wrap">
+                <span className="label">FAQS</span>
+                <h2>Frequently Asked Questions From Our Students</h2>
+                <p className="lead">
+                  Clear answers about the masterclass, private mentorship, and enrollment.
+                </p>
+
+                <div className="acc">
+                  {[
+                    { q: 'How do the 3 private 1-on-1 sessions work?', a: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
+                    { q: 'Is this course suitable for professionals and introverts?', a: 'Yes. The curriculum is specifically designed for professionals, entrepreneurs, and introverts who want to develop natural, calm authority without acting loud or fake.' },
+                    { q: 'How long do I have access to the materials?', a: 'You receive full lifetime access. You can revisit lessons, download the workbooks, and receive all future course updates at zero extra cost.' },
+                    { q: 'What is the refund and satisfaction guarantee?', a: 'We offer a complete 30-day money-back guarantee. If you complete the lessons and don\'t feel a substantial shift in your presence, simply email us for a 100% full refund.' }
+                  ].map((f, idx) => (
+                    <details className="a" key={idx} open={idx === 0}>
+                      <summary>
+                        <span className="n">Q{idx + 1}</span>
+                        <span className="t">{f.q}</span>
+                      </summary>
+                      <p>{f.a}</p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ── Final Call to Action ── */}
+            <section className="cta center">
+              <div className="wrap">
+                <div className="cta-box">
+                  <span className="label" style={{ marginBottom: '16px' }}>ENROLL TODAY</span>
+                  <h2>Ready To Become The Man People Trust?</h2>
+                  <p className="lead">
+                    Master the psychology of calm authority, magnetic communication and effortless self-command with lifetime curriculum access and 3 private 1-on-1 coaching sessions.
+                  </p>
+                  <div className="cta-badges">
+                    <span><Users size={16} weight="fill" /> 3 Private Coaching Calls</span>
+                    <span><Clock size={16} weight="fill" /> Lifetime Video Access</span>
+                    <span><ShieldCheck size={16} weight="fill" /> 30-Day Money-Back Guarantee</span>
+                  </div>
+                  <div>
+                    {isPurchased ? (
+                      <button type="button" className="btn" onClick={() => setShowDashboard(true)}>
+                        Go to Dashboard <span aria-hidden="true">→</span>
+                      </button>
+                    ) : (
+                      <button type="button" className="btn" onClick={handleEnroll}>
+                        Register Now <span aria-hidden="true">→</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </>
+        ) : (
+          /* ═══════════════════════════════════════════════════════════════
+             DEDICATED SINGLE-PAGE COURSE DETAILS VIEW (/course/:slug)
+             ═══════════════════════════════════════════════════════════════ */
+          <section className="d-top" id="course-detail">
+            <div className="wrap">
               <button
                 type="button"
-                onClick={handleEnroll}
-                className="group relative inline-flex items-center gap-4 rounded-full border border-[#c79c6e]/50 bg-gradient-to-r from-white/[0.08] to-[#c79c6e]/[0.08] hover:from-[#c79c6e]/20 hover:to-[#c79c6e]/30 hover:border-[#c79c6e] backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-105 shadow-[0_4px_30px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.25)] hover:shadow-[0_0_50px_rgba(199,156,110,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] cursor-pointer"
+                onClick={() => {
+                  navigate('/course');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="back-link"
               >
-                <span className="tracking-[0.2em]">Register Now</span>
-                <span className="w-10 h-10 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 flex items-center justify-center text-[#c79c6e] group-hover:bg-[#c79c6e] group-hover:text-black transition-all shadow-inner">
-                  <ArrowRight size={17} weight="bold" />
-                </span>
+                ← Back to all courses
               </button>
-            ) : !isPurchased ? (
-              <button
-                type="button"
-                onClick={handleEnroll}
-                className="group relative inline-flex items-center gap-4 rounded-full border border-[#c79c6e]/40 bg-white/[0.06] hover:bg-[#c79c6e]/15 hover:border-[#c79c6e] backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all hover:scale-105 shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(199,156,110,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] cursor-pointer"
-              >
-                <span>{isLoggedIn ? 'Enroll Now' : 'Register Now'}</span>
-                <span className="w-10 h-10 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 flex items-center justify-center text-[#c79c6e] group-hover:bg-[#c79c6e] group-hover:text-black transition-all shadow-inner">
-                  <ArrowRight size={17} weight="bold" />
-                </span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowDashboard(true)}
-                className="group relative inline-flex items-center gap-4 rounded-full border border-white/20 bg-white/[0.06] hover:bg-white/[0.12] hover:border-[#c79c6e]/50 backdrop-blur-2xl pl-8 pr-2.5 py-2.5 font-sans text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-white transition-all shadow-[0_4px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.15)] cursor-pointer"
-              >
-                <span>Go to Course Dashboard</span>
-                <span className="w-10 h-10 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/40 text-[#c79c6e] group-hover:bg-[#c79c6e] group-hover:text-black flex items-center justify-center transition-all">
-                  <ArrowRight size={16} weight="bold" />
-                </span>
-              </button>
-            )}
-            {!isComingSoon && (
-              <p className="text-white/40 font-sans text-xs tracking-wide">
-                Instant Access · 3 Private 1-on-1 Sessions Included · 30-Day Guarantee
-              </p>
-            )}
-          </div>
 
-          {/* Minimal Key Highlight */}
-          <div className="flex items-center justify-center pt-6 border-t border-white/10 text-white/70 font-sans text-xs">
-            <div className="flex items-center gap-2">
-              <Infinity size={16} className="text-[#c79c6e]" weight="bold" />
-              <span className="tracking-wide font-medium">Lifetime Access</span>
+              <div className="d-grid">
+                {/* Left Column: Preview Canvas & Title */}
+                <div>
+                  <div className={`pv ${activeCourse.cls}`} aria-hidden="true">
+                    <span className="big">{activeCourse.title}</span>
+                    <i>{activeCourse.chips[0]}</i>
+                    <i>{activeCourse.chips[1]}</i>
+                    <div className="pv-center-btn">
+                      <Play size={24} weight="fill" />
+                    </div>
+                  </div>
+
+                  <div className="dtitle">
+                    <h1>{activeCourse.title}</h1>
+                    <span className={`sticker ${activeCourse.soon ? 'soon' : ''}`}>
+                      {activeCourse.soon ? 'Coming soon' : 'Live now'}
+                    </span>
+                  </div>
+                  <p className="dlede">{activeCourse.lede || activeCourse.d}</p>
+                </div>
+
+                {/* Right Column: Sidebar Card */}
+                <aside className="side" aria-label="Course summary">
+                  {/* Meta Chips */}
+                  <div className="chips">
+                    {activeCourse.sidebarChips.map((chip, idx) => (
+                      <span key={idx}>
+                        <em>{chip[0]}:</em> {chip[1]}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Key Highlights */}
+                  {activeCourse.hl.map((h, idx) => (
+                    <p className="hl" key={idx}>
+                      <span>
+                        <b>{h[0]}</b> {h[1]}
+                      </span>
+                    </p>
+                  ))}
+
+                  {/* Divider */}
+                  <div className="div-divider">What's inside</div>
+
+                  {/* Feature Checklist */}
+                  <ul className="ck">
+                    {activeCourse.inside.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+
+                  {/* Pricing */}
+                  <p className="sprice">
+                    Price <b>{activeCourse.price}</b>
+                    <s>{activeCourse.was}</s>
+                    <small>(+GST)</small>
+                  </p>
+
+                  {/* Action Buttons */}
+                  {activeCourse.soon ? (
+                    <button
+                      type="button"
+                      className="btn block"
+                      onClick={() => {
+                        if (!isLoggedIn) {
+                          setShowCourseLogin(true);
+                        } else {
+                          setShowPreRegSuccessModal(true);
+                        }
+                      }}
+                    >
+                      Join the Waitlist <span aria-hidden="true">→</span>
+                    </button>
+                  ) : isPurchased ? (
+                    <button
+                      type="button"
+                      className="btn block"
+                      onClick={() => setShowDashboard(true)}
+                    >
+                      Go to Dashboard <span aria-hidden="true">→</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn block"
+                      onClick={handleEnroll}
+                    >
+                      Register Now <span aria-hidden="true">→</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="btn block line"
+                    onClick={() => setShowSyllabusModal(true)}
+                  >
+                    View Full Syllabus <span aria-hidden="true">→</span>
+                  </button>
+                </aside>
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* Syllabus Modal */}
+      {showSyllabusModal && (
+        <div className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="relative w-full max-w-2xl bg-[#0c0a0e] border border-[#5A2C55] rounded-3xl p-6 sm:p-8 max-h-[85vh] overflow-y-auto shadow-2xl">
+            <button 
+              type="button"
+              onClick={() => setShowSyllabusModal(false)}
+              className="absolute right-5 top-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
+              title="Close syllabus"
+            >
+              <X size={16} />
+            </button>
+            <span className="label" style={{ marginBottom: '12px' }}>SYLLABUS</span>
+            <h3 className="font-head text-2xl font-bold text-white mb-2">{activeCourse.title} Curriculum</h3>
+            <p className="text-sm text-white/60 mb-6 font-body">Structured modules and deep-dive lessons included in this masterclass.</p>
+            <div className="acc">
+              {curriculumCards.map((card, idx) => (
+                <details className="a" key={idx} open={idx === 0}>
+                  <summary>
+                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
+                    <span className="t">{card.title}</span>
+                  </summary>
+                  <p>{card.description}</p>
+                </details>
+              ))}
             </div>
           </div>
         </div>
-      </section>
-
-      {/* ─── BELOW HERO CONTENT (Only visible when NOT in Coming Soon mode) ─── */}
-      {!isComingSoon && (
-        <>
-          {/* ─── THE MANIFESTO: PURE EDITORIAL FLOWING TEXT (No Boxes/Cards - Full Width) ─── */}
-          <section className="py-20 sm:py-28 px-6 sm:px-10 md:px-16 lg:px-24 max-w-7xl mx-auto w-full relative z-10 text-[#F5F2EB]">
-            <div className="space-y-14 sm:space-y-20">
-
-              {/* ─── PART 1 ─── */}
-              <div className="space-y-6">
-                <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
-                  PART I · THE UNSEEN FRACTURE
-                </span>
-
-                <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white font-normal leading-[1.15] tracking-tight">
-                  Most men are not failing because they lack ambition. <span className="text-[#c79c6e] font-semibold">They are drowning in uncalibrated internal noise.</span>
-                </h2>
-
-                <p className="font-sans text-xl sm:text-2xl text-white font-bold leading-snug">
-                  You wake up, check your screen before your feet touch the floor, and instantly hand over the steering wheel of your nervous system to fifty different external demands.
-                </p>
-
-                <p className="font-sans text-base sm:text-lg text-white/75 leading-relaxed">
-                  <span className="text-lg sm:text-xl font-bold text-white block mb-1">By noon, you have fought a dozen silent battles:</span> negotiating difficult conversations, repressing subtle micro-frustrations, pretending to be fully focused when your mind is fractured into a hundred pieces, and <strong className="text-white font-bold">carrying an invisible weight in your chest</strong> that you have never once spoken out loud. You look successful on paper. You hit targets, you pay bills, you show up where you are expected. Yet beneath the curated surface, <span className="text-lg sm:text-xl text-[#F5F2EB] font-bold">there is a persistent sensation that you are simply performing a version of yourself</span> rather than inhabiting your genuine power.
-                </p>
-
-                <p className="font-serif text-2xl sm:text-3xl text-[#c79c6e] italic font-normal leading-relaxed pl-5 border-l-2 border-[#c79c6e] my-4">
-                  "Presence is not something you fabricate through aggressive posturing. Presence is what remains when you finally stop leaking your attention to things you cannot control."
-                </p>
-
-                <p className="font-sans text-xs sm:text-sm text-white/45 leading-relaxed">
-                  <strong className="text-white/70 font-semibold text-sm">Key Neuroscience Finding:</strong> Chronic sensory overload degrades executive presence by more than 40%, forcing the human nervous system into an unceasing baseline state of low-grade fight-or-flight.
-                </p>
-              </div>
-
-              {/* ─── PART 2 ─── */}
-              <div className="space-y-6">
-                <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
-                  PART II · THE REACTION LOOP
-                </span>
-
-                <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white font-normal leading-tight">
-                  The moment you react impulsively, <span className="font-bold text-white">you surrender the room.</span>
-                </h3>
-
-                <p className="font-sans text-xl sm:text-2xl text-[#c79c6e] font-bold leading-snug">
-                  True authority is never loud. It is measured, grounded, and unshakeable in the eye of emotional turbulence.
-                </p>
-
-                <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
-                  <span className="text-lg sm:text-xl font-bold text-white block mb-1">Consider what happens in high-stakes environments:</span> When someone challenges your viewpoint in a boardroom, when unexpected conflict arises in your relationship, or when financial friction strikes without warning—<strong className="text-white font-bold">what is your instinctual bodily response?</strong> For 95% of men, the heart rate spikes, the breath climbs high into the collarbones, the vocal pitch tightens, and words rush out in an involuntary attempt to defend, validate, or appease.
-                </p>
-
-                <p className="font-sans text-2xl sm:text-3xl text-white font-bold leading-tight">
-                  Every single person in the room sub-consciously registers that micro-panic. <span className="text-[#c79c6e]">They do not hear your words; they feel your instability.</span>
-                </p>
-
-                <p className="font-sans text-base sm:text-lg text-white/75 leading-relaxed">
-                  Human beings are biological mirrors. We possess mirror neuron systems evolutionary fine-tuned over two million years to sense whether the man standing in front of us is anchored in reality or dangling by a psychological thread. <span className="text-lg sm:text-xl font-bold text-white">You cannot out-talk an ungrounded nervous system.</span> You cannot fake composure when your physiology is broadcasting insecurity with every shallow breath and restless shift of weight.
-                </p>
-
-                <p className="font-sans text-sm sm:text-base text-white/60 leading-relaxed font-medium">
-                  When you learn to <strong className="text-white font-bold text-base sm:text-lg">lengthen the gap between stimulus and response</strong>, you reclaim sovereign control over every social, professional, and personal interaction in your life.
-                </p>
-              </div>
-
-              {/* ─── PART 3 ─── */}
-              <div className="space-y-6">
-                <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
-                  PART III · THE TRIAD OF SELF-COMMAND
-                </span>
-
-                <h3 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white font-normal">
-                  The Three Pillars of The Better Man
-                </h3>
-
-                <p className="font-sans text-xl sm:text-2xl text-white font-bold leading-snug">
-                  Transformation is not an emotional high that fades by Monday morning. It is a systematic reconstruction of your mental, somatic, and vocal operating system.
-                </p>
-
-                <div className="space-y-5 pt-2">
-                  <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
-                    <span className="text-xl sm:text-2xl font-bold text-white block mb-0.5">1. Somatic Anchoring</span>
-                    Rewiring your autonomic nervous system so your default response under severe pressure is <strong className="text-white font-bold">physiological calmness</strong> rather than adrenaline-driven reaction.
-                  </p>
-                  <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
-                    <span className="text-xl sm:text-2xl font-bold text-white block mb-0.5">2. Magnetic Cadence</span>
-                    Eliminating filler words, uptalk, and rushed speech. Speaking with <strong className="text-white font-bold">deliberate resonance, tactical silence</strong>, and unwavering eye contact.
-                  </p>
-                  <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
-                    <span className="text-xl sm:text-2xl font-bold text-white block mb-0.5">3. Internal Sovereignty</span>
-                    Eradicating the need for external validation. Cultivating an <strong className="text-white font-bold">unshakeable locus of control</strong> that no insult, crisis, or chaotic environment can disturb.
-                  </p>
-                </div>
-
-                <p className="font-sans text-lg sm:text-xl text-white/90 leading-relaxed pt-2">
-                  <span className="text-xl sm:text-2xl font-bold text-[#c79c6e] block mb-1">When these three pillars integrate into your daily unconscious behavior:</span> You stop straining for respect because your stillness commands it automatically. You stop over-explaining your decisions because your clarity carries unquestioned weight.
-                </p>
-              </div>
-
-              {/* ─── PART 4 ─── */}
-              <div className="space-y-6">
-                <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
-                  PART IV · THE RIPPLE EFFECT
-                </span>
-
-                <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl text-white font-normal leading-snug">
-                  What changes when you master authentic presence?
-                </h3>
-
-                <p className="font-sans text-2xl sm:text-3xl text-[#c79c6e] font-bold leading-tight">
-                  Everything. Because how you do anything is how you do everything.
-                </p>
-
-                <p className="font-sans text-base sm:text-lg text-white/80 leading-relaxed">
-                  <span className="text-lg sm:text-xl font-bold text-white block mb-1">In business and negotiations:</span> Clients stop hesitating and start saying yes because they feel your conviction. In leadership, teams look to you during turbulence because <strong className="text-white font-bold">your calm is contagious</strong>. In personal relationships, your partner feels safe and deeply connected because you are genuinely in the room with them—listening with your entire being.
-                </p>
-
-                <p className="font-sans text-xl sm:text-2xl text-white font-bold leading-snug">
-                  You stop living in anticipation of the next catastrophe and start living in absolute command of the present moment.
-                </p>
-
-                <p className="font-sans text-xs sm:text-sm text-white/45 leading-relaxed">
-                  *The Better Man curriculum is intentionally built without generic fluff. Every lesson and framework is distilled from over 10 years of intensive 1-on-1 coaching with top executives and high-performing leaders.*
-                </p>
-              </div>
-
-              {/* ─── PART 5 ─── */}
-              <div className="space-y-6 pb-6">
-                <span className="block text-[0.65rem] font-sans font-semibold uppercase tracking-[0.25em] text-[#c79c6e]">
-                  PART V · THE THRESHOLD
-                </span>
-
-                <h3 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white font-normal leading-tight">
-                  The standard you walk past is <span className="text-[#c79c6e] font-bold">the standard you accept.</span>
-                </h3>
-
-                <p className="font-sans text-2xl sm:text-3xl text-white font-bold leading-snug">
-                  Another year of reactive living, silent frustration, and untapped potential is too high a price to pay.
-                </p>
-
-                <p className="font-sans text-base sm:text-lg text-white/75 leading-relaxed">
-                  <span className="text-lg sm:text-xl font-bold text-white block mb-1">You are here for a reason:</span> Something in you knows that your current trajectory does not match your true capacity. You know that talent and hard work without presence will always leave you feeling undervalued. <strong className="text-white font-bold">The tools to re-architect your presence, communication, and emotional grounding exist.</strong> The blueprint is ready.
-                </p>
-
-                <p className="font-serif text-2xl sm:text-3xl text-[#c79c6e] italic font-normal leading-snug pl-5 border-l-2 border-[#c79c6e] my-4">
-                  "The version of you that commands respect without demanding it is waiting on the other side of this decision."
-                </p>
-
-                <p className="font-sans text-sm sm:text-base text-white/60 leading-normal font-medium">
-                  Click <strong className="text-white font-bold">{isLoggedIn ? 'Enroll Now' : 'Register Now'}</strong> above to begin your journey immediately.
-                </p>
-              </div>
-
-            </div>
-          </section>
-
-          <div className="w-full max-w-6xl mx-auto px-6"><div className="h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" /></div>
-
-          {/* ─── WHAT YOU'LL LEARN ──────────────────────────────────── */}
-          <section className="py-24 px-6 max-w-6xl mx-auto w-full">
-            <div className="text-center mb-16">
-              <p className="font-sans text-[0.6rem] uppercase tracking-[0.4em] text-[#c79c6e] mb-3">The Curriculum</p>
-              <h2 className="font-serif text-4xl md:text-5xl text-white">What you will master</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {curriculumCards.map((item, i) => (
-                <div key={item._id || i} className="flex gap-4 p-6 rounded-2xl border border-white/[0.08] bg-[#0a0a0a] hover:border-[#c79c6e]/20 transition-colors group">
-                  <CheckCircle size={22} weight="fill" className="text-[#c79c6e] shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-sans font-semibold text-white text-sm mb-1 group-hover:text-[#c79c6e] transition-colors">{item.title}</h3>
-                    <p className="font-sans text-xs text-white/50 leading-relaxed">{item.description || item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <div className="w-full max-w-6xl mx-auto px-6"><div className="h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" /></div>
-
-          {/* ─── FAQ SECTION ─────────────────────────────────────────── */}
-          <section id="faq" className="py-24 px-6 max-w-4xl mx-auto w-full">
-            <div className="text-center mb-16">
-              <p className="font-sans text-[0.6rem] uppercase tracking-[0.4em] text-[#c79c6e] mb-3">Frequently Asked Questions</p>
-              <h2 className="font-serif text-4xl md:text-5xl text-white">Everything you need to know</h2>
-            </div>
-            <div className="flex flex-col gap-4">
-              {courseFaqs.map((faq, fi) => (
-                <div key={faq._id || fi} className="border border-white/10 rounded-2xl bg-[#0a0a0a] p-6 hover:border-[#c79c6e]/30 transition-colors">
-                  <h3 className="font-serif text-lg text-white mb-2">{faq.question || faq.q}</h3>
-                  <p className="font-sans text-xs md:text-sm text-white/60 leading-relaxed">{faq.answer || faq.a}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </>
       )}
 
       {/* ─── MODALS ──────────────────────────────────────────────── */}
@@ -1727,7 +2077,15 @@ export default function Course() {
           </div>
         </div>
       )}
-    </main>
+
+      {/* Policy Documents Modal */}
+      {activePolicySlug && (
+        <PolicyModal 
+          slug={activePolicySlug} 
+          onClose={() => setActivePolicySlug(null)} 
+        />
+      )}
+    </div>
   );
 }
 
@@ -1836,203 +2194,141 @@ function AuthModal({
   error,
   setError,
   isLoading,
-  handleToggleMode
+  handleToggleMode,
+  basePrice = 15000,
+  comparePrice = 25000
 }) {
   if (!showCourseLogin) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] bg-[#050505] flex flex-col justify-between p-4 sm:p-6 md:p-12 overflow-y-auto overscroll-contain min-h-screen">
-      {/* Background Silhouette & Warm Glowing Atmosphere */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <img
-          src="/course_hero_bg.jpg"
-          alt=""
-          className="w-full h-full object-cover object-center md:object-right opacity-35"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/75 to-[#050505]/30" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/80 via-transparent to-[#050505]" />
-        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[450px] h-[450px] bg-[#c79c6e]/15 rounded-full blur-[140px]" />
-      </div>
+    <div className="auth-modal-scope">
+      {/* Floating Close Button */}
+      <button
+        type="button"
+        onClick={() => setShowCourseLogin(false)}
+        className="close-btn"
+        title="Close"
+      >
+        <X size={18} />
+      </button>
 
-      {/* Top Bar: Brand Logo + Close Button */}
-      <div className="w-full max-w-7xl mx-auto flex items-center justify-between relative z-20 shrink-0">
-        <div className="flex items-center gap-3">
-          {(isForgotPassword || loginMode === 'register') && (
+      {/* ── Left Column: Form Section ── */}
+      <div className="auth-l">
+        <div className="fbox">
+          {/* Back Navigation */}
+          {isForgotPassword ? (
             <button
+              type="button"
+              className="back"
               onClick={() => {
-                if (isForgotPassword) {
-                  setIsForgotPassword(false);
-                  setIsForgotOtpStep(false);
-                } else {
-                  setLoginMode('login');
-                }
+                setIsForgotPassword(false);
+                setIsForgotOtpStep(false);
                 setError('');
               }}
-              className="text-white/60 hover:text-white transition-colors p-1"
-              title="Back"
             >
-              <ArrowLeft size={20} />
+              ← Back to sign in
+            </button>
+          ) : isOtpStep ? (
+            <button
+              type="button"
+              className="back"
+              onClick={() => {
+                setError('');
+              }}
+            >
+              ← Back to details
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="back"
+              onClick={() => setShowCourseLogin(false)}
+            >
+              ← Back to course
             </button>
           )}
-          <span className="font-serif text-xl md:text-2xl tracking-tight text-white select-none">
-            BetterWith<span className="text-[#c79c6e]">Aarkesh</span>
-          </span>
-        </div>
-        <button
-          onClick={() => setShowCourseLogin(false)}
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-        >
-          <X size={18} />
-        </button>
-      </div>
 
-      {/* Center Content Section (Centered Vertically on Mobile) */}
-      <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col md:flex-row items-center justify-center md:justify-between gap-8 md:gap-12 my-auto py-4 sm:py-6 relative z-10">
-        {/* Left Side Quotes & Branding (visible on md+) */}
-        <div className="hidden md:flex flex-col justify-center max-w-md">
-          {isForgotPassword ? (
-            <>
-              <h2 className="font-serif italic text-3xl lg:text-4xl text-[#F5F2EB] leading-snug font-normal">
-                Clarity begins with a single intentional step.
-              </h2>
-              <div className="w-8 h-[2px] bg-[#c79c6e] my-6"></div>
-              <div className="flex flex-col gap-2 font-sans text-[0.65rem] tracking-[0.25em] uppercase text-white/50 font-medium">
-                <span>SECURITY</span>
-                <span>RESET</span>
-                <span>PROGRESS</span>
-              </div>
-            </>
-          ) : loginMode === 'login' ? (
-            <>
-              <h2 className="font-serif italic text-3xl lg:text-4xl text-[#F5F2EB] leading-snug font-normal">
-                Discipline<br />today,<br />extraordinary<br />tomorrow.
-              </h2>
-              <div className="w-8 h-[2px] bg-[#c79c6e] my-6"></div>
-              <div className="flex flex-col gap-2 font-sans text-[0.65rem] tracking-[0.25em] uppercase text-white/50 font-medium">
-                <span>LEARN</span>
-                <span>APPLY</span>
-                <span>GROW</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <h2 className="font-serif italic text-3xl lg:text-4xl text-[#F5F2EB] leading-snug font-normal">
-                A better<br />you starts<br />here.
-              </h2>
-              <div className="w-8 h-[2px] bg-[#c79c6e] my-6"></div>
-              <div className="flex flex-col gap-2 font-sans text-[0.65rem] tracking-[0.25em] uppercase text-white/50 font-medium">
-                <span>KNOWLEDGE</span>
-                <span>PRESENCE</span>
-                <span>CONFIDENCE</span>
-              </div>
-            </>
-          )}
-        </div>
+          {/* Heading & Subtitle */}
+          <h1>
+            {isForgotPassword
+              ? isForgotOtpStep
+                ? 'Set new password'
+                : 'Reset your password'
+              : isOtpStep
+              ? 'Verify your email'
+              : loginMode === 'login'
+              ? 'Welcome back'
+              : 'Create your account'}
+          </h1>
+          <p className="sm">
+            {isForgotPassword
+              ? isForgotOtpStep
+                ? 'Enter the 4-digit code and your new password.'
+                : 'Enter your registered email to receive a reset code.'
+              : isOtpStep
+              ? `Enter the 4-digit code sent to ${email}`
+              : loginMode === 'login'
+              ? 'Sign in to continue your masterclass.'
+              : 'One account for every masterclass you join.'}
+          </p>
 
-        {/* Center Card */}
-        <div className="w-full max-w-[460px] rounded-2xl border border-[#c79c6e]/35 bg-[#0a0a0a]/92 backdrop-blur-2xl p-6 md:p-8 shadow-[0_0_60px_rgba(199,156,110,0.14)] relative z-10">
-          {/* Card Header */}
-          <div className="text-center mb-6">
-            <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold block mb-2">
-              {isForgotPassword
-                ? isForgotOtpStep
-                  ? 'SET NEW PASSWORD'
-                  : 'ACCOUNT RECOVERY'
-                : isOtpStep
-                ? 'VERIFY EMAIL'
-                : loginMode === 'login'
-                ? 'WELCOME BACK'
-                : 'BEGIN YOUR JOURNEY'}
-            </span>
+          {/* Error Message Box */}
+          {error && <div className="err">{error}</div>}
 
-            <h1 className="font-serif text-3xl md:text-[2.2rem] text-white font-normal leading-tight mb-2">
-              {isForgotPassword
-                ? isForgotOtpStep
-                  ? 'Reset Password'
-                  : 'Forgot Password'
-                : isOtpStep
-                ? 'Enter Code'
-                : loginMode === 'login'
-                ? 'Continue Your Journey'
-                : 'Create Your Account'}
-            </h1>
-
-            <p className="font-sans text-xs text-white/60 leading-relaxed max-w-xs mx-auto">
-              {isForgotPassword
-                ? isForgotOtpStep
-                  ? 'Enter the verification code sent to your email along with your new password.'
-                  : 'Enter your registered email address and we will send you an OTP to reset your password.'
-                : isOtpStep
-                ? `Enter the 4-digit verification code sent to ${email}`
-                : loginMode === 'login'
-                ? 'Sign in to access your courses, track your progress and unlock your full potential.'
-                : 'Join thousands of learners and gain access to exclusive content.'}
-            </p>
-          </div>
-
-          <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3.5">
+          {/* Form */}
+          <form onSubmit={handleAuthSubmit} noValidate>
             {!isOtpStep && !isForgotOtpStep ? (
               <>
                 {/* Full Name for Register */}
                 {!isForgotPassword && loginMode === 'register' && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-white/70 font-semibold">
-                      Full Name
-                    </label>
-                    <div className="flex items-center w-full rounded-lg border border-white/15 bg-white/[0.03] px-3.5 py-3 focus-within:border-[#c79c6e] focus-within:ring-1 focus-within:ring-[#c79c6e]/40 transition-all gap-3">
-                      <User size={18} className="text-white/40 shrink-0" />
-                      <input
-                        type="text"
-                        required
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="John Doe"
-                        className="w-full bg-transparent text-white placeholder-white/25 focus:outline-none font-sans text-sm"
-                      />
-                    </div>
+                  <div className="fld">
+                    <label htmlFor="reg-fullname">Full Name</label>
+                    <input
+                      id="reg-fullname"
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Your full name"
+                      autoComplete="name"
+                    />
                   </div>
                 )}
 
                 {/* Email Address */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-white/70 font-semibold">
-                    Email Address
-                  </label>
-                  <div className="flex items-center w-full rounded-lg border border-white/15 bg-white/[0.03] px-3.5 py-3 focus-within:border-[#c79c6e] focus-within:ring-1 focus-within:ring-[#c79c6e]/40 transition-all gap-3">
-                    <Envelope size={18} className="text-white/40 shrink-0" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="john@example.com"
-                      className="w-full bg-transparent text-white placeholder-white/25 focus:outline-none font-sans text-sm"
-                    />
-                  </div>
+                <div className="fld">
+                  <label htmlFor="auth-email">Email Address</label>
+                  <input
+                    id="auth-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
                 </div>
 
-                {/* Password */}
+                {/* Password Field */}
                 {!isForgotPassword && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-white/70 font-semibold">
-                      Password
-                    </label>
-                    <div className="flex items-center w-full rounded-lg border border-white/15 bg-white/[0.03] px-3.5 py-3 focus-within:border-[#c79c6e] focus-within:ring-1 focus-within:ring-[#c79c6e]/40 transition-all gap-3 relative">
-                      <LockKey size={18} className="text-white/40 shrink-0" />
+                  <div className="fld">
+                    <label htmlFor="auth-password">Password</label>
+                    <div className="pw">
                       <input
+                        id="auth-password"
                         type={showPassword ? 'text' : 'password'}
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full bg-transparent text-white placeholder-white/25 focus:outline-none font-sans text-sm tracking-widest pr-8"
+                        placeholder="Enter password"
+                        autoComplete={loginMode === 'login' ? 'current-password' : 'new-password'}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 text-white/40 hover:text-white transition-colors"
+                        aria-label="Toggle password visibility"
                       >
-                        {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                        {showPassword ? 'Hide' : 'Show'}
                       </button>
                     </div>
                   </div>
@@ -2040,41 +2336,35 @@ function AuthModal({
 
                 {/* Confirm Password for Register */}
                 {!isForgotPassword && loginMode === 'register' && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-white/70 font-semibold">
-                      Confirm Password
-                    </label>
-                    <div className="flex items-center w-full rounded-lg border border-white/15 bg-white/[0.03] px-3.5 py-3 focus-within:border-[#c79c6e] focus-within:ring-1 focus-within:ring-[#c79c6e]/40 transition-all gap-3 relative">
-                      <LockKey size={18} className="text-white/40 shrink-0" />
+                  <div className="fld">
+                    <label htmlFor="auth-cpassword">Confirm Password</label>
+                    <div className="pw">
                       <input
+                        id="auth-cpassword"
                         type={showPassword ? 'text' : 'password'}
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full bg-transparent text-white placeholder-white/25 focus:outline-none font-sans text-sm tracking-widest pr-8"
+                        placeholder="Re-enter password"
+                        autoComplete="new-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 text-white/40 hover:text-white transition-colors"
+                        aria-label="Toggle password visibility"
                       >
-                        {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                        {showPassword ? 'Hide' : 'Show'}
                       </button>
                     </div>
                   </div>
                 )}
 
-                {/* Remember Me & Forgot Password on Login */}
+                {/* Remember Me & Forgot Password for Login */}
                 {!isForgotPassword && loginMode === 'login' && (
-                  <div className="flex items-center justify-between pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-white/70 select-none group">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="accent-[#c79c6e] rounded w-4 h-4 cursor-pointer"
-                      />
-                      <span className="group-hover:text-white transition-colors">Remember me</span>
+                  <div className="row">
+                    <label className="chk" style={{ margin: 0 }}>
+                      <input type="checkbox" defaultChecked />
+                      <span>Keep me signed in</span>
                     </label>
                     <button
                       type="button"
@@ -2082,17 +2372,41 @@ function AuthModal({
                         setIsForgotPassword(true);
                         setError('');
                       }}
-                      className="text-xs text-[#c79c6e] hover:text-white transition-colors font-medium"
                     >
-                      Forgot Password?
+                      Forgot password?
                     </button>
                   </div>
                 )}
+
+                {/* Terms checkbox for Register */}
+                {!isForgotPassword && loginMode === 'register' && (
+                  <label className="chk">
+                    <input type="checkbox" defaultChecked />
+                    <span>I agree to the terms and privacy policy.</span>
+                  </label>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn block"
+                  style={{ width: '100%' }}
+                >
+                  {isLoading
+                    ? 'Please wait...'
+                    : isForgotPassword
+                    ? 'Send Reset Code'
+                    : loginMode === 'login'
+                    ? 'Sign In'
+                    : 'Create Account'}{' '}
+                  <span aria-hidden="true">→</span>
+                </button>
               </>
             ) : (
               /* OTP verification / Forgot Password Reset form */
-              <div className="flex flex-col gap-5 py-2">
-                <div className="flex justify-between gap-3 my-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', margin: '8px 0' }}>
                   {otpValues.map((digit, index) => (
                     <input
                       key={index}
@@ -2102,141 +2416,164 @@ function AuthModal({
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="w-14 h-14 text-center rounded-xl bg-white/[0.04] border border-white/15 text-white font-sans text-2xl font-bold focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e] transition-all"
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        textAlign: 'center',
+                        fontSize: '22px',
+                        fontWeight: 'bold',
+                        borderRadius: '12px',
+                        background: '#100B13',
+                        border: '1px solid #3A3040',
+                        color: '#fff'
+                      }}
                     />
                   ))}
                 </div>
 
                 {isForgotPassword && isForgotOtpStep && (
                   <>
-                    <div className="flex flex-col gap-1.5 mt-2">
-                      <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-white/70 font-semibold">
-                        New Password
-                      </label>
-                      <div className="flex items-center w-full rounded-lg border border-white/15 bg-white/[0.03] px-3.5 py-3 focus-within:border-[#c79c6e] focus-within:ring-1 focus-within:ring-[#c79c6e]/40 transition-all gap-3 relative">
-                        <LockKey size={18} className="text-white/40 shrink-0" />
+                    <div className="fld">
+                      <label htmlFor="reset-new-pw">New Password</label>
+                      <div className="pw">
                         <input
+                          id="reset-new-pw"
                           type={showPassword ? 'text' : 'password'}
                           required
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full bg-transparent text-white placeholder-white/25 focus:outline-none font-sans text-sm tracking-widest pr-8"
+                          placeholder="Enter new password"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3.5 text-white/40 hover:text-white transition-colors"
                         >
-                          {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                          {showPassword ? 'Hide' : 'Show'}
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-1.5">
-                      <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-white/70 font-semibold">
-                        Confirm New Password
-                      </label>
-                      <div className="flex items-center w-full rounded-lg border border-white/15 bg-white/[0.03] px-3.5 py-3 focus-within:border-[#c79c6e] focus-within:ring-1 focus-within:ring-[#c79c6e]/40 transition-all gap-3 relative">
-                        <LockKey size={18} className="text-white/40 shrink-0" />
+                    <div className="fld">
+                      <label htmlFor="reset-new-cpw">Confirm New Password</label>
+                      <div className="pw">
                         <input
+                          id="reset-new-cpw"
                           type={showPassword ? 'text' : 'password'}
                           required
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full bg-transparent text-white placeholder-white/25 focus:outline-none font-sans text-sm tracking-widest pr-8"
+                          placeholder="Confirm new password"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3.5 text-white/40 hover:text-white transition-colors"
                         >
-                          {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                          {showPassword ? 'Hide' : 'Show'}
                         </button>
                       </div>
                     </div>
                   </>
                 )}
-              </div>
-            )}
 
-            {error && (
-              <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 font-sans text-xs text-center mt-1">
-                {error}
-              </div>
-            )}
-
-            {/* Primary Action Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-[#c79c6e] hover:bg-[#b0885e] text-black font-semibold text-xs tracking-[0.2em] uppercase py-3.5 rounded-lg flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(199,156,110,0.25)] hover:scale-[1.01] transition-all disabled:opacity-50 mt-2"
-            >
-              {isLoading ? (
-                'PLEASE WAIT...'
-              ) : isForgotPassword ? (
-                isForgotOtpStep ? (
-                  <>RESET PASSWORD <ArrowRight size={16} weight="bold" /></>
-                ) : (
-                  <>SEND OTP <ArrowRight size={16} weight="bold" /></>
-                )
-              ) : isOtpStep ? (
-                <>VERIFY & PROCEED <ArrowRight size={16} weight="bold" /></>
-              ) : loginMode === 'login' ? (
-                <>SIGN IN <ArrowRight size={16} weight="bold" /></>
-              ) : (
-                <>CREATE ACCOUNT <ArrowRight size={16} weight="bold" /></>
-              )}
-            </button>
-
-            {/* Bottom Switcher */}
-            {(!isOtpStep && !isForgotOtpStep) && (
-              <div className="text-center pt-2 text-xs text-white/60">
-                {isForgotPassword ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsForgotPassword(false);
-                      setIsForgotOtpStep(false);
-                      setError('');
-                    }}
-                    className="text-[#c79c6e] hover:underline font-medium inline-flex items-center gap-1"
-                  >
-                    <ArrowLeft size={13} /> Back to Sign In
-                  </button>
-                ) : loginMode === 'login' ? (
-                  <>
-                    Don't have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={handleToggleMode}
-                      className="text-[#c79c6e] hover:underline font-semibold ml-1 inline-flex items-center gap-1"
-                    >
-                      Register <ArrowRight size={13} />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={handleToggleMode}
-                      className="text-[#c79c6e] hover:underline font-semibold ml-1 inline-flex items-center gap-1"
-                    >
-                      Sign in <ArrowRight size={13} />
-                    </button>
-                  </>
-                )}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn block"
+                  style={{ width: '100%', marginTop: '8px' }}
+                >
+                  {isLoading
+                    ? 'Verifying...'
+                    : isForgotPassword
+                    ? 'Reset Password'
+                    : 'Verify Code'}{' '}
+                  <span aria-hidden="true">→</span>
+                </button>
               </div>
             )}
           </form>
+
+          {/* Alternate Mode Switcher */}
+          <p className="alt">
+            {isForgotPassword ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setIsForgotOtpStep(false);
+                  setError('');
+                }}
+              >
+                ← Back to Sign In
+              </button>
+            ) : loginMode === 'login' ? (
+              <>
+                New here?{' '}
+                <button type="button" onClick={handleToggleMode}>
+                  Create an account
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{' '}
+                <button type="button" onClick={handleToggleMode}>
+                  Sign in
+                </button>
+              </>
+            )}
+          </p>
         </div>
       </div>
 
-      {/* Bottom Minimal Footer (Anchor for vertical balance) */}
-      <div className="w-full max-w-7xl mx-auto flex items-center justify-center pt-2 relative z-20 text-[0.65rem] text-white/30 font-sans tracking-wider shrink-0 select-none">
-        <span>&copy; {new Date().getFullYear()} Better With Aarkesh • Secure Member Access</span>
+      {/* ── Right Column: Aesthetic Summary Card ── */}
+      <div className="auth-r">
+        <div className="orb" aria-hidden="true" />
+        <div className="in">
+          <h2>
+            {isForgotPassword
+              ? 'Security & peace of mind.'
+              : loginMode === 'login'
+              ? 'Pick up where you left off.'
+              : 'Your masterclass, ready when you are.'}
+          </h2>
+
+          <div className="sum">
+            {loginMode === 'login' && !isForgotPassword ? (
+              <ul className="ck">
+                <li>Continue your modules from the last video</li>
+                <li>Book your private sessions with Aarkesh</li>
+                <li>Download your workbooks and frameworks</li>
+                <li>Lifetime updates with no recurring fees</li>
+              </ul>
+            ) : isForgotPassword ? (
+              <ul className="ck">
+                <li>Instant 4-digit verification code to your email</li>
+                <li>End-to-end encrypted password restoration</li>
+                <li>Resume your learning seamlessly right after</li>
+              </ul>
+            ) : (
+              <>
+                <span className="sticker">Live now</span>
+                <h3>The Better Man</h3>
+                <p className="l">
+                  Calm authority, magnetic communication and effortless self-command.
+                </p>
+                <ul className="ck">
+                  <li>8 HD video modules</li>
+                  <li>Downloadable workbooks and frameworks</li>
+                  <li>3 private 1-on-1 coaching sessions</li>
+                  <li>Lifetime access with all future updates</li>
+                  <li>30-day money-back guarantee</li>
+                </ul>
+                <p className="sprice">
+                  Price <b>₹{basePrice.toLocaleString('en-IN')}</b>
+                  <s>₹{comparePrice.toLocaleString('en-IN')}</s>
+                  <small>(+GST)</small>
+                </p>
+                <p className="guar">Covered by the 30-day guarantee.</p>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -112,7 +112,7 @@ export default function Navbar() {
   }, [location.pathname, location.hash]);
 
   // Hide on dedicated pages that manage their own themed navbars
-  if (location.pathname.startsWith('/course') || location.pathname === '/library' || location.pathname.startsWith('/articles')) return null;
+  if (location.pathname.startsWith('/course') || location.pathname.startsWith('/courses') || location.pathname === '/library' || location.pathname.startsWith('/articles')) return null;
 
   const handleNavClick = (href) => {
     let target = null;
