@@ -7,8 +7,8 @@ const DEFAULT_DECIDE_DATA = {
   eyebrow: 'PRINCIPLE 03',
   title: 'DECIDE',
   subtitle: 'INTENTIONALLY.',
-  highlight: 'Clarity without decision is just expensive loop.',
-  description: "We help you align your values, weigh what matters, and choose the path you're willing to walk.",
+  highlight: 'True confidence is born from aligned decision-making.',
+  description: "Indecision is also a decision. Stop second-guessing. We create personalized frameworks that give you the courage and conviction to execute fearlessly.",
   closingLine: '....Then we help you walk it.',
   buttonText: '',
   bgImg: ''
@@ -22,9 +22,9 @@ export default function DecidePrinciple() {
   const headlineWhite = data.title || 'DECIDE';
   const headlineGold = data.subtitle || 'INTENTIONALLY.';
   const paragraphs = [
-    `<span class='italic text-xl lg:text-2xl leading-relaxed text-[#111010]' style='font-family: Fraunces, Georgia, serif;'>${data?.highlight || 'Clarity without decision is just expensive loop.'}</span>`,
-    `<span class='font-serif text-xl lg:text-2xl font-normal not-italic text-[#4a463e] leading-relaxed' style='font-family: Fraunces, Georgia, serif;'>${data?.description || "We help you align your values, weigh what matters, and choose the path you're willing to walk."}</span>`,
-    `<span class='font-serif text-[#c9542f] text-xl lg:text-2xl font-medium leading-relaxed' style='font-family: Fraunces, Georgia, serif;'>${data?.closingLine || '....Then we help you walk it.'}</span>`
+    `<span class='italic text-xl lg:text-2xl leading-relaxed text-[#111010] block' style='font-family: Fraunces, Georgia, serif;'>${data?.highlight || 'True confidence is born from aligned decision-making.'}</span>`,
+    `<span class='font-serif text-sm sm:text-base lg:text-base font-normal not-italic text-[#4a463e] leading-relaxed block' style='font-family: Fraunces, Georgia, serif;'>${data?.description || "Indecision is also a decision. Stop second-guessing. We create personalized frameworks that give you the courage and conviction to execute fearlessly."}</span>`,
+    `<span class='font-serif italic text-[#c9542f] text-xl lg:text-2xl font-medium leading-relaxed block' style='font-family: Fraunces, Georgia, serif;'>${data?.closingLine || '....Then we help you walk it.'}</span>`
   ];
   const buttonText = data?.buttonText || '';
   const bgImg = data?.bgImg || defaultBgImg;

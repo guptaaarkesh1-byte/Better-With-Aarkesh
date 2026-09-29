@@ -78,7 +78,7 @@ export default function PrincipleContent({
         {paragraphs.map((p, i) => (
           <p 
             key={i} 
-            className="phil-paragraph font-serif text-xl lg:text-2xl text-[#4a463e] font-normal tracking-wide leading-relaxed"
+            className="phil-paragraph font-serif text-[#4a463e] font-normal tracking-wide leading-relaxed"
             style={{ fontFamily: 'Fraunces, Georgia, serif' }}
             dangerouslySetInnerHTML={{ __html: p }}
           />
