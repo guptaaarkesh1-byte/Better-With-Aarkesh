@@ -96,6 +96,10 @@ const appointmentSchema = new mongoose.Schema({
       type: String,
       enum: ['PENDING', 'APPROVED', 'REJECTED'],
     }
+  },
+  isArchived: {
+    type: Boolean,
+    default: false,
   }
 }, { timestamps: true });
 

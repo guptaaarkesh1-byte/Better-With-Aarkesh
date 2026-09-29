@@ -3,6 +3,7 @@ import Appointment from '../models/Appointment.js';
 import User from '../models/User.js';
 import CourseUser from '../models/CourseUser.js';
 import Settings from '../models/Settings.js';
+import PastClient from '../models/PastClient.js';
 import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 import { Resend } from 'resend';
 
@@ -73,6 +74,7 @@ const syncAppointmentToCal = async (appointment) => {
 router.post('/check-session-type', optionalAuth, async (req, res) => {
   try {
     const rawEmail = (req.body.email || (req.user && req.user.email) || '').toLowerCase().trim();
+    const phone = (req.body.phoneNumber || (req.user && req.user.phoneNumber) || '').trim();
 
     // Fetch updatable fees from settings
     const feeSettings = await Settings.findOne({ key: 'fees' });
@@ -81,21 +83,42 @@ router.post('/check-session-type', optionalAuth, async (req, res) => {
 
     let isFirstSession = true;
 
+    // Check if user has ANY past appointments by email or phone (even across account deletions)
     if (rawEmail) {
       const escapedEmail = rawEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pastClient = await PastClient.findOne({ email: new RegExp(`^${escapedEmail}$`, 'i') });
       const pastAppointments = await Appointment.countDocuments({
         email: new RegExp(`^${escapedEmail}$`, 'i'),
-        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        status: { $in: ['UPCOMING', 'COMPLETED', 'CANCELLED'] },
         paymentStatus: { $ne: 'Failed' }
       });
-      isFirstSession = pastAppointments === 0;
-    } else if (req.user?._id) {
-      const pastAppointments = await Appointment.countDocuments({
+      if (pastClient || pastAppointments > 0) {
+        isFirstSession = false;
+      }
+    }
+
+    if (isFirstSession && phone) {
+      const escapedPhone = phone.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pastClientPhone = await PastClient.findOne({ phoneNumber: new RegExp(`^${escapedPhone}$`, 'i') });
+      const pastPhoneAppointments = await Appointment.countDocuments({
+        phoneNumber: new RegExp(`^${escapedPhone}$`, 'i'),
+        status: { $in: ['UPCOMING', 'COMPLETED', 'CANCELLED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
+      if (pastClientPhone || pastPhoneAppointments > 0) {
+        isFirstSession = false;
+      }
+    }
+
+    if (isFirstSession && req.user?._id) {
+      const pastUserAppointments = await Appointment.countDocuments({
         userId: req.user._id,
-        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        status: { $in: ['UPCOMING', 'COMPLETED', 'CANCELLED'] },
         paymentStatus: { $ne: 'Failed' }
       });
-      isFirstSession = pastAppointments === 0;
+      if (pastUserAppointments > 0) {
+        isFirstSession = false;
+      }
     }
 
     const duration = isFirstSession ? 60 : 90;
@@ -219,26 +242,38 @@ router.post('/', optionalAuth, async (req, res) => {
       });
     }
 
-    // Check if user has past appointments (Registered or Unregistered)
+    // Check if user has past appointments (Registered or Unregistered, even across deleted accounts)
     const normalizedEmail = (email || (req.user && req.user.email) || '').toLowerCase().trim();
     const phone = (phoneNumber || (req.user && req.user.phoneNumber) || '').trim();
 
     let isFirstSession = true;
     if (normalizedEmail) {
       const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pastClient = await PastClient.findOne({ email: new RegExp(`^${escapedEmail}$`, 'i') });
       const pastAppointments = await Appointment.countDocuments({ 
         email: new RegExp(`^${escapedEmail}$`, 'i'),
-        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        status: { $in: ['UPCOMING', 'COMPLETED', 'CANCELLED'] },
         paymentStatus: { $ne: 'Failed' }
       });
-      isFirstSession = pastAppointments === 0;
-    } else if (req.user?._id) {
+      if (pastClient || pastAppointments > 0) isFirstSession = false;
+    }
+    if (isFirstSession && phone) {
+      const escapedPhone = phone.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pastClientPhone = await PastClient.findOne({ phoneNumber: new RegExp(`^${escapedPhone}$`, 'i') });
+      const pastPhoneAppointments = await Appointment.countDocuments({
+        phoneNumber: new RegExp(`^${escapedPhone}$`, 'i'),
+        status: { $in: ['UPCOMING', 'COMPLETED', 'CANCELLED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
+      if (pastClientPhone || pastPhoneAppointments > 0) isFirstSession = false;
+    }
+    if (isFirstSession && req.user?._id) {
       const pastAppointments = await Appointment.countDocuments({ 
         userId: req.user._id,
-        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        status: { $in: ['UPCOMING', 'COMPLETED', 'CANCELLED'] },
         paymentStatus: { $ne: 'Failed' }
       });
-      isFirstSession = pastAppointments === 0;
+      if (pastAppointments > 0) isFirstSession = false;
     }
 
     const duration = isFirstSession ? 60 : 90;
@@ -272,6 +307,15 @@ router.post('/', optionalAuth, async (req, res) => {
     });
 
     const createdAppointment = await appointment.save();
+
+    // Record in PastClient to ensure permanent returning user recognition
+    if (normalizedEmail) {
+      await PastClient.findOneAndUpdate(
+        { email: normalizedEmail },
+        { email: normalizedEmail, phoneNumber: phone },
+        { upsert: true }
+      );
+    }
 
     // Cal.com sync is now handled in /finalize route
     // ---------------------------
@@ -380,12 +424,16 @@ router.put('/:id/fail', optionalAuth, async (req, res) => {
 // GET /api/appointments - Get all appointments for a user
 router.get('/', protect, async (req, res) => {
   try {
-    // Fetch by userId OR by email (to catch free-session appointments that may have been booked before account linking)
+    const cleanEmail = (req.user.email || '').trim().toLowerCase();
+    const escapedEmail = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Fetch active non-archived appointments by userId OR by email
     const appointments = await Appointment.find({
       $or: [
         { userId: req.user._id },
-        { email: { $regex: new RegExp(`^${req.user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
-      ]
+        { email: new RegExp(`^${escapedEmail}$`, 'i') }
+      ],
+      isArchived: { $ne: true }
     }).sort({ createdAt: -1 });
 
     // Deduplicate by _id (in case both userId and email matched)

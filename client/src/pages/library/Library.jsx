@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
-import { List, X, ArrowDown } from '@phosphor-icons/react';
+import { List, X, ArrowDown, ArrowRight } from '@phosphor-icons/react';
 import { CURATED_LIBRARY_ARTICLES } from '../../constants/libraryArticlesData';
 
 export default function Library() {
@@ -610,9 +610,9 @@ export default function Library() {
           box-shadow: 0 10px 22px -4px rgba(20, 19, 20, 0.4);
         }
 
-        /* Reflective Search Exploration Bar - Compact Width */
+        /* Reflective Search Exploration Bar - Compact & Sleek */
         .library-root .hero-search-wrap {
-          max-width: 380px;
+          max-width: 320px;
           width: 100%;
           margin: 10px auto 0;
           position: relative;
@@ -622,18 +622,18 @@ export default function Library() {
         .library-root .hero-search-bar {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 8px;
           background: #fff;
           border: 1px solid rgba(0, 0, 0, 0.14);
-          padding: 8px 16px 8px 20px;
+          padding: 5px 6px 5px 16px;
           border-radius: 50px;
-          box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 6px 20px -6px rgba(0, 0, 0, 0.08);
           transition: all 0.25s ease;
         }
 
         .library-root .hero-search-bar:focus-within {
           border-color: var(--rel);
-          box-shadow: 0 12px 35px -8px rgba(128, 38, 115, 0.18);
+          box-shadow: 0 8px 24px -4px rgba(128, 38, 115, 0.16);
         }
 
         .library-root .hero-search-bar input {
@@ -641,7 +641,7 @@ export default function Library() {
           outline: none;
           background: transparent;
           font-family: 'Inter', sans-serif;
-          font-size: 13px;
+          font-size: 12.5px;
           color: var(--ink);
           width: 100%;
         }
@@ -651,48 +651,44 @@ export default function Library() {
           font-style: italic;
         }
 
-        .library-root .hero-search-btn {
+        .library-root .hero-search-arrow-btn {
           background: var(--ink);
           color: var(--cream);
           border: none;
-          border-radius: 50px;
-          padding: 8px 16px;
-          font-family: 'Inter', sans-serif;
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
+          border-radius: 50%;
+          width: 26px;
+          height: 26px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
-          white-space: nowrap;
+          flex-shrink: 0;
           transition: transform 0.2s, background 0.2s;
         }
 
-        .library-root .hero-search-btn:hover {
+        .library-root .hero-search-arrow-btn:hover {
           background: var(--rel);
-          transform: scale(1.03);
+          transform: scale(1.08);
         }
 
-        /* Animated Scroll Indicator */
+        /* Animated Scroll Indicator - Arrow Only */
         .library-root .scroll-indicator {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          margin-top: 20px;
+          justify-content: center;
+          margin-top: 14px;
           color: #555047;
-          font-family: 'Inter', sans-serif;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
           cursor: pointer;
           transition: all 0.25s ease;
-          background: rgba(255, 255, 255, 0.7);
+          background: rgba(255, 255, 255, 0.85);
           border: 1px solid rgba(0, 0, 0, 0.1);
-          padding: 6px 14px 6px 16px;
-          border-radius: 30px;
+          width: 34px;
+          height: 34px;
+          padding: 0;
+          border-radius: 50%;
           position: relative;
           z-index: 10;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
         }
 
         .library-root .scroll-indicator:hover {
@@ -700,12 +696,12 @@ export default function Library() {
           background: #ffffff;
           border-color: rgba(128, 38, 115, 0.3);
           transform: translateY(2px);
-          box-shadow: 0 6px 18px rgba(128, 38, 115, 0.12);
+          box-shadow: 0 6px 18px rgba(128, 38, 115, 0.14);
         }
 
         .library-root .scroll-indicator .arrow-icon-wrap {
-          width: 22px;
-          height: 22px;
+          width: 24px;
+          height: 24px;
           border-radius: 50%;
           background: var(--ink);
           display: flex;
@@ -1432,7 +1428,7 @@ export default function Library() {
           <form onSubmit={handleSearchSubmit} className="hero-search-bar">
             <input 
               type="text" 
-              placeholder="Describe what you're navigating right now..."
+              placeholder="Describe what you're navigating..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -1440,8 +1436,8 @@ export default function Library() {
               }}
               onFocus={() => setIsSearchFocused(true)}
             />
-            <button type="submit" className="hero-search-btn">
-              Explore →
+            <button type="submit" className="hero-search-arrow-btn" aria-label="Search">
+              <ArrowRight size={13} weight="bold" />
             </button>
           </form>
 
@@ -1506,7 +1502,7 @@ export default function Library() {
                 </>
               ) : (
                 <div style={{ padding: '16px 20px', fontSize: '13px', color: '#8a857a', textAlign: 'center' }}>
-                  No articles found matching "{searchQuery}". Press Explore to search archive.
+                  No articles found matching "{searchQuery}". Press Enter to search archive.
                 </div>
               )}
             </div>
@@ -1520,9 +1516,8 @@ export default function Library() {
           className="scroll-indicator"
           aria-label="Scroll down to explore categories"
         >
-          <span>Scroll to explore</span>
           <div className="arrow-icon-wrap">
-            <ArrowDown size={12} weight="bold" />
+            <ArrowDown size={13} weight="bold" />
           </div>
         </button>
       </section>

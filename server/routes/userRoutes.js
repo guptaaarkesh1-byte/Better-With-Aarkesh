@@ -6,6 +6,9 @@ import { protect } from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
 import Article from '../models/Article.js';
 import Video from '../models/Video.js';
+import Appointment from '../models/Appointment.js';
+import Note from '../models/Note.js';
+import PastClient from '../models/PastClient.js';
 
 const router = express.Router();
 
@@ -553,7 +556,38 @@ router.post('/delete-account-verify', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Soft delete: Keep record in DB for admin records with isDeleted flag
+    const cleanEmail = (user.email || '').trim().toLowerCase();
+
+    // 1. Record in PastClient to remember user has booked before (90m for returning)
+    if (cleanEmail) {
+      await PastClient.findOneAndUpdate(
+        { email: cleanEmail },
+        { email: cleanEmail, phoneNumber: user.phoneNumber },
+        { upsert: true }
+      );
+    }
+
+    // 2. Delete all user notes
+    await Note.deleteMany({ user: user._id });
+
+    // 3. Clear and remove past appointment history from DB
+    if (cleanEmail) {
+      const escapedEmail = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      await Appointment.deleteMany({
+        $or: [
+          { userId: user._id },
+          { email: new RegExp(`^${escapedEmail}$`, 'i') }
+        ]
+      });
+    } else {
+      await Appointment.deleteMany({ userId: user._id });
+    }
+
+    // 4. Clear saved and completed lists and mark user as deleted
+    user.savedArticles = [];
+    user.savedVideos = [];
+    user.completedArticles = [];
+    user.completedVideos = [];
     user.isDeleted = true;
     user.deletedAt = new Date();
     await user.save();

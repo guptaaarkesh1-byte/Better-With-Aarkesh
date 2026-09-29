@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
 import User from '../models/User.js';
 import CourseUser from '../models/CourseUser.js';
+import Appointment from '../models/Appointment.js';
+import Note from '../models/Note.js';
+import PastClient from '../models/PastClient.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -35,10 +38,10 @@ router.post('/register-init', async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    // Check if user exists
+    // Check if active user exists
     const userExists = await User.findOne({ email: emailRegex });
 
-    if (userExists) {
+    if (userExists && !userExists.isDeleted) {
       // Check if this is a course purchaser — redirect to login instead of blocking
       const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
       if (courseUser) {
@@ -158,10 +161,10 @@ router.post('/register-verify', async (req, res) => {
     const { fullName, password, countryCode, phoneNumber } = pendingData;
     const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    // Check if user exists
+    // Check if active user exists
     const userExists = await User.findOne({ email: emailRegex });
 
-    if (userExists) {
+    if (userExists && !userExists.isDeleted) {
       return res.status(400).json({ message: 'Email ID already exists. Use a different one.' });
     }
 
@@ -173,16 +176,55 @@ router.post('/register-verify', async (req, res) => {
     const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
     const hasCoursePerks = !!courseUser;
 
-    // Create user
-    const user = await User.create({
-      fullName,
-      email: cleanEmail,
-      password: hashedPassword,
-      countryCode,
-      phoneNumber,
-      freeSessions: hasCoursePerks ? 3 : 0,
-      courseSessionsGranted: hasCoursePerks,
-    });
+    let user;
+    if (userExists && userExists.isDeleted) {
+      // 1. Record PastClient so returning user gets 90min
+      await PastClient.findOneAndUpdate(
+        { email: cleanEmail },
+        { email: cleanEmail, phoneNumber },
+        { upsert: true }
+      );
+
+      // 2. Clear any leftover user notes
+      await Note.deleteMany({ user: userExists._id });
+
+      // 3. Delete previous appointments from old account so user gets a 100% clean fresh start
+      await Appointment.deleteMany({
+        $or: [
+          { userId: userExists._id },
+          { email: new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+        ]
+      });
+
+      // 4. Re-activate and reset user data with fresh registration
+      userExists.fullName = fullName;
+      userExists.password = hashedPassword;
+      userExists.countryCode = countryCode;
+      userExists.phoneNumber = phoneNumber;
+      userExists.dob = '';
+      userExists.gender = 'Prefer not to say';
+      userExists.savedArticles = [];
+      userExists.savedVideos = [];
+      userExists.completedArticles = [];
+      userExists.completedVideos = [];
+      userExists.freeSessions = hasCoursePerks ? 3 : 0;
+      userExists.courseSessionsGranted = hasCoursePerks;
+      userExists.isDeleted = false;
+      userExists.deletedAt = null;
+      await userExists.save();
+      user = userExists;
+    } else {
+      // Create user
+      user = await User.create({
+        fullName,
+        email: cleanEmail,
+        password: hashedPassword,
+        countryCode,
+        phoneNumber,
+        freeSessions: hasCoursePerks ? 3 : 0,
+        courseSessionsGranted: hasCoursePerks,
+      });
+    }
 
     if (user) {
       res.status(201).json({
@@ -305,7 +347,7 @@ router.post('/check-free-sessions', async (req, res) => {
     const emailRegex = new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
-    const coachingUser = await User.findOne({ email: emailRegex });
+    const coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
 
     if (courseUser) {
       if (!coachingUser) {
@@ -356,15 +398,17 @@ router.post('/check-free-sessions', async (req, res) => {
 router.post('/forgot-password-init', async (req, res) => {
   try {
     const { email } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
     if (!user) {
       return res.status(404).json({ message: 'User account does not exist' });
     }
 
     const otp = generateOTP();
     
-    pendingPasswordResets.set(email, {
+    pendingPasswordResets.set(cleanEmail, {
       otp,
       expires: Date.now() + 10 * 60 * 1000
     });
@@ -394,7 +438,7 @@ router.post('/forgot-password-init', async (req, res) => {
 
       const { data, error } = await resend.emails.send({
         from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-        to: email,
+        to: cleanEmail,
         subject: 'Password Reset OTP - Better With Aarkesh',
         html: emailHtmlTemplate,
       });
@@ -421,14 +465,16 @@ router.post('/forgot-password-init', async (req, res) => {
 router.post('/forgot-password-reset', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    const pendingData = pendingPasswordResets.get(email);
+    const pendingData = pendingPasswordResets.get(cleanEmail);
     if (!pendingData) {
       return res.status(400).json({ message: 'Session expired or invalid. Please try again.' });
     }
 
     if (pendingData.expires < Date.now()) {
-      pendingPasswordResets.delete(email);
+      pendingPasswordResets.delete(cleanEmail);
       return res.status(400).json({ message: 'OTP expired. Please try again.' });
     }
 
@@ -439,8 +485,8 @@ router.post('/forgot-password-reset', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    await User.findOneAndUpdate({ email }, { password: hashedPassword });
-    pendingPasswordResets.delete(email);
+    await User.findOneAndUpdate({ email: emailRegex, isDeleted: { $ne: true } }, { password: hashedPassword });
+    pendingPasswordResets.delete(cleanEmail);
 
     res.status(200).json({ message: 'Password reset successfully' });
   } catch (error) {

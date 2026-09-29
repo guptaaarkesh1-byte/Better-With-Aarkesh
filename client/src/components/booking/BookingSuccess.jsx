@@ -4,7 +4,7 @@ import {
   EnvelopeSimple, House, Quotes, ChatCenteredText, BookOpen, ArrowLeft
 } from '@phosphor-icons/react';
 import { Link, useNavigate } from 'react-router-dom';
-import bookingBg from '../../assets/images/booking_bg_lamp.webp';
+import bookingBg from '../../assets/images/booking_bg_lamp.png';
 import defaultHeroImg from '../../assets/hero.webp';
 import LoginModal from '../layout/LoginModal';
 import PolicyModal from '../ui/PolicyModal';
@@ -47,15 +47,16 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
   return (
     <div className="min-h-screen bg-[#f5f1e8] text-[#111010] relative pt-28 md:pt-36 lg:pt-40 pb-12 sm:pb-16 px-3 sm:px-4 md:px-8 animate-in fade-in zoom-in-95 duration-1000">
       
-      {/* Background Image Layer with Warm Cream Gradients */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-25">
+      {/* Background Image Layer with Warm Lamp Atmosphere */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <img 
           src={generalSettings?.bgImageUrl || bookingBg} 
-          alt="Desk lamp" 
-          className="w-full h-full object-cover object-left mix-blend-multiply"
-          style={{ opacity: (generalSettings?.overlayOpacity ? (100 - generalSettings.overlayOpacity) / 100 : 0.4) }}
+          alt="Warm desk lamp coaching atmosphere" 
+          className="w-full h-full object-cover object-left md:object-left-top opacity-85 transition-opacity duration-700"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8]/60 via-transparent to-[#f5f1e8]/90" />
+        {/* Soft edge washes to blend seamlessly with theme while keeping lamp crystal clear */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f5f1e8]/20 to-[#f5f1e8]/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8]/30 via-transparent to-[#f5f1e8]/60" />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto">
@@ -96,108 +97,103 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
           </p>
         </div>
 
-        {/* Appointment Card */}
-        <div className="grid grid-cols-1 md:grid-cols-5 bg-white/90 border border-black/10 rounded-2xl md:rounded-3xl overflow-hidden mb-8 shadow-xl">
+        {/* Appointment Card - Centered, Image Removed */}
+        <div className="max-w-2xl mx-auto bg-white/95 backdrop-blur-sm border border-black/10 rounded-2xl md:rounded-3xl p-6 sm:p-8 md:p-9 mb-10 shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
           
-          <div className="p-6 md:p-8 md:col-span-2 flex flex-col justify-center">
-            <div className="flex items-start gap-3 mb-5">
-              <CalendarBlank className="text-[#802673] text-3xl shrink-0" weight="light" />
-              <div>
-                <p className="font-sans text-[0.6rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1">
-                  {settings.appointmentCardBadge || 'YOUR APPOINTMENT'}
-                </p>
-                <div className="flex flex-col">
-                <span className="text-[#111010] text-lg font-medium">{data.date || 'Friday, October 4, 2024'}</span>
-                <p className="text-[#555047] text-sm font-normal mt-0.5">
-                  {data.time ? (
-                    (() => {
-                      const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
-                      if (!match) return `${data.time}`;
-                      
-                      let [_, hours, minutes, ampm] = match;
-                      hours = parseInt(hours, 10);
-                      minutes = parseInt(minutes, 10);
-                      
-                      // Convert to 24h for easier math
-                      if (ampm === 'PM' && hours !== 12) hours += 12;
-                      if (ampm === 'AM' && hours === 12) hours = 0;
-                      
-                      // Add duration
-                      const duration = data.sessionDuration || 60;
-                      minutes += duration;
-                      hours += Math.floor(minutes / 60);
-                      minutes = minutes % 60;
-                      
-                      // Convert back to 12h format
-                      const endAmpm = (hours >= 12 && hours < 24) ? 'PM' : 'AM';
-                      let endHours = hours % 12;
-                      if (endHours === 0) endHours = 12;
-                      
-                      const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${endAmpm}`;
-                      return `${data.time} – ${endTime} IST`;
-                    })()
-                  ) : '10:30 AM – 11:30 AM IST'}
-                </p>
-                </div>
-              </div>
+          <div className="flex items-start gap-3.5 sm:gap-4 mb-6 pb-6 border-b border-black/10">
+            <div className="w-12 h-12 rounded-2xl bg-[#f6eaf4] border border-[#e8c4e2] flex items-center justify-center text-[#802673] shrink-0 shadow-xs">
+              <CalendarBlank className="text-2xl" weight="light" />
             </div>
-
-            <div className="w-full h-[1px] bg-black/10 mb-5" />
-
-            <div className="flex flex-col gap-4">
-              <div className="flex items-start gap-4">
-                <User className="text-[#802673] text-2xl shrink-0" weight="light" />
-                <div>
-                  <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Session Type</p>
-                  <p className="text-[#111010] text-sm font-medium">
-                    {data.sessionDuration === 90 || data.isFirstSession === false
-                      ? '1-on-1 Follow-up Coaching Session'
-                      : '1-on-1 First Coaching Session'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <Clock className="text-[#802673] text-2xl shrink-0" weight="light" />
-                <div>
-                  <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Duration</p>
-                  <p className="text-[#111010] text-sm font-medium">
-                    {data.sessionDuration || (data.isFirstSession === false ? 90 : 60)} minutes
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-6 flex justify-center text-[#802673] text-2xl shrink-0 font-serif font-bold">₹</div>
-                <div>
-                  <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Total Paid</p>
-                  {data.isFreeSession ? (
-                    <p className="text-[#802673] text-sm font-bold">
-                      ₹0 <span className="text-[#7a756b] text-xs font-normal">(Course Bonus • {data.freeSessionsRemaining ?? 0} credits left)</span>
-                    </p>
-                  ) : (
-                    <p className="text-[#111010] text-sm font-bold">₹{(data.paidAmount ?? fee ?? 5000).toLocaleString('en-IN')}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <VideoCamera className="text-[#802673] text-2xl shrink-0" weight="light" />
-                <div>
-                  <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Where</p>
-                  <p className="text-[#111010] text-sm font-medium">{settings.whereValue || 'Google Meet'}</p>
-                  <p className="text-[#7a756b] text-xs font-normal">{settings.whereNote || '(Link shared in confirmation email)'}</p>
-                </div>
-              </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-sans text-[0.62rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1">
+                {settings.appointmentCardBadge || 'YOUR APPOINTMENT'}
+              </p>
+              <h3 className="text-[#111010] text-xl sm:text-2xl font-serif font-medium leading-snug">
+                {data.date || 'Friday, October 4, 2024'}
+              </h3>
+              <p className="text-[#555047] text-sm font-normal mt-1">
+                {data.time ? (
+                  (() => {
+                    const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
+                    if (!match) return `${data.time}`;
+                    
+                    let [_, hours, minutes, ampm] = match;
+                    hours = parseInt(hours, 10);
+                    minutes = parseInt(minutes, 10);
+                    
+                    if (ampm === 'PM' && hours !== 12) hours += 12;
+                    if (ampm === 'AM' && hours === 12) hours = 0;
+                    
+                    const duration = data.sessionDuration || 60;
+                    minutes += duration;
+                    hours += Math.floor(minutes / 60);
+                    minutes = minutes % 60;
+                    
+                    const endAmpm = (hours >= 12 && hours < 24) ? 'PM' : 'AM';
+                    let endHours = hours % 12;
+                    if (endHours === 0) endHours = 12;
+                    
+                    const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${endAmpm}`;
+                    return `${data.time} – ${endTime} IST`;
+                  })()
+                ) : '10:30 AM – 11:30 AM IST'}
+              </p>
             </div>
           </div>
 
-          <div className="relative h-64 md:h-auto md:col-span-3 overflow-hidden">
-            <img 
-              src={(!settings.cardImageUrl || settings.cardImageUrl.includes('images.unsplash.com/photo-1506794778202-cad84cf45f1d')) ? defaultHeroImg : settings.cardImageUrl} 
-              alt="Peaceful coaching environment" 
-              className="absolute inset-0 w-full h-full object-cover object-center scale-105"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+            <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
+              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#802673] shrink-0 shadow-xs">
+                <User className="text-lg" weight="light" />
+              </div>
+              <div>
+                <p className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Session Type</p>
+                <p className="text-[#111010] text-sm font-semibold">
+                  {data.sessionDuration === 90 || data.isFirstSession === false
+                    ? '1-on-1 Follow-up Coaching Session'
+                    : '1-on-1 First Coaching Session'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
+              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#802673] shrink-0 shadow-xs">
+                <Clock className="text-lg" weight="light" />
+              </div>
+              <div>
+                <p className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Duration</p>
+                <p className="text-[#111010] text-sm font-semibold">
+                  {data.sessionDuration || (data.isFirstSession === false ? 90 : 60)} minutes
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
+              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#802673] shrink-0 shadow-xs font-serif font-bold text-base">
+                ₹
+              </div>
+              <div>
+                <p className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Total Paid</p>
+                {data.isFreeSession ? (
+                  <p className="text-[#802673] text-sm font-bold">
+                    ₹0 <span className="text-[#7a756b] text-xs font-normal">(Course Bonus • {data.freeSessionsRemaining ?? 0} credits left)</span>
+                  </p>
+                ) : (
+                  <p className="text-[#111010] text-sm font-bold">₹{(data.paidAmount ?? fee ?? 5000).toLocaleString('en-IN')}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
+              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#802673] shrink-0 shadow-xs">
+                <VideoCamera className="text-lg" weight="light" />
+              </div>
+              <div>
+                <p className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Where</p>
+                <p className="text-[#111010] text-sm font-semibold">{settings.whereValue || 'Google Meet'}</p>
+                <p className="text-[#7a756b] text-xs font-normal">{settings.whereNote || '(Link shared in confirmation email)'}</p>
+              </div>
+            </div>
           </div>
 
         </div>

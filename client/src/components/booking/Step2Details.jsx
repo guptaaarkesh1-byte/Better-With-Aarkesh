@@ -35,6 +35,21 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
 
   return (
     <div className="flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <style>{`
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active,
+        textarea:-webkit-autofill,
+        select:-webkit-autofill {
+          -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+          box-shadow: 0 0 0 1000px #ffffff inset !important;
+          -webkit-text-fill-color: #111010 !important;
+          color: #111010 !important;
+          caret-color: #111010 !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+      `}</style>
       
       {/* Course Student Free Session Banner */}
       {freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0 && (
