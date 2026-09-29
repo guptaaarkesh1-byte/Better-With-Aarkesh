@@ -216,7 +216,7 @@ export default function CoachingTab() {
 
       {/* Header */}
       <div className="mb-6 md:mb-10 relative z-10">
-        <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] md:tracking-[0.3em] font-bold text-[#802673] block mb-2 md:mb-3">
+        <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] md:tracking-[0.3em] font-bold text-[#c9542f] block mb-2 md:mb-3">
           YOUR SCHEDULE
         </span>
         <h2 className="font-serif text-2xl sm:text-3xl md:text-5xl text-[#111010] mb-2 md:mb-4 tracking-tight">Coaching Appointments</h2>
@@ -227,11 +227,11 @@ export default function CoachingTab() {
 
       {/* Course Student Complimentary Sessions Widget */}
       {(userProfile?.courseSessionsGranted || (userProfile?.freeSessions ?? 0) > 0) && (
-        <div className="mb-6 md:mb-10 relative z-10 overflow-hidden rounded-xl md:rounded-2xl border border-[#e8c4e2] bg-[#f6eaf4] p-4 sm:p-6 md:p-8 shadow-xs">
+        <div className="mb-6 md:mb-10 relative z-10 overflow-hidden rounded-xl md:rounded-2xl border border-[#e8c4e2] bg-[#fbf0eb] p-4 sm:p-6 md:p-8 shadow-xs">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#e8c4e2] text-[#802673] text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-wider shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#e8c4e2] text-[#c9542f] text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-wider shadow-2xs">
                   <Sparkle size={12} weight="fill" /> Course Perk
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e5f2e8] border border-[#a8d5b1] text-[#2f4a34] text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-wider">
@@ -249,13 +249,13 @@ export default function CoachingTab() {
             {(userProfile?.freeSessions ?? 0) > 0 ? (
               <Link
                 to="/book"
-                className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl bg-[#802673] text-white font-semibold text-xs uppercase tracking-[0.15em] hover:bg-[#962e87] hover:scale-[1.02] transition-all shadow-md text-center"
+                className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl bg-[#c9542f] text-white font-semibold text-xs uppercase tracking-[0.15em] hover:bg-[#a64117] hover:scale-[1.02] transition-all shadow-md text-center"
               >
                 <CalendarPlus size={16} weight="bold" /> Book Free Session <ArrowRight size={14} weight="bold" />
               </Link>
             ) : (
               <span className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-black/10 text-[#7a756b] text-xs font-medium shadow-2xs">
-                <CheckCircle size={15} weight="fill" className="text-[#802673]" /> All 3 Sessions Utilized
+                <CheckCircle size={15} weight="fill" className="text-[#c9542f]" /> All 3 Sessions Utilized
               </span>
             )}
           </div>
@@ -269,12 +269,12 @@ export default function CoachingTab() {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`pb-3 md:pb-4 font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all duration-300 relative cursor-pointer ${
-              activeTab === tab ? 'text-[#802673]' : 'text-[#7a756b] hover:text-[#111010]'
+              activeTab === tab ? 'text-[#c9542f]' : 'text-[#7a756b] hover:text-[#111010]'
             }`}
           >
             {tab}
             {activeTab === tab && (
-              <span className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-[#802673]" />
+              <span className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-[#c9542f]" />
             )}
           </button>
         ))}
@@ -295,7 +295,7 @@ export default function CoachingTab() {
           filteredAppointments.map(app => (
             <div key={app.id} className="group/card w-full flex flex-col items-center">
                 {/* Main Card */}
-                <div className="w-full rounded-xl border border-black/10 bg-white p-4 sm:p-6 md:p-8 flex flex-col justify-between gap-5 sm:gap-6 hover:border-[#802673]/50 transition-all duration-300 shadow-xs hover:shadow-md relative z-10 h-full overflow-hidden">
+                <div className="w-full rounded-xl border border-black/10 bg-white p-4 sm:p-6 md:p-8 flex flex-col justify-between gap-5 sm:gap-6 hover:border-[#c9542f]/50 transition-all duration-300 shadow-xs hover:shadow-md relative z-10 h-full overflow-hidden">
                   
                   {app.rescheduleRequest?.status === 'APPROVED' && (
                     <div className="absolute top-0 right-0 bg-[#e5f2e8] border-b border-l border-[#a8d5b1] px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-[#2f4a34] font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 z-20">
@@ -324,7 +324,7 @@ export default function CoachingTab() {
 
                   {/* Top: Status & Details */}
                   <div className="flex flex-col gap-3 sm:gap-4 pt-2 sm:pt-0">
-                    <div className={`flex items-center gap-2 ${app.status === 'COMPLETED' ? 'text-emerald-700' : 'text-[#802673]'} font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold`}>
+                    <div className={`flex items-center gap-2 ${app.status === 'COMPLETED' ? 'text-emerald-700' : 'text-[#c9542f]'} font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold`}>
                       <span>{app.badge}</span>
                       {app.badge === 'CONFIRMED' && <CheckCircle weight="fill" size={14} />}
                       {app.badge === 'PENDING' && <Clock weight="fill" size={14} />}
@@ -332,7 +332,7 @@ export default function CoachingTab() {
                     </div>
 
                     <div className="flex flex-col gap-1 sm:gap-1.5">
-                      <h3 className="font-serif text-xl sm:text-2xl md:text-[1.7rem] text-[#111010] uppercase tracking-wide leading-tight transition-colors group-hover/card:text-[#802673]">
+                      <h3 className="font-serif text-xl sm:text-2xl md:text-[1.7rem] text-[#111010] uppercase tracking-wide leading-tight transition-colors group-hover/card:text-[#c9542f]">
                         {app.date}
                       </h3>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 font-sans text-[0.65rem] sm:text-[0.7rem] tracking-[0.12em] sm:tracking-[0.15em] text-[#555047] uppercase mt-1">
@@ -343,7 +343,7 @@ export default function CoachingTab() {
                     </div>
 
                     <div className="flex items-center gap-2.5 sm:gap-3 mt-1 text-[#111010] font-sans text-[0.7rem] sm:text-[0.75rem] tracking-[0.12em] sm:tracking-[0.15em] uppercase font-semibold">
-                      <User size={18} weight="regular" className="text-[#802673] shrink-0" />
+                      <User size={18} weight="regular" className="text-[#c9542f] shrink-0" />
                       <span>{app.person}</span>
                     </div>
                   </div>
@@ -355,7 +355,7 @@ export default function CoachingTab() {
                         setSelectedSession(app);
                         setSessionModalTab(app.status === 'COMPLETED' || app.primaryAction === 'VIEW SHARED NOTES' ? 'notes' : 'details');
                       }}
-                      className="flex-1 py-3 sm:py-3.5 px-4 sm:px-6 rounded-xl border border-black/15 text-[#802673] hover:border-[#802673] hover:bg-[#f6eaf4] font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all text-center cursor-pointer shadow-2xs"
+                      className="flex-1 py-3 sm:py-3.5 px-4 sm:px-6 rounded-xl border border-black/15 text-[#c9542f] hover:border-[#c9542f] hover:bg-[#fbf0eb] font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all text-center cursor-pointer shadow-2xs"
                     >
                       {app.primaryAction}
                     </button>
@@ -366,7 +366,7 @@ export default function CoachingTab() {
                           e.stopPropagation();
                           setOptionsOpenId(optionsOpenId === app.id ? null : app.id);
                         }}
-                        className={`p-3 sm:p-3.5 rounded-xl border transition-colors flex items-center justify-center shrink-0 cursor-pointer ${optionsOpenId === app.id ? 'bg-[#f6eaf4] border-[#802673] text-[#802673]' : 'border-black/15 text-[#555047] hover:text-[#111010] hover:border-black/30 hover:bg-black/5'}`}
+                        className={`p-3 sm:p-3.5 rounded-xl border transition-colors flex items-center justify-center shrink-0 cursor-pointer ${optionsOpenId === app.id ? 'bg-[#fbf0eb] border-[#c9542f] text-[#c9542f]' : 'border-black/15 text-[#555047] hover:text-[#111010] hover:border-black/30 hover:bg-black/5'}`}
                       >
                         <DotsThree size={18} weight="bold" />
                       </button>
@@ -381,9 +381,9 @@ export default function CoachingTab() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => setOptionsOpenId(null)}
-                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-[#555047] hover:text-[#111010] hover:bg-[#f6eaf4]/60 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors"
+                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-[#555047] hover:text-[#111010] hover:bg-[#fbf0eb]/60 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors"
                         >
-                          <CalendarPlus size={15} className="text-[#802673] shrink-0" />
+                          <CalendarPlus size={15} className="text-[#c9542f] shrink-0" />
                           <span>ADD TO CALENDAR</span>
                         </a>
                         
@@ -393,7 +393,7 @@ export default function CoachingTab() {
                             setOptionsOpenId(null);
                           }}
                           disabled={app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'APPROVED'}
-                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-[#555047] hover:text-[#111010] hover:bg-[#f6eaf4]/60 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-[#555047] hover:text-[#111010] hover:bg-[#fbf0eb]/60 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                           <ArrowsClockwise size={15} className="text-amber-600 shrink-0" />
                           <span>
@@ -459,25 +459,25 @@ export default function CoachingTab() {
                 <div className="flex items-center gap-4 sm:gap-6 border-b border-black/10 pb-3 sm:pb-4 mb-4 pr-10 overflow-x-auto [scrollbar-width:none]">
                   <button 
                     onClick={() => setSessionModalTab('details')}
-                    className={`font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-colors relative pb-1 flex items-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer ${sessionModalTab === 'details' ? 'text-[#802673]' : 'text-[#7a756b] hover:text-[#111010]'}`}
+                    className={`font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-colors relative pb-1 flex items-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer ${sessionModalTab === 'details' ? 'text-[#c9542f]' : 'text-[#7a756b] hover:text-[#111010]'}`}
                   >
                     <CalendarBlank size={15} />
                     <span>Appointment Details</span>
                     {sessionModalTab === 'details' && (
-                      <div className="absolute bottom-[-13px] sm:bottom-[-17px] left-0 w-full h-[2px] bg-[#802673]" />
+                      <div className="absolute bottom-[-13px] sm:bottom-[-17px] left-0 w-full h-[2px] bg-[#c9542f]" />
                     )}
                   </button>
                   <button 
                     onClick={() => setSessionModalTab('notes')}
-                    className={`font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-colors relative pb-1 flex items-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer ${sessionModalTab === 'notes' ? 'text-[#802673]' : 'text-[#7a756b] hover:text-[#111010]'}`}
+                    className={`font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-colors relative pb-1 flex items-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer ${sessionModalTab === 'notes' ? 'text-[#c9542f]' : 'text-[#7a756b] hover:text-[#111010]'}`}
                   >
                     <FileText size={15} />
                     <span>Coach's Session Notes</span>
                     {hasNotes && (
-                      <span className="w-2 h-2 rounded-full bg-[#802673] animate-pulse" />
+                      <span className="w-2 h-2 rounded-full bg-[#c9542f] animate-pulse" />
                     )}
                     {sessionModalTab === 'notes' && (
-                      <div className="absolute bottom-[-13px] sm:bottom-[-17px] left-0 w-full h-[2px] bg-[#802673]" />
+                      <div className="absolute bottom-[-13px] sm:bottom-[-17px] left-0 w-full h-[2px] bg-[#c9542f]" />
                     )}
                   </button>
                 </div>
@@ -492,7 +492,7 @@ export default function CoachingTab() {
                   
                   {/* Date */}
                   <div className="flex gap-3.5 sm:gap-5">
-                    <CalendarBlank size={20} className="text-[#802673] shrink-0 mt-0.5" />
+                    <CalendarBlank size={20} className="text-[#c9542f] shrink-0 mt-0.5" />
                     <div className="flex flex-col gap-1">
                       <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-[#7a756b] font-medium uppercase tracking-wider">Date</span>
                       <span className="font-sans text-base sm:text-lg md:text-xl text-[#111010] font-semibold">{selectedSession.date}</span>
@@ -501,7 +501,7 @@ export default function CoachingTab() {
 
                   {/* Time */}
                   <div className="flex gap-3.5 sm:gap-5">
-                    <Clock size={20} className="text-[#802673] shrink-0 mt-0.5" />
+                    <Clock size={20} className="text-[#c9542f] shrink-0 mt-0.5" />
                     <div className="flex flex-col gap-1">
                       <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-[#7a756b] font-medium uppercase tracking-wider">Time</span>
                       <span className="font-sans text-base sm:text-lg md:text-xl text-[#111010] font-semibold">{formatTimeRange(selectedSession.time, selectedSession.duration || 60)}</span>
@@ -510,7 +510,7 @@ export default function CoachingTab() {
 
                   {/* Session Type */}
                   <div className="flex gap-3.5 sm:gap-5">
-                    <User size={20} className="text-[#802673] shrink-0 mt-0.5" />
+                    <User size={20} className="text-[#c9542f] shrink-0 mt-0.5" />
                     <div className="flex flex-col gap-1">
                       <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-[#7a756b] font-medium uppercase tracking-wider">Session Type</span>
                       <span className="font-sans text-base sm:text-lg md:text-xl text-[#111010] font-semibold">1-on-1 Coaching Session</span>
@@ -519,7 +519,7 @@ export default function CoachingTab() {
 
                   {/* Duration */}
                   <div className="flex gap-3.5 sm:gap-5">
-                    <Clock size={20} className="text-[#802673] shrink-0 mt-0.5" />
+                    <Clock size={20} className="text-[#c9542f] shrink-0 mt-0.5" />
                     <div className="flex flex-col gap-1">
                       <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-[#7a756b] font-medium uppercase tracking-wider">Duration</span>
                       <span className="font-sans text-base sm:text-lg md:text-xl text-[#111010] font-semibold">{selectedSession.duration || 60} minutes</span>
@@ -528,13 +528,13 @@ export default function CoachingTab() {
 
                   {/* Where */}
                   <div className="flex gap-3.5 sm:gap-5">
-                    <VideoCamera size={20} className="text-[#802673] shrink-0 mt-0.5" />
+                    <VideoCamera size={20} className="text-[#c9542f] shrink-0 mt-0.5" />
                     <div className="flex flex-col gap-1">
                       <span className="font-sans text-[0.65rem] sm:text-[0.7rem] text-[#7a756b] font-medium uppercase tracking-wider">Where</span>
                       <div className="font-sans text-base sm:text-lg md:text-xl text-[#111010] font-semibold flex flex-wrap items-center gap-1.5 sm:gap-2">
                         Google Meet
                         {selectedSession.meetLink ? (
-                           <a href={selectedSession.meetLink} target="_blank" rel="noopener noreferrer" className="text-[#802673] hover:underline text-xs sm:text-sm md:text-base ml-1">(Join Link)</a>
+                           <a href={selectedSession.meetLink} target="_blank" rel="noopener noreferrer" className="text-[#c9542f] hover:underline text-xs sm:text-sm md:text-base ml-1">(Join Link)</a>
                         ) : (
                            <span className="text-[#7a756b] text-xs sm:text-sm md:text-base ml-1 font-normal">(Link will be shared after booking)</span>
                         )}
@@ -544,7 +544,7 @@ export default function CoachingTab() {
 
                   {/* Total Amount */}
                   <div className="flex gap-3.5 sm:gap-5">
-                    <CurrencyInr size={20} className="text-[#802673] shrink-0 mt-0.5" />
+                    <CurrencyInr size={20} className="text-[#c9542f] shrink-0 mt-0.5" />
                     <div className="flex flex-col gap-1">
                       <span className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] text-[#7a756b] font-bold">TOTAL AMOUNT</span>
                       {selectedSession.isFreeSession ? (
@@ -583,16 +583,16 @@ export default function CoachingTab() {
                   {Boolean(selectedSession.coachNotes && (typeof selectedSession.coachNotes === 'string' ? selectedSession.coachNotes.trim().length > 0 : selectedSession.coachNotes.length > 0)) && (
                     <div 
                       onClick={() => setSessionModalTab('notes')}
-                      className="w-full rounded-xl bg-[#f6eaf4] border border-[#e8c4e2] p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 cursor-pointer hover:bg-[#eed5e9] transition-colors shadow-2xs"
+                      className="w-full rounded-xl bg-[#fbf0eb] border border-[#e8c4e2] p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 cursor-pointer hover:bg-[#eed5e9] transition-colors shadow-2xs"
                     >
                       <div className="flex items-center gap-3">
-                        <FileText size={18} className="text-[#802673] shrink-0" />
+                        <FileText size={18} className="text-[#c9542f] shrink-0" />
                         <div className="flex flex-col">
                           <span className="text-xs sm:text-sm font-semibold text-[#111010]">Coach Notes Available</span>
                           <span className="text-[0.7rem] sm:text-xs text-[#555047]">Aarkesh has written notes for this session. Click to view.</span>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-[#802673] uppercase tracking-wider shrink-0">
+                      <span className="text-xs font-bold text-[#c9542f] uppercase tracking-wider shrink-0">
                         View Notes &rarr;
                       </span>
                     </div>
@@ -611,7 +611,7 @@ export default function CoachingTab() {
                     if (!hasNotes) {
                       return (
                         <div className="w-full py-12 sm:py-16 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-white border border-black/10 flex flex-col items-center justify-center text-center gap-3 shadow-xs">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#f6eaf4] border border-[#e8c4e2] flex items-center justify-center text-[#802673] mb-2">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#fbf0eb] border border-[#e8c4e2] flex items-center justify-center text-[#c9542f] mb-2">
                             <FileText size={20} className="sm:w-6 sm:h-6" />
                           </div>
                           <span className="font-serif text-base sm:text-lg text-[#111010]">No Notes Shared Yet</span>
@@ -626,17 +626,17 @@ export default function CoachingTab() {
                       <div className="w-full rounded-xl sm:rounded-2xl bg-white border border-black/10 p-4 sm:p-6 md:p-8 shadow-xs flex flex-col gap-4 sm:gap-5">
                         <div className="flex flex-wrap items-center justify-between border-b border-black/10 pb-3 sm:pb-4 gap-2">
                           <div className="flex items-center gap-2.5 sm:gap-3">
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#f6eaf4] border border-[#e8c4e2] flex items-center justify-center text-[#802673]">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#fbf0eb] border border-[#e8c4e2] flex items-center justify-center text-[#c9542f]">
                               <FileText size={16} />
                             </div>
                             <div className="flex flex-col">
-                              <h4 className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.2em] sm:tracking-[0.25em] font-bold text-[#802673]">
+                              <h4 className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.2em] sm:tracking-[0.25em] font-bold text-[#c9542f]">
                                 COACH'S SESSION NOTES
                               </h4>
                               <span className="text-[#7a756b] text-[0.7rem] sm:text-xs">Shared with you by Aarkesh</span>
                             </div>
                           </div>
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#f6eaf4] border border-[#e8c4e2] text-[#802673] text-[0.7rem] sm:text-xs font-semibold">
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#fbf0eb] border border-[#e8c4e2] text-[#c9542f] text-[0.7rem] sm:text-xs font-semibold">
                             {selectedSession.date}
                           </span>
                         </div>
@@ -649,7 +649,7 @@ export default function CoachingTab() {
                             <ul className="flex flex-col gap-2.5 sm:gap-3">
                               {notes.map((n, idx) => (
                                 <li key={idx} className="flex items-start gap-2.5 sm:gap-3">
-                                  <span className="text-[#802673] mt-1 text-xs">●</span>
+                                  <span className="text-[#c9542f] mt-1 text-xs">●</span>
                                   <span>{n}</span>
                                 </li>
                               ))}
@@ -662,7 +662,7 @@ export default function CoachingTab() {
                         {/* Footer Disclaimer */}
                         <div className="pt-3 sm:pt-4 border-t border-black/10 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[0.7rem] sm:text-xs text-[#7a756b] gap-1.5 sm:gap-2">
                           <span>Personal guidance & action items shared for your journey</span>
-                          <span className="text-[#802673] font-serif italic">Better With Aarkesh</span>
+                          <span className="text-[#c9542f] font-serif italic">Better With Aarkesh</span>
                         </div>
                       </div>
                     );
@@ -690,7 +690,7 @@ export default function CoachingTab() {
             >
               <X size={20} />
             </button>
-            <h3 className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-bold text-[#802673] mb-4 sm:mb-6 leading-relaxed pr-6">
+            <h3 className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-bold text-[#c9542f] mb-4 sm:mb-6 leading-relaxed pr-6">
               PREPARE FOR THE<br/>CONVERSATION
             </h3>
             <p className="font-sans text-[#111010] text-sm sm:text-[1.05rem] leading-[1.6] mb-6 sm:mb-8 font-light">
@@ -701,7 +701,7 @@ export default function CoachingTab() {
             </p>
             <button 
               onClick={() => setPrepareSession({ ...prepareSession, step: 2 })}
-              className="w-full flex items-center justify-center gap-2 sm:gap-3 py-3.5 sm:py-4 rounded-xl bg-[#802673] text-white hover:bg-[#962e87] font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shadow-md cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 sm:gap-3 py-3.5 sm:py-4 rounded-xl bg-[#c9542f] text-white hover:bg-[#a64117] font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shadow-md cursor-pointer"
             >
               <span>BEGIN PREPARATION</span>
               <span>&rarr;</span>
@@ -721,14 +721,14 @@ export default function CoachingTab() {
           <div className="w-full px-4 sm:px-8 md:px-16 pt-8 sm:pt-12 md:pt-20 flex flex-col items-start max-w-[1400px] mx-auto min-h-screen pb-16 md:pb-20">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl border border-black/10 bg-white mb-6 sm:mb-8 font-sans text-[0.55rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold text-[#555047] shadow-2xs">
                 <span>{prepareSession.session.date} • {formatTimeRange(prepareSession.session.time, prepareSession.session.duration || 60)}</span>
-                <span className="text-[#802673] flex items-center gap-1.5 ml-1 sm:ml-2">
+                <span className="text-[#c9542f] flex items-center gap-1.5 ml-1 sm:ml-2">
                   • {prepareSession.session.badge} <CheckCircle size={12} weight="fill" />
                 </span>
               </div>
               
               <button 
                 onClick={() => setPrepareSession(null)}
-                className="flex items-center gap-2.5 sm:gap-3 font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold text-[#802673] hover:text-[#111010] transition-colors mb-8 sm:mb-16 cursor-pointer"
+                className="flex items-center gap-2.5 sm:gap-3 font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold text-[#c9542f] hover:text-[#111010] transition-colors mb-8 sm:mb-16 cursor-pointer"
               >
                 <span>&larr;</span>
                 <span>BACK TO APPOINTMENT</span>
@@ -738,7 +738,7 @@ export default function CoachingTab() {
                 
                 {/* Left Column: Form */}
                 <div className="flex flex-col flex-1 w-full max-w-4xl">
-                  <span className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-bold text-[#802673] mb-4 sm:mb-6 block">
+                  <span className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-bold text-[#c9542f] mb-4 sm:mb-6 block">
                     BEFORE WE SPEAK
                   </span>
                   <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-[3.5rem] text-[#111010] tracking-tight leading-[1.15] mb-6 sm:mb-12">
@@ -747,7 +747,7 @@ export default function CoachingTab() {
                   
                   <div className="w-full relative mb-3 sm:mb-4">
                     <textarea 
-                      className="w-full h-56 sm:h-72 md:h-80 bg-white border border-black/10 rounded-2xl p-4 sm:p-6 md:p-8 font-serif text-base sm:text-lg md:text-xl text-[#111010] placeholder-[#7a756b]/40 resize-none focus:outline-none focus:border-[#802673] transition-all shadow-xs"
+                      className="w-full h-56 sm:h-72 md:h-80 bg-white border border-black/10 rounded-2xl p-4 sm:p-6 md:p-8 font-serif text-base sm:text-lg md:text-xl text-[#111010] placeholder-[#7a756b]/40 resize-none focus:outline-none focus:border-[#c9542f] transition-all shadow-xs"
                       placeholder="Write as much or as little as you need."
                     />
                   </div>
@@ -756,7 +756,7 @@ export default function CoachingTab() {
                   </p>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-8 mt-auto">
-                    <button className="flex items-center justify-center gap-3 sm:gap-4 px-8 sm:px-10 py-3.5 sm:py-4 rounded-xl bg-[#802673] text-white hover:bg-[#962e87] font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shadow-md cursor-pointer">
+                    <button className="flex items-center justify-center gap-3 sm:gap-4 px-8 sm:px-10 py-3.5 sm:py-4 rounded-xl bg-[#c9542f] text-white hover:bg-[#a64117] font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shadow-md cursor-pointer">
                       <span>CONTINUE</span>
                       <span>&rarr;</span>
                     </button>
@@ -776,7 +776,7 @@ export default function CoachingTab() {
                       <X size={16} />
                     </button>
                     
-                    <h4 className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-4 sm:mb-6">
+                    <h4 className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-4 sm:mb-6">
                       A NOTE FROM AARKESH
                     </h4>
                     <p className="font-serif text-sm sm:text-base md:text-lg text-[#111010] leading-[1.7] sm:leading-[1.8] mb-6 sm:mb-10">
@@ -786,7 +786,7 @@ export default function CoachingTab() {
                     <span className="font-sans text-[0.55rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-semibold text-[#7a756b] block mb-3 sm:mb-4">
                       FOR THIS CONVERSATION
                     </span>
-                    <button className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold text-[#802673] hover:text-[#962e87] transition-colors border-b border-[#802673]/30 pb-1 cursor-pointer">
+                    <button className="font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold text-[#c9542f] hover:text-[#a64117] transition-colors border-b border-[#c9542f]/30 pb-1 cursor-pointer">
                       COACH'S NOTES
                     </button>
                   </div>

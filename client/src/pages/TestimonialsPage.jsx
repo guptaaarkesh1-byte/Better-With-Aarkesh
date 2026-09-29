@@ -83,7 +83,7 @@ export default function TestimonialsPage() {
     <div className="min-h-screen bg-[#f5f1e8] text-[#111010] pt-28 pb-20 relative overflow-hidden">
       
       {/* Background ambient lighting */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#802673]/[0.03] rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#c9542f]/[0.03] rounded-full blur-[160px] pointer-events-none" />
       <div className="absolute bottom-40 right-10 w-[500px] h-[500px] bg-[#ede7d8] rounded-full blur-[180px] pointer-events-none" />
 
       <Container className="relative z-10">
@@ -92,25 +92,31 @@ export default function TestimonialsPage() {
         <div className="mb-10 sm:mb-12 flex flex-col gap-6">
           <Link
             to="/#testimonials"
-            className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-black/10 hover:border-[#802673]/40 bg-white/90 hover:bg-white text-[#111010] hover:text-[#802673] text-xs uppercase tracking-[0.18em] font-medium transition-all duration-300 shadow-xs group w-fit cursor-pointer"
+            className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-black/10 hover:border-[#c9542f]/40 bg-white/90 hover:bg-white text-[#111010] hover:text-[#c9542f] text-xs uppercase tracking-[0.18em] font-medium transition-all duration-300 shadow-xs group w-fit cursor-pointer"
           >
-            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-200 text-[#802673]" />
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-200 text-[#c9542f]" />
             <span>Back to Home</span>
           </Link>
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
-              <div className="h-[1.5px] w-6 bg-[#802673]" />
-              <span className="font-sans text-xs uppercase tracking-[0.25em] font-bold text-[#802673]">
+              <div className="h-[1.5px] w-6 bg-[#c9542f]" />
+              <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
                 REAL STORIES. REAL CHANGE.
               </span>
             </div>
             
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#111010] font-medium tracking-tight">
-              Testimonials & <span className="text-[#802673] italic font-light">Stories</span>
+            <h1 
+              className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08] mb-1"
+              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+            >
+              Testimonials & <span className="text-[#c9542f] not-italic font-medium">Stories</span>
             </h1>
             
-            <p className="text-[#555047] font-serif text-lg sm:text-xl font-light max-w-xl mt-1 leading-relaxed">
+            <p 
+              className="text-[#4a463e] font-serif text-xl lg:text-2xl font-normal max-w-xl mt-2 leading-relaxed"
+              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+            >
               Real reflections and transformative journeys from people who decided to do the work.
             </p>
           </div>
@@ -121,24 +127,24 @@ export default function TestimonialsPage() {
           {testimonials.map((t, index) => {
             const initial = t.name ? t.name.charAt(0).toUpperCase() : 'C';
             const colors = [
-              'bg-[#802673]', 
+              'bg-[#c9542f]', 
               'bg-[#3d1b37]', 
               'bg-[#2f4a34]', 
               'bg-[#a64117]', 
               'bg-[#111010]', 
-              'bg-[#802673]'
+              'bg-[#c9542f]'
             ];
             const color = t.color || colors[index % colors.length];
 
             return (
               <div 
                 key={index}
-                className="flex flex-col justify-between bg-white/95 border border-black/8 hover:border-[#802673]/35 rounded-2xl p-6 sm:p-7 transition-all duration-300 group hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_32px_rgba(128,38,115,0.08)] hover:-translate-y-1"
+                className="flex flex-col justify-between bg-white/95 border border-black/8 hover:border-[#c9542f]/35 rounded-2xl p-6 sm:p-7 transition-all duration-300 group hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_32px_rgba(201, 84, 47,0.08)] hover:-translate-y-1"
               >
                 <div>
                   {/* Top Row: Quote Icon */}
                   <div className="mb-3">
-                    <Quotes className="text-[#802673] text-2xl opacity-90 group-hover:scale-110 transition-transform duration-300" weight="fill" />
+                    <Quotes className="text-[#c9542f] text-2xl opacity-90 group-hover:scale-110 transition-transform duration-300" weight="fill" />
                   </div>
 
                   {/* Quote Body */}
@@ -150,7 +156,7 @@ export default function TestimonialsPage() {
                 {/* Author Info */}
                 <div className="flex items-center gap-3.5 pt-4 border-t border-black/6 mt-auto">
                   {t.image ? (
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[#802673]/30 shrink-0 bg-white shadow-xs">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[#c9542f]/30 shrink-0 bg-white shadow-xs">
                       <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
                     </div>
                   ) : (

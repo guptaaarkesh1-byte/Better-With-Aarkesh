@@ -256,16 +256,16 @@ export default function SecurityPrivacyTab() {
       <div className="flex flex-col gap-4 mb-8">
         
         {/* Password Card */}
-        <div className={`flex flex-col border border-black/10 rounded-2xl p-5 sm:p-6 bg-[#fcfbfa] hover:border-[#802673]/40 transition-colors ${!isEditingPassword ? 'group md:flex-row md:items-center justify-between' : ''}`}>
+        <div className={`flex flex-col border border-black/10 rounded-2xl p-5 sm:p-6 bg-[#fcfbfa] hover:border-[#c9542f]/40 transition-colors ${!isEditingPassword ? 'group md:flex-row md:items-center justify-between' : ''}`}>
           {!isEditingPassword ? (
             <>
               <div className="flex flex-col gap-1.5">
-                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673]">PASSWORD</span>
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f]">PASSWORD</span>
                 <span className="font-mono text-[#111010] tracking-widest mt-1">•••••••••••••••</span>
               </div>
               <button 
                 onClick={() => setIsEditingPassword(true)}
-                className="mt-4 md:mt-0 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673] flex items-center gap-2 cursor-pointer hover:text-[#962e87]"
+                className="mt-4 md:mt-0 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] flex items-center gap-2 cursor-pointer hover:text-[#a64117]"
               >
                 CHANGE PASSWORD <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </button>
@@ -273,7 +273,7 @@ export default function SecurityPrivacyTab() {
           ) : (
             <div className="w-full animate-in fade-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between mb-6">
-                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673]">CHANGE PASSWORD</span>
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f]">CHANGE PASSWORD</span>
                 <button 
                   onClick={() => {
                     setIsEditingPassword(false);
@@ -293,7 +293,7 @@ export default function SecurityPrivacyTab() {
                   placeholder="Current Password" 
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] font-sans placeholder-[#7a756b]/40"
+                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
                   required
                 />
                 <input 
@@ -301,7 +301,7 @@ export default function SecurityPrivacyTab() {
                   placeholder="New Password (min 6 characters)" 
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] font-sans placeholder-[#7a756b]/40"
+                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
                   required
                 />
                 <input 
@@ -309,7 +309,7 @@ export default function SecurityPrivacyTab() {
                   placeholder="Confirm New Password" 
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] font-sans placeholder-[#7a756b]/40"
+                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
                   required
                 />
                 
@@ -323,7 +323,7 @@ export default function SecurityPrivacyTab() {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="mt-2 bg-[#802673] text-white font-bold text-[0.7rem] tracking-[0.2em] uppercase py-3.5 rounded-xl hover:bg-[#962e87] transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer shadow-md"
+                  className="mt-2 bg-[#c9542f] text-white font-bold text-[0.7rem] tracking-[0.2em] uppercase py-3.5 rounded-xl hover:bg-[#a64117] transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer shadow-md"
                 >
                   {isSubmitting ? <SpinnerGap size={16} className="animate-spin" /> : 'SAVE PASSWORD'}
                 </button>

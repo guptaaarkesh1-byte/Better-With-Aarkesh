@@ -41,7 +41,7 @@ export default function NoteViewModal({ isOpen, onClose, note }) {
         
         {/* Header */}
         <div className="flex justify-between items-center p-4 sm:p-6 md:px-10 border-b border-black/10 shrink-0 bg-[#ede7d8]">
-          <div className="flex items-center gap-2 sm:gap-3 text-[#802673]">
+          <div className="flex items-center gap-2 sm:gap-3 text-[#c9542f]">
             <LockKey size={15} weight="bold" />
             <span className="font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">
               VIEW NOTE
@@ -81,10 +81,10 @@ export default function NoteViewModal({ isOpen, onClose, note }) {
                 className="prose prose-sm sm:prose-base max-w-full break-words
                   prose-headings:font-serif prose-headings:font-medium prose-headings:text-[#111010] 
                   prose-p:font-sans prose-p:font-light prose-p:text-[#111010] prose-p:leading-relaxed prose-p:whitespace-pre-wrap prose-p:break-words
-                  prose-a:text-[#802673] hover:prose-a:text-[#962e87] prose-a:break-all
+                  prose-a:text-[#c9542f] hover:prose-a:text-[#a64117] prose-a:break-all
                   prose-strong:text-[#111010] prose-strong:font-semibold
                   prose-ul:list-disc prose-ol:list-decimal
-                  prose-li:text-[#3d3832] prose-li:font-light prose-li:marker:text-[#802673]"
+                  prose-li:text-[#3d3832] prose-li:font-light prose-li:marker:text-[#c9542f]"
                 dangerouslySetInnerHTML={{ __html: note.content }}
               />
             </div>
@@ -102,7 +102,7 @@ export default function NoteViewModal({ isOpen, onClose, note }) {
         <div className="p-4 sm:p-6 md:px-10 border-t border-black/10 shrink-0 flex justify-end bg-[#ede7d8]">
           <button 
             onClick={onClose}
-            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl border border-black/15 bg-white text-[#111010] hover:bg-[#f6eaf4] font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all text-center cursor-pointer shadow-2xs"
+            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl border border-black/15 bg-white text-[#111010] hover:bg-[#fbf0eb] font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all text-center cursor-pointer shadow-2xs"
           >
             CLOSE
           </button>

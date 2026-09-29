@@ -13,7 +13,8 @@ export default function PrincipleContent({
   headlineGold, 
   headlineGoldItalic, 
   paragraphs, 
-  buttonText 
+  buttonText,
+  maxContentWidth = "max-w-[460px]"
 }) {
   const container = useRef(null);
 
@@ -52,39 +53,43 @@ export default function PrincipleContent({
   }, { scope: container, dependencies: [headlineWhite, headlineGold, paragraphs, eyebrow, id] });
 
   return (
-    <div ref={container} className="max-w-xl text-left relative z-20">
+    <div ref={container} className={`${maxContentWidth} text-left relative z-20`}>
       
       <div className="flex items-center gap-4 mb-6">
-        <div className="phil-line h-[1.5px] w-8 bg-[#802673] origin-left" />
-        <span className="phil-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
+        <div className="phil-line h-[1.5px] w-8 bg-[#c9542f] origin-left" />
+        <span className="phil-eyebrow font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
           {eyebrow}
         </span>
       </div>
 
-      <h2 className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 flex flex-col items-start">
-        <span className={`phil-heading-word text-[#111010] overflow-hidden pb-1 ${headlineWhite === headlineWhite?.toUpperCase() ? 'uppercase' : ''}`}>
+      <h2 
+        className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 flex flex-col items-start w-fit"
+        style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+      >
+        <span className={`phil-heading-word text-[#111010] whitespace-nowrap overflow-hidden pb-1 ${headlineWhite === headlineWhite?.toUpperCase() ? 'uppercase' : ''}`}>
           {headlineWhite}
         </span>
-        <span className={`phil-heading-word text-[#802673] overflow-hidden pb-1 ${headlineGoldItalic ? 'italic font-light' : ''} ${headlineGold === headlineGold?.toUpperCase() ? 'uppercase' : ''}`}>
+        <span className={`phil-heading-word text-[#c9542f] whitespace-nowrap overflow-hidden pb-1 not-italic font-medium ${headlineGold === headlineGold?.toUpperCase() ? 'uppercase' : ''}`}>
           {headlineGold}
         </span>
       </h2>
 
-      <div className="space-y-5 mb-6">
+      <div className="space-y-5 mb-6 max-w-full">
         {paragraphs.map((p, i) => (
           <p 
             key={i} 
-            className={`phil-paragraph font-serif ${i === 0 ? 'text-xl lg:text-2xl text-[#111010] font-normal' : 'text-lg lg:text-xl text-[#3d3832] font-light'} tracking-wide leading-relaxed`}
+            className="phil-paragraph font-serif text-xl lg:text-2xl text-[#4a463e] font-normal tracking-wide leading-relaxed"
+            style={{ fontFamily: 'Fraunces, Georgia, serif' }}
             dangerouslySetInnerHTML={{ __html: p }}
           />
         ))}
       </div>
 
       <div className="phil-button flex items-center gap-4 sm:gap-5 cursor-pointer group w-fit pt-2">
-        <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-full border border-black/20 bg-white/60 flex items-center justify-center transition-all duration-300 group-hover:border-[#802673] group-hover:bg-[#f6eaf4] group-hover:scale-105 shadow-xs">
-          <ArrowDown size={20} weight="bold" className="text-[#111010] transition-transform group-hover:text-[#802673] group-hover:translate-y-1" />
+        <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-full border border-black/20 bg-white/60 flex items-center justify-center transition-all duration-300 group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] group-hover:scale-105 shadow-xs">
+          <ArrowDown size={20} weight="bold" className="text-[#111010] transition-transform group-hover:text-[#c9542f] group-hover:translate-y-1" />
         </div>
-        <span className="font-sans text-xs sm:text-sm md:text-[0.82rem] uppercase tracking-[0.25em] text-[#111010] font-bold transition-colors group-hover:text-[#802673]">
+        <span className="font-sans text-xs sm:text-sm md:text-[0.82rem] uppercase tracking-[0.25em] text-[#111010] font-bold transition-colors group-hover:text-[#c9542f]">
           {buttonText || 'SCROLL FOR NEXT PRINCIPLE'}
         </span>
       </div>

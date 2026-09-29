@@ -37,16 +37,16 @@ import {
 // Exact Default Assets from Frontend Website
 import defaultHeroImg from '../../../client/src/assets/hero.webp';
 import defaultTransImg from '../../../client/src/assets/Page2/bottom.webp';
-import defaultThinkImg from '../../../client/src/assets/Page3/ChatGPT Image Jul 24, 2026, 02_21_12 PM.webp';
-import defaultFeelImg from '../../../client/src/assets/Page4/ChatGPT Image Jul 24, 2026, 02_41_22 PM.webp';
-import defaultDecideImg from '../../../client/src/assets/Page5/ChatGPT Image Jul 24, 2026, 03_00_05 PM.webp';
-import defaultCoachingProcessImg from '../../../client/src/assets/Page6/ChatGPT Image Jul 24, 2026, 03_28_41 PM.webp';
-import defaultCoachingJourneyImg from '../../../client/src/assets/Page7/ChatGPT Image Jul 24, 2026, 03_42_25 PM.webp';
+import defaultThinkImg from '../../../client/src/assets/Page3/think-clearly.webp';
+import defaultFeelImg from '../../../client/src/assets/Page4/feel-honestly.webp';
+import defaultDecideImg from '../../../client/src/assets/Page5/decide-intentionally.jpg';
+import defaultCoachingProcessImg from '../../../client/src/assets/Page6/coaching-process.webp';
+import defaultCoachingJourneyImg from '../../../client/src/assets/Page7/coaching-journey.webp';
 import defaultPilotImg from '../../../client/src/assets/Page8/pilot.webp';
 import defaultCoachImg from '../../../client/src/assets/Page8/Coach.webp';
 import defaultHumanImg from '../../../client/src/assets/Page8/human.webp';
-import defaultTestimonialsImg from '../../../client/src/assets/Page9/ChatGPT Image Jul 24, 2026, 04_56_37 PM.webp';
-import defaultCtaImg from '../../../client/src/assets/Page10/ChatGPT Image Jul 24, 2026, 05_10_01 PM.webp';
+import defaultTestimonialsImg from '../../../client/src/assets/Page9/testimonials-doorway.webp';
+import defaultCtaImg from '../../../client/src/assets/Page10/next-chapter-cozy.webp';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -64,12 +64,12 @@ const SIDEBAR_TABS = [
   { id: 'faq', label: 'FAQ Section', icon: <Question size={18} />, description: 'Frequently asked questions' },
 ];
 
-// Reusable Image Editor Component with Prominent Dimensions & < 200 KB Enforcement
+// Reusable Image Editor Component with Prominent Dimensions & < 2 MB Enforcement
 function ImageEditorCard({
   title = 'Background Image',
   dimensions = '1536 × 1024 px (16:9 / 3:2)',
   orientation = 'Landscape (Horizontal)',
-  maxSize = 'Under 200 KB',
+  maxSize = 'Under 2 MB',
   imageUrl = '',
   fallbackUrl = '',
   aspectRatio = 'aspect-[16/9]',
@@ -80,7 +80,40 @@ function ImageEditorCard({
   extraControls = null,
   overlayOpacity = 40,
 }) {
-  const displayImage = imageUrl || fallbackUrl;
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [imageUrl, fallbackUrl]);
+
+  const getFullSrc = (src) => {
+    if (!src) return '';
+    if (typeof src !== 'string') return src;
+    if (
+      src.startsWith('data:') || 
+      src.startsWith('blob:') || 
+      src.startsWith('http://') || 
+      src.startsWith('https://') ||
+      src.startsWith('/@fs') ||
+      src.startsWith('/@id') ||
+      src.startsWith('/src') ||
+      src.startsWith('/node_modules') ||
+      src.startsWith('/@vite')
+    ) {
+      return src;
+    }
+    if (src.startsWith('/uploads/') || src.startsWith('/images/')) {
+      return `${API_URL}${src}`;
+    }
+    if (src.startsWith('/')) {
+      return `${API_URL}${src}`;
+    }
+    return src;
+  };
+
+  const primarySrc = getFullSrc(imageUrl);
+  const secondarySrc = getFullSrc(fallbackUrl);
+  const displayImage = imgError ? secondarySrc : (primarySrc || secondarySrc);
 
   return (
     <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-4 shadow-xl">
@@ -110,7 +143,7 @@ function ImageEditorCard({
           </div>
           <div className="flex flex-col">
             <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">File Size</span>
-            <span className="text-[#c79c6e] font-mono font-bold text-xs">Under 200 KB</span>
+            <span className="text-[#c79c6e] font-mono font-bold text-xs">{maxSize}</span>
           </div>
         </div>
         <p className="text-[0.68rem] text-white/50 bg-black/40 p-2 rounded border border-white/5 leading-relaxed">
@@ -125,6 +158,11 @@ function ImageEditorCard({
             <img
               src={displayImage}
               alt={title}
+              onError={() => {
+                if (!imgError && secondarySrc && displayImage !== secondarySrc) {
+                  setImgError(true);
+                }
+              }}
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
             />
             {/* Live Contrast Overlay Darkness */}
@@ -159,12 +197,12 @@ function ImageEditorCard({
         {isUploading ? (
           <>
             <span className="w-3.5 h-3.5 border-2 border-[#c79c6e] border-t-transparent rounded-full animate-spin" />
-            <span>Uploading (&lt; 200 KB)...</span>
+            <span>Uploading (&lt; 2 MB)...</span>
           </>
         ) : (
           <>
             <UploadSimple size={16} weight="bold" />
-            <span>Upload Image (Under 200 KB)</span>
+            <span>Upload Image (Under 2 MB)</span>
           </>
         )}
       </button>
@@ -398,11 +436,11 @@ export default function AdminHomeEditor() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Strict validation: under 200 KB
-    const MAX_SIZE_BYTES = 200 * 1024;
+    // Validation: under 2 MB
+    const MAX_SIZE_BYTES = 2 * 1024 * 1024;
     if (file.size > MAX_SIZE_BYTES) {
-      const sizeKB = (file.size / 1024).toFixed(1);
-      showToast(`Image is ${sizeKB} KB. Max allowed size is 200 KB. Please compress your image.`, 'error');
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      showToast(`Image is ${sizeMB} MB. Max allowed size is 2 MB. Please compress your image.`, 'error');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -446,7 +484,7 @@ export default function AdminHomeEditor() {
           handleSectionChange(uploadTargetField, finalUrl);
         }
       }
-      showToast('Image uploaded successfully (Under 200 KB)!');
+      showToast('Image uploaded successfully (Under 2 MB)!');
     } catch (err) {
       console.error('Image upload error:', err);
       showToast('Failed to upload image.', 'error');
@@ -571,7 +609,7 @@ export default function AdminHomeEditor() {
             </span>
           </div>
           <p className="text-xs text-white/50 mt-0.5">
-            Customize content and images. All image uploads must be <strong className="text-[#c79c6e]">under 200 KB</strong> for maximum performance.
+            Customize content and images. All image uploads must be <strong className="text-[#c79c6e]">under 2 MB</strong> for maximum performance.
           </p>
         </div>
 
@@ -665,7 +703,7 @@ export default function AdminHomeEditor() {
           <div className="mt-auto pt-6 border-t border-white/5">
             <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 flex items-center gap-3 text-xs text-white/50">
               <Info size={18} className="text-[#c79c6e] shrink-0" />
-              <span>All uploads must be under 200 KB. Clicking 'Save Section' instantly updates MongoDB.</span>
+              <span>All uploads must be under 2 MB. Clicking 'Save Section' instantly updates MongoDB.</span>
             </div>
           </div>
         </aside>
@@ -789,7 +827,7 @@ export default function AdminHomeEditor() {
                   <ImageEditorCard
                     title="Hero Banner Image"
                     dimensions="1920 × 1080 px (16:9)"
-                    maxSize="Under 200 KB"
+                    maxSize="Under 2 MB"
                     aspectRatio="aspect-[16/9]"
                     imageUrl={currentHero.bgImageUrl}
                     fallbackUrl={defaultHeroImg}
@@ -798,80 +836,6 @@ export default function AdminHomeEditor() {
                     isUploading={isUploading}
                     tip="Keep coach portrait focused towards the right half so left-side typography remains crisp."
                     overlayOpacity={currentGlobalOverlayOpacity}
-                    extraControls={
-                      <div className="pt-3 border-t border-white/5 flex flex-col gap-4">
-                        
-                        {/* Overlay Darkness Bar */}
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-medium text-white flex items-center gap-1.5">
-                              <SlidersHorizontal size={14} className="text-[#c79c6e]" />
-                              <span>Global Contrast Overlay Darkness</span>
-                            </label>
-                            <span className="text-xs font-mono text-[#c79c6e] font-semibold">
-                              {globalVisuals.overlayDarkness}%
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="90"
-                            step="1"
-                            value={globalVisuals.overlayDarkness}
-                            onChange={(e) => handleGlobalOverlayChange(Number(e.target.value))}
-                            className="w-full accent-[#c79c6e] cursor-pointer"
-                          />
-                        </div>
-
-                        {/* Master Contrast Bar */}
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-medium text-white flex items-center gap-1.5">
-                              <Sun size={14} className="text-[#c79c6e]" weight="bold" />
-                              <span>Master Image Contrast</span>
-                            </label>
-                            <span className="text-xs font-mono text-[#c79c6e] font-semibold">
-                              {globalVisuals.contrast}%
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min="50"
-                            max="150"
-                            step="1"
-                            value={globalVisuals.contrast}
-                            onChange={(e) => handleGlobalContrastChange(Number(e.target.value))}
-                            className="w-full accent-[#c79c6e] cursor-pointer"
-                          />
-                        </div>
-
-                        {/* Master Brightness Bar */}
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-medium text-white flex items-center gap-1.5">
-                              <Sun size={14} className="text-amber-400" weight="fill" />
-                              <span>Master Image Brightness</span>
-                            </label>
-                            <span className="text-xs font-mono text-[#c79c6e] font-semibold">
-                              {globalVisuals.brightness}%
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min="50"
-                            max="150"
-                            step="1"
-                            value={globalVisuals.brightness}
-                            onChange={(e) => handleGlobalBrightnessChange(Number(e.target.value))}
-                            className="w-full accent-[#c79c6e] cursor-pointer"
-                          />
-                        </div>
-
-                        <p className="text-[0.68rem] text-white/50 leading-relaxed bg-black/40 p-2.5 rounded border border-white/5">
-                          ⚡ <strong>Universal Master Controller:</strong> Adjusting these sliders sets the contrast, brightness, and background darkening on <strong>ALL images &amp; sections</strong> across the entire website simultaneously.
-                        </p>
-                      </div>
-                    }
                   />
                 </div>
               </div>
@@ -1113,7 +1077,7 @@ export default function AdminHomeEditor() {
                       title="Think Scene Landscape"
                       dimensions="1536 × 1024 px (16:9 / 3:2)"
                       orientation="Landscape (Horizontal)"
-                      maxSize="Under 200 KB"
+                      maxSize="Under 2 MB"
                       aspectRatio="aspect-[16/9]"
                       imageUrl={p.bgImg}
                       fallbackUrl={defaultThinkImg}
@@ -1217,7 +1181,7 @@ export default function AdminHomeEditor() {
                       title="Feel Scene Landscape"
                       dimensions="1536 × 1025 px (16:9 / 3:2)"
                       orientation="Landscape (Horizontal)"
-                      maxSize="Under 200 KB"
+                      maxSize="Under 2 MB"
                       aspectRatio="aspect-[16/9]"
                       imageUrl={p.bgImg}
                       fallbackUrl={defaultFeelImg}
@@ -1332,7 +1296,7 @@ export default function AdminHomeEditor() {
                       title="Decide Scene Landscape"
                       dimensions="1536 × 1024 px (16:9 / 3:2)"
                       orientation="Landscape (Horizontal)"
-                      maxSize="Under 200 KB"
+                      maxSize="Under 2 MB"
                       aspectRatio="aspect-[16/9]"
                       imageUrl={p.bgImg}
                       fallbackUrl={defaultDecideImg}
@@ -1482,7 +1446,7 @@ export default function AdminHomeEditor() {
                       title="Coaching Process Lounge Asset"
                       dimensions="1536 × 1024 px (16:9 / 3:2)"
                       orientation="Landscape (Horizontal)"
-                      maxSize="Under 200 KB"
+                      maxSize="Under 2 MB"
                       aspectRatio="aspect-[16/9]"
                       imageUrl={currentCoachingProcess.bgImg}
                       fallbackUrl={defaultCoachingProcessImg}
@@ -1753,7 +1717,7 @@ export default function AdminHomeEditor() {
                       title="Mountain Journey Scene"
                       dimensions="1536 × 1024 px (16:9 / 3:2)"
                       orientation="Landscape (Horizontal)"
-                      maxSize="Under 200 KB"
+                      maxSize="Under 2 MB"
                       aspectRatio="aspect-[16/9]"
                       imageUrl={currentCoachingJourney.bgImg}
                       fallbackUrl={defaultCoachingJourneyImg}
@@ -1928,7 +1892,7 @@ export default function AdminHomeEditor() {
                           title={`${name} Card Portrait`}
                           dimensions="800 × 1200 px (2:3)"
                           orientation="Portrait (Vertical)"
-                          maxSize="Under 200 KB"
+                          maxSize="Under 2 MB"
                           aspectRatio="aspect-[2/3]"
                           imageUrl={roleData.bgImg}
                           fallbackUrl={key === 'rolePilot' ? defaultPilotImg : key === 'roleCoach' ? defaultCoachImg : defaultHumanImg}
@@ -1978,7 +1942,7 @@ export default function AdminHomeEditor() {
               <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
                 <h2 className="font-serif text-2xl text-white">Testimonials Section</h2>
                 <p className="text-xs text-white/50">
-                  Manage the client reviews list, headline copy, and glowing background image (<strong className="text-[#c79c6e]">1920 × 1080 px, under 200 KB</strong>).
+                  Manage the client reviews list, headline copy, and glowing background image (<strong className="text-[#c79c6e]">1920 × 1080 px, under 2 MB</strong>).
                 </p>
               </div>
 
@@ -2198,7 +2162,7 @@ export default function AdminHomeEditor() {
                     title="Testimonials Gateway Background"
                     dimensions="1536 × 1024 px (16:9 / 3:2)"
                     orientation="Landscape (Horizontal)"
-                    maxSize="Under 200 KB"
+                    maxSize="Under 2 MB"
                     aspectRatio="aspect-[16/9]"
                     imageUrl={currentTestimonials.bgImg}
                     fallbackUrl={defaultTestimonialsImg}
@@ -2221,7 +2185,7 @@ export default function AdminHomeEditor() {
               <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
                 <h2 className="font-serif text-2xl text-white">Final Call to Action Banner</h2>
                 <p className="text-xs text-white/50">
-                  Manage the bottom booking card, inspiring closing quotes, and background coffee/study visual (<strong className="text-[#c79c6e]">1920 × 1080 px, under 200 KB</strong>).
+                  Manage the bottom booking card, inspiring closing quotes, and background coffee/study visual (<strong className="text-[#c79c6e]">1920 × 1080 px, under 2 MB</strong>).
                 </p>
               </div>
 
@@ -2320,7 +2284,7 @@ export default function AdminHomeEditor() {
                     title="CTA Coffee Cup Background"
                     dimensions="1536 × 1024 px (16:9 / 3:2)"
                     orientation="Landscape (Horizontal)"
-                    maxSize="Under 200 KB"
+                    maxSize="Under 2 MB"
                     aspectRatio="aspect-[16/9]"
                     imageUrl={currentCta.bgImg}
                     fallbackUrl={defaultCtaImg}

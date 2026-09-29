@@ -16,10 +16,10 @@
   --color-text-muted: #7a756b;
   --color-border: rgba(0, 0, 0, 0.1);
   --color-border-subtle: rgba(0, 0, 0, 0.05);
-  --color-gold: #802673;
+  --color-gold: #c9542f;
   --color-gold-hover: #a64117;
-  --color-gold-subtle: rgba(128, 38, 115, 0.12);
-  --color-gold-border: rgba(128, 38, 115, 0.35);
+  --color-gold-subtle: rgba(201, 84, 47, 0.12);
+  --color-gold-border: rgba(201, 84, 47, 0.35);
   --overlay-opacity: 0.20;
   --site-contrast: 100%;
   --site-brightness: 100%;
@@ -381,7 +381,7 @@ select:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
   box-shadow: 0 0 0px 1000px #ffffff inset !important;
   transition: background-color 5000000s ease-in-out 0s !important;
-  caret-color: #802673 !important;
+  caret-color: #c9542f !important;
   color: #111010 !important;
 }
 
@@ -399,7 +399,7 @@ select:-webkit-autofill:focus {
   -webkit-text-fill-color: #F5F2EB !important;
   -webkit-box-shadow: 0 0 0px 1000px #1a1a1a inset !important;
   box-shadow: 0 0 0px 1000px #1a1a1a inset !important;
-  caret-color: #802673 !important;
+  caret-color: #c9542f !important;
   color: #F5F2EB !important;
 }
 

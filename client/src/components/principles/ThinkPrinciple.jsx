@@ -21,8 +21,8 @@ export default function ThinkPrinciple() {
   const headlineWhite = data.title || 'THINK';
   const headlineGold = data.subtitle || 'CLEARLY.';
   const paragraphs = [
-    `<span class='italic text-lg text-[#111010]'>${data?.highlight || 'Clarity is the bridge between intention and action.'}</span>`,
-    `<span class='text-[#3d3832] text-lg'>....${data?.description || 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.'}</span>`
+    `<span class='italic text-xl lg:text-2xl text-[#111010] leading-relaxed' style='font-family: Fraunces, Georgia, serif;'>${data?.highlight || 'Clarity is the bridge between intention and action.'}</span>`,
+    `<span class='font-serif text-xl lg:text-2xl font-normal not-italic text-[#4a463e] leading-relaxed' style='font-family: Fraunces, Georgia, serif;'>....${data?.description || 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.'}</span>`
   ];
   const buttonText = data?.buttonText || 'SCROLL FOR NEXT PRINCIPLE';
   const bgImg = data?.bgImg || defaultBgImg;
@@ -38,6 +38,7 @@ export default function ThinkPrinciple() {
       headlineGoldItalic={false}
       paragraphs={paragraphs}
       buttonText={buttonText}
+      maxContentWidth="max-w-[365px]"
       activeStep={1}
       bannerTitle="DYNAMIC<br/>ELEMENT"
       bannerIcon={Sparkle}

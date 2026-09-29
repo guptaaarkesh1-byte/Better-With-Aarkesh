@@ -36,12 +36,12 @@ export default function Settings() {
           <div className="mb-6 md:mb-12">
             <button 
               onClick={() => navigate('/my-journey')}
-              className="flex items-center gap-2 text-[#7a756b] hover:text-[#802673] font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold transition-colors mb-4 sm:mb-8 cursor-pointer"
+              className="flex items-center gap-2 text-[#7a756b] hover:text-[#c9542f] font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold transition-colors mb-4 sm:mb-8 cursor-pointer"
             >
               <CaretLeft size={14} weight="bold" /> BACK
             </button>
             <div className="flex items-center gap-2 text-[#7a756b] font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-bold mb-3 sm:mb-4">
-              <span className="text-[#802673]">MY JOURNEY</span>
+              <span className="text-[#c9542f]">MY JOURNEY</span>
               <span>/</span>
               <span className="text-[#111010]">SETTINGS</span>
             </div>
@@ -60,7 +60,7 @@ export default function Settings() {
               onClick={() => handleTabChange('PROFILE')}
               className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shrink-0 md:shrink cursor-pointer ${
                 activeTab === 'PROFILE' 
-                  ? 'border border-[#802673] text-[#802673] bg-[#f6eaf4] shadow-xs' 
+                  ? 'border border-[#c9542f] text-[#c9542f] bg-[#fbf0eb] shadow-xs' 
                   : 'border border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5'
               }`}
             >
@@ -70,7 +70,7 @@ export default function Settings() {
               onClick={() => handleTabChange('NOTIFICATIONS')}
               className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shrink-0 md:shrink cursor-pointer ${
                 activeTab === 'NOTIFICATIONS' 
-                  ? 'border border-[#802673] text-[#802673] bg-[#f6eaf4] shadow-xs' 
+                  ? 'border border-[#c9542f] text-[#c9542f] bg-[#fbf0eb] shadow-xs' 
                   : 'border border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5'
               }`}
             >
@@ -80,7 +80,7 @@ export default function Settings() {
               onClick={() => handleTabChange('SECURITY')}
               className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shrink-0 md:shrink cursor-pointer ${
                 activeTab === 'SECURITY' 
-                  ? 'border border-[#802673] text-[#802673] bg-[#f6eaf4] shadow-xs' 
+                  ? 'border border-[#c9542f] text-[#c9542f] bg-[#fbf0eb] shadow-xs' 
                   : 'border border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5'
               }`}
             >

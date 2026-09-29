@@ -199,7 +199,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
           -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
           box-shadow: 0 0 0px 1000px #ffffff inset !important;
           -webkit-text-fill-color: #111010 !important;
-          caret-color: #802673 !important;
+          caret-color: #c9542f !important;
           color: #111010 !important;
           transition: background-color 5000s ease-in-out 0s !important;
         }
@@ -215,14 +215,14 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
               onClose();
             }
           }}
-          className="absolute top-5 right-5 text-[#111010]/40 hover:text-[#802673] transition-colors cursor-pointer"
+          className="absolute top-5 right-5 text-[#111010]/40 hover:text-[#c9542f] transition-colors cursor-pointer"
         >
           <X size={22} />
         </button>
 
         <div className="flex items-center gap-3 mb-2">
-          <div className="h-[1.5px] w-5 bg-[#802673]" />
-          <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
+          <div className="h-[1.5px] w-5 bg-[#c9542f]" />
+          <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
             {isLogin ? 'ACCOUNT ACCESS' : 'MEMBER ONBOARDING'}
           </span>
         </div>
@@ -243,10 +243,10 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
 
         {/* Course Student Notice */}
         {courseNotice && !isForgotPassword && (
-          <div className="mb-6 p-3.5 rounded-xl border border-[#802673]/30 bg-[#f6eaf4] flex items-start gap-3">
+          <div className="mb-6 p-3.5 rounded-xl border border-[#c9542f]/30 bg-[#fbf0eb] flex items-start gap-3">
             <span className="text-base leading-none mt-0.5">✨</span>
             <div>
-              <p className="text-[#802673] text-xs font-semibold">Mastery Course Member</p>
+              <p className="text-[#c9542f] text-xs font-semibold">Mastery Course Member</p>
               <p className="text-[#555047] text-[0.72rem] font-light mt-0.5 leading-relaxed">
                 {isLogin 
                   ? `Sign in with your course email (${defaultEmail || email || 'your email'}) to access your 3 free coaching sessions.`
@@ -261,7 +261,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             <>
               {(!isLogin && !isForgotPassword) && (
                 <div>
-                  <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1.5">
+                  <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
                     Full Name
                   </label>
                   <input 
@@ -269,14 +269,14 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-white/80 border border-black/10 focus:border-[#802673] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 shadow-2xs"
+                    className="w-full bg-white/80 border border-black/10 focus:border-[#c9542f] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 shadow-2xs"
                     placeholder="John Doe"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1.5">
+                <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
                   Email Address
                 </label>
                 <input 
@@ -284,17 +284,17 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white/80 border border-black/10 focus:border-[#802673] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 shadow-2xs"
+                  className="w-full bg-white/80 border border-black/10 focus:border-[#c9542f] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 shadow-2xs"
                   placeholder="john@example.com"
                 />
               </div>
 
               {(!isLogin && !isForgotPassword) && (
                 <div>
-                  <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1.5">
+                  <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
                     Phone Number
                   </label>
-                  <div className="flex items-center bg-white/80 border border-black/10 focus-within:border-[#802673] rounded-xl px-3 py-1.5 transition-all focus-within:bg-white shadow-2xs">
+                  <div className="flex items-center bg-white/80 border border-black/10 focus-within:border-[#c9542f] rounded-xl px-3 py-1.5 transition-all focus-within:bg-white shadow-2xs">
                     <select 
                       className="bg-transparent text-[#111010] font-sans focus:outline-none appearance-none pr-2 cursor-pointer outline-none text-sm font-medium"
                       value={countryCode}
@@ -322,7 +322,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
 
               {!isForgotPassword && (
                 <div>
-                  <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1.5">
+                  <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
                     Password
                   </label>
                   <div className="relative">
@@ -331,13 +331,13 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-white/80 border border-black/10 focus:border-[#802673] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 pr-10 shadow-2xs"
+                      className="w-full bg-white/80 border border-black/10 focus:border-[#c9542f] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 pr-10 shadow-2xs"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7a756b] hover:text-[#802673] transition-colors cursor-pointer"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7a756b] hover:text-[#c9542f] transition-colors cursor-pointer"
                     >
                       {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
                     </button>
@@ -347,7 +347,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
 
               {(!isLogin && !isForgotPassword) && (
                 <div>
-                  <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1.5">
+                  <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
                     Confirm Password
                   </label>
                   <div className="relative">
@@ -356,13 +356,13 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full bg-white/80 border border-black/10 focus:border-[#802673] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 pr-10 shadow-2xs"
+                      className="w-full bg-white/80 border border-black/10 focus:border-[#c9542f] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 pr-10 shadow-2xs"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7a756b] hover:text-[#802673] transition-colors cursor-pointer"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7a756b] hover:text-[#c9542f] transition-colors cursor-pointer"
                     >
                       {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
                     </button>
@@ -382,7 +382,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className="w-12 h-14 sm:w-14 sm:h-14 text-center bg-white border border-black/15 text-[#111010] font-sans text-2xl font-bold rounded-xl focus:outline-none focus:border-[#802673] shadow-2xs transition-colors"
+                    className="w-12 h-14 sm:w-14 sm:h-14 text-center bg-white border border-black/15 text-[#111010] font-sans text-2xl font-bold rounded-xl focus:outline-none focus:border-[#c9542f] shadow-2xs transition-colors"
                   />
                 ))}
               </div>
@@ -390,7 +390,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
               {isForgotPassword && (
                 <>
                   <div>
-                    <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1.5">
+                    <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
                       New Password
                     </label>
                     <div className="relative">
@@ -399,13 +399,13 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-white/80 border border-black/10 focus:border-[#802673] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 pr-10 shadow-2xs"
+                        className="w-full bg-white/80 border border-black/10 focus:border-[#c9542f] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 pr-10 shadow-2xs"
                         placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7a756b] hover:text-[#802673] transition-colors cursor-pointer"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7a756b] hover:text-[#c9542f] transition-colors cursor-pointer"
                       >
                         {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
                       </button>
@@ -413,7 +413,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                   </div>
 
                   <div>
-                    <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1.5">
+                    <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
                       Re-enter New Password
                     </label>
                     <div className="relative">
@@ -422,13 +422,13 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full bg-white/80 border border-black/10 focus:border-[#802673] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 pr-10 shadow-2xs"
+                        className="w-full bg-white/80 border border-black/10 focus:border-[#c9542f] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 pr-10 shadow-2xs"
                         placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7a756b] hover:text-[#802673] transition-colors cursor-pointer"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7a756b] hover:text-[#c9542f] transition-colors cursor-pointer"
                       >
                         {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
                       </button>
@@ -449,7 +449,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full justify-center bg-[#802673] hover:bg-[#6b1f60] disabled:bg-[#802673]/60 text-white py-3.5 rounded-full font-sans text-xs uppercase tracking-[0.2em] font-bold transition-all shadow-[0_4px_16px_rgba(128,38,115,0.25)] hover:shadow-[0_6px_20px_rgba(128,38,115,0.35)] cursor-pointer"
+              className="w-full justify-center bg-[#c9542f] hover:bg-[#6b1f60] disabled:bg-[#c9542f]/60 text-white py-3.5 rounded-full font-sans text-xs uppercase tracking-[0.2em] font-bold transition-all shadow-[0_4px_16px_rgba(201, 84, 47,0.25)] hover:shadow-[0_6px_20px_rgba(201, 84, 47,0.35)] cursor-pointer"
             >
               {isLoading ? 'PLEASE WAIT...' : (isForgotPassword ? (isForgotOtpStep ? 'RESET PASSWORD' : 'SEND OTP') : (isOtpStep ? 'VERIFY OTP' : (isLogin ? 'SIGN IN' : 'CREATE ACCOUNT')))}
             </button>
@@ -464,7 +464,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                 setIsForgotPassword(true);
                 setError('');
               }}
-              className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#802673] hover:text-[#111010] transition-colors cursor-pointer"
+              className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] hover:text-[#111010] transition-colors cursor-pointer"
             >
               Forgot Password?
             </button>
@@ -476,7 +476,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             <button 
               type="button"
               onClick={handleToggleMode}
-              className="font-sans text-[0.68rem] uppercase tracking-[0.18em] font-semibold text-[#555047] hover:text-[#802673] transition-colors cursor-pointer"
+              className="font-sans text-[0.68rem] uppercase tracking-[0.18em] font-semibold text-[#555047] hover:text-[#c9542f] transition-colors cursor-pointer"
             >
               {isLogin ? "Don't have an account? Register" : "Already have an account? Sign in"}
             </button>

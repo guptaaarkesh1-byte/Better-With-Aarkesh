@@ -69,8 +69,8 @@ export default function MyNotesTab() {
             A place for the thoughts you want to keep entirely your own.
           </p>
           <div className="flex items-center gap-2 mt-2 sm:mt-4">
-            <LockKey size={16} weight="bold" className="text-[#802673]" />
-            <span className="font-sans text-xs uppercase tracking-[0.2em] font-bold text-[#802673]">
+            <LockKey size={16} weight="bold" className="text-[#c9542f]" />
+            <span className="font-sans text-xs uppercase tracking-[0.2em] font-bold text-[#c9542f]">
               ONLY VISIBLE TO YOU
             </span>
           </div>
@@ -78,7 +78,7 @@ export default function MyNotesTab() {
         
         <button 
           onClick={() => openEditor()}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 rounded-xl bg-[#802673] text-white hover:bg-[#962e87] font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-all shrink-0 shadow-md cursor-pointer"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 rounded-xl bg-[#c9542f] text-white hover:bg-[#a64117] font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-all shrink-0 shadow-md cursor-pointer"
         >
           <Plus size={18} weight="bold" />
           <span>CREATE A NOTE</span>
@@ -92,7 +92,7 @@ export default function MyNotesTab() {
           <input 
             type="text" 
             placeholder="Search your notes"
-            className="w-full bg-white border border-black/10 rounded-xl py-3 pl-11 pr-4 text-xs sm:text-sm font-sans text-[#111010] placeholder-[#7a756b]/40 focus:outline-none focus:border-[#802673] transition-all shadow-2xs"
+            className="w-full bg-white border border-black/10 rounded-xl py-3 pl-11 pr-4 text-xs sm:text-sm font-sans text-[#111010] placeholder-[#7a756b]/40 focus:outline-none focus:border-[#c9542f] transition-all shadow-2xs"
           />
         </div>
       </div>
@@ -111,13 +111,13 @@ export default function MyNotesTab() {
           notes.map((note) => (
             <div 
               key={note._id} 
-              className="w-full rounded-xl sm:rounded-2xl border border-black/10 bg-white hover:border-[#802673]/40 hover:shadow-md transition-all duration-300 p-4 sm:p-5 md:p-6 flex flex-col group overflow-hidden shadow-xs"
+              className="w-full rounded-xl sm:rounded-2xl border border-black/10 bg-white hover:border-[#c9542f]/40 hover:shadow-md transition-all duration-300 p-4 sm:p-5 md:p-6 flex flex-col group overflow-hidden shadow-xs"
             >
               {/* Top Row */}
               <div className="flex flex-col justify-between items-start gap-3 sm:gap-4 w-full h-full">
                 {/* Top: Title & Date */}
                 <div className="flex flex-col gap-1.5 w-full">
-                  <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-[#111010] group-hover:text-[#802673] transition-colors leading-tight">
+                  <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-[#111010] group-hover:text-[#c9542f] transition-colors leading-tight">
                     {note.title}
                   </h3>
                   <p className="font-sans text-[#7a756b] text-xs sm:text-sm font-light">
@@ -137,13 +137,13 @@ export default function MyNotesTab() {
                 <div className="w-full flex items-center gap-3 pt-3 mt-1 border-t border-black/10">
                   <button 
                     onClick={() => openView(note)}
-                    className="flex-1 py-2.5 sm:py-3 rounded-xl border border-black/15 hover:border-[#802673] hover:bg-[#f6eaf4] text-[#802673] font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-all text-center cursor-pointer shadow-2xs"
+                    className="flex-1 py-2.5 sm:py-3 rounded-xl border border-black/15 hover:border-[#c9542f] hover:bg-[#fbf0eb] text-[#c9542f] font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-all text-center cursor-pointer shadow-2xs"
                   >
                     OPEN
                   </button>
                   <button 
                     onClick={() => openEditor(note)}
-                    className="flex-1 py-2.5 sm:py-3 rounded-xl border border-black/15 hover:border-[#802673] hover:bg-[#f6eaf4] text-[#802673] font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-all text-center cursor-pointer shadow-2xs"
+                    className="flex-1 py-2.5 sm:py-3 rounded-xl border border-black/15 hover:border-[#c9542f] hover:bg-[#fbf0eb] text-[#c9542f] font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-all text-center cursor-pointer shadow-2xs"
                   >
                     EDIT
                   </button>
@@ -159,7 +159,7 @@ export default function MyNotesTab() {
       <div className="flex justify-center mt-4 sm:mt-6 relative z-10">
         <button 
           onClick={() => navigate('/my-journey/notes')}
-          className="flex items-center gap-2 font-sans text-xs sm:text-sm uppercase tracking-[0.18em] font-bold text-[#802673] hover:text-[#962e87] transition-colors cursor-pointer"
+          className="flex items-center gap-2 font-sans text-xs sm:text-sm uppercase tracking-[0.18em] font-bold text-[#c9542f] hover:text-[#a64117] transition-colors cursor-pointer"
         >
           <span>VIEW ALL NOTES</span>
           <span>&rarr;</span>

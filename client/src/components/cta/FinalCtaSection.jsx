@@ -85,18 +85,24 @@ export default function FinalCtaSection() {
             {/* Header */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-4">
-                <div className="h-[1.5px] w-8 bg-[#802673]" />
-                <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
+                <div className="h-[1.5px] w-8 bg-[#c9542f]" />
+                <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
                   {eyebrow}
                 </span>
               </div>
               
-              <h2 className="font-serif text-5xl md:text-6xl text-[#111010] font-medium tracking-tight leading-[1.08]">
+              <h2 
+                className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08]"
+                style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+              >
                 {heading1}<br/>
-                <span className="text-[#802673] italic">{headingAccent}</span>
+                <span className="text-[#c9542f] not-italic font-medium">{headingAccent}</span>
               </h2>
               
-              <p className="text-[#2b2723] text-lg font-light max-w-md mt-1 leading-relaxed">
+              <p 
+                className="font-serif text-xl lg:text-2xl text-[#4a463e] font-normal tracking-wide leading-relaxed max-w-xl mt-2"
+                style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+              >
                 {description}
               </p>
             </div>
@@ -114,7 +120,7 @@ export default function FinalCtaSection() {
               </Link>
               
               <div className="flex items-center gap-2 opacity-70">
-                <LockKey className="text-[#802673] text-sm" weight="bold" />
+                <LockKey className="text-[#c9542f] text-sm" weight="bold" />
                 <span className="font-sans text-xs text-[#555047] tracking-wide">
                   {confidentialText}
                 </span>
@@ -126,18 +132,18 @@ export default function FinalCtaSection() {
           {/* Middle: Inspiring Quote (Above the bottom bar with clear luminous backdrop) */}
           <div className="w-full flex flex-col items-center text-center my-3 relative py-3 px-4">
             <h2 className="font-serif text-2xl md:text-3xl lg:text-[2.2rem] text-[#111010] font-semibold tracking-tight flex items-center gap-2">
-              <span className="text-[#802673] text-3xl md:text-4xl font-serif">“</span>
+              <span className="text-[#c9542f] text-3xl md:text-4xl font-serif">“</span>
               {quote1}
             </h2>
-            <h2 className="font-serif text-2xl md:text-3xl lg:text-[2.2rem] text-[#802673] italic font-medium tracking-tight flex items-center gap-2 mt-1">
+            <h2 className="font-serif text-2xl md:text-3xl lg:text-[2.2rem] text-[#c9542f] italic font-medium tracking-tight flex items-center gap-2 mt-1">
               {quote2}
-              <span className="text-[#802673] text-3xl md:text-4xl font-serif">”</span>
+              <span className="text-[#c9542f] text-3xl md:text-4xl font-serif">”</span>
             </h2>
             
             <div className="flex items-center justify-center gap-2 mt-3 opacity-80">
-              <LockKey className="text-[#802673] text-xs" weight="fill" />
+              <LockKey className="text-[#c9542f] text-xs" weight="fill" />
               <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#2b2723]">
-                THIS IS YOUR JOURNEY. I'M HERE <span className="text-[#802673]">WALKING</span> WITH YOU.
+                THIS IS YOUR JOURNEY. I'M HERE <span className="text-[#c9542f]">WALKING</span> WITH YOU.
               </span>
             </div>
           </div>
@@ -147,7 +153,7 @@ export default function FinalCtaSection() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 divide-y md:divide-y-0 md:divide-x divide-black/8">
               
               <div className="flex items-start gap-4 pt-4 md:pt-0 px-2 group">
-                <CalendarBlank className="text-[#802673] text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="regular" />
+                <CalendarBlank className="text-[#c9542f] text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="regular" />
                 <div className="flex flex-col">
                   <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#111010] mb-1">Flexible Scheduling</span>
                   <p className="font-sans text-[#555047] text-xs leading-relaxed">Sessions around your time, your way.</p>
@@ -155,7 +161,7 @@ export default function FinalCtaSection() {
               </div>
 
               <div className="flex items-start gap-4 pt-4 md:pt-0 px-2 group lg:pl-8">
-                <LockKey className="text-[#802673] text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="regular" />
+                <LockKey className="text-[#c9542f] text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="regular" />
                 <div className="flex flex-col">
                   <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#111010] mb-1">Confidential Space</span>
                   <p className="font-sans text-[#555047] text-xs leading-relaxed">A safe, judgment-free space to share openly.</p>
@@ -163,7 +169,7 @@ export default function FinalCtaSection() {
               </div>
 
               <div className="flex items-start gap-4 pt-4 md:pt-0 px-2 group lg:pl-8">
-                <User className="text-[#802673] text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="regular" />
+                <User className="text-[#c9542f] text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="regular" />
                 <div className="flex flex-col">
                   <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#111010] mb-1">Personalized Approach</span>
                   <p className="font-sans text-[#555047] text-xs leading-relaxed">Guidance tailored to you, not a one-size-fits-all plan.</p>
@@ -171,7 +177,7 @@ export default function FinalCtaSection() {
               </div>
 
               <div className="flex items-start gap-4 pt-4 md:pt-0 px-2 group lg:pl-8">
-                <Target className="text-[#802673] text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="regular" />
+                <Target className="text-[#c9542f] text-3xl shrink-0 group-hover:scale-110 transition-transform" weight="regular" />
                 <div className="flex flex-col">
                   <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#111010] mb-1">Focused Sessions</span>
                   <p className="font-sans text-[#555047] text-xs leading-relaxed">60 or 90-minute sessions that create real momentum.</p>

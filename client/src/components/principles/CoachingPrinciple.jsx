@@ -127,20 +127,48 @@
           <div className="w-full lg:w-[85%] xl:w-[80%] shrink-0 lg:pr-8">
             {/* Header */}
             <div className="flex items-center gap-4 mb-4 coaching-fade">
-              <div className="h-[1.5px] w-8 bg-[#802673] origin-left" />
-              <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
+              <div className="h-[1.5px] w-8 bg-[#c9542f] origin-left" />
+              <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
                 {data.eyebrowText || 'THE COACHING PROCESS'}
               </span>
             </div>
 
-            <h2 className="font-serif text-4xl md:text-5xl lg:text-[4rem] font-medium tracking-tight leading-[1.08] mb-2 flex flex-col items-start coaching-fade">
+            <h2 
+              className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 flex flex-col items-start coaching-fade"
+              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+            >
               <span className="text-[#111010] pb-1">{data.headingLine1 || 'A proven process'}</span>
-              <span className="text-[#802673] italic font-light pb-1">{data.headingAccent || 'built around you.'}</span>
+              <span className="text-[#c9542f] not-italic font-medium pb-1">{data.headingAccent || 'built around you.'}</span>
             </h2>
 
-            <p className="text-[#2b2723] text-lg lg:text-xl font-serif font-light tracking-wide leading-relaxed mb-6 coaching-fade max-w-lg">
-              <span className="italic text-xl lg:text-2xl text-[#111010]">{data.subtitle || 'A clear path from where you are, to where you want to be.'}</span><br />
-              <span className="text-[#555047] text-base">{data.subnote || 'Simple. Effective.'}</span>
+            <p 
+              className="font-serif font-normal tracking-wide leading-relaxed mb-6 coaching-fade max-w-xl"
+              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+            >
+              <span className="italic text-xl lg:text-2xl text-[#111010]">
+                {data.subtitle?.includes('to where you want to be') ? (
+                  <>
+                    {data.subtitle.split('to where you want to be')[0].trim()}
+                    <br />
+                    to where you want to be.
+                  </>
+                ) : data.subtitle?.includes('you want to be') ? (
+                  <>
+                    {data.subtitle.split('you want to be')[0].trim()}
+                    <br />
+                    you want to be{data.subtitle.split('you want to be').slice(1).join('you want to be')}
+                  </>
+                ) : (
+                  data.subtitle || (
+                    <>
+                      A clear path from where you are,<br />
+                      to where you want to be.
+                    </>
+                  )
+                )}
+              </span><br />
+              <br />
+              <span className="font-serif text-xl lg:text-2xl font-normal not-italic text-[#7a756b]">{data.subnote || 'Simple. Effective.'}</span>
             </p>
 
             {/* Grid Stepper */}
@@ -154,20 +182,20 @@
                     onClick={() => setActiveStep(isActive ? null : i)}
                     className={`coaching-step w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1.35rem)] relative z-50 flex gap-3.5 items-start group rounded-2xl p-4 transition-all duration-300 cursor-pointer ${
                       isActive 
-                        ? 'bg-[#f6eaf4] border border-[#802673]/50 shadow-[0_6px_24px_rgba(128, 38, 115,0.12)]' 
-                        : 'bg-white/85 border border-black/8 hover:bg-white hover:border-[#802673]/35 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                        ? 'bg-[#fbf0eb] border border-[#c9542f]/50 shadow-[0_6px_24px_rgba(201, 84, 47,0.12)]' 
+                        : 'bg-white/85 border border-black/8 hover:bg-white hover:border-[#c9542f]/35 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                     }`}
                   >
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
                       isActive 
-                        ? 'border border-[#802673] bg-[#802673] text-white shadow-xs' 
-                        : 'border border-black/10 bg-[#f5f1e8] text-[#111010] group-hover:border-[#802673]/40 group-hover:text-[#802673]'
+                        ? 'border border-[#c9542f] bg-[#c9542f] text-white shadow-xs' 
+                        : 'border border-black/10 bg-[#f5f1e8] text-[#111010] group-hover:border-[#c9542f]/40 group-hover:text-[#c9542f]'
                     }`}>
                       <Icon className="text-lg transition-transform duration-300 group-hover:scale-110" weight="regular" />
                     </div>
                     <div className="flex flex-col justify-center min-h-[40px] flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-sans text-[0.68rem] tracking-widest font-bold text-[#802673]">{step.num || `0${i+1}`}</span>
+                        <span className="font-sans text-[0.68rem] tracking-widest font-bold text-[#c9542f]">{step.num || `0${i+1}`}</span>
                         <span className="font-sans text-[0.72rem] uppercase tracking-[0.18em] font-bold text-[#111010]">{step.title}</span>
                       </div>
                       <div className={`grid transition-[grid-template-rows] duration-400 ease-out ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] group-hover:grid-rows-[1fr]'}`}>

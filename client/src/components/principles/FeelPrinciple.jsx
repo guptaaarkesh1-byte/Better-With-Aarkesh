@@ -20,9 +20,16 @@ export default function FeelPrinciple() {
   const eyebrow = data.eyebrow || 'PRINCIPLE 02';
   const headlineWhite = data.title || 'Feel honestly.';
   const headlineGold = data.subtitle || 'Heal deeply.';
+  const rawHighlight = data?.highlight || "You can't move forward, running from what you feel.";
+  const formattedHighlight = rawHighlight.includes('What you resist persists.') 
+    ? rawHighlight.replace('What you resist persists.', 'What you resist persists.<br />')
+    : rawHighlight.includes('\n')
+      ? rawHighlight.replace(/\n/g, '<br />')
+      : rawHighlight;
+
   const paragraphs = [
-    `<span class='italic text-xl lg:text-2xl leading-relaxed text-[#111010]'>${data?.highlight || "You can't move forward, running from what you feel."}</span>`,
-    `<span class='text-[#3d3832] text-lg lg:text-xl leading-relaxed'>....${data?.description || "We create the safe space to feel it all - without judgement"}</span>`
+    `<span class='italic text-xl lg:text-2xl leading-relaxed text-[#111010]' style='font-family: Fraunces, Georgia, serif;'>${formattedHighlight}</span>`,
+    `<span class='font-serif text-xl lg:text-2xl font-normal not-italic text-[#4a463e] leading-relaxed' style='font-family: Fraunces, Georgia, serif;'>....${data?.description || "We create the safe space to feel it all - without judgement"}</span>`
   ];
   const buttonText = data?.buttonText || '';
   const bgImg = data?.bgImg || defaultBgImg;
@@ -35,9 +42,10 @@ export default function FeelPrinciple() {
       eyebrow={eyebrow}
       headlineWhite={headlineWhite}
       headlineGold={headlineGold}
-      headlineGoldItalic={true}
+      headlineGoldItalic={false}
       paragraphs={paragraphs}
       buttonText={buttonText}
+      maxContentWidth="max-w-[365px]"
       activeStep={2}
       bannerTitle="DYNAMIC<br/>EXPERIENCE"
       bannerIcon={Sparkle}

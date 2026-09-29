@@ -152,7 +152,7 @@ export default function ProblemSection() {
         <div 
           className="golden-burst absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full pointer-events-none z-20"
           style={{
-            background: 'radial-gradient(circle, rgba(128, 38, 115,0.7) 0%, rgba(128, 38, 115,0.25) 35%, rgba(128, 38, 115,0) 70%)',
+            background: 'radial-gradient(circle, rgba(201, 84, 47,0.7) 0%, rgba(201, 84, 47,0.25) 35%, rgba(201, 84, 47,0) 70%)',
             willChange: 'transform, opacity'
           }}
         />
@@ -162,7 +162,7 @@ export default function ProblemSection() {
           {[...Array(30)].map((_, i) => (
             <div
               key={i}
-              className="dust-particle absolute rounded-full bg-[#802673]"
+              className="dust-particle absolute rounded-full bg-[#c9542f]"
               style={{
                 width: `${Math.random() * 3 + 1}px`,
                 height: `${Math.random() * 3 + 1}px`,

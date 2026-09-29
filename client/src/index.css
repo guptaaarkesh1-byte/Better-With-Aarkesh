@@ -11,10 +11,10 @@
   --color-text-muted: #7a756b;
   --color-border: rgba(0, 0, 0, 0.1);
   --color-border-subtle: rgba(0, 0, 0, 0.05);
-  --color-gold: #802673;
+  --color-gold: #c9542f;
   --color-gold-hover: #a64117;
-  --color-gold-subtle: rgba(128, 38, 115, 0.1);
-  --color-gold-border: rgba(128, 38, 115, 0.35);
+  --color-gold-subtle: rgba(201, 84, 47, 0.1);
+  --color-gold-border: rgba(201, 84, 47, 0.35);
 
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
   --heading: 'Fraunces', Georgia, serif;
@@ -33,7 +33,7 @@
 .editorial-dropcap {
   float: left;
   font-family: 'Fraunces', Georgia, serif;
-  color: #802673;
+  color: #c9542f;
   font-weight: 400;
   line-height: 0.78;
   font-size: 3.6rem;

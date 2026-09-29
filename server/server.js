@@ -73,8 +73,11 @@ app.use('/api/booking-settings', bookingSettingsRoutes);
 app.use('/api/questionnaire', questionnaireRoutes);
 app.use('/api/visual-settings', visualSettingsRoutes);
 
-// Make uploads folder static
+// Make static folders accessible to client and admin
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/images', express.static(path.join(__dirname, '../client/public/images')));
+app.use('/assets', express.static(path.join(__dirname, '../client/src/assets')));
+app.use(express.static(path.join(__dirname, '../client/public')));
 
 app.get('/', (req, res) => {
   res.send('API is running...');

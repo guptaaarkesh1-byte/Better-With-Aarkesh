@@ -22,9 +22,9 @@ export default function DecidePrinciple() {
   const headlineWhite = data.title || 'DECIDE';
   const headlineGold = data.subtitle || 'INTENTIONALLY.';
   const paragraphs = [
-    `<span class='italic text-xl lg:text-2xl leading-relaxed text-[#111010]'>${data?.highlight || 'Clarity without decision is just expensive loop.'}</span>`,
-    `<span class='text-lg lg:text-xl leading-relaxed text-[#3d3832]'>${data?.description || "We help you align your values, weigh what matters, and choose the path you're willing to walk."}</span>`,
-    `<span class='text-[#802673] text-xl lg:text-2xl font-medium'>${data?.closingLine || '....Then we help you walk it.'}</span>`
+    `<span class='italic text-xl lg:text-2xl leading-relaxed text-[#111010]' style='font-family: Fraunces, Georgia, serif;'>${data?.highlight || 'Clarity without decision is just expensive loop.'}</span>`,
+    `<span class='font-serif text-xl lg:text-2xl font-normal not-italic text-[#4a463e] leading-relaxed' style='font-family: Fraunces, Georgia, serif;'>${data?.description || "We help you align your values, weigh what matters, and choose the path you're willing to walk."}</span>`,
+    `<span class='font-serif text-[#c9542f] text-xl lg:text-2xl font-medium leading-relaxed' style='font-family: Fraunces, Georgia, serif;'>${data?.closingLine || '....Then we help you walk it.'}</span>`
   ];
   const buttonText = data?.buttonText || '';
   const bgImg = data?.bgImg || defaultBgImg;

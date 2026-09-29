@@ -6,24 +6,33 @@ import silhouetteImg from '../../assets/Page2/problem_silhouette.png';
 
 gsap.registerPlugin(ScrollTrigger);
 
+// =========================================================================
+// 🎛️ WORD CLOUD POSITION & STYLE CONTROLS
+// Yahan se aap har ek word ka position (top, left), size aur opacity change kar sakte hain!
+// =========================================================================
 const WORDS = [
-  { text: 'Overthinking', top: '15%', left: '40%', size: 'text-2xl', opacity: 'opacity-85' },
-  { text: 'Regret', top: '10%', left: '60%', size: 'text-lg', opacity: 'opacity-55' },
-  { text: 'Self doubt', top: '7%', left: '25%', size: 'text-xl', opacity: 'opacity-70' },
-  { text: 'Guilt', top: '25%', left: '55%', size: 'text-2xl', opacity: 'opacity-90' },
-  { text: 'Family', top: '22%', left: '75%', size: 'text-xl', opacity: 'opacity-70' },
-  { text: 'Uncertainty', top: '22%', left: '88%', size: 'text-sm', opacity: 'opacity-45' },
-  { text: 'Breakup', top: '35%', left: '32%', size: 'text-xl', opacity: 'opacity-95' },
-  { text: 'Career pressure', top: '35%', left: '65%', size: 'text-xl', opacity: 'opacity-85' },
-  { text: 'Failing', top: '35%', left: '92%', size: 'text-sm', opacity: 'opacity-40' },
-  { text: 'People pleasing', top: '85%', left: '25%', size: 'text-lg', opacity: 'opacity-70' },
-  { text: 'Loneliness', top: '45%', left: '80%', size: 'text-3xl', opacity: 'opacity-95' },
-  { text: 'Not enough', top: '55%', left: '35%', size: 'text-lg', opacity: 'opacity-65' },
-  { text: 'Past mistakes', top: '55%', left: '65%', size: 'text-lg', opacity: 'opacity-80' },
-  { text: 'Judgement', top: '55%', left: '90%', size: 'text-sm', opacity: 'opacity-50' },
-  { text: 'Financial stress', top: '78%', left: '30%', size: 'text-xl', opacity: 'opacity-70' },
-  { text: 'Comparison', top: '70%', left: '75%', size: 'text-xl', opacity: 'opacity-65' },
-  { text: 'What if?', top: '12%', left: '30%', size: 'text-sm', opacity: 'opacity-55' },
+  // --- Left Side Words (Heading ke aas-paas) ---
+  { text: 'Self doubt',       top: '1%',   left: '34%', size: 'text-xl',  opacity: 'opacity-70' },
+  { text: 'What if?',         top: '10%',  left: '30%', size: 'text-sm',  opacity: 'opacity-55' },
+  { text: 'Breakup',          top: '35%',  left: '36%', size: 'text-xl',  opacity: 'opacity-95' },
+  { text: 'Not enough',       top: '55%',  left: '35%', size: 'text-lg',  opacity: 'opacity-65' },
+  { text: 'Financial stress', top: '78%',  left: '80%', size: 'text-xl',  opacity: 'opacity-70' },
+  { text: 'People pleasing',  top: '90%',  left: '29%', size: 'text-lg',  opacity: 'opacity-70' },
+
+  // --- Center Area Words (Head / Silhouette ke upar) ---
+  { text: 'Overthinking',     top: '11%',  left: '40%', size: 'text-2xl', opacity: 'opacity-85' },
+  { text: 'Guilt',            top: '25%',  left: '55%', size: 'text-2xl', opacity: 'opacity-90' },
+  { text: 'Regret',           top: '10%',  left: '60%', size: 'text-lg',  opacity: 'opacity-55' },
+
+  // --- Right Side Words ---
+  { text: 'Family',           top: '22%',  left: '75%', size: 'text-xl',  opacity: 'opacity-70' },
+  { text: 'Uncertainty',      top: '22%',  left: '88%', size: 'text-sm',  opacity: 'opacity-45' },
+  { text: 'Career pressure',  top: '35%',  left: '65%', size: 'text-xl',  opacity: 'opacity-85' },
+  { text: 'Failing',          top: '35%',  left: '92%', size: 'text-sm',  opacity: 'opacity-40' },
+  { text: 'Loneliness',       top: '45%',  left: '80%', size: 'text-3xl', opacity: 'opacity-95' },
+  { text: 'Past mistakes',    top: '55%',  left: '65%', size: 'text-lg',  opacity: 'opacity-80' },
+  { text: 'Judgement',        top: '55%',  left: '90%', size: 'text-sm',  opacity: 'opacity-50' },
+  { text: 'Comparison',       top: '70%',  left: '75%', size: 'text-xl',  opacity: 'opacity-65' },
 ];
 
 export default function WordCloud() {

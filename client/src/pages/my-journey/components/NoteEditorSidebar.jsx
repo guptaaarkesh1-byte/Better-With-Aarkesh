@@ -97,7 +97,7 @@ export default function NoteEditorSidebar({ isOpen, onClose, noteToEdit, onSucce
         
         {/* Header */}
         <div className="flex justify-between items-center p-4 sm:p-6 md:px-10 border-b border-black/10 shrink-0 bg-[#ede7d8]">
-          <div className="flex items-center gap-2 text-[#802673] font-sans text-[0.65rem] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">
+          <div className="flex items-center gap-2 text-[#c9542f] font-sans text-[0.65rem] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">
             <LockKey size={15} weight="bold" />
             <span>{noteToEdit ? 'EDIT PRIVATE NOTE' : 'CREATE PRIVATE NOTE'}</span>
           </div>
@@ -168,7 +168,7 @@ export default function NoteEditorSidebar({ isOpen, onClose, noteToEdit, onSucce
           <button 
             onClick={handleSaveNote}
             disabled={!formData.title.trim() || isSaving}
-            className="px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl bg-[#802673] hover:bg-[#962e87] text-white disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shadow-md cursor-pointer"
+            className="px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl bg-[#c9542f] hover:bg-[#a64117] text-white disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shadow-md cursor-pointer"
           >
             {isSaving ? 'SAVING...' : 'SAVE NOTE'}
           </button>

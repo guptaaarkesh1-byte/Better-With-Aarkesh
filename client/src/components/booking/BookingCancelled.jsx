@@ -25,7 +25,7 @@ export default function BookingCancelled({ data, onRetry }) {
         <div className="w-full mb-6 sm:mb-8 text-left">
           <Link 
             to="/" 
-            className="inline-flex items-center gap-2 font-sans text-[0.68rem] uppercase tracking-widest text-[#7a756b] hover:text-[#802673] transition-colors font-semibold"
+            className="inline-flex items-center gap-2 font-sans text-[0.68rem] uppercase tracking-widest text-[#7a756b] hover:text-[#c9542f] transition-colors font-semibold"
           >
             <ArrowLeft className="text-base" />
             RETURN TO HOME
@@ -50,7 +50,7 @@ export default function BookingCancelled({ data, onRetry }) {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
             <button 
               onClick={onRetry}
-              className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-[#802673] text-white font-sans text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-[#111010] transition-all w-full sm:w-auto shadow-md cursor-pointer"
+              className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-[#c9542f] text-white font-sans text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-[#111010] transition-all w-full sm:w-auto shadow-md cursor-pointer"
             >
               TRY AGAIN
               <ArrowRight className="text-lg" weight="bold" />
@@ -69,7 +69,7 @@ export default function BookingCancelled({ data, onRetry }) {
         {/* Contact Note */}
         <div className="mt-6 pt-6 border-t border-black/10 w-full text-center">
           <p className="font-sans text-xs text-[#7a756b] mb-1.5">Having trouble with payment?</p>
-          <a href="mailto:coaching@betterwithaarkesh.com" className="font-sans text-xs text-[#802673] font-semibold underline hover:text-[#111010] transition-colors">
+          <a href="mailto:coaching@betterwithaarkesh.com" className="font-sans text-xs text-[#c9542f] font-semibold underline hover:text-[#111010] transition-colors">
             Contact Support →
           </a>
         </div>

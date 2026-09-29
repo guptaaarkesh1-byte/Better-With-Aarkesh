@@ -43,11 +43,11 @@ export default function OverviewSection() {
               onClick={() => setActiveTab('MY LIBRARY')}
               className={`flex-1 h-9 sm:h-10 flex justify-center items-center gap-2 px-3 sm:px-5 rounded-xl transition-all duration-200 border cursor-pointer ${
                 activeTab === 'MY LIBRARY' 
-                  ? 'border-[#802673] bg-[#f6eaf4] text-[#802673] shadow-xs font-semibold' 
+                  ? 'border-[#c9542f] bg-[#fbf0eb] text-[#c9542f] shadow-xs font-semibold' 
                   : 'border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5 font-medium'
               }`}
             >
-              <BookmarkSimple size={18} weight={activeTab === 'MY LIBRARY' ? 'fill' : 'regular'} className={`shrink-0 ${activeTab === 'MY LIBRARY' ? 'text-[#802673]' : ''}`} />
+              <BookmarkSimple size={18} weight={activeTab === 'MY LIBRARY' ? 'fill' : 'regular'} className={`shrink-0 ${activeTab === 'MY LIBRARY' ? 'text-[#c9542f]' : ''}`} />
               <span className="font-sans text-[0.68rem] sm:text-xs md:text-sm uppercase tracking-[0.15em] md:tracking-[0.2em] whitespace-nowrap leading-none">MY LIBRARY</span>
             </button>
 
@@ -56,11 +56,11 @@ export default function OverviewSection() {
               onClick={() => setActiveTab('COACHING')}
               className={`flex-1 h-9 sm:h-10 flex justify-center items-center gap-2 px-3 sm:px-5 rounded-xl transition-all duration-200 border cursor-pointer ${
                 activeTab === 'COACHING' 
-                  ? 'border-[#802673] bg-[#f6eaf4] text-[#802673] shadow-xs font-semibold' 
+                  ? 'border-[#c9542f] bg-[#fbf0eb] text-[#c9542f] shadow-xs font-semibold' 
                   : 'border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5 font-medium'
               }`}
             >
-              <ChatCircleText size={18} weight={activeTab === 'COACHING' ? 'fill' : 'regular'} className={`shrink-0 ${activeTab === 'COACHING' ? 'text-[#802673]' : ''}`} />
+              <ChatCircleText size={18} weight={activeTab === 'COACHING' ? 'fill' : 'regular'} className={`shrink-0 ${activeTab === 'COACHING' ? 'text-[#c9542f]' : ''}`} />
               <span className="font-sans text-[0.68rem] sm:text-xs md:text-sm uppercase tracking-[0.15em] md:tracking-[0.2em] whitespace-nowrap leading-none">COACHING</span>
             </button>
 
@@ -69,11 +69,11 @@ export default function OverviewSection() {
               onClick={() => setActiveTab('MY NOTES')}
               className={`flex-1 h-9 sm:h-10 flex justify-center items-center gap-2 px-3 sm:px-5 rounded-xl transition-all duration-200 border cursor-pointer ${
                 activeTab === 'MY NOTES' 
-                  ? 'border-[#802673] bg-[#f6eaf4] text-[#802673] shadow-xs font-semibold' 
+                  ? 'border-[#c9542f] bg-[#fbf0eb] text-[#c9542f] shadow-xs font-semibold' 
                   : 'border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5 font-medium'
               }`}
             >
-              <Notebook size={18} weight={activeTab === 'MY NOTES' ? 'fill' : 'regular'} className={`shrink-0 ${activeTab === 'MY NOTES' ? 'text-[#802673]' : ''}`} />
+              <Notebook size={18} weight={activeTab === 'MY NOTES' ? 'fill' : 'regular'} className={`shrink-0 ${activeTab === 'MY NOTES' ? 'text-[#c9542f]' : ''}`} />
               <span className="font-sans text-[0.68rem] sm:text-xs md:text-sm uppercase tracking-[0.15em] md:tracking-[0.2em] whitespace-nowrap leading-none">MY NOTES</span>
             </button>
           </div>
@@ -83,7 +83,7 @@ export default function OverviewSection() {
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-8 sm:pt-10 md:pt-12 pb-16 flex flex-col flex-1">
         {/* Header Section */}
         <div className="w-full max-w-2xl flex flex-col items-start justify-center mb-8 md:mb-10">
-          <span className="font-sans text-[0.65rem] sm:text-[0.7rem] md:text-[0.75rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-bold text-[#802673] mb-2 md:mb-3 block">
+          <span className="font-sans text-[0.65rem] sm:text-[0.7rem] md:text-[0.75rem] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-bold text-[#c9542f] mb-2 md:mb-3 block">
             MY JOURNEY
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#111010] tracking-tight leading-[1.15] mb-2 md:mb-3 font-medium">

@@ -232,12 +232,12 @@ export default function MyLibraryTab() {
             key={tab}
             onClick={() => setMainTab(tab)}
             className={`pb-3 sm:pb-4 font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-semibold transition-colors relative shrink-0 cursor-pointer ${
-              mainTab === tab ? 'text-[#802673]' : 'text-[#7a756b] hover:text-[#111010]'
+              mainTab === tab ? 'text-[#c9542f]' : 'text-[#7a756b] hover:text-[#111010]'
             }`}
           >
             {tab}
             {mainTab === tab && (
-              <span className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-[#802673]" />
+              <span className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-[#c9542f]" />
             )}
           </button>
         ))}
@@ -250,7 +250,7 @@ export default function MyLibraryTab() {
             key={tab}
             onClick={() => setSubTab(tab)}
             className={`font-sans text-xs uppercase tracking-[0.16em] font-bold transition-colors shrink-0 cursor-pointer pb-1 ${
-              subTab === tab ? 'text-[#802673] border-b border-[#802673]' : 'text-[#7a756b] hover:text-[#111010]'
+              subTab === tab ? 'text-[#c9542f] border-b border-[#c9542f]' : 'text-[#7a756b] hover:text-[#111010]'
             }`}
           >
             {tab}
@@ -275,7 +275,7 @@ export default function MyLibraryTab() {
                 return (
                   <div 
                     key={video._id} 
-                    className="group/vid cursor-pointer flex flex-col bg-white border border-black/10 hover:border-[#802673]/40 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-xs hover:shadow-md"
+                    className="group/vid cursor-pointer flex flex-col bg-white border border-black/10 hover:border-[#c9542f]/40 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-xs hover:shadow-md"
                     onClick={() => {
                       if (video.videoUrl && video.videoUrl.includes('instagram.com')) {
                         window.open(video.videoUrl, '_blank');
@@ -295,7 +295,7 @@ export default function MyLibraryTab() {
                       
                       {/* Center Play Icon */}
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-white/90 border border-black/10 flex items-center justify-center group-hover/vid:bg-[#802673] group-hover/vid:border-[#802673] text-[#111010] group-hover/vid:text-white group-hover/vid:scale-110 transition-all duration-300 shadow-lg">
+                        <div className="w-12 h-12 rounded-full bg-white/90 border border-black/10 flex items-center justify-center group-hover/vid:bg-[#c9542f] group-hover/vid:border-[#c9542f] text-[#111010] group-hover/vid:text-white group-hover/vid:scale-110 transition-all duration-300 shadow-lg">
                           <Play size={22} weight="fill" className="ml-0.5" />
                         </div>
                       </div>
@@ -310,12 +310,12 @@ export default function MyLibraryTab() {
                     <div className="p-5 flex flex-col flex-1 justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <PlayCircle size={14} className="text-[#802673]" weight="bold" />
-                          <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673]">
+                          <PlayCircle size={14} className="text-[#c9542f]" weight="bold" />
+                          <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f]">
                             VIDEO
                           </span>
                         </div>
-                        <h3 className="font-serif text-lg sm:text-xl text-[#111010] font-medium leading-snug group-hover/vid:text-[#802673] transition-colors line-clamp-2">
+                        <h3 className="font-serif text-lg sm:text-xl text-[#111010] font-medium leading-snug group-hover/vid:text-[#c9542f] transition-colors line-clamp-2">
                           {renderFormattedTitle(video.title)}
                         </h3>
                         <span className="font-sans text-[0.7rem] text-[#7a756b] block mt-2">
@@ -331,7 +331,7 @@ export default function MyLibraryTab() {
                             e.stopPropagation();
                             setActiveModalVideo(video);
                           }}
-                          className="flex-1 py-2.5 px-3 rounded-xl border border-black/15 hover:border-[#802673] hover:bg-[#f6eaf4] text-[#802673] font-sans text-xs uppercase tracking-[0.14em] font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          className="flex-1 py-2.5 px-3 rounded-xl border border-black/15 hover:border-[#c9542f] hover:bg-[#fbf0eb] text-[#c9542f] font-sans text-xs uppercase tracking-[0.14em] font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                         >
                           <Play size={12} weight="bold" />
                           WATCH
@@ -396,23 +396,23 @@ export default function MyLibraryTab() {
                 }
 
                 return (
-                  <div key={article._id} className="group/card w-full rounded-2xl border border-black/10 bg-white p-5 sm:p-6 md:p-7 flex flex-col justify-between hover:border-[#802673]/40 transition-all duration-200 shadow-xs hover:shadow-md">
+                  <div key={article._id} className="group/card w-full rounded-2xl border border-black/10 bg-white p-5 sm:p-6 md:p-7 flex flex-col justify-between hover:border-[#c9542f]/40 transition-all duration-200 shadow-xs hover:shadow-md">
                     
                     {/* Main Visible Content */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
                       <div className="flex flex-col gap-2 sm:gap-3">
                         <div className="flex items-center gap-2 text-[#7a756b]">
-                          <BookmarkSimple size={16} weight="bold" className="text-[#802673]" />
-                          <span className="font-sans text-xs uppercase tracking-[0.2em] font-bold text-[#802673]">ARTICLE</span>
+                          <BookmarkSimple size={16} weight="bold" className="text-[#c9542f]" />
+                          <span className="font-sans text-xs uppercase tracking-[0.2em] font-bold text-[#c9542f]">ARTICLE</span>
                         </div>
-                        <h3 className="font-serif text-xl sm:text-2xl md:text-2xl text-[#111010] transition-colors group-hover/card:text-[#802673] leading-snug font-medium">
+                        <h3 className="font-serif text-xl sm:text-2xl md:text-2xl text-[#111010] transition-colors group-hover/card:text-[#c9542f] leading-snug font-medium">
                           {renderFormattedTitle(article.title)}
                         </h3>
                       </div>
 
                       <div className="flex flex-row sm:flex-col sm:items-end justify-between sm:text-right shrink-0 gap-1.5 pt-2 sm:pt-0 border-t border-black/5 sm:border-0">
                         {mainTab !== 'COMPLETED' && (
-                          <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold text-[#802673]">
+                          <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold text-[#c9542f]">
                             {hasLegacyProgress && readPercentage === 0 ? 'IN PROGRESS' : `${readPercentage}% READ`}
                           </div>
                         )}
@@ -432,7 +432,7 @@ export default function MyLibraryTab() {
                           e.stopPropagation(); 
                           navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}&from=my-journey`, { state: { from: 'my-journey' } }); 
                         }}
-                        className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-black/15 hover:border-[#802673] hover:bg-[#f6eaf4] text-[#802673] font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-all text-center cursor-pointer shadow-2xs"
+                        className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-black/15 hover:border-[#c9542f] hover:bg-[#fbf0eb] text-[#c9542f] font-sans text-xs sm:text-sm uppercase tracking-[0.16em] font-bold transition-all text-center cursor-pointer shadow-2xs"
                       >
                         {mainTab === 'COMPLETED' ? 'REVISIT' : 'CONTINUE'}
                       </button>

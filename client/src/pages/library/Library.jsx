@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
-import { List, X, ArrowDown, ArrowRight } from '@phosphor-icons/react';
+import { List, X, ArrowDown, ArrowRight, Play, User, BookmarkSimple, SignOut, LockKey } from '@phosphor-icons/react';
 import { CURATED_LIBRARY_ARTICLES } from '../../constants/libraryArticlesData';
+import LoginModal from '../../components/layout/LoginModal';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -11,7 +12,22 @@ export default function Library() {
   const [searchQuery, setSearchQuery] = useState('');
   const [publishedArticles, setPublishedArticles] = useState([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token'));
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const searchWrapRef = useRef(null);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setIsLoggedIn(!!localStorage.getItem('token'));
+    };
+    handleAuthChange();
+    window.addEventListener('auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (window.lenis) {
@@ -67,7 +83,7 @@ export default function Library() {
       case 'self': return { bg: '#f0eee8', color: '#111010' };
       case 'change': return { bg: '#e5f2e8', color: '#2f4a34' };
       case 'decisions': return { bg: '#faece6', color: '#c85628' };
-      case 'difficult-people': return { bg: '#f6eaf4', color: '#a64117' };
+      case 'difficult-people': return { bg: '#fbf0eb', color: '#a64117' };
       case 'communication': return { bg: '#e8e6e8', color: '#141314' };
       default: return { bg: '#f0eee8', color: '#111010' };
     }
@@ -171,7 +187,7 @@ export default function Library() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 22px 40px;
+          padding: 20px 48px;
           border-bottom: 1px solid var(--line);
           position: relative;
           z-index: 10;
@@ -179,70 +195,184 @@ export default function Library() {
         }
 
         .library-root .logo {
-          font-family: 'Fraunces', serif;
-          font-size: 21px;
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: clamp(26px, 2.5vw, 34px);
           font-weight: 600;
-          letter-spacing: -0.01em;
+          letter-spacing: -0.02em;
+          line-height: 1.1;
         }
 
         .library-root .logo em {
-          font-style: italic;
-          color: var(--rel);
-          font-family: 'Fraunces', serif;
+          font-style: normal;
+          color: #c9542f;
+          font-family: 'Fraunces', Georgia, serif;
+          font-weight: 600;
+          margin-left: 2px;
         }
 
         .library-root .navlinks {
           display: flex;
-          gap: 28px;
-          font-size: 12px;
+          align-items: center;
+          gap: clamp(18px, 2.2vw, 34px);
+          font-size: 13px;
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.16em;
           text-transform: uppercase;
         }
 
         .library-root .navlinks a {
-          transition: opacity 0.2s;
+          color: #111010;
+          transition: all 0.2s ease;
+          position: relative;
+          padding: 4px 0;
         }
 
         .library-root .navlinks a:hover {
-          opacity: 0.7;
+          color: #c9542f;
+          opacity: 1;
         }
 
         .library-root .navlinks a.active {
+          color: #111010;
           text-decoration: underline;
-          text-underline-offset: 5px;
+          text-underline-offset: 6px;
+          text-decoration-thickness: 2px;
           opacity: 1;
         }
 
         .library-root .navcta {
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 12px;
           font-size: 12px;
           font-weight: 700;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
         }
 
-        .library-root .navcta .my-journey-btn {
-          transition: opacity 0.2s;
+        .library-root .navcta .nav-btn-outline {
+          padding: 8px 16px;
+          border-radius: 2px;
+          border: 1px solid rgba(0, 0, 0, 0.22);
+          color: #111010;
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+          background: transparent;
+          text-decoration: none;
         }
 
-        .library-root .navcta .my-journey-btn:hover {
-          opacity: 0.7;
+        .library-root .navcta .nav-btn-outline:hover {
+          border-color: #c9542f;
+          color: #c9542f;
+          background: #fbf0eb;
+        }
+
+        .library-root .navcta .account-wrapper {
+          position: relative;
+        }
+
+        .library-root .navcta .account-wrapper:hover .account-dropdown {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+
+        .library-root .navcta .account-dropdown {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          padding-top: 8px;
+          width: 210px;
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(8px);
+          transition: all 0.25s ease;
+          pointer-events: none;
+          z-index: 200;
+        }
+
+        .library-root .navcta .account-card {
+          border-radius: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          background: #ffffff;
+          padding: 8px;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .library-root .navcta .account-card .user-title {
+          font-family: 'Inter', sans-serif;
+          font-size: 10px;
+          letter-spacing: 0.15em;
+          font-weight: 700;
+          color: rgba(0, 0, 0, 0.5);
+          margin: 6px 0 6px 12px;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+
+        .library-root .navcta .account-card button {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          letter-spacing: 0.12em;
+          font-weight: 600;
+          color: rgba(0, 0, 0, 0.8);
+          background: none;
+          border: none;
+          padding: 8px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          text-align: left;
+          width: 100%;
+          transition: background 0.15s, color 0.15s;
+        }
+
+        .library-root .navcta .account-card button:hover {
+          background: rgba(0, 0, 0, 0.05);
+          color: #111010;
+        }
+
+        .library-root .navcta .account-card button.logout-btn {
+          color: #c9542f;
+          font-weight: 700;
+          margin-top: 4px;
+        }
+
+        .library-root .navcta .account-card button.logout-btn:hover {
+          background: rgba(201, 84, 47, 0.1);
         }
 
         .library-root .navcta .book {
           background: var(--ink);
           color: var(--cream);
-          padding: 11px 20px;
+          padding: 9px 20px;
           border-radius: 2px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
           transition: transform 0.2s, background 0.2s;
           cursor: pointer;
           display: inline-block;
+          border: none;
         }
 
         .library-root .navcta .book:hover {
-          background: #2a2828;
+          background: #c9542f;
           transform: translateY(-1px);
         }
 
@@ -263,7 +393,8 @@ export default function Library() {
           .library-root .navlinks { display: none; }
           .library-root header.nav { padding: 16px 20px; }
           .library-root .mobile-toggle { display: block; }
-          .library-root .navcta .my-journey-btn { display: none; }
+          .library-root .navcta .nav-btn-outline,
+          .library-root .navcta .account-wrapper { display: none; }
           .library-root .mobile-drawer {
             display: flex;
             flex-direction: column;
@@ -272,11 +403,18 @@ export default function Library() {
             background: var(--cream);
             border-bottom: 1px solid var(--line);
           }
-          .library-root .mobile-drawer a {
+          .library-root .mobile-drawer a,
+          .library-root .mobile-drawer button {
             font-size: 15px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.04em;
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 0;
+            cursor: pointer;
+            color: inherit;
           }
         }
 
@@ -343,7 +481,7 @@ export default function Library() {
           transform: translate(-50%, -50%);
           width: 500px;
           height: 240px;
-          background: radial-gradient(circle, rgba(128, 38, 115, 0.08) 0%, rgba(245, 241, 232, 0) 70%);
+          background: radial-gradient(circle, rgba(201, 84, 47, 0.08) 0%, rgba(245, 241, 232, 0) 70%);
           filter: blur(60px);
           pointer-events: none;
           z-index: 0;
@@ -359,8 +497,8 @@ export default function Library() {
           letter-spacing: 0.14em;
           text-transform: uppercase;
           color: var(--rel);
-          background: rgba(128, 38, 115, 0.08);
-          border: 1px solid rgba(128, 38, 115, 0.2);
+          background: rgba(201, 84, 47, 0.08);
+          border: 1px solid rgba(201, 84, 47, 0.2);
           padding: 5px 14px;
           border-radius: 100px;
           margin-bottom: 14px;
@@ -402,6 +540,9 @@ export default function Library() {
         }
 
         /* ---------- HERO (CREATIVE FLOATING CLOUD HERO) ---------- */
+        /* =========================================================
+           🎛️ POSITION CONTROLS PANEL (Yahan se sabhi items move karein)
+           ========================================================= */
         .library-root .hero {
           display: flex;
           flex-direction: column;
@@ -415,37 +556,76 @@ export default function Library() {
           z-index: 80;
           overflow: visible;
           box-sizing: border-box;
+
+          /* --- 1. RELATIONSHIPS (Top-Left) --- */
+          --rel-top: 30px;
+          --rel-left: 25%;
+
+          /* --- 2. SELF (Top-Right) --- */
+          --self-top: 30px;
+          --self-right: 25%;
+
+          /* --- 3. CHANGE (Middle-Left) --- */
+          --change-top: 30%;
+          --change-left: -1%;
+
+          /* --- 4. DECISIONS (Middle-Right) --- */
+          --dec-top: 30%;
+          --dec-right: -2%;
+
+          /* --- 5. DIFFICULT PEOPLE (Bottom-Left) --- */
+          --diff-bottom: 40px;
+          --diff-left: 5%;
+
+          /* --- 6. COMMUNICATION (Bottom-Right) --- */
+          --comm-bottom: 40px;
+          --comm-right: 7%;
+
+          /* --- 7. SEARCH BAR (Upar/Neeche move karne ke liye) --- */
+          --search-margin-top: -38px;
+          --search-max-width: 330px;
         }
 
         .library-root .hero-cloud-stage {
           position: relative;
           width: 100%;
-          max-width: 900px;
-          min-height: 270px;
+          max-width: 760px;
+          min-height: 230px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 24px 16px;
+          padding: 30px 16px 14px;
           margin: 0 auto;
         }
 
         .library-root .hero-cloud-stage h1 {
-          font-size: clamp(30px, 4.4vw, 52px);
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: clamp(38px, 4.8vw, 64px);
+          font-weight: 400;
+          font-style: normal;
+          color: #111010;
           margin: 0;
-          line-height: 1.2;
-          letter-spacing: -0.01em;
+          line-height: 1.08;
+          letter-spacing: -0.02em;
           position: relative;
           z-index: 5;
-          max-width: 640px;
+          max-width: 620px;
           text-align: center;
+        }
+
+        .library-root .hero-cloud-stage h1 em {
+          font-family: 'Fraunces', Georgia, serif;
+          font-style: italic;
+          color: #c9542f;
+          font-weight: 400;
         }
 
         /* Floating Cloud Pills */
         .library-root .cat-cloud-pill {
           display: inline-flex;
           align-items: center;
-          padding: 7px 18px;
+          padding: 6px 16px;
           border-radius: 40px;
           font-family: 'Inter', sans-serif;
           font-size: 11px;
@@ -460,45 +640,43 @@ export default function Library() {
           user-select: none;
         }
 
-        /* Desktop: Floating Cloud Coordinates Directly Above, Below, and Around Title */
+        /* Desktop: Positioned via easy Control Variables above */
         @media (min-width: 860px) {
           .library-root .cat-cloud-pill {
             position: absolute;
             z-index: 10;
           }
-          /* Top Left & Top Right - Floating directly above heading */
+          /* Top Crest - Directly above heading */
           .library-root .cat-cloud-pill.p-rel {
-            top: 2%;
-            left: 20%;
+            top: var(--rel-top, -6px);
+            left: var(--rel-left, 22%);
             animation: cloudDrift1 5.2s ease-in-out infinite;
           }
           .library-root .cat-cloud-pill.p-self {
-            top: 0%;
-            right: 22%;
+            top: var(--self-top, -8px);
+            right: var(--self-right, 22%);
             animation: cloudDrift2 6.0s ease-in-out infinite 0.7s;
           }
-          /* Mid Left & Mid Right - Flanking heading */
+          /* Mid Flanks - Hugging heading sides closely */
           .library-root .cat-cloud-pill.p-change {
-            top: 50%;
-            left: 2%;
-            transform: translateY(-50%);
+            top: var(--change-top, 40%);
+            left: var(--change-left, 2%);
             animation: cloudDrift3 5.6s ease-in-out infinite 1.3s;
           }
           .library-root .cat-cloud-pill.p-dec {
-            top: 48%;
-            right: 2%;
-            transform: translateY(-50%);
+            top: var(--dec-top, 38%);
+            right: var(--dec-right, 2%);
             animation: cloudDrift1 6.4s ease-in-out infinite 1.9s;
           }
-          /* Bottom Left & Bottom Right - Floating directly below heading */
+          /* Bottom Base - Tightly under heading flanking search */
           .library-root .cat-cloud-pill.p-diff {
-            bottom: 2%;
-            left: 18%;
+            bottom: var(--diff-bottom, -8px);
+            left: var(--diff-left, 12%);
             animation: cloudDrift2 5.4s ease-in-out infinite 1.0s;
           }
           .library-root .cat-cloud-pill.p-comm {
-            bottom: 0%;
-            right: 20%;
+            bottom: var(--comm-bottom, -8px);
+            right: var(--comm-right, 12%);
             animation: cloudDrift3 6.2s ease-in-out infinite 1.6s;
           }
         }
@@ -534,8 +712,8 @@ export default function Library() {
         }
 
         @keyframes cloudDrift3 {
-          0%, 100% { transform: translateY(-50%) rotate(-1deg); }
-          50% { transform: translateY(calc(-50% - 7px)) rotate(1.5deg); }
+          0%, 100% { transform: translateY(0px) rotate(-1deg); }
+          50% { transform: translateY(-7px) rotate(1.5deg); }
         }
 
         .library-root .cat-cloud-pill.p-rel {
@@ -612,9 +790,9 @@ export default function Library() {
 
         /* Reflective Search Exploration Bar - Compact & Sleek */
         .library-root .hero-search-wrap {
-          max-width: 320px;
+          max-width: var(--search-max-width, 330px);
           width: 100%;
-          margin: 10px auto 0;
+          margin: var(--search-margin-top, 16px) auto 0;
           position: relative;
           z-index: 100;
         }
@@ -633,7 +811,7 @@ export default function Library() {
 
         .library-root .hero-search-bar:focus-within {
           border-color: var(--rel);
-          box-shadow: 0 8px 24px -4px rgba(128, 38, 115, 0.16);
+          box-shadow: 0 8px 24px -4px rgba(201, 84, 47, 0.16);
         }
 
         .library-root .hero-search-bar input {
@@ -694,9 +872,9 @@ export default function Library() {
         .library-root .scroll-indicator:hover {
           color: var(--rel);
           background: #ffffff;
-          border-color: rgba(128, 38, 115, 0.3);
+          border-color: rgba(201, 84, 47, 0.3);
           transform: translateY(2px);
-          box-shadow: 0 6px 18px rgba(128, 38, 115, 0.14);
+          box-shadow: 0 6px 18px rgba(201, 84, 47, 0.14);
         }
 
         .library-root .scroll-indicator .arrow-icon-wrap {
@@ -1141,7 +1319,7 @@ export default function Library() {
           transform: translate(-50%, -50%);
           width: 580px;
           height: 320px;
-          background: radial-gradient(circle, rgba(128, 38, 115, 0.2) 0%, rgba(13, 12, 14, 0) 70%);
+          background: radial-gradient(circle, rgba(201, 84, 47, 0.2) 0%, rgba(13, 12, 14, 0) 70%);
           filter: blur(80px);
           pointer-events: none;
           z-index: 0;
@@ -1341,10 +1519,75 @@ export default function Library() {
         </nav>
 
         <div className="navcta">
-          <Link to="/my-journey" className="my-journey-btn">My Journey</Link>
-          <button onClick={handleBookClick} className="book" style={{ border: 'none' }}>Book a Session</button>
+          {/* Course Button */}
+          <button 
+            type="button"
+            onClick={() => navigate('/course')} 
+            className="nav-btn-outline"
+          >
+            <Play size={12} weight="fill" /> COURSE
+          </button>
+
+          {/* Login / My Journey */}
+          {!isLoggedIn ? (
+            <button 
+              type="button"
+              onClick={() => setShowLoginModal(true)} 
+              className="nav-btn-outline"
+            >
+              <User size={13} weight="regular" /> LOGIN
+            </button>
+          ) : (
+            <div className="account-wrapper">
+              <button 
+                type="button"
+                onClick={() => navigate('/my-journey')} 
+                className="nav-btn-outline"
+              >
+                <BookmarkSimple size={13} weight="regular" /> MY JOURNEY
+              </button>
+              <div className="account-dropdown">
+                <div className="account-card">
+                  <span className="user-title">
+                    {JSON.parse(localStorage.getItem('userInfo') || '{}')?.fullName || 'MY ACCOUNT'}
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={() => navigate('/my-journey/settings')}
+                  >
+                    <User size={13} /> Profile & Settings
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => navigate('/my-journey/settings?tab=SECURITY')}
+                  >
+                    <LockKey size={13} /> Privacy
+                  </button>
+                  <button 
+                    type="button"
+                    className="logout-btn"
+                    onClick={() => {
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('userInfo');
+                      setIsLoggedIn(false);
+                      window.dispatchEvent(new Event('auth-change'));
+                      navigate('/library');
+                    }}
+                  >
+                    <SignOut size={13} weight="bold" /> Log Out
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Book a Session Button */}
+          <button type="button" onClick={handleBookClick} className="book">
+            BOOK A SESSION
+          </button>
           
           <button 
+            type="button"
             className="mobile-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle navigation menu"
@@ -1363,8 +1606,20 @@ export default function Library() {
           <Link to="/#testimonials" onClick={() => setMobileMenuOpen(false)}>Testimonials</Link>
           <Link to="/library" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'underline' }}>Library</Link>
           <Link to="/#faq" onClick={() => setMobileMenuOpen(false)}>FAQ</Link>
-          <Link to="/my-journey" onClick={() => setMobileMenuOpen(false)}>My Journey</Link>
           <Link to="/course" onClick={() => setMobileMenuOpen(false)}>Course</Link>
+          {!isLoggedIn ? (
+            <button 
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setShowLoginModal(true);
+              }}
+            >
+              Login
+            </button>
+          ) : (
+            <Link to="/my-journey" onClick={() => setMobileMenuOpen(false)}>My Journey</Link>
+          )}
         </div>
       )}
 
@@ -1407,7 +1662,7 @@ export default function Library() {
             Self
           </button>
           
-          <h1 className="serif-i">What are you trying to <em>understand</em>?</h1>
+          <h1 className="hero-heading">What are you trying to <em>understand?</em></h1>
 
           <button type="button" onClick={() => handleScrollTo('change')} className="cat-cloud-pill p-change">
             Change
@@ -1791,6 +2046,9 @@ export default function Library() {
           </button>
         </div>
       </section>
+
+      {/* Login Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );
 }

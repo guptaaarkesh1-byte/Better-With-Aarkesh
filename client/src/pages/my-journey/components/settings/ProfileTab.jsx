@@ -21,7 +21,7 @@ export default function ProfileTab() {
           <input 
             type="text" 
             defaultValue={userInfo.fullName || ''}
-            className="w-full bg-[#fcfbfa] border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] transition-colors"
+            className="w-full bg-[#fcfbfa] border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] transition-colors"
           />
         </div>
 
@@ -42,7 +42,7 @@ export default function ProfileTab() {
           <input 
             type="text" 
             defaultValue={userInfo.phoneNumber ? `${userInfo.countryCode || '+91'} ${userInfo.phoneNumber}` : ''}
-            className="w-full bg-[#fcfbfa] border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] transition-colors"
+            className="w-full bg-[#fcfbfa] border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] transition-colors"
           />
         </div>
 
@@ -56,7 +56,7 @@ export default function ProfileTab() {
             type="text" 
             defaultValue={userInfo.dob || ''}
             placeholder="DD / MM / YYYY"
-            className="w-full bg-[#fcfbfa] border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] transition-colors placeholder-[#7a756b]/40"
+            className="w-full bg-[#fcfbfa] border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] transition-colors placeholder-[#7a756b]/40"
           />
         </div>
 
@@ -68,7 +68,7 @@ export default function ProfileTab() {
           </label>
           <select 
             defaultValue={userInfo.gender || 'Prefer not to say'}
-            className="w-full bg-[#fcfbfa] border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#802673] transition-colors cursor-pointer"
+            className="w-full bg-[#fcfbfa] border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] transition-colors cursor-pointer"
           >
             <option value="Prefer not to say">Prefer not to say</option>
             <option value="Male">Male</option>
@@ -80,13 +80,13 @@ export default function ProfileTab() {
 
       {/* Info Message */}
       <div className="flex items-start gap-3 text-[#555047] font-sans text-xs leading-relaxed mb-10 max-w-sm">
-        <Info size={16} className="shrink-0 mt-0.5 text-[#802673]" />
+        <Info size={16} className="shrink-0 mt-0.5 text-[#c9542f]" />
         <p>Your email or mobile number is used to sign in. A separate username is not required.</p>
       </div>
 
       {/* Action Buttons */}
       <div className="flex items-center gap-4 mt-auto">
-        <button className="px-6 py-3 bg-[#802673] text-white rounded-xl text-xs uppercase tracking-[0.16em] font-bold hover:bg-[#962e87] transition-all shadow-md cursor-pointer">
+        <button className="px-6 py-3 bg-[#c9542f] text-white rounded-xl text-xs uppercase tracking-[0.16em] font-bold hover:bg-[#a64117] transition-all shadow-md cursor-pointer">
           SAVE CHANGES
         </button>
         <button className="px-6 py-3 border border-black/10 text-[#555047] hover:text-[#111010] rounded-xl text-xs uppercase tracking-[0.16em] font-bold transition-colors cursor-pointer">

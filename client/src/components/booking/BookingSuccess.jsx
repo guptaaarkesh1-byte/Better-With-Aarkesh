@@ -65,7 +65,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
         <div className="flex w-full mb-6 sm:mb-8">
           <Link 
             to="/" 
-            className="flex items-center gap-2 font-sans text-[0.68rem] uppercase tracking-widest text-[#7a756b] hover:text-[#802673] transition-colors font-semibold"
+            className="flex items-center gap-2 font-sans text-[0.68rem] uppercase tracking-widest text-[#7a756b] hover:text-[#c9542f] transition-colors font-semibold"
           >
             <ArrowLeft className="text-base" />
             {settings.backButtonText || 'RETURN TO HOME'}
@@ -74,10 +74,10 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
 
         {/* Header section */}
         <div className="text-center mb-6 sm:mb-8 flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-full border border-[#e8c4e2] bg-[#f6eaf4] flex items-center justify-center mb-3 sm:mb-4 shadow-xs">
-            <Check className="text-[#802673] text-xl" weight="bold" />
+          <div className="w-12 h-12 rounded-full border border-[#e8c4e2] bg-[#fbf0eb] flex items-center justify-center mb-3 sm:mb-4 shadow-xs">
+            <Check className="text-[#c9542f] text-xl" weight="bold" />
           </div>
-          <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#802673] block mb-2 sm:mb-3">
+          <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] block mb-2 sm:mb-3">
             {settings.badgeTag || 'YOUR SESSION IS RESERVED'}
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight leading-[1.15] text-[#111010] mb-3 sm:mb-4 max-w-2xl mx-auto">
@@ -92,7 +92,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
               </>
             )}
             {settings.subtitleHighlight && (
-              <span className="italic text-[#802673] mt-1 block font-serif">{settings.subtitleHighlight}</span>
+              <span className="italic text-[#c9542f] mt-1 block font-serif">{settings.subtitleHighlight}</span>
             )}
           </p>
         </div>
@@ -101,11 +101,11 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
         <div className="max-w-2xl mx-auto bg-white/95 backdrop-blur-sm border border-black/10 rounded-2xl md:rounded-3xl p-6 sm:p-8 md:p-9 mb-10 shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
           
           <div className="flex items-start gap-3.5 sm:gap-4 mb-6 pb-6 border-b border-black/10">
-            <div className="w-12 h-12 rounded-2xl bg-[#f6eaf4] border border-[#e8c4e2] flex items-center justify-center text-[#802673] shrink-0 shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-[#fbf0eb] border border-[#e8c4e2] flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs">
               <CalendarBlank className="text-2xl" weight="light" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-sans text-[0.62rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-1">
+              <p className="font-sans text-[0.62rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1">
                 {settings.appointmentCardBadge || 'YOUR APPOINTMENT'}
               </p>
               <h3 className="text-[#111010] text-xl sm:text-2xl font-serif font-medium leading-snug">
@@ -143,7 +143,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
-              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#802673] shrink-0 shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs">
                 <User className="text-lg" weight="light" />
               </div>
               <div>
@@ -157,7 +157,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
             </div>
 
             <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
-              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#802673] shrink-0 shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs">
                 <Clock className="text-lg" weight="light" />
               </div>
               <div>
@@ -169,13 +169,13 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
             </div>
 
             <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
-              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#802673] shrink-0 shadow-xs font-serif font-bold text-base">
+              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs font-serif font-bold text-base">
                 ₹
               </div>
               <div>
                 <p className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Total Paid</p>
                 {data.isFreeSession ? (
-                  <p className="text-[#802673] text-sm font-bold">
+                  <p className="text-[#c9542f] text-sm font-bold">
                     ₹0 <span className="text-[#7a756b] text-xs font-normal">(Course Bonus • {data.freeSessionsRemaining ?? 0} credits left)</span>
                   </p>
                 ) : (
@@ -185,7 +185,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
             </div>
 
             <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
-              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#802673] shrink-0 shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs">
                 <VideoCamera className="text-lg" weight="light" />
               </div>
               <div>
@@ -199,7 +199,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
         </div>
 
         {/* What Happens Next Grid */}
-        <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.25em] font-bold text-[#802673] text-center mb-6 mt-12">
+        <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] text-center mb-6 mt-12">
           {settings.whatHappensNextHeading || 'WHAT HAPPENS NEXT'}
         </h3>
         
@@ -213,7 +213,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
             const IconComp = nextStepIcons[idx % nextStepIcons.length] || EnvelopeSimple;
             return (
               <div key={idx} className="bg-white/90 border border-black/10 rounded-2xl p-6 text-center flex flex-col items-center shadow-xs">
-                <div className="w-12 h-12 rounded-full border border-[#e8c4e2] bg-[#f6eaf4] flex items-center justify-center mb-4 text-[#802673] shadow-xs">
+                <div className="w-12 h-12 rounded-full border border-[#e8c4e2] bg-[#fbf0eb] flex items-center justify-center mb-4 text-[#c9542f] shadow-xs">
                   <IconComp size={24} weight="light" />
                 </div>
                 <h4 className="text-[#111010] text-sm font-bold tracking-wider uppercase mb-2">{card.title}</h4>
@@ -232,24 +232,24 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-black/15 font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-[#111010] hover:bg-black/5 transition-all w-full sm:w-auto text-center cursor-pointer shadow-xs"
           >
-            <CalendarBlank className="text-lg text-[#802673]" />
+            <CalendarBlank className="text-lg text-[#c9542f]" />
             {settings.addToCalendarButtonText || 'ADD TO CALENDAR'}
           </a>
           
           {isAuthenticated ? (
             <>
-              <Link to="/my-journey" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-[#802673] text-white font-sans text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-[#111010] transition-all w-full sm:w-auto shadow-md">
+              <Link to="/my-journey" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-[#c9542f] text-white font-sans text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-[#111010] transition-all w-full sm:w-auto shadow-md">
                 {settings.myJourneyButtonText || 'MY JOURNEY'}
                 <User className="text-lg" />
               </Link>
 
               <Link to="/library" className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-black/15 font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-[#111010] hover:bg-black/5 transition-all w-full sm:w-auto shadow-xs">
-                <BookOpen className="text-lg text-[#802673]" />
+                <BookOpen className="text-lg text-[#c9542f]" />
                 {settings.exploreLibraryButtonText || 'EXPLORE LIBRARY'}
               </Link>
             </>
           ) : (
-            <button onClick={() => setIsLoginModalOpen(true)} className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-[#802673] text-white font-sans text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-[#111010] transition-all w-full sm:w-auto shadow-md cursor-pointer">
+            <button onClick={() => setIsLoginModalOpen(true)} className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-[#c9542f] text-white font-sans text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-[#111010] transition-all w-full sm:w-auto shadow-md cursor-pointer">
               {settings.createAccountButtonText || 'CREATE ACCOUNT TO VIEW JOURNEY'}
               <User className="text-lg" />
             </button>
@@ -257,13 +257,13 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
         </div>
 
         {/* Quote Banner */}
-        <div className="relative border border-[#e8c4e2] bg-[#f6eaf4] rounded-2xl md:rounded-3xl p-8 md:p-12 overflow-hidden flex items-center justify-center shadow-sm mb-12">
-          <Quotes className="text-[#802673]/15 text-8xl absolute left-8 top-8" weight="fill" />
+        <div className="relative border border-[#e8c4e2] bg-[#fbf0eb] rounded-2xl md:rounded-3xl p-8 md:p-12 overflow-hidden flex items-center justify-center shadow-sm mb-12">
+          <Quotes className="text-[#c9542f]/15 text-8xl absolute left-8 top-8" weight="fill" />
           <div className="relative z-10 text-center">
             <p className="text-[#111010] text-xl md:text-2xl font-serif font-light mb-2">
               {settings.quoteLine1 || "Clarity doesn't come from having all the answers."}
             </p>
-            <p className="text-[#802673] text-xl md:text-2xl font-serif italic">
+            <p className="text-[#c9542f] text-xl md:text-2xl font-serif italic">
               {settings.quoteLine2 || "It comes from asking better questions."}
             </p>
           </div>
@@ -272,8 +272,8 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
         {/* Footer Note */}
         <div className="flex flex-col items-center justify-center gap-2 text-center">
           <div className="flex items-center gap-2">
-            <ChatCenteredText className="text-[#802673] text-lg" />
-            <span className="font-sans text-xs uppercase tracking-[0.2em] font-bold text-[#802673]">
+            <ChatCenteredText className="text-[#c9542f] text-lg" />
+            <span className="font-sans text-xs uppercase tracking-[0.2em] font-bold text-[#c9542f]">
               {settings.changeHeading || 'NEED TO MAKE A CHANGE?'}
             </span>
           </div>
@@ -283,7 +283,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
           <button 
             type="button"
             onClick={() => setIsPolicyModalOpen(true)} 
-            className="font-sans text-xs text-[#802673] font-semibold underline hover:text-[#111010] transition-colors mt-1 cursor-pointer"
+            className="font-sans text-xs text-[#c9542f] font-semibold underline hover:text-[#111010] transition-colors mt-1 cursor-pointer"
           >
             {settings.changePolicyLinkText || 'View Rescheduling Policy →'}
           </button>

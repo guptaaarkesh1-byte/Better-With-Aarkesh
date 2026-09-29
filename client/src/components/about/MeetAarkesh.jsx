@@ -118,11 +118,11 @@ export default function MeetAarkesh() {
       {/* Mobile Header (Hidden on Desktop) */}
       <div className="flex md:hidden flex-col items-center justify-center text-center z-20 px-6 pb-8 meet-header">
         <div className="flex items-center gap-4 mb-4">
-          <div className="h-[1.5px] w-6 bg-[#802673]" />
-          <span className="font-sans text-[0.68rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
+          <div className="h-[1.5px] w-6 bg-[#c9542f]" />
+          <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
             {eyebrowText}
           </span>
-          <div className="h-[1.5px] w-6 bg-[#802673]" />
+          <div className="h-[1.5px] w-6 bg-[#c9542f]" />
         </div>
 
         <h2 className="font-serif text-4xl font-medium tracking-tight mb-2 text-[#111010]">
@@ -160,11 +160,11 @@ export default function MeetAarkesh() {
               {i === 1 && (
                 <div className="hidden md:flex absolute top-6 inset-x-0 flex-col items-center justify-center text-center z-20 px-6 transition-opacity duration-400 ease-out group-hover:opacity-0 meet-header pointer-events-none">
                   <div className="flex items-center gap-4 mb-2.5">
-                    <div className="h-[1.5px] w-6 bg-[#802673]" />
-                    <span className="font-sans text-[0.68rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
+                    <div className="h-[1.5px] w-6 bg-[#c9542f]" />
+                    <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
                       {eyebrowText}
                     </span>
-                    <div className="h-[1.5px] w-6 bg-[#802673]" />
+                    <div className="h-[1.5px] w-6 bg-[#c9542f]" />
                   </div>
 
                   <h2 className="font-serif text-3xl md:text-4xl lg:text-[2.6rem] font-medium tracking-tight mb-1.5 text-[#111010]">
@@ -178,8 +178,8 @@ export default function MeetAarkesh() {
               )}
 
               <div className="relative z-10 flex flex-col items-center text-center transition-transform duration-500 ease-out group-hover:-translate-y-2">
-                <div className="w-12 h-12 rounded-full border border-[#802673]/30 bg-white/95 shadow-md flex items-center justify-center mb-3 sm:mb-4 group-hover:border-[#802673] group-hover:bg-[#802673] group-hover:text-white transition-colors duration-300">
-                  <Icon className="text-[#802673] group-hover:text-white text-2xl transition-colors duration-300" weight="regular" />
+                <div className="w-12 h-12 rounded-full border border-[#c9542f]/30 bg-white/95 shadow-md flex items-center justify-center mb-3 sm:mb-4 group-hover:border-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white transition-colors duration-300">
+                  <Icon className="text-[#c9542f] group-hover:text-white text-2xl transition-colors duration-300" weight="regular" />
                 </div>
                 
                 <h3 className="font-serif text-3xl md:text-4xl lg:text-[2.5rem] tracking-widest text-[#111010] mb-3 sm:mb-4 font-semibold">{role.title}</h3>
@@ -187,7 +187,7 @@ export default function MeetAarkesh() {
                 <div className="flex flex-col items-center gap-1.5 sm:gap-2 opacity-0 transform translate-y-6 transition-all duration-400 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible px-4">
                   <p className="text-[#111010] font-semibold text-sm sm:text-base md:text-[1.05rem] leading-snug">{role.sub1}</p>
                   <p className="text-[#2b2723] font-medium text-sm sm:text-base md:text-[0.98rem] leading-snug mb-2">{role.sub2}</p>
-                  <p className="text-[#802673] font-serif italic text-base sm:text-lg md:text-xl lg:text-[1.25rem] font-bold leading-normal">{role.highlight}</p>
+                  <p className="text-[#c9542f] font-serif italic text-base sm:text-lg md:text-xl lg:text-[1.25rem] font-bold leading-normal">{role.highlight}</p>
                 </div>
               </div>
             </div>
@@ -202,8 +202,8 @@ export default function MeetAarkesh() {
           {/* Left Side: Mission */}
           <div className="flex-1 shrink-0 flex flex-col items-start w-full xl:w-auto">
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-[1.5px] w-6 bg-[#802673] origin-left" />
-              <span className="font-sans text-xs sm:text-[0.75rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
+              <div className="h-[1.5px] w-6 bg-[#c9542f] origin-left" />
+              <span className="font-sans text-xs sm:text-[0.75rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
                 {aboutData?.missionEyebrow || 'BEYOND THE ROLES'}
               </span>
             </div>
@@ -220,8 +220,8 @@ export default function MeetAarkesh() {
           {/* Right Side: Features */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-8 md:gap-10 w-full xl:w-auto xl:border-l border-black/10 xl:pl-10">
             <div className="flex items-center gap-3.5 group">
-              <div className="w-11 h-11 rounded-full border border-[#802673]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#802673] group-hover:bg-[#f6eaf4] bg-white shadow-xs">
-                <Compass size={20} className="text-[#802673]" weight="regular" />
+              <div className="w-11 h-11 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
+                <Compass size={20} className="text-[#c9542f]" weight="regular" />
               </div>
               <div className="flex flex-col">
                 <span className="font-sans text-sm sm:text-base font-semibold text-[#111010] mb-0.5">Real experience</span>
@@ -230,8 +230,8 @@ export default function MeetAarkesh() {
             </div>
 
             <div className="flex items-center gap-3.5 group">
-              <div className="w-11 h-11 rounded-full border border-[#802673]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#802673] group-hover:bg-[#f6eaf4] bg-white shadow-xs">
-                <Brain size={20} className="text-[#802673]" weight="regular" />
+              <div className="w-11 h-11 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
+                <Brain size={20} className="text-[#c9542f]" weight="regular" />
               </div>
               <div className="flex flex-col">
                 <span className="font-sans text-sm sm:text-base font-semibold text-[#111010] mb-0.5">Deep training</span>
@@ -240,8 +240,8 @@ export default function MeetAarkesh() {
             </div>
 
             <div className="flex items-center gap-3.5 group">
-              <div className="w-11 h-11 rounded-full border border-[#802673]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#802673] group-hover:bg-[#f6eaf4] bg-white shadow-xs">
-                <Users size={20} className="text-[#802673]" weight="regular" />
+              <div className="w-11 h-11 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
+                <Users size={20} className="text-[#c9542f]" weight="regular" />
               </div>
               <div className="flex flex-col">
                 <span className="font-sans text-sm sm:text-base font-semibold text-[#111010] mb-0.5">Relatable approach</span>

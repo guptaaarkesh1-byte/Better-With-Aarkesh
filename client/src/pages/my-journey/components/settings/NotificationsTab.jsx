@@ -7,7 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const Toggle = ({ isOn, onToggle }) => (
   <div 
     onClick={onToggle}
-    className={`w-11 h-6 rounded-full flex items-center p-0.5 cursor-pointer transition-colors duration-300 ${isOn ? 'bg-[#802673]' : 'bg-black/15'}`}
+    className={`w-11 h-6 rounded-full flex items-center p-0.5 cursor-pointer transition-colors duration-300 ${isOn ? 'bg-[#c9542f]' : 'bg-black/15'}`}
   >
     <div 
       className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${isOn ? 'translate-x-5' : 'translate-x-0'}`} 
@@ -90,7 +90,7 @@ export default function NotificationsTab() {
 
       {/* EMAIL SECTION */}
       <div className="mb-10">
-        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#802673] mb-6 block">
+        <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-6 block">
           EMAIL
         </span>
         <div className="flex flex-col gap-5">
@@ -110,13 +110,13 @@ export default function NotificationsTab() {
         <button 
           onClick={handleSave}
           disabled={loading}
-          className="px-6 py-3 bg-[#802673] text-white rounded-xl text-xs uppercase tracking-[0.16em] font-bold hover:bg-[#962e87] transition-all shadow-md cursor-pointer disabled:opacity-50"
+          className="px-6 py-3 bg-[#c9542f] text-white rounded-xl text-xs uppercase tracking-[0.16em] font-bold hover:bg-[#a64117] transition-all shadow-md cursor-pointer disabled:opacity-50"
         >
           {loading ? 'SAVING...' : 'SAVE PREFERENCES'}
         </button>
 
         {saveSuccess && (
-          <span className="flex items-center gap-1.5 text-xs text-[#802673] font-sans font-bold animate-in fade-in">
+          <span className="flex items-center gap-1.5 text-xs text-[#c9542f] font-sans font-bold animate-in fade-in">
             <Check size={16} weight="bold" /> Preferences saved
           </span>
         )}

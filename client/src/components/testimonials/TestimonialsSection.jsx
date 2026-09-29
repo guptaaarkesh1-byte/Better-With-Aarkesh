@@ -39,7 +39,7 @@ const DEFAULT_TESTIMONIALS = [
     name: "Megha, 28",
     role: "Marketing Manager",
     initial: "M",
-    color: "bg-[#802673]"
+    color: "bg-[#c9542f]"
   },
   {
     quote: "Practical. Honest. No fluff. The sessions challenge you—in the best way possible. Highly recommend.",
@@ -130,18 +130,24 @@ export default function TestimonialsSection() {
               {/* Header */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="h-[1.5px] w-6 bg-[#802673]" />
-                  <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#802673]">
+                  <div className="h-[1.5px] w-6 bg-[#c9542f]" />
+                  <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
                     {eyebrow}
                   </span>
                 </div>
                 
-                <h2 className="font-serif text-4xl md:text-5xl text-[#111010] font-medium tracking-tight leading-tight">
+                <h2 
+                  className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08] mb-1"
+                  style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                >
                   {heading1}<br/>
-                  <span className="text-[#802673] italic">{headingAccent}</span>
+                  <span className="text-[#c9542f] not-italic font-medium">{headingAccent}</span>
                 </h2>
                 
-                <p className="text-[#2b2723] text-lg lg:text-xl font-serif font-light tracking-wide leading-relaxed max-w-lg mt-1">
+                <p 
+                  className="text-[#4a463e] text-xl lg:text-2xl font-serif font-normal tracking-wide leading-relaxed max-w-xl mt-2"
+                  style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                >
                   {description}
                 </p>
               </div>
@@ -150,15 +156,15 @@ export default function TestimonialsSection() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                 {testimonials.slice(0, 6).map((t, index) => {
                   const initial = t.name ? t.name.charAt(0).toUpperCase() : 'C';
-                  const colors = ['bg-[#3d1b37]', 'bg-[#802673]', 'bg-[#2f4a34]', 'bg-[#a64117]', 'bg-[#111010]', 'bg-[#3d1b37]'];
+                  const colors = ['bg-[#3d1b37]', 'bg-[#c9542f]', 'bg-[#2f4a34]', 'bg-[#a64117]', 'bg-[#111010]', 'bg-[#3d1b37]'];
                   const color = t.color || colors[index % colors.length];
 
                   return (
                     <div 
                       key={index} 
-                      className="flex flex-col bg-white/95 border border-black/8 rounded-2xl p-5 hover:border-[#802673]/35 hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-colors duration-200"
+                      className="flex flex-col bg-white/95 border border-black/8 rounded-2xl p-5 hover:border-[#c9542f]/35 hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-colors duration-200"
                     >
-                      <Quotes className="text-[#802673] text-2xl mb-2.5 opacity-90" weight="fill" />
+                      <Quotes className="text-[#c9542f] text-2xl mb-2.5 opacity-90" weight="fill" />
                       
                       <p className="text-[#2b2723] font-light text-xs sm:text-sm md:text-[0.92rem] leading-relaxed mb-4 flex-grow">
                         "{t.quote}"
@@ -166,7 +172,7 @@ export default function TestimonialsSection() {
                       
                       <div className="flex items-center gap-3 mt-auto pt-2 border-t border-black/5">
                         {t.image ? (
-                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#802673]/30 shrink-0 bg-white shadow-xs">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#c9542f]/30 shrink-0 bg-white shadow-xs">
                             <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
                           </div>
                         ) : (
@@ -200,19 +206,19 @@ export default function TestimonialsSection() {
           {/* Bottom Trust Pillars */}
           <div className="mt-12 pt-6 border-t border-black/10 flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <ShieldCheck size={20} className="text-[#802673]" weight="bold" />
+              <ShieldCheck size={20} className="text-[#c9542f]" weight="bold" />
               <span className="text-xs font-medium text-[#555047]">100% Confidential</span>
             </div>
             <div className="flex items-center gap-3">
-              <User size={20} className="text-[#802673]" weight="bold" />
+              <User size={20} className="text-[#c9542f]" weight="bold" />
               <span className="text-xs font-medium text-[#555047]">Tailored 1-on-1 Sessions</span>
             </div>
             <div className="flex items-center gap-3">
-              <Handshake size={20} className="text-[#802673]" weight="bold" />
+              <Handshake size={20} className="text-[#c9542f]" weight="bold" />
               <span className="text-xs font-medium text-[#555047]">Evidence-Based Coaching</span>
             </div>
             <div className="flex items-center gap-3">
-              <Heart size={20} className="text-[#802673]" weight="bold" />
+              <Heart size={20} className="text-[#c9542f]" weight="bold" />
               <span className="text-xs font-medium text-[#555047]">Empathetic & Non-Judgmental</span>
             </div>
           </div>
