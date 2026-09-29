@@ -1261,7 +1261,7 @@ export default function AdminHomeEditor() {
                           type="text"
                           value={p.highlight || ''}
                           onChange={(e) => handlePrincipleChange('decide', 'highlight', e.target.value)}
-                          placeholder="Clarity without decision is just expensive loop."
+                          placeholder="True confidence is born from aligned decision-making."
                           className="w-full bg-[#050505] border border-[#c79c6e]/30 rounded-lg px-4 py-3 text-sm text-[#c79c6e] italic font-serif focus:border-[#c79c6e]"
                         />
                       </div>
@@ -1272,7 +1272,7 @@ export default function AdminHomeEditor() {
                           rows={4}
                           value={p.description || ''}
                           onChange={(e) => handlePrincipleChange('decide', 'description', e.target.value)}
-                          placeholder="We help you align your values, weigh what matters, and choose the path you're willing to walk."
+                          placeholder="Indecision is also a decision. Stop second-guessing. We create personalized frameworks that give you the courage and conviction to execute fearlessly."
                           className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e] resize-none"
                         />
                       </div>
