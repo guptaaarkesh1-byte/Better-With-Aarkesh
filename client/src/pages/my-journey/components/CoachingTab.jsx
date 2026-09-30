@@ -159,11 +159,62 @@ export default function CoachingTab() {
                };
             }
 
+            // Check if UPCOMING session date and time has passed (Expired / Missed)
+            let isExpired = false;
+            if (app.status === 'UPCOMING' && app.date && app.time) {
+              try {
+                let startDt;
+                if (app.date.includes('-') && app.date.split('-').length === 3) {
+                  const [y, m, d] = app.date.split('-').map(Number);
+                  startDt = new Date(y, m - 1, d);
+                } else {
+                  startDt = new Date(app.date);
+                }
+
+                const timeMatch = app.time.match(/(\d+):?(\d*)\s*(AM|PM)?/i);
+                if (timeMatch && !isNaN(startDt.getTime())) {
+                  let [_, hStr, minStr, ampm] = timeMatch;
+                  let hours = parseInt(hStr, 10);
+                  const minutes = parseInt(minStr, 10) || 0;
+                  if (ampm) {
+                    if (ampm.toUpperCase() === 'PM' && hours < 12) hours += 12;
+                    if (ampm.toUpperCase() === 'AM' && hours === 12) hours = 0;
+                  }
+                  startDt.setHours(hours, minutes, 0, 0);
+                  const durationMin = app.sessionDuration || app.duration || 60;
+                  const endDt = new Date(startDt.getTime() + (durationMin * 60 * 1000));
+                  if (new Date() > endDt) {
+                    isExpired = true;
+                  }
+                } else if (!isNaN(startDt.getTime())) {
+                  const endOfDay = new Date(startDt);
+                  endOfDay.setHours(23, 59, 59, 999);
+                  if (new Date() > endOfDay) {
+                    isExpired = true;
+                  }
+                }
+              } catch (dateParseErr) {
+                console.error('Error checking session expiry:', dateParseErr);
+              }
+            }
+
+            let calculatedBadge = 'CONFIRMED';
+            if (app.status === 'COMPLETED') {
+              calculatedBadge = 'COMPLETED';
+            } else if (app.status === 'CANCELLED') {
+              calculatedBadge = 'CANCELLED';
+            } else if (app.status === 'REFUNDED') {
+              calculatedBadge = 'REFUNDED';
+            } else if (isExpired) {
+              calculatedBadge = 'EXPIRED';
+            }
+
             return {
               ...app,
               id: app._id,
               status: app.status,
-              badge: app.status === 'UPCOMING' ? 'CONFIRMED' : 'COMPLETED',
+              isExpired,
+              badge: calculatedBadge,
               date: formattedDate,
               rawDate: app.date, // Keep raw date if needed for operations
               time: app.time,
@@ -321,18 +372,35 @@ export default function CoachingTab() {
                       CANCELLED
                     </div>
                   )}
+                  {app.isExpired && app.status === 'UPCOMING' && (
+                    <div className="absolute top-0 right-0 bg-zinc-100 border-b border-l border-zinc-300 px-3 sm:px-4 py-1.5 sm:py-2 rounded-bl-xl text-zinc-600 font-sans text-[0.55rem] sm:text-[0.6rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold flex items-center gap-1.5 z-20">
+                      <Clock weight="bold" size={13} />
+                      SESSION EXPIRED
+                    </div>
+                  )}
 
                   {/* Top: Status & Details */}
                   <div className="flex flex-col gap-3 sm:gap-4 pt-2 sm:pt-0">
-                    <div className={`flex items-center gap-2 ${app.status === 'COMPLETED' ? 'text-emerald-700' : 'text-[#c9542f]'} font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold`}>
-                      <span>{app.badge}</span>
+                    <div className={`flex items-center gap-2 ${
+                      app.badge === 'COMPLETED' 
+                        ? 'text-emerald-700' 
+                        : app.badge === 'EXPIRED'
+                        ? 'text-zinc-500'
+                        : app.badge === 'REFUNDED'
+                        ? 'text-purple-700'
+                        : app.badge === 'CANCELLED'
+                        ? 'text-rose-700'
+                        : 'text-[#c9542f]'
+                    } font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold`}>
+                      <span>{app.badge === 'EXPIRED' ? 'SESSION EXPIRED' : app.badge}</span>
                       {app.badge === 'CONFIRMED' && <CheckCircle weight="fill" size={14} />}
                       {app.badge === 'PENDING' && <Clock weight="fill" size={14} />}
                       {app.badge === 'COMPLETED' && <CheckCircle weight="fill" size={14} />}
+                      {app.badge === 'EXPIRED' && <Clock weight="fill" size={14} className="text-zinc-400" />}
                     </div>
 
                     <div className="flex flex-col gap-1 sm:gap-1.5">
-                      <h3 className="font-serif text-xl sm:text-2xl md:text-[1.7rem] text-[#111010] uppercase tracking-wide leading-tight transition-colors group-hover/card:text-[#c9542f]">
+                      <h3 className={`font-serif text-xl sm:text-2xl md:text-[1.7rem] uppercase tracking-wide leading-tight transition-colors ${app.isExpired ? 'text-[#555047] group-hover/card:text-[#111010]' : 'text-[#111010] group-hover/card:text-[#c9542f]'}`}>
                         {app.date}
                       </h3>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 font-sans text-[0.65rem] sm:text-[0.7rem] tracking-[0.12em] sm:tracking-[0.15em] text-[#555047] uppercase mt-1">
@@ -376,47 +444,60 @@ export default function CoachingTab() {
                     {optionsOpenId === app.id && app.status === 'UPCOMING' && (
                       <div className="absolute bottom-full right-0 mb-3 w-48 sm:w-56 bg-white border border-black/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] flex flex-col py-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                         
-                        <a 
-                          href={generateGoogleCalendarLink(app.date, app.time, app.duration)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => setOptionsOpenId(null)}
-                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-[#555047] hover:text-[#111010] hover:bg-[#fbf0eb]/60 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors"
-                        >
-                          <CalendarPlus size={15} className="text-[#c9542f] shrink-0" />
-                          <span>ADD TO CALENDAR</span>
-                        </a>
-                        
-                        <button 
-                          onClick={() => {
-                            setRescheduleSession(app);
-                            setOptionsOpenId(null);
-                          }}
-                          disabled={app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'APPROVED'}
-                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-[#555047] hover:text-[#111010] hover:bg-[#fbf0eb]/60 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                          <ArrowsClockwise size={15} className="text-amber-600 shrink-0" />
-                          <span>
-                            {app.rescheduleRequest?.status === 'PENDING' 
-                              ? 'RESCHEDULE PENDING' 
-                              : app.rescheduleRequest?.status === 'APPROVED' 
-                                ? 'RESCHEDULED' 
-                                : 'RESCHEDULE'}
-                          </span>
-                        </button>
-                        
-                        <div className="h-px w-full bg-black/10 my-1"></div>
+                        {!app.isExpired ? (
+                          <>
+                            <a 
+                              href={generateGoogleCalendarLink(app.date, app.time, app.duration)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setOptionsOpenId(null)}
+                              className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-[#555047] hover:text-[#111010] hover:bg-[#fbf0eb]/60 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors"
+                            >
+                              <CalendarPlus size={15} className="text-[#c9542f] shrink-0" />
+                              <span>ADD TO CALENDAR</span>
+                            </a>
+                            
+                            <button 
+                              onClick={() => {
+                                setRescheduleSession(app);
+                                setOptionsOpenId(null);
+                              }}
+                              disabled={app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'APPROVED'}
+                              className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-[#555047] hover:text-[#111010] hover:bg-[#fbf0eb]/60 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                              <ArrowsClockwise size={15} className="text-amber-600 shrink-0" />
+                              <span>
+                                {app.rescheduleRequest?.status === 'PENDING' 
+                                  ? 'RESCHEDULE PENDING' 
+                                  : app.rescheduleRequest?.status === 'APPROVED' 
+                                    ? 'RESCHEDULED' 
+                                    : 'RESCHEDULE'}
+                              </span>
+                            </button>
+                            
+                            <div className="h-px w-full bg-black/10 my-1"></div>
 
-                        <button 
-                          onClick={() => {
-                            setCancelSession(app);
-                            setOptionsOpenId(null);
-                          }}
-                          className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-red-600 hover:text-red-700 hover:bg-red-50 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors cursor-pointer"
-                        >
-                          <XCircle size={15} className="shrink-0" />
-                          <span>CANCEL</span>
-                        </button>
+                            <button 
+                              onClick={() => {
+                                setCancelSession(app);
+                                setOptionsOpenId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-red-600 hover:text-red-700 hover:bg-red-50 font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors cursor-pointer"
+                            >
+                              <XCircle size={15} className="shrink-0" />
+                              <span>CANCEL</span>
+                            </button>
+                          </>
+                        ) : (
+                          <a
+                            href="/book"
+                            onClick={() => setOptionsOpenId(null)}
+                            className="w-full flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 text-left text-[#c9542f] hover:bg-[#fbf0eb] font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-semibold transition-colors"
+                          >
+                            <CalendarPlus size={15} className="text-[#c9542f] shrink-0" />
+                            <span>BOOK NEW SESSION</span>
+                          </a>
+                        )}
 
                       </div>
                     )}

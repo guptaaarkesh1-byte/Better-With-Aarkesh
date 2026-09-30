@@ -46,7 +46,8 @@ export default function FinalCtaSection() {
   const eyebrow = data?.eyebrowText || 'A CONVERSATION CAN CHANGE EVERYTHING';
   const heading1 = data?.headingLine1 || 'Your next chapter';
   const headingAccent = data?.headingAccent || 'starts here.';
-  const description = data?.description || "This is your space to be heard, understood, and guided forward. Let's create real change—together.";
+  const rawDescription = data?.description || "This is your space to be heard, understood, and guided forward. Let's create real change together.";
+  const description = rawDescription.replace(/—/g, ' ').replace(/--/g, ' ');
   const ctaText = data?.ctaText || 'BOOK YOUR SESSION';
   const ctaLink = data?.ctaLink || '/book';
   const confidentialText = data?.confidentialText || '100% Confidential & Safe Space';

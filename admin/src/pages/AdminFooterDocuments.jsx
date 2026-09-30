@@ -45,6 +45,28 @@ const DEFAULT_FOOTER_SECTIONS = [
   'LEGAL'
 ];
 
+const PROTECTED_SLUGS = [
+  'contact-us',
+  'contact',
+  'terms-and-conditions',
+  'terms',
+  'terms-conditions',
+  'rescheduling-policy',
+  'reschedule-policy',
+  'rescheduling',
+  'privacy-policy',
+  'privacy',
+  'refund-and-cancellation',
+  'refund-policy',
+  'cancellation-policy'
+];
+
+const isProtectedDoc = (slug) => {
+  if (!slug) return false;
+  const clean = String(slug).toLowerCase().trim().replace(/^\/+/, '');
+  return PROTECTED_SLUGS.includes(clean);
+};
+
 const emptyDocForm = {
   id: null,
   title: '',
@@ -536,8 +558,8 @@ export default function AdminFooterDocuments() {
 
   const handleDeleteDoc = async (id) => {
     const docToDelete = documents.find(d => d._id === id);
-    if (docToDelete && (docToDelete.slug === 'contact-us' || docToDelete.slug === 'contact')) {
-      alert('Contact Us is a core system page and cannot be deleted.');
+    if (docToDelete && isProtectedDoc(docToDelete.slug)) {
+      alert(`${docToDelete.title || 'This document'} is a core system/legal page and cannot be deleted.`);
       return;
     }
 
@@ -1690,10 +1712,10 @@ export default function AdminFooterDocuments() {
                                 >
                                   <Pen size={15} />
                                 </button>
-                                {doc.slug === 'contact-us' || doc.slug === 'contact' ? (
+                                {isProtectedDoc(doc.slug) ? (
                                   <span 
                                     className="px-2.5 py-1 bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-[0.68rem] font-semibold rounded-lg inline-flex items-center gap-1 select-none cursor-default"
-                                    title="Core System Page (Protected from Deletion)"
+                                    title="Core Legal / System Page (Protected from Deletion)"
                                   >
                                     <ShieldCheck size={13} weight="fill" />
                                     <span>Protected Page</span>

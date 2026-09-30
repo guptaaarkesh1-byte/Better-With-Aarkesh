@@ -72,24 +72,24 @@ export default function FooterDocumentView({ slug: propSlug }) {
 
   if (loading) {
     return (
-      <div className="w-full min-h-[65vh] flex flex-col items-center justify-center pt-32 pb-24 text-white bg-[#050505]">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-accent-gold mb-4"></div>
-        <p className="text-white/50 text-xs font-sans tracking-widest uppercase">Loading policy document...</p>
+      <div className="w-full min-h-[65vh] flex flex-col items-center justify-center pt-32 pb-24 text-[#111010] bg-[#f5f1e8]">
+        <div className="w-9 h-9 border-2 border-[#c9542f]/20 border-t-[#c9542f] rounded-full animate-spin mb-4"></div>
+        <p className="text-[#7a756b] text-xs font-sans tracking-widest uppercase">Loading policy document...</p>
       </div>
     );
   }
 
   if (error || !document) {
     return (
-      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center pt-32 pb-24 text-white bg-[#050505]">
-        <div className="p-8 text-center max-w-md">
-          <h2 className="font-serif text-2xl text-white mb-2">Document Not Available</h2>
-          <p className="font-sans text-xs text-white/50 mb-6 leading-relaxed">
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center pt-32 pb-24 text-[#111010] bg-[#f5f1e8]">
+        <div className="p-8 text-center max-w-md bg-[#fbfbf9] border border-[#eadcd3] rounded-3xl shadow-sm">
+          <h2 className="font-serif text-2xl text-[#111010] mb-2 font-normal">Document Not Available</h2>
+          <p className="font-sans text-xs text-[#555047] mb-6 leading-relaxed">
             The requested policy page could not be found or has not been published yet.
           </p>
           <Link
             to={isCourseDoc ? '/course' : '/'}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#c79c6e] text-black font-sans text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#111010] hover:bg-[#c9542f] text-white font-sans text-xs font-semibold uppercase tracking-wider transition-all shadow-sm"
           >
             <ArrowLeft size={14} weight="bold" />
             <span>Return to {isCourseDoc ? 'Course Portal' : 'Homepage'}</span>
@@ -100,11 +100,11 @@ export default function FooterDocumentView({ slug: propSlug }) {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] pt-28 sm:pt-32 pb-24 text-white">
+    <div className="w-full min-h-screen bg-[#f5f1e8] pt-28 sm:pt-36 pb-24 text-[#111010]">
       <Container className="max-w-4xl px-4 sm:px-6">
         
         {/* Navigation Breadcrumb / Back Link */}
-        <div className="mb-8">
+        <div className="mb-6">
           <button
             type="button"
             onClick={() => {
@@ -114,41 +114,44 @@ export default function FooterDocumentView({ slug: propSlug }) {
                 window.location.href = isCourseDoc ? '/course' : '/';
               }
             }}
-            className="inline-flex items-center gap-2 text-xs font-sans text-white/50 hover:text-accent-gold transition-colors group cursor-pointer bg-transparent border-0 p-0"
+            className="inline-flex items-center gap-2 text-xs font-sans text-[#7a756b] hover:text-[#c9542f] transition-colors group cursor-pointer bg-transparent border-0 p-0 font-medium"
           >
             <ArrowLeft size={14} weight="bold" className="group-hover:-translate-x-0.5 transition-transform" />
             <span>Back to {isCourseDoc ? 'The Better Man™ Course' : 'Better With Aarkesh'}</span>
           </button>
         </div>
 
-        {/* Page Header */}
-        <div className="mb-10 sm:mb-12 border-b border-white/10 pb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="px-2.5 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[0.65rem] text-[#c79c6e] font-semibold tracking-widest uppercase">
-              {document.category === 'course' ? 'Course Legal Policy' : 'Coaching Legal Policy'}
-            </span>
-          </div>
+        {/* Page Card Container */}
+        <div className="bg-[#fbfbf9] border border-[#eadcd3] rounded-3xl p-6 sm:p-10 md:p-12 shadow-sm">
+          {/* Page Header */}
+          <div className="mb-8 sm:mb-10 border-b border-[#eadcd3] pb-6 sm:pb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-3 py-1 rounded-full bg-[#fbf0eb] border border-[#e8c4e2] text-[0.68rem] text-[#c9542f] font-bold tracking-widest uppercase">
+                {document.category === 'course' ? 'Course Legal Policy' : 'Coaching Legal Policy'}
+              </span>
+            </div>
 
-          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#F5F2EB] tracking-tight mb-4 font-normal leading-tight">
-            {document.title}
-          </h1>
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#111010] tracking-tight mb-4 font-normal leading-tight">
+              {document.title}
+            </h1>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 text-white/40 text-xs font-sans">
-            <p className="tracking-wider uppercase text-[0.7rem]">
-              Last updated: {new Date(document.updatedAt || document.createdAt || Date.now()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-            <div className="flex items-center gap-1.5 text-white/40 text-[0.7rem]">
-              <ShieldCheck size={14} className="text-[#c79c6e]" />
-              <span>Official Policy Document</span>
+            <div className="flex flex-wrap items-center justify-between gap-4 text-[#7a756b] text-xs font-sans">
+              <p className="tracking-wider uppercase text-[0.7rem]">
+                Last updated: {new Date(document.updatedAt || document.createdAt || Date.now()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+              <div className="flex items-center gap-1.5 text-[#7a756b] text-[0.7rem]">
+                <ShieldCheck size={16} className="text-[#c9542f]" weight="fill" />
+                <span>Official Policy Document</span>
+              </div>
             </div>
           </div>
+          
+          {/* Policy Body HTML */}
+          <div 
+            className="legal-policy-content-light max-w-none"
+            dangerouslySetInnerHTML={{ __html: document.contentHtml }}
+          />
         </div>
-        
-        {/* Policy Body HTML */}
-        <div 
-          className="legal-policy-content max-w-none"
-          dangerouslySetInnerHTML={{ __html: document.contentHtml }}
-        />
       </Container>
     </div>
   );

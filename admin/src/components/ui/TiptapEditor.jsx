@@ -36,52 +36,85 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Dedicated Brand Gold Mark for 100% reliable gold coloring on ANY text (bold, italic, normal)
-export const GoldMark = Mark.create({
-  name: 'gold',
+// Dedicated Dynamic Color Mark supporting any Category Accent Color (e.g. Pink, Mint Green, Coral, Sand, White, Gold)
+export const ColorMark = Mark.create({
+  name: 'textColor',
+
+  addOptions() {
+    return {
+      HTMLAttributes: {},
+    };
+  },
+
+  addAttributes() {
+    return {
+      color: {
+        default: null,
+        parseHTML: (element) => {
+          return (
+            element.getAttribute('data-color') ||
+            element.style?.color ||
+            (element.hasAttribute('data-gold') || element.classList?.contains('text-gold') ? '#c79c6e' : null)
+          );
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.color) {
+            return {};
+          }
+          return {
+            'data-color': attributes.color,
+            style: `color: ${attributes.color} !important;`,
+          };
+        },
+      },
+    };
+  },
 
   parseHTML() {
     return [
-      { tag: 'span[data-gold]' },
-      { tag: 'span.text-gold' },
+      {
+        tag: 'span[data-color]',
+        getAttrs: (element) => ({ color: element.getAttribute('data-color') || element.style.color }),
+      },
+      {
+        tag: 'span[data-gold]',
+        getAttrs: (element) => ({ color: element.getAttribute('data-color') || element.style.color || '#c79c6e' }),
+      },
+      {
+        tag: 'span.text-gold',
+        getAttrs: (element) => ({ color: element.getAttribute('data-color') || element.style.color || '#c79c6e' }),
+      },
       {
         tag: 'span',
         getAttrs: (element) => {
-          const style = element.getAttribute('style') || '';
           const color = element.style?.color;
-          if (
-            color === 'rgb(199, 156, 110)' ||
-            color === '#c79c6e' ||
-            style.includes('#c79c6e') ||
-            style.includes('199, 156, 110')
-          ) {
-            return {};
-          }
-          return false;
+          return color ? { color } : false;
         },
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [
-      'span',
-      mergeAttributes(HTMLAttributes, {
-        'data-gold': 'true',
-        class: 'text-[#c79c6e] text-gold',
-        style: 'color: #c79c6e !important;',
-      }),
-      0,
-    ];
+    return ['span', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
 
   addCommands() {
     return {
-      toggleGold: () => ({ commands }) => {
-        return commands.toggleMark(this.name);
+      setColor: (color) => ({ commands }) => {
+        return commands.setMark(this.name, { color });
       },
+      toggleColor: (color) => ({ commands }) => {
+        return commands.toggleMark(this.name, { color });
+      },
+      unsetColor: () => ({ commands }) => {
+        return commands.unsetMark(this.name);
+      },
+      // Aliases for backward compatibility
       setGold: () => ({ commands }) => {
-        return commands.setMark(this.name);
+        return commands.setMark(this.name, { color: '#c79c6e' });
+      },
+      toggleGold: () => ({ commands }) => {
+        return commands.toggleMark(this.name, { color: '#c79c6e' });
       },
       unsetGold: () => ({ commands }) => {
         return commands.unsetMark(this.name);
@@ -89,6 +122,9 @@ export const GoldMark = Mark.create({
     };
   },
 });
+
+// Legacy GoldMark alias definition in case of direct import
+export const GoldMark = ColorMark;
 
 // Interactive React NodeView for Image with Float/Text-Wrapping, Drag-to-Resize handle & Drag-to-move
 function ResizableImageNodeView(props) {
@@ -429,7 +465,7 @@ const FONT_SIZES = [
   { label: 'Display (44px)', value: '44px' }
 ];
 
-function MenuBar({ editor }) {
+function MenuBar({ editor, highlightColor = '#c79c6e', highlightLabel = 'Highlight' }) {
   if (!editor) {
     return null;
   }
@@ -519,13 +555,25 @@ function MenuBar({ editor }) {
   };
 
   const clearFormatting = () => {
-    editor.chain().focus().unsetAllMarks().unsetGold().clearNodes().setParagraph().run();
+    editor.chain().focus().unsetAllMarks().unsetColor().clearNodes().setParagraph().run();
   };
 
-  const isGoldActive = editor.isActive('gold');
+  const activeColor = editor.getAttributes('textColor')?.color;
+  const isColorActive = editor.isActive('textColor');
+  const isCurrentColorActive =
+    isColorActive &&
+    Boolean(
+      activeColor &&
+      highlightColor &&
+      activeColor.toLowerCase() === highlightColor.toLowerCase()
+    );
 
-  const handleGoldToggle = () => {
-    editor.chain().focus().toggleGold().run();
+  const handleColorToggle = () => {
+    if (isCurrentColorActive) {
+      editor.chain().focus().unsetColor().run();
+    } else {
+      editor.chain().focus().setColor(highlightColor).run();
+    }
   };
 
   const setImageAlign = (newAlign) => {
@@ -553,19 +601,19 @@ function MenuBar({ editor }) {
   };
 
   return (
-    <div className="flex flex-col border-b border-white/10 bg-[#12100e] select-none text-xs">
+    <div className="flex flex-col border-b border-stone-200 bg-[#faf7f0] select-none text-xs">
       
       {/* ── Main Toolbar ── */}
       <div className="flex flex-wrap items-center gap-1.5 p-2.5">
         {/* ── Block & Inline Heading Controls ── */}
-        <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-0.5">
+        <div className="flex items-center bg-white border border-stone-200 rounded-lg p-0.5 shadow-sm">
           <button
             type="button"
             onClick={handleParagraphClick}
             className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
               editor.isActive('paragraph') && !editor.isActive('heading')
-                ? 'text-[#c79c6e] bg-[#c79c6e]/20 font-bold'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
             }`}
             title="Normal Paragraph (P)"
           >
@@ -576,8 +624,8 @@ function MenuBar({ editor }) {
             onClick={() => handleHeadingClick(1)}
             className={`px-2.5 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
               editor.isActive('heading', { level: 1 })
-                ? 'text-[#c79c6e] bg-[#c79c6e]/20'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'text-[#c9542f] bg-[#c9542f]/10'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
             }`}
             title="Heading 1 (H1)"
           >
@@ -588,8 +636,8 @@ function MenuBar({ editor }) {
             onClick={() => handleHeadingClick(2)}
             className={`px-2.5 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
               editor.isActive('heading', { level: 2 })
-                ? 'text-[#c79c6e] bg-[#c79c6e]/20'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'text-[#c9542f] bg-[#c9542f]/10'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
             }`}
             title="Heading 2 (H2)"
           >
@@ -600,8 +648,8 @@ function MenuBar({ editor }) {
             onClick={() => handleHeadingClick(3)}
             className={`px-2.5 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
               editor.isActive('heading', { level: 3 })
-                ? 'text-[#c79c6e] bg-[#c79c6e]/20'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'text-[#c9542f] bg-[#c9542f]/10'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
             }`}
             title="Heading 3 (H3)"
           >
@@ -610,168 +658,182 @@ function MenuBar({ editor }) {
         </div>
 
         {/* ── Inline Font Size Selector for specific selected text ── */}
-        <div className="flex items-center bg-black/40 border border-white/10 rounded-lg px-2 py-1 gap-1">
-          <TextAa size={14} className="text-[#c79c6e]" />
+        <div className="flex items-center bg-white border border-stone-200 rounded-lg px-2.5 py-1 gap-1.5 shadow-sm">
+          <TextAa size={14} className="text-[#c9542f]" />
           <select
             onChange={(e) => setFontSize(e.target.value)}
             value={editor.getAttributes('textStyle').fontSize || ''}
-            className="bg-transparent text-white/80 text-xs focus:outline-none cursor-pointer border-none"
+            className="bg-white text-stone-800 text-xs focus:outline-none cursor-pointer border-none font-medium pr-1"
             title="Font Size (Selected Text)"
           >
             {FONT_SIZES.map((fs) => (
-              <option key={fs.label} value={fs.value} className="bg-[#1a1714] text-white">
+              <option key={fs.label} value={fs.value} className="bg-white text-stone-900 py-1">
                 {fs.label}
               </option>
             ))}
           </select>
         </div>
 
-        <div className="w-[1px] h-5 bg-white/10 mx-0.5" />
+        <div className="w-[1px] h-5 bg-stone-200 mx-0.5" />
 
-        {/* ── Brand Gold Color Direct Toggle (Dedicated Mark) ── */}
+        {/* ── Category Specific Highlight Color Button ── */}
         <button
           type="button"
-          onClick={handleGoldToggle}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-            isGoldActive
-              ? 'bg-[#c79c6e]/25 border-[#c79c6e] text-[#c79c6e] font-semibold shadow-[0_0_12px_rgba(199,156,110,0.35)] ring-1 ring-[#c79c6e]/50'
-              : 'bg-black/40 border-white/10 text-white/80 hover:text-[#c79c6e] hover:border-[#c79c6e]/50'
-          }`}
-          title="Apply Brand Gold Color (#c79c6e)"
+          onClick={handleColorToggle}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-sm text-xs font-medium"
+          style={
+            isColorActive
+              ? {
+                  backgroundColor: `${highlightColor}20`,
+                  borderColor: highlightColor,
+                  color: highlightColor,
+                  fontWeight: 700,
+                  boxShadow: `0 0 10px ${highlightColor}30`,
+                }
+              : {
+                  backgroundColor: '#ffffff',
+                  borderColor: '#e7e5e4',
+                  color: '#44403c',
+                }
+          }
+          title={`Apply ${highlightLabel} Highlight Color (${highlightColor})`}
         >
-          <span className="w-2.5 h-2.5 rounded-full bg-[#c79c6e] shadow-sm inline-block shrink-0" />
-          <span className="font-medium tracking-wide">Gold</span>
+          <span
+            className="w-2.5 h-2.5 rounded-full shadow-sm inline-block shrink-0 ring-1 ring-black/10"
+            style={{ backgroundColor: highlightColor }}
+          />
+          <span className="tracking-wide">{highlightLabel}</span>
         </button>
 
-        <div className="w-[1px] h-5 bg-white/10 mx-0.5" />
+        <div className="w-[1px] h-5 bg-stone-200 mx-0.5" />
 
         {/* ── Text Inline Styling Marks (Bold, Italic, Underline, Strike, Highlight) ── */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center bg-white border border-stone-200 rounded-lg p-0.5 shadow-sm gap-0.5">
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('bold') ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('bold') ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Bold (Ctrl+B)"
           >
-            <TextB size={16} weight="bold" />
+            <TextB size={15} weight="bold" />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('italic') ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('italic') ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Italic (Ctrl+I)"
           >
-            <TextItalic size={16} />
+            <TextItalic size={15} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('underline') ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('underline') ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Underline (Ctrl+U)"
           >
-            <TextUnderline size={16} />
+            <TextUnderline size={15} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleStrike().run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('strike') ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('strike') ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Strikethrough"
           >
-            <TextStrikethrough size={16} />
+            <TextStrikethrough size={15} />
           </button>
           <button
             type="button"
-            onClick={() => editor.chain().focus().toggleHighlight({ color: '#c79c6e33' }).run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('highlight') ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
-            title="Gold Highlighter Marker"
+            onClick={() => editor.chain().focus().toggleHighlight({ color: '#c9542f25' }).run()}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('highlight') ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
+            title="Marker Highlighter"
           >
-            <HighlighterCircle size={16} />
+            <HighlighterCircle size={15} />
           </button>
         </div>
 
-        <div className="w-[1px] h-5 bg-white/10 mx-0.5" />
+        <div className="w-[1px] h-5 bg-stone-200 mx-0.5" />
 
         {/* ── Lists & Blockquote ── */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center bg-white border border-stone-200 rounded-lg p-0.5 shadow-sm gap-0.5">
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('bulletList') ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('bulletList') ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Bullet List"
           >
-            <ListBullets size={16} />
+            <ListBullets size={16} weight={editor.isActive('bulletList') ? 'bold' : 'regular'} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('orderedList') ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('orderedList') ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Numbered List"
           >
-            <ListNumbers size={16} />
+            <ListNumbers size={16} weight={editor.isActive('orderedList') ? 'bold' : 'regular'} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('blockquote') ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
-            title="Blockquote"
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive('blockquote') ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
+            title="Blockquote / Quote"
           >
-            <Quotes size={16} />
+            <Quotes size={16} weight={editor.isActive('blockquote') ? 'bold' : 'regular'} />
           </button>
         </div>
 
-        <div className="w-[1px] h-5 bg-white/10 mx-0.5" />
+        <div className="w-[1px] h-5 bg-stone-200 mx-0.5" />
 
         {/* ── Alignment ── */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center bg-white border border-stone-200 rounded-lg p-0.5 shadow-sm gap-0.5">
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive({ textAlign: 'left' }) ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive({ textAlign: 'left' }) ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Align Left"
           >
-            <TextAlignLeft size={16} />
+            <TextAlignLeft size={15} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive({ textAlign: 'center' }) ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive({ textAlign: 'center' }) ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Align Center"
           >
-            <TextAlignCenter size={16} />
+            <TextAlignCenter size={15} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive({ textAlign: 'right' }) ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive({ textAlign: 'right' }) ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Align Right"
           >
-            <TextAlignRight size={16} />
+            <TextAlignRight size={15} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive({ textAlign: 'justify' }) ? 'text-[#c79c6e] bg-[#c79c6e]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${editor.isActive({ textAlign: 'justify' }) ? 'text-[#c9542f] bg-[#c9542f]/10 font-bold' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}
             title="Justify"
           >
-            <TextAlignJustify size={16} />
+            <TextAlignJustify size={15} />
           </button>
         </div>
 
-        <div className="w-[1px] h-5 bg-white/10 mx-0.5" />
+        <div className="w-[1px] h-5 bg-stone-200 mx-0.5" />
 
         {/* ── Image Upload Button ── */}
-        <label className="p-1.5 rounded transition-colors text-white/70 hover:text-[#c79c6e] hover:bg-white/10 cursor-pointer flex items-center justify-center gap-1 bg-black/40 border border-white/10 px-2" title="Upload & Insert Image">
-          <ImageIcon size={16} />
-          <span className="text-[11px] font-medium text-white/80">Image</span>
+        <label className="p-1.5 rounded-lg transition-colors text-stone-700 hover:text-[#c9542f] hover:bg-stone-100 cursor-pointer flex items-center justify-center gap-1.5 bg-white border border-stone-200 px-2.5 shadow-sm" title="Upload & Insert Image">
+          <ImageIcon size={15} className="text-[#c9542f]" />
+          <span className="text-xs font-medium text-stone-800">Image</span>
           <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
         </label>
 
         {/* ── Clear / Eraser & Undo / Redo ── */}
-        <div className="flex items-center gap-0.5 ml-auto">
+        <div className="flex items-center gap-1 ml-auto">
           <button
             type="button"
             onClick={clearFormatting}
-            className="p-1.5 rounded transition-colors text-white/50 hover:text-rose-400 hover:bg-white/10 cursor-pointer"
+            className="p-1.5 rounded-lg transition-colors text-stone-500 hover:text-rose-600 hover:bg-rose-50 cursor-pointer border border-transparent hover:border-rose-200"
             title="Clear All Formatting"
           >
             <Eraser size={16} />
@@ -780,7 +842,7 @@ function MenuBar({ editor }) {
             type="button"
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}
-            className="p-1.5 rounded transition-colors text-white/50 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            className="p-1.5 rounded-lg transition-colors text-stone-600 hover:text-stone-900 hover:bg-white hover:border hover:border-stone-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             title="Undo (Ctrl+Z)"
           >
             <ArrowCounterClockwise size={16} />
@@ -789,7 +851,7 @@ function MenuBar({ editor }) {
             type="button"
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
-            className="p-1.5 rounded transition-colors text-white/50 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            className="p-1.5 rounded-lg transition-colors text-stone-600 hover:text-stone-900 hover:bg-white hover:border hover:border-stone-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             title="Redo (Ctrl+Y)"
           >
             <ArrowClockwise size={16} />
@@ -799,22 +861,22 @@ function MenuBar({ editor }) {
 
       {/* ── Top Image Alignment & Size Control Bar ── */}
       {isImageSelected && (
-        <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 bg-[#1a1510] border-t border-[#c79c6e]/40 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 bg-stone-100 border-t border-stone-200 animate-in fade-in slide-in-from-top-1 duration-200">
           
           {/* Left: Align Controls */}
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#c79c6e] flex items-center gap-1">
-              <ImageIcon size={14} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-1">
+              <ImageIcon size={14} className="text-[#c9542f]" />
               Wrap / Align:
             </span>
-            <div className="flex items-center bg-black/60 border border-white/15 rounded-lg p-0.5">
+            <div className="flex items-center bg-white border border-stone-200 rounded-lg p-0.5 shadow-sm">
               <button
                 type="button"
                 onClick={() => setImageAlign('left')}
                 className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 transition-colors cursor-pointer ${
                   activeAlign === 'left'
-                    ? 'bg-[#c79c6e] text-black font-bold shadow-sm'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-[#c9542f] text-white font-bold shadow-sm'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
                 }`}
                 title="Float Left (Text wraps on right)"
               >
@@ -826,8 +888,8 @@ function MenuBar({ editor }) {
                 onClick={() => setImageAlign('center')}
                 className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 transition-colors cursor-pointer ${
                   activeAlign === 'center'
-                    ? 'bg-[#c79c6e] text-black font-bold shadow-sm'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-[#c9542f] text-white font-bold shadow-sm'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
                 }`}
                 title="Center (Full line, no wrap)"
               >
@@ -839,8 +901,8 @@ function MenuBar({ editor }) {
                 onClick={() => setImageAlign('right')}
                 className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 transition-colors cursor-pointer ${
                   activeAlign === 'right'
-                    ? 'bg-[#c79c6e] text-black font-bold shadow-sm'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-[#c9542f] text-white font-bold shadow-sm'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
                 }`}
                 title="Float Right (Text wraps on left)"
               >
@@ -852,11 +914,11 @@ function MenuBar({ editor }) {
 
           {/* Center: Width / Size Presets */}
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#c79c6e] flex items-center gap-1">
-              <ArrowsInLineHorizontal size={14} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-1">
+              <ArrowsInLineHorizontal size={14} className="text-[#c9542f]" />
               Width:
             </span>
-            <div className="flex items-center bg-black/60 border border-white/15 rounded-lg p-0.5">
+            <div className="flex items-center bg-white border border-stone-200 rounded-lg p-0.5 shadow-sm">
               {['25%', '50%', '75%', '100%'].map((w) => {
                 const isCurrent = activeWidth === w;
                 return (
@@ -866,8 +928,8 @@ function MenuBar({ editor }) {
                     onClick={() => setImageWidth(w)}
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
                       isCurrent
-                        ? 'bg-[#c79c6e] text-black font-bold shadow-sm'
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                        ? 'bg-[#c9542f] text-white font-bold shadow-sm'
+                        : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
                     }`}
                   >
                     {w}
@@ -881,7 +943,7 @@ function MenuBar({ editor }) {
           <button
             type="button"
             onClick={handleDeleteImage}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500 hover:text-white transition-all cursor-pointer text-xs"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white transition-all cursor-pointer text-xs font-medium shadow-sm"
             title="Remove Image"
           >
             <Trash size={14} />
@@ -895,7 +957,14 @@ function MenuBar({ editor }) {
   );
 }
 
-export default function TiptapEditor({ value, content, onChange }) {
+export default function TiptapEditor({
+  value,
+  content,
+  onChange,
+  highlightColor = '#c79c6e',
+  highlightLabel = 'Highlight',
+  placeholder = 'Write content here...'
+}) {
   const initialData = value !== undefined ? value : content !== undefined ? content : '';
 
   const editor = useEditor({
@@ -907,7 +976,7 @@ export default function TiptapEditor({ value, content, onChange }) {
       }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       CustomTextStyle,
-      GoldMark,
+      ColorMark,
       Underline,
       Highlight.configure({ multicolor: true }),
       CustomImage,
@@ -917,7 +986,7 @@ export default function TiptapEditor({ value, content, onChange }) {
     editorProps: {
       attributes: {
         class:
-          'tiptap-content prose prose-invert max-w-none focus:outline-none min-h-[480px] p-6 text-white/85 text-sm sm:text-base leading-relaxed font-sans prose-headings:font-serif prose-headings:font-normal prose-headings:text-white prose-h1:text-3xl prose-h1:font-serif prose-h1:text-white prose-h2:text-2xl prose-h2:text-[#c79c6e] prose-h2:font-serif prose-h2:mt-6 prose-h2:mb-3 prose-h3:text-lg prose-h3:text-white prose-p:my-2 prose-p:text-white/80 prose-ul:text-white/80 prose-li:my-1.5 prose-a:text-[#c79c6e] prose-blockquote:border-l-2 prose-blockquote:border-[#c79c6e] prose-blockquote:pl-4 prose-blockquote:italic custom-scrollbar',
+          'tiptap-content max-w-none focus:outline-none min-h-[420px] p-6 text-stone-900 text-base leading-relaxed font-sans custom-scrollbar',
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
@@ -935,17 +1004,100 @@ export default function TiptapEditor({ value, content, onChange }) {
   }, [editor, value, content]);
 
   return (
-    <div className="tiptap-editor-container border border-white/10 rounded-xl overflow-hidden focus-within:border-[#c79c6e]/50 transition-colors bg-[#0a0a0a] shadow-lg relative">
+    <div
+      className="tiptap-editor-container border border-stone-200 rounded-xl overflow-hidden transition-all bg-white shadow-sm relative focus-within:border-[#c9542f] focus-within:ring-1 focus-within:ring-[#c9542f]/30"
+    >
       <style>{`
-        .tiptap-editor-container .ProseMirror [data-gold],
-        .tiptap-editor-container .ProseMirror [data-gold] *,
-        .tiptap-editor-container .ProseMirror .text-gold,
-        .tiptap-editor-container .ProseMirror .text-gold * {
-          color: #c79c6e !important;
+        .tiptap-editor-container .ProseMirror {
+          outline: none !important;
+          color: #1c1917;
+          font-size: 1rem;
+          line-height: 1.8;
+          min-height: 380px;
+        }
+        .tiptap-editor-container .ProseMirror p {
+          margin: 0.65rem 0;
+          color: #1c1917;
+        }
+        .tiptap-editor-container .ProseMirror h1 {
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: 1.85rem;
+          font-weight: 700;
+          color: #111010;
+          margin-top: 1.5rem;
+          margin-bottom: 0.75rem;
+          line-height: 1.3;
+        }
+        .tiptap-editor-container .ProseMirror h2 {
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #111010;
+          margin-top: 1.25rem;
+          margin-bottom: 0.5rem;
+          line-height: 1.35;
+        }
+        .tiptap-editor-container .ProseMirror h3 {
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #111010;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+          line-height: 1.4;
+        }
+        /* Explicit List styling */
+        .tiptap-editor-container .ProseMirror ul,
+        .tiptap-content ul {
+          list-style-type: disc !important;
+          padding-left: 2rem !important;
+          margin: 0.85rem 0 !important;
+        }
+        .tiptap-editor-container .ProseMirror ol,
+        .tiptap-content ol {
+          list-style-type: decimal !important;
+          padding-left: 2rem !important;
+          margin: 0.85rem 0 !important;
+        }
+        .tiptap-editor-container .ProseMirror li,
+        .tiptap-content li {
+          margin: 0.35rem 0 !important;
+          display: list-item !important;
+          color: #1c1917 !important;
+        }
+        .tiptap-editor-container .ProseMirror li p,
+        .tiptap-content li p {
+          margin: 0 !important;
+          display: inline;
+        }
+        /* Explicit Blockquote styling */
+        .tiptap-editor-container .ProseMirror blockquote,
+        .tiptap-content blockquote {
+          border-left: 3px solid #c9542f !important;
+          padding: 0.65rem 1.25rem !important;
+          margin: 1.25rem 0 !important;
+          font-style: italic !important;
+          color: #44403c !important;
+          background: #faf7f0 !important;
+          border-radius: 0 0.5rem 0.5rem 0 !important;
+        }
+        .tiptap-editor-container .ProseMirror [data-color] {
+          /* Styled dynamically via inline style */
+        }
+        .tiptap-editor-container .ProseMirror [data-gold]:not([data-color]),
+        .tiptap-editor-container .ProseMirror .text-gold:not([data-color]) {
+          color: ${highlightColor || '#c9542f'} !important;
         }
         .tiptap-editor-container .ProseMirror strong,
         .tiptap-editor-container .ProseMirror b {
           font-weight: 700;
+          color: #111010;
+        }
+        .tiptap-editor-container .ProseMirror mark {
+          background-color: rgba(201, 84, 47, 0.15);
+          color: inherit;
+          padding: 0.1rem 0.3rem;
+          border-radius: 0.25rem;
         }
         .tiptap-editor-container .ProseMirror::after {
           content: "";
@@ -953,8 +1105,8 @@ export default function TiptapEditor({ value, content, onChange }) {
           clear: both;
         }
       `}</style>
-      <MenuBar editor={editor} />
-      <EditorContent editor={editor} className="bg-transparent" />
+      <MenuBar editor={editor} highlightColor={highlightColor} highlightLabel={highlightLabel} />
+      <EditorContent editor={editor} className="bg-white min-h-[380px]" />
     </div>
   );
 }

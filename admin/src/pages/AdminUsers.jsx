@@ -19,7 +19,12 @@ import {
   Megaphone,
   Question,
   CheckCircle,
-  Sparkle
+  Sparkle,
+  WarningCircle,
+  ShieldCheck,
+  ArrowCounterClockwise,
+  Receipt,
+  Info
 } from '@phosphor-icons/react';
 
 const formatSource = (src) => {
@@ -58,6 +63,40 @@ const formatTimeRange = (timeStr, duration = 60) => {
   const formattedEndTime = `${endDisplayHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')} ${endAmpm}`;
 
   return `${formattedStartTime} – ${formattedEndTime}`;
+};
+
+const formatDisplayDate = (dateVal) => {
+  if (!dateVal) return '—';
+  try {
+    const str = String(dateVal).trim();
+    
+    // Case 1: Format "YYYY-MM-DD" e.g. "2026-10-08" or "2026-10-1"
+    const ymdMatch = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (ymdMatch) {
+      const year = parseInt(ymdMatch[1], 10);
+      const month = parseInt(ymdMatch[2], 10) - 1;
+      const day = parseInt(ymdMatch[3], 10);
+      const d = new Date(year, month, day);
+      if (!isNaN(d.getTime())) {
+        const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+        const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+        return `${weekday}, ${day} ${monthName} ${year}`;
+      }
+    }
+
+    // Case 2: Parse standard date formats (like "Thursday, October 1, 2026" or ISO)
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+      const day = d.getDate();
+      const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+      const year = d.getFullYear();
+      return `${weekday}, ${day} ${monthName} ${year}`;
+    }
+  } catch (e) {
+    console.error('Error in formatDisplayDate:', e);
+  }
+  return dateVal;
 };
 
 export default function AdminUsers() {
@@ -184,6 +223,7 @@ export default function AdminUsers() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [bookingFilter, setBookingFilter] = useState('All');
   const [accountFilter, setAccountFilter] = useState('All');
+  const [rescheduleFilter, setRescheduleFilter] = useState('All');
 
   // Dropdown UI states
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -241,14 +281,23 @@ export default function AdminUsers() {
     }
   };
 
+  const [isProcessingReschedule, setIsProcessingReschedule] = useState(false);
+
   const handleRescheduleAction = async (userId, sessionId, action) => {
+    const targetSessionId = sessionId || selectedSession?._id || selectedSession?.id;
+    if (!targetSessionId) {
+      showError('Session ID is missing');
+      return;
+    }
+
+    setIsProcessingReschedule(true);
     try {
       const token = localStorage.getItem('adminToken');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       
       const endpoint = action === 'approve' ? 'approve-reschedule' : 'reject-reschedule';
       
-      const res = await fetch(`${apiUrl}/api/appointments/admin/${sessionId}/${endpoint}`, {
+      const res = await fetch(`${apiUrl}/api/appointments/admin/${targetSessionId}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -257,41 +306,196 @@ export default function AdminUsers() {
       });
       
       if (!res.ok) {
-        throw new Error('Failed to perform action');
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || 'Failed to perform action');
       }
 
       const updatedAppointment = await res.json();
+      const newStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
       
+      // Immediately update selectedSession in UI
+      setSelectedSession(prev => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          date: action === 'approve' ? (updatedAppointment.date || prev.rescheduleRequest?.date || prev.date) : prev.date,
+          time: action === 'approve' ? (updatedAppointment.time || prev.rescheduleRequest?.time || prev.time) : prev.time,
+          rescheduleRequest: {
+            ...(prev.rescheduleRequest || {}),
+            status: newStatus
+          }
+        };
+        sessionStorage.setItem('admin_users_selected_session', JSON.stringify(updated));
+        return updated;
+      });
+
+      // Update user in users list state
       setUsers(prevUsers => prevUsers.map(user => {
-        if (user.id === userId) {
-          const updatedHistory = user.history.map(session => 
-            session.id === sessionId 
-              ? { 
-                  ...session, 
-                  date: updatedAppointment.date,
-                  time: updatedAppointment.time,
-                  rescheduleRequest: updatedAppointment.rescheduleRequest 
-                } 
-              : session
-          );
+        const isTargetUser = (user.id === userId || user._id === userId || (selectedUser && (user.id === selectedUser.id || user._id === selectedUser._id)));
+        if (isTargetUser) {
+          const updatedHistory = (user.history || []).map(session => {
+            const isMatch = (session.id === targetSessionId || session._id === targetSessionId || session.id === sessionId || session._id === sessionId);
+            if (isMatch) {
+              return { 
+                ...session, 
+                date: action === 'approve' ? (updatedAppointment.date || session.rescheduleRequest?.date || session.date) : session.date,
+                time: action === 'approve' ? (updatedAppointment.time || session.rescheduleRequest?.time || session.time) : session.time,
+                rescheduleRequest: {
+                  ...(session.rescheduleRequest || {}),
+                  status: newStatus
+                }
+              };
+            }
+            return session;
+          });
           return { ...user, history: updatedHistory };
         }
         return user;
       }));
 
-      if (selectedSession && selectedSession.id === sessionId) {
+      showSuccess(`Reschedule request ${action === 'approve' ? 'approved' : 'declined'} successfully!`);
+    } catch (err) {
+      console.error('handleRescheduleAction error:', err);
+      showError(`Failed to ${action} reschedule request: ${err.message}`);
+    } finally {
+      setIsProcessingReschedule(false);
+    }
+  };
+
+  // 48-Hour Reschedule Window Calculator
+  const get48HoursNoticeInfo = (date, time) => {
+    if (!date || !time) return null;
+    try {
+      const scheduled = new Date(`${date} ${time} GMT+0530`);
+      if (isNaN(scheduled.getTime())) return null;
+      const now = new Date();
+      const diffMs = scheduled - now;
+      const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+      
+      if (diffMs <= 0) {
+        return {
+          status: 'PAST',
+          hours: Math.abs(diffHours),
+          badgeText: 'Past Session',
+          badgeClass: 'bg-zinc-800/80 text-zinc-400 border-zinc-700/60',
+          isSafe: false,
+          isLate: false,
+        };
+      }
+      if (diffHours >= 48) {
+        return {
+          status: 'SAFE',
+          hours: diffHours,
+          badgeText: `> 48h Safe (${diffHours}h left)`,
+          badgeSub: 'Free Reschedule Eligible',
+          badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+          isSafe: true,
+          isLate: false,
+        };
+      }
+      return {
+        status: 'LATE',
+        hours: diffHours,
+        badgeText: `< 48h Window (${diffHours}h left)`,
+        badgeSub: 'Late / Locked Window',
+        badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+        isSafe: false,
+        isLate: true,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  // Refund Modal State & Actions
+  const [refundModalSession, setRefundModalSession] = useState(null);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [isRefunding, setIsRefunding] = useState(false);
+
+  const openRefundModal = (session, user) => {
+    const defaultAmt = session.amount !== undefined && session.amount !== null 
+      ? session.amount 
+      : (session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min);
+
+    setRefundModalSession({
+      ...session,
+      userId: user.id,
+      userName: user.name,
+      userEmail: user.email,
+      defaultAmount: defaultAmt
+    });
+    setRefundReason('Client Emergency / Cancellation Request');
+    setRefundAmount(defaultAmt);
+  };
+
+  const handleIssueRefund = async () => {
+    if (!refundModalSession) return;
+    setIsRefunding(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/appointments/admin/${refundModalSession.id}/issue-refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          reason: refundReason || 'Admin issued emergency refund',
+          refundAmount: refundAmount !== '' ? Number(refundAmount) : refundModalSession.defaultAmount
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to issue refund');
+      }
+
+      const data = await res.json();
+      const refundedAmt = data.appointment?.refundAmount !== undefined ? data.appointment.refundAmount : refundAmount;
+      showSuccess(`Refund of ₹${Number(refundedAmt).toLocaleString('en-IN')} processed successfully!`);
+
+      // Update local state
+      setUsers(prevUsers => prevUsers.map(u => {
+        if (u.id === refundModalSession.userId) {
+          const updatedHistory = u.history.map(s => 
+            s.id === refundModalSession.id 
+              ? { 
+                  ...s, 
+                  status: 'REFUNDED', 
+                  payment: 'Refunded', 
+                  refundStatus: 'REFUNDED', 
+                  refundReason: data.appointment?.refundReason || refundReason, 
+                  refundAmount: refundedAmt,
+                  refundedAt: data.appointment?.refundedAt || new Date()
+                } 
+              : s
+          );
+          return { ...u, history: updatedHistory };
+        }
+        return u;
+      }));
+
+      if (selectedSession && selectedSession.id === refundModalSession.id) {
         setSelectedSession(prev => ({
-           ...prev,
-           date: updatedAppointment.date,
-           time: updatedAppointment.time,
-           rescheduleRequest: updatedAppointment.rescheduleRequest
+          ...prev,
+          status: 'REFUNDED',
+          payment: 'Refunded',
+          refundStatus: 'REFUNDED',
+          refundReason: data.appointment?.refundReason || refundReason,
+          refundAmount: refundedAmt,
+          refundedAt: data.appointment?.refundedAt || new Date()
         }));
       }
 
-      showSuccess(`Reschedule request ${action === 'approve' ? 'approved' : 'declined'} successfully!`);
+      setRefundModalSession(null);
+      setRefundReason('');
+      setRefundAmount('');
     } catch (err) {
-      console.error(err);
-      showError(`Failed to ${action} reschedule request`);
+      console.error('Refund error:', err);
+      showError('Failed to process refund.');
+    } finally {
+      setIsRefunding(false);
     }
   };
 
@@ -355,9 +559,11 @@ export default function AdminUsers() {
                             appDateObj.getFullYear() === today.getFullYear();
             
             let calculatedStatus = app.status || 'Upcoming';
-            if (calculatedStatus.toLowerCase() !== 'completed' && isToday) {
+            if (calculatedStatus.toLowerCase() !== 'completed' && calculatedStatus.toLowerCase() !== 'refunded' && isToday) {
               calculatedStatus = 'Today';
             }
+
+            const isRefunded = app.status === 'REFUNDED' || app.refundStatus === 'REFUNDED';
 
             userMap[uId].history.push({
               id: app._id,
@@ -366,7 +572,9 @@ export default function AdminUsers() {
               type: isFreeSession ? '🎓 Course Complimentary Session' : (app.type || 'Life Coaching Session'),
               status: calculatedStatus,
               txnId: isFreeSession ? 'COURSE_FREE_SESSION' : (app.orderId || 'TXN-PENDING'),
-              payment: isFreeSession ? 'Free' : (app.paymentId ? 'Paid' : (app.paymentStatus || 'Failed')),
+              paymentId: app.paymentId || '',
+              orderId: app.orderId || '',
+              payment: isRefunded ? 'Refunded' : (isFreeSession ? 'Free' : (app.paymentId ? 'Paid' : (app.paymentStatus || 'Failed'))),
               beforeWeSpeak: app.reason || '',
               reason: app.reason || '',
               extra: app.extra || '',
@@ -376,6 +584,10 @@ export default function AdminUsers() {
               isFreeSession: isFreeSession,
               isCourseMember: isCourseMember,
               amount: app.amount,
+              refundStatus: app.refundStatus || 'NONE',
+              refundAmount: app.refundAmount || 0,
+              refundReason: app.refundReason || '',
+              refundedAt: app.refundedAt || null,
               coachNotes: app.coachNotes || '',
               questionnaireAnswers: app.questionnaireAnswers || null
             });
@@ -461,6 +673,7 @@ export default function AdminUsers() {
       case 'upcoming': return 'text-[#c79c6e] border-[#c79c6e]/40';
       case 'completed': return 'text-green-500 border-green-500/40';
       case 'cancelled': return 'text-red-500 border-red-500/40';
+      case 'refunded': return 'text-purple-400 border-purple-500/40 bg-purple-500/10';
       case 'today': return 'text-blue-400 border-blue-400/40';
       default: return 'text-white/60 border-white/20';
     }
@@ -473,6 +686,7 @@ export default function AdminUsers() {
       case 'complimentary': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30 font-semibold';
       case 'failed': return 'text-red-500 bg-red-500/10 border-red-500/20';
       case 'pending': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+      case 'refunded': return 'text-purple-400 bg-purple-500/10 border-purple-500/30 font-semibold';
       default: return 'text-white/60 border-white/20';
     }
   };
@@ -483,6 +697,7 @@ export default function AdminUsers() {
     setStatusFilter('All');
     setBookingFilter('All');
     setAccountFilter('All');
+    setRescheduleFilter('All');
   };
 
   // Filtering Logic
@@ -506,7 +721,24 @@ export default function AdminUsers() {
     if (accountFilter === 'Active') matchesAccount = !user.isDeleted;
     if (accountFilter === 'Deleted') matchesAccount = !!user.isDeleted;
 
-    return matchesSearch && matchesPayment && matchesStatus && matchesBooking && matchesAccount;
+    let matchesReschedule = true;
+    if (rescheduleFilter === 'Has Reschedule') {
+      matchesReschedule = user.history.some(h => !!h.rescheduleRequest);
+    } else if (rescheduleFilter === 'Paid Reschedule') {
+      matchesReschedule = user.history.some(h => h.rescheduleRequest?.rescheduleFeePaid);
+    } else if (rescheduleFilter === 'Pending Reschedule') {
+      matchesReschedule = user.history.some(h => h.rescheduleRequest?.status === 'PENDING');
+    } else if (rescheduleFilter === 'Approved Reschedule') {
+      matchesReschedule = user.history.some(h => h.rescheduleRequest?.status === 'APPROVED');
+    } else if (rescheduleFilter === 'Rejected Reschedule') {
+      matchesReschedule = user.history.some(h => h.rescheduleRequest?.status === 'REJECTED');
+    } else if (rescheduleFilter === '< 48h Late') {
+      matchesReschedule = user.history.some(h => h.rescheduleRequest?.isWithin48Hours);
+    } else if (rescheduleFilter === '> 48h Safe') {
+      matchesReschedule = user.history.some(h => h.rescheduleRequest && !h.rescheduleRequest.isWithin48Hours);
+    }
+
+    return matchesSearch && matchesPayment && matchesStatus && matchesBooking && matchesAccount && matchesReschedule;
   });
 
   return (
@@ -600,7 +832,7 @@ export default function AdminUsers() {
           />
         </div>
         
-        {(searchQuery || paymentFilter !== 'All' || statusFilter !== 'All' || bookingFilter !== 'All' || accountFilter !== 'All') && (
+        {(searchQuery || paymentFilter !== 'All' || statusFilter !== 'All' || bookingFilter !== 'All' || accountFilter !== 'All' || rescheduleFilter !== 'All') && (
           <button 
             onClick={clearFilters}
             className="text-[#c79c6e] hover:text-white text-xs uppercase tracking-widest font-semibold transition-colors px-2"
@@ -614,6 +846,55 @@ export default function AdminUsers() {
         {/* Dropdowns */}
         <div className="flex flex-wrap items-center gap-3">
           
+          {/* Reschedule Filter */}
+          <div className="relative">
+            <button 
+              onClick={() => setActiveDropdown(activeDropdown === 'reschedule' ? null : 'reschedule')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs transition-colors ${
+                rescheduleFilter !== 'All' 
+                  ? 'border-amber-500/50 bg-amber-500/10 text-amber-300 font-semibold' 
+                  : 'border-white/10 bg-[#050505] text-white/70 hover:text-white'
+              }`}
+            >
+              <span className="text-white/40 uppercase tracking-widest text-[0.65rem] mr-2">Reschedule</span>
+              <span className={rescheduleFilter === 'Paid Reschedule' ? 'text-emerald-400 font-semibold' : rescheduleFilter === 'Pending Reschedule' ? 'text-yellow-400 font-semibold' : ''}>
+                {rescheduleFilter}
+              </span>
+              <CaretDown size={12} className="ml-2" />
+            </button>
+            {activeDropdown === 'reschedule' && (
+              <div className="absolute top-full left-0 mt-2 w-56 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
+                {[
+                  { label: 'All', value: 'All' },
+                  { label: 'Any Reschedule Request', value: 'Has Reschedule' },
+                  { label: '💳 Paid Reschedules', value: 'Paid Reschedule', badge: 'bg-emerald-500/20 text-emerald-300' },
+                  { label: '⏳ Pending Requests', value: 'Pending Reschedule', badge: 'bg-yellow-500/20 text-yellow-300' },
+                  { label: '✅ Approved Reschedules', value: 'Approved Reschedule', badge: 'bg-green-500/20 text-green-300' },
+                  { label: '❌ Rejected Reschedules', value: 'Rejected Reschedule', badge: 'bg-red-500/20 text-red-300' },
+                  { label: '⚠️ < 48h Late Window', value: '< 48h Late', badge: 'bg-rose-500/20 text-rose-300' },
+                  { label: '🟢 > 48h Safe Window', value: '> 48h Safe', badge: 'bg-emerald-500/20 text-emerald-300' },
+                ].map(opt => (
+                  <button 
+                    key={opt.value} 
+                    onClick={() => { setRescheduleFilter(opt.value); setActiveDropdown(null); }} 
+                    className={`px-4 py-2 text-left text-xs transition-colors hover:bg-white/5 flex items-center justify-between ${
+                      rescheduleFilter === opt.value 
+                        ? 'text-[#c79c6e] font-semibold bg-white/[0.03]' 
+                        : 'text-white/70 hover:text-white'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {opt.badge && (
+                      <span className={`text-[0.58rem] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider ${opt.badge}`}>
+                        {opt.value.split(' ')[0]}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Payment Filter */}
           <div className="relative">
             <button 
@@ -784,7 +1065,7 @@ export default function AdminUsers() {
                     {user.nextAppointmentDate ? (
                       <>
                         <div className="flex flex-col">
-                          <span className="text-white/90 text-sm">{user.nextAppointmentDate}</span>
+                          <span className="text-white/90 text-sm">{formatDisplayDate(user.nextAppointmentDate)}</span>
                           <span className="text-white/50 text-xs">{formatTimeRange(user.nextAppointmentTime, user.history?.[0]?.duration || 60)}</span>
                         </div>
                         <div className="relative inline-block">
@@ -851,8 +1132,14 @@ export default function AdminUsers() {
                   </div>
                   
                   <div className="flex flex-col items-start gap-1">
-                    {user.history.some(h => h.rescheduleRequest && h.rescheduleRequest.status === 'PENDING') ? (
-                      <span className="text-yellow-500 text-xs font-medium px-2 py-1 bg-yellow-500/10 rounded-full border border-yellow-500/20">Pending</span>
+                    {user.history.some(h => h.rescheduleRequest?.status === 'PENDING') ? (
+                      <span className="text-yellow-400 text-xs font-medium px-2 py-0.5 bg-yellow-500/10 rounded-full border border-yellow-500/20">Pending</span>
+                    ) : user.history.some(h => h.rescheduleRequest?.rescheduleFeePaid) ? (
+                      <span className="text-emerald-300 text-xs font-medium px-2 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">Paid Reschedule</span>
+                    ) : user.history.some(h => h.rescheduleRequest?.status === 'APPROVED') ? (
+                      <span className="text-green-400 text-xs font-medium px-2 py-0.5 bg-green-500/10 rounded-full border border-green-500/20">Approved</span>
+                    ) : user.history.some(h => h.rescheduleRequest?.status === 'REJECTED') ? (
+                      <span className="text-red-400 text-xs font-medium px-2 py-0.5 bg-red-500/10 rounded-full border border-red-500/20">Rejected</span>
                     ) : (
                       <span className="text-white/30 text-sm">—</span>
                     )}
@@ -882,7 +1169,25 @@ export default function AdminUsers() {
                       const filteredHistory = user.history.filter(h => {
                         const matchesPayment = paymentFilter === 'All' || h.payment.toLowerCase() === paymentFilter.toLowerCase();
                         const matchesStatus = statusFilter === 'All' || h.status.toLowerCase() === statusFilter.toLowerCase();
-                        return matchesPayment && matchesStatus;
+                        
+                        let matchesReschedule = true;
+                        if (rescheduleFilter === 'Has Reschedule') {
+                          matchesReschedule = !!h.rescheduleRequest;
+                        } else if (rescheduleFilter === 'Paid Reschedule') {
+                          matchesReschedule = !!h.rescheduleRequest?.rescheduleFeePaid;
+                        } else if (rescheduleFilter === 'Pending Reschedule') {
+                          matchesReschedule = h.rescheduleRequest?.status === 'PENDING';
+                        } else if (rescheduleFilter === 'Approved Reschedule') {
+                          matchesReschedule = h.rescheduleRequest?.status === 'APPROVED';
+                        } else if (rescheduleFilter === 'Rejected Reschedule') {
+                          matchesReschedule = h.rescheduleRequest?.status === 'REJECTED';
+                        } else if (rescheduleFilter === '< 48h Late') {
+                          matchesReschedule = !!h.rescheduleRequest?.isWithin48Hours;
+                        } else if (rescheduleFilter === '> 48h Safe') {
+                          matchesReschedule = !!h.rescheduleRequest && !h.rescheduleRequest.isWithin48Hours;
+                        }
+
+                        return matchesPayment && matchesStatus && matchesReschedule;
                       });
 
                       if (filteredHistory.length === 0) {
@@ -902,14 +1207,25 @@ export default function AdminUsers() {
                           </div>
                           
                           <div className="flex flex-col gap-2 pl-4 border-l border-white/10 ml-2">
-                            {filteredHistory.map((session) => (
-                            <div key={session.id} className="grid grid-cols-[1fr_2fr_1fr_1.5fr_1fr_1.5fr_100px] gap-4 items-center px-4 py-3 bg-[#111] border border-white/5 rounded-lg hover:border-white/10 transition-colors">
+                            {filteredHistory.map((session) => {
+                              const notice48h = get48HoursNoticeInfo(session.date, session.time);
+                              return (
+                            <div key={session.id} className="grid grid-cols-[1.3fr_2fr_1fr_1.3fr_1fr_1.4fr_110px] gap-4 items-center px-4 py-3 bg-[#111] border border-white/5 rounded-lg hover:border-white/10 transition-colors">
                               
                               <div className="flex items-start gap-3">
-                                <CalendarBlank size={16} className="text-white/30 mt-0.5" />
-                                <div className="flex flex-col">
-                                  <span className="text-white/80 text-sm">{session.date}</span>
+                                <CalendarBlank size={16} className="text-white/30 mt-0.5 shrink-0" />
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-white/80 text-sm font-medium">{formatDisplayDate(session.date)}</span>
                                   <span className="text-white/40 text-xs">{formatTimeRange(session.time, session.duration || 60)}</span>
+                                  {notice48h && session.status.toUpperCase() === 'UPCOMING' && (
+                                    <span 
+                                      className={`text-[0.6rem] px-2 py-0.5 rounded border inline-flex items-center gap-1 font-medium w-fit ${notice48h.badgeClass}`}
+                                      title={notice48h.badgeSub}
+                                    >
+                                      <span className={`w-1.5 h-1.5 rounded-full ${notice48h.isSafe ? 'bg-emerald-400' : notice48h.isLate ? 'bg-rose-400' : 'bg-zinc-400'}`} />
+                                      {notice48h.badgeText}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
 
@@ -928,14 +1244,14 @@ export default function AdminUsers() {
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (session.status.toUpperCase() !== 'CANCELLED') {
+                                      if (session.status.toUpperCase() !== 'CANCELLED' && session.status.toUpperCase() !== 'REFUNDED') {
                                         setStatusDropdownOpenId(statusDropdownOpenId === session.id ? null : session.id);
                                       }
                                     }}
-                                    className={`px-2.5 py-1 rounded-full border text-[0.65rem] uppercase tracking-wider hover:opacity-80 transition-opacity flex items-center gap-1 ${getStatusPillColor(session.status)} ${session.status.toUpperCase() === 'CANCELLED' ? 'cursor-default opacity-80 hover:opacity-80' : ''}`}
+                                    className={`px-2.5 py-1 rounded-full border text-[0.65rem] uppercase tracking-wider hover:opacity-80 transition-opacity flex items-center gap-1 ${getStatusPillColor(session.status)} ${(session.status.toUpperCase() === 'CANCELLED' || session.status.toUpperCase() === 'REFUNDED') ? 'cursor-default opacity-90' : ''}`}
                                   >
                                     {session.status}
-                                    {session.status.toUpperCase() !== 'CANCELLED' && <CaretDown size={10} />}
+                                    {session.status.toUpperCase() !== 'CANCELLED' && session.status.toUpperCase() !== 'REFUNDED' && <CaretDown size={10} />}
                                   </button>
                                   
                                   {statusDropdownOpenId === session.id && (
@@ -946,7 +1262,7 @@ export default function AdminUsers() {
                                             e.stopPropagation();
                                             updateAppointmentStatus(user.id, session.id, 'COMPLETED');
                                           }} 
-                                          className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-green-500 hover:bg-white/5 transition-colors"
+                                          className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-green-500 hover:bg-white/5 transition-colors cursor-pointer"
                                         >
                                           Completed
                                         </button>
@@ -957,7 +1273,7 @@ export default function AdminUsers() {
                                             e.stopPropagation();
                                             updateAppointmentStatus(user.id, session.id, 'UPCOMING');
                                           }} 
-                                          className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-[#c79c6e] hover:bg-white/5 transition-colors"
+                                          className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-[#c79c6e] hover:bg-white/5 transition-colors cursor-pointer"
                                         >
                                           Upcoming
                                         </button>
@@ -976,18 +1292,41 @@ export default function AdminUsers() {
                                   {session.payment}
                                 </span>
                                 <span className="text-white/80 text-[0.65rem] font-medium font-mono">
-                                  {session.isFreeSession
-                                    ? <span className="text-emerald-400 font-semibold">₹0 FREE</span>
-                                    : `₹${Number(session.amount !== undefined && session.amount !== null ? session.amount : (session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}`
-                                  }
+                                  {session.status === 'REFUNDED' ? (
+                                    <span className="text-purple-400 font-bold">₹{Number(session.refundAmount || session.amount || 0).toLocaleString('en-IN')}</span>
+                                  ) : session.isFreeSession ? (
+                                    <span className="text-emerald-400 font-semibold">₹0 FREE</span>
+                                  ) : session.rescheduleRequest?.rescheduleFeePaid ? (
+                                    <div className="flex flex-col items-start">
+                                      <span>₹{Number(session.amount || (session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}</span>
+                                      <span className="text-emerald-400 text-[0.58rem] font-semibold">+ ₹{Number(session.rescheduleRequest.rescheduleAmount || 5000).toLocaleString('en-IN')} Fee</span>
+                                    </div>
+                                  ) : (
+                                    `₹${Number(session.amount !== undefined && session.amount !== null ? session.amount : (session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}`
+                                  )}
                                 </span>
                               </div>
 
                               <div className="flex flex-col gap-0.5">
                                 {session.rescheduleRequest ? (
                                   <>
-                                    <span className={`text-[0.65rem] uppercase tracking-wider font-semibold ${session.rescheduleRequest.status === 'PENDING' ? 'text-yellow-500' : session.rescheduleRequest.status === 'APPROVED' ? 'text-green-500' : 'text-red-500'}`}>{session.rescheduleRequest.status}</span>
-                                    <span className="text-white/80 text-xs">{session.rescheduleRequest.date}</span>
+                                    <div className="flex items-center gap-1.5">
+                                      {session.rescheduleRequest.rescheduleFeePaid ? (
+                                        <span className="text-[0.6rem] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                          PAID RESCHEDULE
+                                        </span>
+                                      ) : (
+                                        <span className={`text-[0.65rem] uppercase tracking-wider font-semibold ${session.rescheduleRequest.status === 'PENDING' ? 'text-yellow-500' : session.rescheduleRequest.status === 'APPROVED' ? 'text-green-500' : 'text-red-500'}`}>
+                                          {session.rescheduleRequest.status}
+                                        </span>
+                                      )}
+                                      {session.rescheduleRequest.isWithin48Hours !== undefined && !session.rescheduleRequest.rescheduleFeePaid && (
+                                        <span className={`text-[0.55rem] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider ${session.rescheduleRequest.isWithin48Hours ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                          {session.rescheduleRequest.isWithin48Hours ? '<48h Late' : '>48h Safe'}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-white/80 text-xs">{formatDisplayDate(session.rescheduleRequest.date)}</span>
                                     <span className="text-white/50 text-[0.6rem]">{formatTimeRange(session.rescheduleRequest.time, session.duration || 60)}</span>
                                   </>
                                 ) : (
@@ -995,13 +1334,13 @@ export default function AdminUsers() {
                                 )}
                               </div>
 
-                              <div className="text-right">
+                              <div className="text-right flex items-center justify-end">
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     openSessionDetails(user, session);
                                   }}
-                                  className="text-[#c79c6e] hover:text-white text-xs flex items-center justify-end gap-1 transition-colors group ml-auto"
+                                  className="text-[#c79c6e] hover:text-white text-xs flex items-center justify-end gap-1 transition-colors group cursor-pointer"
                                 >
                                   View Details
                                   <CaretRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
@@ -1009,7 +1348,8 @@ export default function AdminUsers() {
                               </div>
                               
                             </div>
-                          ))}
+                            );
+                            })}
                         </div>
                       </div>
                     );
@@ -1116,62 +1456,218 @@ export default function AdminUsers() {
                         <Clock size={16} />
                         <span className="text-[0.65rem] uppercase tracking-widest">Date & Time</span>
                       </div>
-                      <span className="text-white text-sm font-medium">{selectedSession.date}</span>
+                      <span className="text-white text-sm font-medium">{formatDisplayDate(selectedSession.date)}</span>
                       <span className="text-white/60 text-xs">{formatTimeRange(selectedSession.time, selectedSession.duration || 60)}</span>
                     </div>
                     <div className="bg-[#111] border border-white/5 p-4 rounded-xl flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-white/40">
-                        <CurrencyCircleDollar size={16} />
-                        <span className="text-[0.65rem] uppercase tracking-widest">Payment</span>
+                      <div className="flex items-center justify-between text-white/40">
+                        <div className="flex items-center gap-2">
+                          <CurrencyCircleDollar size={16} />
+                          <span className="text-[0.65rem] uppercase tracking-widest">Payment</span>
+                        </div>
+                        {selectedSession.rescheduleRequest?.rescheduleFeePaid && (
+                          <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold uppercase tracking-wider">
+                            + Paid Reschedule Fee
+                          </span>
+                        )}
                       </div>
-                      <span className={`text-sm font-medium ${selectedSession.payment === 'Paid' ? 'text-green-500' : 'text-red-500'}`}>
-                        {selectedSession.payment}
-                      </span>
+                      <div className="flex items-baseline justify-between">
+                        <span className={`text-sm font-medium ${selectedSession.payment === 'Paid' ? 'text-green-500' : selectedSession.payment === 'Refunded' ? 'text-purple-400' : 'text-red-500'}`}>
+                          {selectedSession.payment}
+                        </span>
+                        <span className="text-white text-xs font-mono font-bold">
+                          {selectedSession.isFreeSession ? (
+                            <span className="text-emerald-400 font-semibold">₹0 FREE</span>
+                          ) : selectedSession.rescheduleRequest?.rescheduleFeePaid ? (
+                            `₹${(Number(selectedSession.amount || 0) + Number(selectedSession.rescheduleRequest.rescheduleAmount || 5000)).toLocaleString('en-IN')} Total`
+                          ) : (
+                            `₹${Number(selectedSession.amount !== undefined && selectedSession.amount !== null ? selectedSession.amount : (selectedSession.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}`
+                          )}
+                        </span>
+                      </div>
                       {selectedSession.isFreeSession ? (
-                        <span className="text-emerald-400 text-xs font-semibold">₹0 · Course Free Session</span>
+                        <span className="text-emerald-400 text-[0.65rem] font-semibold">Course Free Session</span>
                       ) : (
-                        <span className="text-white/40 text-[0.65rem] font-mono">{selectedSession.txnId}</span>
+                        <div className="flex flex-col gap-0.5 text-white/40 text-[0.65rem] font-mono">
+                          {selectedSession.paymentId && <span>Payment ID: {selectedSession.paymentId}</span>}
+                          {selectedSession.txnId && selectedSession.txnId !== 'TXN-PENDING' && <span>Order ID: {selectedSession.txnId}</span>}
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Reschedule Request */}
+                  {/* 48-Hour Rescheduling Notice Window Card */}
+                  {(() => {
+                    const noticeInfo = get48HoursNoticeInfo(selectedSession.date, selectedSession.time);
+                    if (!noticeInfo) return null;
+                    return (
+                      <div className={`p-4 rounded-xl border flex flex-col gap-2 ${noticeInfo.badgeClass}`}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[0.68rem] uppercase tracking-widest font-bold flex items-center gap-1.5">
+                            <Clock size={14} />
+                            {noticeInfo.isSafe ? '🟢 > 48h Safe Window' : noticeInfo.isLate ? '🔴 < 48h Late Window' : '⚪ Session Concluded'}
+                          </span>
+                          <span className="text-xs font-mono font-bold">
+                            {noticeInfo.badgeText}
+                          </span>
+                        </div>
+                        <p className="text-xs opacity-85 leading-relaxed">
+                          {noticeInfo.isSafe 
+                            ? 'Client is eligible for automated 100% free rescheduling. Over 48 hours remaining before appointment.'
+                            : noticeInfo.isLate
+                            ? 'Session is within the locked 48-hour window. Rescheduling requires coach/admin review or fresh booking.'
+                            : 'This session has already taken place or is currently ongoing.'}
+                        </p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Emergency Refund / Cancellation Card */}
+                  <div className="flex flex-col gap-2 bg-[#111] border border-white/5 p-4 rounded-xl">
+                    <div className="flex items-center justify-between text-white/40 pb-1 border-b border-white/5">
+                      <div className="flex items-center gap-2">
+                        <Receipt size={16} className="text-[#c79c6e]" />
+                        <span className="text-[0.65rem] uppercase tracking-widest text-white/70 font-semibold">Emergency Refund / Cancellation</span>
+                      </div>
+                      <span className={`text-[0.65rem] font-medium px-2 py-0.5 rounded border uppercase ${
+                        selectedSession.status === 'REFUNDED' 
+                          ? 'text-purple-400 bg-purple-500/10 border-purple-500/30' 
+                          : 'text-white/40 border-white/10'
+                      }`}>
+                        {selectedSession.status === 'REFUNDED' ? 'REFUNDED' : 'ACTIVE / BOOKED'}
+                      </span>
+                    </div>
+
+                    {selectedSession.status === 'REFUNDED' ? (
+                      <div className="flex flex-col gap-1.5 pt-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-white/60">Amount Refunded:</span>
+                          <span className="text-purple-400 font-bold font-mono text-sm">₹{Number(selectedSession.refundAmount || selectedSession.amount || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                        {selectedSession.refundReason && (
+                          <p className="text-xs text-white/70 italic bg-purple-500/5 p-2 rounded border border-purple-500/20">
+                            Reason: "{selectedSession.refundReason}"
+                          </p>
+                        )}
+                        {selectedSession.refundedAt && (
+                          <span className="text-[0.65rem] text-white/40">
+                            Processed on {new Date(selectedSession.refundedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2.5 pt-2">
+                        <p className="text-xs text-white/60 leading-relaxed">
+                          If the client has a genuine emergency or cancellation need, you can process a full refund and release the calendar slot.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => openRefundModal(selectedSession, selectedUser)}
+                          className="w-full py-2 px-3 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500 hover:text-white transition-all text-xs uppercase tracking-wider font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                        >
+                          <ArrowCounterClockwise size={14} weight="bold" />
+                          <span>Issue Emergency Refund</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Reschedule Request & Payment Details */}
                   {selectedSession.rescheduleRequest && (
                     <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2 text-amber-500 border-b border-white/5 pb-2">
-                        <CalendarBlank size={18} />
-                        <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Reschedule Request</h3>
+                      <div className="flex items-center justify-between text-amber-500 border-b border-white/5 pb-2">
+                        <div className="flex items-center gap-2">
+                          <CalendarBlank size={18} />
+                          <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Reschedule Details</h3>
+                        </div>
+                        {selectedSession.rescheduleRequest.rescheduleFeePaid ? (
+                          <span className="text-[0.62rem] px-2 py-0.5 rounded font-semibold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                            <CheckCircle size={12} weight="fill" />
+                            <span>Paid Late Reschedule (Auto-Approved)</span>
+                          </span>
+                        ) : selectedSession.rescheduleRequest.isWithin48Hours !== undefined ? (
+                          <span className={`text-[0.62rem] px-2 py-0.5 rounded font-semibold uppercase tracking-wider ${
+                            selectedSession.rescheduleRequest.isWithin48Hours 
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          }`}>
+                            {selectedSession.rescheduleRequest.isWithin48Hours ? '⚠️ Requested in <48h Window' : '✅ Requested >48h in advance'}
+                          </span>
+                        ) : null}
                       </div>
-                      <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-5 flex flex-col gap-4">
+
+                      <div className={`border rounded-xl p-5 flex flex-col gap-4 ${
+                        selectedSession.rescheduleRequest.rescheduleFeePaid 
+                          ? 'bg-emerald-950/20 border-emerald-500/30' 
+                          : 'bg-amber-500/10 border-amber-500/20'
+                      }`}>
                         <div className="flex flex-col gap-1">
-                          <span className="text-amber-500/60 text-[0.65rem] uppercase tracking-widest font-semibold">Requested New Time</span>
-                          <span className="text-amber-500 font-medium text-sm">
-                            {selectedSession.rescheduleRequest.date} at {formatTimeRange(selectedSession.rescheduleRequest.time, selectedSession.duration || 60)}
+                          <span className="text-white/60 text-[0.65rem] uppercase tracking-widest font-semibold">Rescheduled Session Time</span>
+                          <span className="text-white font-medium text-sm">
+                            {formatDisplayDate(selectedSession.rescheduleRequest.date)} at {formatTimeRange(selectedSession.rescheduleRequest.time, selectedSession.duration || 60)}
                           </span>
                         </div>
+
+                        {/* Late Reschedule Payment Information Card */}
+                        {selectedSession.rescheduleRequest.rescheduleFeePaid && (
+                          <div className="bg-black/50 border border-emerald-500/30 rounded-lg p-3.5 flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-emerald-400 text-xs uppercase tracking-wider font-bold flex items-center gap-1.5">
+                                <CheckCircle size={14} weight="fill" />
+                                Reschedule Fee Paid
+                              </span>
+                              <span className="text-emerald-300 font-mono font-bold text-sm">
+                                ₹{Number(selectedSession.rescheduleRequest.rescheduleAmount || 5000).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[0.68rem] text-white/70 font-mono pt-2 border-t border-white/10">
+                              {selectedSession.rescheduleRequest.reschedulePaymentId && (
+                                <div>
+                                  <span className="text-white/40 block text-[0.6rem] uppercase">Payment ID</span>
+                                  <span className="text-emerald-300">{selectedSession.rescheduleRequest.reschedulePaymentId}</span>
+                                </div>
+                              )}
+                              {selectedSession.rescheduleRequest.rescheduleOrderId && (
+                                <div>
+                                  <span className="text-white/40 block text-[0.6rem] uppercase">Order ID</span>
+                                  <span className="text-white/80">{selectedSession.rescheduleRequest.rescheduleOrderId}</span>
+                                </div>
+                              )}
+                              {selectedSession.rescheduleRequest.paidAt && (
+                                <div className="sm:col-span-2 text-white/50 text-[0.65rem]">
+                                  Paid on: {new Date(selectedSession.rescheduleRequest.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex flex-col gap-1">
-                          <span className="text-amber-500/60 text-[0.65rem] uppercase tracking-widest font-semibold">Client's Reason</span>
-                          <span className="text-amber-500/90 text-sm italic">
-                            {selectedSession.rescheduleRequest.reason ? `"${selectedSession.rescheduleRequest.reason}"` : <span className="text-amber-500/50">No reason provided.</span>}
+                          <span className="text-white/60 text-[0.65rem] uppercase tracking-widest font-semibold">Client's Reason</span>
+                          <span className="text-white/90 text-sm italic">
+                            {selectedSession.rescheduleRequest.reason ? `"${selectedSession.rescheduleRequest.reason}"` : <span className="text-white/40">No reason provided.</span>}
                           </span>
                         </div>
+
                         {selectedSession.rescheduleRequest.status === 'PENDING' && (
                           <div className="flex items-center gap-2 mt-2">
                             <button 
-                              onClick={() => handleRescheduleAction(selectedUser.id, selectedSession.id, 'approve')}
-                              className="flex-1 py-2 rounded bg-amber-500 text-black font-semibold text-xs uppercase tracking-widest hover:bg-amber-400 transition-colors"
+                              disabled={isProcessingReschedule}
+                              onClick={() => handleRescheduleAction(selectedUser?.id || selectedUser?._id, selectedSession?._id || selectedSession?.id, 'approve')}
+                              className="flex-1 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs uppercase tracking-widest transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2"
                             >
-                              Accept
+                              {isProcessingReschedule ? 'Processing...' : 'Accept'}
                             </button>
                             <button 
-                              onClick={() => handleRescheduleAction(selectedUser.id, selectedSession.id, 'reject')}
-                              className="flex-1 py-2 rounded border border-amber-500/30 text-amber-500 font-semibold text-xs uppercase tracking-widest hover:bg-amber-500/10 transition-colors"
+                              disabled={isProcessingReschedule}
+                              onClick={() => handleRescheduleAction(selectedUser?.id || selectedUser?._id, selectedSession?._id || selectedSession?.id, 'reject')}
+                              className="flex-1 py-2.5 rounded-lg border border-amber-500/30 text-amber-500 font-semibold text-xs uppercase tracking-widest hover:bg-amber-500/10 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Decline
                             </button>
                           </div>
                         )}
-                        {selectedSession.rescheduleRequest.status !== 'PENDING' && (
+                        {selectedSession.rescheduleRequest.status !== 'PENDING' && !selectedSession.rescheduleRequest.rescheduleFeePaid && (
                           <div className="mt-2 text-xs uppercase tracking-widest font-semibold opacity-60">
                             Status: {selectedSession.rescheduleRequest.status}
                           </div>
@@ -1362,7 +1858,7 @@ export default function AdminUsers() {
                         <span className="text-[0.65rem] uppercase tracking-widest">Next Booking</span>
                       </div>
                       <span className={`text-sm font-medium ${selectedUser.appointmentsCount > 0 ? 'text-[#c79c6e]' : 'text-white'}`}>
-                        {selectedUser.appointmentsCount > 0 ? selectedUser.nextAppointmentDate : 'None scheduled'}
+                        {selectedUser.appointmentsCount > 0 ? formatDisplayDate(selectedUser.nextAppointmentDate) : 'None scheduled'}
                       </span>
                     </div>
                   </div>
@@ -1374,6 +1870,91 @@ export default function AdminUsers() {
           </div>
         )}
       </div>
+
+      {/* ── Emergency Refund Confirmation Modal ── */}
+      {refundModalSession && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#12100e] border border-rose-500/40 rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col gap-5 relative">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5 text-rose-400">
+                <ArrowCounterClockwise size={20} weight="bold" />
+                <h3 className="font-serif text-lg text-white font-medium">Issue Emergency Refund</h3>
+              </div>
+              <button 
+                onClick={() => setRefundModalSession(null)}
+                disabled={isRefunding}
+                className="p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col gap-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-white/50">Client Name:</span>
+                <span className="text-white font-semibold">{refundModalSession.userName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/50">Client Email:</span>
+                <span className="text-white/80 font-mono">{refundModalSession.userEmail}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/50">Scheduled Time:</span>
+                <span className="text-[#c79c6e] font-medium">{formatDisplayDate(refundModalSession.date)} at {refundModalSession.time}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+                Refund Amount (₹)
+              </label>
+              <input 
+                type="number"
+                value={refundAmount}
+                onChange={(e) => setRefundAmount(e.target.value)}
+                placeholder="Amount to refund"
+                className="w-full px-3.5 py-2.5 rounded-lg bg-black/60 border border-white/15 text-white font-mono text-sm focus:outline-none focus:border-rose-400"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+                Reason / Note for Client
+              </label>
+              <textarea 
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                rows={3}
+                placeholder="E.g., Client medical emergency, mutual cancellation agreement..."
+                className="w-full px-3.5 py-2.5 rounded-lg bg-black/60 border border-white/15 text-white text-xs resize-none focus:outline-none focus:border-rose-400 placeholder-white/20"
+              />
+            </div>
+
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-[11px] text-rose-300 leading-relaxed">
+              ⚠️ This will mark the session as <strong>REFUNDED</strong>, release the calendar slot, and dispatch an automated confirmation email to the client.
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setRefundModalSession(null)}
+                disabled={isRefunding}
+                className="px-4 py-2 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleIssueRefund}
+                disabled={isRefunding}
+                className="px-5 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-lg flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                {isRefunding ? 'Processing...' : 'Confirm & Process Refund'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

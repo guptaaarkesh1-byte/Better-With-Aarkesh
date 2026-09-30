@@ -467,3 +467,97 @@ body .ql-editor.ql-blank::before {
   border-left-color: rgba(0, 0, 0, 0.2);
   color: #6b7280;
 }
+
+/* Warm Light Theme for Policy Modals & Policy Pages */
+.legal-policy-content-light {
+  color: #555047;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.legal-policy-content-light h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: #111010;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.legal-policy-content-light h2 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111010;
+  margin-top: 1.75rem;
+  margin-bottom: 0.65rem;
+  line-height: 1.35;
+}
+
+.legal-policy-content-light h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111010;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.legal-policy-content-light p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  color: #555047;
+}
+
+.legal-policy-content-light strong,
+.legal-policy-content-light b {
+  color: #111010;
+  font-weight: 600;
+}
+
+.legal-policy-content-light ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  color: #555047;
+}
+
+.legal-policy-content-light ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  color: #555047;
+}
+
+.legal-policy-content-light li {
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.65;
+}
+
+.legal-policy-content-light a {
+  color: #c9542f;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.legal-policy-content-light a:hover {
+  color: #111010;
+}
+
+.legal-policy-content-light blockquote {
+  border-left: 3px solid #c9542f;
+  background-color: #fbf0eb;
+  padding: 0.75rem 1rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #555047;
+}
+

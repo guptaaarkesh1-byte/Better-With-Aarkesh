@@ -8,6 +8,7 @@ import {
   ArrowRight,
   ArrowDown
 } from '@phosphor-icons/react';
+import { renderFormattedTitle } from '../../pages/articles/ArticleReaderView';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -174,14 +175,14 @@ export default function FeaturedSection() {
 
         {/* Title */}
         <h3 className="font-serif text-3xl md:text-4xl text-white font-light leading-tight mb-8">
-          {article.title}
+          {renderFormattedTitle(article.title, '#d97fc8')}
         </h3>
 
         <div className="w-full h-[1px] bg-white/10 mb-8" />
 
         {/* Description */}
         <p className={`font-sans text-xs md:text-sm font-light leading-relaxed transition-colors duration-500 line-clamp-3 ${isHovered ? 'text-white/90' : 'text-white/10'}`}>
-          {article.description}
+          {renderFormattedTitle(article.description, '#d97fc8')}
         </p>
 
         {/* Bottom Link (Appears on Hover) */}

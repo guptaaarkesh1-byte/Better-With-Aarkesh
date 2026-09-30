@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
 import { List, X, ArrowDown, ArrowRight, Play, User, BookmarkSimple, SignOut, LockKey } from '@phosphor-icons/react';
 import { CURATED_LIBRARY_ARTICLES } from '../../constants/libraryArticlesData';
+import { renderFormattedTitle } from '../articles/ArticleReaderView';
 import LoginModal from '../../components/layout/LoginModal';
+import PlasmaRingSphere from '../../components/library/PlasmaRingSphere';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -37,8 +39,28 @@ export default function Library() {
     }
   }, []);
 
-  // Fetch published articles from API to enrich search
+  const [heroSettings, setHeroSettings] = useState({
+    headingText: 'What are you trying to *understand*?',
+    searchPlaceholder: "Describe what you're navigating...",
+  });
+
+  // Fetch Hero Heading & Search Placeholder & Published Articles from API
   useEffect(() => {
+    const fetchHeroSettings = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/library-settings/hero`);
+        if (res.ok) {
+          const data = await res.json();
+          setHeroSettings({
+            headingText: data.headingText || 'What are you trying to *understand*?',
+            searchPlaceholder: data.searchPlaceholder || "Describe what you're navigating...",
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch hero settings', err);
+      }
+    };
+
     const fetchArticles = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/articles/published`);
@@ -50,8 +72,22 @@ export default function Library() {
         console.error('Failed to fetch published articles', err);
       }
     };
+
+    fetchHeroSettings();
     fetchArticles();
   }, []);
+
+  // Helper to render italicized words in hero heading
+  const renderHeroHeading = (text) => {
+    if (!text) return <>What are you trying to <em>understand?</em></>;
+    const parts = text.split(/(\*[^*]+\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <em key={index}>{part.slice(1, -1)}</em>;
+      }
+      return part;
+    });
+  };
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -87,6 +123,56 @@ export default function Library() {
       case 'communication': return { bg: '#e8e6e8', color: '#141314' };
       default: return { bg: '#f0eee8', color: '#111010' };
     }
+  };
+
+  // Helper to dynamically get and merge DB articles with curated articles per category
+  const getCategoryArticles = (categoryId, categoryName) => {
+    const targetCatId = categoryId.toLowerCase().replace(/\s+/g, '-');
+    const targetCatName = (categoryName || '').toLowerCase();
+
+    const matchingDb = publishedArticles.filter(a => {
+      if (a.status === 'Draft') return false;
+      const aCatId = (a.categoryId || '').toLowerCase().replace(/\s+/g, '-');
+      const aCat = (a.category || '').toLowerCase().replace(/\s+/g, '-');
+      return aCatId === targetCatId || aCat === targetCatId || aCat === targetCatName || aCat.includes(targetCatId);
+    });
+
+    const sortedDb = [...matchingDb].sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.updatedAt || a.date || 0).getTime();
+      const timeB = new Date(b.createdAt || b.updatedAt || b.date || 0).getTime();
+      return timeB - timeA;
+    });
+
+    const matchingCurated = CURATED_LIBRARY_ARTICLES.filter(c => {
+      const cCat = (c.category || '').toLowerCase().replace(/\s+/g, '-');
+      return cCat === targetCatId || cCat === targetCatName || cCat.includes(targetCatId);
+    });
+
+    const merged = [
+      ...sortedDb,
+      ...matchingCurated.filter(
+        c => !matchingDb.some(db => db.slug === c.slug || db.title?.toLowerCase() === c.title?.toLowerCase())
+      )
+    ];
+
+    return merged.map((article, idx) => {
+      let displayDate = article.date;
+      if (!displayDate && article.createdAt) {
+        try {
+          const d = new Date(article.createdAt);
+          if (!isNaN(d.getTime())) {
+            displayDate = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+          }
+        } catch (_) {}
+      }
+      return {
+        ...article,
+        id: article._id || article.id || `article-${idx}`,
+        slug: article.slug || article._id || article.id || `article-${idx}`,
+        readTime: article.readTime || `${5 + (idx * 2)} MIN`,
+        date: displayDate || 'MAY 2026'
+      };
+    });
   };
 
   // Combine and deduplicate articles
@@ -418,40 +504,101 @@ export default function Library() {
           }
         }
 
-        /* ---------- MARQUEE STRIP (6 TOPICS EXACT) ---------- */
+        /* ---------- MARQUEE STRIP (FULL-HEIGHT SOLID COLOR BLOCKS) ---------- */
+        /* =========================================================
+           🎛️ MARQUEE BAR CONTROLS: Height, Font Size & Padding
+           ========================================================= */
         .library-root .marquee {
-          background: var(--ink);
-          color: var(--cream);
+          --marquee-height: 54px;      /* ⬅️ Bar ki height yahan se adjust kar sakte hain */
+          --marquee-font-size: 14px;   /* ⬅️ Text ka font size */
+          --marquee-padding-x: 32px;   /* ⬅️ Har box ki left-right padding */
+
+          background: #111010;
           overflow: hidden;
-          padding: 16px 0;
-          border-bottom: 1px solid var(--line);
+          padding: 0;
+          height: var(--marquee-height);
+          display: flex;
+          align-items: stretch;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.15);
         }
 
         .library-root .marquee-track {
           display: flex;
-          gap: 36px;
+          align-items: stretch;
+          height: 100%;
+          gap: 0;
           width: max-content;
-          animation: mq 26s linear infinite;
+          animation: mq 34s linear infinite;
         }
 
-        .library-root .marquee-track span {
+        .library-root .marquee:hover .marquee-track {
+          animation-play-state: paused;
+        }
+
+        .library-root .marquee-box {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          padding: 0 var(--marquee-padding-x);
+          border-radius: 0;
+          border: none;
+          outline: none;
           font-family: 'Archivo Black', sans-serif;
           text-transform: uppercase;
-          font-size: 19px;
+          font-size: var(--marquee-font-size);
+          letter-spacing: 0.08em;
           white-space: nowrap;
+          cursor: pointer;
+          margin: 0;
+          transition: filter 0.2s ease, opacity 0.2s ease;
+          user-select: none;
+          box-shadow: none;
         }
 
-        .library-root .marquee-track .sep {
-          font-size: 17px;
-          margin: 0 4px;
-          display: inline-block;
+        .library-root .marquee-box:hover {
+          filter: brightness(1.22);
         }
-        .library-root .marquee-track .sep.s-rel { color: #d97fc8; }
-        .library-root .marquee-track .sep.s-self { color: #ffffff; }
-        .library-root .marquee-track .sep.s-change { color: #63d17e; }
-        .library-root .marquee-track .sep.s-dec { color: #f2734b; }
-        .library-root .marquee-track .sep.s-diff { color: #f2ba8f; }
-        .library-root .marquee-track .sep.s-comm { color: #a4abb8; }
+
+        .library-root .marquee-box.m-rel {
+          background: #3d1b37;
+          color: #ffffff;
+        }
+
+        .library-root .marquee-box.m-self {
+          background: #ffffff;
+          color: #111010;
+        }
+
+        .library-root .marquee-box.m-self:hover {
+          background: #eae6df;
+          filter: none;
+        }
+
+        .library-root .marquee-box.m-change {
+          background: #2f4a34;
+          color: #ffffff;
+        }
+
+        .library-root .marquee-box.m-dec {
+          background: #c85628;
+          color: #ffffff;
+        }
+
+        .library-root .marquee-box.m-diff {
+          background: #f0d9c9;
+          color: #2b1208;
+        }
+
+        .library-root .marquee-box.m-diff:hover {
+          background: #e4ccbb;
+          filter: none;
+        }
+
+        .library-root .marquee-box.m-comm {
+          background: #141314;
+          color: #ffffff;
+        }
 
         @keyframes mq {
           from { transform: translateX(0); }
@@ -539,16 +686,16 @@ export default function Library() {
           z-index: 1;
         }
 
-        /* ---------- HERO (CREATIVE FLOATING CLOUD HERO) ---------- */
+        /* ---------- HERO (CLEAN SEARCH & HEADING) ---------- */
         /* =========================================================
-           🎛️ POSITION CONTROLS PANEL (Yahan se sabhi items move karein)
+           🎛️ POSITION CONTROLS: Upar / Neeche Move Karne Ke Liye
            ========================================================= */
         .library-root .hero {
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          padding: clamp(20px, 3vh, 32px) 16px clamp(16px, 2vh, 24px);
+          padding: 40px 16px 14px;
           text-align: center;
           max-width: 1080px;
           margin: 0 auto;
@@ -557,46 +704,33 @@ export default function Library() {
           overflow: visible;
           box-sizing: border-box;
 
-          /* --- 1. RELATIONSHIPS (Top-Left) --- */
-          --rel-top: 30px;
-          --rel-left: 25%;
+          /* ↕️ 'What are you trying...' ko Upar (-) ya Neeche (+) move karein: e.g. '-40px', '-25px', '0px' */
+          --heading-shift-y: -35px;
 
-          /* --- 2. SELF (Top-Right) --- */
-          --self-top: 30px;
-          --self-right: 25%;
+          /* ↕️ Search bar ko Neeche (+) ya Upar (-) move karein: e.g. '-10px', '0px', '+10px' */
+          --search-shift-y: -10px;
 
-          /* --- 3. CHANGE (Middle-Left) --- */
-          --change-top: 30%;
-          --change-left: -1%;
-
-          /* --- 4. DECISIONS (Middle-Right) --- */
-          --dec-top: 30%;
-          --dec-right: -2%;
-
-          /* --- 5. DIFFICULT PEOPLE (Bottom-Left) --- */
-          --diff-bottom: 40px;
-          --diff-left: 5%;
-
-          /* --- 6. COMMUNICATION (Bottom-Right) --- */
-          --comm-bottom: 40px;
-          --comm-right: 7%;
-
-          /* --- 7. SEARCH BAR (Upar/Neeche move karne ke liye) --- */
-          --search-margin-top: -38px;
-          --search-max-width: 330px;
+          /* ↕️ Search bar ka gap */
+          --search-margin-top: 14px;
+          --search-max-width: 260px;
         }
 
         .library-root .hero-cloud-stage {
           position: relative;
           width: 100%;
           max-width: 760px;
-          min-height: 230px;
+          min-height: auto;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 30px 16px 14px;
+          padding: 0 16px;
           margin: 0 auto;
+          transform: translateY(var(--heading-shift-y, -35px));
+        }
+
+        .library-root .hero-search-wrap {
+          transform: translateY(var(--search-shift-y, -10px));
         }
 
         .library-root .hero-cloud-stage h1 {
@@ -1074,68 +1208,52 @@ export default function Library() {
           opacity: 0.75;
         }
 
-        /* 3-Column Alternating Grid Layout */
+        /* 2-Column Edge-to-Edge Layout (Word & Ball on Opposite Ends) */
         .library-root .cat-layout {
-          display: grid;
-          grid-template-columns: 1fr 320px 1fr;
+          display: flex;
           align-items: center;
-          gap: 20px;
+          justify-content: space-between;
+          gap: clamp(20px, 4vw, 60px);
           min-height: 300px;
+          width: 100%;
         }
 
         .library-root .cat-word {
-          font-size: clamp(60px, 9vw, 140px);
+          font-size: clamp(48px, 7.8vw, 126px);
           margin: 0;
           line-height: 0.92;
+          flex: 1;
+          min-width: 0;
         }
 
         .library-root .cat-word.left {
-          text-align: right;
-        }
-
-        .library-root .cat-word.right {
           text-align: left;
         }
 
-        /* 3D Sphere Reveal */
+        .library-root .cat-word.right {
+          text-align: right;
+        }
+
+        /* 3D Plasma Sphere - Positioned at Full Edges */
         .library-root .circle-reveal {
-          width: 300px;
-          height: 300px;
+          width: clamp(260px, 26vw, 360px);
+          height: clamp(260px, 26vw, 360px);
           border-radius: 50%;
-          overflow: hidden;
+          overflow: visible;
           position: relative;
-          margin: 0 auto;
-          box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.35);
-          transition: transform 0.4s ease, box-shadow 0.4s ease;
-          display: block;
-        }
-
-        .library-root .circle-reveal:hover {
-          transform: scale(1.03);
-          box-shadow: 0 35px 70px -15px rgba(0, 0, 0, 0.45);
-        }
-
-        .library-root .circle-reveal .viewbtn {
-          position: absolute;
-          right: 26px;
-          bottom: 26px;
-          width: 52px;
-          height: 52px;
-          border-radius: 50%;
-          background: var(--ink);
-          color: var(--cream);
+          margin: 0;
+          flex-shrink: 0;
+          background: transparent;
+          box-shadow: none;
+          transition: transform 0.4s ease;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-          transition: transform 0.2s;
+          cursor: grab;
         }
 
-        .library-root .circle-reveal:hover .viewbtn {
-          transform: scale(1.08);
+        .library-root .circle-reveal:hover {
+          transform: scale(1.05);
         }
 
         /* Article List & Rows */
@@ -1210,24 +1328,14 @@ export default function Library() {
           white-space: nowrap;
         }
 
-        /* 6 Photographic Gradient Spheres matching section themes */
-        .library-root .g1 {
-          background: radial-gradient(circle at 35% 25%, #c87ab9 0%, #7d2c72 35%, #481541 70%, #1c061a 100%);
-        }
-        .library-root .g2 {
-          background: radial-gradient(circle at 35% 25%, #ffffff 0%, #e2e2ec 35%, #9fa0b5 70%, #4a4b60 100%);
-        }
-        .library-root .g3 {
-          background: radial-gradient(circle at 35% 25%, #8fca9c 0%, #3d6b46 35%, #1e3a24 70%, #0a1c0e 100%);
-        }
-        .library-root .g4 {
-          background: radial-gradient(circle at 35% 25%, #fca283 0%, #d85c35 35%, #8a2e12 70%, #3e1205 100%);
-        }
-        .library-root .g5 {
-          background: radial-gradient(circle at 35% 25%, #fceade 0%, #d9aa86 35%, #8f5c35 70%, #462812 100%);
-        }
+        /* Pure Plasma Containers */
+        .library-root .g1,
+        .library-root .g2,
+        .library-root .g3,
+        .library-root .g4,
+        .library-root .g5,
         .library-root .g6 {
-          background: radial-gradient(circle at 35% 25%, #5a5a5a 0%, #323232 35%, #181818 70%, #080808 100%);
+          background: transparent;
         }
 
         /* 6 Section Color Themes & Stacking Z-Indices */
@@ -1479,7 +1587,8 @@ export default function Library() {
 
         @media (max-width: 980px) {
           .library-root .cat-layout {
-            grid-template-columns: 1fr;
+            flex-direction: column;
+            gap: 24px;
             text-align: center;
           }
           .library-root .cat-word.left,
@@ -1490,6 +1599,7 @@ export default function Library() {
             order: -1;
             width: 220px;
             height: 220px;
+            margin: 0 auto;
           }
           .library-root .art-row {
             grid-template-columns: 36px 1fr;
@@ -1623,59 +1733,29 @@ export default function Library() {
         </div>
       )}
 
-      {/* ---------- MARQUEE STRIP (EXACT 6 TOPICS) ---------- */}
+      {/* ---------- MARQUEE STRIP (FULL-HEIGHT SOLID COLOR BLOCKS) ---------- */}
       <div className="marquee">
         <div className="marquee-track">
-          <span>Relationships</span><span className="sep s-rel">✦</span>
-          <span>Self</span><span className="sep s-self">✦</span>
-          <span>Change</span><span className="sep s-change">✦</span>
-          <span>Decisions</span><span className="sep s-dec">✦</span>
-          <span>Difficult People</span><span className="sep s-diff">✦</span>
-          <span>Communication</span><span className="sep s-comm">✦</span>
-
-          <span>Relationships</span><span className="sep s-rel">✦</span>
-          <span>Self</span><span className="sep s-self">✦</span>
-          <span>Change</span><span className="sep s-change">✦</span>
-          <span>Decisions</span><span className="sep s-dec">✦</span>
-          <span>Difficult People</span><span className="sep s-diff">✦</span>
-          <span>Communication</span><span className="sep s-comm">✦</span>
-
-          <span>Relationships</span><span className="sep s-rel">✦</span>
-          <span>Self</span><span className="sep s-self">✦</span>
-          <span>Change</span><span className="sep s-change">✦</span>
-          <span>Decisions</span><span className="sep s-dec">✦</span>
-          <span>Difficult People</span><span className="sep s-diff">✦</span>
-          <span>Communication</span><span className="sep s-comm">✦</span>
+          {[...Array(6)].flatMap((_, setIdx) => [
+            <button key={`rel-${setIdx}`} type="button" onClick={() => handleScrollTo('rel')} className="marquee-box m-rel">Relationships</button>,
+            <button key={`self-${setIdx}`} type="button" onClick={() => handleScrollTo('self')} className="marquee-box m-self">Self</button>,
+            <button key={`change-${setIdx}`} type="button" onClick={() => handleScrollTo('change')} className="marquee-box m-change">Change</button>,
+            <button key={`dec-${setIdx}`} type="button" onClick={() => handleScrollTo('dec')} className="marquee-box m-dec">Decisions</button>,
+            <button key={`diff-${setIdx}`} type="button" onClick={() => handleScrollTo('diff')} className="marquee-box m-diff">Difficult People</button>,
+            <button key={`comm-${setIdx}`} type="button" onClick={() => handleScrollTo('comm')} className="marquee-box m-comm">Communication</button>
+          ])}
         </div>
       </div>
 
-      {/* ---------- HERO (CREATIVE & INTERACTIVE FLOATING CLOUD) ---------- */}
+      {/* ---------- HERO (CLEAN SEARCH & HEADING) ---------- */}
       <section className="hero">
         <div className="hero-ambient-glow" />
         
-        {/* Center Stage: Title with 6 Floating Category Cloud Pills around it */}
+        {/* Center Stage: Title */}
         <div className="hero-cloud-stage">
-          <button type="button" onClick={() => handleScrollTo('rel')} className="cat-cloud-pill p-rel">
-            Relationships
-          </button>
-          <button type="button" onClick={() => handleScrollTo('self')} className="cat-cloud-pill p-self">
-            Self
-          </button>
-          
-          <h1 className="hero-heading">What are you trying to <em>understand?</em></h1>
-
-          <button type="button" onClick={() => handleScrollTo('change')} className="cat-cloud-pill p-change">
-            Change
-          </button>
-          <button type="button" onClick={() => handleScrollTo('dec')} className="cat-cloud-pill p-dec">
-            Decisions
-          </button>
-          <button type="button" onClick={() => handleScrollTo('diff')} className="cat-cloud-pill p-diff">
-            Difficult People
-          </button>
-          <button type="button" onClick={() => handleScrollTo('comm')} className="cat-cloud-pill p-comm">
-            Communication
-          </button>
+          <h1 className="hero-heading">
+            {renderHeroHeading(heroSettings.headingText)}
+          </h1>
         </div>
 
         {/* Reflective Exploration Search */}
@@ -1683,7 +1763,7 @@ export default function Library() {
           <form onSubmit={handleSearchSubmit} className="hero-search-bar">
             <input 
               type="text" 
-              placeholder="Describe what you're navigating..."
+              placeholder={heroSettings.searchPlaceholder || "Describe what you're navigating..."}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -1778,262 +1858,238 @@ export default function Library() {
       </section>
 
       {/* ---------- (01) RELATIONSHIPS (WORD LEFT, SPHERE RIGHT) ---------- */}
-      <section className="cat-sec" id="rel">
-        <div className="cat-inner">
-          <div className="cat-top">
-            <span className="idx">(01) RELATIONSHIPS</span>
-            <Link className="viewall" to="/articles?category=relationships">VIEW ALL →</Link>
-          </div>
-          <div className="cat-layout">
-            <h2 className="disp cat-word left">RELATION<br />SHIPS</h2>
-            <Link to="/articles?category=relationships" className="circle-reveal g1">
-              <span className="viewbtn">VIEW</span>
-            </Link>
-            <div></div>
-          </div>
-          <div className="art-list">
-            <div className="art-list-head">
-              <span className="art-count">3 ARTICLES</span>
+      {(() => {
+        const catArticles = getCategoryArticles('relationships', 'Relationships');
+        return (
+          <section className="cat-sec" id="rel">
+            <div className="cat-inner">
+              <div className="cat-top">
+                <span className="idx">(01) RELATIONSHIPS</span>
+                <Link className="viewall" to="/articles?category=relationships">VIEW ALL →</Link>
+              </div>
+              <div className="cat-layout">
+                <h2 className="disp cat-word left">RELATIONSH<br />IPS</h2>
+                <div className="circle-reveal g1">
+                  <PlasmaRingSphere colors={['#f3a8e2', '#d97fc8', '#993388', '#ff44aa']} scale={76} speed={85} />
+                </div>
+              </div>
+              <div className="art-list">
+                <div className="art-list-head">
+                  <span className="art-count">{catArticles.length} ARTICLES</span>
+                </div>
+                {catArticles.slice(0, 3).map((art, idx) => (
+                  <Link 
+                    key={art.slug || art.id || idx} 
+                    className="art-row" 
+                    to={`/articles?article=${art.slug || art.id}&category=relationships`}
+                  >
+                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
+                    <div className="art-content">
+                      <h4>{renderFormattedTitle(art.title, '#d97fc8')}</h4>
+                      <span className="meta">{art.readTime} · {art.date}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-            <Link className="art-row" to="/articles?article=attention-feels-like-love&category=relationships">
-              <span className="n">01</span>
-              <div className="art-content">
-                <h4>It's Not Always About Finding the Right Person</h4>
-                <span className="meta">6 min · May 12</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=the-problem-with-closure&category=relationships">
-              <span className="n">02</span>
-              <div className="art-content">
-                <h4>How to Let Go (Without Losing Yourself)</h4>
-                <span className="meta">7 min · May 6</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=a-kinder-way-to-disagree&category=relationships">
-              <span className="n">03</span>
-              <div className="art-content">
-                <h4>Why Attachment Styles Aren't Destiny</h4>
-                <span className="meta">5 min · Apr 21</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
+          </section>
+        );
+      })()}
 
       {/* ---------- (02) SELF (SPHERE LEFT, WORD RIGHT) ---------- */}
-      <section className="cat-sec" id="self">
-        <div className="cat-inner">
-          <div className="cat-top">
-            <span className="idx">(02) SELF</span>
-            <Link className="viewall" to="/articles?category=self">VIEW ALL →</Link>
-          </div>
-          <div className="cat-layout">
-            <div></div>
-            <Link to="/articles?category=self" className="circle-reveal g2">
-              <span className="viewbtn">VIEW</span>
-            </Link>
-            <h2 className="disp cat-word right">SELF</h2>
-          </div>
-          <div className="art-list">
-            <div className="art-list-head">
-              <span className="art-count">3 ARTICLES</span>
+      {(() => {
+        const catArticles = getCategoryArticles('self', 'Self');
+        return (
+          <section className="cat-sec" id="self">
+            <div className="cat-inner">
+              <div className="cat-top">
+                <span className="idx">(02) SELF</span>
+                <Link className="viewall" to="/articles?category=self">VIEW ALL →</Link>
+              </div>
+              <div className="cat-layout">
+                <div className="circle-reveal g2">
+                  <PlasmaRingSphere colors={['#111010', '#1c1c22', '#2d2d38', '#000000']} scale={76} speed={85} />
+                </div>
+                <h2 className="disp cat-word right">SELF</h2>
+              </div>
+              <div className="art-list">
+                <div className="art-list-head">
+                  <span className="art-count">{catArticles.length} ARTICLES</span>
+                </div>
+                {catArticles.slice(0, 3).map((art, idx) => (
+                  <Link 
+                    key={art.slug || art.id || idx} 
+                    className="art-row" 
+                    to={`/articles?article=${art.slug || art.id}&category=self`}
+                  >
+                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
+                    <div className="art-content">
+                      <h4>{renderFormattedTitle(art.title, '#111010')}</h4>
+                      <span className="meta">{art.readTime} · {art.date}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-            <Link className="art-row" to="/articles?article=you-dont-have-a-career-problem&category=self">
-              <span className="n">01</span>
-              <div className="art-content">
-                <h4>The Quiet Practice of Knowing Who You Are</h4>
-                <span className="meta">6 min · May 15</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=you-have-a-waiting-problem&category=self">
-              <span className="n">02</span>
-              <div className="art-content">
-                <h4>Overcoming the Need for External Validation</h4>
-                <span className="meta">5 min · May 8</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=discomfort-is-a-sign-youre-growing&category=self">
-              <span className="n">03</span>
-              <div className="art-content">
-                <h4>Reclaiming Inner Peace in a Noisy World</h4>
-                <span className="meta">7 min · Apr 29</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
+          </section>
+        );
+      })()}
 
       {/* ---------- (03) CHANGE (WORD LEFT, SPHERE RIGHT) ---------- */}
-      <section className="cat-sec" id="change">
-        <div className="cat-inner">
-          <div className="cat-top">
-            <span className="idx">(03) CHANGE</span>
-            <Link className="viewall" to="/articles?category=change">VIEW ALL →</Link>
-          </div>
-          <div className="cat-layout">
-            <h2 className="disp cat-word left">CHANGE</h2>
-            <Link to="/articles?category=change" className="circle-reveal g3">
-              <span className="viewbtn">VIEW</span>
-            </Link>
-            <div></div>
-          </div>
-          <div className="art-list">
-            <div className="art-list-head">
-              <span className="art-count">3 ARTICLES</span>
+      {(() => {
+        const catArticles = getCategoryArticles('change', 'Change');
+        return (
+          <section className="cat-sec" id="change">
+            <div className="cat-inner">
+              <div className="cat-top">
+                <span className="idx">(03) CHANGE</span>
+                <Link className="viewall" to="/articles?category=change">VIEW ALL →</Link>
+              </div>
+              <div className="cat-layout">
+                <h2 className="disp cat-word left">CHANGE</h2>
+                <div className="circle-reveal g3">
+                  <PlasmaRingSphere colors={['#8fca9c', '#48b868', '#1e6830', '#a8f0b8']} scale={76} speed={85} />
+                </div>
+              </div>
+              <div className="art-list">
+                <div className="art-list-head">
+                  <span className="art-count">{catArticles.length} ARTICLES</span>
+                </div>
+                {catArticles.slice(0, 3).map((art, idx) => (
+                  <Link 
+                    key={art.slug || art.id || idx} 
+                    className="art-row" 
+                    to={`/articles?article=${art.slug || art.id}&category=change`}
+                  >
+                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
+                    <div className="art-content">
+                      <h4>{renderFormattedTitle(art.title, '#8ee09f')}</h4>
+                      <span className="meta">{art.readTime} · {art.date}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-            <Link className="art-row" to="/articles?article=everybody-says-theyve-changed&category=change">
-              <span className="n">01</span>
-              <div className="art-content">
-                <h4>Starting Over Before You Feel Ready</h4>
-                <span className="meta">6 min · May 10</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=the-in-between-is-a-part-of-the-process&category=change">
-              <span className="n">02</span>
-              <div className="art-content">
-                <h4>The Grief of Outgrowing Familiar Spaces</h4>
-                <span className="meta">7 min · May 3</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=you-can-be-both&category=change">
-              <span className="n">03</span>
-              <div className="art-content">
-                <h4>Becoming Someone You'd Want to Meet</h4>
-                <span className="meta">6 min · Apr 27</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
+          </section>
+        );
+      })()}
 
       {/* ---------- (04) DECISIONS (SPHERE LEFT, WORD RIGHT) ---------- */}
-      <section className="cat-sec" id="dec">
-        <div className="cat-inner">
-          <div className="cat-top">
-            <span className="idx">(04) DECISIONS</span>
-            <Link className="viewall" to="/articles?category=decisions">VIEW ALL →</Link>
-          </div>
-          <div className="cat-layout">
-            <div></div>
-            <Link to="/articles?category=decisions" className="circle-reveal g4">
-              <span className="viewbtn">VIEW</span>
-            </Link>
-            <h2 className="disp cat-word right">DECISIONS</h2>
-          </div>
-          <div className="art-list">
-            <div className="art-list-head">
-              <span className="art-count">3 ARTICLES</span>
+      {(() => {
+        const catArticles = getCategoryArticles('decisions', 'Decisions');
+        return (
+          <section className="cat-sec" id="dec">
+            <div className="cat-inner">
+              <div className="cat-top">
+                <span className="idx">(04) DECISIONS</span>
+                <Link className="viewall" to="/articles?category=decisions">VIEW ALL →</Link>
+              </div>
+              <div className="cat-layout">
+                <div className="circle-reveal g4">
+                  <PlasmaRingSphere colors={['#ff8c5a', '#fca283', '#d85c35', '#ff4500']} scale={76} speed={85} />
+                </div>
+                <h2 className="disp cat-word right">DECISIONS</h2>
+              </div>
+              <div className="art-list">
+                <div className="art-list-head">
+                  <span className="art-count">{catArticles.length} ARTICLES</span>
+                </div>
+                {catArticles.slice(0, 3).map((art, idx) => (
+                  <Link 
+                    key={art.slug || art.id || idx} 
+                    className="art-row" 
+                    to={`/articles?article=${art.slug || art.id}&category=decisions`}
+                  >
+                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
+                    <div className="art-content">
+                      <h4>{renderFormattedTitle(art.title, '#ffffff')}</h4>
+                      <span className="meta">{art.readTime} · {art.date}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-            <Link className="art-row" to="/articles?article=more-options-a-less-happy-you&category=decisions">
-              <span className="n">01</span>
-              <div className="art-content">
-                <h4>Choosing What Matters Over What Feels Easy</h4>
-                <span className="meta">6 min · May 14</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=the-cost-of-a-safe-decision&category=decisions">
-              <span className="n">02</span>
-              <div className="art-content">
-                <h4>How to Make Peace with Trade-Offs</h4>
-                <span className="meta">5 min · May 5</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=clarity-comes-after-action&category=decisions">
-              <span className="n">03</span>
-              <div className="art-content">
-                <h4>Overcoming Chronic Indecision and Overthinking</h4>
-                <span className="meta">7 min · Apr 25</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
+          </section>
+        );
+      })()}
 
       {/* ---------- (05) DIFFICULT PEOPLE (WORD LEFT, SPHERE RIGHT) ---------- */}
-      <section className="cat-sec" id="diff">
-        <div className="cat-inner">
-          <div className="cat-top">
-            <span className="idx">(05) DIFFICULT PEOPLE</span>
-            <Link className="viewall" to="/articles?category=difficult-people">VIEW ALL →</Link>
-          </div>
-          <div className="cat-layout">
-            <h2 className="disp cat-word left">DIFFICULT<br />PEOPLE</h2>
-            <Link to="/articles?category=difficult-people" className="circle-reveal g5">
-              <span className="viewbtn" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>VIEW</span>
-            </Link>
-            <div></div>
-          </div>
-          <div className="art-list">
-            <div className="art-list-head">
-              <span className="art-count">3 ARTICLES</span>
+      {(() => {
+        const catArticles = getCategoryArticles('difficult-people', 'Difficult People');
+        return (
+          <section className="cat-sec" id="diff">
+            <div className="cat-inner">
+              <div className="cat-top">
+                <span className="idx">(05) DIFFICULT PEOPLE</span>
+                <Link className="viewall" to="/articles?category=difficult-people">VIEW ALL →</Link>
+              </div>
+              <div className="cat-layout">
+                <h2 className="disp cat-word left">DIFFICULT<br />PEOPLE</h2>
+                <div className="circle-reveal g5">
+                  <PlasmaRingSphere colors={['#fceade', '#e09865', '#9e5225', '#ff9966']} scale={76} speed={85} />
+                </div>
+              </div>
+              <div className="art-list">
+                <div className="art-list-head">
+                  <span className="art-count">{catArticles.length} ARTICLES</span>
+                </div>
+                {catArticles.slice(0, 3).map((art, idx) => (
+                  <Link 
+                    key={art.slug || art.id || idx} 
+                    className="art-row" 
+                    to={`/articles?article=${art.slug || art.id}&category=difficult-people`}
+                  >
+                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
+                    <div className="art-content">
+                      <h4>{renderFormattedTitle(art.title, '#7a2d0f')}</h4>
+                      <span className="meta">{art.readTime} · {art.date}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-            <Link className="art-row" to="/articles?article=when-understanding-becomes-an-excuse&category=difficult-people">
-              <span className="n">01</span>
-              <div className="art-content">
-                <h4>Small Steps, Big Changes</h4>
-                <span className="meta">7 min · May 8</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=the-peace-in-not-reacting&category=difficult-people">
-              <span className="n">02</span>
-              <div className="art-content">
-                <h4>Saying No Without the Guilt</h4>
-                <span className="meta">4 min · Apr 15</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=you-cant-make-everyone-like-you&category=difficult-people">
-              <span className="n">03</span>
-              <div className="art-content">
-                <h4>The Boundary You Keep Breaking First</h4>
-                <span className="meta">5 min · Apr 2</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
+          </section>
+        );
+      })()}
 
       {/* ---------- (06) COMMUNICATION (SPHERE LEFT, WORD RIGHT) ---------- */}
-      <section className="cat-sec" id="comm">
-        <div className="cat-inner">
-          <div className="cat-top">
-            <span className="idx">(06) COMMUNICATION</span>
-            <Link className="viewall" to="/articles?category=communication">VIEW ALL →</Link>
-          </div>
-          <div className="cat-layout">
-            <div></div>
-            <Link to="/articles?category=communication" className="circle-reveal g6">
-              <span className="viewbtn">VIEW</span>
-            </Link>
-            <h2 className="disp cat-word right">COMMUNI<br />CATION</h2>
-          </div>
-          <div className="art-list">
-            <div className="art-list-head">
-              <span className="art-count">3 ARTICLES</span>
+      {(() => {
+        const catArticles = getCategoryArticles('communication', 'Communication');
+        return (
+          <section className="cat-sec" id="comm">
+            <div className="cat-inner">
+              <div className="cat-top">
+                <span className="idx">(06) COMMUNICATION</span>
+                <Link className="viewall" to="/articles?category=communication">VIEW ALL →</Link>
+              </div>
+              <div className="cat-layout">
+                <div className="circle-reveal g6">
+                  <PlasmaRingSphere colors={['#a4abb8', '#ffffff', '#505460', '#8899aa']} scale={76} speed={85} />
+                </div>
+                <h2 className="disp cat-word right">COMMUNICA<br />TION</h2>
+              </div>
+              <div className="art-list">
+                <div className="art-list-head">
+                  <span className="art-count">{catArticles.length} ARTICLES</span>
+                </div>
+                {catArticles.slice(0, 3).map((art, idx) => (
+                  <Link 
+                    key={art.slug || art.id || idx} 
+                    className="art-row" 
+                    to={`/articles?article=${art.slug || art.id}&category=communication`}
+                  >
+                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
+                    <div className="art-content">
+                      <h4>{renderFormattedTitle(art.title, '#ffffff')}</h4>
+                      <span className="meta">{art.readTime} · {art.date}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-            <Link className="art-row" to="/articles?article=say-less-say-better&category=communication">
-              <span className="n">01</span>
-              <div className="art-content">
-                <h4>The Art of Honest Communication</h4>
-                <span className="meta">6 min · May 4</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=its-not-what-you-say-how-they-receive&category=communication">
-              <span className="n">02</span>
-              <div className="art-content">
-                <h4>The Pattern Repeats Until It's Named</h4>
-                <span className="meta">6 min · Apr 18</span>
-              </div>
-            </Link>
-            <Link className="art-row" to="/articles?article=honesty-can-be-kind&category=communication">
-              <span className="n">03</span>
-              <div className="art-content">
-                <h4>Reading the Signs Before the Story Changes</h4>
-                <span className="meta">5 min · Apr 9</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
+          </section>
+        );
+      })()}
 
       {/* ---------- CTA SECTION (READY TO GO DEEPER) ---------- */}
       <section className="cta-wrapper">

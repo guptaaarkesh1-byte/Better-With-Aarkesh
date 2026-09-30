@@ -93,7 +93,7 @@ export const THEMES_MAP = {
     inkMuted: 'rgba(43, 18, 8, 0.85)',
     inkFaint: 'rgba(43, 18, 8, 0.45)',
     borderLine: 'rgba(43, 18, 8, 0.14)',
-    accent: '#a64117',
+    accent: '#7a2d0f',
     accentLight: '#faeae0',
     cardBg: 'rgba(43, 18, 8, 0.05)',
     aarkeshColor: '#a64117',
@@ -144,7 +144,7 @@ export function renderFormattedTitle(text, accentColor = '#f3a8e2') {
       if (raw.startsWith('**') && raw.endsWith('**')) {
         const inner = raw.slice(2, -2);
         elements.push(
-          <strong key={key} className="font-bold font-serif" style={{ color: 'inherit' }}>
+          <strong key={key} className="font-bold font-serif" style={{ color: 'inherit', fontWeight: 700 }}>
             {parseTokens(inner, key)}
           </strong>
         );
@@ -404,30 +404,154 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
         .themed-reader-view {
           font-family: 'Inter', sans-serif;
           -webkit-font-smoothing: antialiased;
+          overflow-x: hidden;
+          width: 100%;
+          max-width: 100vw;
+          box-sizing: border-box;
         }
 
         .themed-reader-view h1,
         .themed-reader-view h2,
         .themed-reader-view h3,
-        .themed-reader-view h4 {
+        .themed-reader-view h4,
+        .themed-reader-view h5,
+        .themed-reader-view h6,
+        .themed-reader-view .editorial-body h1,
+        .themed-reader-view .editorial-body h2,
+        .themed-reader-view .editorial-body h3,
+        .themed-reader-view .editorial-body h4,
+        .themed-reader-view .editorial-body .prose h1,
+        .themed-reader-view .editorial-body .prose h2,
+        .themed-reader-view .editorial-body .prose h3,
+        .themed-reader-view .editorial-body .prose h4,
+        .themed-reader-view .prose :where(h1, h2, h3, h4) {
           font-family: 'Fraunces', serif;
+          color: ${theme.ink} !important;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .themed-reader-view strong,
+        .themed-reader-view b,
+        .themed-reader-view .editorial-body strong,
+        .themed-reader-view .editorial-body b,
+        .themed-reader-view .editorial-body .prose strong,
+        .themed-reader-view .editorial-body .prose b,
+        .themed-reader-view .prose :where(strong, b),
+        .themed-reader-view [style*="font-weight: bold"],
+        .themed-reader-view [style*="font-weight: 700"] {
+          font-weight: 700 !important;
+          color: ${theme.ink} !important;
+        }
+
+        .themed-reader-view .editorial-body {
+          width: 100%;
+          max-width: 48rem;
+          margin-left: auto;
+          margin-right: auto;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          box-sizing: border-box;
         }
 
         .themed-reader-view .editorial-body p,
-        .themed-reader-view .editorial-body li {
+        .themed-reader-view .editorial-body li,
+        .themed-reader-view .editorial-body div,
+        .themed-reader-view .editorial-body span:not([style*="rgb(243"]:not([style*="rgb(217"]:not([style*="rgb(252"]:not([style*="rgb(142"]:not([style*="rgb(99"]:not([style*="rgb(242"]:not([style*="rgb(255"]):not([style*="#d97fc8"]):not([style*="#f3a8e2"]):not([style*="#8ee09f"]):not([style*="#63d17e"]):not([style*="#fca283"]):not([style*="#ff8c5a"]):not([style*="#f2ba8f"]):not([style*="#a64117"]):not([style*="#a4abb8"]),
+        .themed-reader-view .editorial-body .prose,
+        .themed-reader-view .editorial-body .prose p,
+        .themed-reader-view .editorial-body .prose li,
+        .themed-reader-view .editorial-body .prose ul,
+        .themed-reader-view .editorial-body .prose ol,
+        .themed-reader-view .editorial-body .prose em {
           font-family: 'Fraunces', serif;
+          color: ${theme.ink} !important;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        /* Auto-correct dark / near-black inline styles on dark reader background (only for dark themes) */
+        ${theme.id !== 'self' && theme.id !== 'difficult-people' ? `
+        .themed-reader-view .editorial-body [style*="color: rgb(17, 16, 16)"],
+        .themed-reader-view .editorial-body [style*="color: #111010"],
+        .themed-reader-view .editorial-body [style*="color: #1c1917"],
+        .themed-reader-view .editorial-body [style*="color: #000000"],
+        .themed-reader-view .editorial-body [style*="color: black"],
+        .themed-reader-view .editorial-body [style*="color: #0a0a0a"],
+        .themed-reader-view .editorial-body [style*="color: #12100e"],
+        .themed-reader-view .editorial-body [style*="color: #1a1714"],
+        .themed-reader-view .editorial-body [style*="color: #44403c"],
+        .themed-reader-view .editorial-body [style*="color: #57534e"],
+        .themed-reader-view .editorial-body [style*="color: #832671"] {
+          color: ${theme.ink} !important;
+        }
+        ` : ''}
+
+        .themed-reader-view .editorial-body [data-color="#832671"] {
+          color: ${theme.accent} !important;
+        }
+
+        .themed-reader-view .editorial-body p {
           font-size: 1.18rem;
           line-height: 1.85;
-          color: ${theme.inkMuted};
+          color: ${theme.ink} !important;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .themed-reader-view .prose {
+          --tw-prose-body: ${theme.ink} !important;
+          --tw-prose-headings: ${theme.ink} !important;
+          --tw-prose-lead: ${theme.ink} !important;
+          --tw-prose-links: ${theme.accent} !important;
+          --tw-prose-bold: ${theme.ink} !important;
+          --tw-prose-counters: ${theme.accent} !important;
+          --tw-prose-bullets: ${theme.accent} !important;
+          --tw-prose-hr: ${theme.borderLine} !important;
+          --tw-prose-quotes: ${theme.ink} !important;
+          --tw-prose-quote-borders: ${theme.accent} !important;
+          --tw-prose-captions: ${theme.inkFaint} !important;
+          --tw-prose-code: ${theme.ink} !important;
+          --tw-prose-pre-code: ${theme.ink} !important;
+          --tw-prose-pre-bg: ${theme.cardBg} !important;
+          --tw-prose-th-borders: ${theme.borderLine} !important;
+          --tw-prose-td-borders: ${theme.borderLine} !important;
+          color: ${theme.ink} !important;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .themed-reader-view .editorial-body blockquote {
           font-family: 'Fraunces', serif;
           font-style: italic;
-          border-left: 2px solid ${theme.accent};
+          border-left: 3px solid ${theme.accent};
           padding-left: 1.5rem;
           margin: 2.5rem 0;
-          color: ${theme.ink};
+          color: ${theme.ink} !important;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .themed-reader-view .editorial-body ul {
+          list-style-type: disc !important;
+          padding-left: 2rem !important;
+          margin: 1.5rem 0 !important;
+        }
+
+        .themed-reader-view .editorial-body ol {
+          list-style-type: decimal !important;
+          padding-left: 2rem !important;
+          margin: 1.5rem 0 !important;
+        }
+
+        .themed-reader-view .editorial-body li {
+          margin: 0.5rem 0 !important;
+          display: list-item !important;
+          font-size: 1.15rem;
+          line-height: 1.8;
+          color: ${theme.ink} !important;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
       `}</style>
       
@@ -589,20 +713,21 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
                   return (
                     <div 
                       key={block.id || bIdx} 
-                      className="pl-6 py-4 my-10 flex flex-col gap-2 rounded-r-xl"
+                      className="pl-6 py-5 my-10 flex flex-col gap-2.5 rounded-r-2xl border-l-[3px] shadow-sm max-w-full overflow-hidden"
                       style={{ 
-                        borderLeft: `3px solid ${theme.accent}`,
-                        backgroundColor: theme.cardBg 
+                        borderColor: theme.accent,
+                        backgroundColor: theme.cardBg,
+                        overflowWrap: 'anywhere'
                       }}
                     >
                       {block.line1 && (
-                        <p className="text-xl sm:text-2xl italic font-normal" style={{ color: theme.ink }}>
-                          {block.line1}
+                        <p className="text-xl sm:text-2xl italic font-normal break-words m-0" style={{ color: theme.ink, overflowWrap: 'anywhere' }}>
+                          {renderFormattedTitle(block.line1, theme.accent)}
                         </p>
                       )}
                       {block.line2 && (
-                        <p className="text-xl sm:text-2xl italic font-normal" style={{ color: theme.accent }}>
-                          {block.line2}
+                        <p className="text-xl sm:text-2xl italic font-normal break-words m-0" style={{ color: theme.accent, overflowWrap: 'anywhere' }}>
+                          {renderFormattedTitle(block.line2, theme.accent)}
                         </p>
                       )}
                     </div>
@@ -620,25 +745,32 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
                   }
 
                   return (
-                    <p key={block.id || bIdx} className="mb-8 font-normal">
-                      {letter && (
-                        <span style={{
-                          float: 'left',
-                          fontFamily: '"Fraunces", "Playfair Display", Georgia, serif',
-                          color: theme.accent,
-                          fontWeight: '400',
-                          lineHeight: '0.78',
-                          fontSize: '4.2rem',
-                          paddingRight: '0.75rem',
-                          paddingTop: '0.15rem',
-                          userSelect: 'none',
-                          display: 'block'
-                        }}>
-                          {letter}
-                        </span>
+                    <div key={block.id || bIdx} className="mb-8 font-normal clear-both overflow-hidden">
+                      {letter ? (
+                        <p className="text-xl sm:text-2xl font-serif leading-relaxed m-0 break-words" style={{ color: theme.ink, overflowWrap: 'anywhere' }}>
+                          <span style={{
+                            float: 'left',
+                            fontFamily: '"Fraunces", "Playfair Display", Georgia, serif',
+                            color: theme.accent,
+                            fontWeight: '400',
+                            lineHeight: '0.8',
+                            fontSize: '4.2rem',
+                            paddingRight: '0.75rem',
+                            paddingTop: '0.15rem',
+                            marginRight: '0.15rem',
+                            userSelect: 'none',
+                            display: 'inline-block'
+                          }}>
+                            {letter}
+                          </span>
+                          {renderFormattedTitle(remainingText || rawText, theme.accent)}
+                        </p>
+                      ) : (
+                        <p className="text-xl sm:text-2xl font-serif leading-relaxed m-0 break-words" style={{ color: theme.ink, overflowWrap: 'anywhere' }}>
+                          {renderFormattedTitle(rawText, theme.accent)}
+                        </p>
                       )}
-                      {renderFormattedTitle(remainingText || rawText, theme.accent)}
-                    </p>
+                    </div>
                   );
                 }
 
@@ -650,8 +782,8 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
                     return (
                       <div 
                         key={block.id || bIdx}
-                        className="mb-8 space-y-4 prose max-w-none clear-both after:content-[''] after:table after:clear-both"
-                        style={{ color: theme.inkMuted }}
+                        className="mb-8 space-y-4 prose max-w-none clear-both after:content-[''] after:table after:clear-both break-words overflow-hidden"
+                        style={{ color: theme.ink, overflowWrap: 'anywhere' }}
                         dangerouslySetInnerHTML={{ __html: text }}
                       />
                     );
@@ -663,7 +795,7 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
                   return (
                     <React.Fragment key={block.id || bIdx}>
                       {pList.map((p, pIdx) => p?.trim() ? (
-                        <p key={pIdx} className="mb-8 font-normal">
+                        <p key={pIdx} className="mb-8 font-normal break-words" style={{ overflowWrap: 'anywhere' }}>
                           {renderFormattedTitle(p, theme.accent)}
                         </p>
                       ) : null)}

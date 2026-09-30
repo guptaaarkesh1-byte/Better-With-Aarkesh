@@ -23,9 +23,21 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 gsap.registerPlugin(ScrollTrigger);
 
+// =========================================================================
+// 🎛️ SUBHEADING ('Different lenses...') POSITION CONTROLS
+// Adjust distance from heading / position near chest here!
+// =========================================================================
+export const MEET_SUBHEADING_CONTROLS = {
+  // ↕️ Space from heading down towards chest: e.g. '70px', '90px', '120px'
+  marginTop: '210px',
+  // 🎯 Fine-tune Up (-) or Down (+) nudge: e.g. '+15px', '-20px'
+  shiftY: '0px',
+};
+
 export default function MeetAarkesh() {
   const container = useRef(null);
   const [aboutData, setAboutData] = useState(null);
+  const [isMiddleHovered, setIsMiddleHovered] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -69,8 +81,8 @@ export default function MeetAarkesh() {
     {
       title: coachData.title || 'COACH',
       icon: Crosshair,
-      sub1: coachData.sub1 || 'ICF-certified life coach.',
-      sub2: coachData.sub2 || 'Evidence-based. Human-first.',
+      sub1: coachData.sub1 || 'ICF certified life coach.',
+      sub2: coachData.sub2 || 'Evidence based. Human first.',
       highlight: coachData.highlight || 'I walk beside you, not ahead of you.',
       bgImg: coachData.bgImg || coachImg,
       imgPos: 'object-[center_85%]'
@@ -113,23 +125,31 @@ export default function MeetAarkesh() {
   }, { scope: container, dependencies: [aboutData] });
 
   return (
-    <section ref={container} id="meet-aarkesh" className="relative w-full h-auto lg:h-screen min-h-screen flex flex-col bg-[#f5f1e8] overflow-hidden snap-section pt-12 md:pt-20">
+    <section ref={container} id="meet-aarkesh" className="relative w-full h-auto lg:h-screen min-h-screen flex flex-col bg-[#f5f1e8] overflow-hidden snap-section">
       
-      {/* Mobile Header (Hidden on Desktop) */}
-      <div className="flex md:hidden flex-col items-center justify-center text-center z-20 px-6 pb-8 meet-header">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="h-[1.5px] w-6 bg-[#c9542f]" />
-          <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+      {/* Top Header: Only MEET AARKESH in top white/cream space */}
+      <div className="flex flex-col items-center justify-center text-center z-20 px-6 pt-5 sm:pt-7 pb-3 sm:pb-4 meet-header shrink-0">
+        <div className="flex items-center gap-3.5">
+          <div className="h-[2px] w-8 sm:w-10 bg-[#c9542f]" />
+          <span 
+            className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.6rem] font-medium tracking-tight text-[#c9542f]"
+            style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+          >
             {eyebrowText}
           </span>
-          <div className="h-[1.5px] w-6 bg-[#c9542f]" />
+          <div className="h-[2px] w-8 sm:w-10 bg-[#c9542f]" />
         </div>
+      </div>
 
-        <h2 className="font-serif text-4xl font-medium tracking-tight mb-2 text-[#111010]">
+      {/* Mobile Subheading (Visible on mobile screens) */}
+      <div className="flex md:hidden flex-col items-center justify-center text-center z-20 px-6 pb-5">
+        <h2 
+          className="font-serif text-2xl sm:text-3xl font-medium tracking-tight mb-1 text-[#111010]"
+          style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+        >
           {headingLine}
         </h2>
-        
-        <p className="text-[#555047] text-sm font-light tracking-wide">
+        <p className="text-[#555047] text-xs sm:text-sm font-light tracking-wide">
           {subheading}
         </p>
       </div>
@@ -143,6 +163,8 @@ export default function MeetAarkesh() {
             <div 
               key={i} 
               className="role-pane relative h-[45vh] md:h-auto md:flex-1 min-h-0 flex flex-col items-center justify-end pb-12 md:pb-16 p-6 group overflow-hidden border-b md:border-b-0 md:border-r border-black/10 last:border-none cursor-pointer bg-[#f5f1e8]"
+              onMouseEnter={() => { if (i === 1) setIsMiddleHovered(true); }}
+              onMouseLeave={() => { if (i === 1) setIsMiddleHovered(false); }}
             >
               {/* Background Image - Full Visibility */}
               <div className="absolute inset-0 z-0 overflow-hidden">
@@ -155,23 +177,28 @@ export default function MeetAarkesh() {
 
               {/* Clean bottom gradient only on hover for legible text - No glow, no full-card fog */}
               <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/70 to-transparent opacity-0 group-hover:opacity-100 z-0 pointer-events-none transition-opacity duration-300 ease-out" />
-              
-              {/* Conditional Top Header (Only in the Middle Column on Desktop) */}
-              {i === 1 && (
-                <div className="hidden md:flex absolute top-6 inset-x-0 flex-col items-center justify-center text-center z-20 px-6 transition-opacity duration-400 ease-out group-hover:opacity-0 meet-header pointer-events-none">
-                  <div className="flex items-center gap-4 mb-2.5">
-                    <div className="h-[1.5px] w-6 bg-[#c9542f]" />
-                    <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
-                      {eyebrowText}
-                    </span>
-                    <div className="h-[1.5px] w-6 bg-[#c9542f]" />
-                  </div>
 
-                  <h2 className="font-serif text-3xl md:text-4xl lg:text-[2.6rem] font-medium tracking-tight mb-1.5 text-[#111010]">
+              {/* Three roles. One purpose. Heading inside the middle column image */}
+              {i === 1 && (
+                <div 
+                  className={`hidden md:flex absolute top-6 sm:top-8 inset-x-0 flex-col items-center justify-center text-center z-20 px-6 transition-all duration-300 ease-out pointer-events-none ${
+                    isMiddleHovered ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'
+                  }`}
+                >
+                  <h2 
+                    className="font-serif text-2xl md:text-3xl lg:text-[1.95rem] font-medium tracking-tight mb-1 text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]"
+                    style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                  >
                     {headingLine}
                   </h2>
                   
-                  <p className="text-[#2b2723] text-xs md:text-sm font-normal tracking-wide">
+                  <p 
+                    className="text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)] text-xs md:text-sm font-normal tracking-wide px-4"
+                    style={{
+                      marginTop: MEET_SUBHEADING_CONTROLS.marginTop,
+                      transform: `translateY(${MEET_SUBHEADING_CONTROLS.shiftY || '0px'})`
+                    }}
+                  >
                     {subheading}
                   </p>
                 </div>

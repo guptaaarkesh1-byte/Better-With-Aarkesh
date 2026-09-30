@@ -7,8 +7,8 @@ const DEFAULT_DECIDE_DATA = {
   eyebrow: 'PRINCIPLE 03',
   title: 'DECIDE',
   subtitle: 'INTENTIONALLY.',
-  highlight: 'True confidence is born from aligned decision-making.',
-  description: "Indecision is also a decision. Stop second-guessing. We create personalized frameworks that give you the courage and conviction to execute fearlessly.",
+  highlight: 'True confidence is born from aligned decision making.',
+  description: "Indecision is also a decision. Stop second guessing. We create personalized frameworks that give you the courage and conviction to execute fearlessly.",
   closingLine: '....Then we help you walk it.',
   buttonText: '',
   bgImg: ''
@@ -21,10 +21,28 @@ export default function DecidePrinciple() {
   const eyebrow = data.eyebrow || 'PRINCIPLE 03';
   const headlineWhite = data.title || 'DECIDE';
   const headlineGold = data.subtitle || 'INTENTIONALLY.';
+  const rawHighlight = (data?.highlight || 'True confidence is born from aligned decision making.').replace(/decision-making/g, 'decision making');
+  const formattedHighlight = rawHighlight.includes('born from aligned')
+    ? rawHighlight.replace('born from aligned', 'born from<br />aligned')
+    : rawHighlight.includes('\n')
+      ? rawHighlight.replace(/\n/g, '<br />')
+      : rawHighlight;
+
+  const rawDescription = (data?.description || "Indecision is also a decision. Stop second guessing. We create personalized frameworks that give you the courage and conviction to execute fearlessly.").replace(/second-guessing/g, 'second guessing');
+  let formattedDescription = rawDescription;
+  if (formattedDescription.includes('Indecision is also a decision. Stop')) {
+    formattedDescription = formattedDescription.replace('Indecision is also a decision. Stop', 'Indecision is also a decision.<br />Stop');
+  } else if (formattedDescription.includes('Indecision is also a decision.')) {
+    formattedDescription = formattedDescription.replace('Indecision is also a decision.', 'Indecision is also a decision.<br />');
+  }
+  if (formattedDescription.includes('\n')) {
+    formattedDescription = formattedDescription.replace(/\n/g, '<br />');
+  }
+
   const paragraphs = [
-    `<span class='italic font-serif text-xl lg:text-2xl leading-relaxed text-[#111010] block' style='font-family: Fraunces, Georgia, serif;'>${data?.highlight || 'True confidence is born from aligned decision-making.'}</span>`,
-    `<span class='font-serif text-sm sm:text-base lg:text-base font-normal not-italic text-[#4a463e] leading-relaxed block' style='font-family: Fraunces, Georgia, serif;'>${data?.description || "Indecision is also a decision. Stop second-guessing. We create personalized frameworks that give you the courage and conviction to execute fearlessly."}</span>`,
-    `<span class='italic font-serif text-xl lg:text-2xl leading-relaxed text-[#c9542f] block' style='font-family: Fraunces, Georgia, serif;'>${data?.closingLine || '....Then we help you walk it.'}</span>`
+    `<span class='italic font-serif text-xl lg:text-2xl leading-relaxed text-[#111010] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${formattedHighlight}</span>`,
+    `<span class='font-serif text-base lg:text-lg font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif; font-style: normal;'>${formattedDescription}</span>`,
+    `<span class='italic font-serif text-xl lg:text-2xl leading-relaxed text-[#c9542f] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${data?.closingLine || '....Then we help you walk it.'}</span>`
   ];
   const buttonText = data?.buttonText || '';
   const bgImg = data?.bgImg || defaultBgImg;
@@ -47,6 +65,7 @@ export default function DecidePrinciple() {
       headlineGoldItalic={false}
       paragraphs={paragraphs}
       buttonText={buttonText}
+      maxContentWidth="max-w-[365px]"
       activeStep={3}
       bannerTitle="DYNAMIC<br/>EXPERIENCE"
       bannerIcon={Sparkle}

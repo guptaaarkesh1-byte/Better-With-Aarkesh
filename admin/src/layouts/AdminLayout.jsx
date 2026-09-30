@@ -84,21 +84,21 @@ export default function AdminLayout({ children, onLogout }) {
         />
         
         {/* Horizontal Tabs */}
-        <div className="px-6 flex items-center gap-1 overflow-x-auto scrollbar-hide border-t border-white/5 bg-[#050505]/50">
+        <div className="px-6 flex items-center gap-1 overflow-x-auto scrollbar-hide border-t border-black/10 bg-[#ede7d8]/90">
           {topTabs.map(tab => {
             const isActive = activeTab === tab.id;
             return (
               <Link
                 key={tab.id}
                 to={tab.path}
-                className={`flex items-center gap-2 px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-2 px-6 py-3.5 border-b-2 transition-all whitespace-nowrap ${
                   isActive 
-                    ? 'border-[#c79c6e] text-[#c79c6e] bg-[#c79c6e]/5' 
-                    : 'border-transparent text-white/50 hover:text-white hover:bg-white/5'
+                    ? 'border-[#c9542f] text-[#c9542f] bg-[#c9542f]/10 font-bold shadow-xs' 
+                    : 'border-transparent text-[#4a453d] hover:text-[#111010] hover:bg-black/5 font-medium'
                 }`}
               >
                 {tab.icon}
-                <span className="text-sm font-medium tracking-wide">{tab.label}</span>
+                <span className="text-sm tracking-wide">{tab.label}</span>
               </Link>
             );
           })}

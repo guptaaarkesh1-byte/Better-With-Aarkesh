@@ -20,9 +20,20 @@ export default function ThinkPrinciple() {
   const eyebrow = data.eyebrow || 'PRINCIPLE 01';
   const headlineWhite = data.title || 'THINK';
   const headlineGold = data.subtitle || 'CLEARLY.';
+  const rawHighlight = data?.highlight || 'Clarity is the bridge between intention and action.';
+  const formattedHighlight = rawHighlight.includes('\n')
+    ? rawHighlight.replace(/\n/g, '<br />')
+    : rawHighlight;
+
+  const rawDescription = data?.description || 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.';
+  const formattedDescription = rawDescription.includes('\n')
+    ? rawDescription.replace(/\n/g, '<br />')
+    : rawDescription;
+  const descText = formattedDescription.startsWith('....') ? formattedDescription : '....' + formattedDescription;
+
   const paragraphs = [
-    `<span class='italic text-xl lg:text-2xl text-[#111010] leading-relaxed' style='font-family: Fraunces, Georgia, serif;'>${data?.highlight || 'Clarity is the bridge between intention and action.'}</span>`,
-    `<span class='font-serif text-xl lg:text-2xl font-normal not-italic text-[#4a463e] leading-relaxed' style='font-family: Fraunces, Georgia, serif;'>....${data?.description || 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.'}</span>`
+    `<span class='italic font-serif text-xl lg:text-2xl leading-relaxed text-[#111010] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${formattedHighlight}</span>`,
+    `<span class='font-serif text-base lg:text-lg font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif; font-style: normal;'>${descText}</span>`
   ];
   const buttonText = data?.buttonText || 'SCROLL FOR NEXT PRINCIPLE';
   const bgImg = data?.bgImg || defaultBgImg;

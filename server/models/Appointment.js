@@ -39,7 +39,7 @@ const appointmentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['UPCOMING', 'COMPLETED', 'DRAFTS', 'CANCELLED'],
+    enum: ['UPCOMING', 'COMPLETED', 'DRAFTS', 'CANCELLED', 'REFUNDED'],
     default: 'UPCOMING',
   },
   duration: {
@@ -74,6 +74,22 @@ const appointmentSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  refundStatus: {
+    type: String,
+    enum: ['NONE', 'PENDING', 'REFUNDED'],
+    default: 'NONE',
+  },
+  refundAmount: {
+    type: Number,
+    default: 0,
+  },
+  refundReason: {
+    type: String,
+    default: '',
+  },
+  refundedAt: {
+    type: Date,
+  },
   calBookingUid: {
     type: String,
   },
@@ -95,7 +111,18 @@ const appointmentSchema = new mongoose.Schema({
     status: {
       type: String,
       enum: ['PENDING', 'APPROVED', 'REJECTED'],
-    }
+    },
+    requestedAt: Date,
+    isWithin48Hours: Boolean,
+    hoursRemainingAtRequest: Number,
+    rescheduleFeePaid: {
+      type: Boolean,
+      default: false,
+    },
+    reschedulePaymentId: String,
+    rescheduleOrderId: String,
+    rescheduleAmount: Number,
+    paidAt: Date,
   },
   isArchived: {
     type: Boolean,

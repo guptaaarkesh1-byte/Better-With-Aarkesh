@@ -12,6 +12,7 @@ import {
   Signpost, 
   Sun 
 } from '@phosphor-icons/react';
+import { renderFormattedTitle } from '../../pages/articles/ArticleReaderView';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -382,7 +383,7 @@ export default function QuestionsSection() {
                                 href={`/articles?category=${currentTopic.id}`} 
                                 className="font-sans text-[0.6rem] md:text-[0.65rem] text-white/80 hover:text-white font-light transition-colors flex flex-col gap-1 border border-[#c79c6e]/20 bg-[#c79c6e]/5 rounded-md p-3 group hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/10"
                               >
-                                <span className="leading-relaxed">{article.title}</span>
+                                <span className="leading-relaxed">{renderFormattedTitle(article.title)}</span>
                               </a>
                             ));
                           }
@@ -450,7 +451,7 @@ export default function QuestionsSection() {
                                   href={`/articles?category=${topic.id}`} 
                                   className="font-sans text-[0.65rem] text-white/80 hover:text-white font-light border border-[#c79c6e]/20 bg-[#c79c6e]/5 rounded-md p-3 group hover:border-[#c79c6e]/50 hover:bg-[#c79c6e]/10"
                                 >
-                                  {article.title}
+                                  {renderFormattedTitle(article.title)}
                                 </a>
                               ));
                             }

@@ -80,7 +80,7 @@ export const DEFAULT_BOOKING_SETTINGS = {
       }
     ],
     rescheduleHeading: "NEED TO RESCHEDULE?",
-    rescheduleText: "You can reschedule or cancel up to 24 hours before the session.",
+    rescheduleText: "You can reschedule or cancel up to 48 hours before the session.",
     reschedulePolicyLinkText: "View Rescheduling Policy",
     agreementPrefix: "I agree to the",
     agreementLinkText: "terms and conditions",
@@ -127,7 +127,7 @@ export const DEFAULT_BOOKING_SETTINGS = {
     quoteLine1: "Clarity doesn't come from having all the answers.",
     quoteLine2: "It comes from asking better questions.",
     changeHeading: "NEED TO MAKE A CHANGE?",
-    changeText: "You can reschedule or cancel up to 24 hours before the session.",
+    changeText: "You can reschedule or cancel up to 48 hours before the session.",
     changePolicyLinkText: "View Rescheduling Policy →"
   }
 };

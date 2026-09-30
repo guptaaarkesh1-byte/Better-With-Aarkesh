@@ -11,12 +11,14 @@ export default function QuestionnaireModal({ isOpen, onClose, onComplete }) {
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const overlayRef = useRef(null);
+  const answersRef = useRef({});
 
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
     setCurrentQuestion(0);
     setAnswers({});
+    answersRef.current = {};
     setSubmitted(false);
     fetch(`${API_URL}/api/questionnaire`)
       .then(r => r.json())
@@ -38,15 +40,17 @@ export default function QuestionnaireModal({ isOpen, onClose, onComplete }) {
   const selectedOption = current ? (answers[current.id]?.optionId || (typeof answers[current.id] === 'string' ? answers[current.id] : null)) : null;
 
   const handleSelect = (questionId, optionId, optionLabel) => {
-    setAnswers(prev => ({
-      ...prev,
+    const updated = {
+      ...answersRef.current,
       [questionId]: {
         questionId,
         question: current?.question || '',
         optionId,
         answer: optionLabel || ''
       }
-    }));
+    };
+    answersRef.current = updated;
+    setAnswers(updated);
   };
 
   const handleNext = () => {
@@ -54,8 +58,9 @@ export default function QuestionnaireModal({ isOpen, onClose, onComplete }) {
       setCurrentQuestion(q => q + 1);
     } else {
       setSubmitted(true);
+      const currentAnswers = answersRef.current;
       const structuredAnswers = questions.map(q => {
-        const ans = answers[q.id];
+        const ans = currentAnswers[q.id];
         if (!ans) return null;
         if (typeof ans === 'object' && ans.answer) {
           return ans;

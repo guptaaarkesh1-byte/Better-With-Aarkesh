@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import Settings from '../models/Settings.js';
 
 const router = express.Router();
@@ -45,6 +45,28 @@ export const DEFAULT_QUESTIONNAIRE = {
         { id: "q3o3", label: "A practical action plan" },
         { id: "q3o4", label: "Fresh perspective on my situation" },
         { id: "q3o5", label: "Just to talk it through with someone" }
+      ]
+    },
+    {
+      id: "q4",
+      question: "Have you worked with a coach, mentor, or therapist before?",
+      required: false,
+      options: [
+        { id: "q4o1", label: "Yes, regularly in the past" },
+        { id: "q4o2", label: "Yes, a few sessions before" },
+        { id: "q4o3", label: "No, this is my first time" },
+        { id: "q4o4", label: "I have read self-help & done solo work" }
+      ]
+    },
+    {
+      id: "q5",
+      question: "What is your main priority or focus for our conversation?",
+      required: false,
+      options: [
+        { id: "q5o1", label: "Overcoming a specific roadblock" },
+        { id: "q5o2", label: "Building lasting habits & consistency" },
+        { id: "q5o3", label: "Navigating an emotional or personal challenge" },
+        { id: "q5o4", label: "Setting clear long-term goals" }
       ]
     }
   ]

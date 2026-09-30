@@ -171,41 +171,73 @@
               <span className="font-serif text-xl lg:text-2xl font-normal not-italic text-[#7a756b]">{data.subnote || 'Simple. Effective.'}</span>
             </p>
 
-            {/* Grid Stepper */}
-            <div className="relative flex flex-wrap justify-start gap-x-6 gap-y-4 lg:gap-x-8 lg:gap-y-6 mt-4">
+            {/* Grid Stepper: 3 rows x 2 columns with 5th item spanning 2 cols wide */}
+            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 lg:gap-5 mt-4 max-w-2xl lg:max-w-3xl">
               {steps.map((step, i) => {
                 const Icon = ICONS[i % ICONS.length];
                 const isActive = activeStep === i;
+                const isWide = i === 4;
                 return (
                   <div 
                     key={i} 
                     onClick={() => setActiveStep(isActive ? null : i)}
-                    className={`coaching-step w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1.35rem)] relative z-50 flex gap-3.5 items-start group rounded-2xl p-4 transition-all duration-300 cursor-pointer ${
+                    className={`coaching-step w-full ${
+                      isWide ? 'col-span-1 md:col-span-2' : 'col-span-1'
+                    } relative z-50 flex group rounded-2xl p-4 transition-all duration-300 cursor-pointer ${
                       isActive 
                         ? 'bg-[#fbf0eb] border border-[#c9542f]/50 shadow-[0_6px_24px_rgba(201, 84, 47,0.12)]' 
                         : 'bg-white/85 border border-black/8 hover:bg-white hover:border-[#c9542f]/35 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
-                    }`}
+                    } ${isWide ? 'flex-col items-center justify-center' : 'flex-row gap-3.5 items-start'}`}
                   >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                      isActive 
-                        ? 'border border-[#c9542f] bg-[#c9542f] text-white shadow-xs' 
-                        : 'border border-black/10 bg-[#f5f1e8] text-[#111010] group-hover:border-[#c9542f]/40 group-hover:text-[#c9542f]'
-                    }`}>
-                      <Icon className="text-lg transition-transform duration-300 group-hover:scale-110" weight="regular" />
-                    </div>
-                    <div className="flex flex-col justify-center min-h-[40px] flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-sans text-[0.68rem] tracking-widest font-bold text-[#c9542f]">{step.num || `0${i+1}`}</span>
-                        <span className="font-sans text-[0.72rem] uppercase tracking-[0.18em] font-bold text-[#111010]">{step.title}</span>
-                      </div>
-                      <div className={`grid transition-[grid-template-rows] duration-400 ease-out ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] group-hover:grid-rows-[1fr]'}`}>
-                        <div className="overflow-hidden">
-                          <p className={`text-[#4a463e] text-xs font-light leading-relaxed transition-opacity duration-400 delay-75 pt-2 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                            {step.text}
-                          </p>
+                    {isWide ? (
+                      /* Point 5 Centered Layout */
+                      <div className="w-full flex flex-col items-center justify-center text-center">
+                        <div className="flex items-center justify-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                            isActive 
+                              ? 'border border-[#c9542f] bg-[#c9542f] text-white shadow-xs' 
+                              : 'border border-black/10 bg-[#f5f1e8] text-[#111010] group-hover:border-[#c9542f]/40 group-hover:text-[#c9542f]'
+                          }`}>
+                            <Icon className="text-lg transition-transform duration-300 group-hover:scale-110" weight="regular" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-sans text-[0.68rem] tracking-widest font-bold text-[#c9542f]">{step.num || `0${i+1}`}</span>
+                            <span className="font-sans text-[0.72rem] uppercase tracking-[0.18em] font-bold text-[#111010]">{step.title}</span>
+                          </div>
+                        </div>
+                        <div className={`grid transition-[grid-template-rows] duration-400 ease-out w-full ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] group-hover:grid-rows-[1fr]'}`}>
+                          <div className="overflow-hidden">
+                            <p className={`text-[#4a463e] text-xs font-light leading-relaxed transition-opacity duration-400 delay-75 pt-2 text-center max-w-xl mx-auto ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                              {step.text}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      /* Points 1 - 4 Standard Layout */
+                      <>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                          isActive 
+                            ? 'border border-[#c9542f] bg-[#c9542f] text-white shadow-xs' 
+                            : 'border border-black/10 bg-[#f5f1e8] text-[#111010] group-hover:border-[#c9542f]/40 group-hover:text-[#c9542f]'
+                        }`}>
+                          <Icon className="text-lg transition-transform duration-300 group-hover:scale-110" weight="regular" />
+                        </div>
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center gap-2 h-10">
+                            <span className="font-sans text-[0.68rem] tracking-widest font-bold text-[#c9542f]">{step.num || `0${i+1}`}</span>
+                            <span className="font-sans text-[0.72rem] uppercase tracking-[0.18em] font-bold text-[#111010]">{step.title}</span>
+                          </div>
+                          <div className={`grid transition-[grid-template-rows] duration-400 ease-out ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] group-hover:grid-rows-[1fr]'}`}>
+                            <div className="overflow-hidden">
+                              <p className={`text-[#4a463e] text-xs font-light leading-relaxed transition-opacity duration-400 delay-75 pb-1 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                {step.text}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })}

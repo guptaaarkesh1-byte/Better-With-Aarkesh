@@ -80,21 +80,21 @@ export function ToastProvider({ children }) {
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto relative overflow-hidden rounded-2xl p-4 shadow-2xl backdrop-blur-2xl border transition-all duration-300 animate-in slide-in-from-top-5 fade-in ${
+              className={`pointer-events-auto relative overflow-hidden rounded-2xl p-4 shadow-[0_20px_45px_rgba(0,0,0,0.14)] backdrop-blur-xl border transition-all duration-300 animate-in slide-in-from-top-5 fade-in ${
                 isSuccess
-                  ? 'bg-[#0a1711]/95 border-emerald-500/50 text-white shadow-[0_16px_40px_rgba(16,185,129,0.28)] ring-1 ring-emerald-500/20'
+                  ? 'bg-white border-emerald-200 shadow-emerald-900/10'
                   : isError
-                  ? 'bg-[#1c0c0c]/95 border-red-500/50 text-white shadow-[0_16px_40px_rgba(239,68,68,0.28)] ring-1 ring-red-500/20'
-                  : 'bg-[#141210]/95 border-[#c79c6e]/50 text-white shadow-[0_16px_40px_rgba(199,156,110,0.28)] ring-1 ring-[#c79c6e]/20'
+                  ? 'bg-white border-red-200 shadow-red-900/10'
+                  : 'bg-white border-stone-200 shadow-stone-900/10'
               }`}
             >
               <div className="flex items-start gap-3.5">
-                <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 shadow-inner ${
+                <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 shadow-sm ${
                   isSuccess 
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-emerald-500/10' 
+                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
                     : isError 
-                    ? 'bg-red-500/20 text-red-400 border border-red-500/40 shadow-red-500/10' 
-                    : 'bg-[#c79c6e]/20 text-[#c79c6e] border border-[#c79c6e]/40'
+                    ? 'bg-red-50 text-red-600 border border-red-200' 
+                    : 'bg-[#c9542f]/10 text-[#c9542f] border border-[#c9542f]/20'
                 }`}>
                   {isSuccess && <CheckCircle size={22} weight="fill" />}
                   {isError && <WarningCircle size={22} weight="fill" />}
@@ -104,15 +104,15 @@ export function ToastProvider({ children }) {
                 <div className="flex-1 min-w-0 pr-1">
                   <div className="flex items-center gap-2">
                     <h4 className={`text-xs font-bold uppercase tracking-wider font-sans ${
-                      isSuccess ? 'text-emerald-400' : isError ? 'text-red-400' : 'text-[#c79c6e]'
+                      isSuccess ? 'text-emerald-700' : isError ? 'text-red-700' : 'text-[#c9542f]'
                     }`}>
                       {isSuccess ? 'Saved Successfully' : isError ? 'Action Failed' : 'Notice'}
                     </h4>
                     {isSuccess && (
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                     )}
                   </div>
-                  <p className="text-xs font-sans text-white/90 leading-relaxed mt-1 font-medium">
+                  <p className="text-xs font-sans text-stone-700 leading-relaxed mt-1 font-semibold">
                     {toast.message}
                   </p>
                 </div>
@@ -120,7 +120,7 @@ export function ToastProvider({ children }) {
                 <button
                   type="button"
                   onClick={() => removeToast(toast.id)}
-                  className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+                  className="p-1 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors shrink-0"
                 >
                   <X size={15} />
                 </button>
@@ -128,10 +128,10 @@ export function ToastProvider({ children }) {
 
               {/* Animated Progress countdown timer bar */}
               {toast.duration > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5">
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-stone-100">
                   <div
                     className={`h-full ${
-                      isSuccess ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : isError ? 'bg-red-500' : 'bg-[#c79c6e]'
+                      isSuccess ? 'bg-emerald-500' : isError ? 'bg-red-500' : 'bg-[#c9542f]'
                     }`}
                     style={{
                       animation: `adminToastProgress ${toast.duration}ms linear forwards`,
@@ -148,7 +148,7 @@ export function ToastProvider({ children }) {
   ) : null;
 
   return (
-    <ToastContext.Provider value={{ showToast, showSuccess, showError, showInfo, removeToast }}>
+    <ToastContext.Provider value={{ showToast, addToast: showToast, showSuccess, showError, showInfo, removeToast }}>
       {children}
       {toastContainer}
     </ToastContext.Provider>
@@ -172,12 +172,16 @@ export function useToast() {
     // Fallback if used outside provider
     return {
       showToast: triggerAdminToast,
+      addToast: triggerAdminToast,
       showSuccess: (msg) => triggerAdminToast(msg, 'success'),
       showError: (msg) => triggerAdminToast(msg, 'error'),
       showInfo: (msg) => triggerAdminToast(msg, 'info'),
       removeToast: () => {},
     };
   }
-  return context;
+  return {
+    ...context,
+    addToast: context.addToast || context.showToast,
+  };
 }
 

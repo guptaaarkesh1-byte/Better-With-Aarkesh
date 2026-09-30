@@ -278,7 +278,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
             </span>
           </div>
           <span className="font-sans text-xs text-[#555047]">
-            {settings.changeText || 'You can reschedule or cancel up to 24 hours before the session.'}
+            {settings.changeText || 'You can reschedule or cancel up to 48 hours before the session.'}
           </span>
           <button 
             type="button"

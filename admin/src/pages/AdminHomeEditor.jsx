@@ -116,43 +116,43 @@ function ImageEditorCard({
   const displayImage = imgError ? secondarySrc : (primarySrc || secondarySrc);
 
   return (
-    <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-4 shadow-xl">
+    <div className="bg-white border border-stone-200 rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-white/5">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">
+      <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c9542f]">
           <ImageIcon size={16} />
           <span>{title}</span>
         </div>
-        <span className="px-2 py-0.5 rounded bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-[0.62rem] font-mono font-semibold text-[#c79c6e]">
+        <span className="px-2 py-0.5 rounded bg-[#c9542f]/10 border border-[#c9542f]/30 text-[0.62rem] font-mono font-bold text-[#c9542f]">
           {dimensions}
         </span>
       </div>
 
       {/* Specifications Box */}
-      <div className="bg-gradient-to-br from-[#12100e] to-[#070707] border border-[#c79c6e]/25 rounded-xl p-3.5 flex flex-col gap-2.5">
+      <div className="bg-[#faf7f0] border border-[#c9542f]/30 rounded-xl p-3.5 flex flex-col gap-2.5 shadow-xs">
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div className="flex flex-col">
-            <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">Dimensions</span>
-            <span className="text-white font-mono font-medium text-xs truncate">
+            <span className="text-stone-500 text-[0.6rem] uppercase font-bold tracking-wider">Dimensions</span>
+            <span className="text-stone-900 font-mono font-bold text-xs truncate">
               {dimensions.includes('(') ? dimensions.split('(')[0].trim() : dimensions}
             </span>
           </div>
           <div className="flex flex-col">
-            <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">Orientation</span>
-            <span className="text-white font-medium text-xs truncate">{orientation}</span>
+            <span className="text-stone-500 text-[0.6rem] uppercase font-bold tracking-wider">Orientation</span>
+            <span className="text-stone-900 font-semibold text-xs truncate">{orientation}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">File Size</span>
-            <span className="text-[#c79c6e] font-mono font-bold text-xs">{maxSize}</span>
+            <span className="text-stone-500 text-[0.6rem] uppercase font-bold tracking-wider">File Size</span>
+            <span className="text-[#c9542f] font-mono font-bold text-xs">{maxSize}</span>
           </div>
         </div>
-        <p className="text-[0.68rem] text-white/50 bg-black/40 p-2 rounded border border-white/5 leading-relaxed">
-          💡 <strong>Tip:</strong> {tip}
+        <p className="text-[0.68rem] text-stone-700 bg-white p-2.5 rounded-lg border border-stone-200 leading-relaxed font-medium">
+          💡 <strong className="text-stone-900">Tip:</strong> {tip}
         </p>
       </div>
 
       {/* Image Preview Box */}
-      <div className={`w-full ${aspectRatio} rounded-xl overflow-hidden relative border border-white/10 bg-black group flex items-center justify-center shadow-inner`}>
+      <div className={`w-full ${aspectRatio} rounded-xl overflow-hidden relative border border-stone-200 bg-stone-100 group flex items-center justify-center shadow-inner`}>
         {displayImage ? (
           <>
             <img
@@ -171,18 +171,18 @@ function ImageEditorCard({
               style={{ opacity: (overlayOpacity || 40) / 100 }}
             />
             <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none z-10">
-              <span className="px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[0.6rem] font-mono text-[#c79c6e] border border-white/10">
+              <span className="px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-[0.6rem] font-mono text-white border border-white/20 font-semibold">
                 {imageUrl ? 'Custom Upload / URL' : 'Default Asset'}
               </span>
-              <span className="px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[0.6rem] font-mono text-white/80 border border-white/10">
+              <span className="px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-[0.6rem] font-mono text-white border border-white/20 font-semibold">
                 {dimensions.includes('(') ? dimensions.split('(')[0].trim() : dimensions}
               </span>
             </div>
           </>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-white/30 gap-2 p-6">
+          <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 gap-2 p-6">
             <ImageIcon size={28} />
-            <span className="text-xs">No image uploaded</span>
+            <span className="text-xs font-medium">No image uploaded</span>
           </div>
         )}
       </div>
@@ -1157,7 +1157,7 @@ export default function AdminHomeEditor() {
                           type="text"
                           value={p.highlight || ''}
                           onChange={(e) => handlePrincipleChange('feel', 'highlight', e.target.value)}
-                          placeholder="You can't move forward, running from what you feel."
+                          placeholder="What you resist persists. What you feel fully dissolves."
                           className="w-full bg-[#050505] border border-[#c79c6e]/30 rounded-lg px-4 py-3 text-sm text-[#c79c6e] italic font-serif focus:border-[#c79c6e]"
                         />
                       </div>
@@ -1261,7 +1261,7 @@ export default function AdminHomeEditor() {
                           type="text"
                           value={p.highlight || ''}
                           onChange={(e) => handlePrincipleChange('decide', 'highlight', e.target.value)}
-                          placeholder="True confidence is born from aligned decision-making."
+                          placeholder="True confidence is born from aligned decision making."
                           className="w-full bg-[#050505] border border-[#c79c6e]/30 rounded-lg px-4 py-3 text-sm text-[#c79c6e] italic font-serif focus:border-[#c79c6e]"
                         />
                       </div>
@@ -1272,7 +1272,7 @@ export default function AdminHomeEditor() {
                           rows={4}
                           value={p.description || ''}
                           onChange={(e) => handlePrincipleChange('decide', 'description', e.target.value)}
-                          placeholder="Indecision is also a decision. Stop second-guessing. We create personalized frameworks that give you the courage and conviction to execute fearlessly."
+                          placeholder="Indecision is also a decision. Stop second guessing. We create personalized frameworks that give you the courage and conviction to execute fearlessly."
                           className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e] resize-none"
                         />
                       </div>

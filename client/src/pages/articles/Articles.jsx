@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookmarkSimple, List, X, Sparkle } from '@phosphor-icons/react';
 import { useBooking } from '../../context/BookingContext';
-import ArticleReaderView from './ArticleReaderView';
+import ArticleReaderView, { renderFormattedTitle } from './ArticleReaderView';
 import { CURATED_LIBRARY_ARTICLES, getCuratedArticle } from '../../constants/libraryArticlesData';
+import PlasmaRingSphere from '../../components/library/PlasmaRingSphere';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -12,7 +13,7 @@ const CATEGORY_CONFIGS = {
     id: 'relationships',
     num: '01',
     name: 'Relationships',
-    displayWords: ['RELATION', 'SHIPS'],
+    displayWords: ['RELATIONSH', 'IPS'],
     wordClass: 'left',
     sphereClass: 'g1',
     bg: '#3d1b37',
@@ -28,6 +29,7 @@ const CATEGORY_CONFIGS = {
     btnHoverInk: '#3d1b37',
     pillBg: '#ece0ea',
     pillColor: '#3d1b37',
+    plasmaColors: ['#f3a8e2', '#d97fc8', '#993388', '#ff44aa'],
     sphereGrad: 'radial-gradient(circle at 35% 25%, #c87ab9 0%, #7d2c72 35%, #481541 70%, #1c061a 100%)',
     tagline: 'Essays on connection, boundaries, projection, and the quiet courage of honest intimacy.'
   },
@@ -51,6 +53,7 @@ const CATEGORY_CONFIGS = {
     btnHoverInk: '#ffffff',
     pillBg: '#111010',
     pillColor: '#ffffff',
+    plasmaColors: ['#111010', '#1c1c22', '#2d2d38', '#000000'],
     sphereGrad: 'radial-gradient(circle at 35% 25%, #ffffff 0%, #e2e2ec 35%, #9fa0b5 70%, #4a4b60 100%)',
     tagline: 'Perspectives on inner alignment, silencing the need for approval, and returning home to who you are.'
   },
@@ -74,6 +77,7 @@ const CATEGORY_CONFIGS = {
     btnHoverInk: '#1d3321',
     pillBg: '#e2ebe3',
     pillColor: '#1a2f1e',
+    plasmaColors: ['#8fca9c', '#48b868', '#1e6830', '#a8f0b8'],
     sphereGrad: 'radial-gradient(circle at 35% 25%, #8fca9c 0%, #3d6b46 35%, #1e3a24 70%, #0a1c0e 100%)',
     tagline: 'Navigating life transitions, the grief of outgrowing old spaces, and starting before you feel ready.'
   },
@@ -97,6 +101,7 @@ const CATEGORY_CONFIGS = {
     btnHoverInk: '#ffffff',
     pillBg: 'rgba(255, 255, 255, 0.15)',
     pillColor: '#ffffff',
+    plasmaColors: ['#ff8c5a', '#fca283', '#d85c35', '#ff4500'],
     sphereGrad: 'radial-gradient(circle at 35% 25%, #fca283 0%, #d85c35 35%, #8a2e12 70%, #3e1205 100%)',
     tagline: 'Tools for cutting through analysis paralysis, weighing trade-offs, and committing wholeheartedly.'
   },
@@ -112,7 +117,7 @@ const CATEGORY_CONFIGS = {
     borderLine: 'rgba(43, 18, 8, 0.14)',
     cardBg: 'rgba(43, 18, 8, 0.05)',
     cardBorder: 'rgba(43, 18, 8, 0.14)',
-    accent: '#f2ba8f',
+    accent: '#7a2d0f',
     aarkeshColor: '#a64117',
     btnBg: '#2b1208',
     btnInk: '#fceade',
@@ -120,6 +125,7 @@ const CATEGORY_CONFIGS = {
     btnHoverInk: '#ffffff',
     pillBg: '#faeae0',
     pillColor: '#2b1208',
+    plasmaColors: ['#fceade', '#e09865', '#9e5225', '#ff9966'],
     sphereGrad: 'radial-gradient(circle at 35% 25%, #fceade 0%, #d9aa86 35%, #8f5c35 70%, #462812 100%)',
     tagline: 'Holding unwavering boundaries without guilt, distinguishing empathy from excusing, and preserving peace.'
   },
@@ -127,7 +133,7 @@ const CATEGORY_CONFIGS = {
     id: 'communication',
     num: '06',
     name: 'Communication',
-    displayWords: ['COMMUNI', 'CATION'],
+    displayWords: ['COMMUNICA', 'TION'],
     wordClass: 'right',
     sphereClass: 'g6',
     bg: '#141314',
@@ -143,6 +149,7 @@ const CATEGORY_CONFIGS = {
     btnHoverInk: '#141314',
     pillBg: '#e6e3dd',
     pillColor: '#141314',
+    plasmaColors: ['#a4abb8', '#ffffff', '#505460', '#8899aa'],
     sphereGrad: 'radial-gradient(circle at 35% 25%, #5a5a5a 0%, #323232 35%, #181818 70%, #080808 100%)',
     tagline: 'The art of honest conversation, speaking hard truths with gentle hands, and naming repeating patterns.'
   }
@@ -276,46 +283,94 @@ export default function Articles() {
     navigate('/book');
   };
 
+  const resolveImageUrl = (url, fallback = '/library_preview_silhouette.jpg') => {
+    if (!url) return fallback;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    if (url.startsWith('/uploads/')) {
+      return `${API_URL}${url}`;
+    }
+    if (url.startsWith('uploads/')) {
+      return `${API_URL}/${url}`;
+    }
+    return url;
+  };
+
   // If viewing a specific article, show Reader View
   if (articleParam) {
     const curated = getCuratedArticle(articleParam);
-    const dbMatch = publishedArticles.find(a => a._id === articleParam || a.slug === articleParam);
-    const mergedArticle = dbMatch ? { ...curated, ...dbMatch, image: dbMatch.featuredImage || curated.image } : curated;
-
-    return (
-      <ArticleReaderView
-        article={mergedArticle}
-        categoryConfig={currentCat}
-        onBack={() => {
-          searchParams.delete('article');
-          setSearchParams(searchParams);
-        }}
-      />
+    const dbMatch = publishedArticles.find(
+      a => a._id === articleParam || a.slug === articleParam || (a.title && a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === articleParam)
     );
+    const mergedArticle = dbMatch 
+      ? { ...curated, ...dbMatch, image: resolveImageUrl(dbMatch.featuredImage || dbMatch.image || curated?.image) } 
+      : curated;
+
+    if (mergedArticle) {
+      return (
+        <ArticleReaderView
+          article={mergedArticle}
+          categoryConfig={currentCat}
+          onBack={() => {
+            searchParams.delete('article');
+            setSearchParams(searchParams);
+          }}
+        />
+      );
+    }
   }
 
-  // Filter curated articles for current category
-  const curatedCategoryArticles = CURATED_LIBRARY_ARTICLES.filter(
-    a => a.category.toLowerCase().replace('_', ' ').replace('-', ' ') === currentCat.name.toLowerCase()
-  );
+  // 1. Filter published DB articles for current category (excluding drafts)
+  const targetCatId = currentCat.id.toLowerCase().replace(/\s+/g, '-');
+  const targetCatName = currentCat.name.toLowerCase();
 
-  // Combine with matching published articles from backend
-  const apiMatchingArticles = publishedArticles.filter(
-    a => (a.categoryId?.toLowerCase() === currentCat.id || a.category?.toLowerCase() === currentCat.name.toLowerCase())
-  );
+  const matchingDb = publishedArticles.filter(a => {
+    if (a.status === 'Draft') return false;
+    const aCatId = (a.categoryId || '').toLowerCase().replace(/\s+/g, '-');
+    const aCat = (a.category || '').toLowerCase().replace(/\s+/g, '-');
+    return aCatId === targetCatId || aCat === targetCatId || aCat === targetCatName || aCat.includes(targetCatId);
+  });
 
-  // Unified list of articles
-  const allCategoryArticles = curatedCategoryArticles.map((curated, idx) => {
+  const sortedDb = [...matchingDb].sort((a, b) => {
+    const timeA = new Date(a.createdAt || a.updatedAt || a.date || 0).getTime();
+    const timeB = new Date(b.createdAt || b.updatedAt || b.date || 0).getTime();
+    return timeB - timeA;
+  });
+
+  // 2. Filter curated articles for current category
+  const matchingCurated = CURATED_LIBRARY_ARTICLES.filter(c => {
+    const cCat = (c.category || '').toLowerCase().replace(/\s+/g, '-');
+    return cCat === targetCatId || cCat === targetCatName || cCat.includes(targetCatId);
+  });
+
+  // 3. Merge: DB articles take precedence, Curated articles backfill if missing
+  const mergedArticlesList = [
+    ...sortedDb,
+    ...matchingCurated.filter(
+      c => !matchingDb.some(db => db.slug === c.slug || db.title?.toLowerCase() === c.title?.toLowerCase())
+    )
+  ];
+
+  // 4. Build unified list of articles
+  const allCategoryArticles = mergedArticlesList.map((article, idx) => {
     const fallbackImage = FALLBACK_COVERS[currentCat.id]?.[idx] || '/library_preview_silhouette.jpg';
-    const apiMatch = apiMatchingArticles.find(a => a.slug === curated.slug || a.title?.toLowerCase() === curated.title?.toLowerCase());
+    let displayDate = article.date;
+    if (!displayDate && article.createdAt) {
+      try {
+        const d = new Date(article.createdAt);
+        if (!isNaN(d.getTime())) {
+          displayDate = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+      } catch (_) {}
+    }
     return {
-      ...curated,
-      ...(apiMatch || {}),
-      id: apiMatch?._id || curated.id || `curated-${idx}`,
-      slug: curated.slug || apiMatch?.slug || curated.id,
-      image: apiMatch?.featuredImage || curated.image || fallbackImage,
-      readTime: curated.readTime || `${5 + (idx * 2)} MIN`,
-      date: curated.date || 'MAY 2026'
+      ...article,
+      id: article._id || article.id || `article-${idx}`,
+      slug: article.slug || article._id || article.id || `article-${idx}`,
+      image: resolveImageUrl(article.featuredImage || article.image, fallbackImage),
+      readTime: article.readTime || `${5 + (idx * 2)} MIN`,
+      date: displayDate || 'MAY 2026'
     };
   });
 
@@ -492,9 +547,11 @@ export default function Articles() {
 
         /* Category Hero Banner */
         .themed-category-root .category-hero {
-          padding: 70px 40px 50px;
-          max-width: 1280px;
+          padding: 60px 48px 50px;
+          max-width: 1380px;
           margin: 0 auto;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .themed-category-root .cat-header-top {
@@ -510,77 +567,97 @@ export default function Articles() {
           letter-spacing: 0.05em;
         }
 
-        /* 3-Column Alternating Showcase */
+        /* 2-Column Edge-to-Edge Layout */
         .themed-category-root .cat-showcase-layout {
-          display: grid;
-          grid-template-columns: 1fr 320px 1fr;
+          display: flex;
           align-items: center;
-          gap: 20px;
+          justify-content: space-between;
+          gap: clamp(20px, 4vw, 60px);
           min-height: 300px;
           margin-bottom: 40px;
+          width: 100%;
         }
 
         .themed-category-root .cat-big-word {
-          font-size: clamp(60px, 9vw, 140px);
+          font-size: clamp(48px, 7.8vw, 126px);
           margin: 0;
           line-height: 0.92;
+          flex: 1;
+          min-width: 0;
         }
 
-        .themed-category-root .cat-big-word.left { text-align: right; }
-        .themed-category-root .cat-big-word.right { text-align: left; }
+        .themed-category-root .cat-big-word.left { text-align: left; }
+        .themed-category-root .cat-big-word.right { text-align: right; }
 
         .themed-category-root .cat-sphere {
-          width: 300px;
-          height: 300px;
+          width: clamp(260px, 26vw, 360px);
+          height: clamp(260px, 26vw, 360px);
           border-radius: 50%;
-          margin: 0 auto;
-          box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.4);
-          background: ${currentCat.sphereGrad};
-          display: block;
+          margin: 0;
+          flex-shrink: 0;
+          background: transparent;
+          box-shadow: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           position: relative;
+          cursor: grab;
+          overflow: visible;
         }
 
-        /* Topic Switcher Bar */
+        /* Topic Switcher Bar - Full Width Extent & Bigger Size */
         .themed-category-root .topic-switcher-bar {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          padding: 24px 0 36px;
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 12px;
+          padding: 24px 0 28px;
           border-top: 1px solid ${currentCat.borderLine};
           border-bottom: 1px solid ${currentCat.borderLine};
-          margin-bottom: 60px;
-          align-items: center;
-          justify-content: flex-start;
+          margin-bottom: 50px;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .themed-category-root .topic-pill {
-          display: inline-flex;
+          display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 8px 16px;
-          border-radius: 40px;
-          font-size: 11px;
+          justify-content: center;
+          gap: 8px;
+          padding: 13px 14px;
+          border-radius: 50px;
+          font-family: 'Inter', sans-serif;
+          font-size: 13px;
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
           border: 1px solid ${currentCat.borderLine};
-          transition: all 0.25s ease;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
           cursor: pointer;
           color: inherit;
+          text-align: center;
+          white-space: nowrap;
+          box-sizing: border-box;
         }
 
-        .themed-category-root .topic-pill:hover,
+        .themed-category-root .topic-pill:hover {
+          background: rgba(255, 255, 255, 0.12);
+          transform: translateY(-2px);
+          border-color: ${currentCat.ink};
+        }
+
         .themed-category-root .topic-pill.active {
           background: ${currentCat.ink};
           color: ${currentCat.bg};
           transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.25);
+          border-color: ${currentCat.ink};
         }
 
         .themed-category-root .topic-pill span.num {
           font-family: 'Archivo Black', sans-serif;
-          font-size: 10px;
-          opacity: 0.7;
+          font-size: 11px;
+          opacity: 0.8;
+          letter-spacing: 0.04em;
         }
 
         /* Section Total Articles Header */
@@ -769,12 +846,17 @@ export default function Articles() {
             grid-template-columns: repeat(2, 1fr);
           }
           .themed-category-root .cat-showcase-layout {
-            grid-template-columns: 1fr;
+            flex-direction: column;
+            gap: 24px;
             text-align: center;
           }
           .themed-category-root .cat-big-word.left,
           .themed-category-root .cat-big-word.right {
             text-align: center;
+          }
+          .themed-category-root .topic-switcher-bar {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
           }
         }
 
@@ -784,6 +866,14 @@ export default function Articles() {
           .themed-category-root .articles-cards-grid { grid-template-columns: 1fr; }
           .themed-category-root footer.cat-page-footer { flex-direction: column; gap: 14px; text-align: center; padding: 24px 20px; }
           .themed-category-root .cat-sphere { width: 200px; height: 200px; }
+          .themed-category-root .topic-switcher-bar {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+          .themed-category-root .topic-pill {
+            padding: 10px 10px;
+            font-size: 11.5px;
+          }
         }
       `}</style>
 
@@ -868,7 +958,7 @@ export default function Articles() {
           <div></div>
         </div>
 
-        {/* 3-Column Alternating Layout matching Library section exactly without side tagline texts */}
+        {/* Edge-to-Edge Layout matching Library section */}
         <div className="cat-showcase-layout">
           {currentCat.wordClass === 'left' ? (
             <>
@@ -880,13 +970,15 @@ export default function Articles() {
                   </React.Fragment>
                 ))}
               </h1>
-              <div className={`cat-sphere ${currentCat.sphereClass}`} />
-              <div></div>
+              <div className="cat-sphere">
+                <PlasmaRingSphere colors={currentCat.plasmaColors} scale={76} speed={85} />
+              </div>
             </>
           ) : (
             <>
-              <div></div>
-              <div className={`cat-sphere ${currentCat.sphereClass}`} />
+              <div className="cat-sphere">
+                <PlasmaRingSphere colors={currentCat.plasmaColors} scale={76} speed={85} />
+              </div>
               <h1 className="disp cat-big-word right">
                 {currentCat.displayWords.map((w, i) => (
                   <React.Fragment key={i}>
@@ -958,11 +1050,11 @@ export default function Articles() {
                   </div>
 
                   <h3 className="card-title">
-                    {article.title}
+                    {renderFormattedTitle(article.title, currentCat.accent)}
                   </h3>
 
                   <p className="card-excerpt">
-                    {article.subtitle || article.description || 'A reflective perspective exploring deeper emotional understanding and self-clarity.'}
+                    {renderFormattedTitle(article.subtitle || article.description || 'A reflective perspective exploring deeper emotional understanding and self-clarity.', currentCat.accent)}
                   </p>
 
                   <div className="card-read-action">

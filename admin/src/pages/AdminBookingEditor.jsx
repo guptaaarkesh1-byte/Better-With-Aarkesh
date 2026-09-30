@@ -1183,7 +1183,7 @@ export default function AdminBookingEditor() {
                     value={settings.step3.rescheduleText || ''}
                     onChange={(e) => updateField('step3', 'rescheduleText', e.target.value)}
                     className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white"
-                    placeholder="You can reschedule or cancel up to 24 hours before the session."
+                    placeholder="You can reschedule or cancel up to 48 hours before the session."
                   />
                 </div>
 
@@ -1514,7 +1514,7 @@ export default function AdminBookingEditor() {
                       value={settings.success?.changeText || ''}
                       onChange={(e) => updateField('success', 'changeText', e.target.value)}
                       className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white"
-                      placeholder="You can reschedule or cancel up to 24 hours before the session."
+                      placeholder="You can reschedule or cancel up to 48 hours before the session."
                     />
                   </div>
 

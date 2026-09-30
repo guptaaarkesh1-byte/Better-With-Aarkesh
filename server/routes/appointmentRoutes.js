@@ -573,20 +573,43 @@ router.put('/admin/:id/notes', protect, admin, async (req, res) => {
   }
 });
 
-// POST /api/appointments/:id/reschedule - Submit a reschedule request
-router.post('/:id/reschedule', protect, async (req, res) => {
+// POST /api/appointments/:id/reschedule - Submit a reschedule request (Standard / > 48h)
+router.post('/:id/reschedule', optionalAuth, async (req, res) => {
   try {
     const { date, time, reason } = req.body;
     const appointment = await Appointment.findById(req.params.id);
     
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
-    if (appointment.userId && appointment.userId.toString() !== req.user._id.toString()) return res.status(401).json({ message: 'Not authorized' });
+    if (req.user && appointment.userId && !req.user.isAdmin) {
+      const isOwnerId = appointment.userId.toString() === req.user._id.toString();
+      const isOwnerEmail = appointment.email && req.user.email && appointment.email.toLowerCase() === req.user.email.toLowerCase();
+      if (!isOwnerId && !isOwnerEmail) {
+        return res.status(401).json({ message: 'Not authorized for this appointment' });
+      }
+    }
+
+    // Calculate hours remaining until the scheduled session
+    let hoursRemaining = null;
+    let isWithin48Hours = false;
+    try {
+      const scheduledDateTime = new Date(`${appointment.date} ${appointment.time} GMT+0530`);
+      if (!isNaN(scheduledDateTime.getTime())) {
+        const diffMs = scheduledDateTime - new Date();
+        hoursRemaining = Math.round(diffMs / (1000 * 60 * 60));
+        isWithin48Hours = hoursRemaining < 48;
+      }
+    } catch (dateErr) {
+      console.error('Error calculating hours remaining:', dateErr);
+    }
 
     appointment.rescheduleRequest = {
       date,
       time,
       reason,
-      status: 'PENDING'
+      status: 'PENDING',
+      requestedAt: new Date(),
+      isWithin48Hours,
+      hoursRemainingAtRequest: hoursRemaining,
     };
     
     await appointment.save();
@@ -594,6 +617,179 @@ router.post('/:id/reschedule', protect, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error submitting reschedule request' });
+  }
+});
+
+// POST /api/appointments/:id/reschedule-paid - Reschedule with payment (within 48 hours)
+router.post('/:id/reschedule-paid', optionalAuth, async (req, res) => {
+  try {
+    const { date, time, reason, paymentId, orderId, signature, amount } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+    
+    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+    if (req.user && appointment.userId && !req.user.isAdmin) {
+      const isOwnerId = appointment.userId.toString() === req.user._id.toString();
+      const isOwnerEmail = appointment.email && req.user.email && appointment.email.toLowerCase() === req.user.email.toLowerCase();
+      if (!isOwnerId && !isOwnerEmail) {
+        return res.status(401).json({ message: 'Not authorized for this appointment' });
+      }
+    }
+
+    if (!date || !time) {
+      return res.status(400).json({ message: 'New date and time are required.' });
+    }
+
+    // --- Cal.com Integration: Cancel old & create new slot ---
+    if (process.env.CAL_API_KEY) {
+      try {
+        if (appointment.calBookingUid) {
+          await fetch(`https://api.cal.com/v2/bookings/${appointment.calBookingUid}/cancel`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
+              'Content-Type': 'application/json',
+              'cal-api-version': '2024-08-13'
+            },
+            body: JSON.stringify({ reason: "Rescheduled by user with late window payment" })
+          });
+        }
+
+        const startDate = new Date(`${date} ${time} GMT+0530`);
+        const startISO = startDate.toISOString();
+        
+        const eventTypeId = appointment.isFirstSession 
+          ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
+          : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
+
+        const payload = {
+          eventTypeId: parseInt(eventTypeId),
+          start: startISO,
+          attendee: {
+            name: appointment.name,
+            email: appointment.email,
+            timeZone: "Asia/Calcutta",
+            language: "en"
+          }
+        };
+
+        const calRes = await fetch('https://api.cal.com/v2/bookings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
+            'Content-Type': 'application/json',
+            'cal-api-version': '2024-08-13'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (calRes.ok) {
+          const calData = await calRes.json();
+          if (calData?.data?.uid) appointment.calBookingUid = calData.data.uid;
+          else if (calData?.booking?.uid) appointment.calBookingUid = calData.booking.uid;
+          
+          const possibleMeetLink = calData?.data?.meetingUrl || calData?.data?.location || calData?.data?.videoCallUrl || calData?.booking?.meetingUrl || calData?.booking?.location || calData?.data?.metadata?.videoCallUrl;
+          if (possibleMeetLink && typeof possibleMeetLink === 'string' && possibleMeetLink.startsWith('http')) {
+            appointment.meetLink = possibleMeetLink;
+          }
+        }
+      } catch (calError) {
+        console.error("Failed to sync paid reschedule with Cal.com:", calError);
+      }
+    }
+
+    // Update appointment details to new date & time
+    appointment.date = date;
+    appointment.time = time;
+    appointment.status = 'UPCOMING';
+    appointment.paymentStatus = 'Paid';
+    if (paymentId) appointment.paymentId = paymentId;
+    if (signature) appointment.signature = signature;
+
+    appointment.rescheduleRequest = {
+      date,
+      time,
+      reason,
+      status: 'APPROVED',
+      requestedAt: new Date(),
+      isWithin48Hours: true,
+      hoursRemainingAtRequest: 0,
+      rescheduleFeePaid: true,
+      reschedulePaymentId: paymentId || '',
+      rescheduleOrderId: orderId || '',
+      rescheduleAmount: Number(amount) || 5000,
+      paidAt: new Date(),
+    };
+
+    await appointment.save();
+
+    // Send confirmation emails
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const emailHtmlTemplate = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <h2 style="color: #c9542f;">Your Session Has Been Rescheduled & Confirmed</h2>
+            <p>Hi ${appointment.name},</p>
+            <p>Your payment for the late reschedule window was received and your coaching session has been confirmed for the new time below.</p>
+            <div style="background: #fbf0eb; border: 1px solid #e8c4e2; padding: 20px; border-radius: 12px; margin: 20px 0;">
+              <strong>New Date:</strong> ${appointment.date}<br>
+              <strong>New Time:</strong> ${appointment.time}<br>
+              <strong>Duration:</strong> ${appointment.duration || 60} Minutes<br>
+              ${paymentId ? `<strong>Payment ID:</strong> ${paymentId}<br>` : ''}
+              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Click here to join</a><br>` : ''}
+            </div>
+            <p>We look forward to seeing you then!</p>
+          </div>
+        `;
+
+        const coachEmailTemplate = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <h2 style="color: #111010;">Paid Session Rescheduled</h2>
+            <p><strong>${appointment.name}</strong> has rescheduled their session within the 48h window and paid the session fee.</p>
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <strong>Client:</strong> ${appointment.name} (${appointment.email})<br>
+              <strong>New Date:</strong> ${appointment.date}<br>
+              <strong>New Time:</strong> ${appointment.time}<br>
+              <strong>Paid Amount:</strong> ₹${amount || 5000}<br>
+              ${paymentId ? `<strong>Payment ID:</strong> ${paymentId}<br>` : ''}
+              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Click here to join</a><br>` : ''}
+            </div>
+          </div>
+        `;
+
+        const clientUser = await User.findOne({ email: appointment.email });
+        const allowChangesEmail = clientUser?.notificationPreferences?.emailChanges ?? true;
+
+        const emailPromises = [
+          resend.emails.send({
+            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+            to: process.env.ADMIN_EMAIL || 'support@yashrajtech.online',
+            subject: `Paid Reschedule Confirmed for ${appointment.name}`,
+            html: coachEmailTemplate,
+          })
+        ];
+
+        if (allowChangesEmail) {
+          emailPromises.push(
+            resend.emails.send({
+              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+              to: appointment.email,
+              subject: 'Your session has been rescheduled & confirmed',
+              html: emailHtmlTemplate,
+            })
+          );
+        }
+
+        await Promise.all(emailPromises);
+      } catch (emailErr) {
+        console.error("Failed to send reschedule email", emailErr);
+      }
+    }
+
+    res.json(appointment);
+  } catch (error) {
+    console.error('Error processing paid reschedule:', error);
+    res.status(500).json({ message: 'Server error processing paid reschedule' });
   }
 });
 
@@ -775,6 +971,101 @@ router.post('/admin/:id/reject-reschedule', protect, admin, async (req, res) => 
     res.status(500).json({ message: 'Server error rejecting reschedule' });
   }
 });
+
+// POST /api/appointments/admin/:id/issue-refund - Emergency / Manual Refund for an Appointment (Admin only)
+router.post('/admin/:id/issue-refund', protect, admin, async (req, res) => {
+  try {
+    const { reason, refundAmount } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+    
+    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+    // 1. Cancel / Release Cal.com booking if present
+    if (process.env.CAL_API_KEY && appointment.calBookingUid) {
+      try {
+        await fetch(`https://api.cal.com/v2/bookings/${appointment.calBookingUid}/cancel`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
+            'Content-Type': 'application/json',
+            'cal-api-version': '2024-08-13'
+          },
+          body: JSON.stringify({ reason: reason || "Cancelled & Refunded by Admin" })
+        });
+      } catch (calError) {
+        console.error("Failed to cancel Cal.com booking on refund:", calError);
+      }
+    }
+
+    // 2. Mark status as REFUNDED
+    const finalRefundAmount = refundAmount !== undefined && refundAmount !== null ? Number(refundAmount) : (appointment.amount || 0);
+    appointment.status = 'REFUNDED';
+    appointment.refundStatus = 'REFUNDED';
+    appointment.refundReason = reason || 'Admin issued emergency refund';
+    appointment.refundAmount = finalRefundAmount;
+    appointment.refundedAt = new Date();
+
+    if (appointment.rescheduleRequest && appointment.rescheduleRequest.status === 'PENDING') {
+      appointment.rescheduleRequest.status = 'REJECTED';
+    }
+
+    // 3. If it was a free course session, restore the credit to user
+    if (appointment.isFreeSession && !appointment.freeSessionRefunded) {
+      try {
+        const refundedUser = await User.findOne({ email: appointment.email });
+        if (refundedUser) {
+          refundedUser.freeSessions = (refundedUser.freeSessions || 0) + 1;
+          await refundedUser.save();
+          appointment.freeSessionRefunded = true;
+        }
+      } catch (freeErr) {
+        console.error("Failed to restore free session credit on refund:", freeErr);
+      }
+    }
+
+    await appointment.save();
+
+    // 4. Send Confirmation Email via Resend
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #222; line-height: 1.6;">
+            <h2 style="color: #c79c6e; margin-bottom: 8px;">Session Refund Confirmation</h2>
+            <p>Hi <strong>${appointment.name}</strong>,</p>
+            <p>We are writing to confirm that your 1:1 coaching session scheduled on <strong>${appointment.date} at ${appointment.time}</strong> has been cancelled and a refund has been processed.</p>
+            
+            <div style="background: #faf7f2; border: 1px solid #e8dbce; border-left: 4px solid #c79c6e; padding: 18px 20px; border-radius: 8px; margin: 24px 0;">
+              <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Refund Amount:</strong> ₹${finalRefundAmount.toLocaleString('en-IN')}</p>
+              <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Reason / Note:</strong> ${appointment.refundReason}</p>
+              <p style="margin: 0; font-size: 14px;"><strong>Processed On:</strong> ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            </div>
+
+            <p style="font-size: 13px; color: #666;">
+              Please allow 5-7 business days for the funds to reflect in your original payment account.
+            </p>
+            <p style="margin-top: 24px;">Warm regards,<br><strong>Aarkesh Gupta & Team</strong><br><span style="color: #888; font-size: 12px;">Better With Aarkesh</span></p>
+          </div>
+        `;
+
+        await resend.emails.send({
+          from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+          to: appointment.email,
+          subject: 'Session Refund Confirmation - Better With Aarkesh',
+          html: emailHtml,
+        });
+      } catch (emailErr) {
+        console.error("Failed to send refund email:", emailErr);
+      }
+    }
+
+    res.json({ message: 'Refund issued successfully', appointment });
+  } catch (error) {
+    console.error('Error issuing refund:', error);
+    res.status(500).json({ message: 'Server error processing refund' });
+  }
+});
+
 // PUT /api/appointments/:id/cancel - Cancel an appointment
 router.put('/:id/cancel', optionalAuth, async (req, res) => {
   try {

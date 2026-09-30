@@ -413,7 +413,28 @@ export default function Course() {
       facts: [["8", "Modules"], ["Yes", "Certified"], ["1-on-1", "Coaching"]],
       price: `₹${basePrice.toLocaleString('en-IN')}`,
       was: `₹${comparePrice.toLocaleString('en-IN')}`,
-      cta: "Check Course"
+      cta: "Check Course",
+      syllabusTitle: "Eight Modules To Total Self-Command",
+      syllabusSubtitle: "A comprehensive, step-by-step roadmap from baseline nervousness to unshakeable gravitas.",
+      syllabus: [
+        { n: '01', t: 'The Foundation of Presence', d: 'Grounding techniques, diaphragmatic breathing under tension, and mastering the crucial first 10 seconds in any room.' },
+        { n: '02', t: 'Breaking the Reactive Cycle', d: 'Identifying personal emotional triggers, pausing between impulse and response, and eliminating defensive habits.' },
+        { n: '03', t: 'Mastering Vocal Gravitas & Tone', d: 'Lowering resonance, eliminating filler words, pacing your delivery, and speaking with magnetic, effortless weight.' },
+        { n: '04', t: 'Non-Verbal Dominance & Spatial Calibration', d: 'Unwavering eye contact, open posture mechanics, micro-expression control, and physical composure.' },
+        { n: '05', t: 'High-Stakes Conversations & Holding Frame', d: 'Navigating demanding bosses, aggressive negotiations, or emotionally volatile conversations without yielding.' },
+        { n: '06', t: 'Decision Making & Decisive Action', d: 'Eliminating second-guessing, owning difficult outcomes, and leading team members or family with unhesitating clarity.' },
+        { n: '07', t: 'Conflict Resolution Without Compromise', d: 'De-escalating heated confrontation while maintaining firm boundaries and achieving win-win outcomes.' },
+        { n: '08', t: 'Integration & Lifetime Standard', d: 'Building your daily self-command rituals, maintaining high standards, and solidifying permanent personal gravitas.' }
+      ],
+      writeup: {
+        chip: "CORE METHODOLOGY",
+        h1: "Most Men Were Never Taught How to Hold Ground",
+        lede: "True charisma is not loud. It is the unhurried certainty of a man who does not need permission to take up space.",
+        p1: "When pressure spikes in a meeting, negotiation, or relationship, the natural reflex is either to collapse inward or become combative. Both signal the same underlying weakness: emotional reactivity.",
+        quote: "A room doesn't respond to volume. It responds to certainty.",
+        p2: "Through 8 structured modules, you dismantle the nervous system habits that cause rushing, stammering, and over-explaining. You learn how to anchor your physical presence, speak with calm resonance, and command respectful silence before uttering a single sentence.",
+        distinction: "Reactive men seek approval through fast speech and validation. Anchored men lead through stillness, calibrated pauses, and clear boundaries."
+      }
     },
     {
       slug: "difficult-people",
@@ -444,7 +465,26 @@ export default function Course() {
       facts: [["6", "Modules"], ["Yes", "Certified"], ["1-on-1", "Coaching"]],
       price: "₹3,999",
       was: "₹7,999",
-      cta: "Check Course"
+      cta: "Check Course",
+      syllabusTitle: "Six Modules To Emotional Sovereignty",
+      syllabusSubtitle: "The practical psychological playbook to disarm manipulation, establish firm boundaries, and protect your inner peace.",
+      syllabus: [
+        { n: '01', t: 'Mapping Toxic Patterns & Triggers', d: 'Recognizing manipulative archetypes, passive-aggressive traps, and subtle emotional manipulation tactics before they drain you.' },
+        { n: '02', t: 'The Unshakeable Boundary Framework', d: 'Setting clear, non-negotiable boundaries with bosses, partners, or parents without anger, defensiveness, or guilt.' },
+        { n: '03', t: 'Disarming High-Conflict Personalities', d: 'Verbal de-escalation strategies, avoiding defensive traps, and maintaining quiet emotional detachment in heated moments.' },
+        { n: '04', t: 'Holding Ground in High-Stakes Confrontations', d: 'Staying centered during intense arguments, asserting your authority, and never breaking composure under pressure.' },
+        { n: '05', t: 'Navigating Difficult Workplace Dynamics', d: 'Managing micro-managers, corporate politics, and aggressive colleagues while protecting your professional standing.' },
+        { n: '06', t: 'Reclaiming Your Mental Sovereignty', d: 'Overcoming post-conflict rumination, establishing internal calm, and permanent emotional freedom from difficult dynamics.' }
+      ],
+      writeup: {
+        chip: "CONFLICT FRAMEWORK",
+        h1: "Stop Absorbing Other People's Emotional Chaos",
+        lede: "High-conflict personalities don't look for resolution—they look for reaction. The moment you react, you lose ground.",
+        p1: "Whether it's a demanding boss, a passive-aggressive colleague, or a volatile family member, their emotional turbulence is designed to pull you off-center and put you on the defensive.",
+        quote: "You don't defeat difficult people by fighting back. You defeat them by becoming impossible to trigger.",
+        p2: "In this 6-module masterclass, you get the exact psychological tools to stay completely unshakeable. You will learn how to set ironclad boundaries, disarm manipulative tactics in real-time, and hold your frame without shouting or apologizing.",
+        distinction: "Weak responses either explode with anger or shrink with compliance. Strategic self-command stays neutral, unbothered, and in total control."
+      }
     },
     {
       slug: "decisions",
@@ -475,7 +515,25 @@ export default function Course() {
       facts: [["5", "Modules"], ["Yes", "Certified"], ["1-on-1", "Coaching"]],
       price: "₹3,499",
       was: "₹6,999",
-      cta: "Check Course"
+      cta: "Check Course",
+      syllabusTitle: "Five Modules To High-Conviction Clarity",
+      syllabusSubtitle: "A proven framework to overcome analysis paralysis, evaluate high-stakes tradeoffs, and execute decisions without second-guessing.",
+      syllabus: [
+        { n: '01', t: 'Deconstructing Analysis Paralysis', d: 'Understanding why smart people delay critical choices, the psychology of overthinking, and how fear masks itself as research.' },
+        { n: '02', t: 'The 4-Step Clarity Architecture', d: 'A structured cognitive framework to filter out background noise, rank core priorities, and pinpoint optimal paths with speed.' },
+        { n: '03', t: 'Risk Calibration & Asymmetric Upside', d: 'Evaluating worst-case scenarios realistically, managing regret risk, and taking calculated, high-reward decisive action.' },
+        { n: '04', t: 'Execution & Living With The Choice', d: 'Ending chronic second-guessing, owning outcomes with conviction, and leading teams and family members through ambiguity.' },
+        { n: '05', t: 'Building a Decisive Mindset for Life', d: 'Daily decision-making heuristics to eliminate cognitive fatigue and maintain effortless clarity across business and personal life.' }
+      ],
+      writeup: {
+        chip: "DECISION ARCHITECTURE",
+        h1: "Analysis Paralysis Is Simply Fear in Disguise",
+        lede: "Great leaders do not wait for 100% certainty. They master the art of moving with high conviction through ambiguity.",
+        p1: "The agonizing delay on career pivots, relationship choices, or major investments isn't a lack of information—it is fear of regret masquerading as research.",
+        quote: "Indecision is the most expensive decision you will ever make.",
+        p2: "Through 5 focused modules, you receive a repeatable cognitive architecture to strip away emotion, evaluate asymmetric upside, and make high-stakes choices rapidly—without second-guessing yourself once committed.",
+        distinction: "Indecisive minds seek guarantees that never exist. Decisive leaders manage risk, commit with clarity, and create the outcome."
+      }
     }
   ], [basePrice, comparePrice]);
 
@@ -1387,24 +1445,6 @@ export default function Course() {
               </div>
             </section>
 
-            {/* ── Dashboard Metrics Strip ── */}
-            <div className="strip">
-              <div className="strip-in">
-                <div className="stat">
-                  <strong>8</strong>
-                  <span>video modules with workbooks</span>
-                </div>
-                <div className="stat">
-                  <strong>3</strong>
-                  <span>private coaching sessions</span>
-                </div>
-                <div className="peek">
-                  <small>Start with Module 1</small>
-                  <b>The Foundation of Presence</b>
-                </div>
-              </div>
-            </div>
-
             {/* ── More Masterclasses Stacked Section (Directly Below Hero Section) ── */}
             <section className="stack-sec" id="courses">
               <div className="stack">
@@ -1439,7 +1479,7 @@ export default function Course() {
                           <div className="price">
                             Price <b>{c.price}</b><s>{c.was}</s><small>(+GST)</small>
                           </div>
-                          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                          <div>
                             <button
                               type="button"
                               className={btnClass}
@@ -1447,118 +1487,48 @@ export default function Course() {
                             >
                               Check Course <span aria-hidden="true">→</span>
                             </button>
-                            {c.soon ? (
-                              <button
-                                type="button"
-                                className="btn line sm"
-                                onClick={() => {
-                                  if (!isLoggedIn) {
-                                    setShowCourseLogin(true);
-                                  } else {
-                                    setShowPreRegSuccessModal(true);
-                                  }
-                                }}
-                              >
-                                Waitlist
-                              </button>
-                            ) : !isPurchased && (
-                              <button
-                                type="button"
-                                className="btn line sm"
-                                onClick={handleEnroll}
-                              >
-                                Enroll Now
-                              </button>
-                            )}
                           </div>
                         </div>
                       </article>
                     );
                   })}
                 </div>
-              </div>
-            </section>
 
-            {/* ── Editorial Philosophy Deep-Dive Section ── */}
-            <section className="light-sec" id="philosophy">
-              <div className="wrap">
-                <div className="card">
-                  <div className="rd">
-                    <nav className="toc" aria-label="Table of contents">
-                      <p>IN THIS MASTERCLASS</p>
-                      <a href="#p1" className={activeToc === 'p1' ? 'on' : ''}>01. Presence Under Pressure</a>
-                      <a href="#p2" className={activeToc === 'p2' ? 'on' : ''}>02. Breaking Reaction</a>
-                      <a href="#p3" className={activeToc === 'p3' ? 'on' : ''}>03. Calm Gravitas</a>
-                      <a href="#curriculum" className={activeToc === 'curriculum' ? 'on' : ''}>04. Full Curriculum</a>
-                      <a href="#faq" className={activeToc === 'faq' ? 'on' : ''}>05. Frequently Asked</a>
-                    </nav>
-
-                    <article className="prose">
-                      <span className="chip">CORE METHODOLOGY</span>
-                      <h2 id="p1">Most Men Were Never Taught How to Hold Ground</h2>
-                      <p className="lede">
-                        True charisma is not loud. It is the unhurried certainty of a man who does not need permission to take up space.
-                      </p>
-                      <p>
-                        When pressure spikes in a meeting, negotiation, or relationship, the natural reflex is either to collapse inward or become combative. Both responses signal the same underlying weakness: emotional reactivity.
-                      </p>
-                      <blockquote>
-                        "A room doesn't respond to volume. It responds to certainty."
-                      </blockquote>
-                      <p>
-                        In <b>The Better Man</b> masterclass, we dismantle the nervous system habits that cause rushing, stammering, and over-explaining. You learn how to anchor your physical presence, lower your vocal register under stress, and command respectful silence before uttering a single sentence.
-                      </p>
-
-                      <div className="finding">
-                        <b>Key Distinction:</b> Reactive men seek approval through fast speech and excessive validation. Anchored men lead through stillness, calibrated pauses, and clear boundaries.
-                      </div>
-
-                      <h2 id="p2">From Seeking Approval to Setting Direction</h2>
-                      <p>
-                        Authority is communicated in the micro-moments: the half-second pause before replying, the stillness of your shoulders, the refusal to laugh at nervous tension.
-                      </p>
-                      <p>
-                        Through 8 structured modules, you will develop a repeatable internal framework that replaces performance anxiety with quiet, magnetic self-command.
-                      </p>
-
-                      <h2 id="p3">3 Private 1-on-1 Sessions With Aarkesh</h2>
-                      <p>
-                        Video courses alone don't transform behavior — feedback does. That is why every student receives <b>3 personalized private sessions</b> directly with Aarkesh to analyze your unique communication style, deconstruct your real-life situations, and lock in lasting transformation.
-                      </p>
-                    </article>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* ── Curriculum Syllabus Section ── */}
-            <section className="sec center" id="curriculum">
-              <div className="wrap">
-                <span className="label">SYLLABUS</span>
-                <h2>Eight Modules To Total Self-Command</h2>
-                <p className="lead">
-                  A comprehensive, step-by-step roadmap from baseline nervousness to unshakeable gravitas.
-                </p>
-
-                <div className="acc">
-                  {[
-                    { n: '01', t: 'The Foundation of Presence', d: 'Grounding techniques, diaphragmatic breathing under tension, and mastering the crucial first 10 seconds in any room.' },
-                    { n: '02', t: 'Breaking the Reactive Cycle', d: 'Identifying personal emotional triggers, pausing between impulse and response, and eliminating defensive habits.' },
-                    { n: '03', t: 'Mastering Vocal Gravitas & Tone', d: 'Lowering resonance, eliminating filler words, pacing your delivery, and speaking with magnetic, effortless weight.' },
-                    { n: '04', t: 'Non-Verbal Dominance & Spatial Calibration', d: 'Unwavering eye contact, open posture mechanics, micro-expression control, and physical composure.' },
-                    { n: '05', t: 'High-Stakes Conversations & Holding Frame', d: 'Navigating demanding bosses, aggressive negotiations, or emotionally volatile conversations without yielding.' },
-                    { n: '06', t: 'Decision Making & Decisive Action', d: 'Eliminating second-guessing, owning difficult outcomes, and leading team members or family with unhesitating clarity.' },
-                    { n: '07', t: 'Conflict Resolution Without Compromise', d: 'De-escalating heated confrontation while maintaining firm boundaries and achieving win-win outcomes.' },
-                    { n: '08', t: 'Integration & Lifetime Standard', d: 'Building your daily self-command rituals, maintaining high standards, and solidifying permanent personal gravitas.' }
-                  ].map((m, idx) => (
-                    <details className="a" key={m.n} open={idx === 0}>
-                      <summary>
-                        <span className="n">{m.n}</span>
-                        <span className="t">{m.t}</span>
-                      </summary>
-                      <p>{m.d}</p>
-                    </details>
-                  ))}
+                {/* ── View All Masterclasses Action Button ── */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '48px' }}>
+                  <button
+                    type="button"
+                    className="btn dark"
+                    onClick={() => {
+                      navigate('/course/better-man');
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '16px 38px',
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      borderRadius: '999px',
+                      background: '#0E0C0B',
+                      color: '#ffffff',
+                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                      cursor: 'pointer',
+                      transition: 'transform 0.25s ease, box-shadow 0.25s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 14px 36px rgba(0, 0, 0, 0.28)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.2)';
+                    }}
+                  >
+                    View All <ArrowRight size={18} weight="bold" />
+                  </button>
                 </div>
               </div>
             </section>
@@ -1597,18 +1567,18 @@ export default function Course() {
                 </p>
 
                 <div className="acc">
-                  {[
+                  {(courseFaqs && courseFaqs.length > 0 ? courseFaqs : [
                     { q: 'How do the 3 private 1-on-1 sessions work?', a: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
                     { q: 'Is this course suitable for professionals and introverts?', a: 'Yes. The curriculum is specifically designed for professionals, entrepreneurs, and introverts who want to develop natural, calm authority without acting loud or fake.' },
                     { q: 'How long do I have access to the materials?', a: 'You receive full lifetime access. You can revisit lessons, download the workbooks, and receive all future course updates at zero extra cost.' },
                     { q: 'What is the refund and satisfaction guarantee?', a: 'We offer a complete 30-day money-back guarantee. If you complete the lessons and don\'t feel a substantial shift in your presence, simply email us for a 100% full refund.' }
-                  ].map((f, idx) => (
+                  ]).map((f, idx) => (
                     <details className="a" key={idx} open={idx === 0}>
                       <summary>
                         <span className="n">Q{idx + 1}</span>
-                        <span className="t">{f.q}</span>
+                        <span className="t">{f.q || f.question}</span>
                       </summary>
-                      <p>{f.a}</p>
+                      <p>{f.a || f.answer}</p>
                     </details>
                   ))}
                 </div>
@@ -1648,121 +1618,185 @@ export default function Course() {
           /* ═══════════════════════════════════════════════════════════════
              DEDICATED SINGLE-PAGE COURSE DETAILS VIEW (/course/:slug)
              ═══════════════════════════════════════════════════════════════ */
-          <section className="d-top" id="course-detail">
-            <div className="wrap">
-              <button
-                type="button"
-                onClick={() => {
-                  navigate('/course');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="back-link"
-              >
-                ← Back to all courses
-              </button>
+          <>
+            <section className="d-top" id="course-detail">
+              <div className="wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/course');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="back-link"
+                >
+                  ← Back to all courses
+                </button>
 
-              <div className="d-grid">
-                {/* Left Column: Preview Canvas & Title */}
-                <div>
-                  <div className={`pv ${activeCourse.cls}`} aria-hidden="true">
-                    <span className="big">{activeCourse.title}</span>
-                    <i>{activeCourse.chips[0]}</i>
-                    <i>{activeCourse.chips[1]}</i>
-                    <div className="pv-center-btn">
-                      <Play size={24} weight="fill" />
+                <div className="d-grid">
+                  {/* Left Column: Preview Canvas & Title */}
+                  <div>
+                    <div className={`pv ${activeCourse.cls}`} aria-hidden="true">
+                      <span className="big">{activeCourse.title}</span>
+                      <i>{activeCourse.chips[0]}</i>
+                      <i>{activeCourse.chips[1]}</i>
+                      <div className="pv-center-btn">
+                        <Play size={24} weight="fill" />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="dtitle">
-                    <h1>{activeCourse.title}</h1>
-                    <span className={`sticker ${activeCourse.soon ? 'soon' : ''}`}>
-                      {activeCourse.soon ? 'Coming soon' : 'Live now'}
-                    </span>
-                  </div>
-                  <p className="dlede">{activeCourse.lede || activeCourse.d}</p>
-                </div>
-
-                {/* Right Column: Sidebar Card */}
-                <aside className="side" aria-label="Course summary">
-                  {/* Meta Chips */}
-                  <div className="chips">
-                    {activeCourse.sidebarChips.map((chip, idx) => (
-                      <span key={idx}>
-                        <em>{chip[0]}:</em> {chip[1]}
+                    <div className="dtitle">
+                      <h1>{activeCourse.title}</h1>
+                      <span className={`sticker ${activeCourse.soon ? 'soon' : ''}`}>
+                        {activeCourse.soon ? 'Coming soon' : 'Live now'}
                       </span>
+                    </div>
+                    <p className="dlede">{activeCourse.lede || activeCourse.d}</p>
+                  </div>
+
+                  {/* Right Column: Sidebar Card */}
+                  <aside className="side" aria-label="Course summary">
+                    {/* Meta Chips */}
+                    <div className="chips">
+                      {activeCourse.sidebarChips.map((chip, idx) => (
+                        <span key={idx}>
+                          <em>{chip[0]}:</em> {chip[1]}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Key Highlights */}
+                    {activeCourse.hl.map((h, idx) => (
+                      <p className="hl" key={idx}>
+                        <span>
+                          <b>{h[0]}</b> {h[1]}
+                        </span>
+                      </p>
                     ))}
-                  </div>
 
-                  {/* Key Highlights */}
-                  {activeCourse.hl.map((h, idx) => (
-                    <p className="hl" key={idx}>
-                      <span>
-                        <b>{h[0]}</b> {h[1]}
-                      </span>
+                    {/* Divider */}
+                    <div className="div-divider">What's inside</div>
+
+                    {/* Feature Checklist */}
+                    <ul className="ck">
+                      {activeCourse.inside.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+
+                    {/* Pricing */}
+                    <p className="sprice">
+                      Price <b>{activeCourse.price}</b>
+                      <s>{activeCourse.was}</s>
+                      <small>(+GST)</small>
                     </p>
-                  ))}
 
-                  {/* Divider */}
-                  <div className="div-divider">What's inside</div>
+                    {/* Action Buttons */}
+                    {activeCourse.soon ? (
+                      <button
+                        type="button"
+                        className="btn block"
+                        onClick={() => {
+                          if (!isLoggedIn) {
+                            setShowCourseLogin(true);
+                          } else {
+                            setShowPreRegSuccessModal(true);
+                          }
+                        }}
+                      >
+                        Join the Waitlist <span aria-hidden="true">→</span>
+                      </button>
+                    ) : isPurchased ? (
+                      <button
+                        type="button"
+                        className="btn block"
+                        onClick={() => setShowDashboard(true)}
+                      >
+                        Go to Dashboard <span aria-hidden="true">→</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn block"
+                        onClick={handleEnroll}
+                      >
+                        Register Now <span aria-hidden="true">→</span>
+                      </button>
+                    )}
 
-                  {/* Feature Checklist */}
-                  <ul className="ck">
-                    {activeCourse.inside.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
-                  </ul>
-
-                  {/* Pricing */}
-                  <p className="sprice">
-                    Price <b>{activeCourse.price}</b>
-                    <s>{activeCourse.was}</s>
-                    <small>(+GST)</small>
-                  </p>
-
-                  {/* Action Buttons */}
-                  {activeCourse.soon ? (
                     <button
                       type="button"
-                      className="btn block"
+                      className="btn block line"
                       onClick={() => {
-                        if (!isLoggedIn) {
-                          setShowCourseLogin(true);
+                        const el = document.getElementById('detail-syllabus');
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth' });
                         } else {
-                          setShowPreRegSuccessModal(true);
+                          setShowSyllabusModal(true);
                         }
                       }}
                     >
-                      Join the Waitlist <span aria-hidden="true">→</span>
+                      View Full Syllabus <span aria-hidden="true">→</span>
                     </button>
-                  ) : isPurchased ? (
-                    <button
-                      type="button"
-                      className="btn block"
-                      onClick={() => setShowDashboard(true)}
-                    >
-                      Go to Dashboard <span aria-hidden="true">→</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn block"
-                      onClick={handleEnroll}
-                    >
-                      Register Now <span aria-hidden="true">→</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    className="btn block line"
-                    onClick={() => setShowSyllabusModal(true)}
-                  >
-                    View Full Syllabus <span aria-hidden="true">→</span>
-                  </button>
-                </aside>
+                  </aside>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+
+            {/* ── Curriculum Syllabus Section on Detail Page (Scroll to view) ── */}
+            <section className="sec center" id="detail-syllabus" style={{ paddingTop: '80px', paddingBottom: '100px' }}>
+              <div className="wrap">
+                <span className="label">SYLLABUS</span>
+                <h2>{activeCourse.syllabusTitle || `${activeCourse.title} Curriculum`}</h2>
+                <p className="lead">
+                  {activeCourse.syllabusSubtitle || 'A comprehensive, step-by-step roadmap designed for practical, real-world mastery.'}
+                </p>
+
+                <div className="acc">
+                  {(activeCourse.syllabus || []).map((m, idx) => (
+                    <details className="a" key={m.n || idx} open={idx === 0}>
+                      <summary>
+                        <span className="n">{m.n || String(idx + 1).padStart(2, '0')}</span>
+                        <span className="t">{m.t || m.title}</span>
+                      </summary>
+                      <p>{m.d || m.description}</p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ── Editorial Writeup Section for Detail Page (Below Syllabus) ── */}
+            {activeCourse.writeup && (
+              <section className="light-sec" id="detail-writeup" style={{ padding: '70px 0 100px' }}>
+                <div className="wrap">
+                  <div className="card">
+                    <div className="rd" style={{ display: 'block' }}>
+                      <article className="prose" style={{ maxWidth: '840px', margin: '0 auto' }}>
+                        <span className="chip">{activeCourse.writeup.chip}</span>
+                        <h2>{activeCourse.writeup.h1}</h2>
+                        <p className="lede">
+                          {activeCourse.writeup.lede}
+                        </p>
+                        <p>
+                          {activeCourse.writeup.p1}
+                        </p>
+                        <blockquote>
+                          "{activeCourse.writeup.quote}"
+                        </blockquote>
+                        <p>
+                          {activeCourse.writeup.p2}
+                        </p>
+
+                        <div className="finding">
+                          <b>Key Distinction:</b> {activeCourse.writeup.distinction}
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+          </>
         )}
       </main>
 

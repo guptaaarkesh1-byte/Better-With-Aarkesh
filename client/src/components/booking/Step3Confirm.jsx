@@ -158,7 +158,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
             <ClockCounterClockwise className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
             <div>
               <p className="text-[#555047] text-xs font-normal leading-relaxed mb-2">
-                {settings.rescheduleText || 'You can reschedule or cancel up to 24 hours before the session.'}
+                {settings.rescheduleText || 'You can reschedule or cancel up to 48 hours before the session.'}
               </p>
               <button 
                 onClick={() => setActiveModal('rescheduling-policy')}

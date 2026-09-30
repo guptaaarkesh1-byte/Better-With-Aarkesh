@@ -35,13 +35,72 @@ export const DESKTOP_IMAGE_CONTROLS = {
 };
 
 // =========================================================================
-// 📍 4 MOUNTAIN JOURNEY NODES POSITION CONTROLS (Desktop)
+// 📍 1. MOUNTAIN 4 POINTS KO EK SAATH MOVE KARNE KA OPTION (Right Side Nodes)
+// Change moveX / moveY here to move ALL 4 mountain points together!
+// =========================================================================
+export const ALL_4_MOUNTAIN_POINTS_CONTROLS = {
+  // ↔️ Left (-) ya Right (+) move karein: e.g. '-60px', '+40px', '-5%'
+  moveX: '180px',
+
+  // ↕️ Up (-) ya Down (+) move karein: e.g. '-40px', '+50px', '-3%'
+  moveY: '40px',
+};
+
+// =========================================================================
+// 📍 2. HEADING KE NEECHE WALE 4 POINTS (Left Side Step Buttons)
+// Change moveX / moveY here to move the 4 left step cards together!
+// =========================================================================
+export const LEFT_4_STEPS_PILLS_CONTROLS = {
+  // ↔️ Left (-) ya Right (+) move karein: e.g. '-30px', '+40px', '20px'
+  moveX: '0px',
+
+  // ↕️ Up (-) ya Down (+) move karein: e.g. '-20px', '+30px'
+  moveY: '0px',
+};
+
+// =========================================================================
+// 📍 3. MOUNTAIN KE HAR POINT KI INDIVIDUAL POSITIONS (Agar alag se karni ho)
 // =========================================================================
 export const DESKTOP_NODE_POSITIONS = [
-  { top: '60%', left: '53%', mobTop: '68%', mobLeft: '50%', flip: false }, // Node 01: Clarifying
-  { top: '40%', left: '46%', mobTop: '48%', mobLeft: '24%', flip: true },  // Node 02: Connect
-  { top: '25%', left: '54%', mobTop: '32%', mobLeft: '28%', flip: true },  // Node 03: Create
-  { top: '10%', left: '68%', mobTop: '18%', mobLeft: '78%', flip: false }, // Node 04: Commit
+  // 📍 Point 1: CLARIFYING
+  { 
+    name: '01 CLARIFYING',
+    top: '65%',           // Base Up/Down
+    left: '55%',          // Base Left/Right
+    flip: false,          // Card text side (false = Right, true = Left)
+    mobTop: '68%',
+    mobLeft: '50%',
+  },
+
+  // 📍 Point 2: CONNECT
+  { 
+    name: '02 CONNECT',
+    top: '48%',
+    left: '55%',
+    flip: true,
+    mobTop: '50%',
+    mobLeft: '50%',
+  },
+
+  // 📍 Point 3: CREATE
+  { 
+    name: '03 CREATE',
+    top: '31%',
+    left: '55%',
+    flip: false,
+    mobTop: '32%',
+    mobLeft: '50%',
+  },
+
+  // 📍 Point 4: COMMIT
+  { 
+    name: '04 COMMIT',
+    top: '14%',
+    left: '55%',
+    flip: true,
+    mobTop: '14%',
+    mobLeft: '50%',
+  },
 ];
 
 // =========================================================================
@@ -49,14 +108,14 @@ export const DESKTOP_NODE_POSITIONS = [
 // =========================================================================
 export const DESKTOP_QUOTE_CONTROLS = {
   bottom: '230px',      // ↕️ Position from bottom (e.g. '200px', '220px', '250px')
-  right: '8%',          // ↔️ Position from right (e.g. '8%', '10%', '12%')
+  right: '12%',          // ↔️ Position from right (e.g. '8%', '10%', '12%')
 };
 
 const DEFAULT_JOURNEY_DATA = {
   eyebrowText: 'THE COACHING JOURNEYS',
   headingLine1: 'A clear process.',
   headingAccent: 'Real transformation.',
-  description: "We don't do hacks. We follow a proven, human-first process designed to create deep, lasting change.",
+  description: "We don't do hacks. We follow a proven, human first process designed to create deep, lasting change.",
   quoteLine1: "Transformation isn't a moment.",
   quoteAccent: "It's a journey you walk with the right guide.",
   bgImg: '',
@@ -195,7 +254,7 @@ export default function CoachingJourney() {
             </div>
 
             <h2 
-              className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-3 flex flex-col items-start journey-fade"
+              className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 sm:mb-6 flex flex-col items-start journey-fade"
               style={{ fontFamily: 'Fraunces, Georgia, serif' }}
             >
               <span className="text-[#111010] pb-0.5">{data.headingLine1 || 'A clear process.'}</span>
@@ -203,14 +262,19 @@ export default function CoachingJourney() {
             </h2>
 
             <p 
-              className="font-serif text-xl lg:text-2xl text-[#4a463e] font-normal tracking-wide leading-relaxed mb-4 xl:mb-6 journey-fade max-w-xl"
+              className="font-serif text-base lg:text-lg text-[#4a463e] font-normal tracking-wide leading-relaxed mb-5 xl:mb-7 journey-fade max-w-lg"
               style={{ fontFamily: 'Fraunces, Georgia, serif' }}
             >
-              {data.description || "We don't do hacks. We follow a proven, human-first process designed to create deep, lasting change."}
+              {(data.description || "We don't do hacks. We follow a proven, human first process designed to create deep, lasting change.").replace(/human-first/g, 'human first')}
             </p>
 
             {/* Vertical Steps (2 columns, content-fit width) */}
-            <div className="flex flex-wrap gap-x-4 sm:gap-x-6 gap-y-3 mt-3 xl:mt-4 journey-fade items-start">
+            <div 
+              className="flex flex-wrap gap-x-4 sm:gap-x-6 gap-y-3 mt-3 xl:mt-4 journey-fade items-start"
+              style={{
+                transform: `translate(${LEFT_4_STEPS_PILLS_CONTROLS.moveX || '0px'}, ${LEFT_4_STEPS_PILLS_CONTROLS.moveY || '0px'})`
+              }}
+            >
               {/* Left Column: Clarify & Connect */}
               <div className="flex flex-col gap-y-3 items-start">
                 {leftSteps.slice(0, 2).map((step, i) => {
@@ -282,18 +346,24 @@ export default function CoachingJourney() {
                 return (
                   <div 
                     key={`mob-${i}`} 
-                    className={`absolute flex items-center gap-2 z-20 group cursor-pointer ${node.flip ? 'flex-row-reverse' : ''} scale-[0.82] sm:scale-100 origin-center`}
+                    className="absolute flex items-center z-20 group cursor-pointer scale-[0.82] sm:scale-100 origin-center"
                     style={{ 
                       top: node.mobTop, 
                       left: node.mobLeft,
                       transform: 'translate(-50%, -50%)'
                     }}
                   >
-                    <div className="w-10 h-10 rounded-full border border-[#c9542f]/40 bg-white/95 shadow-md flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-full border border-[#c9542f]/40 bg-white/95 shadow-md flex items-center justify-center shrink-0 z-10">
                       <Icon className="text-[#c9542f] text-lg" weight="regular" />
                     </div>
-                    <div className="w-max select-none bg-white/80 backdrop-blur-md border border-white/70 rounded-xl px-2.5 py-1.5 shadow-xs">
-                      <div className={`flex items-center gap-1.5 mb-0.5 ${node.flip ? 'justify-end' : ''}`}>
+                    <div 
+                      className={`absolute top-1/2 -translate-y-1/2 w-max select-none bg-white/85 backdrop-blur-md border border-white/70 rounded-xl px-2.5 py-1.5 shadow-xs ${
+                        node.flip 
+                          ? 'right-[calc(100%+0.5rem)] text-right' 
+                          : 'left-[calc(100%+0.5rem)] text-left'
+                      }`}
+                    >
+                      <div className={`flex items-center gap-1.5 mb-0.5 ${node.flip ? 'justify-end' : 'justify-start'}`}>
                         {node.flip ? (
                           <>
                             <span className="font-sans text-[0.75rem] uppercase tracking-[0.18em] font-extrabold text-[#111010]">{node.title}</span>
@@ -306,7 +376,7 @@ export default function CoachingJourney() {
                           </>
                         )}
                       </div>
-                      <p className={`text-[#2b2723] text-[0.72rem] font-medium leading-tight whitespace-pre-line ${node.flip ? 'text-right' : ''}`}>
+                      <p className={`text-[#2b2723] text-[0.72rem] font-medium leading-tight whitespace-pre-line ${node.flip ? 'text-right' : 'text-left'}`}>
                         {node.text}
                       </p>
                     </div>
@@ -319,56 +389,61 @@ export default function CoachingJourney() {
         </Container>
       </div>
 
-      {/* Floating Nodes (Desktop) */}
-      {floatingNodes.map((node, i) => {
-        const Icon = node.icon;
-        return (
-          <div 
-            key={i} 
-            className={`hidden lg:flex absolute items-center gap-3 journey-node z-20 group cursor-pointer ${node.flip ? 'flex-row-reverse' : ''}`}
-            style={{ top: node.top, left: node.left }}
-          >
-            {/* Crisp Node Icon (Zero-lag hardware rendered) */}
-            <div className="w-11 h-11 rounded-full border border-[#c9542f]/40 bg-white/95 flex items-center justify-center shrink-0 shadow-[0_4px_14px_rgba(0,0,0,0.06)] transition-transform duration-200 group-hover:scale-110 group-hover:border-[#c9542f] group-hover:bg-white">
-              <Icon className="text-[#c9542f] text-lg" weight="regular" />
-            </div>
-
-            {/* Crisp Text Content (Transparent White Glassmorphism) */}
-            <div className="w-max select-none bg-white/75 backdrop-blur-md border border-white/70 rounded-2xl px-3.5 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-hover:bg-white/90 group-hover:border-[#c9542f]/30 transition-all duration-200">
-              <div className={`flex items-center gap-2 mb-0.5 ${node.flip ? 'justify-end' : ''}`}>
-                {node.flip ? (
-                  <>
-                    <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.2em] font-extrabold text-[#111010]">{node.title}</span>
-                    <span className="font-sans text-xs sm:text-[0.82rem] tracking-widest font-extrabold text-[#c9542f]">{node.num}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-sans text-xs sm:text-[0.82rem] tracking-widest font-extrabold text-[#c9542f]">{node.num}</span>
-                    <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.2em] font-extrabold text-[#111010]">{node.title}</span>
-                  </>
-                )}
-              </div>
-              <p className={`text-[#2b2723] text-xs sm:text-[0.84rem] font-semibold leading-snug whitespace-pre-line ${node.flip ? 'text-right' : ''}`}>
-                {node.text}
-              </p>
-            </div>
-          </div>
-        );
-      })}
-
-      {/* Floating Quote */}
+      {/* 📍 ALL 4 MOUNTAIN POINTS CONTAINER (Desktop) - Controlled by ALL_4_MOUNTAIN_POINTS_CONTROLS */}
       <div 
-        className="hidden lg:block absolute max-w-[320px] xl:max-w-[350px] journey-quote z-20 select-none bg-white/85 backdrop-blur-md border border-white/80 rounded-3xl p-6 xl:p-7 shadow-[0_12px_36px_rgba(0,0,0,0.06)]"
-        style={{ bottom: DESKTOP_QUOTE_CONTROLS.bottom, right: DESKTOP_QUOTE_CONTROLS.right }}
+        className="hidden lg:block absolute inset-0 pointer-events-none z-20"
+        style={{
+          transform: `translate(${ALL_4_MOUNTAIN_POINTS_CONTROLS.moveX || '0px'}, ${ALL_4_MOUNTAIN_POINTS_CONTROLS.moveY || '0px'})`
+        }}
       >
-        <span className="font-serif text-4xl text-[#c9542f] leading-none block mb-2 font-normal">“</span>
-        <p className="font-serif text-xl xl:text-2xl text-[#111010] font-medium mb-1.5 leading-snug">
-          {data.quoteLine1 || "Transformation isn't a moment."}
-        </p>
-        <p className="font-serif text-xl xl:text-2xl text-[#c9542f] not-italic font-medium leading-snug">
-          {data.quoteAccent || "It's a journey you walk with the right guide."}
-        </p>
+        {floatingNodes.map((node, i) => {
+          const Icon = node.icon;
+          return (
+            <div 
+              key={i} 
+              className="absolute flex items-center journey-node group cursor-pointer pointer-events-auto"
+              style={{ 
+                top: node.top, 
+                left: node.left,
+                transform: 'translate(-50%, -50%)'
+              }}
+            >
+              {/* Crisp Node Icon (Zero-lag hardware rendered, centered on the straight vertical axis) */}
+              <div className="w-11 h-11 rounded-full border border-[#c9542f]/40 bg-white/95 flex items-center justify-center shrink-0 shadow-[0_4px_14px_rgba(0,0,0,0.06)] transition-transform duration-200 group-hover:scale-110 group-hover:border-[#c9542f] group-hover:bg-white z-10">
+                <Icon className="text-[#c9542f] text-lg" weight="regular" />
+              </div>
+
+              {/* Crisp Text Content (Alternating Left and Right) */}
+              <div 
+                className={`absolute top-1/2 -translate-y-1/2 w-max select-none bg-white/80 backdrop-blur-md border border-white/70 rounded-2xl px-3.5 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-hover:bg-white/95 group-hover:border-[#c9542f]/30 transition-all duration-200 ${
+                  node.flip 
+                    ? 'right-[calc(100%+0.75rem)] text-right' 
+                    : 'left-[calc(100%+0.75rem)] text-left'
+                }`}
+              >
+                <div className={`flex items-center gap-2 mb-0.5 ${node.flip ? 'justify-end' : 'justify-start'}`}>
+                  {node.flip ? (
+                    <>
+                      <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.2em] font-extrabold text-[#111010]">{node.title}</span>
+                      <span className="font-sans text-xs sm:text-[0.82rem] tracking-widest font-extrabold text-[#c9542f]">{node.num}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-sans text-xs sm:text-[0.82rem] tracking-widest font-extrabold text-[#c9542f]">{node.num}</span>
+                      <span className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.2em] font-extrabold text-[#111010]">{node.title}</span>
+                    </>
+                  )}
+                </div>
+                <p className={`text-[#2b2723] text-xs sm:text-[0.84rem] font-semibold leading-snug whitespace-pre-line ${node.flip ? 'text-right' : 'text-left'}`}>
+                  {node.text}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
+
+
 
       {/* Bottom Banners */}
       <div className="absolute bottom-0 left-0 w-full z-40 journey-bottom hidden xl:block">

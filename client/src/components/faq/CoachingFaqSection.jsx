@@ -11,15 +11,15 @@ const DEFAULT_FAQS = [
   },
   {
     question: 'What is the difference between life coaching and therapy?',
-    answer: 'While therapy generally focuses on resolving past trauma and emotional healing, life coaching with Aarkesh is forward-focused and action-driven. We concentrate on where you are right now and build the emotional mastery, presence, and decision-making clarity needed to shape your future.',
+    answer: 'While therapy generally focuses on resolving past trauma and emotional healing, life coaching with Aarkesh is forward focused and action driven. We concentrate on where you are right now and build the emotional mastery, presence, and decision making clarity needed to shape your future.',
   },
   {
     question: 'How do I choose between a 60-minute and 90-minute session?',
-    answer: 'A 60-minute session is ideal for focused problem-solving, navigating a specific decision, or continuous monthly momentum. A 90-minute session is recommended for your first deep dive, allowing ample space to thoroughly map your core patterns and develop a complete transformation roadmap.',
+    answer: 'A 60-minute session is ideal for focused problem solving, navigating a specific decision, or continuous monthly momentum. A 90-minute session is recommended for your first deep dive, allowing ample space to thoroughly map your core patterns and develop a complete transformation roadmap.',
   },
   {
     question: 'Are all our conversations confidential?',
-    answer: 'Yes, 100%. Every conversation, reflection, and personal detail you share is held in absolute privacy and confidence. This is your safe, judgment-free space to speak openly and authentically.',
+    answer: 'Yes, 100%. Every conversation, reflection, and personal detail you share is held in absolute privacy and confidence. This is your safe, judgment free space to speak openly and authentically.',
   },
   {
     question: 'What happens after I book my session?',
@@ -27,7 +27,7 @@ const DEFAULT_FAQS = [
   },
   {
     question: 'Can I reschedule if my schedule changes?',
-    answer: 'Absolutely. You can reschedule your session anytime up to 12 hours before the appointment using the simple reschedule link in your email or through your My Journey dashboard.',
+    answer: 'Absolutely. You can reschedule your session anytime up to 48 hours before the appointment using the simple reschedule link in your email or through your My Journey dashboard.',
   },
 ];
 

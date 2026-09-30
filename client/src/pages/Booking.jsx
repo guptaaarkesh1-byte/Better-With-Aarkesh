@@ -125,7 +125,7 @@ export default function Booking() {
         }
       ],
       rescheduleHeading: "NEED TO RESCHEDULE?",
-      rescheduleText: "You can reschedule or cancel up to 24 hours before the session.",
+      rescheduleText: "You can reschedule or cancel up to 48 hours before the session.",
       reschedulePolicyLinkText: "View Rescheduling Policy",
       agreementPrefix: "I agree to the",
       agreementLinkText: "terms and conditions",
@@ -297,7 +297,17 @@ export default function Booking() {
   };
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4));
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+  const prevStep = () => {
+    if (step === 1) {
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate('/');
+      }
+    } else {
+      setStep((s) => Math.max(s - 1, 1));
+    }
+  };
   
   const updateData = (newData) => {
     setBookingData((prev) => ({ ...prev, ...newData }));
@@ -531,10 +541,10 @@ export default function Booking() {
       <div className="relative z-10 px-3 sm:px-6 md:px-8 w-full max-w-5xl mx-auto">
         
         {/* Top Left Back Button */}
-        {step === 1 && (
+        {step <= 3 && (
           <div className="flex w-full mb-4">
             <button 
-              onClick={() => navigate(-1)}
+              onClick={prevStep}
               className="flex items-center gap-2 font-sans text-[0.68rem] uppercase tracking-widest text-[#7a756b] hover:text-[#c9542f] transition-colors cursor-pointer font-semibold"
             >
               <ArrowLeft className="text-base" />

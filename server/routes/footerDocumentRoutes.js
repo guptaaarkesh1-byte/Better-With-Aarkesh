@@ -132,6 +132,22 @@ router.put('/:id', protect, admin, async (req, res) => {
   }
 });
 
+const PROTECTED_SLUGS = [
+  'contact-us',
+  'contact',
+  'terms-and-conditions',
+  'terms',
+  'terms-conditions',
+  'rescheduling-policy',
+  'reschedule-policy',
+  'rescheduling',
+  'privacy-policy',
+  'privacy',
+  'refund-and-cancellation',
+  'refund-policy',
+  'cancellation-policy'
+];
+
 // @desc    Delete a footer document
 // @route   DELETE /api/footer-documents/:id
 // @access  Private/Admin
@@ -140,6 +156,11 @@ router.delete('/:id', protect, admin, async (req, res) => {
     const document = await FooterDocument.findById(req.params.id);
 
     if (document) {
+      const cleanSlug = (document.slug || '').toLowerCase().trim().replace(/^\/+/, '');
+      if (PROTECTED_SLUGS.includes(cleanSlug)) {
+        return res.status(400).json({ message: 'Core system and legal pages cannot be deleted.' });
+      }
+
       await FooterDocument.deleteOne({ _id: document._id });
       res.json({ message: 'Document removed' });
     } else {
