@@ -445,19 +445,22 @@ export default function ProtectedYouTubePlayer({
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   }, [isPlaying, isMuted, volume, duration, currentTime, togglePlay, toggleMute, toggleFullscreen]);
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const isValidYoutubeId = Boolean(actualVideoId && typeof actualVideoId === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(actualVideoId.trim()));
 
-  if (!actualVideoId) {
+  if (!isValidYoutubeId) {
     return (
-      <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-br from-black via-[#0c0c0c] to-[#070707] select-none">
-        <img src="/course_hero_bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none" />
-        <div className="text-center z-10 p-6 max-w-md">
-          <span className="text-[10px] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold mb-2 block">
-            Lesson Ready
-          </span>
-          <h3 className="text-xl md:text-2xl font-serif text-white mb-2">{title}</h3>
-          <p className="text-xs text-white/50">Video content will begin once loaded.</p>
+      <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-br from-[#180816] via-[#0D050E] to-[#050205] select-none overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(200,120,190,0.18),transparent_70%)] pointer-events-none" />
+        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#C878BE_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+        <div className="text-center z-10 p-6 max-w-lg">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C878BE]/15 border border-[#C878BE]/30 text-[#E3B8DE] text-xs font-semibold uppercase tracking-wider mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <span>Masterclass Session</span>
+          </div>
+          <h3 className="text-2xl sm:text-3xl text-white mb-2 font-semibold tracking-tight" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{title || 'Interactive Session'}</h3>
+          <p className="text-xs sm:text-sm text-white/60 mb-6 font-sans">Learn calm authority, magnetic communication and self-command directly with Aarkesh.</p>
+          <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white flex items-center justify-center shadow-[0_0_35px_rgba(200,120,190,0.4)] hover:scale-105 transition-transform">
+            <Play size={28} weight="fill" className="ml-1" />
+          </div>
         </div>
       </div>
     );
@@ -521,8 +524,8 @@ export default function ProtectedYouTubePlayer({
           onClick={togglePlay}
           className="absolute inset-0 z-30 flex items-center justify-center bg-black/30 hover:bg-black/20 transition-all duration-300 cursor-pointer"
         >
-          <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-black/70 backdrop-blur-md border border-white/25 hover:border-[#c79c6e] text-white hover:text-black hover:bg-[#c79c6e] flex items-center justify-center transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.8)] hover:scale-110 active:scale-95 group/btn">
-            <Play size={24} weight="fill" className="ml-1 text-white group-hover/btn:text-black transition-colors" />
+          <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-black/70 backdrop-blur-md border border-white/25 hover:border-[#C878BE] text-white hover:text-white hover:bg-[#A83B96] flex items-center justify-center transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.8)] hover:scale-110 active:scale-95 group/btn">
+            <Play size={24} weight="fill" className="ml-1 text-white transition-colors" />
           </div>
         </div>
       )}
@@ -553,7 +556,7 @@ export default function ProtectedYouTubePlayer({
           {/* Hover Time Tooltip */}
           {hoverTime !== null && (
             <div 
-              className="absolute -top-7 px-2 py-0.5 rounded bg-black/90 border border-white/20 text-[10px] font-mono text-[#c79c6e] -translate-x-1/2 pointer-events-none shadow-lg"
+              className="absolute -top-7 px-2 py-0.5 rounded bg-black/90 border border-white/20 text-[10px] font-mono text-[#E3B8DE] -translate-x-1/2 pointer-events-none shadow-lg"
               style={{ left: `${hoverPos}px` }}
             >
               {formatTime(hoverTime)}
@@ -569,14 +572,14 @@ export default function ProtectedYouTubePlayer({
             />
             {/* Played Track */}
             <div 
-              className="absolute top-0 bottom-0 left-0 bg-[#c79c6e] rounded-full shadow-[0_0_8px_rgba(199,156,110,0.6)]"
+              className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-[#A83B96] to-[#C878BE] rounded-full shadow-[0_0_8px_rgba(200,120,190,0.6)]"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
 
           {/* Scrubber Handle */}
           <div 
-            className="absolute w-3 h-3 bg-[#c79c6e] border border-white rounded-full -translate-x-1/2 shadow-md transition-transform scale-0 group-hover/scrub:scale-100"
+            className="absolute w-3 h-3 bg-[#C878BE] border border-white rounded-full -translate-x-1/2 shadow-md transition-transform scale-0 group-hover/scrub:scale-100"
             style={{ left: `${progressPercent}%` }}
           />
         </div>
@@ -590,7 +593,7 @@ export default function ProtectedYouTubePlayer({
             <button
               type="button"
               onClick={togglePlay}
-              className="w-8 h-8 rounded-lg text-white hover:text-[#c79c6e] hover:bg-white/10 flex items-center justify-center transition-all cursor-pointer"
+              className="w-8 h-8 rounded-lg text-white hover:text-[#E3B8DE] hover:bg-white/10 flex items-center justify-center transition-all cursor-pointer"
               title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
             >
               {isPlaying ? <Pause size={17} weight="fill" /> : <Play size={17} weight="fill" className="ml-0.5" />}
@@ -640,7 +643,7 @@ export default function ProtectedYouTubePlayer({
                 max="100"
                 value={isMuted ? 0 : volume}
                 onChange={(e) => handleVolumeChange(e.target.value)}
-                className="w-12 sm:w-16 h-1 bg-white/20 accent-[#c79c6e] rounded-full cursor-pointer transition-all opacity-60 group-hover/vol:opacity-100"
+                className="w-12 sm:w-16 h-1 bg-white/20 accent-[#C878BE] rounded-full cursor-pointer transition-all opacity-60 group-hover/vol:opacity-100"
               />
             </div>
 
@@ -665,7 +668,7 @@ export default function ProtectedYouTubePlayer({
                 }}
                 className={`px-2 py-1 rounded-md text-[11px] font-mono transition-all flex items-center gap-1 cursor-pointer ${
                   playbackRate !== 1 
-                    ? 'bg-[#c79c6e]/20 text-[#c79c6e] font-bold' 
+                    ? 'bg-[#C878BE]/20 text-[#E3B8DE] font-bold' 
                     : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
                 title="Playback Speed"
@@ -684,11 +687,11 @@ export default function ProtectedYouTubePlayer({
                       type="button"
                       onClick={() => handleSpeedChange(rate)}
                       className={`w-full px-3 py-1.5 text-left text-xs font-mono flex items-center justify-between hover:bg-white/10 transition-colors cursor-pointer ${
-                        playbackRate === rate ? 'text-[#c79c6e] font-bold bg-[#c79c6e]/10' : 'text-white/70'
+                        playbackRate === rate ? 'text-[#E3B8DE] font-bold bg-[#C878BE]/15' : 'text-white/70'
                       }`}
                     >
                       <span>{rate}x</span>
-                      {playbackRate === rate && <Check size={12} className="text-[#c79c6e]" />}
+                      {playbackRate === rate && <Check size={12} className="text-[#C878BE]" />}
                     </button>
                   ))}
                 </div>
@@ -704,7 +707,7 @@ export default function ProtectedYouTubePlayer({
                   setShowSpeedMenu(false);
                 }}
                 className={`p-1.5 rounded-md transition-colors cursor-pointer flex items-center gap-1 text-xs ${
-                  showQualityMenu ? 'bg-[#c79c6e]/20 text-[#c79c6e]' : 'text-white/70 hover:text-white hover:bg-white/10'
+                  showQualityMenu ? 'bg-[#C878BE]/20 text-[#E3B8DE]' : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
                 title="Video Quality"
               >
@@ -728,11 +731,11 @@ export default function ProtectedYouTubePlayer({
                       type="button"
                       onClick={() => handleQualityChange(opt.val)}
                       className={`w-full px-3 py-1.5 text-left text-xs font-sans flex items-center justify-between hover:bg-white/10 transition-colors cursor-pointer ${
-                        quality === opt.val ? 'text-[#c79c6e] font-semibold bg-[#c79c6e]/10' : 'text-white/70'
+                        quality === opt.val ? 'text-[#E3B8DE] font-semibold bg-[#C878BE]/15' : 'text-white/70'
                       }`}
                     >
                       <span>{opt.label}</span>
-                      {quality === opt.val && <Check size={12} className="text-[#c79c6e]" />}
+                      {quality === opt.val && <Check size={12} className="text-[#C878BE]" />}
                     </button>
                   ))}
                 </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { 
   Sparkle, 
@@ -10,34 +11,47 @@ import {
   CheckCircle, 
   WarningCircle, 
   Eye, 
-  SlidersHorizontal,
-  Info,
-  ArrowSquareOut,
-  Desktop,
-  ChatCircleText,
-  Quotes,
-  Question,
-  MegaphoneSimple,
-  Compass,
-  Plus,
-  Trash,
-  AirplaneTilt,
-  Crosshair,
-  Heart,
-  Brain,
-  CaretUp,
-  CaretDown,
-  LockKey,
-  Mountains,
-  Path,
-  Kanban,
-  Sun
+  SlidersHorizontal, 
+  Info, 
+  ArrowSquareOut, 
+  Desktop, 
+  ChatCircleText, 
+  Quotes, 
+  Question, 
+  MegaphoneSimple, 
+  Compass, 
+  Plus, 
+  Trash, 
+  AirplaneTilt, 
+  Crosshair, 
+  Heart, 
+  Brain, 
+  CaretUp, 
+  CaretDown, 
+  LockKey, 
+  Mountains, 
+  Path, 
+  Kanban, 
+  Sun,
+  FolderOpen,
+  EnvelopeSimple,
+  ShareNetwork,
+  ArrowRight,
+  InstagramLogo,
+  YoutubeLogo,
+  XLogo,
+  LinkedinLogo,
+  FacebookLogo,
+  SpotifyLogo,
+  DiscordLogo,
+  TiktokLogo,
+  Globe
 } from '@phosphor-icons/react';
 
 // Exact Default Assets from Frontend Website
 import defaultHeroImg from '../../../client/src/assets/hero.webp';
 import defaultTransImg from '../../../client/src/assets/Page2/bottom.webp';
-import defaultThinkImg from '../../../client/src/assets/Page3/think-clearly.webp';
+import defaultThinkImg from '../../../client/src/assets/Page3/think-clearly.png';
 import defaultFeelImg from '../../../client/src/assets/Page4/feel-honestly.webp';
 import defaultDecideImg from '../../../client/src/assets/Page5/decide-intentionally.jpg';
 import defaultCoachingProcessImg from '../../../client/src/assets/Page6/coaching-process.webp';
@@ -62,6 +76,7 @@ const SIDEBAR_TABS = [
   { id: 'testimonials', label: 'Testimonials', icon: <Quotes size={18} />, description: 'Client reviews & words' },
   { id: 'cta', label: 'Final Call to Action', icon: <MegaphoneSimple size={18} />, description: 'Bottom booking banner' },
   { id: 'faq', label: 'FAQ Section', icon: <Question size={18} />, description: 'Frequently asked questions' },
+  { id: 'footer', label: 'Footer Section', icon: <FolderOpen size={18} />, description: 'Brand bio, contact email, copyright text & footer links' },
 ];
 
 // Reusable Image Editor Component with Prominent Dimensions & < 2 MB Enforcement
@@ -283,10 +298,20 @@ export default function AdminHomeEditor() {
     saturation: 100,
   });
 
+  const [footerBrandSettings, setFooterBrandSettings] = useState({
+    brandDescription: 'Authentic 1-on-1 mentorship, transformational coaching & self-mastery courses designed to quiet inner noise, dissolve reactive patterns, and elevate your presence.',
+    brandEmail: 'coaching@betterwithaarkesh.com',
+    copyrightText: '© 2026 Better With Aarkesh. All rights reserved.',
+  });
+  const [footerColumns, setFooterColumns] = useState([]);
+  const [footerSocials, setFooterSocials] = useState([]);
+  const [isSavingFooter, setIsSavingFooter] = useState(false);
+
   // Fetch All Home Settings & Global Visuals on Load
   useEffect(() => {
     fetchAllHomeSettings();
     fetchGlobalVisuals();
+    fetchFooterSettings();
   }, []);
 
   const fetchGlobalVisuals = async () => {
@@ -317,6 +342,52 @@ export default function AdminHomeEditor() {
       showToast('Could not load current settings', 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchFooterSettings = async () => {
+    try {
+      const [setRes, colRes, socRes] = await Promise.all([
+        fetch(`${API_URL}/api/footer-columns/settings`),
+        fetch(`${API_URL}/api/footer-columns/admin`, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } }),
+        fetch(`${API_URL}/api/social-links/admin`, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } })
+      ]);
+      if (setRes.ok) {
+        const setData = await setRes.json();
+        if (setData) setFooterBrandSettings(setData);
+      }
+      if (colRes.ok) {
+        const colData = await colRes.json();
+        if (Array.isArray(colData)) setFooterColumns(colData);
+      }
+      if (socRes.ok) {
+        const socData = await socRes.json();
+        if (Array.isArray(socData)) setFooterSocials(socData);
+      }
+    } catch (err) {
+      console.error('Failed to fetch footer settings in Home editor:', err);
+    }
+  };
+
+  const handleSaveFooterBrand = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      setIsSavingFooter(true);
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/footer-columns/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(footerBrandSettings)
+      });
+      if (res.ok) {
+        showSuccess('Footer brand settings saved & live on website!');
+      } else {
+        showError('Failed to save footer settings');
+      }
+    } catch (err) {
+      showError('Error saving footer settings');
+    } finally {
+      setIsSavingFooter(false);
     }
   };
 
@@ -2412,6 +2483,142 @@ export default function AdminHomeEditor() {
                     isUploading={isUploading}
                     tip="Soft ambient reflection or study background behind FAQ section."
                   />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================
+              8. FOOTER SECTION
+             ========================================================= */}
+          {activeTab === 'footer' && (
+            <div className="flex flex-col gap-8 max-w-5xl">
+              <div className="flex items-center justify-between pb-4 border-b border-white/5">
+                <div className="flex flex-col gap-1">
+                  <h2 className="font-serif text-2xl text-white">Footer Section & Brand Settings</h2>
+                  <p className="text-xs text-white/50">
+                    Edit brand bio, contact email, copyright notice, and manage website footer columns & links.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveFooterBrand}
+                  disabled={isSavingFooter}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#c79c6e] text-black font-semibold rounded-xl hover:bg-[#c79c6e]/90 transition-colors text-xs disabled:opacity-50 shadow-lg cursor-pointer"
+                >
+                  <FloppyDisk size={16} weight="bold" />
+                  {isSavingFooter ? 'Saving...' : 'Save Footer Settings'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Left Column: Brand Text Form */}
+                <div className="lg:col-span-7 flex flex-col gap-6">
+                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5 shadow-xl">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Brand Texts & Details</span>
+                    
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Brand Tagline / Bio</label>
+                      <textarea
+                        rows={3}
+                        value={footerBrandSettings.brandDescription}
+                        onChange={(e) => setFooterBrandSettings({ ...footerBrandSettings, brandDescription: e.target.value })}
+                        placeholder="Authentic 1-on-1 mentorship..."
+                        className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e] leading-relaxed resize-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Contact Email</label>
+                        <input
+                          type="email"
+                          value={footerBrandSettings.brandEmail}
+                          onChange={(e) => setFooterBrandSettings({ ...footerBrandSettings, brandEmail: e.target.value })}
+                          placeholder="coaching@betterwithaarkesh.com"
+                          className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Copyright Notice</label>
+                        <input
+                          type="text"
+                          value={footerBrandSettings.copyrightText}
+                          onChange={(e) => setFooterBrandSettings({ ...footerBrandSettings, copyrightText: e.target.value })}
+                          placeholder="© 2026 Better With Aarkesh. All rights reserved."
+                          className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Social Media Quick View */}
+                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-4 shadow-xl">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Active Social Media Links</span>
+                      <Link
+                        to="/footer-documents?tab=brand"
+                        className="text-xs text-[#c79c6e] hover:underline flex items-center gap-1 font-medium"
+                      >
+                        Manage Social Links <ArrowRight size={14} />
+                      </Link>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {footerSocials.length > 0 ? (
+                        footerSocials.map((s, idx) => (
+                          <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white/80">
+                            <ShareNetwork size={14} className="text-[#c79c6e]" />
+                            <span className="capitalize">{s.platform || s.label}</span>
+                            <span className="text-[10px] text-white/40">({s.isActive !== false ? 'Live' : 'Hidden'})</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-white/40 italic">No custom social links added yet.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Footer Columns & Advanced Management Hub */}
+                <div className="lg:col-span-5 flex flex-col gap-6">
+                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-4 shadow-xl">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Website Footer Columns</span>
+                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-white/10 text-white/70">
+                        {footerColumns.length} Columns
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {footerColumns.map((col, idx) => (
+                        <div key={idx} className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-white uppercase tracking-wider">{col.title}</span>
+                            <span className="text-[10px] text-white/40">{(col.links || []).length} Links</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(col.links || []).map((l, lIdx) => (
+                              <span key={lIdx} className="text-[11px] px-2 py-0.5 rounded bg-white/5 border border-white/5 text-white/60 truncate max-w-[180px]">
+                                {l.label}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-2">
+                      <Link
+                        to="/footer-documents"
+                        className="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-[#c79c6e]/15 border border-white/10 hover:border-[#c79c6e]/40 text-white hover:text-[#c79c6e] text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                      >
+                        <FolderOpen size={16} />
+                        <span>Open Advanced Footer & Static Page Editor →</span>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

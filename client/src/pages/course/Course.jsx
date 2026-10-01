@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Link, useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
 import PolicyModal from '../../components/ui/PolicyModal';
 import { 
   Play, 
@@ -38,12 +38,15 @@ import {
   SpotifyLogo,
   DiscordLogo,
   TiktokLogo,
-  Globe
+  Globe,
+  Quotes
 } from '@phosphor-icons/react';
 import Button from '../../components/ui/Button';
 import LessonComments from '../../components/course/LessonComments';
 import ProtectedYouTubePlayer from '../../components/course/ProtectedYouTubePlayer';
 import CoursePaymentSuccess from './CoursePaymentSuccess';
+import FlippingWordSwap from '../../components/ui/FlippingWordSwap';
+import { resolvePlayableVideoId } from '../../utils/videoSecurity';
 import './course-landing.css';
 
 const renderSocialIcon = (platform, size = 16) => {
@@ -111,14 +114,24 @@ const MODULES = [
 export default function Course() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { slug } = useParams();
-  const isDetailPage = Boolean(slug);
+  const location = useLocation();
+  const isAllCoursesPage = slug === 'all' || location.pathname === '/courses' || location.pathname === '/courses/all';
+  const isDetailPage = Boolean(slug) && slug !== 'all';
+
+  const getCardThemeClass = (index) => {
+    const mod = index % 3;
+    if (mod === 0) return 'card-theme-black';
+    if (mod === 1) return 'card-theme-purple';
+    return 'card-theme-white';
+  };
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showDashboard, setShowDashboard] = useState(() => {
     const isPurchasedStored = localStorage.getItem('isCoursePurchased') === 'true';
     const hasToken = !!localStorage.getItem('courseToken');
     const params = new URLSearchParams(window.location.search);
     const isCheckout = params.get('checkout') === 'true' || sessionStorage.getItem('course_checkout_active') === 'true';
-    return hasToken && isPurchasedStored && !isCheckout;
+    const isLearn = params.get('learn') === 'true';
+    return isLearn && hasToken && isPurchasedStored && !isCheckout;
   });
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('courseToken'));
   const [isPurchased, setIsPurchased] = useState(() => localStorage.getItem('isCoursePurchased') === 'true');
@@ -133,7 +146,6 @@ export default function Course() {
   const [checkoutAgreed, setCheckoutAgreed] = useState(false);
   const [showPreRegSuccessModal, setShowPreRegSuccessModal] = useState(false);
   const [showSyllabusModal, setShowSyllabusModal] = useState(false);
-  const [isNavDarkText, setIsNavDarkText] = useState(false);
   const profileMenuRef = useRef(null);
   const leftColumnRef = useRef(null);
 
@@ -211,12 +223,14 @@ export default function Course() {
   const gstRate = courseData?.gstRate !== undefined && courseData?.gstRate !== null ? Number(courseData.gstRate) : 18;
   const isGstIncluded = Boolean(courseData?.isGstIncluded);
 
-  const gstAmount = isGstIncluded
-    ? Math.round(basePrice - (basePrice / (1 + (gstRate / 100))))
-    : Math.round((basePrice * gstRate) / 100);
-
-  const baseBeforeGst = isGstIncluded ? basePrice - gstAmount : basePrice;
-  const finalPayable = isGstIncluded ? basePrice : basePrice + gstAmount;
+  useEffect(() => {
+    const isLearn = searchParams.get('learn') === 'true';
+    if (isLearn && isLoggedIn && isPurchased) {
+      setShowDashboard(true);
+    } else if (!isLearn) {
+      setShowDashboard(false);
+    }
+  }, [searchParams, isLoggedIn, isPurchased]);
 
   useEffect(() => {
     const fetchPublishedCurriculum = async () => {
@@ -346,42 +360,23 @@ export default function Course() {
     fetchCourseFaqs();
   }, []);
 
-  // Dynamically detect when floating navbar crosses light/white sections
-  useEffect(() => {
-    const handleScroll = () => {
-      const lightElements = document.querySelectorAll('.stack-sec, .light-sec, [data-theme="light"], .curriculum-section, footer');
-      if (!lightElements || lightElements.length === 0) {
-        setIsNavDarkText(false);
-        return;
-      }
-      
-      const navCheckLine = 40; // Pixels from top of viewport where navbar buttons sit
-      let isDark = false;
 
-      lightElements.forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        if (rect.top <= navCheckLine && rect.bottom >= navCheckLine) {
-          isDark = true;
-        }
-      });
-
-      setIsNavDarkText(isDark);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true });
-    handleScroll();
-    const timer = setTimeout(handleScroll, 150);
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-      clearTimeout(timer);
-    };
-  }, [slug]);
 
   const [pendingCheckout, setPendingCheckout] = useState(false);
   const [activeToc, setActiveToc] = useState('p1');
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponMsg, setCouponMsg] = useState({ type: '', text: '' });
+  const [isGstApplied, setIsGstApplied] = useState(false);
+  const [gstNumber, setGstNumber] = useState('');
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
 
   const coursesList = useMemo(() => [
     {
@@ -389,7 +384,7 @@ export default function Course() {
       n: "01",
       chips: ["Calm Authority", "Self-Command"],
       soon: false,
-      cls: "",
+      cls: "v3",
       title: "The Better Man",
       lede: "Master the psychology of calm authority, magnetic communication and effortless self-command.",
       d: "Calm authority, magnetic communication and self-command, taught in eight modules with three private sessions.",
@@ -407,10 +402,9 @@ export default function Course() {
         "8 HD video modules & frameworks",
         "Downloadable workbooks and mental models",
         "3 private 1-on-1 coaching sessions with Aarkesh",
-        "Lifetime access with all future updates",
-        "30-day money-back guarantee"
+        "Lifetime access with all future updates"
       ],
-      facts: [["8", "Modules"], ["Yes", "Certified"], ["1-on-1", "Coaching"]],
+      facts: [["8", "Modules"], ["3 Free", "1-on-1 Sessions"]],
       price: `₹${basePrice.toLocaleString('en-IN')}`,
       was: `₹${comparePrice.toLocaleString('en-IN')}`,
       cta: "Check Course",
@@ -462,7 +456,7 @@ export default function Course() {
         "Lifetime access",
         "Early-access price for waitlist members"
       ],
-      facts: [["6", "Modules"], ["Yes", "Certified"], ["1-on-1", "Coaching"]],
+      facts: [["6", "Modules"], ["3 Free", "1-on-1 Sessions"]],
       price: "₹3,999",
       was: "₹7,999",
       cta: "Check Course",
@@ -491,7 +485,7 @@ export default function Course() {
       n: "03",
       chips: ["Clarity", "Choice"],
       soon: true,
-      cls: "v3",
+      cls: "",
       title: "Decisions",
       lede: "A clear method for the choices you keep putting off, and for living with them once made.",
       d: "A clear method for the choices you keep putting off, and for living with them once made.",
@@ -512,7 +506,7 @@ export default function Course() {
         "Lifetime access",
         "Early-access price for waitlist members"
       ],
-      facts: [["5", "Modules"], ["Yes", "Certified"], ["1-on-1", "Coaching"]],
+      facts: [["5", "Modules"], ["3 Free", "1-on-1 Sessions"]],
       price: "₹3,499",
       was: "₹6,999",
       cta: "Check Course",
@@ -541,6 +535,95 @@ export default function Course() {
     if (!slug) return coursesList[0];
     return coursesList.find((c) => c.slug === slug) || coursesList[0];
   }, [coursesList, slug]);
+
+  const activeCourseBasePrice = useMemo(() => {
+    if (activeCourse?.slug === 'better-man') return basePrice;
+    if (activeCourse?.slug === 'difficult-people') return 3999;
+    if (activeCourse?.slug === 'decisions') return 3499;
+    return basePrice;
+  }, [activeCourse, basePrice]);
+
+  const activeCourseComparePrice = useMemo(() => {
+    if (activeCourse?.slug === 'better-man') return comparePrice;
+    if (activeCourse?.slug === 'difficult-people') return 7999;
+    if (activeCourse?.slug === 'decisions') return 6999;
+    return comparePrice;
+  }, [activeCourse, comparePrice]);
+
+  const discountAmount = useMemo(() => {
+    return appliedCoupon ? Math.round((activeCourseBasePrice * (appliedCoupon.percent || 0)) / 100) : 0;
+  }, [appliedCoupon, activeCourseBasePrice]);
+
+  const discountedBasePrice = Math.max(0, activeCourseBasePrice - discountAmount);
+
+  const gstAmount = useMemo(() => {
+    return isGstIncluded
+      ? Math.round(discountedBasePrice - (discountedBasePrice / (1 + (gstRate / 100))))
+      : Math.round((discountedBasePrice * gstRate) / 100);
+  }, [discountedBasePrice, isGstIncluded, gstRate]);
+
+  const baseBeforeGst = isGstIncluded ? discountedBasePrice - gstAmount : discountedBasePrice;
+  const finalPayable = isGstIncluded ? discountedBasePrice : discountedBasePrice + gstAmount;
+
+  const handleApplyCoupon = (codeToApply) => {
+    const code = (codeToApply || couponCode).trim().toUpperCase();
+    if (!code) {
+      setCouponMsg({ type: 'error', text: 'Please enter a valid coupon code.' });
+      return;
+    }
+    if (code === 'AARKESH50' || code === 'CLAIM50' || code === 'SHERY50') {
+      setAppliedCoupon({ code, percent: 50 });
+      setCouponMsg({ type: 'success', text: 'Coupon applied! 50% discount applied successfully.' });
+    } else if (code === 'BETTER20') {
+      setAppliedCoupon({ code, percent: 20 });
+      setCouponMsg({ type: 'success', text: 'Coupon applied! 20% discount applied.' });
+    } else if (code === 'WELCOME10') {
+      setAppliedCoupon({ code, percent: 10 });
+      setCouponMsg({ type: 'success', text: 'Coupon applied! 10% discount applied.' });
+    } else {
+      setCouponMsg({ type: 'error', text: 'Invalid coupon code. Try AARKESH50 or CLAIM50' });
+    }
+  };
+
+  const courseThemes = {
+    'better-man': {
+      accent: '#C878BE',
+      accentLight: '#E3B8DE',
+      accentGlow: 'rgba(200, 120, 190, 0.22)',
+      gradient: 'from-[#A83B96] via-[#C878BE] to-[#7A2A70]',
+      buttonBg: 'bg-gradient-to-r from-[#A83B96] via-[#C878BE] to-[#7A2A70]',
+      cardBg: 'bg-[#150a18]',
+      outerBg: 'bg-[#0e0610]',
+      border: 'border-[#C878BE]/30',
+      badge: 'Full Masterclass Access',
+      tagline: 'Master calm authority, presence & gravitas'
+    },
+    'difficult-people': {
+      accent: '#A855F7',
+      accentLight: '#D8B4FE',
+      accentGlow: 'rgba(168, 85, 247, 0.22)',
+      gradient: 'from-[#9333EA] via-[#A855F7] to-[#7E22CE]',
+      buttonBg: 'bg-gradient-to-r from-[#9333EA] via-[#A855F7] to-[#7E22CE]',
+      cardBg: 'bg-[#140b20]',
+      outerBg: 'bg-[#0c0614]',
+      border: 'border-[#A855F7]/30',
+      badge: 'Emotional Sovereignty',
+      tagline: 'Disarm manipulation & establish unshakeable boundaries'
+    },
+    'decisions': {
+      accent: '#38BDF8',
+      accentLight: '#BAE6FD',
+      accentGlow: 'rgba(56, 189, 248, 0.22)',
+      gradient: 'from-[#0284C7] via-[#38BDF8] to-[#0369A1]',
+      buttonBg: 'bg-gradient-to-r from-[#0284C7] via-[#38BDF8] to-[#0369A1]',
+      cardBg: 'bg-[#081528]',
+      outerBg: 'bg-[#040D1A]',
+      border: 'border-[#38BDF8]/30',
+      badge: 'Decision Architecture',
+      tagline: 'Overcome overthinking & lead with high conviction'
+    }
+  };
+  const activeTheme = courseThemes[activeCourse?.slug] || courseThemes['better-man'];
 
   const handleSelectCourse = (c) => {
     navigate(`/course/${c.slug}`);
@@ -626,10 +709,6 @@ export default function Course() {
   };
 
   const handlePayment = async () => {
-    if (!checkoutAgreed) {
-      setError("Please agree to the terms and conditions.");
-      return;
-    }
     setIsLoading(true);
     setError('');
 
@@ -664,7 +743,11 @@ export default function Course() {
       const orderRes = await fetch(`${API_URL}/api/payment/course-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ 
+          email,
+          courseSlug: activeCourse?.slug || 'better-man',
+          amount: finalPayable
+        })
       });
       const orderData = await safeJson(orderRes);
       if (!orderRes.ok) throw new Error(orderData.message || 'Failed to create payment order');
@@ -674,7 +757,7 @@ export default function Course() {
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Better With Aarkesh',
-        description: 'Premium Course Bundle',
+        description: activeCourse?.title ? `${activeCourse.title} Masterclass` : 'The Better Man Masterclass',
         order_id: orderData.id,
         handler: async function (response) {
           try {
@@ -691,13 +774,27 @@ export default function Course() {
             });
             const verifyData = await safeJson(verifyRes);
             if (verifyRes.ok && verifyData.success) {
+              // Mark course as purchased
               localStorage.setItem('isCoursePurchased', 'true');
               setIsPurchased(true);
               setShowCheckout(false);
+              setShowPricingModal(false);
               sessionStorage.removeItem('course_checkout_active');
               setSearchParams({});
 
-              const billPayload = verifyData.purchase || {
+              // Save coaching token so My Journey page shows free sessions
+              if (verifyData.coachingToken) {
+                localStorage.setItem('token', verifyData.coachingToken);
+              }
+              if (verifyData.freeSessions !== undefined) {
+                localStorage.setItem('freeSessions', String(verifyData.freeSessions));
+              }
+
+              // Show success toast
+              showToast('🎉 Payment Successful! Official Tax Invoice generated.');
+
+              const invoiceData = verifyData.purchase || {
+                status: 'Success',
                 transactionId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id,
                 amount: finalPayable,
@@ -709,12 +806,17 @@ export default function Course() {
                 purchaseDate: new Date().toISOString(),
                 studentName: fullName || email?.split('@')[0] || 'Valued Student',
                 studentEmail: email,
-                courseTitle: 'The Better Man™',
+                courseTitle: activeCourse?.title || 'The Better Man™',
+                invoiceItemTitle: `${activeCourse?.title || 'The Better Man™'} — Masterclass Lifetime Access`,
+                invoiceItemSubtitle: 'HD video frameworks, modular curriculum, worksheets & community',
+                bonusItemTitle: '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
+                bonusItemSubtitle: 'Valued at ₹15,000 — 100% Complimentary student bonus',
                 freeSessionsGranted: 3
               };
 
-              setPurchaseSuccessData(billPayload);
-              sessionStorage.setItem('lastCoursePurchaseReceipt', JSON.stringify(billPayload));
+              // Open invoice / success page directly
+              setShowDashboard(false);
+              setPurchaseSuccessData(invoiceData);
             } else {
               setError(verifyData.message || 'Payment verification failed');
             }
@@ -724,8 +826,8 @@ export default function Course() {
             setIsLoading(false);
           }
         },
-        prefill: { email },
-        theme: { color: '#c79c6e' },
+        prefill: { email, contact: phoneNumber },
+        theme: { color: activeTheme.accent || '#C878BE' },
       };
 
       const rzp = new window.Razorpay(options);
@@ -768,8 +870,8 @@ export default function Course() {
           console.warn('Failed to record failure:', e);
         }
 
-        setPurchaseSuccessData(failedPayload);
-        setShowCheckout(false);
+        // Show inline error — no receipt page for failures
+        setError(failedPayload.failureReason || 'Payment failed. Please try again.');
         setIsLoading(false);
       });
       rzp.open();
@@ -865,6 +967,7 @@ export default function Course() {
     setShowCheckout(false);
     setShowProfileMenu(false);
     setSearchParams({});
+    showToast('Logged out successfully', 'success');
   };
 
   // OTP Handlers
@@ -966,26 +1069,18 @@ export default function Course() {
           if (data.isPurchased && !isComingSoon) {
             localStorage.setItem('isCoursePurchased', 'true');
             setIsPurchased(true);
-            setShowDashboard(true);
-            setShowPricingModal(false);
           } else {
             localStorage.removeItem('isCoursePurchased');
             setIsPurchased(false);
-            setShowDashboard(false);
-            if (isComingSoon) {
-              setShowCheckout(false);
-              setShowPricingModal(false);
-              setShowPreRegSuccessModal(true);
-            } else if (pendingCheckout || searchParams.get('checkout') === 'true') {
-              setShowCheckout(true);
-              setPendingCheckout(false);
-            } else {
-              setShowCheckout(false);
-              setShowPricingModal(true);
-            }
           }
+          setShowDashboard(false);
+          setShowCheckout(false);
+          setShowPricingModal(false);
           setShowCourseLogin(false);
           setIsLoggedIn(true);
+
+          const successMsg = loginMode === 'register' ? 'Registration successfully' : 'Login successfully';
+          showToast(successMsg, 'success');
         }
       } else {
         setError(data.message || 'Authentication failed');
@@ -1009,11 +1104,11 @@ export default function Course() {
         purchaseData={purchaseSuccessData}
         onStartLearning={() => {
           setPurchaseSuccessData(null);
-          setShowDashboard(true);
+          navigate('/my-course');
         }}
         onBookSession={() => {
           setPurchaseSuccessData(null);
-          navigate('/booking');
+          navigate('/book');
         }}
         onRetryPayment={() => {
           setPurchaseSuccessData(null);
@@ -1032,8 +1127,16 @@ export default function Course() {
   // DASHBOARD VIEW (purchased users)
   // ═══════════════════════════════════════════════════════════════
   if (showDashboard) {
+    const resolvedActiveVid = resolvePlayableVideoId(activeLesson);
+    const hasActivePlayableVideo = Boolean(
+      resolvedActiveVid && 
+      resolvedActiveVid.trim().length >= 8 && 
+      resolvedActiveVid !== 'dummy' && 
+      !resolvedActiveVid.includes('undefined')
+    );
+
     return (
-      <main className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden">
+      <div className="course-landing-scope h-screen bg-[#070408] text-white flex flex-col overflow-hidden">
         <CourseNavbar
           isLoggedIn={isLoggedIn}
           isPurchased={isPurchased}
@@ -1044,84 +1147,165 @@ export default function Course() {
           setShowProfileMenu={setShowProfileMenu}
           handleLogout={handleLogout}
           setShowCourseLogin={setShowCourseLogin}
+          completedCount={allLessons.filter(l => l.isCompleted).length}
+          totalCount={allLessons.length}
         />
 
-        {/* Main Dashboard Layout: Responsive Vertical/Landscape Mobile, Split on Desktop */}
+        {/* Main Dashboard Layout: Responsive Vertical on Mobile, Split on Desktop */}
         <div className="flex-grow flex flex-col lg:flex-row h-[calc(100vh-66px)] sm:h-[calc(100vh-76px)] overflow-hidden" data-lenis-prevent="true">
           
           {/* ── LEFT / MAIN COLUMN (Scrollable on both mobile and desktop) ── */}
           <div 
             ref={leftColumnRef}
             data-lenis-prevent="true"
-            className="flex-1 flex flex-col bg-[#050505] overflow-y-auto border-r border-white/10 scroll-smooth overscroll-contain h-full"
+            className="flex-1 flex flex-col bg-[#070408] overflow-y-auto border-r border-white/10 scroll-smooth overscroll-contain h-full"
           >
-            {/* ── 1. VIDEO PLAYER (Naturally scrollable so user can scroll down to view details, list & comments) ── */}
-            <div className="w-full aspect-video shrink-0 bg-black relative flex items-center justify-center border-b border-white/10 overflow-hidden z-20 shadow-2xl">
-              {activeLesson?.videoToken || activeLesson?.encryptedVideoToken || activeLesson?.youtubeVideoId || (activeLesson?.youtubeUrl && extractYoutubeVideoId(activeLesson.youtubeUrl)) || (activeLesson?.videoSourceType === 'youtube') ? (
+            {/* ── 1. CINEMATIC VIDEO PLAYER ── */}
+            <div className="w-full aspect-video shrink-0 bg-black relative flex items-center justify-center border-b border-white/10 overflow-hidden z-20 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
+              {hasActivePlayableVideo ? (
                 <ProtectedYouTubePlayer 
                   key={activeLesson?._id || activeLesson?.id || 'yt_active'}
                   lesson={activeLesson}
                   videoToken={activeLesson?.videoToken || activeLesson?.encryptedVideoToken}
-                  videoId={activeLesson?.youtubeVideoId || (activeLesson?.youtubeUrl ? extractYoutubeVideoId(activeLesson.youtubeUrl) : '')}
+                  videoId={resolvedActiveVid}
                   title={activeLesson?.title}
                 />
               ) : activeLesson?.muxPlaybackId ? (
                 <iframe
-                  src={`https://player.mux.com/${activeLesson.muxPlaybackId}?accentColor=c79c6e`}
+                  src={`https://player.mux.com/${activeLesson.muxPlaybackId}?accentColor=C878BE`}
                   className="w-full h-full border-0"
                   allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                   allowFullScreen
                   title={activeLesson.title}
                 />
               ) : (
-                <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-br from-black via-[#0c0c0c] to-[#070707]">
-                  <img src="/course_hero_bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-25" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                  <button className="w-20 h-20 rounded-full bg-[#c79c6e] flex items-center justify-center text-black hover:scale-105 transition-transform shadow-[0_0_40px_rgba(199,156,110,0.3)] relative z-10">
-                    <Play size={36} weight="fill" className="ml-1" />
-                  </button>
-                  <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8 z-10">
-                    <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] font-semibold mb-1 block">PLAYING NOW</span>
-                    <h2 className="text-xl md:text-2xl font-serif text-white drop-shadow-md">{activeLesson?.title}</h2>
+                <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-br from-[#150614] via-[#0B040B] to-[#040204] overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(200,120,190,0.18),transparent_70%)]" />
+                  
+                  {/* Subtle Grid Background */}
+                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#C878BE_1px,transparent_1px)] [background-size:24px_24px]" />
+                  
+                  <div className="relative z-10 flex flex-col items-center text-center p-6 max-w-lg">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C878BE]/15 border border-[#C878BE]/30 text-[#E3B8DE] text-xs font-semibold uppercase tracking-wider mb-4" style={{ fontFamily: 'var(--head)' }}>
+                      <Sparkle size={13} weight="fill" />
+                      <span>{activeModuleObj?.title || 'Masterclass Session'}</span>
+                    </div>
+
+                    <h2 className="text-2xl sm:text-3xl text-white font-semibold mb-3 drop-shadow-md tracking-tight" style={{ fontFamily: 'var(--head)' }}>
+                      {activeLesson?.title || 'Lesson Stream Ready'}
+                    </h2>
+                    
+                    <p className="text-white/60 text-xs sm:text-sm font-sans mb-6 max-w-md line-clamp-2">
+                      {activeLesson?.description || 'Learn calm authority, magnetic communication and self-command directly with Aarkesh.'}
+                    </p>
+
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const updated = { ...activeLesson, isCompleted: !activeLesson?.isCompleted };
+                        setActiveLesson(updated);
+                      }}
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white font-medium text-xs sm:text-sm hover:opacity-95 transition-all shadow-[0_0_30px_rgba(200,120,190,0.35)] cursor-pointer"
+                      style={{ fontFamily: 'var(--head)' }}
+                    >
+                      <Play size={16} weight="fill" />
+                      <span>Start Session</span>
+                    </button>
+                  </div>
+
+                  <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-10">
+                    <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[#C878BE] font-bold mb-0.5 block" style={{ fontFamily: 'var(--head)' }}>NOW PLAYING</span>
+                    <h3 className="text-sm sm:text-base text-white/90 drop-shadow-md truncate max-w-xs sm:max-w-md font-semibold" style={{ fontFamily: 'var(--head)' }}>{activeLesson?.title}</h3>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ── 2. MOBILE LESSON TITLE & MARK COMPLETED BAR ── */}
-            <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#0a0a0a] border-b border-white/10 shrink-0 gap-3">
-              <h3 className="font-serif text-base text-white font-normal leading-snug truncate min-w-0">
-                {activeLesson?.title}
-              </h3>
-
-              {/* Mark Complete Button */}
+            {/* ── 2. LESSON CONTROL & QUICK NAVIGATION BAR ── */}
+            <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 bg-[#0C060D] border-b border-white/10 shrink-0 gap-3">
+              {/* Prev Lesson */}
               <button
                 type="button"
+                disabled={!prevLesson}
                 onClick={() => {
-                  const updated = { ...activeLesson, isCompleted: !activeLesson?.isCompleted };
-                  setActiveLesson(updated);
+                  if (prevLesson) {
+                    handleSelectLesson(prevLesson, prevLesson.module);
+                    if (leftColumnRef.current) leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
                 }}
-                className={`px-3 py-1.5 rounded-xl border text-[11px] font-semibold flex items-center gap-1.5 transition-all shrink-0 ${
-                  activeLesson?.isCompleted
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                    : 'bg-white/5 border-white/10 text-white/80 hover:text-white'
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  prevLesson 
+                    ? 'bg-white/5 border border-white/10 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/20 cursor-pointer' 
+                    : 'opacity-30 cursor-not-allowed border border-white/5 text-white/40'
                 }`}
+                style={{ fontFamily: 'var(--head)' }}
               >
-                <CheckCircle size={15} weight={activeLesson?.isCompleted ? 'fill' : 'regular'} />
-                <span>{activeLesson?.isCompleted ? 'Completed' : 'Mark Complete'}</span>
+                <ArrowLeft size={13} weight="bold" />
+                <span className="hidden sm:inline">Previous</span>
               </button>
+
+              {/* Lesson Title & Module Info (Center on mobile/desktop) */}
+              <div className="text-center truncate min-w-0 px-2">
+                <span className="text-[0.62rem] uppercase tracking-[0.18em] text-[#C878BE] font-bold block truncate" style={{ fontFamily: 'var(--head)' }}>
+                  {activeModuleObj?.title || 'Masterclass Curriculum'}
+                </span>
+                <h3 className="text-xs sm:text-sm text-white font-medium truncate" style={{ fontFamily: 'var(--head)' }}>
+                  {activeLesson?.title}
+                </h3>
+              </div>
+
+              {/* Next Lesson / Mark Complete */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = { ...activeLesson, isCompleted: !activeLesson?.isCompleted };
+                    setActiveLesson(updated);
+                  }}
+                  className={`px-3 sm:px-4 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
+                    activeLesson?.isCompleted
+                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                      : 'bg-[#C878BE]/15 border-[#C878BE]/40 text-[#E3B8DE] hover:bg-[#C878BE]/25'
+                  }`}
+                  style={{ fontFamily: 'var(--head)' }}
+                >
+                  <CheckCircle size={15} weight={activeLesson?.isCompleted ? 'fill' : 'regular'} />
+                  <span className="hidden sm:inline">{activeLesson?.isCompleted ? 'Completed' : 'Mark Complete'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!nextLesson}
+                  onClick={() => {
+                    if (nextLesson) {
+                      handleSelectLesson(nextLesson, nextLesson.module);
+                      if (leftColumnRef.current) leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    nextLesson 
+                      ? 'bg-gradient-to-r from-[#8A2E80] to-[#58184E] border border-[#C878BE]/40 text-white hover:opacity-90 shadow-md cursor-pointer' 
+                      : 'opacity-30 cursor-not-allowed border border-white/5 text-white/40'
+                  }`}
+                  style={{ fontFamily: 'var(--head)' }}
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ArrowRight size={13} weight="bold" />
+                </button>
+              </div>
             </div>
 
-            {/* ── 3. MOBILE TAB SELECTOR (Playlist & Comments) ── */}
-            <div className="lg:hidden flex items-center border-b border-white/10 bg-[#070707] px-3.5 py-2.5 gap-2 shrink-0">
+            {/* ── 3. MOBILE TAB SELECTOR (Curriculum Playlist & Comments) ── */}
+            <div className="lg:hidden flex items-center border-b border-white/10 bg-[#0A050A] px-3.5 py-2.5 gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveMobileTab('playlist')}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                   activeMobileTab === 'playlist'
-                    ? 'bg-[#c79c6e]/20 border border-[#c79c6e]/50 text-[#c79c6e] shadow-sm'
+                    ? 'bg-[#C878BE]/20 border border-[#C878BE]/50 text-[#E3B8DE] shadow-sm'
                     : 'bg-white/[0.03] border border-white/5 text-white/60 hover:text-white'
                 }`}
+                style={{ fontFamily: 'var(--head)' }}
               >
                 <Play size={13} weight="fill" />
                 <span>Playlist</span>
@@ -1135,21 +1319,22 @@ export default function Course() {
                 onClick={() => setActiveMobileTab('comments')}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                   activeMobileTab === 'comments'
-                    ? 'bg-[#c79c6e]/20 border border-[#c79c6e]/50 text-[#c79c6e] shadow-sm'
+                    ? 'bg-[#C878BE]/20 border border-[#C878BE]/50 text-[#E3B8DE] shadow-sm'
                     : 'bg-white/[0.03] border border-white/5 text-white/60 hover:text-white'
                 }`}
+                style={{ fontFamily: 'var(--head)' }}
               >
                 <ChatCenteredDots size={14} weight="bold" />
-                <span>Comments</span>
+                <span>Discussions</span>
               </button>
             </div>
 
             {/* ── MOBILE PLAYLIST VIEW ── */}
             {activeMobileTab === 'playlist' && (
-              <div className="lg:hidden p-4 space-y-4 bg-[#050505]">
+              <div className="lg:hidden p-4 space-y-4 bg-[#070408]">
                 <div className="flex items-center justify-between px-1">
-                  <h4 className="font-serif text-base text-white">Course Curriculum</h4>
-                  <span className="text-xs text-white/40 font-mono">{allLessons.length} Videos</span>
+                  <h4 className="text-base text-white font-semibold" style={{ fontFamily: 'var(--head)' }}>Course Curriculum</h4>
+                  <span className="text-xs text-[#E3B8DE] font-mono font-medium">{allLessons.filter(l => l.isCompleted).length} / {allLessons.length} Completed</span>
                 </div>
 
                 <div className="space-y-3">
@@ -1158,25 +1343,25 @@ export default function Course() {
                     const lessons = module.lessons || [];
 
                     return (
-                      <div key={module._id || module.id} className="border border-white/10 rounded-2xl bg-[#0a0a0a] overflow-hidden">
+                      <div key={module._id || module.id} className="border border-white/10 rounded-2xl bg-[#0F0710] overflow-hidden">
                         <button
                           type="button"
                           className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left group"
                           onClick={() => setActiveModuleObj(isCurrentMod ? null : module)}
                         >
                           <div className="pr-3">
-                            <h5 className={`font-serif text-sm mb-0.5 leading-snug ${isCurrentMod ? 'text-[#c79c6e]' : 'text-white'}`}>
+                            <h5 className={`text-sm mb-0.5 leading-snug font-semibold ${isCurrentMod ? 'text-[#E3B8DE]' : 'text-white'}`} style={{ fontFamily: 'var(--head)' }}>
                               {module.title}
                             </h5>
-                            <p className="font-sans text-[0.6rem] uppercase tracking-[0.15em] text-white/40">
-                              {lessons.length} {lessons.length === 1 ? 'VIDEO' : 'VIDEOS'}
+                            <p className="text-[0.6rem] uppercase tracking-[0.15em] text-white/40" style={{ fontFamily: 'var(--head)' }}>
+                              {lessons.length} {lessons.length === 1 ? 'LESSON' : 'LESSONS'}
                             </p>
                           </div>
                           <CaretDown size={14} className={`text-white/40 transition-transform shrink-0 ${isCurrentMod ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isCurrentMod && (
-                          <div className="bg-[#050505] p-2 pt-0 border-t border-white/5 space-y-1">
+                          <div className="bg-[#070408] p-2 pt-0 border-t border-white/5 space-y-1">
                             {lessons.map((lesson) => {
                               const isActive = (activeLesson?._id && activeLesson._id === lesson._id) || (activeLesson?.id && activeLesson.id === lesson.id);
 
@@ -1191,20 +1376,20 @@ export default function Course() {
                                     }
                                   }}
                                   className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl transition-all text-left ${
-                                    isActive ? 'bg-[#c79c6e]/15 border border-[#c79c6e]/40' : 'hover:bg-white/5 border border-transparent'
+                                    isActive ? 'bg-[#2E122A] border border-[#C878BE]/50 shadow-[0_0_15px_rgba(200,120,190,0.15)]' : 'hover:bg-white/5 border border-transparent'
                                   }`}
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                     {lesson.isCompleted ? (
-                                      <CheckCircle size={15} weight="fill" className="text-[#c79c6e] shrink-0" />
+                                      <CheckCircle size={15} weight="fill" className="text-emerald-400 shrink-0" />
                                     ) : (
-                                      <Play size={14} weight={isActive ? 'fill' : 'regular'} className={`shrink-0 ${isActive ? 'text-[#c79c6e]' : 'text-white/40'}`} />
+                                      <Play size={14} weight={isActive ? 'fill' : 'regular'} className={`shrink-0 ${isActive ? 'text-[#C878BE]' : 'text-white/40'}`} />
                                     )}
-                                    <span className={`font-sans text-xs truncate ${isActive ? 'text-white font-medium' : 'text-white/70'}`}>
+                                    <span className={`text-xs truncate ${isActive ? 'text-white font-medium' : 'text-white/70'}`} style={{ fontFamily: 'var(--head)' }}>
                                       {lesson.title}
                                     </span>
                                   </div>
-                                  <span className="font-sans text-[0.6rem] text-white/40 whitespace-nowrap ml-2 shrink-0">
+                                  <span className="text-[0.6rem] text-white/40 whitespace-nowrap ml-2 shrink-0 font-mono">
                                     {lesson.duration || '12:00'}
                                   </span>
                                 </button>
@@ -1219,117 +1404,163 @@ export default function Course() {
               </div>
             )}
 
-            {/* ── 4. DESKTOP ONLY: Overview Description & Worksheets ── */}
-            <div className="hidden lg:block p-6 md:p-10 pb-0 space-y-6">
+            {/* ── 4. LESSON OVERVIEW, 1-ON-1 COACHING PERKS & WORKSHEETS ── */}
+            <div className="p-4 sm:p-8 space-y-6">
               {/* About Lesson Card */}
-              <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
-                <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-white/10">
-                  <h3 className="font-serif text-xl sm:text-2xl text-white">{activeLesson?.title}</h3>
-                  <button
-                    onClick={() => {
-                      const updated = { ...activeLesson, isCompleted: !activeLesson.isCompleted };
-                      setActiveLesson(updated);
-                    }}
-                    className={`px-4 py-2 rounded-xl border text-xs font-semibold uppercase tracking-wider items-center gap-2 transition-all ${
-                      activeLesson?.isCompleted
-                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                        : 'bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <CheckCircle size={16} weight={activeLesson?.isCompleted ? 'fill' : 'regular'} />
-                    <span>{activeLesson?.isCompleted ? 'Completed' : 'Mark Complete'}</span>
-                  </button>
+              <div className="bg-[#0E0710] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_100%_0%,rgba(200,120,190,0.12),transparent_70%)] pointer-events-none" />
+
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-4 border-b border-white/10">
+                  <div>
+                    <span className="text-[0.65rem] uppercase tracking-[0.18em] text-[#C878BE] font-bold block mb-1" style={{ fontFamily: 'var(--head)' }}>
+                      SESSION OVERVIEW
+                    </span>
+                    <h3 className="text-xl sm:text-2xl text-white font-semibold tracking-tight" style={{ fontFamily: 'var(--head)' }}>{activeLesson?.title}</h3>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs uppercase tracking-[0.15em] text-white/60" style={{ fontFamily: 'var(--head)' }}>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                      <Clock size={15} className="text-[#C878BE]" /> {activeLesson?.duration || '15:00'}
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                      <span className="w-4 h-4 rounded-full bg-[#C878BE]/20 text-[#E3B8DE] flex items-center justify-center text-[8px] font-bold">A</span>
+                      AARKESH GUPTA
+                    </div>
+                  </div>
                 </div>
 
-                <p className="text-white/70 font-sans text-sm md:text-base leading-relaxed mb-6">
+                <p className="text-white/75 text-sm sm:text-base leading-relaxed mb-6">
                   {activeLesson?.description || 'In this session, we dive deep into the mechanics of presence. You will learn how to anchor yourself in high-pressure situations, tune out internal noise, and project a calm, magnetic energy.'}
                 </p>
 
-                <div className="flex items-center gap-6 text-xs font-sans uppercase tracking-[0.2em] text-white/50">
-                  <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-[#c79c6e]" /> {activeLesson?.duration || '15:00'}
+                {/* 3 Complimentary 1-on-1 Mentorship Sessions Banner */}
+                <div className="p-4 sm:p-5 rounded-xl bg-gradient-to-r from-[#200D1E] via-[#150914] to-[#0D050D] border border-[#C878BE]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-[#C878BE]/20 border border-[#C878BE]/40 flex items-center justify-center text-[#E3B8DE] shrink-0">
+                      <Sparkle size={20} weight="fill" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-white mb-0.5" style={{ fontFamily: 'var(--head)' }}>3 Private 1-on-1 Mentorship Sessions Included</h4>
+                      <p className="text-xs text-white/60">Schedule your private deep-dive sessions directly with Aarkesh anytime during your course access.</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#c79c6e]/20 text-[#c79c6e] flex items-center justify-center text-[9px] font-bold">A</span>
-                    AARKESH GUPTA
-                  </div>
+
+                  <Link
+                    to="/book"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-all shadow-[0_0_20px_rgba(200,120,190,0.3)] shrink-0"
+                    style={{ fontFamily: 'var(--head)' }}
+                  >
+                    <span>Schedule Session</span>
+                    <ArrowRight size={13} weight="bold" />
+                  </Link>
                 </div>
               </div>
             </div>
 
-            {/* ── 5. COMMENTS SECTION (Always on desktop, shown on mobile when Comments tab is active) ── */}
-            <div className={`${activeMobileTab === 'comments' ? 'block' : 'hidden lg:block'} p-3.5 sm:p-6 md:p-10 pt-3 sm:pt-6`}>
-              <LessonComments
-                lessonId={activeLesson?._id || activeLesson?.id}
-                lessonTitle={activeLesson?.title}
-                onRequireAuth={() => {
-                  setShowCourseLogin(true);
-                  setLoginMode('login');
-                }}
-              />
+            {/* ── 5. DISCUSSIONS & COMMENTS SECTION ── */}
+            <div className={`${activeMobileTab === 'comments' ? 'block' : 'hidden lg:block'} p-4 sm:p-8 pt-0`}>
+              <div className="bg-[#0E0710] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+                  <ChatCenteredDots size={20} className="text-[#C878BE]" />
+                  <h4 className="text-lg text-white font-semibold" style={{ fontFamily: 'var(--head)' }}>Lesson Discussion & Student Q&A</h4>
+                </div>
+                <LessonComments
+                  lessonId={activeLesson?._id || activeLesson?.id}
+                  lessonTitle={activeLesson?.title}
+                  onRequireAuth={() => {
+                    setShowCourseLogin(true);
+                    setLoginMode('login');
+                  }}
+                />
+              </div>
             </div>
           </div>
 
-          {/* ── DESKTOP RIGHT COLUMN - Day by Day Curriculum Playlist ── */}
+          {/* ── DESKTOP RIGHT COLUMN - Curriculum Playlist & Progress ── */}
           <div 
             data-lenis-prevent="true"
-            className="hidden lg:flex w-[420px] bg-black flex-col h-full overflow-y-auto p-6 gap-5 border-l border-white/10 overscroll-contain"
+            className="hidden lg:flex w-[400px] xl:w-[440px] bg-[#0A050A] flex-col h-full overflow-y-auto p-6 gap-5 border-l border-white/10 overscroll-contain"
           >
-            <div className="sticky top-0 bg-black/95 backdrop-blur-md z-10 pb-2 flex items-center justify-between">
-              <h3 className="font-sans text-[0.68rem] uppercase tracking-widest text-[#c79c6e] font-bold">
-                Day-by-Day Playlist
-              </h3>
-              <span className="text-xs text-white/40 font-sans">
-                {allLessons.length} Videos
-              </span>
+            {/* Playlist Header & Overall Progress */}
+            <div className="sticky top-0 bg-[#0A050A]/95 backdrop-blur-md z-10 pb-4 border-b border-white/10">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-[0.68rem] uppercase tracking-widest text-[#E3B8DE] font-bold flex items-center gap-2" style={{ fontFamily: 'var(--head)' }}>
+                  <BookOpen size={14} className="text-[#C878BE]" />
+                  Masterclass Curriculum
+                </h3>
+                <span className="text-xs text-white/50 font-mono font-medium">
+                  {allLessons.filter(l => l.isCompleted).length} / {allLessons.length} Completed
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-[#A83B96] to-[#C878BE] rounded-full transition-all duration-500"
+                  style={{
+                    width: `${allLessons.length > 0 ? Math.round((allLessons.filter(l => l.isCompleted).length / allLessons.length) * 100) : 0}%`
+                  }}
+                />
+              </div>
             </div>
 
-            <div className="flex flex-col gap-4">
+            {/* Modules Accordion List */}
+            <div className="flex flex-col gap-3.5">
               {curriculumModules.map((module) => {
                 const isCurrentMod = activeModuleObj?._id === module._id || activeModuleObj?.id === module.id;
                 const lessons = module.lessons || [];
+                const completedInMod = lessons.filter(l => l.isCompleted).length;
 
                 return (
-                  <div key={module._id || module.id} className="border border-white/10 rounded-2xl bg-[#050505] overflow-hidden">
+                  <div key={module._id || module.id} className="border border-white/10 rounded-2xl bg-[#0E060F] overflow-hidden transition-colors hover:border-white/20">
                     <button
-                      className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors text-left group"
+                      className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-white/5 transition-colors text-left group cursor-pointer"
                       onClick={() => setActiveModuleObj(isCurrentMod ? null : module)}
                     >
                       <div className="pr-3">
-                        <h4 className={`font-serif text-base mb-1 transition-colors leading-snug ${isCurrentMod ? 'text-[#c79c6e]' : 'text-white group-hover:text-[#c79c6e]'}`}>
+                        <h4 className={`text-sm sm:text-base mb-1 transition-colors leading-snug font-semibold ${isCurrentMod ? 'text-[#E3B8DE]' : 'text-white group-hover:text-[#E3B8DE]'}`} style={{ fontFamily: 'var(--head)' }}>
                           {module.title}
                         </h4>
-                        <p className="font-sans text-[0.62rem] uppercase tracking-[0.2em] text-white/40">
-                          {lessons.length} {lessons.length === 1 ? 'VIDEO' : 'VIDEOS'}
-                        </p>
+                        <div className="flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.16em] text-white/40" style={{ fontFamily: 'var(--head)' }}>
+                          <span>{lessons.length} {lessons.length === 1 ? 'LESSON' : 'LESSONS'}</span>
+                          <span>•</span>
+                          <span className={completedInMod === lessons.length && lessons.length > 0 ? 'text-emerald-400 font-semibold' : ''}>
+                            {completedInMod}/{lessons.length} DONE
+                          </span>
+                        </div>
                       </div>
-                      <CaretDown size={15} className={`text-white/40 transition-transform shrink-0 ${isCurrentMod ? 'rotate-180' : ''}`} />
+                      <CaretDown size={15} className={`text-white/40 transition-transform shrink-0 ${isCurrentMod ? 'rotate-180 text-[#C878BE]' : ''}`} />
                     </button>
 
                     {isCurrentMod && (
-                      <div className="bg-[#080808] p-2 pt-0 border-t border-white/5 space-y-1">
+                      <div className="bg-[#070308] p-2 pt-0 border-t border-white/5 space-y-1">
                         {lessons.map((lesson) => {
                           const isActive = (activeLesson?._id && activeLesson._id === lesson._id) || (activeLesson?.id && activeLesson.id === lesson.id);
 
                           return (
                             <button
                               key={lesson._id || lesson.id}
-                              onClick={() => handleSelectLesson(lesson, module)}
-                              className={`w-full flex items-center justify-between py-3 px-3.5 rounded-xl transition-all text-left group ${
-                                isActive ? 'bg-[#c79c6e]/15 border border-[#c79c6e]/40' : 'hover:bg-white/5 border border-transparent'
+                              onClick={() => {
+                                handleSelectLesson(lesson, module);
+                                if (leftColumnRef.current) leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className={`w-full flex items-center justify-between py-3 px-3.5 rounded-xl transition-all text-left group cursor-pointer ${
+                                isActive 
+                                  ? 'bg-[#2A1026] border border-[#C878BE]/60 shadow-[0_0_20px_rgba(200,120,190,0.2)]' 
+                                  : 'hover:bg-white/5 border border-transparent'
                               }`}
                             >
                               <div className="flex items-center gap-3 min-w-0 pr-2">
                                 {lesson.isCompleted ? (
-                                  <CheckCircle size={16} weight="fill" className="text-[#c79c6e] shrink-0" />
+                                  <CheckCircle size={16} weight="fill" className="text-emerald-400 shrink-0" />
                                 ) : (
-                                  <Play size={16} weight={isActive ? 'fill' : 'regular'} className={`shrink-0 ${isActive ? 'text-[#c79c6e]' : 'text-white/40'}`} />
+                                  <Play size={15} weight={isActive ? 'fill' : 'regular'} className={`shrink-0 ${isActive ? 'text-[#C878BE]' : 'text-white/40 group-hover:text-white'}`} />
                                 )}
-                                <span className={`font-sans text-xs truncate ${isActive ? 'text-white font-semibold' : 'text-white/70 group-hover:text-white'}`}>
+                                <span className={`text-xs truncate ${isActive ? 'text-white font-semibold' : 'text-white/70 group-hover:text-white'}`} style={{ fontFamily: 'var(--head)' }}>
                                   {lesson.title}
                                 </span>
                               </div>
-                              <span className="font-sans text-[0.62rem] text-white/40 whitespace-nowrap ml-2 shrink-0">
+                              <span className="text-[0.62rem] text-white/40 whitespace-nowrap ml-2 shrink-0 font-mono">
                                 {lesson.duration || '12:00'}
                               </span>
                             </button>
@@ -1343,42 +1574,109 @@ export default function Course() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
     <div className="course-landing-scope">
       {/* ── Top Fixed Nav ── */}
-      <header className={`course-nav ${isNavDarkText ? 'nav-dark-text' : ''}`}>
+      <header className="course-nav">
         <Link className="course-logo" to="/course">
           BetterWith<b>Aarkesh</b>
         </Link>
-        <div className="nav-r">
-          <Link to="/" className="course-nav-back-btn" title="Back to Main Website">
-            <ArrowLeft size={16} weight="bold" />
-            <span>Back to Home</span>
+        <nav className="course-nav-center-links">
+          <Link 
+            to="/course" 
+            onClick={(e) => {
+              if (location.pathname === '/course' || location.pathname === '/course/') {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            className={`course-nav-link ${location.pathname === '/course' ? 'active' : ''}`}
+          >
+            <FlippingWordSwap 
+              word1="Home" 
+              word2="Home" 
+              active={location.pathname === '/course'} 
+              toClassName="text-[#C878BE]"
+            />
           </Link>
-          {isPurchased ? (
-            <button
-              type="button"
-              className="sign-in-btn font-semibold"
-              onClick={() => setShowDashboard(true)}
-            >
-              Go to Dashboard →
-            </button>
-          ) : isLoggedIn ? (
-            <div className="relative" ref={profileMenuRef}>
-              <button
-                type="button"
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="course-profile-btn w-9 h-9 rounded-full border border-[#C878BE]/50 bg-[#111] flex items-center justify-center text-[#C878BE] hover:bg-[#C878BE] hover:text-black transition-all shadow-[0_0_20px_rgba(200,120,190,0.2)] shrink-0 cursor-pointer"
-                title="Student Profile"
-              >
-                <User size={16} weight="bold" />
-              </button>
+          <Link 
+            to="/course/all" 
+            onClick={(e) => {
+              if (isAllCoursesPage) {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            className={`course-nav-link ${isAllCoursesPage ? 'active' : ''}`}
+          >
+            <FlippingWordSwap 
+              word1="Courses" 
+              word2="Courses" 
+              active={isAllCoursesPage} 
+              toClassName="text-[#C878BE]"
+            />
+          </Link>
+          <a 
+            href="/course#faq" 
+            onClick={(e) => {
+              if (location.pathname === '/course' || location.pathname === '/course/') {
+                e.preventDefault();
+                const el = document.getElementById('faq');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              } else {
+                e.preventDefault();
+                navigate('/course');
+                setTimeout(() => {
+                  const el = document.getElementById('faq');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 150);
+              }
+            }}
+            className="course-nav-link"
+          >
+            <FlippingWordSwap 
+              word1="FAQ" 
+              word2="FAQ" 
+              toClassName="text-[#C878BE]"
+            />
+          </a>
+        </nav>
+        <div className="nav-r flex items-center gap-3">
+          {isLoggedIn ? (
+            <>
+              {isPurchased && (
+                <Link
+                  to="/my-course"
+                  className="course-nav-mycourse-btn"
+                  title="My Enrolled Courses"
+                >
+                  <BookOpen size={16} weight="bold" />
+                  <span>My Course</span>
+                </Link>
+              )}
+
+              <div className="relative" ref={profileMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="course-profile-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#C878BE]/50 bg-[#120613] flex items-center justify-center text-[#E3B8DE] hover:bg-[#C878BE] hover:text-black transition-all shadow-[0_0_20px_rgba(200,120,190,0.25)] shrink-0 cursor-pointer"
+                  title="Student Profile"
+                >
+                  <User size={17} weight="bold" />
+                </button>
               {showProfileMenu && (
-                <div className="absolute right-0 mt-3 w-48 rounded-xl border border-white/10 bg-[#0C0C0E] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                  <Link
+                    to="/my-course"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  >
+                    <BookOpen size={18} className="text-[#C878BE]" /> My Course
+                  </Link>
                   <Link
                     to="/course/profile"
                     onClick={() => setShowProfileMenu(false)}
@@ -1389,13 +1687,14 @@ export default function Course() {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3"
+                    className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer"
                   >
                     <SignOut size={18} /> Log Out
                   </button>
                 </div>
               )}
             </div>
+            </>
           ) : (
             <button
               type="button"
@@ -1412,9 +1711,93 @@ export default function Course() {
       </header>
 
       <main id="top">
-        {!isDetailPage ? (
+        {isAllCoursesPage ? (
           /* ═══════════════════════════════════════════════════════════════
-             MAIN COURSES LISTING PAGE (/course or /courses)
+             DEDICATED ALL MASTERCLASSES VIEW / CATALOG (/course/all or /courses)
+             ═══════════════════════════════════════════════════════════════ */
+          <section className="all-courses-sec">
+            <div className="wrap">
+              <button
+                type="button"
+                className="back-link"
+                onClick={() => {
+                  navigate('/course');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                ← Back to overview
+              </button>
+
+              <div className="all-courses-hero">
+                <span className="tag">ALL PROGRAMS</span>
+                <h1>All Masterclasses & Programs</h1>
+                <p className="sub">
+                  Each masterclass is an intensive, transformative curriculum paired with private 1-on-1 mentorship sessions with Aarkesh.
+                </p>
+              </div>
+
+              <div className="all-courses-grid">
+                {coursesList.map((c, i) => {
+                  const themeCls = getCardThemeClass(i);
+                  return (
+                    <article className={`all-course-card ${themeCls}`} key={c.n || c.slug}>
+                      {/* Thumbnail Banner */}
+                      <div className={`vis ${c.cls}`} aria-hidden="true">
+                        <div className="vis-badge-top">
+                          {c.soon ? (
+                            <span className="live-status-badge soon">Coming soon</span>
+                          ) : (
+                            <span className="live-status-badge live"><span className="pulse-dot"></span> Live</span>
+                          )}
+                        </div>
+                        <span className="no">{c.n}</span>
+                        <i>{c.chips[0]}</i>
+                        <i>{c.chips[1]}</i>
+                      </div>
+
+                      {/* Content Body */}
+                      <div className="all-course-card-content">
+                        {/* Topic Tag Pills */}
+                        <div className="card-tag-pills">
+                          {c.chips.map((chip, ci) => (
+                            <span className="card-tag-pill" key={ci}>{chip}</span>
+                          ))}
+                          <span className="card-tag-pill">{c.facts[0][0]} {c.facts[0][1]}</span>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="card-course-title">{c.title}</h3>
+
+                        {/* Price & Badge Row */}
+                        <div className="card-price-row">
+                          <div className="price-label">
+                            Price <b>{c.price}</b> <s>{c.was}</s>
+                          </div>
+                          {c.soon ? (
+                            <span className="card-discount-badge">WAITLIST</span>
+                          ) : (
+                            <span className="card-discount-badge">POPULAR</span>
+                          )}
+                        </div>
+
+                        {/* Action CTA Button */}
+                        <button
+                          type="button"
+                          className="card-cta-btn"
+                          onClick={() => handleSelectCourse(c)}
+                        >
+                          Check Course <span aria-hidden="true">→</span>
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        ) : !isDetailPage ? (
+          /* ═══════════════════════════════════════════════════════════════
+             MAIN COURSES LISTING PAGE (/course)
              ═══════════════════════════════════════════════════════════════ */
           <>
             {/* ── Hero Section ── */}
@@ -1433,8 +1816,26 @@ export default function Course() {
                 </div>
                 <div>
                   {isPurchased ? (
-                    <button type="button" className="btn" onClick={() => setShowDashboard(true)}>
-                      Go to Dashboard <span aria-hidden="true">→</span>
+                    <button 
+                      type="button" 
+                      className="btn" 
+                      onClick={() => navigate('/my-course')}
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    >
+                      <BookOpen size={20} weight="fill" />
+                      <span>My Course</span>
+                      <span aria-hidden="true">→</span>
+                    </button>
+                  ) : isLoggedIn ? (
+                    <button 
+                      type="button" 
+                      className="btn" 
+                      onClick={() => {
+                        navigate('/course/all');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    >
+                      Explore Courses <span aria-hidden="true">→</span>
                     </button>
                   ) : (
                     <button type="button" className="btn" onClick={handleEnroll}>
@@ -1500,7 +1901,8 @@ export default function Course() {
                     type="button"
                     className="btn dark"
                     onClick={() => {
-                      navigate('/course/better-man');
+                      navigate('/course/all');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     style={{
                       display: 'inline-flex',
@@ -1533,30 +1935,6 @@ export default function Course() {
               </div>
             </section>
 
-            {/* ── What Is Included Banner ── */}
-            <div className="orange">
-              <div className="wrap">
-                <h2>Everything Included In Your Lifetime Membership</h2>
-                <div className="inc">
-                  <div>
-                    <strong>8</strong>
-                    <b>HD Video Modules</b>
-                    <span>Self-paced video curriculum with downloadable workbooks & frameworks.</span>
-                  </div>
-                  <div>
-                    <strong>3</strong>
-                    <b>Private Coaching Calls</b>
-                    <span>Direct 1-on-1 private mentorship sessions with Aarkesh.</span>
-                  </div>
-                  <div>
-                    <strong>∞</strong>
-                    <b>Lifetime Access</b>
-                    <span>Continuous access to all current & future curriculum updates.</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* ── FAQ Section ── */}
             <section className="faq center" id="faq">
               <div className="wrap">
@@ -1571,7 +1949,7 @@ export default function Course() {
                     { q: 'How do the 3 private 1-on-1 sessions work?', a: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
                     { q: 'Is this course suitable for professionals and introverts?', a: 'Yes. The curriculum is specifically designed for professionals, entrepreneurs, and introverts who want to develop natural, calm authority without acting loud or fake.' },
                     { q: 'How long do I have access to the materials?', a: 'You receive full lifetime access. You can revisit lessons, download the workbooks, and receive all future course updates at zero extra cost.' },
-                    { q: 'What is the refund and satisfaction guarantee?', a: 'We offer a complete 30-day money-back guarantee. If you complete the lessons and don\'t feel a substantial shift in your presence, simply email us for a 100% full refund.' }
+                    { q: 'Is there a certificate provided upon completion?', a: 'Yes. Upon completing all modules and your private sessions, you will receive an official Certificate of Completion signed by Aarkesh.' }
                   ]).map((f, idx) => (
                     <details className="a" key={idx} open={idx === 0}>
                       <summary>
@@ -1597,12 +1975,29 @@ export default function Course() {
                   <div className="cta-badges">
                     <span><Users size={16} weight="fill" /> 3 Private Coaching Calls</span>
                     <span><Clock size={16} weight="fill" /> Lifetime Video Access</span>
-                    <span><ShieldCheck size={16} weight="fill" /> 30-Day Money-Back Guarantee</span>
                   </div>
                   <div>
                     {isPurchased ? (
-                      <button type="button" className="btn" onClick={() => setShowDashboard(true)}>
-                        Go to Dashboard <span aria-hidden="true">→</span>
+                      <button 
+                        type="button" 
+                        className="btn" 
+                        onClick={() => navigate('/my-course')}
+                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                      >
+                        <BookOpen size={20} weight="fill" />
+                        <span>My Course</span>
+                        <span aria-hidden="true">→</span>
+                      </button>
+                    ) : isLoggedIn ? (
+                      <button 
+                        type="button" 
+                        className="btn" 
+                        onClick={() => {
+                          navigate('/course/all');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      >
+                        Explore Courses <span aria-hidden="true">→</span>
                       </button>
                     ) : (
                       <button type="button" className="btn" onClick={handleEnroll}>
@@ -1619,7 +2014,7 @@ export default function Course() {
              DEDICATED SINGLE-PAGE COURSE DETAILS VIEW (/course/:slug)
              ═══════════════════════════════════════════════════════════════ */
           <>
-            <section className="d-top" id="course-detail">
+            <section className={`d-top ${activeCourse.slug === 'better-man' ? 'theme-dark' : activeCourse.slug === 'difficult-people' ? 'theme-purple' : ''}`} id="course-detail">
               <div className="wrap">
                 <button
                   type="button"
@@ -1655,15 +2050,6 @@ export default function Course() {
 
                   {/* Right Column: Sidebar Card */}
                   <aside className="side" aria-label="Course summary">
-                    {/* Meta Chips */}
-                    <div className="chips">
-                      {activeCourse.sidebarChips.map((chip, idx) => (
-                        <span key={idx}>
-                          <em>{chip[0]}:</em> {chip[1]}
-                        </span>
-                      ))}
-                    </div>
-
                     {/* Key Highlights */}
                     {activeCourse.hl.map((h, idx) => (
                       <p className="hl" key={idx}>
@@ -1709,9 +2095,12 @@ export default function Course() {
                       <button
                         type="button"
                         className="btn block"
-                        onClick={() => setShowDashboard(true)}
+                        onClick={() => navigate('/my-course')}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                       >
-                        Go to Dashboard <span aria-hidden="true">→</span>
+                        <BookOpen size={20} weight="fill" />
+                        <span>My Course</span>
+                        <span aria-hidden="true">→</span>
                       </button>
                     ) : (
                       <button
@@ -1719,47 +2108,31 @@ export default function Course() {
                         className="btn block"
                         onClick={handleEnroll}
                       >
-                        Register Now <span aria-hidden="true">→</span>
+                        {isLoggedIn ? 'Enroll Now' : 'Register Now'} <span aria-hidden="true">→</span>
                       </button>
                     )}
-
-                    <button
-                      type="button"
-                      className="btn block line"
-                      onClick={() => {
-                        const el = document.getElementById('detail-syllabus');
-                        if (el) {
-                          el.scrollIntoView({ behavior: 'smooth' });
-                        } else {
-                          setShowSyllabusModal(true);
-                        }
-                      }}
-                    >
-                      View Full Syllabus <span aria-hidden="true">→</span>
-                    </button>
                   </aside>
                 </div>
               </div>
             </section>
 
             {/* ── Curriculum Syllabus Section on Detail Page (Scroll to view) ── */}
-            <section className="sec center" id="detail-syllabus" style={{ paddingTop: '80px', paddingBottom: '100px' }}>
+            <section className={`detail-syllabus-sec ${activeCourse.slug === 'better-man' ? 'theme-dark' : activeCourse.slug === 'difficult-people' ? 'theme-purple' : ''}`} id="detail-syllabus">
               <div className="wrap">
-                <span className="label">SYLLABUS</span>
-                <h2>{activeCourse.syllabusTitle || `${activeCourse.title} Curriculum`}</h2>
-                <p className="lead">
-                  {activeCourse.syllabusSubtitle || 'A comprehensive, step-by-step roadmap designed for practical, real-world mastery.'}
-                </p>
+                <div className="syllabus-head">
+                  <span className="syllabus-tag sel">SYLLABUS</span>
+                  <h2 className="syllabus-title">{activeCourse.syllabusTitle || `${activeCourse.title} Curriculum`}</h2>
+                </div>
 
-                <div className="acc">
+                <div className="syllabus-points-grid">
                   {(activeCourse.syllabus || []).map((m, idx) => (
-                    <details className="a" key={m.n || idx} open={idx === 0}>
-                      <summary>
-                        <span className="n">{m.n || String(idx + 1).padStart(2, '0')}</span>
-                        <span className="t">{m.t || m.title}</span>
-                      </summary>
-                      <p>{m.d || m.description}</p>
-                    </details>
+                    <div className="syllabus-point-card" key={m.n || idx}>
+                      <div className="point-num">{m.n || String(idx + 1).padStart(2, '0')}</div>
+                      <div className="point-body">
+                        <h4 className="point-title">{m.t || m.title}</h4>
+                        <p className="point-desc">{m.d || m.description}</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1767,31 +2140,34 @@ export default function Course() {
 
             {/* ── Editorial Writeup Section for Detail Page (Below Syllabus) ── */}
             {activeCourse.writeup && (
-              <section className="light-sec" id="detail-writeup" style={{ padding: '70px 0 100px' }}>
+              <section className={`detail-writeup-sec ${activeCourse.slug === 'better-man' ? 'theme-dark' : activeCourse.slug === 'difficult-people' ? 'theme-purple' : ''}`} id="detail-writeup">
                 <div className="wrap">
-                  <div className="card">
-                    <div className="rd" style={{ display: 'block' }}>
-                      <article className="prose" style={{ maxWidth: '840px', margin: '0 auto' }}>
-                        <span className="chip">{activeCourse.writeup.chip}</span>
-                        <h2>{activeCourse.writeup.h1}</h2>
-                        <p className="lede">
+                  <div className="writeup-card">
+                    <article className="writeup-prose">
+                      <div className="writeup-header">
+                        <span className="writeup-tag sel">{activeCourse.writeup.chip}</span>
+                        <h2 className="writeup-title">{activeCourse.writeup.h1}</h2>
+                        <p className="writeup-lede">
                           {activeCourse.writeup.lede}
                         </p>
-                        <p>
-                          {activeCourse.writeup.p1}
-                        </p>
-                        <blockquote>
-                          "{activeCourse.writeup.quote}"
-                        </blockquote>
-                        <p>
-                          {activeCourse.writeup.p2}
-                        </p>
+                      </div>
 
-                        <div className="finding">
-                          <b>Key Distinction:</b> {activeCourse.writeup.distinction}
+                      <div className="writeup-body">
+                        <p>{activeCourse.writeup.p1}</p>
+
+                        <div className="writeup-quote-box">
+                          <Quotes size={36} weight="fill" className="quote-icon" />
+                          <blockquote>"{activeCourse.writeup.quote}"</blockquote>
                         </div>
-                      </article>
-                    </div>
+
+                        <p>{activeCourse.writeup.p2}</p>
+
+                        <div className="writeup-distinction">
+                          <span className="distinction-badge">Key Distinction</span>
+                          <p className="distinction-text">{activeCourse.writeup.distinction}</p>
+                        </div>
+                      </div>
+                    </article>
                   </div>
                 </div>
               </section>
@@ -1832,176 +2208,252 @@ export default function Course() {
 
       {/* ─── MODALS ──────────────────────────────────────────────── */}
 
-      {/* 2-Column Minimal Glassmorphic Pricing Modal */}
+      {/* Complete Your Purchase Checkout Modal (Theme-Adapted & Sheryians-Style Layout) */}
       {showPricingModal && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl overflow-y-auto overscroll-contain p-3 sm:p-6 flex flex-col items-center justify-start sm:justify-center animate-in fade-in duration-200">
-          {/* Background Ambient Glow */}
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-[#c79c6e]/12 rounded-full blur-[160px] pointer-events-none" />
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl overflow-y-auto overscroll-contain p-3 sm:p-6 flex flex-col items-center justify-start sm:justify-center animate-in fade-in duration-200">
+          {/* Dynamic Background Glow */}
+          <div 
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full blur-[180px] pointer-events-none"
+            style={{ background: activeTheme.accentGlow }}
+          />
 
-          {/* Minimal Glassmorphic Modal Dialog Box */}
-          <div className="relative w-full max-w-4xl rounded-2xl sm:rounded-3xl border border-[#c79c6e]/35 bg-[#0c0c0c] shadow-[0_25px_90px_rgba(0,0,0,0.95)] p-4 sm:p-8 my-4 sm:my-auto text-left">
-            
+          {/* Top Header Text */}
+          <div className="relative z-10 text-center mb-4 sm:mb-6">
+            <h2 
+              className="text-2xl sm:text-4xl font-bold text-white tracking-tight"
+              style={{ fontFamily: 'var(--head)' }}
+            >
+              Complete Your <span style={{ color: activeTheme.accent }}>Purchase</span>
+            </h2>
+          </div>
+
+          {/* Main Container Card */}
+          <div 
+            className={`relative w-full max-w-4xl rounded-3xl border ${activeTheme.border} ${activeTheme.outerBg} shadow-[0_30px_100px_rgba(0,0,0,0.95)] p-6 sm:p-8 md:p-10 my-auto text-left`}
+          >
             {/* Top Close Button */}
             <button 
               type="button"
               onClick={() => setShowPricingModal(false)} 
-              className="absolute right-3.5 top-3.5 sm:right-6 sm:top-6 z-30 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 border border-white/15 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+              className="absolute right-4 top-4 sm:right-6 sm:top-6 z-30 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 border border-white/15 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               title="Close modal"
             >
               <X size={17} />
             </button>
 
-            {/* Modal Header */}
-            <div className="pr-10 mb-3">
-              <span className="font-sans text-[10px] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold block mb-1">
-                MASTERCLASS ACCESS
-              </span>
-              <h3 className="font-serif text-xl sm:text-3xl text-white font-normal tracking-tight">
-                The Better Man™
-              </h3>
-            </div>
-
-            <p className="font-sans text-xs sm:text-sm text-white/70 leading-relaxed mb-5">
-              A transformative masterclass journey to master authentic presence, magnetic communication, and quiet confidence that commands every room.
-            </p>
-
-            {/* Grid Layout: Pricing Card & Features */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
+            {/* Grid: 2 Columns (Your Course on Left, Payment Details on Right) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
               
-              {/* ─── PRICING CARD (Placed First on Mobile, Right on Desktop) ─── */}
-              <div className="order-1 lg:order-2 lg:col-span-5 rounded-2xl border border-[#c79c6e]/40 bg-[#12100d] p-4 sm:p-6 shadow-2xl">
-                <span className="font-sans text-[10px] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold block mb-1">
-                  ONE-TIME ENROLLMENT
-                </span>
-                
-                <div className="flex items-baseline gap-2.5 mb-1">
-                  <span className="font-sans text-3xl sm:text-4xl font-bold text-[#c79c6e] tracking-tight">
-                    ₹{basePrice.toLocaleString('en-IN')}
-                  </span>
-                  {comparePrice > basePrice && (
-                    <span className="font-sans text-xs sm:text-sm text-white/35 line-through">
-                      ₹{comparePrice.toLocaleString('en-IN')}
+              {/* LEFT COLUMN: Your Course */}
+              <div className="lg:col-span-6 flex flex-col justify-center">
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 tracking-tight">
+                  Your Course
+                </h3>
+
+                {/* Course Display: Dummy Visual Graphic Card + Info */}
+                <div className="flex flex-col gap-4">
+                  {/* Dummy Graphic Card Mockup matching Course Themes */}
+                  <div 
+                    className="w-full aspect-[16/10] sm:aspect-[16/10.5] rounded-2xl overflow-hidden border border-white/15 relative shadow-2xl flex items-center justify-center select-none"
+                    style={{
+                      background: activeCourse?.slug === 'difficult-people'
+                        ? 'radial-gradient(circle at 35% 25%, #2a2a2a 0%, #141414 55%, #050505 100%)'
+                        : activeCourse?.slug === 'decisions'
+                        ? 'radial-gradient(circle at 35% 25%, #3d246c 0%, #1d1038 55%, #080312 100%)'
+                        : 'radial-gradient(circle at 35% 25%, #6A1B60 0%, #300E32 55%, #0C040E 100%)'
+                    }}
+                  >
+                    {/* Top Right Live Badge */}
+                    <div className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 z-20">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-[10px] sm:text-[11px] font-semibold backdrop-blur-md">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        Live now
+                      </span>
+                    </div>
+
+                    {/* Big Center Number */}
+                    <span 
+                      className="text-white font-extrabold tracking-tighter"
+                      style={{ 
+                        fontFamily: 'var(--head)',
+                        fontSize: 'clamp(4.5rem, 9vw, 6.8rem)',
+                        lineHeight: 1,
+                        textShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                      }}
+                    >
+                      {activeCourse?.n || '01'}
                     </span>
+
+                    {/* Top Right Rotated Pill */}
+                    <span 
+                      className="absolute right-2.5 top-[20%] -rotate-12 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold text-white shadow-xl pointer-events-none"
+                      style={{
+                        background: 'linear-gradient(135deg, #C878BE, #7A2A70)',
+                        border: '1px solid rgba(255,255,255,0.25)',
+                        fontFamily: 'var(--head)'
+                      }}
+                    >
+                      {activeCourse?.chips?.[0] || 'Calm Authority'}
+                    </span>
+
+                    {/* Bottom Left Rotated Pill */}
+                    <span 
+                      className="absolute left-2.5 bottom-[18%] rotate-6 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold text-white shadow-xl pointer-events-none"
+                      style={{
+                        background: 'linear-gradient(135deg, #8A6BFF, #3A2A86)',
+                        border: '1px solid rgba(255,255,255,0.25)',
+                        fontFamily: 'var(--head)'
+                      }}
+                    >
+                      {activeCourse?.chips?.[1] || 'Self-Command'}
+                    </span>
+                  </div>
+
+                  {/* Title & Pricing */}
+                  <div className="mt-1">
+                    <h4 
+                      className="text-xl sm:text-2xl font-bold text-white leading-snug tracking-tight mb-1.5"
+                      style={{ fontFamily: 'var(--head)' }}
+                    >
+                      {activeCourse.title}
+                    </h4>
+
+                    <div className="flex items-baseline gap-2.5">
+                      <span className="font-sans text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                        ₹{finalPayable.toLocaleString('en-IN')}
+                      </span>
+                      {activeCourseComparePrice > activeCourseBasePrice && (
+                        <span className="font-sans text-sm text-white/40 line-through">
+                          Rs.{activeCourseComparePrice.toLocaleString('en-IN')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Payment Details */}
+              <div className="lg:col-span-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 tracking-tight">
+                  Payment Details
+                </h3>
+
+                <div className={`rounded-2xl border border-white/10 ${activeTheme.cardBg} p-5 sm:p-6 shadow-xl`}>
+                  <div className="space-y-3.5 text-xs sm:text-sm font-sans">
+                    
+                    {/* Base Price */}
+                    <div className="flex items-center justify-between text-white/70">
+                      <span>Base Price</span>
+                      <span className="font-semibold text-white">₹{baseBeforeGst.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    {/* Platform Fee */}
+                    <div className="flex items-center justify-between text-white/70">
+                      <span>Platform fee</span>
+                      <span className="font-semibold text-white">₹0</span>
+                    </div>
+
+                    {/* GST */}
+                    <div className="flex items-center justify-between text-white/70">
+                      <span>GST({gstRate}%)</span>
+                      <span className="font-semibold text-white">₹{gstAmount.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-white/10 pt-3 my-2" />
+
+                    {/* Total Amount */}
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm sm:text-base text-white">Total Amount</span>
+                      <span 
+                        className="font-extrabold text-xl sm:text-2xl tracking-tight"
+                        style={{ color: activeTheme.accentLight }}
+                      >
+                        ₹{finalPayable.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+
+
+                  {/* T&C Agreement Checkbox */}
+                  <div className="mt-5 mb-1">
+                    <label className="flex items-start gap-2.5 cursor-pointer group select-none">
+                      <div
+                        onClick={() => setCheckoutAgreed(!checkoutAgreed)}
+                        className="w-4 h-4 mt-0.5 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-all"
+                        style={{
+                          background: checkoutAgreed ? (activeTheme.accent || '#C878BE') : 'transparent',
+                          borderColor: checkoutAgreed ? (activeTheme.accent || '#C878BE') : 'rgba(255,255,255,0.25)',
+                          boxShadow: checkoutAgreed ? `0 0 8px ${activeTheme.accent || '#C878BE'}60` : 'none'
+                        }}
+                      >
+                        {checkoutAgreed && (
+                          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                      <span className="font-sans text-xs text-white/65 leading-relaxed group-hover:text-white/85 transition-colors">
+                        I agree to the{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const termsDoc = courseDocuments?.find(d =>
+                              (d.slug && (d.slug.toLowerCase().includes('term') || d.slug.toLowerCase().includes('condition'))) ||
+                              (d.title && (d.title.toLowerCase().includes('term') || d.title.toLowerCase().includes('condition')))
+                            );
+                            setActivePolicySlug(termsDoc?.slug || 'course-terms-and-conditions');
+                          }}
+                          className="font-semibold underline underline-offset-2 inline cursor-pointer transition-colors"
+                          style={{ color: activeTheme.accentLight || '#E3B8DE' }}
+                        >
+                          Terms &amp; Conditions
+                        </button>
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Error message if any */}
+                  {error && (
+                    <div className="text-white/70 font-sans text-xs mt-3 text-center bg-white/5 border border-white/15 rounded-xl p-2.5">
+                      {error}
+                    </div>
                   )}
-                </div>
 
-                <p className="font-sans text-[11px] text-white/60 mb-3.5">
-                  {gstRate > 0 && !isGstIncluded
-                    ? `+ ${gstRate}% GST (₹${gstAmount.toLocaleString('en-IN')}) at checkout · No recurring charges`
-                    : gstRate > 0 && isGstIncluded
-                    ? `Inclusive of all taxes (${gstRate}% GST) · No recurring charges`
-                    : 'No recurring charges'}
-                </p>
+                  {/* Proceed to checkout CTA Button */}
+                  <button
+                    type="button"
+                    onClick={handlePayment}
+                    disabled={isLoading || !checkoutAgreed}
+                    className={`w-full mt-4 rounded-xl ${activeTheme.buttonBg} hover:brightness-110 active:scale-[0.99] text-white py-4 font-sans text-xs sm:text-sm font-bold uppercase tracking-[0.16em] transition-all shadow-[0_0_30px_rgba(200,120,190,0.3)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed`}
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>PROCESSING...</span>
+                      </>
+                    ) : (
+                      <span>Proceed to checkout</span>
+                    )}
+                  </button>
 
-                <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 mb-3.5 space-y-1.5 text-xs font-sans text-white/80">
-                  <div className="flex items-center justify-between">
-                    <span>Course Masterclass:</span>
-                    <span className="font-semibold text-white">Included</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>3 Private 1-on-1 Calls:</span>
-                    <span className="font-semibold text-[#c79c6e]">FREE</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Validity:</span>
-                    <span className="font-semibold text-white">Lifetime Access</span>
-                  </div>
-                </div>
-
-                {/* Glassmorphic CTA Button */}
-                <button
-                  type="button"
-                  onClick={handlePurchase}
-                  className="w-full rounded-xl bg-gradient-to-r from-[#c79c6e] via-[#dfb98f] to-[#c79c6e] hover:brightness-110 text-black px-4 py-3.5 font-sans text-xs sm:text-sm font-bold uppercase tracking-[0.18em] transition-all hover:scale-[1.01] active:scale-[0.99] shadow-[0_0_30px_rgba(199,156,110,0.3)] flex items-center justify-center gap-2 cursor-pointer mb-3"
-                >
-                  <span>PROCEED TO CHECKOUT</span>
-                  <ArrowRight size={16} weight="bold" className="text-black" />
-                </button>
-
-                {/* Trust Strip */}
-                <div className="space-y-1.5 pt-3 border-t border-white/10 text-white/60 text-[11px] font-sans">
-                  <div className="flex items-center gap-2">
-                    <LockKey size={14} className="text-[#c79c6e]" />
-                    <span>256-Bit SSL Encrypted Checkout</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Lightning size={14} className="text-[#c79c6e]" />
+                  {/* Security Notice */}
+                  <div className="flex items-center justify-center gap-3 text-[10px] text-white/50 mt-3 font-sans">
+                    <div className="flex items-center gap-1">
+                      <LockKey size={12} className="text-white/60" />
+                      <span>256-Bit SSL Encrypted</span>
+                    </div>
+                    <span>•</span>
                     <span>Instant Lifetime Access</span>
                   </div>
-                </div>
-              </div>
 
-              {/* ─── FEATURES & WHAT'S INCLUDED (Placed Second on Mobile, Left on Desktop) ─── */}
-              <div className="order-2 lg:order-1 lg:col-span-7 space-y-3 pb-2">
-                <div className="text-[0.65rem] sm:text-[0.7rem] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold font-sans">
-                  WHAT'S INCLUDED
-                </div>
 
-                <div className="space-y-3">
-                  {/* Item 1 */}
-                  <div className="flex items-start gap-3 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-white/5 sm:border-0">
-                    <div className="w-8 h-8 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
-                      <Play size={14} weight="fill" />
-                    </div>
-                    <div>
-                      <h4 className="font-sans text-xs sm:text-sm font-medium text-white leading-tight">
-                        Full Masterclass Video Access
-                      </h4>
-                      <p className="font-sans text-[11px] text-white/60 mt-0.5 leading-relaxed">
-                        Self-paced HD video frameworks on mental clarity, posture &amp; gravitas
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Item 2 */}
-                  <div className="flex items-start gap-3 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-white/5 sm:border-0">
-                    <div className="w-8 h-8 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
-                      <Users size={14} />
-                    </div>
-                    <div>
-                      <h4 className="font-sans text-xs sm:text-sm font-medium text-white leading-tight">
-                        3 Free 1-on-1 Private Coaching Sessions with Aarkesh
-                      </h4>
-                      <p className="font-sans text-[11px] text-white/60 mt-0.5 leading-relaxed">
-                        Direct personalized strategy and tailored breakthrough guidance
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Item 3 */}
-                  <div className="flex items-start gap-3 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-white/5 sm:border-0">
-                    <div className="w-8 h-8 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
-                      <FileText size={14} />
-                    </div>
-                    <div>
-                      <h4 className="font-sans text-xs sm:text-sm font-medium text-white leading-tight">
-                        Actionable Workbooks &amp; Mindset Guides
-                      </h4>
-                      <p className="font-sans text-[11px] text-white/60 mt-0.5 leading-relaxed">
-                        Practical, downloadable templates for immediate implementation
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Item 4 */}
-                  <div className="flex items-start gap-3 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-white/5 sm:border-0">
-                    <div className="w-8 h-8 rounded-full border border-[#c79c6e]/30 bg-white/[0.04] flex items-center justify-center text-[#c79c6e] shrink-0 mt-0.5">
-                      <ShieldCheck size={14} weight="fill" />
-                    </div>
-                    <div>
-                      <h4 className="font-sans text-xs sm:text-sm font-medium text-white leading-tight">
-                        Verified Certificate of Completion
-                      </h4>
-                      <p className="font-sans text-[11px] text-white/60 mt-0.5 leading-relaxed">
-                        Plus exclusive access to our private community
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
 
             </div>
-
           </div>
         </div>
       )}
@@ -2036,6 +2488,9 @@ export default function Course() {
         setError={setError}
         isLoading={isLoading}
         handleToggleMode={handleToggleMode}
+        coursesList={coursesList}
+        basePrice={basePrice}
+        comparePrice={comparePrice}
       />
       <CheckoutOverlay
         showCheckout={showCheckout}
@@ -2062,6 +2517,10 @@ export default function Course() {
         slug={activePolicySlug}
         title="Terms & Conditions"
         showActions={true}
+        accentColor={activeTheme.accent || '#C878BE'}
+        accentLight={activeTheme.accentLight || '#E3B8DE'}
+        gradientFrom={activeTheme.accent ? activeTheme.accent + '99' : '#6A1B60'}
+        gradientTo={activeTheme.accent ? activeTheme.accent + '44' : '#300E32'}
         onAgree={() => {
           setCheckoutAgreed(true);
           setActivePolicySlug(null);
@@ -2071,6 +2530,7 @@ export default function Course() {
           setActivePolicySlug(null);
         }}
       />
+
 
       {/* ─── PRE-REGISTRATION CONFIRMATION MODAL ─── */}
       {showPreRegSuccessModal && (
@@ -2090,10 +2550,13 @@ export default function Course() {
             </div>
 
             <div className="space-y-2">
-              <span className="text-[10px] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold block">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#E3B8DE] font-semibold block">
                 REGISTRATION CONFIRMED
               </span>
-              <h3 className="font-serif text-2xl sm:text-3xl text-white font-normal">
+              <h3 
+                className="text-2xl sm:text-3xl text-white font-bold"
+                style={{ fontFamily: 'var(--head)' }}
+              >
                 You're Registered!
               </h3>
               <p className="font-sans text-xs sm:text-sm text-white/65 leading-relaxed max-w-sm mx-auto">
@@ -2104,7 +2567,7 @@ export default function Course() {
             <button
               type="button"
               onClick={() => setShowPreRegSuccessModal(false)}
-              className="w-full py-3.5 rounded-xl bg-[#c79c6e] hover:bg-[#b0885e] text-black font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#c79c6e]/20 active:scale-[0.99]"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#C878BE]/20 active:scale-[0.99]"
             >
               Got It
             </button>
@@ -2112,46 +2575,103 @@ export default function Course() {
         </div>
       )}
 
-      {/* Policy Documents Modal */}
-      {activePolicySlug && (
-        <PolicyModal 
-          slug={activePolicySlug} 
-          onClose={() => setActivePolicySlug(null)} 
-        />
+
+      {/* Green Success Toast */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-none">
+          <div className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-[#0a1f14]/95 border border-emerald-500/40 shadow-[0_10px_35px_rgba(16,185,129,0.3)] backdrop-blur-xl text-emerald-300 font-sans text-xs sm:text-sm font-semibold tracking-wide">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399] animate-pulse" />
+            <CheckCircle size={18} className="text-emerald-400" />
+            <span>{toast.message}</span>
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-// ─── NAVBAR ─────────────────────────────────────────────────────
+// ─── NAVBAR (POST-PURCHASE DASHBOARD) ───────────────────────────
 function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard, profileMenuRef, showProfileMenu, setShowProfileMenu, handleLogout, setShowCourseLogin }) {
+  const navigate = useNavigate();
+
   return (
-    <header className="flex-none h-[66px] sm:h-[76px] border-b border-white/10 bg-[#070707]/95 backdrop-blur-xl px-3.5 sm:px-6 md:px-12 flex items-center justify-between z-50 sticky top-0 w-full max-w-full">
-      <div 
-        onClick={() => isPurchased ? setShowDashboard(!showDashboard) : null}
-        className="font-serif text-lg sm:text-2xl text-white tracking-tight flex items-center hover:opacity-90 transition-opacity select-none cursor-pointer shrink-0"
+    <header className="course-nav" style={{ position: 'relative', top: 'auto', zIndex: 50, flexShrink: 0 }}>
+      {/* Brand Logo */}
+      <Link 
+        className="course-logo" 
+        to="/course"
+        onClick={(e) => {
+          e.preventDefault();
+          setShowDashboard(false);
+          navigate('/course');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       >
-        BetterWith<span className="text-[#c79c6e]">Aarkesh</span>
-      </div>
+        BetterWith<b>Aarkesh</b>
+      </Link>
 
-      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
-        {isPurchased && (
-          <button
-            type="button"
-            onClick={() => setShowDashboard(!showDashboard)}
-            className="hidden sm:flex text-[10px] sm:text-[0.65rem] font-sans font-semibold uppercase tracking-[0.15em] sm:tracking-[0.18em] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all items-center gap-1.5 shadow-[0_0_20px_rgba(199,156,110,0.1)] whitespace-nowrap"
-          >
-            {showDashboard ? 'OVERVIEW' : 'WATCH'}
-          </button>
-        )}
-
-        <Link
-          to="/"
-          className="hidden sm:flex text-[10px] sm:text-[0.65rem] font-sans font-semibold uppercase tracking-[0.15em] sm:tracking-[0.18em] px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-lg border border-white/10 text-white/75 hover:bg-white/10 hover:text-white transition-all items-center gap-1.5 whitespace-nowrap"
-          title="Back to Coaching Portal"
+      {/* Center Nav: Home, Courses, FAQ */}
+      <nav className="course-nav-center-links">
+        <Link 
+          to="/course" 
+          onClick={(e) => {
+            e.preventDefault();
+            setShowDashboard(false);
+            navigate('/course');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="course-nav-link"
         >
-          <ArrowLeft size={13} weight="bold" />
-          <span className="hidden xs:inline sm:inline">COACHING</span>
+          <FlippingWordSwap 
+            word1="Home" 
+            word2="Home" 
+            toClassName="text-[#C878BE]"
+          />
+        </Link>
+        <Link 
+          to="/course/all" 
+          onClick={(e) => {
+            e.preventDefault();
+            setShowDashboard(false);
+            navigate('/course/all');
+          }}
+          className="course-nav-link"
+        >
+          <FlippingWordSwap 
+            word1="Courses" 
+            word2="Courses" 
+            toClassName="text-[#C878BE]"
+          />
+        </Link>
+        <a 
+          href="/course#faq" 
+          onClick={(e) => {
+            e.preventDefault();
+            setShowDashboard(false);
+            setTimeout(() => {
+              const el = document.getElementById('faq');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }}
+          className="course-nav-link"
+        >
+          <FlippingWordSwap 
+            word1="FAQ" 
+            word2="FAQ" 
+            toClassName="text-[#C878BE]"
+          />
+        </a>
+      </nav>
+
+      {/* Right Controls: My Course button + round profile icon */}
+      <div className="nav-r flex items-center gap-3">
+        <Link
+          to="/my-course"
+          className="course-nav-mycourse-btn"
+          title="My Enrolled Courses"
+        >
+          <BookOpen size={16} weight="bold" />
+          <span>My Course</span>
         </Link>
 
         {isLoggedIn ? (
@@ -2159,24 +2679,41 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
             <button
               type="button"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#c79c6e]/40 bg-[#111] flex items-center justify-center text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all shadow-[0_0_20px_rgba(199,156,110,0.15)] shrink-0 cursor-pointer"
+              className="course-profile-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#C878BE]/50 bg-[#120613] flex items-center justify-center text-[#E3B8DE] hover:bg-[#C878BE] hover:text-black transition-all shadow-[0_0_20px_rgba(200,120,190,0.25)] shrink-0 cursor-pointer"
               title="Student Profile"
             >
               <User size={17} weight="bold" />
             </button>
             {showProfileMenu && (
-              <div className="absolute right-0 mt-3 w-48 rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl py-2 z-[100] overflow-hidden">
+              <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                <Link
+                  to="/my-course"
+                  onClick={() => setShowProfileMenu(false)}
+                  className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                >
+                  <BookOpen size={18} className="text-[#C878BE]" /> My Course
+                </Link>
                 <Link
                   to="/course/profile"
                   onClick={() => setShowProfileMenu(false)}
                   className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
                 >
-                  <User size={18} className="text-[#c79c6e]" /> Profile
+                  <User size={18} className="text-[#C878BE]" /> Profile
                 </Link>
                 <button
                   type="button"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    setShowDashboard(false);
+                  }}
+                  className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 cursor-pointer"
+                >
+                  <BookOpen size={18} className="text-[#C878BE]" /> Course Landing
+                </button>
+                <button
+                  type="button"
                   onClick={handleLogout}
-                  className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3"
+                  className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer"
                 >
                   <SignOut size={18} /> Log Out
                 </button>
@@ -2186,11 +2723,11 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
         ) : (
           <button
             type="button"
-            className="text-[11px] sm:text-xs font-sans font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-lg border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black transition-all flex items-center gap-1.5 shadow-[0_0_20px_rgba(199,156,110,0.1)] whitespace-nowrap shrink-0 cursor-pointer"
+            className="sign-in-btn"
             onClick={() => setShowCourseLogin(true)}
+            title="Sign In"
           >
-            <User size={14} weight="bold" />
-            <span>LOGIN</span>
+            Sign In
           </button>
         )}
       </div>
@@ -2229,10 +2766,43 @@ function AuthModal({
   setError,
   isLoading,
   handleToggleMode,
+  coursesList = [],
   basePrice = 15000,
   comparePrice = 25000
 }) {
+  const [activeCourseIdx, setActiveCourseIdx] = useState(0);
+  const [isFading, setIsFading] = useState(false);
+
+  useEffect(() => {
+    if (!coursesList || coursesList.length <= 1) return;
+    const interval = setInterval(() => {
+      setIsFading(true);
+      setTimeout(() => {
+        setActiveCourseIdx((prev) => (prev + 1) % coursesList.length);
+        setIsFading(false);
+      }, 350);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [coursesList]);
+
   if (!showCourseLogin) return null;
+
+  const currentCourse = (coursesList && coursesList.length > 0)
+    ? coursesList[activeCourseIdx]
+    : {
+        title: 'The Better Man',
+        soon: false,
+        lede: 'Calm authority, magnetic communication and effortless self-command.',
+        inside: [
+          '8 HD video modules',
+          'Downloadable workbooks and frameworks',
+          '3 private 1-on-1 coaching sessions',
+          'Lifetime access with all future updates'
+        ],
+        price: `₹${basePrice.toLocaleString('en-IN')}`,
+        was: `₹${comparePrice.toLocaleString('en-IN')}`
+      };
 
   return (
     <div className="auth-modal-scope">
@@ -2412,13 +2982,7 @@ function AuthModal({
                   </div>
                 )}
 
-                {/* Terms checkbox for Register */}
-                {!isForgotPassword && loginMode === 'register' && (
-                  <label className="chk">
-                    <input type="checkbox" defaultChecked />
-                    <span>I agree to the terms and privacy policy.</span>
-                  </label>
-                )}
+
 
                 {/* Submit Button */}
                 <button
@@ -2586,24 +3150,59 @@ function AuthModal({
               </ul>
             ) : (
               <>
-                <span className="sticker">Live now</span>
-                <h3>The Better Man</h3>
-                <p className="l">
-                  Calm authority, magnetic communication and effortless self-command.
-                </p>
-                <ul className="ck">
-                  <li>8 HD video modules</li>
-                  <li>Downloadable workbooks and frameworks</li>
-                  <li>3 private 1-on-1 coaching sessions</li>
-                  <li>Lifetime access with all future updates</li>
-                  <li>30-day money-back guarantee</li>
-                </ul>
-                <p className="sprice">
-                  Price <b>₹{basePrice.toLocaleString('en-IN')}</b>
-                  <s>₹{comparePrice.toLocaleString('en-IN')}</s>
-                  <small>(+GST)</small>
-                </p>
-                <p className="guar">Covered by the 30-day guarantee.</p>
+                <div className={`auth-modal-course-card ${isFading ? 'fading-out' : 'fading-in'}`}>
+                  <span
+                    className="sticker"
+                    style={{
+                      background: currentCourse.soon
+                        ? 'rgba(255, 255, 255, 0.18)'
+                        : 'linear-gradient(135deg, #B04FA6, #6E2266)'
+                    }}
+                  >
+                    {currentCourse.soon ? 'Coming soon' : 'Live now'}
+                  </span>
+                  <h3>{currentCourse.title}</h3>
+                  <p className="l">
+                    {currentCourse.lede || currentCourse.d}
+                  </p>
+                  <ul className="ck">
+                    {(currentCourse.inside || [
+                      '8 HD video modules',
+                      'Downloadable workbooks and frameworks',
+                      '3 private 1-on-1 coaching sessions',
+                      'Lifetime access with all future updates'
+                    ]).map((feat, idx) => (
+                      <li key={idx}>{feat}</li>
+                    ))}
+                  </ul>
+                  <p className="sprice">
+                    Price <b>{currentCourse.price || `₹${basePrice.toLocaleString('en-IN')}`}</b>
+                    <s>{currentCourse.was || `₹${comparePrice.toLocaleString('en-IN')}`}</s>
+                    <small>(+GST)</small>
+                  </p>
+                </div>
+
+                {coursesList && coursesList.length > 1 && (
+                  <div className="auth-course-dots">
+                    {coursesList.map((c, idx) => (
+                      <button
+                        key={c.slug || idx}
+                        type="button"
+                        onClick={() => {
+                          if (idx === activeCourseIdx) return;
+                          setIsFading(true);
+                          setTimeout(() => {
+                            setActiveCourseIdx(idx);
+                            setIsFading(false);
+                          }, 250);
+                        }}
+                        className={`auth-course-dot ${idx === activeCourseIdx ? 'active' : 'inactive'}`}
+                        title={c.title}
+                        aria-label={`Go to ${c.title}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -2632,22 +3231,22 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
     <div className="fixed inset-0 z-[110] bg-[#050505] flex flex-col justify-between overflow-y-auto min-h-screen">
       {/* Background Ambience & Spotlights */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#c79c6e]/10 rounded-full blur-[150px]" />
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-[#c79c6e]/10 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-[#c79c6e]/8 rounded-full blur-[160px]" />
+        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#C878BE]/12 rounded-full blur-[150px]" />
+        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-[#7A2A70]/12 rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-[#C878BE]/10 rounded-full blur-[160px]" />
       </div>
 
       {/* Top Bar Navigation */}
       <div className="w-full max-w-5xl mx-auto flex items-center justify-between pt-8 px-6 md:px-10 relative z-20">
         <button
           onClick={() => setShowCheckout(false)}
-          className="flex items-center gap-2.5 font-sans text-xs uppercase tracking-[0.2em] text-white/70 hover:text-[#c79c6e] transition-colors"
+          className="flex items-center gap-2.5 font-sans text-xs uppercase tracking-[0.2em] text-white/70 hover:text-[#E3B8DE] transition-colors cursor-pointer"
         >
           <ArrowLeft size={16} /> BACK TO COURSE
         </button>
 
         <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md">
-          <ShieldCheck size={16} className="text-[#c79c6e]" />
+          <ShieldCheck size={16} className="text-[#C878BE]" />
           <span className="font-sans text-[0.68rem] uppercase tracking-wider text-white/80 font-medium">100% Secure Checkout</span>
         </div>
       </div>
@@ -2655,10 +3254,13 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
       {/* Center Checkout Card */}
       <div className="w-full max-w-lg mx-auto px-6 py-10 relative z-10 my-auto">
         <div className="text-center mb-8">
-          <span className="font-sans text-[0.68rem] uppercase tracking-[0.25em] text-[#c79c6e] font-semibold block mb-2">
+          <span className="font-sans text-[0.68rem] uppercase tracking-[0.25em] text-[#E3B8DE] font-semibold block mb-2">
             FINAL STEP
           </span>
-          <h1 className="font-serif text-3xl md:text-4xl text-white font-normal tracking-tight">
+          <h1 
+            className="text-3xl md:text-4xl text-white font-bold tracking-tight"
+            style={{ fontFamily: 'var(--head)' }}
+          >
             Checkout Payment
           </h1>
           <p className="font-sans text-xs md:text-sm text-white/60 mt-1.5">
@@ -2667,15 +3269,20 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
         </div>
 
         {/* Glassmorphic Payment Summary Card */}
-        <div className="rounded-3xl border border-[#c79c6e]/30 bg-[#0c0c0c]/85 backdrop-blur-2xl p-7 md:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(199,156,110,0.1)]">
+        <div className="rounded-3xl border border-[#C878BE]/30 bg-[#0e0a16]/90 backdrop-blur-2xl p-7 md:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(200,120,190,0.1)]">
           {/* Item Row */}
           <div className="flex items-center gap-4 pb-6 border-b border-white/10">
-            <div className="w-16 h-16 rounded-xl overflow-hidden border border-[#c79c6e]/40 bg-black shrink-0 relative shadow-inner">
-              <img src="/course_hero_bg.jpg" alt="Course" className="w-full h-full object-cover opacity-90" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+            <div 
+              className="w-16 h-16 rounded-xl overflow-hidden border border-[#C878BE]/40 shrink-0 relative shadow-inner flex items-center justify-center font-bold text-white text-xl"
+              style={{
+                background: 'radial-gradient(circle at 35% 25%, #6A1B60 0%, #300E32 55%, #0C040E 100%)',
+                fontFamily: 'var(--head)'
+              }}
+            >
+              <span>01</span>
             </div>
             <div className="flex-1 min-w-0">
-              <span className="inline-block px-2 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[0.65rem] text-[#c79c6e] font-medium tracking-wide uppercase mb-1">
+              <span className="inline-block px-2 py-0.5 rounded-full bg-[#C878BE]/20 border border-[#C878BE]/40 text-[0.65rem] text-[#E3B8DE] font-medium tracking-wide uppercase mb-1">
                 Full Master Access
               </span>
               <h3 className="font-sans text-sm font-semibold text-white truncate">The Better Man™</h3>
@@ -2710,7 +3317,7 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
                   </span>
                 )}
               </div>
-              <span className="font-sans text-2xl md:text-3xl font-bold text-[#c79c6e] tracking-tight">₹{finalPayable.toLocaleString('en-IN')}</span>
+              <span className="font-sans text-2xl md:text-3xl font-bold text-[#E3B8DE] tracking-tight">₹{finalPayable.toLocaleString('en-IN')}</span>
             </div>
           </div>
 
@@ -2721,7 +3328,7 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
                 type="checkbox"
                 checked={checkoutAgreed}
                 onChange={(e) => setCheckoutAgreed(e.target.checked)}
-                className="accent-[#c79c6e] rounded w-4 h-4 mt-0.5 cursor-pointer shrink-0"
+                className="accent-[#C878BE] rounded w-4 h-4 mt-0.5 cursor-pointer shrink-0"
               />
               <span className="font-sans text-xs text-white/75 leading-relaxed group-hover:text-white transition-colors">
                 I agree to the{' '}
@@ -2732,7 +3339,7 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
                     e.stopPropagation();
                     if (onOpenTerms) onOpenTerms();
                   }}
-                  className="underline text-[#c79c6e] font-semibold hover:text-white transition-colors inline"
+                  className="underline text-[#E3B8DE] font-semibold hover:text-white transition-colors inline"
                 >
                   Terms &amp; Conditions
                 </button>
@@ -2751,7 +3358,7 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
               type="button"
               onClick={handlePayment}
               disabled={isLoading || !checkoutAgreed}
-              className="w-full rounded-xl bg-gradient-to-r from-[#c79c6e] via-[#dfb98f] to-[#c79c6e] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed px-6 py-4 font-sans text-xs font-bold uppercase tracking-[0.2em] text-black transition-all shadow-[0_0_30px_rgba(199,156,110,0.25)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed px-6 py-4 font-sans text-xs font-bold uppercase tracking-[0.2em] text-white transition-all shadow-[0_0_30px_rgba(200,120,190,0.35)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
             >
               <span>{isLoading ? 'PROCESSING...' : `PAY ₹${finalPayable.toLocaleString('en-IN')} & ENROLL NOW`}</span>
               <ArrowRight size={16} weight="bold" />
@@ -2760,7 +3367,7 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
             {/* Security Badges */}
             <div className="flex items-center justify-center gap-4 text-[0.7rem] text-white/50 mt-4 font-sans">
               <div className="flex items-center gap-1.5">
-                <LockKey size={13} className="text-[#c79c6e]" />
+                <LockKey size={13} className="text-[#C878BE]" />
                 <span>256-bit SSL Encrypted</span>
               </div>
               <span className="text-white/20">•</span>

@@ -1,6 +1,6 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
-import defaultBgImg from '../../assets/Page3/think-clearly.webp';
+import defaultBgImg from '../../assets/Page3/think-clearly.png';
 import { Sparkle, SunDim, TextT, Coffee, Circle } from '@phosphor-icons/react';
 
 const DEFAULT_THINK_DATA = {

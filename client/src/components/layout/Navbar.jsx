@@ -112,7 +112,7 @@ export default function Navbar() {
   }, [location.pathname, location.hash]);
 
   // Hide on dedicated pages that manage their own themed navbars
-  if (location.pathname.startsWith('/course') || location.pathname.startsWith('/courses') || location.pathname === '/library' || location.pathname.startsWith('/articles')) return null;
+  if (location.pathname.startsWith('/course') || location.pathname.startsWith('/courses') || location.pathname.startsWith('/my-course') || location.pathname.startsWith('/my-courses') || location.pathname.startsWith('/classroom') || location.pathname === '/library' || location.pathname.startsWith('/articles')) return null;
 
   const handleNavClick = (href) => {
     let target = null;
@@ -155,7 +155,7 @@ export default function Navbar() {
         ref={navRef}
         className={cn(
           'fixed top-0 left-0 right-0 z-[100] transition-all duration-300',
-          scrolled || location.pathname === '/my-journey'
+          scrolled || location.pathname === '/my-journey' || location.pathname.startsWith('/course')
             ? 'py-2 bg-[#f5f1e8]/95 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] border-b border-black/8' 
             : 'py-2.5 sm:py-3.5 bg-[#f5f1e8]/90 backdrop-blur-md border-b border-black/6'
         )}
@@ -180,7 +180,12 @@ export default function Navbar() {
                 {/* Course Button */}
                 <button
                   onClick={() => navigate('/course')}
-                  className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className={cn(
+                    "px-4 py-1.5 rounded-sm border font-sans text-[0.7rem] uppercase tracking-[0.18em] transition-colors flex items-center gap-1.5 cursor-pointer",
+                    location.pathname.startsWith('/course')
+                      ? "border-[#c9542f] text-[#c9542f] bg-[#fbf0eb] font-bold"
+                      : "border-black/20 text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-medium"
+                  )}
                 >
                   <Play size={13} weight="fill" /> COURSE
                 </button>

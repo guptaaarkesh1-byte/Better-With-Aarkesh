@@ -1807,6 +1807,28 @@ export default function AdminUsers() {
                     </div>
                   </div>
 
+                  {/* Official Coaching Agreement PDF */}
+                  <div className="bg-[#111] border border-white/10 rounded-xl p-4 flex items-center justify-between gap-3 shadow-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e] shrink-0">
+                        <FileText size={20} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-white text-xs font-semibold">Coaching Agreement</span>
+                        <span className="text-white/40 text-[0.68rem]">Official legal coaching agreement (PDF)</span>
+                      </div>
+                    </div>
+                    <a
+                      href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/appointments/${selectedSession.id || selectedSession._id}/agreement-pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-2 rounded-lg bg-[#c79c6e] hover:bg-white text-black text-xs font-semibold uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1.5"
+                    >
+                      <FileText size={14} weight="bold" />
+                      Download PDF
+                    </a>
+                  </div>
+
                   {/* Coach's Session Notes */}
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between border-b border-white/5 pb-2">

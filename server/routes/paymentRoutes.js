@@ -14,8 +14,8 @@ import { sendCoursePurchaseInvoiceEmail, sendCoursePaymentFailedEmail } from '..
 
 const router = express.Router();
 
-// Helper to get Razorpay instance
-const getRazorpayInstance = async () => {
+// Helper to get Razorpay credentials consistently
+const getRazorpayKeys = async () => {
   let keyId = process.env.RAZORPAY_KEY_ID;
   let keySecret = process.env.RAZORPAY_KEY_SECRET;
 
@@ -26,6 +26,13 @@ const getRazorpayInstance = async () => {
       keySecret = settings.value.keySecret;
     }
   }
+
+  return { keyId, keySecret };
+};
+
+// Helper to get Razorpay instance
+const getRazorpayInstance = async () => {
+  const { keyId, keySecret } = await getRazorpayKeys();
 
   if (!keyId || !keySecret) {
     throw new Error('Razorpay keys not configured. Please configure in Admin Settings or .env.');
@@ -42,13 +49,7 @@ const getRazorpayInstance = async () => {
 // @access  Public
 router.get('/public-key', async (req, res) => {
   try {
-    let keyId = process.env.RAZORPAY_KEY_ID;
-    if (!keyId) {
-      const settings = await Settings.findOne({ key: 'razorpay' });
-      if (settings?.value?.keyId) {
-        keyId = settings.value.keyId;
-      }
-    }
+    const { keyId } = await getRazorpayKeys();
 
     if (!keyId) {
       return res.status(404).json({ message: 'Razorpay keys not configured' });
@@ -261,14 +262,16 @@ router.post('/course-verify', async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, token } = req.body;
 
-    const settings = await Settings.findOne({ key: 'razorpay' });
-    if (!settings || !settings.value || !settings.value.keySecret) {
-      return res.status(500).json({ message: 'Razorpay keys not configured' });
+    // Resolve Razorpay credentials using the same unified helper
+    const { keySecret } = await getRazorpayKeys();
+
+    if (!keySecret) {
+      return res.status(500).json({ message: 'Razorpay secret key not configured' });
     }
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac('sha256', settings.value.keySecret)
+      .createHmac('sha256', keySecret)
       .update(body.toString())
       .digest('hex');
 
@@ -348,7 +351,7 @@ router.post('/course-verify', async (req, res) => {
                 { upsert: true, returnDocument: 'after' }
               );
 
-              // Asynchronously dispatch official tax invoice email
+              // Asynchronously dispatch official tax invoice + 3 free sessions email
               sendCoursePurchaseInvoiceEmail({
                 studentEmail: email.toLowerCase(),
                 studentName: courseUser.fullName || 'Valued Student',
@@ -413,6 +416,8 @@ router.post('/course-verify', async (req, res) => {
     res.status(500).json({ message: 'Server error verifying payment' });
   }
 });
+
+
 
 // @desc    Record Failed Payment Attempt
 // @route   POST /api/payment/course-failed-record

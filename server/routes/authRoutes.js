@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
 import User from '../models/User.js';
 import CourseUser from '../models/CourseUser.js';
+import CoursePurchase from '../models/CoursePurchase.js';
 import Appointment from '../models/Appointment.js';
 import Note from '../models/Note.js';
 import PastClient from '../models/PastClient.js';
@@ -174,7 +175,8 @@ router.post('/register-verify', async (req, res) => {
 
     // Check if this email belongs to a course purchaser → grant 3 free sessions
     const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
-    const hasCoursePerks = !!courseUser;
+    const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid' });
+    const hasCoursePerks = !!courseUser || !!coursePurchase;
 
     let user;
     if (userExists && userExists.isDeleted) {
@@ -277,7 +279,8 @@ router.post('/login', async (req, res) => {
       // If user purchased course but coaching account didn't have sessions granted yet, sync them
       if (!user.courseSessionsGranted) {
         const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
-        if (courseUser) {
+        const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid' });
+        if (courseUser || coursePurchase) {
           user.freeSessions = 3;
           user.courseSessionsGranted = true;
           await user.save();
@@ -319,7 +322,8 @@ router.get('/me', protect, async (req, res) => {
     if (!user.courseSessionsGranted && user.email) {
       const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
       const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
-      if (courseUser) {
+      const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid' });
+      if (courseUser || coursePurchase) {
         user.freeSessions = 3;
         user.courseSessionsGranted = true;
         await user.save();

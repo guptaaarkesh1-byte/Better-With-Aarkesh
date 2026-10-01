@@ -6,6 +6,7 @@ import Settings from '../models/Settings.js';
 import PastClient from '../models/PastClient.js';
 import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 import { Resend } from 'resend';
+import { sendCoachingBookingConfirmationEmail, generateCoachingAgreementPdf } from '../services/coachingAgreementService.js';
 
 const router = express.Router();
 
@@ -212,29 +213,14 @@ router.post('/', optionalAuth, async (req, res) => {
       // Sync with Cal.com just like a paid booking
       await syncAppointmentToCal(createdFreeAppointment);
 
-      // Send confirmation emails in background
-      if (process.env.RESEND_API_KEY) {
-        try {
-          const resend = new Resend(process.env.RESEND_API_KEY);
-          await resend.emails.send({
-            from: 'Better With Aarkesh <coaching@betterwithaarkesh.com>',
-            to: normalizedEmail,
-            subject: 'Your Free Coaching Session is Confirmed',
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                <h2>Coaching Session Confirmed</h2>
-                <p>Hello ${name},</p>
-                <p>Your 1-on-1 complimentary coaching session with Aarkesh has been reserved.</p>
-                <p><strong>Date:</strong> ${date}<br/><strong>Time:</strong> ${time}<br/><strong>Duration:</strong> ${duration} Minutes</p>
-                <p>Remaining complimentary credits: ${coachingUser.freeSessions}</p>
-                <p>Google Meet details will follow prior to the call.</p>
-              </div>
-            `
-          });
-        } catch (emailErr) {
-          console.error("Failed to send free session confirmation email", emailErr);
-        }
-      }
+      // Send confirmation emails with dynamic Coaching Agreement PDF attached
+      sendCoachingBookingConfirmationEmail({
+        appointment: createdFreeAppointment,
+        isFreeSession: true,
+        freeSessionsRemaining: coachingUser.freeSessions
+      }).catch(emailErr => {
+        console.error("Failed to send free session confirmation email with PDF agreement:", emailErr);
+      });
 
       return res.status(201).json({
         ...createdFreeAppointment.toObject(),
@@ -397,10 +383,51 @@ router.put('/:id/finalize', optionalAuth, async (req, res) => {
     }
     // ---------------------------
     
+    // Send confirmation email with dynamic Coaching Agreement PDF attached
+    sendCoachingBookingConfirmationEmail({
+      appointment: updatedAppointment,
+      isFreeSession: false
+    }).catch(emailErr => {
+      console.error('Failed to send paid booking confirmation email with PDF agreement:', emailErr);
+    });
+
     res.json(updatedAppointment);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error finalizing appointment' });
+  }
+});
+
+// GET /api/appointments/:id/agreement-pdf - Download the official signed Coaching Agreement PDF
+router.get('/:id/agreement-pdf', optionalAuth, async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+    const clientName = (appointment.name || 'Client').trim();
+    const pdfBuffer = await generateCoachingAgreementPdf({
+      clientName,
+      clientEmail: appointment.email,
+      clientPhone: appointment.phoneNumber || appointment.phone || '',
+      sessionDate: appointment.date,
+      sessionTime: appointment.time,
+      agreementDate: new Date(appointment.createdAt || Date.now()).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }),
+      isPackage: Boolean(appointment.isFreeSession || appointment.isCoursePackage),
+      modeOfCoaching: 'Online 1-on-1 Video Session (Google Meet)',
+      meetLink: appointment.meetLink,
+    });
+
+    const safeFilename = `Coaching_Agreement_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Error generating Coaching Agreement PDF:', err);
+    res.status(500).json({ message: 'Failed to generate Coaching Agreement PDF' });
   }
 });
 

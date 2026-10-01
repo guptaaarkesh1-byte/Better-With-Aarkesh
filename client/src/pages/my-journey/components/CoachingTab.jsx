@@ -679,6 +679,28 @@ export default function CoachingTab() {
                     </div>
                   )}
 
+                  {/* Coaching Agreement Download Card */}
+                  <div className="w-full rounded-xl bg-white border border-black/10 p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#fbf0eb] border border-[#e8c4e2] flex items-center justify-center text-[#c9542f] shrink-0">
+                        <FileText size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs sm:text-sm font-semibold text-[#111010]">Coaching Agreement</span>
+                        <span className="text-[0.7rem] sm:text-xs text-[#7a756b]">Official coaching agreement & session engagement terms (PDF)</span>
+                      </div>
+                    </div>
+                    <a
+                      href={`${import.meta.env.VITE_API_URL}/api/appointments/${selectedSession.id || selectedSession._id}/agreement-pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-lg bg-[#c9542f] hover:bg-[#111010] text-white text-xs font-semibold uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1.5"
+                    >
+                      <FileText size={14} />
+                      Download PDF
+                    </a>
+                  </div>
+
                 </div>
               ) : (
                 /* Tab 2: Coach's Session Notes */

@@ -73,7 +73,7 @@ export default function CoursePaymentSuccess({
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white py-10 px-4 sm:px-6 relative overflow-hidden flex flex-col items-center">
+    <div className="w-full min-h-screen bg-[#06040a] text-white py-10 px-4 sm:px-6 relative overflow-hidden flex flex-col items-center">
       {/* Background Ambient Glows */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden print:hidden">
         {isFailed ? (
@@ -83,8 +83,8 @@ export default function CoursePaymentSuccess({
           </>
         ) : (
           <>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#c79c6e]/10 rounded-full blur-[160px]" />
-            <div className="absolute bottom-0 right-10 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[180px]" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#C878BE]/15 rounded-full blur-[160px]" />
+            <div className="absolute bottom-0 right-10 w-[500px] h-[500px] bg-[#7A2A70]/15 rounded-full blur-[180px]" />
           </>
         )}
       </div>
@@ -99,7 +99,10 @@ export default function CoursePaymentSuccess({
                 <span>PAYMENT TRANSACTION FAILED</span>
               </div>
 
-              <h1 className="font-serif text-3xl sm:text-4xl text-white font-normal tracking-tight">
+              <h1 
+                className="text-3xl sm:text-4xl text-white font-bold tracking-tight"
+                style={{ fontFamily: 'var(--head)' }}
+              >
                 Enrollment <span className="text-rose-400 italic">Incomplete</span>
               </h1>
               <p className="font-sans text-xs sm:text-sm text-white/60 max-w-md mx-auto">
@@ -113,8 +116,11 @@ export default function CoursePaymentSuccess({
                 <span>PAYMENT SUCCESSFUL · ENROLLMENT ACTIVE</span>
               </div>
 
-              <h1 className="font-serif text-3xl sm:text-4xl text-white font-normal tracking-tight">
-                Welcome to <span className="text-[#c79c6e] italic">{courseTitle}</span>
+              <h1 
+                className="text-3xl sm:text-4xl text-white font-bold tracking-tight"
+                style={{ fontFamily: 'var(--head)' }}
+              >
+                Welcome to <span className="text-[#E3B8DE] italic">{courseTitle}</span>
               </h1>
               <p className="font-sans text-xs sm:text-sm text-white/60 max-w-md mx-auto">
                 Congratulations <strong className="text-white">{studentName}</strong>! Your masterclass access is unlocked and your 3 private coaching calls are credited.
@@ -133,7 +139,7 @@ export default function CoursePaymentSuccess({
               </>
             ) : (
               <>
-                <ShieldCheck size={18} className="text-[#c79c6e]" weight="fill" />
+                <ShieldCheck size={18} className="text-[#C878BE]" weight="fill" />
                 <span>Official Invoice &amp; Tax Receipt</span>
               </>
             )}
@@ -153,7 +159,7 @@ export default function CoursePaymentSuccess({
               <button
                 type="button"
                 onClick={onRetryPayment}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#c79c6e] to-[#b0885e] text-black text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(199,156,110,0.25)] cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(200,120,190,0.3)] cursor-pointer"
               >
                 <ArrowCounterClockwise size={16} weight="bold" />
                 <span>Retry Payment</span>
@@ -162,7 +168,7 @@ export default function CoursePaymentSuccess({
               <button
                 type="button"
                 onClick={onStartLearning}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#c79c6e] to-[#b0885e] text-black text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(199,156,110,0.25)] cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(200,120,190,0.35)] cursor-pointer"
               >
                 <PlayCircle size={16} weight="fill" />
                 <span>Start Learning Now</span>
@@ -174,19 +180,22 @@ export default function CoursePaymentSuccess({
         {/* ── THE FORMAL TAX INVOICE & BILL CARD ── */}
         <div 
           id="invoice-receipt"
-          className={`rounded-3xl border ${isFailed ? 'border-rose-500/30' : 'border-[#c79c6e]/30'} bg-[#0a0a0a]/95 backdrop-blur-2xl p-6 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(199,156,110,0.08)] relative overflow-hidden print:bg-white print:text-black print:border-gray-300 print:shadow-none print:p-6`}
+          className={`rounded-3xl border ${isFailed ? 'border-rose-500/30' : 'border-[#C878BE]/30'} bg-[#0e0a16]/95 backdrop-blur-2xl p-6 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(200,120,190,0.08)] relative overflow-hidden print:bg-white print:text-black print:border-gray-300 print:shadow-none print:p-6`}
         >
           {/* Subtle Corner Accent */}
-          <div className={`absolute top-0 right-0 w-36 h-36 ${isFailed ? 'bg-rose-500/10' : 'bg-[#c79c6e]/10'} blur-3xl pointer-events-none print:hidden`} />
+          <div className={`absolute top-0 right-0 w-36 h-36 ${isFailed ? 'bg-rose-500/10' : 'bg-[#C878BE]/10'} blur-3xl pointer-events-none print:hidden`} />
 
           {/* Invoice Header */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pb-6 border-b border-white/10 print:border-gray-300">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-serif text-xl sm:text-2xl text-white font-bold tracking-tight print:text-black">
+                <span 
+                  className="text-xl sm:text-2xl text-white font-bold tracking-tight print:text-black"
+                  style={{ fontFamily: 'var(--head)' }}
+                >
                   Better With Aarkesh
                 </span>
-                <span className={`px-2 py-0.5 rounded ${isFailed ? 'bg-rose-500/20 text-rose-400' : 'bg-[#c79c6e]/20 text-[#c79c6e]'} text-[10px] font-mono font-bold tracking-wider print:border print:border-gray-400`}>
+                <span className={`px-2 py-0.5 rounded ${isFailed ? 'bg-rose-500/20 text-rose-400' : 'bg-[#C878BE]/20 text-[#E3B8DE]'} text-[10px] font-mono font-bold tracking-wider print:border print:border-gray-400`}>
                   {isFailed ? 'FAILED ATTEMPT BILL' : 'OFFICIAL INVOICE'}
                 </span>
               </div>
@@ -240,7 +249,7 @@ export default function CoursePaymentSuccess({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-b border-white/10 print:border-gray-300 text-xs">
             {/* Student Info */}
             <div className="space-y-1">
-              <span className="text-[10px] uppercase tracking-widest text-[#c79c6e] font-semibold block print:text-[#916b3f]">
+              <span className="text-[10px] uppercase tracking-widest text-[#E3B8DE] font-semibold block print:text-[#7A2A70]">
                 BILLED TO (STUDENT)
               </span>
               <p className="font-semibold text-white text-sm print:text-black">{studentName}</p>
@@ -256,7 +265,7 @@ export default function CoursePaymentSuccess({
 
             {/* Payment Info */}
             <div className="space-y-1 sm:text-right">
-              <span className="text-[10px] uppercase tracking-widest text-[#c79c6e] font-semibold block print:text-[#916b3f]">
+              <span className="text-[10px] uppercase tracking-widest text-[#E3B8DE] font-semibold block print:text-[#7A2A70]">
                 PAYMENT TRANSACTION DETAILS
               </span>
               <div className="flex items-center sm:justify-end gap-1.5 font-mono text-white/90 print:text-black">
@@ -264,7 +273,7 @@ export default function CoursePaymentSuccess({
                 <button
                   type="button"
                   onClick={handleCopyTxn}
-                  className="p-1 text-white/50 hover:text-white transition-colors print:hidden"
+                  className="p-1 text-white/50 hover:text-white transition-colors print:hidden cursor-pointer"
                   title="Copy Transaction ID"
                 >
                   {copiedTxn ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
@@ -371,7 +380,7 @@ export default function CoursePaymentSuccess({
               )}
               <div className="pt-2 border-t border-white/10 print:border-gray-300 flex justify-between sm:justify-end gap-6 text-base font-bold text-white print:text-black">
                 <span>{isFailed ? 'Amount Due (Unpaid):' : 'Total Paid:'}</span>
-                <span className={`${isFailed ? 'text-rose-400' : 'text-[#c79c6e]'} font-bold text-lg print:text-black`}>
+                <span className={`${isFailed ? 'text-rose-400' : 'text-[#E3B8DE]'} font-bold text-lg print:text-black`}>
                   ₹{finalAmount.toLocaleString('en-IN')}
                 </span>
               </div>
@@ -381,7 +390,7 @@ export default function CoursePaymentSuccess({
 
         {/* ── ACTION CARDS AT BOTTOM ── */}
         {isFailed ? (
-          <div className="bg-[#0a0a0a] border border-rose-500/20 rounded-2xl p-6 sm:p-8 space-y-5 print:hidden">
+          <div className="bg-[#0e0a16] border border-rose-500/20 rounded-2xl p-6 sm:p-8 space-y-5 print:hidden">
             <div className="flex items-center gap-2 text-rose-400 font-semibold text-xs uppercase tracking-wider">
               <WarningCircle size={16} weight="fill" />
               <span>HOW WOULD YOU LIKE TO PROCEED?</span>
@@ -404,7 +413,7 @@ export default function CoursePaymentSuccess({
               <button
                 type="button"
                 onClick={onRetryPayment}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#c79c6e] via-[#dfb98f] to-[#c79c6e] text-black text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_25px_rgba(199,156,110,0.3)] cursor-pointer"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_25px_rgba(200,120,190,0.35)] cursor-pointer"
               >
                 <ArrowCounterClockwise size={16} weight="bold" />
                 <span>RETRY PAYMENT (₹{finalAmount.toLocaleString('en-IN')})</span>
@@ -412,16 +421,16 @@ export default function CoursePaymentSuccess({
             </div>
           </div>
         ) : (
-          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 sm:p-8 space-y-5 print:hidden">
-            <div className="flex items-center gap-2 text-[#c79c6e] font-semibold text-xs uppercase tracking-wider">
-              <Sparkle size={16} weight="fill" />
+          <div className="bg-[#0e0a16] border border-[#C878BE]/20 rounded-2xl p-6 sm:p-8 space-y-5 print:hidden">
+            <div className="flex items-center gap-2 text-[#E3B8DE] font-semibold text-xs uppercase tracking-wider">
+              <Sparkle size={16} weight="fill" className="text-[#C878BE]" />
               <span>YOUR UNLOCKED STUDENT BENEFITS</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
                 <div className="flex items-center gap-2 text-white font-semibold">
-                  <PlayCircle size={16} className="text-[#c79c6e]" weight="fill" />
+                  <PlayCircle size={16} className="text-[#C878BE]" weight="fill" />
                   <span>Lifetime Masterclass Access</span>
                 </div>
                 <p className="text-white/50 leading-relaxed">
@@ -445,7 +454,7 @@ export default function CoursePaymentSuccess({
                 <button
                   type="button"
                   onClick={onBookSession}
-                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-[#c79c6e]/40 text-[#c79c6e] hover:text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-[#C878BE]/40 text-[#E3B8DE] hover:text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <CalendarCheck size={16} />
                   <span>Book 1st Coaching Call (₹0)</span>
@@ -455,7 +464,7 @@ export default function CoursePaymentSuccess({
               <button
                 type="button"
                 onClick={onStartLearning}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#c79c6e] via-[#dfb98f] to-[#c79c6e] text-black text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_25px_rgba(199,156,110,0.3)] cursor-pointer"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_25px_rgba(200,120,190,0.35)] cursor-pointer"
               >
                 <span>ACCESS COURSE DASHBOARD</span>
                 <ArrowRight size={16} weight="bold" />

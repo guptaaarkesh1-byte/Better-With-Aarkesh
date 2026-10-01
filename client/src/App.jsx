@@ -13,6 +13,7 @@ import Articles from './pages/articles/Articles';
 import Videos from './pages/videos/Videos';
 import Course from './pages/course/Course';
 import CourseProfile from './pages/course/CourseProfile';
+import MyCourses from './pages/course/MyCourses';
 import Footer from './components/layout/Footer';
 import FooterDocumentView from './pages/FooterDocumentView';
 import ContactUs from './pages/ContactUs';
@@ -43,6 +44,10 @@ function App() {
             <Route path="/courses" element={<Course />} />
             <Route path="/courses/:slug" element={<Course />} />
             <Route path="/course/profile" element={<CourseProfile />} />
+            <Route path="/course-profile" element={<CourseProfile />} />
+            <Route path="/my-course" element={<MyCourses />} />
+            <Route path="/my-courses" element={<MyCourses />} />
+            <Route path="/classroom" element={<MyCourses />} />
 
             {/* Direct Static & Policy Pages */}
             <Route path="/about-us" element={<FooterDocumentView slug="about-us" />} />

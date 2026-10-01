@@ -575,26 +575,29 @@ export default function LessonComments({
       {/* ── Section Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[#c79c6e] font-semibold flex items-center gap-1.5">
-              <Sparkle size={13} weight="fill" />
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[0.68rem] uppercase tracking-[0.2em] text-[#E3B8DE] font-semibold flex items-center gap-1.5">
+              <Sparkle size={13} weight="fill" className="text-[#C878BE]" />
               COMMENTS & DISCUSSIONS
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-[11px] text-white/70 font-mono">
+            <span className="px-2 py-0.5 rounded-full bg-[#C878BE]/10 border border-[#C878BE]/20 text-[11px] text-[#E3B8DE] font-mono">
               {totalComments}
             </span>
           </div>
-          <h3 className="font-serif text-xl md:text-2xl text-white tracking-tight">
+          <h3 
+            className="text-xl md:text-2xl text-white font-bold tracking-tight"
+            style={{ fontFamily: 'var(--head)' }}
+          >
             Join the conversation
           </h3>
         </div>
       </div>
 
       {/* ── Top Level Comment Creation Box ── */}
-      <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-4 md:p-6 shadow-xl relative focus-within:border-[#c79c6e]/50 focus-within:shadow-[0_0_25px_rgba(199,156,110,0.12)] transition-all mb-8">
+      <div className="bg-[#0e0a16] border border-[#C878BE]/20 rounded-2xl p-4 md:p-6 shadow-xl relative focus-within:border-[#C878BE]/50 focus-within:shadow-[0_0_25px_rgba(200,120,190,0.18)] transition-all mb-8">
         <div className="flex items-start gap-3 md:gap-4">
           {/* Current User Avatar */}
-          <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-[#1c1a17] to-[#0f0e0c] border border-[#c79c6e]/30 text-[#c79c6e] flex items-center justify-center text-xs md:text-sm font-serif font-bold shrink-0 shadow-sm">
+          <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-[#2a1330] to-[#160b1c] border border-[#C878BE]/40 text-[#E3B8DE] flex items-center justify-center text-xs md:text-sm font-bold shrink-0 shadow-sm">
             {auth.isAuthenticated ? getInitials(auth.userName) : <ChatCircleDots size={18} />}
           </div>
 
@@ -630,7 +633,7 @@ export default function LessonComments({
                 type="button"
                 disabled={isPosting || !newCommentText.trim()}
                 onClick={handlePostComment}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#c79c6e] to-[#b88d5e] text-black font-semibold text-xs tracking-wider uppercase flex items-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none shadow-[0_0_20px_rgba(199,156,110,0.2)] cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] hover:from-[#BA45A7] hover:to-[#8E3283] text-white font-semibold text-xs tracking-wider uppercase flex items-center gap-2 hover:shadow-[0_0_20px_rgba(200,120,190,0.35)] active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
               >
                 {isPosting ? (
                   <>
@@ -676,14 +679,17 @@ export default function LessonComments({
         </div>
       ) : comments.length === 0 ? (
         /* Empty State */
-        <div className="p-10 md:p-14 text-center rounded-2xl bg-gradient-to-b from-white/[0.02] to-transparent border border-white/[0.06]">
-          <div className="w-12 h-12 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/20 text-[#c79c6e] flex items-center justify-center mx-auto mb-3">
+        <div className="p-10 md:p-14 text-center rounded-2xl bg-gradient-to-b from-[#140b20]/60 to-transparent border border-[#C878BE]/15">
+          <div className="w-12 h-12 rounded-full bg-[#C878BE]/15 border border-[#C878BE]/30 text-[#E3B8DE] flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(200,120,190,0.2)]">
             <Sparkle size={22} weight="duotone" />
           </div>
-          <h4 className="font-serif text-lg md:text-xl text-white font-normal mb-1">
+          <h4 
+            className="text-lg md:text-xl text-white font-semibold mb-1"
+            style={{ fontFamily: 'var(--head)' }}
+          >
             Start the conversation
           </h4>
-          <p className="text-white/40 text-xs md:text-sm max-w-sm mx-auto leading-relaxed">
+          <p className="text-white/50 text-xs md:text-sm max-w-sm mx-auto leading-relaxed">
             Be the first to share your takeaways, insights, or ask a question regarding this lesson.
           </p>
         </div>
@@ -711,17 +717,17 @@ export default function LessonComments({
                 key={comment._id}
                 className={`p-4 md:p-6 rounded-2xl border transition-all duration-300 ${
                   isInstructorComment
-                    ? 'bg-gradient-to-r from-[#1f1911] via-[#16120c] to-[#0d0b08] border-[#c79c6e]/70 shadow-[0_0_30px_rgba(199,156,110,0.18)] ring-1 ring-[#c79c6e]/30'
+                    ? 'bg-gradient-to-r from-[#200c24] via-[#16091b] to-[#0c0510] border-[#C878BE]/60 shadow-[0_0_30px_rgba(200,120,190,0.16)] ring-1 ring-[#C878BE]/30'
                     : isHighlighted
-                    ? 'bg-[#0a0a0a] border-[#c79c6e] shadow-[0_0_20px_rgba(199,156,110,0.2)]'
-                    : 'bg-[#0a0a0a] border-white/10 hover:border-white/20'
+                    ? 'bg-[#0f0a1c] border-[#C878BE] shadow-[0_0_20px_rgba(200,120,190,0.25)]'
+                    : 'bg-[#0c0816] border-white/10 hover:border-[#C878BE]/30'
                 } ${isHidden ? 'opacity-60 border-dashed border-amber-500/40' : ''}`}
               >
                 {/* ── Badges Row (Pinned / Hidden) ── */}
                 {(comment.isPinned || isHidden) && (
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
                     {comment.isPinned && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#c79c6e]/20 border border-[#c79c6e]/50 text-[#c79c6e] text-[10px] font-bold uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C878BE]/20 border border-[#C878BE]/50 text-[#E3B8DE] text-[10px] font-bold uppercase tracking-wider">
                         <PushPin size={11} weight="fill" />
                         PINNED
                       </span>
@@ -739,10 +745,10 @@ export default function LessonComments({
                 {/* ── Comment Author & Header ── */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-serif font-bold shrink-0 ${
+                    <div className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
                       isInstructorComment
-                        ? 'bg-gradient-to-br from-[#e0b98d] via-[#c79c6e] to-[#9e764a] text-black shadow-[0_0_15px_rgba(199,156,110,0.4)] ring-2 ring-[#c79c6e]/50'
-                        : 'bg-gradient-to-br from-[#1c1a17] to-[#0f0e0c] border border-[#c79c6e]/30 text-[#c79c6e]'
+                        ? 'bg-gradient-to-br from-[#E3B8DE] via-[#C878BE] to-[#8E3283] text-black shadow-[0_0_15px_rgba(200,120,190,0.4)] ring-2 ring-[#C878BE]/50'
+                        : 'bg-gradient-to-br from-[#2a1330] to-[#160b1c] border border-[#C878BE]/40 text-[#E3B8DE]'
                     }`}>
                       {isInstructorComment ? 'A' : getInitials(comment.userName)}
                     </div>
@@ -750,13 +756,13 @@ export default function LessonComments({
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`text-sm md:text-base font-semibold truncate ${
-                          isInstructorComment ? 'text-[#c79c6e]' : 'text-white'
+                          isInstructorComment ? 'text-[#E3B8DE]' : 'text-white'
                         }`}>
                           {comment.userName}
                         </span>
 
                         {isInstructorComment && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#c79c6e] to-[#ad8255] text-black text-[9px] font-bold uppercase tracking-wider shadow-sm">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white text-[9px] font-bold uppercase tracking-wider shadow-sm border border-[#C878BE]/30">
                             <Sparkle size={10} weight="fill" />
                             COURSE INSTRUCTOR
                           </span>
@@ -787,7 +793,7 @@ export default function LessonComments({
                       </button>
 
                       {openMenuId === comment._id && (
-                        <div className="absolute right-0 top-full mt-1 w-32 bg-[#141414] border border-white/15 rounded-xl shadow-2xl py-1.5 z-20 backdrop-blur-md">
+                        <div className="absolute right-0 top-full mt-1 w-32 bg-[#170e24] border border-white/15 rounded-xl shadow-2xl py-1.5 z-20 backdrop-blur-md">
                           <button
                             type="button"
                             onClick={() => {
@@ -820,7 +826,7 @@ export default function LessonComments({
                         if (e.key === 'Escape') setEditingCommentId(null);
                         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') handleSaveEdit(comment._id, false);
                       }}
-                      className="w-full p-3 rounded-xl bg-black/40 border border-[#c79c6e]/40 text-white text-sm leading-relaxed outline-none resize-none focus:border-[#c79c6e]"
+                      className="w-full p-3 rounded-xl bg-black/40 border border-[#C878BE]/40 text-white text-sm leading-relaxed outline-none resize-none focus:border-[#C878BE]"
                       maxLength={3000}
                     />
                     <div className="flex items-center justify-end gap-2">
@@ -835,7 +841,7 @@ export default function LessonComments({
                         type="button"
                         disabled={isSavingEdit || !editText.trim()}
                         onClick={() => handleSaveEdit(comment._id, false)}
-                        className="px-4 py-1.5 rounded-lg bg-[#c79c6e] text-black font-semibold text-xs tracking-wider uppercase flex items-center gap-1.5 hover:brightness-110 transition-all disabled:opacity-50"
+                        className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white font-semibold text-xs tracking-wider uppercase flex items-center gap-1.5 hover:brightness-110 transition-all disabled:opacity-50"
                       >
                         {isSavingEdit ? <CircleNotch size={12} className="animate-spin" /> : <Check size={12} weight="bold" />}
                         <span>Save Changes</span>
@@ -854,13 +860,13 @@ export default function LessonComments({
                   <button
                     type="button"
                     onClick={() => handleToggleLike(comment._id, false)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                       comment.hasLiked
-                        ? 'bg-[#c79c6e]/15 border-[#c79c6e]/40 text-[#c79c6e]'
+                        ? 'bg-[#C878BE]/20 border-[#C878BE]/50 text-[#E3B8DE] shadow-[0_0_12px_rgba(200,120,190,0.2)]'
                         : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:border-white/20'
                     }`}
                   >
-                    <Heart size={14} weight={comment.hasLiked ? 'fill' : 'regular'} />
+                    <Heart size={14} weight={comment.hasLiked ? 'fill' : 'regular'} className={comment.hasLiked ? 'text-[#E3B8DE]' : ''} />
                     <span className="font-mono font-medium">{comment.likesCount || 0}</span>
                   </button>
 
@@ -872,7 +878,7 @@ export default function LessonComments({
                       setActiveReplyCommentId(isReplyingThis ? null : comment._id);
                       setReplyText('');
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-white/60 hover:text-[#E3B8DE] hover:bg-white/5 transition-colors cursor-pointer"
                   >
                     <ChatCircleDots size={14} />
                     <span>Reply</span>
@@ -883,7 +889,7 @@ export default function LessonComments({
                 {isReplyingThis && (
                   <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
                     <div className="flex items-start gap-3">
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 bg-gradient-to-br from-[#1c1a17] to-[#0f0e0c] border border-[#c79c6e]/30 text-[#c79c6e]">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 bg-gradient-to-br from-[#2a1330] to-[#160b1c] border border-[#C878BE]/40 text-[#E3B8DE]">
                         {getInitials(auth.userName)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -898,7 +904,7 @@ export default function LessonComments({
                           placeholder={`Reply to ${comment.userName}... (Esc to cancel)`}
                           maxLength={3000}
                           autoFocus
-                          className="w-full p-3 rounded-xl bg-black/50 border border-white/15 text-white text-sm placeholder-white/30 focus:border-[#c79c6e]/60 outline-none resize-none leading-relaxed"
+                          className="w-full p-3 rounded-xl bg-black/50 border border-[#C878BE]/30 text-white text-sm placeholder-white/30 focus:border-[#C878BE] outline-none resize-none leading-relaxed"
                         />
                         <div className="flex items-center justify-end gap-2 mt-2">
                           <button
@@ -912,7 +918,7 @@ export default function LessonComments({
                             type="button"
                             disabled={isPostingReply || !replyText.trim()}
                             onClick={() => handlePostReply(comment._id)}
-                            className="px-4 py-1.5 rounded-lg bg-[#c79c6e] text-black font-semibold text-xs tracking-wider uppercase flex items-center gap-1.5 hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer"
+                            className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white font-semibold text-xs tracking-wider uppercase flex items-center gap-1.5 hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer shadow-[0_0_15px_rgba(200,120,190,0.25)]"
                           >
                             {isPostingReply ? (
                               <CircleNotch size={12} className="animate-spin" />
@@ -929,7 +935,7 @@ export default function LessonComments({
 
                 {/* ── Nested Replies Thread (1-level strictly) ── */}
                 {comment.replies && comment.replies.length > 0 && (
-                  <div className="mt-4 pt-3 border-t border-white/[0.06] space-y-3 pl-3 md:pl-6 border-l-2 border-[#c79c6e]/20 ml-2 md:ml-3">
+                  <div className="mt-4 pt-3 border-t border-white/[0.06] space-y-3 pl-3 md:pl-6 border-l-2 border-[#C878BE]/30 ml-2 md:ml-3">
                     {comment.replies.map((reply) => {
                       const isInstructorReply = 
                         reply.authorRole === 'instructor' || 
@@ -949,18 +955,18 @@ export default function LessonComments({
                           key={reply._id}
                           className={`p-3.5 md:p-4 rounded-xl border transition-all ${
                             isInstructorReply
-                              ? 'bg-gradient-to-r from-[#1f1911] via-[#16120c] to-[#0d0b08] border-[#c79c6e]/70 shadow-[0_0_20px_rgba(199,156,110,0.15)] ring-1 ring-[#c79c6e]/30'
+                              ? 'bg-gradient-to-r from-[#200c24] via-[#16091b] to-[#0c0510] border-[#C878BE]/60 shadow-[0_0_20px_rgba(200,120,190,0.15)] ring-1 ring-[#C878BE]/30'
                               : isReplyHighlighted
-                              ? 'bg-white/[0.03] border-[#c79c6e] shadow-[0_0_15px_rgba(199,156,110,0.2)]'
+                              ? 'bg-[#140b20] border-[#C878BE] shadow-[0_0_15px_rgba(200,120,190,0.2)]'
                               : 'bg-white/[0.02] border-white/[0.06]'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-serif font-bold shrink-0 ${
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                                 isInstructorReply
-                                  ? 'bg-gradient-to-br from-[#e0b98d] via-[#c79c6e] to-[#9e764a] text-black shadow-[0_0_12px_rgba(199,156,110,0.4)] ring-2 ring-[#c79c6e]/50'
-                                  : 'bg-gradient-to-br from-[#1c1a17] to-[#0f0e0c] border border-[#c79c6e]/30 text-[#c79c6e]'
+                                  ? 'bg-gradient-to-br from-[#E3B8DE] via-[#C878BE] to-[#8E3283] text-black shadow-[0_0_12px_rgba(200,120,190,0.4)] ring-2 ring-[#C878BE]/50'
+                                  : 'bg-gradient-to-br from-[#2a1330] to-[#160b1c] border border-[#C878BE]/40 text-[#E3B8DE]'
                               }`}>
                                 {isInstructorReply ? 'A' : getInitials(reply.userName)}
                               </div>
@@ -968,13 +974,13 @@ export default function LessonComments({
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className={`text-xs md:text-sm font-semibold truncate ${
-                                    isInstructorReply ? 'text-[#c79c6e]' : 'text-white'
+                                    isInstructorReply ? 'text-[#E3B8DE]' : 'text-white'
                                   }`}>
                                     {reply.userName}
                                   </span>
 
                                   {isInstructorReply && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#c79c6e] to-[#ad8255] text-black text-[9px] font-bold uppercase tracking-wider shadow-sm">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white text-[9px] font-bold uppercase tracking-wider shadow-sm border border-[#C878BE]/30">
                                       <Sparkle size={9} weight="fill" />
                                       COURSE INSTRUCTOR
                                     </span>
@@ -1005,7 +1011,7 @@ export default function LessonComments({
                                 </button>
 
                                 {openMenuId === reply._id && (
-                                  <div className="absolute right-0 top-full mt-1 w-28 bg-[#141414] border border-white/15 rounded-xl shadow-2xl py-1 z-20">
+                                  <div className="absolute right-0 top-full mt-1 w-28 bg-[#170e24] border border-white/15 rounded-xl shadow-2xl py-1 z-20">
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -1040,7 +1046,7 @@ export default function LessonComments({
                                     handleSaveEdit(reply._id, true, comment._id);
                                   }
                                 }}
-                                className="w-full p-2.5 rounded-lg bg-black/50 border border-[#c79c6e]/40 text-white text-xs leading-relaxed outline-none resize-none"
+                                className="w-full p-2.5 rounded-lg bg-black/50 border border-[#C878BE]/40 text-white text-xs leading-relaxed outline-none resize-none"
                                 maxLength={3000}
                               />
                               <div className="flex items-center justify-end gap-2">
@@ -1055,7 +1061,7 @@ export default function LessonComments({
                                   type="button"
                                   disabled={isSavingEdit || !editText.trim()}
                                   onClick={() => handleSaveEdit(reply._id, true, comment._id)}
-                                  className="px-3 py-1 rounded bg-[#c79c6e] text-black font-semibold text-xs uppercase"
+                                  className="px-3 py-1 rounded bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white font-semibold text-xs uppercase"
                                 >
                                   Save
                                 </button>
@@ -1071,13 +1077,13 @@ export default function LessonComments({
                           <button
                             type="button"
                             onClick={() => handleToggleLike(reply._id, true, comment._id)}
-                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] transition-all ${
+                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] transition-all cursor-pointer ${
                               reply.hasLiked
-                                ? 'bg-[#c79c6e]/15 border-[#c79c6e]/40 text-[#c79c6e]'
+                                ? 'bg-[#C878BE]/20 border-[#C878BE]/50 text-[#E3B8DE]'
                                 : 'bg-transparent border-white/10 text-white/50 hover:text-white'
                             }`}
                           >
-                            <Heart size={12} weight={reply.hasLiked ? 'fill' : 'regular'} />
+                            <Heart size={12} weight={reply.hasLiked ? 'fill' : 'regular'} className={reply.hasLiked ? 'text-[#E3B8DE]' : ''} />
                             <span className="font-mono">{reply.likesCount || 0}</span>
                           </button>
                         </div>
@@ -1096,11 +1102,11 @@ export default function LessonComments({
                 type="button"
                 disabled={isLoadingMore}
                 onClick={handleLoadMore}
-                className="px-6 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#c79c6e]/40 text-xs font-semibold text-white/80 hover:text-white uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 mx-auto cursor-pointer"
+                className="px-6 py-2.5 rounded-xl bg-white/[0.04] hover:bg-[#C878BE]/10 border border-white/10 hover:border-[#C878BE]/40 text-xs font-semibold text-white/80 hover:text-[#E3B8DE] uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 mx-auto cursor-pointer shadow-sm"
               >
                 {isLoadingMore ? (
                   <>
-                    <CircleNotch size={14} className="animate-spin text-[#c79c6e]" />
+                    <CircleNotch size={14} className="animate-spin text-[#C878BE]" />
                     <span>Loading more comments...</span>
                   </>
                 ) : (
@@ -1119,13 +1125,18 @@ export default function LessonComments({
           aria-modal="true"
           className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
-          <div className="bg-[#111111] border border-white/15 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+          <div className="bg-[#130b1c] border border-[#C878BE]/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-serif text-lg text-white font-medium">Delete comment?</h4>
+              <h4 
+                className="text-lg text-white font-semibold"
+                style={{ fontFamily: 'var(--head)' }}
+              >
+                Delete comment?
+              </h4>
               <button
                 type="button"
                 onClick={() => setCommentToDelete(null)}
-                className="text-white/40 hover:text-white"
+                className="text-white/40 hover:text-white cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -1140,7 +1151,7 @@ export default function LessonComments({
               <button
                 type="button"
                 onClick={() => setCommentToDelete(null)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -1148,7 +1159,7 @@ export default function LessonComments({
                 type="button"
                 disabled={isDeleting}
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30 text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30 text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
               >
                 {isDeleting ? <CircleNotch size={14} className="animate-spin" /> : <Trash size={14} />}
                 <span>Delete</span>
