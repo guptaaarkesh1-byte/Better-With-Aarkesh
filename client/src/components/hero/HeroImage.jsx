@@ -17,8 +17,20 @@ export default function HeroImage({
     );
   }, { scope: container, dependencies: [bgImageUrl] });
 
-  // If bgImageUrl is provided from backend, use it; otherwise use local high-res asset
-  const imgSrc = bgImageUrl || defaultHeroImg;
+  // Resolve image URL dynamically with fallback to local high-res asset
+  const resolveHeroImg = (url) => {
+    if (!url) return defaultHeroImg;
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
+    if (url.includes('localhost:5000/uploads/')) {
+      return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
+    }
+    if (url.startsWith('/uploads/')) {
+      return `${apiUrl}${url}`;
+    }
+    return url;
+  };
+
+  const imgSrc = resolveHeroImg(bgImageUrl);
 
   return (
     <div 
@@ -29,6 +41,11 @@ export default function HeroImage({
         ref={imageRef}
         src={imgSrc}
         alt="Aarkesh - Life Coach"
+        onError={(e) => {
+          if (e.currentTarget.src !== defaultHeroImg) {
+            e.currentTarget.src = defaultHeroImg;
+          }
+        }}
         className="w-full h-full object-cover object-[85%_top] md:object-[88%_top] lg:object-[85%_top] filter contrast-[1.02] brightness-[0.99]"
       />
 

@@ -100,8 +100,20 @@
       {/* Background Image & Soft Blends */}
       <div className="absolute inset-0 z-0 pointer-events-none block overflow-hidden">
         <img 
-          src={data.bgImg || defaultBgImg} 
+          src={(() => {
+            const url = data.bgImg;
+            if (!url) return defaultBgImg;
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
+            if (url.includes('localhost:5000/uploads/')) return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
+            if (url.startsWith('/uploads/')) return `${apiUrl}${url}`;
+            return url;
+          })()} 
           alt="Coaching Process"
+          onError={(e) => {
+            if (e.currentTarget.src !== defaultBgImg) {
+              e.currentTarget.src = defaultBgImg;
+            }
+          }}
           className="w-full h-full object-cover opacity-100 will-change-transform"
           style={{
             objectPosition: `${DESKTOP_IMAGE_CONTROLS.posX} ${DESKTOP_IMAGE_CONTROLS.posY}`,
