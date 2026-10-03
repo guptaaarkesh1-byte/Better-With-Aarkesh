@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   GraduationCap, 
   Desktop, 
@@ -28,25 +28,18 @@ import {
   Clock,
   SquaresFour,
   SlidersHorizontal,
-  UploadSimple,
-  Image as ImageIcon
+  Palette
 } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-const DEFAULT_COURSE_FALLBACK_IMAGES = {
-  'better-man': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop',
-  'difficult-people': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800&auto=format&fit=crop',
-  'decisions': 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop'
-};
 
 const SECTION_TABS = [
   {
     id: 'hero',
     label: '1. Hero & Pricing Sidebar',
     icon: <Desktop size={18} />,
-    description: 'Image thumbnail, title, tags, price & summary card'
+    description: 'Theme style, title, tags, price & summary card'
   },
   {
     id: 'syllabus',
@@ -64,7 +57,6 @@ const SECTION_TABS = [
 
 export default function AdminCourseDetailEditor() {
   const { showToast } = useToast();
-  const fileInputRef = useRef(null);
   const [coursesMap, setCoursesMap] = useState({});
   
   // viewMode: 'catalog' (card grid) | 'editor' (3-section editor)
@@ -104,12 +96,11 @@ export default function AdminCourseDetailEditor() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
   const [newCourseTitle, setNewCourseTitle] = useState('');
   const [newCourseSlug, setNewCourseSlug] = useState('');
-  const [newCourseImage, setNewCourseImage] = useState('');
+  const [newCourseTheme, setNewCourseTheme] = useState('black');
 
   // Fetch all courses map
   const fetchAllCourses = async () => {
@@ -158,35 +149,6 @@ export default function AdminCourseDetailEditor() {
         [field]: value
       }
     }));
-  };
-
-  // Image Upload Handler
-  const handleImageUpload = async (file) => {
-    if (!file) return;
-    if (file.size > 3 * 1024 * 1024) {
-      showToast('Image size must be under 3 MB', 'error');
-      return;
-    }
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      setUploadingImage(true);
-      const res = await fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Failed to upload image');
-      const data = await res.json();
-      const uploadedUrl = data.url || data.imageUrl;
-      handleFieldChange('imageUrl', uploadedUrl);
-      showToast('Course image uploaded successfully!', 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('Image upload failed', 'error');
-    } finally {
-      setUploadingImage(false);
-    }
   };
 
   // Writeup (Methodology) Field Updater
@@ -361,7 +323,7 @@ export default function AdminCourseDetailEditor() {
         body: JSON.stringify(updatedCourse)
       });
       if (!res.ok) throw new Error('Failed to update status');
-      showToast(`Status updated: "${updatedCourse.title || slugToToggle}" is now ${updatedSoon ? 'Waitlist / Soon' : 'LIVE'}!`, 'success');
+      showToast(`Status updated: "${updatedCourse.title || slugToToggle}" is now ${updatedSoon ? 'Waitlist' : 'LIVE'}!`, 'success');
     } catch (err) {
       console.error(err);
       showToast('Error updating course status', 'error');
@@ -478,7 +440,7 @@ export default function AdminCourseDetailEditor() {
     const newCourseObj = {
       slug: cleanSlug,
       n: String(nextCount).padStart(2, '0'),
-      imageUrl: newCourseImage.trim() || 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop',
+      theme: newCourseTheme || 'black',
       chips: ['Leadership', 'Mastery'],
       soon: true,
       cls: 'v3',
@@ -529,20 +491,20 @@ export default function AdminCourseDetailEditor() {
     setShowAddCourseModal(false);
     setNewCourseTitle('');
     setNewCourseSlug('');
-    setNewCourseImage('');
     showToast(`🎉 New course "${newCourseObj.title}" created! Now configure its 3 sections.`, 'success');
   };
 
-  // Helper to get image URL for course card
-  const getCourseImage = (course, slug) => {
-    if (course.imageUrl && course.imageUrl.trim()) return course.imageUrl;
-    if (DEFAULT_COURSE_FALLBACK_IMAGES[slug]) return DEFAULT_COURSE_FALLBACK_IMAGES[slug];
-    return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop';
+  // Helper to determine the theme of a card
+  const getCardTheme = (course, index) => {
+    if (course.theme) return course.theme;
+    if (course.slug === 'better-man' || index % 3 === 0) return 'black';
+    if (course.slug === 'difficult-people' || index % 3 === 1) return 'purple';
+    return 'white';
   };
 
   if (loading) {
     return (
-      <div className="w-full h-96 flex items-center justify-center gap-3 text-white/50 bg-[#050505]">
+      <div className="w-full h-96 flex items-center justify-center gap-3 text-white/50 bg-[#0e070e]">
         <ArrowClockwise size={24} className="animate-spin text-[#c9542f]" />
         <span>Loading courses library...</span>
       </div>
@@ -568,26 +530,26 @@ export default function AdminCourseDetailEditor() {
   const totalModules = courseSlugs.reduce((acc, s) => acc + (coursesMap[s]?.syllabus?.length || 0), 0);
 
   // =========================================================================
-  // VIEW 1: CATALOG CARD GRID VIEW
+  // VIEW 1: CATALOG CARD GRID VIEW (3 CLIENT THEMES MATCHING)
   // =========================================================================
   if (viewMode === 'catalog') {
     return (
-      <div className="w-full min-h-[calc(100vh-120px)] bg-[#050505] text-white flex flex-col">
+      <div className="w-full min-h-[calc(100vh-120px)] bg-gradient-to-b from-[#180e18] via-[#0f0810] to-[#080508] text-white flex flex-col">
         {/* Top Header Banner */}
-        <div className="w-full bg-[#0a0a0a] border-b border-white/5 px-6 sm:px-10 py-6 sm:py-8 sticky top-[57px] z-20 shadow-md">
+        <div className="w-full bg-[#110912]/90 backdrop-blur-md border-b border-white/10 px-6 sm:px-10 py-6 sm:py-8 sticky top-[57px] z-20 shadow-md">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="px-2.5 py-0.5 rounded-full bg-[#c9542f]/15 text-[#c9542f] text-[10px] uppercase font-mono font-bold tracking-widest border border-[#c9542f]/30">
-                  COURSE CATALOG & 3-SECTIONS BUILDER
+                  3-THEME COURSE CATALOG & EDITOR
                 </span>
               </div>
               <h1 className="font-serif text-2xl sm:text-3xl text-white font-medium flex items-center gap-3">
                 <GraduationCap size={30} className="text-[#c9542f]" />
                 Masterclasses Library
               </h1>
-              <p className="text-white/50 text-xs sm:text-sm mt-1 max-w-2xl">
-                Click <strong className="text-white font-medium">"Edit 3-Sections"</strong> on any course card below to customize its Hero & Pricing Sidebar, Syllabus Roadmap, and Core Methodology long-form page.
+              <p className="text-white/60 text-xs sm:text-sm mt-1 max-w-2xl">
+                Showing your courses in their exact 3 visual themes: <strong className="text-white">Obsidian Black</strong>, <strong className="text-[#E3B8DE]">Royal Purple</strong>, and <strong className="text-white bg-white/10 px-1.5 py-0.5 rounded">Clean White</strong>. Click <strong className="text-[#c9542f]">"Edit 3-Sections"</strong> to customize.
               </p>
             </div>
 
@@ -604,28 +566,28 @@ export default function AdminCourseDetailEditor() {
           </div>
 
           {/* Quick Metrics Bar & Search / Filter Controls */}
-          <div className="max-w-7xl mx-auto mt-6 pt-5 border-t border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="max-w-7xl mx-auto mt-6 pt-5 border-t border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Quick Metrics Chips */}
             <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
-              <div className="flex items-center gap-2 text-xs text-white/60">
+              <div className="flex items-center gap-2 text-xs text-white/70">
                 <span className="font-serif text-base text-white font-bold">{totalCourses}</span>
                 <span>Total Courses</span>
               </div>
-              <span className="text-white/10 hidden sm:inline">•</span>
-              <div className="flex items-center gap-2 text-xs text-white/60">
+              <span className="text-white/20 hidden sm:inline">•</span>
+              <div className="flex items-center gap-2 text-xs text-white/70">
                 <span className="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
                 <span className="font-serif text-base text-emerald-400 font-bold">{liveCount}</span>
                 <span>Live Enrolling</span>
               </div>
-              <span className="text-white/10 hidden sm:inline">•</span>
-              <div className="flex items-center gap-2 text-xs text-white/60">
+              <span className="text-white/20 hidden sm:inline">•</span>
+              <div className="flex items-center gap-2 text-xs text-white/70">
                 <span className="inline-block w-2 h-2 rounded-full bg-[#c9542f]"></span>
                 <span className="font-serif text-base text-[#c9542f] font-bold">{waitlistCount}</span>
                 <span>Waitlist / Coming Soon</span>
               </div>
-              <span className="text-white/10 hidden sm:inline">•</span>
-              <div className="flex items-center gap-2 text-xs text-white/60">
-                <span className="font-serif text-base text-white font-bold">{totalModules}</span>
+              <span className="text-white/20 hidden sm:inline">•</span>
+              <div className="flex items-center gap-2 text-xs text-white/70">
+                <span className="font-serif text-base text-[#E3B8DE] font-bold">{totalModules}</span>
                 <span>Total Modules</span>
               </div>
             </div>
@@ -640,12 +602,12 @@ export default function AdminCourseDetailEditor() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search course title or slug..."
-                  className="w-full bg-[#141414] border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#c9542f] placeholder-white/30"
+                  className="w-full bg-[#181119] border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#c9542f] placeholder-white/30"
                 />
               </div>
 
               {/* Status Filter Buttons */}
-              <div className="flex items-center bg-[#141414] p-0.5 rounded-xl border border-white/10">
+              <div className="flex items-center bg-[#181119] p-0.5 rounded-xl border border-white/10">
                 <button
                   type="button"
                   onClick={() => setStatusFilter('all')}
@@ -678,10 +640,10 @@ export default function AdminCourseDetailEditor() {
           </div>
         </div>
 
-        {/* ── COURSE CARDS GRID ── */}
+        {/* ── COURSE CARDS GRID (EXACT 3 CLIENT THEMES) ── */}
         <div className="max-w-7xl mx-auto w-full p-6 sm:p-10 flex-1">
           {filteredSlugs.length === 0 ? (
-            <div className="w-full bg-[#0d0d0d] border border-dashed border-white/10 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
+            <div className="w-full bg-[#140c15] border border-dashed border-white/10 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
               <GraduationCap size={40} className="text-white/20" />
               <h3 className="text-base font-semibold text-white/80">No courses match your search</h3>
               <p className="text-xs text-white/40 max-w-sm">
@@ -696,145 +658,123 @@ export default function AdminCourseDetailEditor() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredSlugs.map((slug) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+              {filteredSlugs.map((slug, idx) => {
                 const c = coursesMap[slug] || {};
                 const isLive = !c.soon;
-                const moduleCount = c.syllabus?.length || 0;
-                const courseImg = getCourseImage(c, slug);
+                const cardTheme = getCardTheme(c, idx);
+
+                // Setup theme-specific card container classes
+                let cardBgClass = 'bg-[#0B070B] text-white border border-[#c878be]/25 shadow-2xl shadow-black/80';
+                let visBgStyle = { background: 'radial-gradient(circle at 30% 25%, #8A2E80, #3D1A38 60%, #0A050A)' };
+                let titleColor = 'text-white';
+                let priceColor = 'text-[#E3B8DE]';
+                let badgeClass = 'bg-[#2E1A2B] text-[#E3B8DE] border border-[#c878be]/30';
+
+                if (cardTheme === 'purple') {
+                  cardBgClass = 'bg-gradient-to-b from-[#58184E] to-[#2E0B29] text-white border border-white/20 shadow-2xl shadow-black/60';
+                  visBgStyle = { background: 'radial-gradient(circle at 70% 25%, #1a1a1a, #080808 75%)' };
+                  titleColor = 'text-white';
+                  priceColor = 'text-white';
+                  badgeClass = 'bg-white/95 text-[#7A2A70]';
+                } else if (cardTheme === 'white') {
+                  cardBgClass = 'bg-[#FFFFFF] text-[#110D13] border border-[#7A2A70]/15 shadow-2xl shadow-purple-950/15';
+                  visBgStyle = { background: 'radial-gradient(circle at 30% 28%, #C878BE, #7A2A70 45%, #3D1A38 80%)' };
+                  titleColor = 'text-[#110D13]';
+                  priceColor = 'text-[#7A2A70]';
+                  badgeClass = 'bg-[#F6ECF4] text-[#7A2A70] border border-[#7A2A70]/20';
+                }
 
                 return (
                   <div
                     key={slug}
-                    className="group bg-[#0e0e0e] border border-white/10 hover:border-[#c9542f]/60 rounded-3xl overflow-hidden transition-all duration-300 flex flex-col shadow-xl hover:shadow-[0_10px_35px_rgba(201,84,47,0.15)] hover:-translate-y-1"
+                    className={`group ${cardBgClass} rounded-[28px] p-6 transition-all duration-300 flex flex-col justify-between hover:-translate-y-2 hover:shadow-[0_20px_45px_rgba(122,42,112,0.25)] relative overflow-hidden`}
                   >
-                    {/* Top Artwork / Thumbnail Banner With Real Image */}
-                    <div className="h-56 relative overflow-hidden flex flex-col justify-between p-5 bg-[#141414]">
-                      {/* Background Image */}
-                      <img 
-                        src={courseImg} 
-                        alt={c.title || slug}
-                        className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop';
-                        }}
-                      />
-                      
-                      {/* Dark gradient overlay on top of image for maximum legibility */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/60 to-black/40 pointer-events-none" />
-
-                      {/* Top Header Row in Card Banner */}
-                      <div className="flex items-center justify-between gap-2 relative z-10">
-                        {/* Course Number & Slug Badge */}
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-white px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md border border-white/20">
-                            #{c.n || '01'}
+                    {/* Top Visual Box with Huge Number & Slanted Pills */}
+                    <div
+                      style={visBgStyle}
+                      className="relative aspect-[16/10] rounded-[22px] mb-5 overflow-hidden flex items-center justify-center border border-white/10 group-hover:scale-[1.01] transition-transform duration-300 shadow-inner select-none"
+                    >
+                      {/* Top Right Live / Coming Soon Status Pill */}
+                      <div className="absolute top-3 right-3 z-20">
+                        {isLive ? (
+                          <span 
+                            onClick={(e) => handleToggleCourseStatus(slug, e)}
+                            title="Click to toggle status"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-[#E11D48] text-[10px] font-bold uppercase tracking-wider shadow-md cursor-pointer hover:scale-105 transition-transform"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48] animate-pulse"></span>
+                            Live
                           </span>
-                          <span className="font-mono text-[11px] text-white/70 px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-md border border-white/10">
-                            /{slug}
+                        ) : (
+                          <span 
+                            onClick={(e) => handleToggleCourseStatus(slug, e)}
+                            title="Click to toggle status"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/65 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider border border-white/20 shadow-md cursor-pointer hover:scale-105 transition-transform"
+                          >
+                            Coming soon
                           </span>
-                        </div>
-
-                        {/* Interactive Status Pill */}
-                        <button
-                          type="button"
-                          onClick={(e) => handleToggleCourseStatus(slug, e)}
-                          title="Click to toggle Live ↔ Waitlist status"
-                          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md transition-all cursor-pointer border ${
-                            isLive
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40 hover:bg-emerald-500/30'
-                              : 'bg-[#c9542f]/20 text-[#ff8059] border-[#c9542f]/40 hover:bg-[#c9542f]/30'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-400 animate-pulse' : 'bg-[#c9542f]'}`}></span>
-                          <span>{isLive ? 'LIVE' : 'WAITLIST'}</span>
-                        </button>
+                        )}
                       </div>
 
-                      {/* Course Title & Category Chips */}
-                      <div className="relative z-10 space-y-2 mt-auto">
-                        <h2 className="font-serif text-2xl font-bold text-white tracking-tight leading-snug drop-shadow-md group-hover:text-[#ff7347] transition-colors line-clamp-2">
+                      {/* Center Huge Sequence Number */}
+                      <span className="font-sans font-bold text-7xl sm:text-8xl text-white/95 tracking-tighter leading-none drop-shadow-md">
+                        {c.n || String(idx + 1).padStart(2, '0')}
+                      </span>
+
+                      {/* Top Right Tilted Chip Pill */}
+                      {c.chips?.[0] && (
+                        <span className="absolute top-4 right-1 sm:right-2 rotate-[-12deg] bg-gradient-to-br from-[#C878BE] to-[#6E2266] text-white px-3.5 py-1.5 rounded-2xl text-[11px] sm:text-xs font-semibold shadow-lg shadow-black/40 border border-white/20">
+                          {c.chips[0]}
+                        </span>
+                      )}
+
+                      {/* Bottom Left Tilted Chip Pill */}
+                      {c.chips?.[1] && (
+                        <span className="absolute bottom-4 left-1 sm:left-2 rotate-[9deg] bg-gradient-to-br from-[#8A6BFF] to-[#3A2A86] text-white px-3.5 py-1.5 rounded-2xl text-[11px] sm:text-xs font-semibold shadow-lg shadow-black/40 border border-white/20">
+                          {c.chips[1]}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Content Section */}
+                    <div className="flex-1 flex flex-col justify-between space-y-4">
+                      <div>
+                        {/* Course Title */}
+                        <h2 className={`font-serif text-2xl sm:text-3xl font-bold tracking-tight leading-tight ${titleColor} mb-2`}>
                           {c.title || slug}
                         </h2>
 
-                        {/* Category chips / Tags */}
-                        {Array.isArray(c.chips) && c.chips.length > 0 && (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {c.chips.map((chip, idx) => (
-                              <span
-                                key={idx}
-                                className="px-2.5 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] font-medium text-white/90 border border-white/15"
-                              >
-                                {chip}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Card Body - Metadata & Summary */}
-                    <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
-                      {/* Course Short Lede */}
-                      <p className="text-white/70 text-xs sm:text-sm leading-relaxed line-clamp-2 min-h-[40px]">
-                        {c.lede || c.d || 'Master the psychology and strategies to elevate your life and career.'}
-                      </p>
-
-                      {/* 4-Column Mini Stats Grid */}
-                      <div className="grid grid-cols-2 gap-2.5 bg-[#141414] p-3.5 rounded-2xl border border-white/5">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] uppercase font-mono text-white/40">Enrollment Fee</span>
-                          <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className="font-serif text-sm font-bold text-white">{c.price || '₹15,000'}</span>
-                            {c.was && <span className="text-[11px] text-white/30 line-through">{c.was}</span>}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col">
-                          <span className="text-[10px] uppercase font-mono text-white/40">Curriculum</span>
-                          <span className="font-serif text-sm font-bold text-[#c9542f] mt-0.5">
-                            {moduleCount} Modules
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col border-t border-white/5 pt-2">
-                          <span className="text-[10px] uppercase font-mono text-white/40">Format</span>
-                          <span className="text-xs text-white/80 font-medium mt-0.5">
-                            {c.sidebarChips?.[0]?.[1] || 'Self-Paced'}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col border-t border-white/5 pt-2">
-                          <span className="text-[10px] uppercase font-mono text-white/40">Mentorship</span>
-                          <span className="text-xs text-white/80 font-medium mt-0.5">
-                            {c.facts?.[1]?.[0] || '2'} {c.facts?.[1]?.[1] || '1-on-1 Sessions'}
-                          </span>
-                        </div>
+                        {/* Course Short Description */}
+                        <p className={`text-xs sm:text-sm line-clamp-2 leading-relaxed ${cardTheme === 'white' ? 'text-stone-600' : 'text-white/70'}`}>
+                          {c.lede || c.d || 'Master the psychology and strategies to elevate your life.'}
+                        </p>
                       </div>
 
-                      {/* Key Highlights Bullet points */}
-                      {Array.isArray(c.hl) && c.hl.length > 0 && (
-                        <div className="space-y-1.5">
-                          {c.hl.slice(0, 2).map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-[11px] text-white/80">
-                              <CheckCircle size={14} weight="fill" className="text-[#c9542f] shrink-0" />
-                              <span className="line-clamp-1">{item[0]} <span className="text-white/40">{item[1]}</span></span>
-                            </div>
-                          ))}
+                      {/* Price Row & Tag Badge */}
+                      <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                        <div className={`flex items-baseline gap-2 font-serif text-base sm:text-lg ${cardTheme === 'white' ? 'text-[#110D13]' : 'text-white'}`}>
+                          <span>Price</span>
+                          <b className={`text-xl sm:text-2xl font-bold ${priceColor}`}>{c.price || '₹15,000'}</b>
+                          {c.was && <s className={`text-xs ${cardTheme === 'white' ? 'text-stone-400' : 'text-white/40'}`}>{c.was}</s>}
                         </div>
-                      )}
 
-                      {/* Card Action Buttons */}
-                      <div className="pt-3 border-t border-white/5 flex flex-col gap-2.5">
-                        {/* Primary Action: Edit 3-Sections */}
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
+                          {c.soon ? 'WAITLIST' : 'POPULAR'}
+                        </span>
+                      </div>
+
+                      {/* Admin Action Buttons */}
+                      <div className="pt-2 flex flex-col gap-2">
+                        {/* Primary Button: Edit 3-Sections */}
                         <button
                           type="button"
                           onClick={() => handleOpenEditor(slug)}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#c9542f]/25 cursor-pointer group-hover:scale-[1.02]"
+                          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#c9542f]/25 cursor-pointer hover:scale-[1.02]"
                         >
-                          <PencilSimple size={15} weight="bold" />
+                          <PencilSimple size={16} weight="bold" />
                           <span>Edit 3-Sections</span>
-                          <CaretRight size={14} weight="bold" className="ml-0.5" />
+                          <CaretRight size={14} weight="bold" />
                         </button>
 
                         {/* Secondary Actions: View Live & Delete */}
@@ -843,7 +783,11 @@ export default function AdminCourseDetailEditor() {
                             href={`https://aarkeshgupta.com/course/${slug}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium border border-white/5 transition-colors"
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors ${
+                              cardTheme === 'white'
+                                ? 'bg-stone-100 hover:bg-stone-200 text-stone-800'
+                                : 'bg-white/10 hover:bg-white/15 text-white/80'
+                            }`}
                           >
                             <ArrowSquareOut size={13} />
                             <span>View Live</span>
@@ -852,7 +796,7 @@ export default function AdminCourseDetailEditor() {
                           <button
                             type="button"
                             onClick={(e) => handleDeleteCourse(slug, c.title, e)}
-                            className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs border border-red-500/20 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs transition-colors cursor-pointer"
                             title={`Delete course ${c.title || slug}`}
                           >
                             <Trash size={15} />
@@ -867,17 +811,17 @@ export default function AdminCourseDetailEditor() {
               {/* ── "+ CREATE NEW MASTERCLASS" CARD ── */}
               <div
                 onClick={() => setShowAddCourseModal(true)}
-                className="group bg-[#0a0a0a] border-2 border-dashed border-white/10 hover:border-[#c9542f]/60 rounded-3xl p-8 flex flex-col items-center justify-center text-center gap-4 transition-all duration-300 cursor-pointer min-h-[420px] hover:bg-[#110f11]"
+                className="group bg-[#110912]/80 border-2 border-dashed border-white/15 hover:border-[#c9542f]/60 rounded-[28px] p-8 flex flex-col items-center justify-center text-center gap-4 transition-all duration-300 cursor-pointer min-h-[440px] hover:bg-[#180e1a]"
               >
-                <div className="w-16 h-16 rounded-2xl bg-[#c9542f]/10 group-hover:bg-[#c9542f]/20 border border-[#c9542f]/30 flex items-center justify-center text-[#c9542f] transition-transform duration-300 group-hover:scale-110">
+                <div className="w-16 h-16 rounded-2xl bg-[#c9542f]/15 group-hover:bg-[#c9542f]/25 border border-[#c9542f]/30 flex items-center justify-center text-[#c9542f] transition-transform duration-300 group-hover:scale-110">
                   <Plus size={32} weight="bold" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-lg text-white font-medium group-hover:text-[#c9542f] transition-colors">
+                  <h3 className="font-serif text-xl text-white font-medium group-hover:text-[#c9542f] transition-colors">
                     Add New Masterclass
                   </h3>
-                  <p className="text-white/40 text-xs max-w-xs mt-1 leading-relaxed">
-                    Create a custom course with a dedicated URL, thumbnail image, pricing structure, interactive syllabus roadmap, and long-form narrative.
+                  <p className="text-white/50 text-xs max-w-xs mt-1 leading-relaxed">
+                    Create a custom course with its own visual theme, sequence number, pricing, syllabus modules roadmap, and long-form narrative.
                   </p>
                 </div>
                 <span className="px-5 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider shadow-md shadow-[#c9542f]/20 transition-all">
@@ -891,10 +835,10 @@ export default function AdminCourseDetailEditor() {
         {/* ── CREATE NEW COURSE MODAL ── */}
         {showAddCourseModal && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-[#0e0e0e] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
-              <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <div className="w-full max-w-md bg-[#140c15] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <GraduationCap size={20} className="text-[#c9542f]" />
+                  <GraduationCap size={22} className="text-[#c9542f]" />
                   <h3 className="font-serif text-lg text-white font-medium">Create New Masterclass</h3>
                 </div>
                 <button
@@ -908,38 +852,72 @@ export default function AdminCourseDetailEditor() {
 
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs uppercase tracking-wider text-white/60">Masterclass Title</label>
+                  <label className="text-xs uppercase tracking-wider text-white/70">Masterclass Title</label>
                   <input
                     type="text"
                     value={newCourseTitle}
                     onChange={(e) => setNewCourseTitle(e.target.value)}
                     placeholder="e.g. Executive Gravitas & Vocal Presence"
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f]"
+                    className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f]"
                     autoFocus
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs uppercase tracking-wider text-white/60">Custom URL Slug (Optional)</label>
+                  <label className="text-xs uppercase tracking-wider text-white/70">Custom URL Slug (Optional)</label>
                   <input
                     type="text"
                     value={newCourseSlug}
                     onChange={(e) => setNewCourseSlug(e.target.value)}
                     placeholder="e.g. vocal-presence"
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f] font-mono text-xs"
+                    className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f] font-mono text-xs"
                   />
                   <span className="text-[11px] text-white/40">Will be accessible at: /course/your-slug</span>
                 </div>
 
+                {/* Theme Selector */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs uppercase tracking-wider text-white/60">Thumbnail Image URL (Optional)</label>
-                  <input
-                    type="text"
-                    value={newCourseImage}
-                    onChange={(e) => setNewCourseImage(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f] text-xs"
-                  />
+                  <label className="text-xs uppercase tracking-wider text-white/70">Visual Card Theme</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setNewCourseTheme('black')}
+                      className={`p-2.5 rounded-xl text-xs font-semibold border flex flex-col items-center gap-1 cursor-pointer transition-all ${
+                        newCourseTheme === 'black'
+                          ? 'bg-[#0B070B] text-white border-[#c9542f]'
+                          : 'bg-[#1c121d] text-white/60 border-white/10'
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-full bg-[#8A2E80]"></span>
+                      <span>Obsidian</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setNewCourseTheme('purple')}
+                      className={`p-2.5 rounded-xl text-xs font-semibold border flex flex-col items-center gap-1 cursor-pointer transition-all ${
+                        newCourseTheme === 'purple'
+                          ? 'bg-[#58184E] text-white border-[#c9542f]'
+                          : 'bg-[#1c121d] text-white/60 border-white/10'
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-full bg-[#1a1a1a]"></span>
+                      <span>Royal Purple</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setNewCourseTheme('white')}
+                      className={`p-2.5 rounded-xl text-xs font-semibold border flex flex-col items-center gap-1 cursor-pointer transition-all ${
+                        newCourseTheme === 'white'
+                          ? 'bg-white text-black border-[#c9542f]'
+                          : 'bg-[#1c121d] text-white/60 border-white/10'
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-full bg-[#C878BE]"></span>
+                      <span>Clean White</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -970,15 +948,15 @@ export default function AdminCourseDetailEditor() {
   // VIEW 2: 3-SECTION EDITOR VIEW (FOR SELECTED COURSE)
   // =========================================================================
   return (
-    <div className="w-full min-h-[calc(100vh-120px)] bg-[#050505] text-white flex flex-col">
+    <div className="w-full min-h-[calc(100vh-120px)] bg-[#0a050b] text-white flex flex-col">
       {/* ── TOP ACTION & COURSE SELECTOR BAR ── */}
-      <div className="w-full bg-[#0a0a0a] border-b border-white/5 px-6 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-[57px] z-20">
+      <div className="w-full bg-[#110912] border-b border-white/10 px-6 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-[57px] z-20">
         <div className="flex items-center gap-3 flex-wrap">
           {/* Back to All Courses Button */}
           <button
             type="button"
             onClick={() => setViewMode('catalog')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold border border-white/10 transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold border border-white/15 transition-colors cursor-pointer"
           >
             <ArrowLeft size={16} weight="bold" />
             <span>← All Courses</span>
@@ -997,7 +975,7 @@ export default function AdminCourseDetailEditor() {
           <span className="text-white/20 hidden md:inline">|</span>
 
           {/* Quick Course Switcher Pills */}
-          <div className="hidden md:flex items-center gap-1.5 bg-[#121212] p-1 rounded-xl border border-white/10 overflow-x-auto max-w-[340px]">
+          <div className="hidden md:flex items-center gap-1.5 bg-[#181119] p-1 rounded-xl border border-white/10 overflow-x-auto max-w-[340px]">
             {courseSlugs.map((slug) => {
               const c = coursesMap[slug] || {};
               const isSelected = activeSlug === slug;
@@ -1064,7 +1042,7 @@ export default function AdminCourseDetailEditor() {
       {/* ── MAIN 2-COLUMN SPLIT: LEFT SIDEBAR TABS & RIGHT EDITING FORM ── */}
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Left Section Navigation Sidebar */}
-        <aside className="w-full lg:w-72 xl:w-80 bg-[#080808] border-b lg:border-b-0 lg:border-r border-white/5 p-4 sm:p-5 flex flex-col gap-2 shrink-0">
+        <aside className="w-full lg:w-72 xl:w-80 bg-[#0e070e] border-b lg:border-b-0 lg:border-r border-white/10 p-4 sm:p-5 flex flex-col gap-2 shrink-0">
           <div className="px-3 py-1 flex items-center justify-between">
             <span className="text-[10px] uppercase font-mono tracking-widest text-white/40 font-semibold">
               3 PAGE SECTIONS
@@ -1082,7 +1060,7 @@ export default function AdminCourseDetailEditor() {
                   onClick={() => setActiveSectionTab(tab.id)}
                   className={`flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer whitespace-nowrap lg:whitespace-normal shrink-0 ${
                     isActive
-                      ? 'bg-[#181111] text-white border border-[#c9542f]/50 shadow-[0_0_20px_rgba(201,84,47,0.15)]'
+                      ? 'bg-[#1e101e] text-white border border-[#c9542f]/50 shadow-[0_0_20px_rgba(201,84,47,0.15)]'
                       : 'hover:bg-white/5 text-white/60 hover:text-white border border-transparent'
                   }`}
                 >
@@ -1103,8 +1081,8 @@ export default function AdminCourseDetailEditor() {
           </nav>
 
           {/* Course Status & Reset Helper Box */}
-          <div className="mt-auto pt-6 border-t border-white/5 flex flex-col gap-3">
-            <div className="bg-[#121212] p-3 rounded-xl border border-white/5 flex items-center justify-between">
+          <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-3">
+            <div className="bg-[#181119] p-3 rounded-xl border border-white/10 flex items-center justify-between">
               <div>
                 <span className="text-[10px] uppercase font-mono text-white/40">Status</span>
                 <p className="text-xs font-semibold text-white">
@@ -1157,92 +1135,75 @@ export default function AdminCourseDetailEditor() {
               <div>
                 <h2 className="font-serif text-2xl text-white font-medium">Section 1: Hero & Pricing Sidebar</h2>
                 <p className="text-xs text-white/50 mt-1">
-                  Customize the hero banner image, tags, lede statement, pricing facts, and what's included checklist.
+                  Customize the visual card theme, tags, lede statement, pricing facts, and what's included checklist.
                 </p>
               </div>
 
-              {/* Course Thumbnail Image Uploader */}
-              <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl p-5 sm:p-6 space-y-4">
+              {/* Theme Selector */}
+              <div className="bg-[#140c15] border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
-                  <ImageIcon size={16} /> Course Thumbnail Artwork
+                  <Palette size={16} /> Course Visual Card Theme
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-center">
-                  {/* Image Preview */}
-                  <div className="relative h-44 rounded-2xl overflow-hidden bg-[#141414] border border-white/10 flex items-center justify-center group">
-                    <img
-                      src={getCourseImage(currentCourse, activeSlug)}
-                      alt="Course preview"
-                      className="w-full h-full object-cover object-center"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="text-xs text-white bg-black/70 px-3 py-1 rounded-lg">Preview</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleFieldChange('theme', 'black')}
+                    className={`p-3.5 rounded-2xl border flex flex-col items-start gap-2 cursor-pointer transition-all ${
+                      (currentCourse.theme || 'black') === 'black'
+                        ? 'bg-[#0B070B] text-white border-[#c9542f] shadow-lg shadow-[#c9542f]/15 ring-2 ring-[#c9542f]/30'
+                        : 'bg-[#1c121d] text-white/60 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="w-full h-12 rounded-xl bg-radial from-[#8A2E80] via-[#3D1A38] to-[#0A050A] flex items-center justify-center font-bold text-lg text-white">
+                      01
                     </div>
-                  </div>
-
-                  {/* Upload Actions & Direct URL */}
-                  <div className="md:col-span-2 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        accept="image/*"
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            handleImageUpload(e.target.files[0]);
-                          }
-                        }}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingImage}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-md shadow-[#c9542f]/20"
-                      >
-                        {uploadingImage ? (
-                          <>
-                            <ArrowClockwise size={15} className="animate-spin" />
-                            <span>Uploading...</span>
-                          </>
-                        ) : (
-                          <>
-                            <UploadSimple size={15} weight="bold" />
-                            <span>Upload Image</span>
-                          </>
-                        )}
-                      </button>
-
-                      {currentCourse.imageUrl && (
-                        <button
-                          type="button"
-                          onClick={() => handleFieldChange('imageUrl', '')}
-                          className="px-3 py-2 rounded-xl bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 text-xs transition-colors"
-                        >
-                          Clear Image
-                        </button>
-                      )}
+                    <div>
+                      <h4 className="text-xs font-bold text-white">1. Obsidian Black</h4>
+                      <p className="text-[11px] text-white/50">Purple glow banner & black card</p>
                     </div>
+                  </button>
 
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs uppercase tracking-wider text-white/60">Or Paste Image URL</label>
-                      <input
-                        type="text"
-                        value={currentCourse.imageUrl || ''}
-                        onChange={(e) => handleFieldChange('imageUrl', e.target.value)}
-                        placeholder="https://images.unsplash.com/... or /assets/..."
-                        className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f]"
-                      />
+                  <button
+                    type="button"
+                    onClick={() => handleFieldChange('theme', 'purple')}
+                    className={`p-3.5 rounded-2xl border flex flex-col items-start gap-2 cursor-pointer transition-all ${
+                      currentCourse.theme === 'purple'
+                        ? 'bg-[#58184E] text-white border-[#c9542f] shadow-lg shadow-[#c9542f]/15 ring-2 ring-[#c9542f]/30'
+                        : 'bg-[#1c121d] text-white/60 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="w-full h-12 rounded-xl bg-radial from-[#1a1a1a] to-[#080808] flex items-center justify-center font-bold text-lg text-white">
+                      02
                     </div>
-                  </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">2. Royal Purple</h4>
+                      <p className="text-[11px] text-white/50">Dark black banner & plum card</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleFieldChange('theme', 'white')}
+                    className={`p-3.5 rounded-2xl border flex flex-col items-start gap-2 cursor-pointer transition-all ${
+                      currentCourse.theme === 'white'
+                        ? 'bg-white text-black border-[#c9542f] shadow-lg shadow-[#c9542f]/15 ring-2 ring-[#c9542f]/30'
+                        : 'bg-[#1c121d] text-white/60 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="w-full h-12 rounded-xl bg-radial from-[#C878BE] via-[#7A2A70] to-[#3D1A38] flex items-center justify-center font-bold text-lg text-white">
+                      03
+                    </div>
+                    <div>
+                      <h4 className={`text-xs font-bold ${currentCourse.theme === 'white' ? 'text-black' : 'text-white'}`}>3. Clean White</h4>
+                      <p className={`text-[11px] ${currentCourse.theme === 'white' ? 'text-stone-600' : 'text-white/50'}`}>Magenta banner & white card</p>
+                    </div>
+                  </button>
                 </div>
               </div>
 
               {/* Course Title & Slug & Sequence */}
-              <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl p-5 sm:p-6 space-y-4">
+              <div className="bg-[#140c15] border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
                   <Tag size={16} /> Course Identity & Headline
                 </h3>
@@ -1254,7 +1215,7 @@ export default function AdminCourseDetailEditor() {
                       type="text"
                       value={currentCourse.title || ''}
                       onChange={(e) => handleFieldChange('title', e.target.value)}
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f]"
+                      className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
 
@@ -1265,7 +1226,7 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.n || '01'}
                       onChange={(e) => handleFieldChange('n', e.target.value)}
                       placeholder="01"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#c9542f]"
+                      className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
                 </div>
@@ -1277,34 +1238,34 @@ export default function AdminCourseDetailEditor() {
                     value={currentCourse.lede || ''}
                     onChange={(e) => handleFieldChange('lede', e.target.value)}
                     placeholder="Master the psychology of calm authority..."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f] resize-none"
+                    className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
-                {/* Chips / Category tags */}
+                {/* Floating Chips (2 tags) */}
                 <div className="flex flex-col gap-2 pt-2">
-                  <label className="text-xs uppercase tracking-wider text-white/60">Canvas Preview Chips (2 tags)</label>
+                  <label className="text-xs uppercase tracking-wider text-white/60">Tilted Banner Chips (2 tags)</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
                       value={currentCourse.chips?.[0] || ''}
                       onChange={(e) => handleChipChange(0, e.target.value)}
-                      placeholder="Tag 1 (e.g. Calm Authority)"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c9542f]"
+                      placeholder="Tag 1 (Top-Right: e.g. Calm Authority)"
+                      className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c9542f]"
                     />
                     <input
                       type="text"
                       value={currentCourse.chips?.[1] || ''}
                       onChange={(e) => handleChipChange(1, e.target.value)}
-                      placeholder="Tag 2 (e.g. Self-Command)"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c9542f]"
+                      placeholder="Tag 2 (Bottom-Left: e.g. Self-Command)"
+                      className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Pricing & Checkout Facts */}
-              <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl p-5 sm:p-6 space-y-4">
+              <div className="bg-[#140c15] border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
                   <CurrencyInr size={16} /> Pricing & Primary CTA
                 </h3>
@@ -1317,7 +1278,7 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.price || ''}
                       onChange={(e) => handleFieldChange('price', e.target.value)}
                       placeholder="₹15,000"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-semibold focus:outline-none focus:border-[#c9542f]"
+                      className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-semibold focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
 
@@ -1328,7 +1289,7 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.was || ''}
                       onChange={(e) => handleFieldChange('was', e.target.value)}
                       placeholder="₹25,000"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white/60 text-sm line-through focus:outline-none focus:border-[#c9542f]"
+                      className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white/60 text-sm line-through focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
 
@@ -1339,55 +1300,55 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.cta || 'Check Course'}
                       onChange={(e) => handleFieldChange('cta', e.target.value)}
                       placeholder="Check Course"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f]"
+                      className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
                 </div>
 
                 {/* 2 Big Highlights in Sidebar Card */}
-                <div className="space-y-3 pt-3 border-t border-white/5">
+                <div className="space-y-3 pt-3 border-t border-white/10">
                   <label className="text-xs uppercase tracking-wider text-white/60">Top 2 Sidebar Highlight Bullets</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-[#141414] p-3 rounded-xl border border-white/5 space-y-2">
+                    <div className="bg-[#1c121d] p-3 rounded-xl border border-white/5 space-y-2">
                       <span className="text-[10px] uppercase font-mono text-[#c9542f]">Highlight 1</span>
                       <input
                         type="text"
                         value={currentCourse.hl?.[0]?.[0] || ''}
                         onChange={(e) => handleHlChange(0, 0, e.target.value)}
                         placeholder="Primary title (e.g. Build Real Presence)"
-                        className="w-full bg-[#1c1c1c] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white"
+                        className="w-full bg-[#261828] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white"
                       />
                       <input
                         type="text"
                         value={currentCourse.hl?.[0]?.[1] || ''}
                         onChange={(e) => handleHlChange(0, 1, e.target.value)}
                         placeholder="Subtitle (e.g. (Not Just Theory))"
-                        className="w-full bg-[#1c1c1c] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/70"
+                        className="w-full bg-[#261828] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/70"
                       />
                     </div>
 
-                    <div className="bg-[#141414] p-3 rounded-xl border border-white/5 space-y-2">
+                    <div className="bg-[#1c121d] p-3 rounded-xl border border-white/5 space-y-2">
                       <span className="text-[10px] uppercase font-mono text-[#c9542f]">Highlight 2</span>
                       <input
                         type="text"
                         value={currentCourse.hl?.[1]?.[0] || ''}
                         onChange={(e) => handleHlChange(1, 0, e.target.value)}
                         placeholder="Primary title (e.g. 3 Private Sessions)"
-                        className="w-full bg-[#1c1c1c] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white"
+                        className="w-full bg-[#261828] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white"
                       />
                       <input
                         type="text"
                         value={currentCourse.hl?.[1]?.[1] || ''}
                         onChange={(e) => handleHlChange(1, 1, e.target.value)}
                         placeholder="Subtitle (e.g. with Aarkesh)"
-                        className="w-full bg-[#1c1c1c] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/70"
+                        className="w-full bg-[#261828] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/70"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* What's Inside Checklist */}
-                <div className="space-y-3 pt-3 border-t border-white/5">
+                <div className="space-y-3 pt-3 border-t border-white/10">
                   <div className="flex items-center justify-between">
                     <label className="text-xs uppercase tracking-wider text-white/60">"What's Inside" Feature Checklist</label>
                     <button
@@ -1407,7 +1368,7 @@ export default function AdminCourseDetailEditor() {
                           type="text"
                           value={item}
                           onChange={(e) => handleInsideItemChange(idx, e.target.value)}
-                          className="flex-1 bg-[#151515] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c9542f]"
+                          className="flex-1 bg-[#1c121d] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c9542f]"
                         />
                         <button
                           type="button"
@@ -1438,7 +1399,7 @@ export default function AdminCourseDetailEditor() {
               </div>
 
               {/* Section Header Controls */}
-              <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl p-5 sm:p-6 space-y-4">
+              <div className="bg-[#140c15] border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
                   <ListNumbers size={16} /> Section Header & Subtitle
                 </h3>
@@ -1450,7 +1411,7 @@ export default function AdminCourseDetailEditor() {
                     value={currentCourse.syllabusTitle || ''}
                     onChange={(e) => handleFieldChange('syllabusTitle', e.target.value)}
                     placeholder="e.g. Eight Modules To Total Self-Command"
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-serif focus:outline-none focus:border-[#c9542f]"
+                    className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-serif focus:outline-none focus:border-[#c9542f]"
                   />
                 </div>
 
@@ -1461,7 +1422,7 @@ export default function AdminCourseDetailEditor() {
                     value={currentCourse.syllabusSubtitle || ''}
                     onChange={(e) => handleFieldChange('syllabusSubtitle', e.target.value)}
                     placeholder="A comprehensive, step-by-step roadmap from baseline nervousness to unshakeable gravitas."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f] resize-none"
+                    className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
               </div>
@@ -1487,11 +1448,11 @@ export default function AdminCourseDetailEditor() {
                   {(currentCourse.syllabus || []).map((mod, idx) => (
                     <div
                       key={idx}
-                      className="bg-[#0e0e0e] border border-white/10 hover:border-[#c9542f]/40 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 transition-colors"
+                      className="bg-[#140c15] border border-white/10 hover:border-[#c9542f]/40 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 flex-1">
-                          <span className="w-8 h-8 rounded-lg bg-[#181818] border border-white/10 flex items-center justify-center font-mono text-xs font-bold text-[#c9542f]">
+                          <span className="w-8 h-8 rounded-lg bg-[#221323] border border-white/10 flex items-center justify-center font-mono text-xs font-bold text-[#c9542f]">
                             {mod.n || String(idx + 1).padStart(2, '0')}
                           </span>
 
@@ -1500,7 +1461,7 @@ export default function AdminCourseDetailEditor() {
                             value={mod.t || ''}
                             onChange={(e) => handleSyllabusChange(idx, 't', e.target.value)}
                             placeholder={`Module ${idx + 1} Title`}
-                            className="flex-1 bg-[#151515] border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-[#c9542f]"
+                            className="flex-1 bg-[#1c121d] border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-[#c9542f]"
                           />
                         </div>
 
@@ -1541,7 +1502,7 @@ export default function AdminCourseDetailEditor() {
                         value={mod.d || ''}
                         onChange={(e) => handleSyllabusChange(idx, 'd', e.target.value)}
                         placeholder="Detailed psychological frameworks, actionable exercises, and real-world implementation."
-                        className="w-full bg-[#151515] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/70 focus:outline-none focus:border-[#c9542f] resize-none"
+                        className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/70 focus:outline-none focus:border-[#c9542f] resize-none"
                       />
                     </div>
                   ))}
@@ -1563,7 +1524,7 @@ export default function AdminCourseDetailEditor() {
               </div>
 
               {/* Methodology Card Form */}
-              <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl p-5 sm:p-6 space-y-5">
+              <div className="bg-[#140c15] border border-white/10 rounded-2xl p-5 sm:p-6 space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs uppercase tracking-wider text-white/60">Header Pill Tag</label>
@@ -1572,7 +1533,7 @@ export default function AdminCourseDetailEditor() {
                       value={writeup.chip || 'CORE METHODOLOGY'}
                       onChange={(e) => handleWriteupChange('chip', e.target.value)}
                       placeholder="CORE METHODOLOGY"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-xs font-mono focus:outline-none focus:border-[#c9542f]"
+                      className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2 text-white text-xs font-mono focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
 
@@ -1583,7 +1544,7 @@ export default function AdminCourseDetailEditor() {
                       value={writeup.h1 || ''}
                       onChange={(e) => handleWriteupChange('h1', e.target.value)}
                       placeholder="Most Men Were Never Taught How to Hold Ground"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-serif font-bold focus:outline-none focus:border-[#c9542f]"
+                      className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-serif font-bold focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
                 </div>
@@ -1595,7 +1556,7 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.lede || ''}
                     onChange={(e) => handleWriteupChange('lede', e.target.value)}
                     placeholder="True charisma is not loud. It is the unhurried certainty of a man who does not need permission to take up space."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f] resize-none"
+                    className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
@@ -1606,12 +1567,12 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.p1 || ''}
                     onChange={(e) => handleWriteupChange('p1', e.target.value)}
                     placeholder="When pressure spikes in a meeting, negotiation, or relationship..."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c9542f] resize-none"
+                    className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
                 {/* Highlighted Quote Box */}
-                <div className="bg-[#141212] border border-[#c9542f]/30 rounded-2xl p-4 sm:p-5 space-y-2">
+                <div className="bg-[#1c121d] border border-[#c9542f]/30 rounded-2xl p-4 sm:p-5 space-y-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-1.5">
                     <Quotes size={16} /> Featured Quote Box
                   </label>
@@ -1620,7 +1581,7 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.quote || ''}
                     onChange={(e) => handleWriteupChange('quote', e.target.value)}
                     placeholder="A room doesn't respond to volume. It responds to certainty."
-                    className="w-full bg-[#1c1818] border border-white/10 rounded-xl px-4 py-2.5 text-white font-serif italic text-sm focus:outline-none focus:border-[#c9542f] resize-none"
+                    className="w-full bg-[#261828] border border-white/10 rounded-xl px-4 py-2.5 text-white font-serif italic text-sm focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
@@ -1631,7 +1592,7 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.p2 || ''}
                     onChange={(e) => handleWriteupChange('p2', e.target.value)}
                     placeholder="Through structured modules, you dismantle reactive habits..."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c9542f] resize-none"
+                    className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
@@ -1642,7 +1603,7 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.distinction || ''}
                     onChange={(e) => handleWriteupChange('distinction', e.target.value)}
                     placeholder="Reactive men seek approval through fast speech. Anchored men lead through stillness and calibrated pauses."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f] resize-none"
+                    className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
               </div>
