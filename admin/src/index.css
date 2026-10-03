@@ -161,34 +161,34 @@ p[class*="bg-black/50"] {
    ========================================================= */
 
 /* Primary Headings & Bold Text */
-.text-white,
-.text-heading,
-[class*="text-[#F5F2EB]"],
-[class*="text-[#f5f2eb]"],
-[class*="text-[#ffffff]"],
-[class*="text-[#eae7e1]"],
-[class*="text-[#f3f4f6]"] {
+.text-white:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+.text-heading:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="text-[#F5F2EB]"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="text-[#f5f2eb]"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="text-[#ffffff]"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="text-[#eae7e1]"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="text-[#f3f4f6]"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) {
   color: #111010 !important;
 }
 
 /* Body Text, Labels & Strong Secondary Text */
-.text-paragraph,
-.text-white\/90,
-.text-white\/80,
-.text-white\/70,
-[class*="text-[#B8B1A7]"],
-[class*="text-[#b8b1a7]"],
-[class*="text-[#9ca3af]"] {
+.text-paragraph:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+.text-white\/90:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+.text-white\/80:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+.text-white\/70:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="text-[#B8B1A7]"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="text-[#b8b1a7]"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="text-[#9ca3af]"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) {
   color: #24211c !important;
 }
 
 /* Metadata, Subtitles, Joined Dates, Phone Numbers & Table Headers */
-.text-white\/60,
-.text-white\/50,
-.text-white\/40,
-.text-white\/30,
-.text-white\/20,
-[class*="text-[#6b6375]"] {
+.text-white\/60:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+.text-white\/50:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+.text-white\/40:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+.text-white\/30:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+.text-white\/20:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="text-[#6b6375]"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) {
   color: #4a453d !important;
 }
 

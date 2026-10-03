@@ -1114,10 +1114,10 @@ export default function AdminCourseDetailEditor() {
                   }}
                 >
                   <div 
-                    className={`mt-0.5 p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-[#c9542f]/25 text-[#ff8059]' : 'bg-white/5 text-white/60'}`}
+                    className="mt-0.5 p-1.5 rounded-lg shrink-0"
                     style={{
-                      backgroundColor: isActive ? 'rgba(201,84,47,0.25)' : 'rgba(255,255,255,0.05)',
-                      color: isActive ? '#ff8059' : 'rgba(255,255,255,0.7)',
+                      backgroundColor: isActive ? 'rgba(201,84,47,0.25)' : 'rgba(255,255,255,0.08)',
+                      color: isActive ? '#ff8059' : '#ffffff',
                     }}
                   >
                     {tab.icon}
@@ -1131,7 +1131,7 @@ export default function AdminCourseDetailEditor() {
                     </h3>
                     <p 
                       className="text-[11px] leading-snug mt-0.5 line-clamp-1 hidden sm:block" 
-                      style={{ color: isActive ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.45)' }}
+                      style={{ color: isActive ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.6)' }}
                     >
                       {tab.description}
                     </p>
