@@ -628,12 +628,7 @@ export default function AdminFooterDocuments() {
 
   const handleDeleteDoc = async (id) => {
     const docToDelete = documents.find(d => d._id === id);
-    if (docToDelete && isProtectedDoc(docToDelete.slug)) {
-      alert(`${docToDelete.title || 'This document'} is a core system/legal page and cannot be deleted.`);
-      return;
-    }
-
-    if (!window.confirm('Are you sure you want to delete this page?')) return;
+    if (!window.confirm(`Are you sure you want to delete "${docToDelete?.title || 'this page'}"?`)) return;
     try {
       const token = localStorage.getItem('adminToken');
 
@@ -1817,23 +1812,13 @@ export default function AdminFooterDocuments() {
                                   <Pen size={14} weight={isCurrentlyEditing ? 'bold' : 'regular'} />
                                   <span>{isCurrentlyEditing ? 'Editing Now' : 'Edit'}</span>
                                 </button>
-                                {isProtectedDoc(doc.slug) ? (
-                                  <span 
-                                    className="px-2.5 py-1 bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-[0.68rem] font-semibold rounded-lg inline-flex items-center gap-1 select-none cursor-default"
-                                    title="Core Legal / System Page (Protected from Deletion)"
-                                  >
-                                    <ShieldCheck size={13} weight="fill" />
-                                    <span>Protected</span>
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={() => handleDeleteDoc(doc._id)}
-                                    className="p-2 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                                    title="Delete Page"
-                                  >
-                                    <Trash size={15} />
-                                  </button>
-                                )}
+                                <button
+                                  onClick={() => handleDeleteDoc(doc._id)}
+                                  className="p-2 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                                  title={`Delete ${doc.title || 'Page'}`}
+                                >
+                                  <Trash size={15} />
+                                </button>
                               </div>
                             </td>
                           </tr>

@@ -1,4 +1,167 @@
 export const CURATED_LIBRARY_ARTICLES = [
+  // =========================================================
+  // 01 RELATIONSHIPS
+  // =========================================================
+{
+  "id": "rel-1",
+  "slug": "are-you-solving-the-conflict-or-trying-to-win-it",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "01 / 10",
+  "title": "Are You Solving the Conflict or Trying to Win It?",
+  "subtitle": "Most arguments begin with something specific — and somewhere between the complaint and the defence, the original problem quietly leaves the room.",
+  "date": "03 OCT 2026",
+  "image": "/library_preview_silhouette.jpg",
+  "readTime": "5 MIN",
+  "dropCap": "M",
+  "dropCapText": "Most arguments between partners begin with something reasonably specific.",
+  "blocks": [],
+  "bodyHtml": "<p>Most arguments between partners begin with something reasonably specific. <em>\"You did not call.\" \"I felt dismissed.\" \"You made that decision without asking me.\"</em></p><p>And somewhere between the complaint and the defence, the original problem quietly leaves the room. The conversation is no longer about what happened. It becomes a contest over whose account is more accurate, whose hurt is more legitimate, and who has committed the greater offence.</p><p>Both people begin presenting evidence. Previous incidents are summoned as witnesses. Words such as \"always\" and \"never\" arrive with the confidence of people who have no intention of checking the records. Eventually, the argument has a winner. The relationship usually does not.</p><p>This happens because admitting fault during conflict rarely feels like acknowledging one behaviour. It can feel like conceding that your partner's entire version of you is correct. Careless. Selfish. Unreliable. So you defend more than your actions. You defend your character.</p><h3>Repair Begins When the Question Changes</h3><p>Repair begins when the question changes from <em>\"Who is right?\"</em> to <em>\"What happened between us, and what must we understand before it happens again?\"</em></p><p>That may require you to admit something without attaching a counter-complaint. It may require listening to an impact you did not intend. None of this guarantees agreement. But disagreement is not what destroys most relationships. The more corrosive experience is repeatedly discovering that whenever pain is expressed, the person you love becomes more interested in acquittal than understanding.</p><p>Your position may be defensible. The more important question is whether the way you are defending it leaves any possibility of repair.</p>"
+},
+
+{
+  "id": "rel-2",
+  "slug": "when-the-argument-is-older-than-the-conversation",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "02 / 10",
+  "title": "When the Argument Is Older Than the Conversation",
+  "subtitle": "Family has a peculiar ability to turn fully functioning adults into earlier versions of themselves — and some arguments began long before the one you are currently having.",
+  "date": "03 OCT 2026",
+  "image": "/library_celestial_column.jpg",
+  "readTime": "5 MIN",
+  "dropCap": "F",
+  "dropCapText": "Family has a peculiar ability to turn fully functioning adults into earlier versions of themselves.",
+  "blocks": [],
+  "bodyHtml": "<p>Family has a peculiar ability to turn fully functioning adults into earlier versions of themselves. It takes exactly two minutes with family to forget you're a grown adult with a mortgage.</p><p>A parent asks one ordinary question. You hear criticism. A sibling makes a joke. You hear the comparison that followed you through childhood. Within minutes, nobody is responding only to what is actually being said.</p><h3>The Roles Assigned Before We Had Words to Question Them</h3><p>Families assign roles long before anyone has the language to question them. \"The responsible one.\" \"The difficult one.\" \"The sensitive one.\" The family grows older, but its understanding of each person may not grow at the same pace.</p><p>You are not responsible for their behaviour. You are responsible for yours. <strong>You are not responsible for what happened to you. But you are responsible for what you do next.</strong></p><h3>You Cannot Leave an Old Role by Performing It More Convincingly</h3><p>Families can be intrusive, dismissive, controlling, and remarkably committed to outdated information. You are not required to accept every role simply because it was assigned early. But you cannot leave an old role by performing it with greater conviction.</p><p>If they continue treating you like a child, responding with the fury of that child may satisfy something in the moment. It also allows the entire family to return to its familiar older positions.</p>"
+},
+
+{
+  "id": "rel-3",
+  "slug": "the-relationship-ended-your-life-has-not-caught-up-yet",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "03 / 10",
+  "title": "The Relationship Ended. Your Life Has Not Caught Up Yet.",
+  "subtitle": "A relationship can end in a single conversation. Your life rarely receives the information that quickly.",
+  "date": "03 OCT 2026",
+  "image": "/course_hero_bg.jpg",
+  "readTime": "6 MIN",
+  "dropCap": "A",
+  "dropCapText": "A relationship can end in a single conversation.",
+  "blocks": [],
+  "bodyHtml": "<p>A relationship can end in a single conversation. Your life rarely receives the information that quickly.</p><p>The morning after a breakup, the same alarm rings. The same side of the bed remains empty. Your hand still reaches for the phone when something funny, irritating, or completely unimportant happens. There are groceries chosen with two people in mind, weekends that suddenly have no shape. The person is gone. Their place in your life is not.</p><h3>You Are Not Grieving One Individual</h3><p>You are not grieving one individual. You may also be grieving a routine, a shared language, a social world, a sense of being known, and a future that had begun to feel like a reasonable expectation. Losing the relationship can disturb the identity built inside it.</p><p>You may understand why the relationship ended and still want it back. You may know that leaving was necessary and still feel devastated by having left. Contradiction is not evidence that you made the wrong decision. It is often evidence that the relationship mattered.</p><h3>The Condition We Attach to Moving On</h3><p>But grief can gradually acquire a condition: <em>I can move on once they explain it properly. Once they admit what they did. Once the final conversation finally feels final.</em></p><p>The person who participated in your hurt may not possess the clarity required to organise it for you. Closure is not about uncovering one final piece of information. It is simply the slow process of ending your argument with reality.</p>"
+},
+
+{
+  "id": "rel-4",
+  "slug": "what-are-you-still-holding-on-to",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "04 / 10",
+  "title": "What Are You Still Holding On To?",
+  "subtitle": "Not letting go is often described as loving someone too deeply. Sometimes it is. Sometimes love is only one of several things refusing to leave.",
+  "date": "03 OCT 2026",
+  "image": "/problem_silhouette.png",
+  "readTime": "6 MIN",
+  "dropCap": "N",
+  "dropCapText": "Not letting go is often described as loving someone too deeply.",
+  "blocks": [],
+  "bodyHtml": "<p>Not letting go is often described as loving someone too deeply. Sometimes it is. Sometimes love is only one of several things refusing to leave.</p><p>You may be clinging to the belief that the relationship was destined to work, or the future you had designed around it. Or the sting of being left, or the person you were when you still felt wanted.</p><h3>The Version You Actually Miss</h3><p>The person you miss is likely a specific version of them, available only when things were perfect. Memory is a highly cooperative accomplice. It behaves like a theatre spotlight: it illuminates only the beautiful scenes that fuel your grief, intentionally casting a shadow over the countless hours you spent anxious, ignored, or trapped in negotiations for what should never have been up for debate. This does not make your love false. It makes grief selective.</p><p><em>Hope is not always courageous. Occasionally, it is grief with better public relations.</em></p><p><strong>Loyalty to what you felt is not the same as loyalty to what currently exists.</strong></p><h3>Reconnection: What Are You Actually Responding To?</h3><p>People can reflect, change, apologise, and return with greater honesty. But missing someone proves only that an attachment remains. It does not prove that the relationship has become workable. A good conversation about change is not the same as evidence of change. Before you reopen that door, look closely at what you are actually responding to: a different person, an altered dynamic, or simply the staggering relief of no longer having to miss them from a distance?</p>"
+},
+
+{
+  "id": "rel-5",
+  "slug": "different-day-same-argument-better-vocabulary",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "05 / 10",
+  "title": "Different Day. Same Argument. Better Vocabulary.",
+  "subtitle": "Some couples have the same argument so often that it begins receiving seasonal updates. The details change. The emotional conclusion does not.",
+  "date": "03 OCT 2026",
+  "image": "/library_preview_silhouette.jpg",
+  "readTime": "5 MIN",
+  "dropCap": "S",
+  "dropCapText": "Some couples have the same argument so often that it begins receiving seasonal updates.",
+  "blocks": [],
+  "bodyHtml": "<p>Some couples have the same argument so often that it begins receiving seasonal updates. This month, it is about an unanswered message. Last month, it was about arriving late. Before that, it was the dishes, a forgotten plan, or a tone that felt dismissive.</p><h3>The Emotional Conclusion That Never Changes</h3><p>The details change. The emotional conclusion does not. <em>I cannot rely on you. You do not respect me. Nothing I do is enough for you. I am carrying this relationship alone.</em></p><p>The conversation becomes impressively detailed while remaining curiously untouched by understanding. Eventually, the incident is settled. Then another one arrives to perform the same emotional job.</p><h3>Arguing About the Event Is Safer Than Naming What It Represents</h3><p>Repeated conflict often survives because arguing about the event is safer than naming what the event has come to represent. A forgotten task can be corrected. Admitting that one person feels chronically unconsidered is more difficult.</p><p>So the couple remains at the surface. One person demands better behaviour. The other presents context. Each leaves with further evidence that the other still does not understand.</p><h3>When the Problem Is No Longer the Argument</h3><p>After the fifth careful explanation, is the problem still communication? After another sincere apology without altered behaviour, is the problem still remorse? If the vocabulary keeps improving while the injury remains identical, perhaps the argument is no longer failing to solve the problem. Perhaps it is the arrangement through which both people have learned to continue living with it.</p>"
+},
+
+{
+  "id": "rel-6",
+  "slug": "why-does-distance-feel-so-desirable",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "06 / 10",
+  "title": "Why Does Distance Feel So Desirable?",
+  "subtitle": "Emotionally unavailable people do not always appear unavailable. They can make you feel understood in ways that more consistent people never have.",
+  "date": "03 OCT 2026",
+  "image": "/library_celestial_column.jpg",
+  "readTime": "6 MIN",
+  "dropCap": "E",
+  "dropCapText": "Emotionally unavailable people do not always appear unavailable.",
+  "blocks": [],
+  "bodyHtml": "<p>Emotionally unavailable people do not always appear unavailable. They may be attentive, affectionate, intensely curious, and remarkably honest about their inner lives. They can make you feel understood in ways that more consistent people never have. They simply become uncertain when understanding asks for responsibility.</p><p>Closeness develops, then retreats. Plans are discussed, but rarely secured. Affection appears just often enough to keep the possibility alive. Whenever you begin accepting the distance, they return with warmth, vulnerability, or a message timed with the accuracy of someone who has somehow sensed your remaining dignity.</p><h3>Effort Does Not Always Measure the Value of a Relationship</h3><p>Distance creates pursuit. Pursuit creates investment. <em>Surely, I would not care this much if this connection were not extraordinary.</em> But effort does not always measure the value of a relationship. Sometimes it measures how rarely the relationship gives you what you need.</p><p>At some point, you must examine why uncertainty continues receiving more patience than reciprocity does. Why does clear affection feel less compelling? Why does being chosen freely carry less emotional force than finally being chosen after a prolonged audition?</p><h3>What the Pattern Is Actually Protecting You From</h3><p>Fantasy protects potential from ordinary reality. Pursuit postpones the vulnerability of being fully known. An unavailable person allows you to experience enormous romantic feeling without having to build an actual shared life, complete with routine, negotiation, disappointment, and Tuesday evenings.</p><p>You may genuinely love them. But love can coexist with a pattern in which their distance intensifies your desire more reliably than their presence supports your wellbeing.</p>"
+},
+
+{
+  "id": "rel-7",
+  "slug": "it-feels-powerful-is-it-actually-good",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "07 / 10",
+  "title": "It Feels Powerful. Is It Actually Good?",
+  "subtitle": "Some relationships seem to arrive with their own background score. But intensity and compatibility are not the same thing.",
+  "date": "03 OCT 2026",
+  "image": "/course_hero_bg.jpg",
+  "readTime": "5 MIN",
+  "dropCap": "S",
+  "dropCapText": "Some relationships seem to arrive with their own background score.",
+  "blocks": [],
+  "bodyHtml": "<p>Some relationships seem to arrive with their own background score. The attraction is immediate. Conversations continue until morning. There is sexual chemistry, emotional urgency, and the startling sensation of having finally met someone who speaks a language nobody else understood. Everything feels unusually alive.</p><h3>What Intensity Can and Cannot Tell You</h3><p>Intensity can show that two people are strongly attracted, emotionally activated, or unusually receptive to each other. What it cannot reveal on its own is whether they share values, handle disagreement responsibly, keep commitments, or possess the capacity to build a life that remains workable after the background score clocks out.</p><p>Compatibility is often quieter in the beginning. It appears in how someone responds when disappointed. Whether affection remains available after disagreement. Whether their promises survive inconvenience.</p><h3>When Calm Feels Suspicious</h3><p>If you have learnt to recognise love through longing, urgency, or emotional upheaval, consistency may initially seem like a reduction in feeling. But being powerfully affected by someone is not the same as being well matched with them. You can have extraordinary chemistry with a person whose values make you miserable.</p><p>Before treating intensity as evidence of compatibility, notice what exists when nothing dramatic is happening. A powerful beginning tells you that something has been ignited. Only time, behaviour, and ordinary life can tell you whether it can provide warmth without repeatedly burning down the room.</p>"
+},
+
+{
+  "id": "rel-8",
+  "slug": "when-did-your-own-opinion-stop-being-enough",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "08 / 10",
+  "title": "When Did Your Own Opinion Stop Being Enough?",
+  "subtitle": "You have a decision to make. So naturally, you ask six people and end up with more information and considerably less clarity.",
+  "date": "03 OCT 2026",
+  "image": "/problem_silhouette.png",
+  "readTime": "6 MIN",
+  "dropCap": "Y",
+  "dropCapText": "You have a decision to make. So, naturally, you ask.",
+  "blocks": [],
+  "bodyHtml": "<p>You have a decision to make. So, naturally, you ask. A few conversations later, you have collected six opinions, two warnings, one personal horror story, and an inspirational quote forwarded by an aunt who has misunderstood the situation entirely. You now possess significantly more information and considerably less clarity.</p><h3>Asking for Perspective vs. Asking Someone to Live Your Life</h3><p>There is nothing wrong with seeking advice. But there is a difference between asking for perspective and asking someone else to decide your life for you. The second one feels safer.</p><p>We may be looking for an answer that protects us from feeling responsible if things go wrong. Unfortunately, advice does not come with that warranty.</p><h3>What Self-Trust Actually Means</h3><p>Self-trust means allowing other people to challenge your thinking without immediately handing them control of it. You listen. You question your assumptions. And then, at some point, you decide.</p><p><strong>Self-trust is not the confidence that you will never make a mistake. It is the confidence that making one will not permanently turn you against yourself.</strong></p><p>At some point, the consultation has to end. The question is no longer, \"Who knows what I should do?\" It is, \"Having heard them, what do I believe I should do, and am I willing to take responsibility for what follows?\"</p>"
+},
+
+{
+  "id": "rel-9",
+  "slug": "the-mirror-test",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "09 / 10",
+  "title": "The Mirror Test",
+  "subtitle": "You liked the outfit. Then a friend paused. Two seconds later you were back questioning everything — even though the outfit had not changed.",
+  "date": "03 OCT 2026",
+  "image": "/library_preview_silhouette.jpg",
+  "readTime": "5 MIN",
+  "dropCap": "Y",
+  "dropCapText": "You are standing inside a clothing store, looking at yourself in the mirror.",
+  "blocks": [],
+  "bodyHtml": "<p>You are standing inside a clothing store, looking at yourself in the mirror. The seventh outfit fits. You like the colour. You think: <em>Yes. This works.</em></p><p>Then you step outside the trial room. Your friend looks at you and pauses. Barely two seconds. \"What?\" you ask. \"Nothing. It's nice.\" \"...Nice?\"</p><p>Five minutes ago, you liked the outfit. Now you are back inside the trial room wondering how you had so badly misjudged it. The outfit has not changed. Your relationship with your own opinion has.</p><h3>When Another Person's Reaction Replaces Your Own</h3><p>The difficulty begins when another person's reaction does not merely influence your opinion. It replaces it. External validation can slowly turn life into a permanent election. Am I attractive? Was I right? Is this achievement impressive enough? Am I living well?</p><p>If your sense of worth depends on the response, you will need to keep checking the scoreboard. It can feel like trying to heat your house using borrowed candles. Each one provides a little warmth, but the moment it goes out, you are cold again.</p><h3>What the Pattern Was Originally For</h3><p>Perhaps being helpful, successful, or undemanding became the easiest way to remain appreciated. You became skilled at reading the room because, at some point, reading the room was useful. But a skill can quietly become a dependency.</p><p>You do not need to stop asking what people think. You may simply need to become more precise about what their opinion is allowed to decide. It can offer information. What it cannot determine, by itself, is your worth or whether your inner experience is permitted to exist.</p>"
+},
+
+{
+  "id": "rel-10",
+  "slug": "the-price-you-pay-to-keep-someone-close",
+  "category": "RELATIONSHIPS",
+  "categoryNum": "10 / 10",
+  "title": "The Price You Pay to Keep Someone Close",
+  "subtitle": "There is a person in almost every relationship who says 'I don't mind.' Three years later, they are furious about a holiday nobody knew they hated.",
+  "date": "03 OCT 2026",
+  "image": "/library_celestial_column.jpg",
+  "readTime": "6 MIN",
+  "dropCap": "T",
+  "dropCapText": "There is a person in almost every relationship who says: 'I don't mind.'",
+  "blocks": [],
+  "bodyHtml": "<p>There is a person in almost every relationship who says: \"I don't mind.\" Where should we eat? \"I don't mind.\" What should we watch? \"I don't mind.\" Then, three years later, they are furious about a holiday destination nobody knew they hated. \"But you said it was fine.\" And technically, they did.</p><h3>Self-Abandonment Happens Through Small Edits</h3><p>Self-abandonment rarely begins with a dramatic sacrifice. It happens through small edits. You ignore a joke that hurt. You agree to a plan you dislike. You say, \"It's not a big deal,\" because the last time you raised something, the conversation became an Olympic event. The immediate reward is peace. The relationship continues smoothly, provided you continue sanding down every part of yourself that creates friction.</p><h3>Compromise Makes Space. Self-Abandonment Makes One Person Smaller.</h3><p><strong>Compromise makes space for both people. Self-abandonment keeps making one person smaller.</strong></p><p>\"Low-maintenance\" sounds like a compliment until you realise people are describing you like a reliable household appliance. Inside, resentment begins collecting quietly, like unread messages in an old family WhatsApp group. You agree, then feel unseen. You offer help, then feel used.</p><h3>Can You Remain Recognisably Present?</h3><p>If you conceal every need and then resent them for not meeting it, you have given the relationship a test without giving the other person the question paper. That does not make the entire situation your fault. It does make your silence part of it.</p><p>Can you remain recognisably present inside the relationship? Can you have a preference without apologising for it? Can you express hurt without first proving it in a court of law? If the answer is consistently no, then the relationship may be peaceful only because one person has made themselves very small to ensure it stays that way.</p>"
+},
+
 
   // =========================================================
   // 02 SELF
