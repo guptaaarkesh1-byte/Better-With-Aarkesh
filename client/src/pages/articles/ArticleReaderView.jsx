@@ -202,7 +202,16 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
   const rawCat = searchParams.get('category')?.toLowerCase().trim() ||
     (article?.category ? article.category.toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-') : '') ||
     'relationships';
-  const theme = categoryConfig || THEMES_MAP[rawCat] || THEMES_MAP.relationships;
+  const baseTheme = THEMES_MAP[rawCat] || THEMES_MAP.relationships;
+  const theme = {
+    ...baseTheme,
+    ...(categoryConfig || {}),
+    ink: categoryConfig?.ink || baseTheme.ink,
+    inkMuted: categoryConfig?.inkMuted || baseTheme.inkMuted || 'rgba(247, 238, 245, 0.88)',
+    inkFaint: categoryConfig?.inkFaint || baseTheme.inkFaint || 'rgba(247, 238, 245, 0.60)',
+    bg: categoryConfig?.bg || baseTheme.bg,
+    accent: categoryConfig?.accent || baseTheme.accent,
+  };
 
   const [isSaved, setIsSaved] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -423,9 +432,8 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
         .themed-reader-view .editorial-body .prose h1,
         .themed-reader-view .editorial-body .prose h2,
         .themed-reader-view .editorial-body .prose h3,
-        .themed-reader-view .editorial-body .prose h4,
-        .themed-reader-view .prose :where(h1, h2, h3, h4) {
-          font-family: 'Fraunces', serif;
+        .themed-reader-view .editorial-body .prose h4 {
+          font-family: 'Fraunces', Georgia, serif;
           color: ${theme.ink} !important;
           overflow-wrap: anywhere;
           word-break: break-word;
@@ -436,10 +444,7 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
         .themed-reader-view .editorial-body strong,
         .themed-reader-view .editorial-body b,
         .themed-reader-view .editorial-body .prose strong,
-        .themed-reader-view .editorial-body .prose b,
-        .themed-reader-view .prose :where(strong, b),
-        .themed-reader-view [style*="font-weight: bold"],
-        .themed-reader-view [style*="font-weight: 700"] {
+        .themed-reader-view .editorial-body .prose b {
           font-weight: 700 !important;
           color: ${theme.ink} !important;
         }
@@ -452,77 +457,48 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
           overflow-wrap: anywhere;
           word-break: break-word;
           box-sizing: border-box;
+          color: ${theme.ink} !important;
         }
 
         .themed-reader-view .editorial-body p,
         .themed-reader-view .editorial-body li,
         .themed-reader-view .editorial-body div,
-        .themed-reader-view .editorial-body span:not([style*="rgb(243"]:not([style*="rgb(217"]:not([style*="rgb(252"]:not([style*="rgb(142"]:not([style*="rgb(99"]:not([style*="rgb(242"]:not([style*="rgb(255"]):not([style*="#d97fc8"]):not([style*="#f3a8e2"]):not([style*="#8ee09f"]):not([style*="#63d17e"]):not([style*="#fca283"]):not([style*="#ff8c5a"]):not([style*="#f2ba8f"]):not([style*="#a64117"]):not([style*="#a4abb8"]),
         .themed-reader-view .editorial-body .prose,
         .themed-reader-view .editorial-body .prose p,
         .themed-reader-view .editorial-body .prose li,
         .themed-reader-view .editorial-body .prose ul,
         .themed-reader-view .editorial-body .prose ol,
-        .themed-reader-view .editorial-body .prose em {
-          font-family: 'Fraunces', serif;
+        .themed-reader-view .editorial-body .editorial-rich-text,
+        .themed-reader-view .editorial-body .editorial-rich-text p,
+        .themed-reader-view .editorial-body .editorial-rich-text li,
+        .themed-reader-view .editorial-body .editorial-rich-text span {
+          font-family: 'Fraunces', Georgia, serif;
           color: ${theme.ink} !important;
+          font-size: 1.18rem;
+          line-height: 1.85;
           overflow-wrap: anywhere;
           word-break: break-word;
         }
 
-        /* Auto-correct dark / near-black inline styles on dark reader background (only for dark themes) */
-        ${theme.id !== 'self' && theme.id !== 'difficult-people' ? `
-        .themed-reader-view .editorial-body [style*="color: rgb(17, 16, 16)"],
-        .themed-reader-view .editorial-body [style*="color: #111010"],
-        .themed-reader-view .editorial-body [style*="color: #1c1917"],
-        .themed-reader-view .editorial-body [style*="color: #000000"],
-        .themed-reader-view .editorial-body [style*="color: black"],
-        .themed-reader-view .editorial-body [style*="color: #0a0a0a"],
-        .themed-reader-view .editorial-body [style*="color: #12100e"],
-        .themed-reader-view .editorial-body [style*="color: #1a1714"],
-        .themed-reader-view .editorial-body [style*="color: #44403c"],
-        .themed-reader-view .editorial-body [style*="color: #57534e"],
-        .themed-reader-view .editorial-body [style*="color: #832671"] {
-          color: ${theme.ink} !important;
+        .themed-reader-view .editorial-body p,
+        .themed-reader-view .editorial-body .prose p,
+        .themed-reader-view .editorial-body .editorial-rich-text p {
+          margin-bottom: 1.75rem !important;
         }
-        ` : ''}
 
-        .themed-reader-view .editorial-body [data-color="#832671"] {
+        .themed-reader-view .editorial-body em,
+        .themed-reader-view .editorial-body i,
+        .themed-reader-view .editorial-body .prose em,
+        .themed-reader-view .editorial-body .prose i,
+        .themed-reader-view .editorial-body .editorial-rich-text em,
+        .themed-reader-view .editorial-body .editorial-rich-text i {
+          font-family: 'Fraunces', Georgia, serif;
+          font-style: italic;
           color: ${theme.accent} !important;
         }
 
-        .themed-reader-view .editorial-body p {
-          font-size: 1.18rem;
-          line-height: 1.85;
-          color: ${theme.ink} !important;
-          overflow-wrap: anywhere;
-          word-break: break-word;
-        }
-
-        .themed-reader-view .prose {
-          --tw-prose-body: ${theme.ink} !important;
-          --tw-prose-headings: ${theme.ink} !important;
-          --tw-prose-lead: ${theme.ink} !important;
-          --tw-prose-links: ${theme.accent} !important;
-          --tw-prose-bold: ${theme.ink} !important;
-          --tw-prose-counters: ${theme.accent} !important;
-          --tw-prose-bullets: ${theme.accent} !important;
-          --tw-prose-hr: ${theme.borderLine} !important;
-          --tw-prose-quotes: ${theme.ink} !important;
-          --tw-prose-quote-borders: ${theme.accent} !important;
-          --tw-prose-captions: ${theme.inkFaint} !important;
-          --tw-prose-code: ${theme.ink} !important;
-          --tw-prose-pre-code: ${theme.ink} !important;
-          --tw-prose-pre-bg: ${theme.cardBg} !important;
-          --tw-prose-th-borders: ${theme.borderLine} !important;
-          --tw-prose-td-borders: ${theme.borderLine} !important;
-          color: ${theme.ink} !important;
-          overflow-wrap: anywhere;
-          word-break: break-word;
-        }
-
         .themed-reader-view .editorial-body blockquote {
-          font-family: 'Fraunces', serif;
+          font-family: 'Fraunces', Georgia, serif;
           font-style: italic;
           border-left: 3px solid ${theme.accent};
           padding-left: 1.5rem;
@@ -782,7 +758,7 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
                     return (
                       <div 
                         key={block.id || bIdx}
-                        className="mb-8 space-y-4 prose max-w-none clear-both after:content-[''] after:table after:clear-both break-words overflow-hidden"
+                        className="mb-8 space-y-4 editorial-rich-text max-w-none clear-both after:content-[''] after:table after:clear-both break-words overflow-hidden"
                         style={{ color: theme.ink, overflowWrap: 'anywhere' }}
                         dangerouslySetInnerHTML={{ __html: text }}
                       />
@@ -904,10 +880,10 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
           )}
 
           {/* Fallback for standard HTML or database articles */}
-          {!article.blocks?.length && !article.sections?.length && !article.dropCap && article.bodyHtml && (
+          {!article.blocks?.length && !article.sections?.length && article.bodyHtml && (
             <div
-              className="prose max-w-none mb-8 leading-[1.85]"
-              style={{ color: theme.inkMuted }}
+              className="editorial-rich-text max-w-none mb-8 leading-[1.85]"
+              style={{ color: theme.ink }}
               dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
             />
           )}

@@ -148,12 +148,7 @@ export default function Library() {
       return cCat === targetCatId || cCat === targetCatName || cCat.includes(targetCatId);
     });
 
-    const merged = [
-      ...sortedDb,
-      ...matchingCurated.filter(
-        c => !matchingDb.some(db => db.slug === c.slug || db.title?.toLowerCase() === c.title?.toLowerCase())
-      )
-    ];
+    const merged = sortedDb.length > 0 ? sortedDb : matchingCurated;
 
     return merged.map((article, idx) => {
       let displayDate = article.date;
@@ -175,10 +170,16 @@ export default function Library() {
     });
   };
 
-  // Combine and deduplicate articles
+  // Combine and deduplicate articles (prioritize DB)
   const allArticles = [
-    ...CURATED_LIBRARY_ARTICLES,
-    ...publishedArticles.filter(p => !CURATED_LIBRARY_ARTICLES.some(c => c.slug === p.slug))
+    ...publishedArticles,
+    ...CURATED_LIBRARY_ARTICLES.filter(
+      c => !publishedArticles.some(p => {
+        const pCat = (p.categoryId || p.category || '').toLowerCase().replace(/\s+/g, '-');
+        const cCat = (c.category || '').toLowerCase().replace(/\s+/g, '-');
+        return pCat === cCat;
+      })
+    )
   ];
 
   const searchResults = (searchQuery.trim().length > 0)

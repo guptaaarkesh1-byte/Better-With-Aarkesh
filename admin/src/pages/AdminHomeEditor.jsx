@@ -45,7 +45,8 @@ import {
   SpotifyLogo,
   DiscordLogo,
   TiktokLogo,
-  Globe
+  Globe,
+  Pen
 } from '@phosphor-icons/react';
 
 // Exact Default Assets from Frontend Website
@@ -2599,17 +2600,37 @@ export default function AdminHomeEditor() {
                             <span className="text-[10px] text-white/40">{(col.links || []).length} Links</span>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
-                            {(col.links || []).map((l, lIdx) => (
-                              <span key={lIdx} className="text-[11px] px-2 py-0.5 rounded bg-white/5 border border-white/5 text-white/60 truncate max-w-[180px]">
-                                {l.label}
-                              </span>
-                            ))}
+                            {(col.links || []).map((l, lIdx) => {
+                              const cleanSlug = (l.url || '').replace(/^\/+/, '');
+                              return (
+                                <Link
+                                  key={lIdx}
+                                  to={`/footer-documents?edit=${encodeURIComponent(cleanSlug || l.label)}`}
+                                  className="text-[11px] px-2.5 py-1 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white/70 hover:text-[#c79c6e] transition-all flex items-center gap-1.5 group/l shadow-xs"
+                                  title={`Click to edit "${l.label}" in Footer Documents`}
+                                >
+                                  <span className="truncate max-w-[140px]">{l.label}</span>
+                                  <Pen size={11} className="text-white/30 group-hover/l:text-[#c79c6e] shrink-0" />
+                                </Link>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
                     </div>
 
-                    <div className="pt-2">
+                    <div className="pt-2 flex flex-col gap-2">
+                      <Link
+                        to="/footer-documents?edit=contact-us"
+                        className="w-full py-2.5 px-4 rounded-xl bg-[#c79c6e]/10 hover:bg-[#c79c6e]/20 border border-[#c79c6e]/30 text-[#c79c6e] text-xs font-semibold flex items-center justify-between transition-all"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Pen size={14} />
+                          <span>Edit Contact Us Page</span>
+                        </span>
+                        <span>→</span>
+                      </Link>
+
                       <Link
                         to="/footer-documents"
                         className="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-[#c79c6e]/15 border border-white/10 hover:border-[#c79c6e]/40 text-white hover:text-[#c79c6e] text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all"

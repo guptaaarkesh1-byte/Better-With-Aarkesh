@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ShieldCheck, CheckCircle, Scroll } from '@phosphor-icons/react';
+import { sanitizeDocumentHtml } from '../../utils/sanitizeHtml';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -218,7 +219,7 @@ export default function PolicyModal({
           ) : (
             <div
               className="px-6 sm:px-8 py-6 policy-modal-dark-content"
-              dangerouslySetInnerHTML={{ __html: content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeDocumentHtml(content) }}
               style={{ color: 'rgba(255,255,255,0.75)', lineHeight: 1.75, fontSize: '0.875rem' }}
             />
           )}

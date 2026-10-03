@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '../context/ToastContext';
 import { 
   Plus, 
@@ -36,6 +36,7 @@ import {
   EyeSlash
 } from '@phosphor-icons/react';
 import TiptapEditor from '../components/ui/TiptapEditor';
+import { sanitizeDocumentHtml } from '../utils/sanitizeHtml';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -151,6 +152,42 @@ export default function AdminFooterDocuments() {
 
   // Form State
   const [docFormData, setDocFormData] = useState(emptyDocForm);
+
+  // References for reliable smooth scrolling across all nested layout containers
+  const containerRef = useRef(null);
+  const formCardRef = useRef(null);
+
+  // URL search params sync for direct deep-linking (e.g. ?edit=contact-us, ?edit=terms-and-conditions)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const editSlug = params.get('edit') || params.get('slug') || params.get('page');
+      if (editSlug && documents.length > 0) {
+        const cleanSlug = editSlug.toLowerCase().replace(/^\/+/, '').trim();
+        const match = documents.find(d => 
+          (d.slug && d.slug.toLowerCase().replace(/^\/+/, '').trim() === cleanSlug) ||
+          (d.title && d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === cleanSlug) ||
+          (d._id === editSlug)
+        );
+        if (match) {
+          handleEditDoc(match);
+        } else if (cleanSlug === 'contact-us' || cleanSlug === 'contact' || cleanSlug.includes('contact')) {
+          setActiveTab('pages');
+          setDocFormData({
+            id: null,
+            title: 'Contact Us',
+            slug: 'contact-us',
+            footerSection: 'COMPANY',
+            contentHtml: '',
+            status: 'Published',
+            order: 0,
+          });
+          fetchContactSettings();
+          setTimeout(scrollToTop, 100);
+        }
+      }
+    } catch (e) {}
+  }, [documents]);
 
   // Dedicated Contact Page Customizer State
   const [contactCustomizer, setContactCustomizer] = useState({
@@ -532,28 +569,61 @@ export default function AdminFooterDocuments() {
     ...documents.map(d => (d.columnHeading || '').trim().toUpperCase()).filter(Boolean)
   ])).filter(Boolean);
 
-  // ─── 3. PAGE ACTIONS ────────────────────────────────────────────
+  // ─── 3. SCROLL & PAGE ACTIONS ──────────────────────────────────
+  const scrollToTop = () => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {}
+    try {
+      if (formCardRef.current) {
+        formCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } catch (e) {}
+    try {
+      if (containerRef.current) {
+        containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (e) {}
+    try {
+      const mainEl = document.querySelector('main');
+      if (mainEl) {
+        mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (e) {}
+  };
+
   const handleEditDoc = (doc) => {
+    if (!doc) return;
+    setActiveTab('pages');
     const secName = findColumnForDoc(doc);
+    const cleanSlug = (doc.slug || '').replace(/^\/+/, '');
     setDocFormData({
-      id: doc._id,
-      title: doc.title,
-      slug: doc.slug,
+      id: doc._id || null,
+      title: doc.title || '',
+      slug: cleanSlug,
       footerSection: secName,
       contentHtml: doc.contentHtml || '',
       status: doc.status || 'Published',
       order: doc.order || 0,
     });
-    if (doc.slug === 'contact-us' || doc.slug === 'contact') {
+    
+    // If contact page or title contains contact, load contact customizer
+    if (cleanSlug.toLowerCase() === 'contact-us' || cleanSlug.toLowerCase() === 'contact' || doc.title?.toLowerCase().includes('contact')) {
       fetchContactSettings();
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     setError(null);
+    setTimeout(() => {
+      scrollToTop();
+    }, 50);
   };
 
   const handleResetForm = () => {
     setDocFormData(emptyDocForm);
     setError(null);
+    setTimeout(() => {
+      scrollToTop();
+    }, 50);
   };
 
   const handleDeleteDoc = async (id) => {
@@ -652,7 +722,7 @@ export default function AdminFooterDocuments() {
         title: docFormData.title.trim(),
         slug,
         columnHeading: sectionName,
-        contentHtml: docFormData.contentHtml,
+        contentHtml: sanitizeDocumentHtml(docFormData.contentHtml),
         status: docFormData.status,
         order: Number(docFormData.order) || 0,
         category: 'general'
@@ -983,7 +1053,7 @@ export default function AdminFooterDocuments() {
   const paginatedDocs = documents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="flex flex-col flex-1 bg-[#050505] p-6 text-white min-h-0 overflow-y-auto">
+    <div ref={containerRef} className="flex flex-col flex-1 bg-[#050505] p-6 text-white min-h-0 overflow-y-auto">
       <div className="max-w-6xl w-full mx-auto space-y-8">
         
 
@@ -1051,32 +1121,43 @@ export default function AdminFooterDocuments() {
           <div className="space-y-10">
             
             {/* 1. TOP CARD: CREATE / EDIT STATIC PAGE FORM */}
-            <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <div>
-                  <h2 className="font-serif text-2xl text-white">
-                    {docFormData.id ? 'Edit Static Page' : 'Create Static Page'}
-                  </h2>
-                  <p className="text-white/40 text-xs mt-1">
+            <div ref={formCardRef} className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl relative">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="font-serif text-2xl text-white">
+                      {docFormData.id || docFormData.slug === 'contact-us' || docFormData.slug === 'contact' 
+                        ? 'Edit Static Page' 
+                        : 'Create Static Page'}
+                    </h2>
+                    {(docFormData.id || docFormData.slug) && (
+                      <span className="text-xs font-semibold font-mono px-3 py-1 rounded-full bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30 flex items-center gap-1.5 shadow-sm">
+                        <Sparkle size={13} weight="fill" />
+                        <span>Editing: {docFormData.title || docFormData.slug} (/{docFormData.slug || ''})</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-white/40 text-xs mt-0.5">
                     Select a footer section, customize the slug, and compose rich-text page content
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {docFormData.id && (
+                  {(docFormData.id || docFormData.slug || docFormData.title) && (
                     <button
                       type="button"
                       onClick={handleResetForm}
-                      className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 text-xs font-medium transition-colors"
+                      className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-colors border border-white/10 flex items-center gap-1.5"
                     >
-                      Clear / New
+                      <Plus size={14} />
+                      <span>Create New Blank Page</span>
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={handleSaveDoc}
                     disabled={isSubmittingDoc}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#c79c6e] text-black font-semibold rounded-xl text-sm hover:bg-[#b0885e] transition-all disabled:opacity-50 shadow-lg shadow-[#c79c6e]/10"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#c79c6e] text-black font-semibold rounded-xl text-sm hover:bg-[#b0885e] transition-all disabled:opacity-50 shadow-lg shadow-[#c79c6e]/10 cursor-pointer"
                   >
                     <FloppyDisk size={16} weight="bold" />
                     {isSubmittingDoc ? 'Saving...' : (docFormData.id ? 'Update Page' : 'Save Page')}
@@ -1640,12 +1721,29 @@ export default function AdminFooterDocuments() {
                       paginatedDocs.map((doc) => {
                         const secName = findColumnForDoc(doc);
                         const isPublished = doc.status === 'Published';
+                        const isCurrentlyEditing = (docFormData.id && docFormData.id === doc._id) || 
+                          (docFormData.slug && (docFormData.slug.replace(/^\/+/, '').toLowerCase() === (doc.slug || '').replace(/^\/+/, '').toLowerCase()));
+                        
                         return (
-                          <tr key={doc._id} className="hover:bg-white/[0.02] transition-colors">
+                          <tr 
+                            key={doc._id} 
+                            className={`transition-all ${
+                              isCurrentlyEditing 
+                                ? 'bg-[#c79c6e]/10 border-l-4 border-l-[#c79c6e]' 
+                                : 'hover:bg-white/[0.02]'
+                            }`}
+                          >
                             {/* Page title & slug */}
                             <td className="p-4 pl-6">
                               <div className="flex flex-col">
-                                <span className="font-semibold text-white text-sm">{doc.title}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-white text-sm">{doc.title}</span>
+                                  {isCurrentlyEditing && (
+                                    <span className="text-[10px] font-semibold font-mono px-2 py-0.5 rounded bg-[#c79c6e] text-black shrink-0">
+                                      OPEN IN EDITOR
+                                    </span>
+                                  )}
+                                </div>
                                 <a 
                                   href={`/${doc.slug}`} 
                                   target="_blank" 
@@ -1656,7 +1754,9 @@ export default function AdminFooterDocuments() {
                                   <ArrowSquareOut size={11} className="text-emerald-400/60" />
                                 </a>
                                 <span className="text-[0.68rem] text-white/30 font-light mt-0.5">
-                                  {doc.contentHtml ? 'Content available' : 'No summary yet.'}
+                                  {doc.slug === 'contact-us' || doc.slug === 'contact' 
+                                    ? 'Contact Visual Customizer active' 
+                                    : (doc.contentHtml ? 'Content available' : 'No summary yet.')}
                                 </span>
                               </div>
                             </td>
@@ -1707,10 +1807,15 @@ export default function AdminFooterDocuments() {
                               <div className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => handleEditDoc(doc)}
-                                  className="p-2 text-white/60 hover:text-[#c79c6e] hover:bg-white/5 rounded-lg transition-colors"
-                                  title="Edit Page"
+                                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
+                                    isCurrentlyEditing
+                                      ? 'bg-[#c79c6e] text-black shadow-md shadow-[#c79c6e]/20'
+                                      : 'bg-white/5 hover:bg-[#c79c6e]/20 text-white/70 hover:text-[#c79c6e] border border-white/10 hover:border-[#c79c6e]/40'
+                                  }`}
+                                  title="Click to edit this page (scrolls up to editor)"
                                 >
-                                  <Pen size={15} />
+                                  <Pen size={14} weight={isCurrentlyEditing ? 'bold' : 'regular'} />
+                                  <span>{isCurrentlyEditing ? 'Editing Now' : 'Edit'}</span>
                                 </button>
                                 {isProtectedDoc(doc.slug) ? (
                                   <span 
@@ -1718,12 +1823,12 @@ export default function AdminFooterDocuments() {
                                     title="Core Legal / System Page (Protected from Deletion)"
                                   >
                                     <ShieldCheck size={13} weight="fill" />
-                                    <span>Protected Page</span>
+                                    <span>Protected</span>
                                   </span>
                                 ) : (
                                   <button
                                     onClick={() => handleDeleteDoc(doc._id)}
-                                    className="p-2 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                    className="p-2 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                                     title="Delete Page"
                                   >
                                     <Trash size={15} />

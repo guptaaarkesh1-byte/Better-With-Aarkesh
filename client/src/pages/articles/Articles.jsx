@@ -344,13 +344,8 @@ export default function Articles() {
     return cCat === targetCatId || cCat === targetCatName || cCat.includes(targetCatId);
   });
 
-  // 3. Merge: DB articles take precedence, Curated articles backfill if missing
-  const mergedArticlesList = [
-    ...sortedDb,
-    ...matchingCurated.filter(
-      c => !matchingDb.some(db => db.slug === c.slug || db.title?.toLowerCase() === c.title?.toLowerCase())
-    )
-  ];
+  // 3. Merge: If DB articles exist, use DB articles exclusively; otherwise fallback to curated
+  const mergedArticlesList = sortedDb.length > 0 ? sortedDb : matchingCurated;
 
   // 4. Build unified list of articles
   const allCategoryArticles = mergedArticlesList.map((article, idx) => {

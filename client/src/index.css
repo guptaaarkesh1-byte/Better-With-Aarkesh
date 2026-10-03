@@ -2,6 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   CRITICAL: Restore Tailwind-preflight-nuked list styles.
+   @layer utilities wins over @layer base (Tailwind preflight).
+   TipTap outputs <ul><li><p>text</p></li></ul> structure.
+   Tailwind base resets: ul{list-style:none;padding:0;margin:0}
+   This block guarantees bullets + spacing on the live site.
+   ============================================================ */
+@layer utilities {
+  .legal-policy-content-light ul {
+    list-style-type: disc !important;
+    list-style-position: outside !important;
+    padding-left: 2.25rem !important;
+    margin-top: 1.25rem !important;
+    margin-bottom: 1.25rem !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+  .legal-policy-content-light ol {
+    list-style-type: decimal !important;
+    list-style-position: outside !important;
+    padding-left: 2.25rem !important;
+    margin-top: 1.25rem !important;
+    margin-bottom: 1.25rem !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+  .legal-policy-content-light li {
+    display: list-item !important;
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+    line-height: 1.8 !important;
+    overflow: visible !important;
+  }
+  .legal-policy-content-light ul > li {
+    list-style-type: disc !important;
+  }
+  .legal-policy-content-light ol > li {
+    list-style-type: decimal !important;
+  }
+  /* TipTap wraps li content in <p> — must be inline so bullet shows */
+  .legal-policy-content-light li > p,
+  .legal-policy-content-light li > span {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: inherit !important;
+  }
+}
+
 :root, [data-theme="dark"], [data-theme="light"], .light-theme {
   --color-bg-primary: #f5f1e8;
   --color-bg-secondary: #ede7d8;
@@ -468,96 +517,430 @@ body .ql-editor.ql-blank::before {
   color: #6b7280;
 }
 
-/* Warm Light Theme for Policy Modals & Policy Pages */
+/* Warm Light Theme for Policy Modals & Policy Pages (Matches Admin Preview Exactly) */
 .legal-policy-content-light {
-  color: #555047;
+  color: #2b2723;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 0.95rem;
-  line-height: 1.7;
+  font-size: 1rem;
+  line-height: 1.85;
+  overflow: visible !important;
 }
 
 .legal-policy-content-light h1 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.85rem;
-  font-weight: 700;
-  color: #111010;
-  margin-top: 1.75rem;
-  margin-bottom: 0.75rem;
-  line-height: 1.3;
+  font-family: 'Fraunces', 'Playfair Display', Georgia, serif !important;
+  font-size: 2.2rem !important;
+  font-weight: 700 !important;
+  color: #111010 !important;
+  margin-top: 2.5rem !important;
+  margin-bottom: 1rem !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.01em !important;
+  display: block !important;
 }
 
 .legal-policy-content-light h2 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #111010;
-  margin-top: 1.75rem;
-  margin-bottom: 0.65rem;
-  line-height: 1.35;
+  font-family: 'Fraunces', 'Playfair Display', Georgia, serif !important;
+  font-size: 1.55rem !important;
+  font-weight: 700 !important;
+  color: #111010 !important;
+  margin-top: 2.25rem !important;
+  margin-bottom: 0.85rem !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.01em !important;
+  display: block !important;
 }
 
 .legal-policy-content-light h3 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #111010;
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
+  font-family: 'Fraunces', 'Playfair Display', Georgia, serif !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: #111010 !important;
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.65rem !important;
+  line-height: 1.4 !important;
+  display: block !important;
+}
+
+.legal-policy-content-light h4,
+.legal-policy-content-light h5,
+.legal-policy-content-light h6 {
+  font-family: 'Fraunces', 'Playfair Display', Georgia, serif !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: #111010 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+  display: block !important;
 }
 
 .legal-policy-content-light p {
-  margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
-  color: #555047;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+  color: #2b2723 !important;
+  line-height: 1.85 !important;
+  /* NOTE: No font-size override here — preserves TipTap inline styles like 18pt, 24pt for headings */
+  display: block !important;
+}
+
+/* TipTap wraps li text in <p> — must stay inline so the bullet marker shows */
+.legal-policy-content-light ul li > p,
+.legal-policy-content-light ol li > p,
+.legal-policy-content-light ul li > span,
+.legal-policy-content-light ol li > span {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.legal-policy-content-light p:empty,
+.legal-policy-content-light p > br:only-child {
+  display: block !important;
+  min-height: 1rem !important;
+  margin: 0.75rem 0 !important;
 }
 
 .legal-policy-content-light strong,
 .legal-policy-content-light b {
-  color: #111010;
-  font-weight: 600;
+  color: #111010 !important;
+  font-weight: 700 !important;
 }
 
+.legal-policy-content-light em,
+.legal-policy-content-light i {
+  font-style: italic !important;
+}
+
+/* Explicit Bullet Points & Numbered Lists (with multi-level nested list support) */
 .legal-policy-content-light ul {
-  list-style-type: disc;
-  padding-left: 1.5rem;
-  margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
-  color: #555047;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  padding-left: 2.25rem !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+  color: #2b2723 !important;
+  display: block !important;
 }
 
 .legal-policy-content-light ol {
-  list-style-type: decimal;
-  padding-left: 1.5rem;
-  margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
-  color: #555047;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  padding-left: 2.25rem !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+  color: #2b2723 !important;
+  display: block !important;
 }
 
 .legal-policy-content-light li {
-  margin-top: 0.35rem;
-  margin-bottom: 0.35rem;
-  line-height: 1.65;
+  display: list-item !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.8 !important;
+  color: #2b2723 !important;
+  padding-left: 0.25rem !important;
+}
+
+.legal-policy-content-light ul > li {
+  list-style-type: disc !important;
+  display: list-item !important;
+}
+
+.legal-policy-content-light ol > li {
+  list-style-type: decimal !important;
+  display: list-item !important;
+}
+
+/* Nested lists */
+.legal-policy-content-light ul ul,
+.legal-policy-content-light ol ul {
+  list-style-type: circle !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.legal-policy-content-light ul ul ul,
+.legal-policy-content-light ol ul ul,
+.legal-policy-content-light ol ol ul {
+  list-style-type: square !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.legal-policy-content-light ol ol,
+.legal-policy-content-light ul ol {
+  list-style-type: lower-alpha !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.legal-policy-content-light ol ol ol {
+  list-style-type: lower-roman !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.legal-policy-content-light li > p {
+  display: inline !important;
+  margin: 0 !important;
+  line-height: inherit !important;
+}
+
+/* Tables pasted from Word / Excel / Google Docs */
+.legal-policy-content-light table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 1.75rem 0 !important;
+  font-size: 0.95rem !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+}
+
+.legal-policy-content-light th,
+.legal-policy-content-light td {
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  padding: 0.75rem 1rem !important;
+  text-align: left !important;
+  vertical-align: top !important;
+  line-height: 1.6 !important;
+}
+
+.legal-policy-content-light th {
+  background-color: #faf7f0 !important;
+  font-weight: 700 !important;
+  color: #111010 !important;
+  font-family: 'Fraunces', Georgia, serif !important;
+}
+
+.legal-policy-content-light tr:nth-child(even) td {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Code & Pre */
+.legal-policy-content-light pre {
+  background-color: #1a1714 !important;
+  color: #f5f1e8 !important;
+  padding: 1rem 1.25rem !important;
+  border-radius: 0.6rem !important;
+  overflow-x: auto !important;
+  font-size: 0.9rem !important;
+  line-height: 1.6 !important;
+  margin: 1.5rem 0 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+.legal-policy-content-light code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  background-color: rgba(0, 0, 0, 0.06) !important;
+  padding: 0.2rem 0.4rem !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.88em !important;
+  color: #c9542f !important;
+}
+
+.legal-policy-content-light pre code {
+  background-color: transparent !important;
+  padding: 0 !important;
+  color: inherit !important;
+}
+
+/* Text formatting tags */
+.legal-policy-content-light u,
+.legal-policy-content-light ins {
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+
+.legal-policy-content-light s,
+.legal-policy-content-light strike,
+.legal-policy-content-light del {
+  text-decoration: line-through !important;
+}
+
+.legal-policy-content-light sub {
+  vertical-align: sub !important;
+  font-size: smaller !important;
+}
+
+.legal-policy-content-light sup {
+  vertical-align: super !important;
+  font-size: smaller !important;
+}
+
+/* Alignment preserving */
+.legal-policy-content-light [style*="text-align: center"],
+.legal-policy-content-light [data-text-align="center"],
+.legal-policy-content-light .text-center {
+  text-align: center !important;
+}
+
+.legal-policy-content-light [style*="text-align: right"],
+.legal-policy-content-light [data-text-align="right"],
+.legal-policy-content-light .text-right {
+  text-align: right !important;
+}
+
+.legal-policy-content-light [style*="text-align: justify"],
+.legal-policy-content-light [data-text-align="justify"],
+.legal-policy-content-light .text-justify {
+  text-align: justify !important;
+}
+
+.legal-policy-content-light hr {
+  border: none !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.15) !important;
+  margin: 2.25rem 0 !important;
+  clear: both !important;
+  display: block !important;
+  height: 0 !important;
 }
 
 .legal-policy-content-light a {
-  color: #c9542f;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  font-weight: 500;
-  transition: color 0.2s ease;
+  color: #c9542f !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  font-weight: 500 !important;
+  transition: color 0.2s ease !important;
 }
 
 .legal-policy-content-light a:hover {
-  color: #111010;
+  color: #111010 !important;
 }
 
 .legal-policy-content-light blockquote {
-  border-left: 3px solid #c9542f;
-  background-color: #fbf0eb;
-  padding: 0.75rem 1rem;
-  border-radius: 0 0.5rem 0.5rem 0;
-  margin: 1rem 0;
-  font-style: italic;
-  color: #555047;
+  border-left: 3px solid #c9542f !important;
+  background-color: #faf7f0 !important;
+  padding: 0.85rem 1.25rem !important;
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+  margin: 1.5rem 0 !important;
+  font-style: italic !important;
+  color: #44403c !important;
+  display: block !important;
+}
+
+.legal-policy-content-light mark {
+  background-color: rgba(201, 84, 47, 0.15) !important;
+  color: inherit !important;
+  padding: 0.1rem 0.35rem !important;
+  border-radius: 0.25rem !important;
+}
+
+.legal-policy-content-light [data-gold],
+.legal-policy-content-light .text-gold {
+  color: #c9542f !important;
+}
+
+/* Hide ghost/empty or fake clipboard images in policy contents */
+.legal-policy-content-light img[src=""],
+.legal-policy-content-light img:not([src]),
+.legal-policy-content-light img[src*="webkit-fake-url"],
+.legal-policy-content-light img[src^="data:image/svg+xml;base64,PHN2Zy"],
+.policy-modal-dark-content img[src=""],
+.policy-modal-dark-content img:not([src]),
+.policy-modal-dark-content img[src*="webkit-fake-url"],
+.policy-modal-dark-content img[src^="data:image/svg+xml;base64,PHN2Zy"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  opacity: 0 !important;
+}
+
+.legal-policy-content-light img,
+.policy-modal-dark-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 1.5rem auto;
+  display: block;
+}
+
+/* Dark Theme for Policy Modals */
+.policy-modal-dark-content h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.policy-modal-dark-content h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.policy-modal-dark-content h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.policy-modal-dark-content p {
+  margin: 0.75rem 0;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.75;
+}
+
+.policy-modal-dark-content hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1.75rem 0;
+}
+
+.policy-modal-dark-content ul {
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  padding-left: 2rem !important;
+  margin: 1rem 0 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  display: block !important;
+}
+
+.policy-modal-dark-content ol {
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  padding-left: 2rem !important;
+  margin: 1rem 0 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  display: block !important;
+}
+
+.policy-modal-dark-content li {
+  display: list-item !important;
+  margin: 0.4rem 0 !important;
+  line-height: 1.75 !important;
+  padding-left: 0.25rem !important;
+}
+
+.policy-modal-dark-content ul > li {
+  list-style-type: disc !important;
+  display: list-item !important;
+}
+
+.policy-modal-dark-content ol > li {
+  list-style-type: decimal !important;
+  display: list-item !important;
+}
+
+.policy-modal-dark-content li > p {
+  display: inline !important;
+  margin: 0 !important;
+}
+
+.policy-modal-dark-content a {
+  color: #e3b8de;
+  text-decoration: underline;
 }
 
