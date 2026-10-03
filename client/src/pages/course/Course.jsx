@@ -221,6 +221,8 @@ export default function Course() {
     { question: 'Is this course beginner-friendly?', answer: 'Absolutely. The framework starts from the fundamental psychology of presence and builds step-by-step toward advanced leadership and magnetism.' },
   ]);
 
+  const [courseDetailsMap, setCourseDetailsMap] = useState({});
+
   const [landingSettings, setLandingSettings] = useState({
     hero: {
       tag: 'Learn. Practise. Lead.',
@@ -456,12 +458,30 @@ export default function Course() {
       }
     };
 
+    const fetchCourseDetailsMap = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/courses/details-settings`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            setCourseDetailsMap(data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch course details map:', err);
+      }
+    };
+
     fetchLandingSettings();
+    fetchCourseDetailsMap();
     window.addEventListener('focus', fetchLandingSettings);
+    window.addEventListener('focus', fetchCourseDetailsMap);
 
     const handleStorage = (e) => {
-      if (e.key === 'bwa_landing_settings_updated') {
+      if (e.key === 'bwa_landing_settings_updated' || e.key === 'bwa_course_details_updated') {
         fetchLandingSettings();
+        fetchCourseDetailsMap();
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -472,11 +492,15 @@ export default function Course() {
         bc = new BroadcastChannel('bwa_course_landing_channel');
         bc.onmessage = () => {
           fetchLandingSettings();
+          fetchCourseDetailsMap();
         };
       }
     } catch (e) {}
 
-    const interval = setInterval(fetchLandingSettings, 3000);
+    const interval = setInterval(() => {
+      fetchLandingSettings();
+      fetchCourseDetailsMap();
+    }, 3000);
 
     fetchCourseFooter();
     fetchSocialLinks();
@@ -485,6 +509,7 @@ export default function Course() {
 
     return () => {
       window.removeEventListener('focus', fetchLandingSettings);
+      window.removeEventListener('focus', fetchCourseDetailsMap);
       window.removeEventListener('storage', handleStorage);
       if (bc) bc.close();
       clearInterval(interval);
@@ -509,158 +534,188 @@ export default function Course() {
     }, 3500);
   };
 
-  const coursesList = useMemo(() => [
-    {
-      slug: "better-man",
-      n: "01",
-      chips: ["Calm Authority", "Self-Command"],
-      soon: false,
-      cls: "v3",
-      title: "The Better Man",
-      lede: "Master the psychology of calm authority, magnetic communication and effortless self-command.",
-      d: "Calm authority, magnetic communication and self-command, taught in eight modules with three private sessions.",
-      sidebarChips: [
-        ["Schedule", "Self-Paced"],
-        ["Certificate", "Yes"],
-        ["Language", "Hinglish / English"],
-        ["Mentorship", "1-on-1 Live"]
-      ],
-      hl: [
-        ["Build Real Presence", "(Not Just Theory)"],
-        ["3 Private Sessions", "with Aarkesh"]
-      ],
-      inside: [
-        "8 HD video modules & frameworks",
-        "Downloadable workbooks and mental models",
-        "3 private 1-on-1 coaching sessions with Aarkesh",
-        "Lifetime access with all future updates"
-      ],
-      facts: [["8", "Modules"], ["3 Free", "1-on-1 Sessions"]],
-      price: `₹${basePrice.toLocaleString('en-IN')}`,
-      was: `₹${comparePrice.toLocaleString('en-IN')}`,
-      cta: "Check Course",
-      syllabusTitle: "Eight Modules To Total Self-Command",
-      syllabusSubtitle: "A comprehensive, step-by-step roadmap from baseline nervousness to unshakeable gravitas.",
-      syllabus: [
-        { n: '01', t: 'The Foundation of Presence', d: 'Grounding techniques, diaphragmatic breathing under tension, and mastering the crucial first 10 seconds in any room.' },
-        { n: '02', t: 'Breaking the Reactive Cycle', d: 'Identifying personal emotional triggers, pausing between impulse and response, and eliminating defensive habits.' },
-        { n: '03', t: 'Mastering Vocal Gravitas & Tone', d: 'Lowering resonance, eliminating filler words, pacing your delivery, and speaking with magnetic, effortless weight.' },
-        { n: '04', t: 'Non-Verbal Dominance & Spatial Calibration', d: 'Unwavering eye contact, open posture mechanics, micro-expression control, and physical composure.' },
-        { n: '05', t: 'High-Stakes Conversations & Holding Frame', d: 'Navigating demanding bosses, aggressive negotiations, or emotionally volatile conversations without yielding.' },
-        { n: '06', t: 'Decision Making & Decisive Action', d: 'Eliminating second-guessing, owning difficult outcomes, and leading team members or family with unhesitating clarity.' },
-        { n: '07', t: 'Conflict Resolution Without Compromise', d: 'De-escalating heated confrontation while maintaining firm boundaries and achieving win-win outcomes.' },
-        { n: '08', t: 'Integration & Lifetime Standard', d: 'Building your daily self-command rituals, maintaining high standards, and solidifying permanent personal gravitas.' }
-      ],
-      writeup: {
-        chip: "CORE METHODOLOGY",
-        h1: "Most Men Were Never Taught How to Hold Ground",
-        lede: "True charisma is not loud. It is the unhurried certainty of a man who does not need permission to take up space.",
-        p1: "When pressure spikes in a meeting, negotiation, or relationship, the natural reflex is either to collapse inward or become combative. Both signal the same underlying weakness: emotional reactivity.",
-        quote: "A room doesn't respond to volume. It responds to certainty.",
-        p2: "Through 8 structured modules, you dismantle the nervous system habits that cause rushing, stammering, and over-explaining. You learn how to anchor your physical presence, speak with calm resonance, and command respectful silence before uttering a single sentence.",
-        distinction: "Reactive men seek approval through fast speech and validation. Anchored men lead through stillness, calibrated pauses, and clear boundaries."
+  const coursesList = useMemo(() => {
+    const defaultList = [
+      {
+        slug: "better-man",
+        n: "01",
+        chips: ["Calm Authority", "Self-Command"],
+        soon: false,
+        cls: "v3",
+        title: "The Better Man",
+        lede: "Master the psychology of calm authority, magnetic communication and effortless self-command.",
+        d: "Calm authority, magnetic communication and self-command, taught in eight modules with three private sessions.",
+        sidebarChips: [
+          ["Schedule", "Self-Paced"],
+          ["Certificate", "Yes"],
+          ["Language", "Hinglish / English"],
+          ["Mentorship", "1-on-1 Live"]
+        ],
+        hl: [
+          ["Build Real Presence", "(Not Just Theory)"],
+          ["3 Private Sessions", "with Aarkesh"]
+        ],
+        inside: [
+          "8 HD video modules & frameworks",
+          "Downloadable workbooks and mental models",
+          "3 private 1-on-1 coaching sessions with Aarkesh",
+          "Lifetime access with all future updates"
+        ],
+        facts: [["8", "Modules"], ["3 Free", "1-on-1 Sessions"]],
+        price: `₹${basePrice.toLocaleString('en-IN')}`,
+        was: `₹${comparePrice.toLocaleString('en-IN')}`,
+        cta: "Check Course",
+        syllabusTitle: "Eight Modules To Total Self-Command",
+        syllabusSubtitle: "A comprehensive, step-by-step roadmap from baseline nervousness to unshakeable gravitas.",
+        syllabus: [
+          { n: '01', t: 'The Foundation of Presence', d: 'Grounding techniques, diaphragmatic breathing under tension, and mastering the crucial first 10 seconds in any room.' },
+          { n: '02', t: 'Breaking the Reactive Cycle', d: 'Identifying personal emotional triggers, pausing between impulse and response, and eliminating defensive habits.' },
+          { n: '03', t: 'Mastering Vocal Gravitas & Tone', d: 'Lowering resonance, eliminating filler words, pacing your delivery, and speaking with magnetic, effortless weight.' },
+          { n: '04', t: 'Non-Verbal Dominance & Spatial Calibration', d: 'Unwavering eye contact, open posture mechanics, micro-expression control, and physical composure.' },
+          { n: '05', t: 'High-Stakes Conversations & Holding Frame', d: 'Navigating demanding bosses, aggressive negotiations, or emotionally volatile conversations without yielding.' },
+          { n: '06', t: 'Decision Making & Decisive Action', d: 'Eliminating second-guessing, owning difficult outcomes, and leading team members or family with unhesitating clarity.' },
+          { n: '07', t: 'Conflict Resolution Without Compromise', d: 'De-escalating heated confrontation while maintaining firm boundaries and achieving win-win outcomes.' },
+          { n: '08', t: 'Integration & Lifetime Standard', d: 'Building your daily self-command rituals, maintaining high standards, and solidifying permanent personal gravitas.' }
+        ],
+        writeup: {
+          chip: "CORE METHODOLOGY",
+          h1: "Most Men Were Never Taught How to Hold Ground",
+          lede: "True charisma is not loud. It is the unhurried certainty of a man who does not need permission to take up space.",
+          p1: "When pressure spikes in a meeting, negotiation, or relationship, the natural reflex is either to collapse inward or become combative. Both signal the same underlying weakness: emotional reactivity.",
+          quote: "A room doesn't respond to volume. It responds to certainty.",
+          p2: "Through 8 structured modules, you dismantle the nervous system habits that cause rushing, stammering, and over-explaining. You learn how to anchor your physical presence, speak with calm resonance, and command respectful silence before uttering a single sentence.",
+          distinction: "Reactive men seek approval through fast speech and validation. Anchored men lead through stillness, calibrated pauses, and clear boundaries."
+        }
+      },
+      {
+        slug: "difficult-people",
+        n: "02",
+        chips: ["Boundaries", "Conflict"],
+        soon: true,
+        cls: "v2",
+        title: "Difficult People",
+        lede: "Stay steady with the boss, partner or parent who pushes every button you have.",
+        d: "Stay steady with the boss, partner or parent who pushes every button you have.",
+        sidebarChips: [
+          ["Schedule", "Self-Paced"],
+          ["Certificate", "Yes"],
+          ["Language", "Hinglish / English"],
+          ["Access", "Lifetime"]
+        ],
+        hl: [
+          ["Hold Your Ground", "(Without a Fight)"],
+          ["2 Private Sessions", "with Aarkesh"]
+        ],
+        inside: [
+          "6 HD video modules",
+          "Downloadable conflict frameworks",
+          "2 private 1-on-1 coaching sessions",
+          "Lifetime access",
+          "Early-access price for waitlist members"
+        ],
+        facts: [["6", "Modules"], ["3 Free", "1-on-1 Sessions"]],
+        price: "₹3,999",
+        was: "₹7,999",
+        cta: "Check Course",
+        syllabusTitle: "Six Modules To Emotional Sovereignty",
+        syllabusSubtitle: "The practical psychological playbook to disarm manipulation, establish firm boundaries, and protect your inner peace.",
+        syllabus: [
+          { n: '01', t: 'Mapping Toxic Patterns & Triggers', d: 'Recognizing manipulative archetypes, passive-aggressive traps, and subtle emotional manipulation tactics before they drain you.' },
+          { n: '02', t: 'The Unshakeable Boundary Framework', d: 'Setting clear, non-negotiable boundaries with bosses, partners, or parents without anger, defensiveness, or guilt.' },
+          { n: '03', t: 'Disarming High-Conflict Personalities', d: 'Verbal de-escalation strategies, avoiding defensive traps, and maintaining quiet emotional detachment in heated moments.' },
+          { n: '04', t: 'Holding Ground in High-Stakes Confrontations', d: 'Staying centered during intense arguments, asserting your authority, and never breaking composure under pressure.' },
+          { n: '05', t: 'Navigating Difficult Workplace Dynamics', d: 'Managing micro-managers, corporate politics, and aggressive colleagues while protecting your professional standing.' },
+          { n: '06', t: 'Reclaiming Your Mental Sovereignty', d: 'Overcoming post-conflict rumination, establishing internal calm, and permanent emotional freedom from difficult dynamics.' }
+        ],
+        writeup: {
+          chip: "CONFLICT FRAMEWORK",
+          h1: "Stop Absorbing Other People's Emotional Chaos",
+          lede: "High-conflict personalities don't look for resolution—they look for reaction. The moment you react, you lose ground.",
+          p1: "Whether it's a demanding boss, a passive-aggressive colleague, or a volatile family member, their emotional turbulence is designed to pull you off-center and put you on the defensive.",
+          quote: "You don't defeat difficult people by fighting back. You defeat them by becoming impossible to trigger.",
+          p2: "In this 6-module masterclass, you get the exact psychological tools to stay completely unshakeable. You will learn how to set ironclad boundaries, disarm manipulative tactics in real-time, and hold your frame without shouting or apologizing.",
+          distinction: "Weak responses either explode with anger or shrink with compliance. Strategic self-command stays neutral, unbothered, and in total control."
+        }
+      },
+      {
+        slug: "decisions",
+        n: "03",
+        chips: ["Clarity", "Choice"],
+        soon: true,
+        cls: "",
+        title: "Decisions",
+        lede: "A clear method for the choices you keep putting off, and for living with them once made.",
+        d: "A clear method for the choices you keep putting off, and for living with them once made.",
+        sidebarChips: [
+          ["Schedule", "Self-Paced"],
+          ["Certificate", "Yes"],
+          ["Language", "Hinglish / English"],
+          ["Access", "Lifetime"]
+        ],
+        hl: [
+          ["Decide With Clarity", "(Not Certainty)"],
+          ["2 Private Sessions", "with Aarkesh"]
+        ],
+        inside: [
+          "5 HD video modules",
+          "Downloadable decision matrix workbooks",
+          "2 private 1-on-1 coaching sessions",
+          "Lifetime access",
+          "Early-access price for waitlist members"
+        ],
+        facts: [["5", "Modules"], ["3 Free", "1-on-1 Sessions"]],
+        price: "₹3,499",
+        was: "₹6,999",
+        cta: "Check Course",
+        syllabusTitle: "Five Modules To High-Conviction Clarity",
+        syllabusSubtitle: "A proven framework to overcome analysis paralysis, evaluate high-stakes tradeoffs, and execute decisions without second-guessing.",
+        syllabus: [
+          { n: '01', t: 'Deconstructing Analysis Paralysis', d: 'Understanding why smart people delay critical choices, the psychology of overthinking, and how fear masks itself as research.' },
+          { n: '02', t: 'The 4-Step Clarity Architecture', d: 'A structured cognitive framework to filter out background noise, rank core priorities, and pinpoint optimal paths with speed.' },
+          { n: '03', t: 'Risk Calibration & Asymmetric Upside', d: 'Evaluating worst-case scenarios realistically, managing regret risk, and taking calculated, high-reward decisive action.' },
+          { n: '04', t: 'Execution & Living With The Choice', d: 'Ending chronic second-guessing, owning outcomes with conviction, and leading teams and family members through ambiguity.' },
+          { n: '05', t: 'Building a Decisive Mindset for Life', d: 'Daily decision-making heuristics to eliminate cognitive fatigue and maintain effortless clarity across business and personal life.' }
+        ],
+        writeup: {
+          chip: "DECISION ARCHITECTURE",
+          h1: "Analysis Paralysis Is Simply Fear in Disguise",
+          lede: "Great leaders do not wait for 100% certainty. They master the art of moving with high conviction through ambiguity.",
+          p1: "The agonizing delay on career pivots, relationship choices, or major investments isn't a lack of information—it is fear of regret masquerading as research.",
+          quote: "Indecision is the most expensive decision you will ever make.",
+          p2: "Through 5 focused modules, you receive a repeatable cognitive architecture to strip away emotion, evaluate asymmetric upside, and make high-stakes choices rapidly—without second-guessing yourself once committed.",
+          distinction: "Indecisive minds seek guarantees that never exist. Decisive leaders manage risk, commit with clarity, and create the outcome."
+        }
       }
-    },
-    {
-      slug: "difficult-people",
-      n: "02",
-      chips: ["Boundaries", "Conflict"],
-      soon: true,
-      cls: "v2",
-      title: "Difficult People",
-      lede: "Stay steady with the boss, partner or parent who pushes every button you have.",
-      d: "Stay steady with the boss, partner or parent who pushes every button you have.",
-      sidebarChips: [
-        ["Schedule", "Self-Paced"],
-        ["Certificate", "Yes"],
-        ["Language", "Hinglish / English"],
-        ["Access", "Lifetime"]
-      ],
-      hl: [
-        ["Hold Your Ground", "(Without a Fight)"],
-        ["2 Private Sessions", "with Aarkesh"]
-      ],
-      inside: [
-        "6 HD video modules",
-        "Downloadable conflict frameworks",
-        "2 private 1-on-1 coaching sessions",
-        "Lifetime access",
-        "Early-access price for waitlist members"
-      ],
-      facts: [["6", "Modules"], ["3 Free", "1-on-1 Sessions"]],
-      price: "₹3,999",
-      was: "₹7,999",
-      cta: "Check Course",
-      syllabusTitle: "Six Modules To Emotional Sovereignty",
-      syllabusSubtitle: "The practical psychological playbook to disarm manipulation, establish firm boundaries, and protect your inner peace.",
-      syllabus: [
-        { n: '01', t: 'Mapping Toxic Patterns & Triggers', d: 'Recognizing manipulative archetypes, passive-aggressive traps, and subtle emotional manipulation tactics before they drain you.' },
-        { n: '02', t: 'The Unshakeable Boundary Framework', d: 'Setting clear, non-negotiable boundaries with bosses, partners, or parents without anger, defensiveness, or guilt.' },
-        { n: '03', t: 'Disarming High-Conflict Personalities', d: 'Verbal de-escalation strategies, avoiding defensive traps, and maintaining quiet emotional detachment in heated moments.' },
-        { n: '04', t: 'Holding Ground in High-Stakes Confrontations', d: 'Staying centered during intense arguments, asserting your authority, and never breaking composure under pressure.' },
-        { n: '05', t: 'Navigating Difficult Workplace Dynamics', d: 'Managing micro-managers, corporate politics, and aggressive colleagues while protecting your professional standing.' },
-        { n: '06', t: 'Reclaiming Your Mental Sovereignty', d: 'Overcoming post-conflict rumination, establishing internal calm, and permanent emotional freedom from difficult dynamics.' }
-      ],
-      writeup: {
-        chip: "CONFLICT FRAMEWORK",
-        h1: "Stop Absorbing Other People's Emotional Chaos",
-        lede: "High-conflict personalities don't look for resolution—they look for reaction. The moment you react, you lose ground.",
-        p1: "Whether it's a demanding boss, a passive-aggressive colleague, or a volatile family member, their emotional turbulence is designed to pull you off-center and put you on the defensive.",
-        quote: "You don't defeat difficult people by fighting back. You defeat them by becoming impossible to trigger.",
-        p2: "In this 6-module masterclass, you get the exact psychological tools to stay completely unshakeable. You will learn how to set ironclad boundaries, disarm manipulative tactics in real-time, and hold your frame without shouting or apologizing.",
-        distinction: "Weak responses either explode with anger or shrink with compliance. Strategic self-command stays neutral, unbothered, and in total control."
-      }
-    },
-    {
-      slug: "decisions",
-      n: "03",
-      chips: ["Clarity", "Choice"],
-      soon: true,
-      cls: "",
-      title: "Decisions",
-      lede: "A clear method for the choices you keep putting off, and for living with them once made.",
-      d: "A clear method for the choices you keep putting off, and for living with them once made.",
-      sidebarChips: [
-        ["Schedule", "Self-Paced"],
-        ["Certificate", "Yes"],
-        ["Language", "Hinglish / English"],
-        ["Access", "Lifetime"]
-      ],
-      hl: [
-        ["Decide With Clarity", "(Not Certainty)"],
-        ["2 Private Sessions", "with Aarkesh"]
-      ],
-      inside: [
-        "5 HD video modules",
-        "Downloadable decision matrix workbooks",
-        "2 private 1-on-1 coaching sessions",
-        "Lifetime access",
-        "Early-access price for waitlist members"
-      ],
-      facts: [["5", "Modules"], ["3 Free", "1-on-1 Sessions"]],
-      price: "₹3,499",
-      was: "₹6,999",
-      cta: "Check Course",
-      syllabusTitle: "Five Modules To High-Conviction Clarity",
-      syllabusSubtitle: "A proven framework to overcome analysis paralysis, evaluate high-stakes tradeoffs, and execute decisions without second-guessing.",
-      syllabus: [
-        { n: '01', t: 'Deconstructing Analysis Paralysis', d: 'Understanding why smart people delay critical choices, the psychology of overthinking, and how fear masks itself as research.' },
-        { n: '02', t: 'The 4-Step Clarity Architecture', d: 'A structured cognitive framework to filter out background noise, rank core priorities, and pinpoint optimal paths with speed.' },
-        { n: '03', t: 'Risk Calibration & Asymmetric Upside', d: 'Evaluating worst-case scenarios realistically, managing regret risk, and taking calculated, high-reward decisive action.' },
-        { n: '04', t: 'Execution & Living With The Choice', d: 'Ending chronic second-guessing, owning outcomes with conviction, and leading teams and family members through ambiguity.' },
-        { n: '05', t: 'Building a Decisive Mindset for Life', d: 'Daily decision-making heuristics to eliminate cognitive fatigue and maintain effortless clarity across business and personal life.' }
-      ],
-      writeup: {
-        chip: "DECISION ARCHITECTURE",
-        h1: "Analysis Paralysis Is Simply Fear in Disguise",
-        lede: "Great leaders do not wait for 100% certainty. They master the art of moving with high conviction through ambiguity.",
-        p1: "The agonizing delay on career pivots, relationship choices, or major investments isn't a lack of information—it is fear of regret masquerading as research.",
-        quote: "Indecision is the most expensive decision you will ever make.",
-        p2: "Through 5 focused modules, you receive a repeatable cognitive architecture to strip away emotion, evaluate asymmetric upside, and make high-stakes choices rapidly—without second-guessing yourself once committed.",
-        distinction: "Indecisive minds seek guarantees that never exist. Decisive leaders manage risk, commit with clarity, and create the outcome."
-      }
+    ];
+
+    if (!courseDetailsMap || Object.keys(courseDetailsMap).length === 0) {
+      return defaultList;
     }
-  ], [basePrice, comparePrice]);
+
+    const mergedList = defaultList.map(item => {
+      const dynamicCourse = courseDetailsMap[item.slug];
+      if (!dynamicCourse) return item;
+      return {
+        ...item,
+        ...dynamicCourse,
+        writeup: { ...(item.writeup || {}), ...(dynamicCourse.writeup || {}) },
+        syllabus: dynamicCourse.syllabus || item.syllabus,
+        inside: dynamicCourse.inside || item.inside,
+        hl: dynamicCourse.hl || item.hl,
+        chips: dynamicCourse.chips || item.chips,
+        sidebarChips: dynamicCourse.sidebarChips || item.sidebarChips
+      };
+    });
+
+    // Append newly created courses from admin
+    Object.keys(courseDetailsMap).forEach(slug => {
+      if (!defaultList.some(item => item.slug === slug)) {
+        mergedList.push(courseDetailsMap[slug]);
+      }
+    });
+
+    return mergedList;
+  }, [basePrice, comparePrice, courseDetailsMap]);
 
   const activeCourse = useMemo(() => {
     if (!slug) return coursesList[0];

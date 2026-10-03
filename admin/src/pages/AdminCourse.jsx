@@ -9,6 +9,7 @@ import {
   CurrencyInr 
 } from '@phosphor-icons/react';
 import AdminCourseLandingEditor from './AdminCourseLandingEditor';
+import AdminCourseDetailEditor from './AdminCourseDetailEditor';
 import AdminCourseControl from './AdminCourseControl';
 import AdminCourseFaq from './AdminCourseFaq';
 import AdminCourseCurriculum from './AdminCourseCurriculum';
@@ -21,12 +22,14 @@ export default function AdminCourse() {
 
   const getInitialTab = () => {
     const tabParam = searchParams.get('tab');
+    if (tabParam === 'details' || tabParam === 'sections' || tabParam === 'course-detail') return 'details';
     if (tabParam === 'editor' || tabParam === 'hero' || tabParam === 'landing' || tabParam === 'page') return 'editor';
     if (tabParam === 'students' || tabParam === 'purchases' || tabParam === 'orders' || tabParam === 'users') return 'students';
     if (tabParam === 'control' || tabParam === 'cards' || tabParam === 'master') return 'control';
     if (tabParam === 'faq' || tabParam === 'faqs' || tabParam === 'questions') return 'faq';
     if (tabParam === 'fee' || tabParam === 'pricing' || tabParam === 'gst') return 'fee';
     if (tabParam === 'curriculum' || tabParam === 'videos' || tabParam === 'comments') return 'curriculum';
+    if (location.pathname.startsWith('/course-detail') || location.pathname.startsWith('/course-sections')) return 'details';
     if (location.pathname.startsWith('/course-editor') || location.pathname.startsWith('/course-landing')) return 'editor';
     if (location.pathname.startsWith('/course-students') || location.pathname.startsWith('/course-purchases')) return 'students';
     if (location.pathname.startsWith('/course-control') || location.pathname.startsWith('/course-cards')) return 'control';
@@ -36,17 +39,19 @@ export default function AdminCourse() {
 
     try {
       const saved = localStorage.getItem('bwa_admin_course_tab');
-      if (saved && ['editor', 'students', 'control', 'faq', 'fee', 'curriculum'].includes(saved)) return saved;
+      if (saved && ['editor', 'details', 'students', 'control', 'faq', 'fee', 'curriculum'].includes(saved)) return saved;
     } catch (e) {}
 
-    return 'editor';
+    return 'details';
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'editor' || tabParam === 'hero' || tabParam === 'landing' || tabParam === 'page') {
+    if (tabParam === 'details' || tabParam === 'sections' || tabParam === 'course-detail') {
+      setActiveTab('details');
+    } else if (tabParam === 'editor' || tabParam === 'hero' || tabParam === 'landing' || tabParam === 'page') {
       setActiveTab('editor');
     } else if (tabParam === 'students' || tabParam === 'purchases' || tabParam === 'orders' || tabParam === 'users') {
       setActiveTab('students');
@@ -91,42 +96,57 @@ export default function AdminCourse() {
       {/* Sub Navigation Bar for Course Vertical */}
       <div className="w-full bg-[#faf7f0]/95 backdrop-blur-md border-b border-black/10 px-6 py-3.5 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
         <div className="flex items-center gap-2 flex-wrap">
-          {/* 1. Course Page Editor (Hero & Content) */}
+          {/* 1. Course Landing Page Editor */}
           <button
             id="tab-btn-editor"
             type="button"
             onClick={() => handleTabSwitch('editor')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
               activeTab === 'editor'
                 ? 'bg-[#c9542f] text-white shadow-md font-bold'
                 : 'bg-white text-stone-700 hover:text-black hover:bg-stone-50 border border-stone-200'
             }`}
           >
-            <Desktop size={16} weight={activeTab === 'editor' ? 'bold' : 'regular'} />
-            <span>Course Page Editor</span>
+            <Desktop size={15} weight={activeTab === 'editor' ? 'bold' : 'regular'} />
+            <span>Landing Page Editor</span>
           </button>
 
-          {/* 2. Course Students & Purchases */}
+          {/* 2. Course 3-Sections Detail Editor */}
+          <button
+            id="tab-btn-details"
+            type="button"
+            onClick={() => handleTabSwitch('details')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+              activeTab === 'details'
+                ? 'bg-[#c9542f] text-white shadow-md font-bold'
+                : 'bg-white text-stone-700 hover:text-black hover:bg-stone-50 border border-stone-200'
+            }`}
+          >
+            <GraduationCap size={15} weight={activeTab === 'details' ? 'bold' : 'regular'} />
+            <span>Course 3-Sections Editor</span>
+          </button>
+
+          {/* 3. Course Students & Purchases */}
           <button
             id="tab-btn-students"
             type="button"
             onClick={() => handleTabSwitch('students')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
               activeTab === 'students'
                 ? 'bg-[#c9542f] text-white shadow-md font-bold'
                 : 'bg-white text-stone-700 hover:text-black hover:bg-stone-50 border border-stone-200'
             }`}
           >
-            <GraduationCap size={16} weight={activeTab === 'students' ? 'bold' : 'regular'} />
-            <span>Course Students &amp; Purchases</span>
+            <GraduationCap size={15} weight={activeTab === 'students' ? 'bold' : 'regular'} />
+            <span>Students &amp; Purchases</span>
           </button>
 
-          {/* 3. Course Fee & GST */}
+          {/* 4. Course Fee & GST */}
           <button
             id="tab-btn-fee"
             type="button"
             onClick={() => handleTabSwitch('fee')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
               activeTab === 'fee'
                 ? 'bg-[#c9542f] text-white shadow-md font-bold'
                 : 'bg-white text-stone-700 hover:text-black hover:bg-stone-50 border border-stone-200'
@@ -136,12 +156,12 @@ export default function AdminCourse() {
             <span>Course Fee &amp; GST</span>
           </button>
 
-          {/* 4. Upload Videos & Curriculum */}
+          {/* 5. Upload Videos & Curriculum */}
           <button
             id="tab-btn-curriculum"
             type="button"
             onClick={() => handleTabSwitch('curriculum')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
               activeTab === 'curriculum'
                 ? 'bg-[#c9542f] text-white shadow-md font-bold'
                 : 'bg-white text-stone-700 hover:text-black hover:bg-stone-50 border border-stone-200'
@@ -151,12 +171,12 @@ export default function AdminCourse() {
             <span>Upload Videos &amp; Curriculum</span>
           </button>
 
-          {/* 5. What you will master */}
+          {/* 6. What you will master */}
           <button
             id="tab-btn-control"
             type="button"
             onClick={() => handleTabSwitch('control')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
               activeTab === 'control'
                 ? 'bg-[#c9542f] text-white shadow-md font-bold'
                 : 'bg-white text-stone-700 hover:text-black hover:bg-stone-50 border border-stone-200'
@@ -166,12 +186,12 @@ export default function AdminCourse() {
             <span>What you will master</span>
           </button>
 
-          {/* 6. FAQ */}
+          {/* 7. FAQ */}
           <button
             id="tab-btn-faq"
             type="button"
             onClick={() => handleTabSwitch('faq')}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
               activeTab === 'faq'
                 ? 'bg-[#c9542f] text-white shadow-md font-bold'
                 : 'bg-white text-stone-700 hover:text-black hover:bg-stone-50 border border-stone-200'
@@ -185,7 +205,9 @@ export default function AdminCourse() {
 
       {/* Main Tab Content */}
       <div className="flex-1">
-        {activeTab === 'editor' ? (
+        {activeTab === 'details' ? (
+          <AdminCourseDetailEditor />
+        ) : activeTab === 'editor' ? (
           <AdminCourseLandingEditor />
         ) : activeTab === 'students' ? (
           <AdminCourseStudents />
