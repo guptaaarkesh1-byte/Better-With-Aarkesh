@@ -8,7 +8,7 @@ export const DEFAULT_LIBRARY_SECTIONS = {
     eyebrowText: 'THE LIBRARY',
     headingLine1: 'What are you trying',
     headingLine2: 'to understand?',
-    headingText: 'What are you trying to *understand*?',
+    headingText: 'What are you trying to *understand?*',
     description: 'Articles, videos and reflective tools for the parts of life that are difficult to see clearly while you are living through them.',
     searchPlaceholder: "Describe what you're navigating...",
     bottomPromptText: 'OR EXPLORE WHAT OTHERS OFTEN CARRY',

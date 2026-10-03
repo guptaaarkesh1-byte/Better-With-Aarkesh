@@ -125,6 +125,9 @@ export function renderFormattedTitle(text, accentColor = '#f3a8e2') {
   const parseTokens = (str, keyPrefix = 'rt') => {
     if (!str) return [];
     
+    // Normalize if trailing question mark/exclamation is placed right after asterisk (e.g. *word*? -> *word?*)
+    const normalizedStr = str.replace(/\*([^*]+)\*(\?|!)/g, '*$1$2*');
+    
     const tokenRegex = /(\*\*(.+?)\*\*|\+\+([^+]+?)\+\+|\+([^+]+?)\+|\*([^*]+?)\*|\[([^\]]+?)\]|_([^_]+?)_)/g;
     
     const elements = [];
@@ -132,10 +135,10 @@ export function renderFormattedTitle(text, accentColor = '#f3a8e2') {
     let match;
     let count = 0;
 
-    while ((match = tokenRegex.exec(str)) !== null) {
+    while ((match = tokenRegex.exec(normalizedStr)) !== null) {
       const matchIndex = match.index;
       if (matchIndex > lastIndex) {
-        elements.push(str.substring(lastIndex, matchIndex));
+        elements.push(normalizedStr.substring(lastIndex, matchIndex));
       }
 
       const raw = match[0];
@@ -181,11 +184,11 @@ export function renderFormattedTitle(text, accentColor = '#f3a8e2') {
       lastIndex = tokenRegex.lastIndex;
     }
 
-    if (lastIndex < str.length) {
-      elements.push(str.substring(lastIndex));
+    if (lastIndex < normalizedStr.length) {
+      elements.push(normalizedStr.substring(lastIndex));
     }
 
-    return elements.length > 0 ? elements : str;
+    return elements.length > 0 ? elements : normalizedStr;
   };
 
   return parseTokens(text);
@@ -276,8 +279,15 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
 
   // Restore reading progress on mount
   useEffect(() => {
+    // Always start new/unopened article from the very top
+    if (window.lenis) {
+      window.lenis.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
     const saved = getSavedProgress();
-    if (saved && saved.scrollY > 100 && !hasRestoredRef.current) {
+    if (saved && saved.scrollY > 150 && !hasRestoredRef.current) {
       hasRestoredRef.current = true;
       maxProgressRef.current = saved.percentage || 0;
       setProgress(saved.percentage || 0);
@@ -285,18 +295,23 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
       const targetY = saved.scrollY;
       setTimeout(() => {
         if (window.lenis) {
-          window.lenis.scrollTo(targetY, { immediate: false, duration: 1.2 });
+          window.lenis.scrollTo(targetY, { immediate: false, duration: 1.0 });
         } else {
           window.scrollTo({ top: targetY, behavior: 'smooth' });
         }
         setToastMessage(`Resumed reading from ${saved.percentage || 0}%`);
         setResumeToast(true);
         setTimeout(() => setResumeToast(false), 4000);
-      }, 300);
+      }, 350);
     } else {
       maxProgressRef.current = 0;
       setProgress(0);
       hasRestoredRef.current = true;
+      if (window.lenis) {
+        window.lenis.scrollTo(0, { immediate: true });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
     }
   }, [article?._id, article?.id, article?.slug]);
 
@@ -557,9 +572,9 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
           <span>{isFromMyJourney ? 'BACK TO MY JOURNEY' : `BACK TO ${theme.name.toUpperCase()}`}</span>
         </button>
 
-        <div className="text-lg font-semibold tracking-tight hidden md:block" style={{ fontFamily: 'Fraunces, serif' }}>
+        <div className="text-2xl sm:text-[28px] font-semibold tracking-tight hidden md:block" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
           <Link to="/" style={{ color: theme.ink }}>
-            BetterWith<em style={{ color: theme.aarkeshColor, fontStyle: 'italic', fontFamily: 'Fraunces, serif' }}>Aarkesh</em>
+            BetterWith<em style={{ color: theme.aarkeshColor, fontStyle: 'normal', fontFamily: 'Fraunces, Georgia, serif', fontWeight: 600, marginLeft: '2px' }}>Aarkesh</em>
           </Link>
         </div>
 

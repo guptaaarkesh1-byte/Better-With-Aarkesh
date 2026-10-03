@@ -17,14 +17,14 @@ export default function MainLayout({ children }) {
     }
     
     lenisRef.current = new Lenis({
-      duration: 0.85,
+      duration: 1.0,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1.05,
-      touchMultiplier: 1.2,
-      autoRaf: false, // Critical to avoid dual ticker conflict with GSAP ticker
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.0,
+      autoRaf: true,
       infinite: false,
     });
 
@@ -32,17 +32,11 @@ export default function MainLayout({ children }) {
     window.lenis = lenisRef.current;
 
     // Sync Lenis scroll with GSAP ScrollTrigger
-    lenisRef.current.on('scroll', ScrollTrigger.update);
-
-    const updateLenis = (time) => {
-      lenisRef.current?.raf(time * 1000);
-    };
-
-    gsap.ticker.add(updateLenis);
-    gsap.ticker.lagSmoothing(500, 33);
+    lenisRef.current.on('scroll', () => {
+      ScrollTrigger.update();
+    });
 
     return () => {
-      gsap.ticker.remove(updateLenis);
       lenisRef.current?.destroy();
       window.lenis = undefined;
     };

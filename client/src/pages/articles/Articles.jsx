@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookmarkSimple, List, X, Sparkle } from '@phosphor-icons/react';
+import { ArrowLeft, BookmarkSimple, List, X, Sparkle, Play } from '@phosphor-icons/react';
 import { useBooking } from '../../context/BookingContext';
 import ArticleReaderView, { renderFormattedTitle } from './ArticleReaderView';
 import { CURATED_LIBRARY_ARTICLES, getCuratedArticle } from '../../constants/libraryArticlesData';
@@ -13,7 +13,7 @@ const CATEGORY_CONFIGS = {
     id: 'relationships',
     num: '01',
     name: 'Relationships',
-    displayWords: ['RELATIONSH', 'IPS'],
+    displayWords: ['RELATION', 'SHIPS'],
     wordClass: 'left',
     sphereClass: 'g1',
     bg: '#3d1b37',
@@ -205,14 +205,71 @@ export default function Articles() {
   const articleParam = searchParams.get('article');
   const searchQuery = searchParams.get('search')?.toLowerCase().trim() || '';
 
-  // Scroll to top on category change
+  // Track category changes and maintain scroll position when returning from an article
+  const prevCategoryRef = useRef(categoryKey);
+
+  // Scroll to top ONLY when user changes category tab
   useEffect(() => {
-    if (window.lenis) {
-      window.lenis.scrollTo(0, { immediate: true });
-    } else {
-      window.scrollTo({ top: 0, behavior: 'instant' });
+    if (prevCategoryRef.current !== categoryKey) {
+      prevCategoryRef.current = categoryKey;
+      sessionStorage.setItem(`articles_scroll_${categoryKey}`, '0');
+      if (window.lenis) {
+        window.lenis.scrollTo(0, { immediate: true });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
     }
-  }, [categoryKey, articleParam]);
+  }, [categoryKey]);
+
+  // Continuously track scroll position when browsing the category articles grid
+  useEffect(() => {
+    if (articleParam) return;
+
+    let timeout;
+    const handleScroll = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        const currentY = window.scrollY || document.documentElement.scrollTop || 0;
+        sessionStorage.setItem(`articles_scroll_${categoryKey}`, String(currentY));
+      }, 60);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(timeout);
+    };
+  }, [articleParam, categoryKey]);
+
+  // Restore scroll position when returning from an article reader back to the articles grid
+  useEffect(() => {
+    if (!articleParam) {
+      const savedY = sessionStorage.getItem(`articles_scroll_${categoryKey}`);
+      if (savedY !== null && savedY !== undefined) {
+        const targetY = parseFloat(savedY);
+        if (!isNaN(targetY) && targetY > 0) {
+          const restore = () => {
+            if (window.lenis) {
+              window.lenis.scrollTo(targetY, { immediate: true });
+            } else {
+              window.scrollTo({ top: targetY, behavior: 'instant' });
+            }
+          };
+
+          restore();
+          const t1 = setTimeout(restore, 50);
+          const t2 = setTimeout(restore, 150);
+          const t3 = setTimeout(restore, 350);
+
+          return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
+          };
+        }
+      }
+    }
+  }, [articleParam, categoryKey]);
 
   // Fetch saved articles from user profile
   useEffect(() => {
@@ -344,8 +401,8 @@ export default function Articles() {
     return cCat === targetCatId || cCat === targetCatName || cCat.includes(targetCatId);
   });
 
-  // 3. Merge: If DB articles exist, use DB articles exclusively; otherwise fallback to curated
-  const mergedArticlesList = sortedDb.length > 0 ? sortedDb : matchingCurated;
+  // 3. Merge: If DB articles are loaded from server, use DB articles exclusively
+  const mergedArticlesList = publishedArticles.length > 0 ? sortedDb : matchingCurated;
 
   // 4. Build unified list of articles
   const allCategoryArticles = mergedArticlesList.map((article, idx) => {
@@ -369,13 +426,47 @@ export default function Articles() {
     };
   });
 
-  // Apply search filtering if user came from search query
+  // Helper to extract full body text for search
+  const extractArticleSearchText = (a) => {
+    if (!a) return '';
+    const parts = [
+      a.title,
+      a.titleMain,
+      a.subtitle,
+      a.excerpt,
+      a.description,
+      a.category,
+      a.quote,
+      a.endingHighlight
+    ];
+
+    if (a.bodyHtml && typeof a.bodyHtml === 'string') {
+      parts.push(a.bodyHtml.replace(/<[^>]+>/g, ' '));
+    }
+    if (a.content && typeof a.content === 'string') {
+      parts.push(a.content.replace(/<[^>]+>/g, ' '));
+    }
+    if (Array.isArray(a.blocks)) {
+      a.blocks.forEach(b => {
+        if (!b) return;
+        if (b.heading) parts.push(b.heading);
+        if (b.text) parts.push(b.text);
+        if (b.content) parts.push(b.content);
+        if (b.line1) parts.push(b.line1);
+        if (b.line2) parts.push(b.line2);
+        if (Array.isArray(b.paragraphs)) parts.push(b.paragraphs.join(' '));
+      });
+    }
+    return parts.filter(Boolean).join(' ').toLowerCase().replace(/[*_\[\]\+\#]/g, ' ');
+  };
+
+  // Apply search filtering if user came from search query (checks titles, subtitles, AND entire body content)
   const displayedArticles = searchQuery
-    ? allCategoryArticles.filter(a =>
-        a.title?.toLowerCase().includes(searchQuery) ||
-        a.subtitle?.toLowerCase().includes(searchQuery) ||
-        a.titleMain?.toLowerCase().includes(searchQuery)
-      )
+    ? allCategoryArticles.filter(a => {
+        const fullText = extractArticleSearchText(a);
+        const qWords = searchQuery.split(/\s+/).filter(Boolean);
+        return fullText.includes(searchQuery) || (qWords.length > 1 && qWords.every(w => fullText.includes(w)));
+      })
     : allCategoryArticles;
 
   return (
@@ -428,25 +519,27 @@ export default function Articles() {
         }
 
         .themed-category-root .logo {
-          font-family: 'Fraunces', serif;
-          font-size: 21px;
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: clamp(26px, 2.5vw, 32px);
           font-weight: 600;
           letter-spacing: -0.01em;
           color: ${currentCat.ink};
         }
 
         .themed-category-root .logo em {
-          font-style: italic;
+          font-style: normal;
           color: ${currentCat.aarkeshColor};
-          font-family: 'Fraunces', serif;
+          font-family: 'Fraunces', Georgia, serif;
+          font-weight: 600;
+          margin-left: 2px;
         }
 
         .themed-category-root .navlinks {
           display: flex;
           gap: 28px;
-          font-size: 12px;
+          font-size: 13.5px;
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
         }
 
@@ -470,14 +563,41 @@ export default function Articles() {
           display: flex;
           align-items: center;
           gap: 16px;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
           text-transform: uppercase;
+        }
+
+        .themed-category-root .navcta .course-pill-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8.5px 15px;
+          border-radius: 2px;
+          border: 1px solid ${currentCat.borderLine};
+          color: ${currentCat.ink};
+          font-family: 'Inter', sans-serif;
+          font-size: 12.5px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          transition: all 0.2s ease;
+          background: transparent;
+          text-decoration: none;
+          cursor: pointer;
+        }
+
+        .themed-category-root .navcta .course-pill-btn:hover {
+          border-color: ${currentCat.accent};
+          color: ${currentCat.accent};
+          transform: translateY(-1px);
         }
 
         .themed-category-root .navcta .my-journey-btn {
           color: ${currentCat.ink};
           opacity: 0.85;
+          font-size: 13px;
+          letter-spacing: 0.04em;
           transition: opacity 0.2s;
         }
 
@@ -488,14 +608,15 @@ export default function Articles() {
         .themed-category-root .navcta .book-pill {
           background: ${currentCat.btnBg};
           color: ${currentCat.btnInk};
-          padding: 11px 20px;
+          padding: 11px 22px;
           border-radius: 2px;
           transition: transform 0.2s, background-color 0.2s, color 0.2s;
           cursor: pointer;
           border: none;
           font-family: 'Inter', sans-serif;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
+          letter-spacing: 0.04em;
           text-transform: uppercase;
           display: inline-block;
         }
@@ -542,7 +663,7 @@ export default function Articles() {
 
         /* Category Hero Banner */
         .themed-category-root .category-hero {
-          padding: 60px 48px 50px;
+          padding: 0 48px 50px;
           max-width: 1380px;
           margin: 0 auto;
           width: 100%;
@@ -600,15 +721,14 @@ export default function Articles() {
           overflow: visible;
         }
 
-        /* Topic Switcher Bar - Full Width Extent & Bigger Size */
+        /* Topic Switcher Bar - Flush right below Navbar */
         .themed-category-root .topic-switcher-bar {
           display: grid;
           grid-template-columns: repeat(6, 1fr);
           gap: 12px;
-          padding: 24px 0 28px;
-          border-top: 1px solid ${currentCat.borderLine};
+          padding: 14px 0 16px;
           border-bottom: 1px solid ${currentCat.borderLine};
-          margin-bottom: 50px;
+          margin-bottom: 30px;
           width: 100%;
           box-sizing: border-box;
         }
@@ -781,9 +901,9 @@ export default function Articles() {
 
         .themed-category-root .card-title {
           font-family: 'Fraunces', serif;
-          font-style: italic;
+          font-style: normal;
           font-size: 20px;
-          font-weight: 400;
+          font-weight: 500;
           line-height: 1.3;
           margin: 0 0 12px;
           color: inherit;
@@ -857,7 +977,7 @@ export default function Articles() {
 
         @media (max-width: 640px) {
           .themed-category-root header.cat-page-nav { padding: 16px 20px; }
-          .themed-category-root .category-hero { padding: 40px 20px; }
+          .themed-category-root .category-hero { padding: 0 20px 40px; }
           .themed-category-root .articles-cards-grid { grid-template-columns: 1fr; }
           .themed-category-root footer.cat-page-footer { flex-direction: column; gap: 14px; text-align: center; padding: 24px 20px; }
           .themed-category-root .cat-sphere { width: 200px; height: 200px; }
@@ -888,6 +1008,9 @@ export default function Articles() {
         </nav>
 
         <div className="navcta">
+          <Link to="/course" className="course-pill-btn">
+            <Play size={12} weight="fill" /> Course
+          </Link>
           <Link to="/my-journey" className="my-journey-btn">My Journey</Link>
           <button onClick={handleBookClick} className="book-pill">Book a Session</button>
 
@@ -917,6 +1040,29 @@ export default function Articles() {
 
       {/* ---------- CATEGORY SHOWCASE & HERO ---------- */}
       <main className="category-hero">
+        {/* Topic Switcher Pills (Positioned right below Navbar) */}
+        <div className="topic-switcher-bar">
+          {Object.values(CATEGORY_CONFIGS).map((cat) => (
+            <Link
+              key={cat.id}
+              to={`/articles?category=${cat.id}`}
+              className={`topic-pill ${cat.id === currentCat.id ? 'active' : ''}`}
+              onClick={() => {
+                if (cat.id !== currentCat.id) {
+                  sessionStorage.setItem(`articles_scroll_${cat.id}`, '0');
+                  if (window.lenis) {
+                    window.lenis.scrollTo(0, { immediate: true });
+                  } else {
+                    window.scrollTo(0, 0);
+                  }
+                }
+              }}
+            >
+              <span>{cat.name.toUpperCase()}</span>
+            </Link>
+          ))}
+        </div>
+
         <div className="cat-header-top">
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <Link 
@@ -948,7 +1094,7 @@ export default function Articles() {
               <ArrowLeft size={14} weight="bold" />
               <span>BACK</span>
             </Link>
-            <span className="idx">({currentCat.num}) {currentCat.name.toUpperCase()}</span>
+            <span className="idx">{currentCat.name.toUpperCase()}</span>
           </div>
           <div></div>
         </div>
@@ -986,20 +1132,6 @@ export default function Articles() {
           )}
         </div>
 
-        {/* Topic Switcher Pills */}
-        <div className="topic-switcher-bar">
-          {Object.values(CATEGORY_CONFIGS).map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/articles?category=${cat.id}`}
-              className={`topic-pill ${cat.id === currentCat.id ? 'active' : ''}`}
-            >
-              <span className="num">{cat.num}</span>
-              <span>{cat.name}</span>
-            </Link>
-          ))}
-        </div>
-
         {/* Section Count Header */}
         <div className="cards-section-head">
           <span className="cards-count-label">
@@ -1017,6 +1149,13 @@ export default function Articles() {
                 key={article.id || article.slug || index}
                 className="article-card"
                 onClick={() => {
+                  const currentY = window.scrollY || document.documentElement.scrollTop || 0;
+                  sessionStorage.setItem(`articles_scroll_${categoryKey}`, String(currentY));
+                  if (window.lenis) {
+                    window.lenis.scrollTo(0, { immediate: true });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                  }
                   setSearchParams({ category: currentCat.id, article: article.slug || article.id });
                 }}
               >
@@ -1040,7 +1179,6 @@ export default function Articles() {
 
                 <div className="card-body">
                   <div className="card-meta-row">
-                    <span>{String(index + 1).padStart(2, '0')}</span>
                     <span>{article.date || 'MAY 2026'}</span>
                   </div>
 

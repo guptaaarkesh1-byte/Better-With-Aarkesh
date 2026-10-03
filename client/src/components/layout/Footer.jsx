@@ -127,7 +127,7 @@ export default function Footer() {
                 <Sparkle size={22} weight="fill" />
               </div>
               <span className="font-serif text-3xl sm:text-4xl text-[#111010] tracking-tight leading-none">
-                BetterWith<em className="text-[#c9542f] not-italic font-normal italic">Aarkesh</em>
+                BetterWith<em className="text-[#c9542f] not-italic font-normal ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>
               </span>
             </Link>
 

@@ -1,6 +1,8 @@
 import express from 'express';
 import Article from '../models/Article.js';
+import Settings from '../models/Settings.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import { CURATED_LIBRARY_ARTICLES } from '../data/curatedArticlesData.js';
 
 const router = express.Router();
 
@@ -31,16 +33,57 @@ const toPayload = (article) => ({
   bodyHtml: article.bodyHtml || '',
 });
 
+// Helper to get deleted articles list
+const getDeletedSlugs = async () => {
+  try {
+    const doc = await Settings.findOne({ key: 'deleted_library_articles' });
+    return Array.isArray(doc?.value) ? doc.value : [];
+  } catch (_) {
+    return [];
+  }
+};
 
+// Seed default curated articles once if DB is fresh
+const ensureArticlesSeeded = async () => {
+  try {
+    const count = await Article.countDocuments();
+    const deletedSlugs = await getDeletedSlugs();
+
+    if (count === 0 && deletedSlugs.length === 0) {
+      console.log('Seeding initial curated library articles...');
+      const seedData = CURATED_LIBRARY_ARTICLES.map(a => toPayload(a));
+      await Article.insertMany(seedData);
+      console.log(`Seeded ${seedData.length} library articles.`);
+    }
+  } catch (err) {
+    console.error('Error ensuring articles seeded:', err);
+  }
+};
+
+// Run seed check
+ensureArticlesSeeded();
 
 // GET all articles or filter by query
 router.get('/', async (req, res) => {
   try {
+    const deletedSlugs = await getDeletedSlugs();
     const query = {};
     if (req.query.categoryId) query.categoryId = req.query.categoryId;
     if (req.query.headingId) query.headingId = req.query.headingId;
     if (req.query.status) query.status = req.query.status;
-    const articles = await Article.find(query).sort({ updatedAt: -1, createdAt: -1 });
+
+    let articles = await Article.find(query).sort({ updatedAt: -1, createdAt: -1 });
+
+    // Filter out any explicitly deleted articles
+    if (deletedSlugs.length > 0) {
+      articles = articles.filter(a => 
+        !deletedSlugs.includes(a.slug) && 
+        !deletedSlugs.includes(a.title) && 
+        !deletedSlugs.includes(String(a._id)) &&
+        !deletedSlugs.includes(a.id)
+      );
+    }
+
     res.json(articles);
   } catch (error) {
     console.error(error);
@@ -81,6 +124,11 @@ router.post('/', async (req, res) => {
 router.get('/single/:idOrSlug', async (req, res) => {
   try {
     const { idOrSlug } = req.params;
+    const deletedSlugs = await getDeletedSlugs();
+    if (deletedSlugs.includes(idOrSlug)) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+
     let article = null;
     if (idOrSlug.match(/^[0-9a-fA-F]{24}$/)) {
       article = await Article.findById(idOrSlug);
@@ -98,8 +146,10 @@ router.get('/single/:idOrSlug', async (req, res) => {
   }
 });
 
+// GET published articles for public client
 router.get('/published', async (req, res) => {
   try {
+    const deletedSlugs = await getDeletedSlugs();
     const query = { status: 'Published' };
 
     if (req.query.categoryId) {
@@ -110,7 +160,17 @@ router.get('/published', async (req, res) => {
       query.headingId = req.query.headingId;
     }
 
-    const articles = await Article.find(query).sort({ updatedAt: -1, createdAt: -1 });
+    let articles = await Article.find(query).sort({ updatedAt: -1, createdAt: -1 });
+
+    if (deletedSlugs.length > 0) {
+      articles = articles.filter(a => 
+        !deletedSlugs.includes(a.slug) && 
+        !deletedSlugs.includes(a.title) && 
+        !deletedSlugs.includes(String(a._id)) &&
+        !deletedSlugs.includes(a.id)
+      );
+    }
+
     res.json(articles);
   } catch (error) {
     console.error(error);
@@ -120,7 +180,11 @@ router.get('/published', async (req, res) => {
 
 router.get('/admin', protect, admin, async (req, res) => {
   try {
-    const articles = await Article.find().sort({ updatedAt: -1, createdAt: -1 });
+    const deletedSlugs = await getDeletedSlugs();
+    let articles = await Article.find().sort({ updatedAt: -1, createdAt: -1 });
+    if (deletedSlugs.length > 0) {
+      articles = articles.filter(a => !deletedSlugs.includes(a.slug) && !deletedSlugs.includes(a.title));
+    }
     res.json(articles);
   } catch (error) {
     console.error(error);
@@ -155,24 +219,40 @@ router.put('/admin/:id', protect, admin, async (req, res) => {
   }
 });
 
-// DELETE /api/articles/:idOrSlug  — open delete (used by admin panel)
+// DELETE /api/articles/:idOrSlug — permanent delete (handles _id, slug, id or title)
 router.delete('/:idOrSlug', async (req, res) => {
   try {
     const { idOrSlug } = req.params;
-    let article = null;
+    const { slug, title, id } = req.body || {};
 
-    if (idOrSlug.match(/^[0-9a-fA-F]{24}$/)) {
-      article = await Article.findById(idOrSlug);
+    const deletionKeys = [
+      idOrSlug,
+      slug,
+      title,
+      id
+    ].filter(Boolean);
+
+    // Record in deleted_library_articles list in Settings
+    await Settings.findOneAndUpdate(
+      { key: 'deleted_library_articles' },
+      { $addToSet: { value: { $each: deletionKeys } } },
+      { upsert: true, new: true }
+    );
+
+    // Delete matching documents in MongoDB
+    const filterConditions = [];
+    if (idOrSlug && idOrSlug.match(/^[0-9a-fA-F]{24}$/)) {
+      filterConditions.push({ _id: idOrSlug });
     }
-    if (!article) {
-      article = await Article.findOne({ slug: idOrSlug });
-    }
-    if (!article) {
-      return res.status(404).json({ message: 'Article not found' });
+    if (idOrSlug) filterConditions.push({ slug: idOrSlug }, { title: idOrSlug });
+    if (slug) filterConditions.push({ slug: slug });
+    if (title) filterConditions.push({ title: title });
+
+    if (filterConditions.length > 0) {
+      await Article.deleteMany({ $or: filterConditions });
     }
 
-    await article.deleteOne();
-    res.json({ message: 'Article deleted successfully' });
+    res.json({ success: true, message: 'Article deleted successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error deleting article' });
@@ -181,13 +261,18 @@ router.delete('/:idOrSlug', async (req, res) => {
 
 router.delete('/admin/:id', protect, admin, async (req, res) => {
   try {
-    const article = await Article.findById(req.params.id);
+    const { id } = req.params;
+    const article = await Article.findById(id);
 
-    if (!article) {
-      return res.status(404).json({ message: 'Article not found' });
+    if (article) {
+      await Settings.findOneAndUpdate(
+        { key: 'deleted_library_articles' },
+        { $addToSet: { value: { $each: [id, article.slug, article.title].filter(Boolean) } } },
+        { upsert: true, new: true }
+      );
+      await article.deleteOne();
     }
 
-    await article.deleteOne();
     res.json({ message: 'Article deleted successfully' });
   } catch (error) {
     console.error(error);

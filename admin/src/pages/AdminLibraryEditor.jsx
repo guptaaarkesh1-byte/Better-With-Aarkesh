@@ -161,7 +161,7 @@ export default function AdminLibraryEditor() {
 
   // Hero Section State
   const [heroSettings, setHeroSettings] = useState({
-    headingText: 'What are you trying to *understand*?',
+    headingText: 'What are you trying to *understand?*',
     searchPlaceholder: "Describe what you're navigating...",
   });
   const [savingHero, setSavingHero] = useState(false);
@@ -204,7 +204,7 @@ export default function AdminLibraryEditor() {
       if (res.ok) {
         const data = await res.json();
         setHeroSettings({
-          headingText: data.headingText || 'What are you trying to *understand*?',
+          headingText: data.headingText || 'What are you trying to *understand?*',
           searchPlaceholder: data.searchPlaceholder || "Describe what you're navigating...",
         });
       }
@@ -267,35 +267,22 @@ export default function AdminLibraryEditor() {
     }
   };
 
-  // Filter and deduplicate articles for active category
+  // Filter articles for active category purely from dbArticles (the source of truth)
   const getCategoryArticles = () => {
-    const catId = activeCategory.id;
-    const catKey = activeCategory.key;
+    const catId = (activeCategory.id || '').toLowerCase().replace(/\s+/g, '-');
+    const catKey = (activeCategory.key || '').toUpperCase();
 
-    // 1. Matching DB articles
-    const matchingDb = dbArticles.filter(
-      (a) => (a.categoryId || a.category?.toLowerCase() || '').replace(/\s+/g, '-').includes(catId) ||
-             (a.category || '').toUpperCase() === catKey
-    );
+    // Matching DB articles
+    const matchingDb = dbArticles.filter((a) => {
+      const aCatId = (a.categoryId || a.category?.toLowerCase() || '').replace(/\s+/g, '-');
+      const aCat = (a.category || '').toUpperCase();
+      return aCatId === catId || aCatId.includes(catId) || aCat === catKey;
+    });
 
-    // 2. Matching Curated default articles
-    const matchingCurated = CURATED_LIBRARY_ARTICLES.filter(
-      (c) => (c.categoryId || c.category?.toLowerCase() || '').replace(/\s+/g, '-').includes(catId) ||
-             (c.category || '').toUpperCase() === catKey
-    );
-
-    // 3. Merge: DB articles first, curated ones as fallback if not in DB
-    const merged = [
-      ...matchingDb,
-      ...matchingCurated.filter(
-        (c) => !matchingDb.some((db) => db.slug === c.slug || db.title === c.title)
-      )
-    ];
-
-    if (!articlesSearchQuery.trim()) return merged;
+    if (!articlesSearchQuery.trim()) return matchingDb;
 
     const q = articlesSearchQuery.toLowerCase().trim();
-    return merged.filter(
+    return matchingDb.filter(
       (a) =>
         (a.title || '').toLowerCase().includes(q) ||
         (a.subtitle || '').toLowerCase().includes(q) ||
@@ -563,25 +550,40 @@ export default function AdminLibraryEditor() {
     if (!deleteConfirmArticle) return;
     try {
       const token = localStorage.getItem('adminToken');
-      const articleId = deleteConfirmArticle._id || deleteConfirmArticle.id;
+      const targetId = deleteConfirmArticle._id || deleteConfirmArticle.id || deleteConfirmArticle.slug;
+      const targetSlug = deleteConfirmArticle.slug || '';
+      const targetTitle = deleteConfirmArticle.title || '';
 
-      if (articleId) {
-        const res = await fetch(`${API_URL}/api/articles/${articleId}`, {
-          method: 'DELETE',
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          }
-        });
+      // Immediately remove from local state so UI updates instantly
+      setDbArticles((prev) =>
+        prev.filter((a) => {
+          if (a._id && a._id === targetId) return false;
+          if (a.id && a.id === targetId) return false;
+          if (targetSlug && a.slug === targetSlug) return false;
+          if (targetTitle && a.title === targetTitle) return false;
+          return true;
+        })
+      );
 
-        if (res.ok) {
-          addToast('Article deleted', 'success');
-          setDeleteConfirmArticle(null);
-          fetchArticles();
-          return;
-        }
+      const res = await fetch(`${API_URL}/api/articles/${encodeURIComponent(targetId)}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          id: targetId,
+          slug: targetSlug,
+          title: targetTitle
+        })
+      });
+
+      if (res.ok) {
+        addToast('Article permanently deleted', 'success');
+      } else {
+        addToast('Article removed', 'info');
       }
 
-      addToast('Article removed', 'info');
       setDeleteConfirmArticle(null);
       fetchArticles();
     } catch (err) {
@@ -738,9 +740,11 @@ export default function AdminLibraryEditor() {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 {FIXED_LIBRARY_CATEGORIES.map((cat) => {
                   const isActive = activeCategory.id === cat.id;
-                  const count = dbArticles.filter(
-                    (a) => (a.categoryId || a.category?.toLowerCase() || '').replace(/\s+/g, '-').includes(cat.id)
-                  ).length || 3;
+                  const count = dbArticles.filter((a) => {
+                    const aCatId = (a.categoryId || a.category?.toLowerCase() || '').replace(/\s+/g, '-');
+                    const aCat = (a.category || '').toUpperCase();
+                    return aCatId === cat.id || aCatId.includes(cat.id) || aCat === cat.key;
+                  }).length;
 
                   return (
                     <button

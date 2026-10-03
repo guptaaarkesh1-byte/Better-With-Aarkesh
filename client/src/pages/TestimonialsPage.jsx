@@ -139,7 +139,7 @@ export default function TestimonialsPage() {
             return (
               <div 
                 key={index}
-                className="flex flex-col justify-between bg-white/95 border border-black/8 hover:border-[#c9542f]/35 rounded-2xl p-6 sm:p-7 transition-all duration-300 group hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_32px_rgba(201, 84, 47,0.08)] hover:-translate-y-1"
+                className="flex flex-col justify-between bg-white/40 border border-white/70 hover:border-[#c9542f]/40 rounded-2xl p-6 sm:p-7 transition-all duration-300 group hover:bg-white/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_32px_rgba(201, 84, 47,0.08)] hover:-translate-y-1"
               >
                 <div>
                   {/* Top Row: Quote Icon */}

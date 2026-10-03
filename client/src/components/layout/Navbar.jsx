@@ -170,7 +170,7 @@ export default function Navbar() {
                 className="text-[26px] sm:text-[32px] md:text-[36px] font-semibold text-[#111010] tracking-tight relative z-10 flex items-center whitespace-nowrap leading-tight"
                 style={{ fontFamily: 'Fraunces, Georgia, serif' }}
               >
-                BetterWith<em className="text-[#c9542f] font-normal not-italic italic ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>
+                BetterWith<em className="text-[#c9542f] font-normal not-italic ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>
               </Link>
             </div>
 

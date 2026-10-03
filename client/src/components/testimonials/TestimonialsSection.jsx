@@ -13,7 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
 // =========================================================================
 // 🎛️ DESKTOP IMAGE CONTROLS (Adjust zoom & position here!)
@@ -71,8 +71,16 @@ const DEFAULT_TESTIMONIALS = [
   }
 ];
 
+const getInitialTestimonialsData = () => {
+  try {
+    const cached = localStorage.getItem('cached_testimonials_data');
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+  return null;
+};
+
 export default function TestimonialsSection() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(getInitialTestimonialsData);
 
   useEffect(() => {
     let isMounted = true;
@@ -82,6 +90,9 @@ export default function TestimonialsSection() {
         if (res.ok && isMounted) {
           const json = await res.json();
           setData(json);
+          try {
+            localStorage.setItem('cached_testimonials_data', JSON.stringify(json));
+          } catch (e) {}
         }
       } catch (err) {
         console.error('Failed to load testimonials:', err);
@@ -113,7 +124,7 @@ export default function TestimonialsSection() {
           }}
         />
         {/* Soft cream gradient only on the left for text and cards, leaving the glowing doorway and mountain 100% crystal clear */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/85 via-35% md:via-[#f5f1e8]/45 md:via-50% to-transparent w-full lg:w-[50%]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8]/80 via-[#f5f1e8]/50 via-35% md:via-[#f5f1e8]/30 md:via-50% to-transparent w-full lg:w-[50%]" />
         
         {/* Minimal edge blends */}
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#f5f1e8]/50 to-transparent" />
@@ -152,7 +163,7 @@ export default function TestimonialsSection() {
                 </p>
               </div>
 
-              {/* Testimonials Grid (Latest 6 on Homepage) */}
+              {/* Testimonials Grid (Translucent Glass Cards) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                 {testimonials.slice(0, 6).map((t, index) => {
                   const initial = t.name ? t.name.charAt(0).toUpperCase() : 'C';
@@ -162,7 +173,7 @@ export default function TestimonialsSection() {
                   return (
                     <div 
                       key={index} 
-                      className="flex flex-col bg-white/95 border border-black/8 rounded-2xl p-5 hover:border-[#c9542f]/35 hover:bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-colors duration-200"
+                      className="flex flex-col bg-white/40 border border-white/70 rounded-2xl p-5 hover:border-[#c9542f]/40 hover:bg-white/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all duration-200"
                     >
                       <Quotes className="text-[#c9542f] text-2xl mb-2.5 opacity-90" weight="fill" />
                       
@@ -170,9 +181,9 @@ export default function TestimonialsSection() {
                         "{t.quote}"
                       </p>
                       
-                      <div className="flex items-center gap-3 mt-auto pt-2 border-t border-black/5">
+                      <div className="flex items-center gap-3 mt-auto pt-2 border-t border-black/8">
                         {t.image ? (
-                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#c9542f]/30 shrink-0 bg-white shadow-xs">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#c9542f]/30 shrink-0 bg-white/80 shadow-xs">
                             <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
                           </div>
                         ) : (

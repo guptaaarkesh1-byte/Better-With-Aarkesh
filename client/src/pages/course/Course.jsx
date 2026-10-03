@@ -233,6 +233,10 @@ export default function Course() {
   }, [searchParams, isLoggedIn, isPurchased]);
 
   useEffect(() => {
+    setShowCourseLogin(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
     const fetchPublishedCurriculum = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -1582,13 +1586,26 @@ export default function Course() {
     <div className="course-landing-scope">
       {/* ── Top Fixed Nav ── */}
       <header className="course-nav">
-        <Link className="course-logo" to="/course">
+        <Link 
+          className="course-logo" 
+          to="/course"
+          onClick={(e) => {
+            setShowCourseLogin(false);
+            setShowDashboard(false);
+            if (location.pathname === '/course' || location.pathname === '/course/') {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+        >
           BetterWith<b>Aarkesh</b>
         </Link>
         <nav className="course-nav-center-links">
           <Link 
             to="/course" 
             onClick={(e) => {
+              setShowCourseLogin(false);
+              setShowDashboard(false);
               if (location.pathname === '/course' || location.pathname === '/course/') {
                 e.preventDefault();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1606,6 +1623,8 @@ export default function Course() {
           <Link 
             to="/course/all" 
             onClick={(e) => {
+              setShowCourseLogin(false);
+              setShowDashboard(false);
               if (isAllCoursesPage) {
                 e.preventDefault();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1623,6 +1642,8 @@ export default function Course() {
           <a 
             href="/course#faq" 
             onClick={(e) => {
+              setShowCourseLogin(false);
+              setShowDashboard(false);
               if (location.pathname === '/course' || location.pathname === '/course/') {
                 e.preventDefault();
                 const el = document.getElementById('faq');
@@ -1826,20 +1847,16 @@ export default function Course() {
                       <span>My Course</span>
                       <span aria-hidden="true">→</span>
                     </button>
-                  ) : isLoggedIn ? (
+                  ) : (
                     <button 
                       type="button" 
                       className="btn" 
                       onClick={() => {
-                        navigate('/course/all');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
+                        handleSelectCourse(betterMan);
                       }}
                     >
-                      Explore Courses <span aria-hidden="true">→</span>
-                    </button>
-                  ) : (
-                    <button type="button" className="btn" onClick={handleEnroll}>
-                      Register Now <span aria-hidden="true">→</span>
+                      Check Course <span aria-hidden="true">→</span>
                     </button>
                   )}
                 </div>
@@ -1851,44 +1868,58 @@ export default function Course() {
               <div className="stack">
                 <h2>More Masterclasses</h2>
                 <p className="lead">Each one is a standalone course with its own private sessions.</p>
-                <div id="cards">
+                <div className="all-courses-grid">
                   {coursesList.map((c, i) => {
-                    const btnClass = i === 0 ? 'btn dark' : i === 1 ? 'btn light' : 'btn';
+                    const themeCls = getCardThemeClass(i);
                     return (
-                      <article className="sc" key={c.n}>
+                      <article className={`all-course-card ${themeCls}`} key={c.n || c.slug}>
+                        {/* Thumbnail Banner */}
                         <div className={`vis ${c.cls}`} aria-hidden="true">
+                          <div className="vis-badge-top">
+                            {c.soon ? (
+                              <span className="live-status-badge soon">Coming soon</span>
+                            ) : (
+                              <span className="live-status-badge live"><span className="pulse-dot"></span> Live</span>
+                            )}
+                          </div>
                           <span className="no">{c.n}</span>
                           <i>{c.chips[0]}</i>
                           <i>{c.chips[1]}</i>
                         </div>
-                        <div>
-                          {c.soon ? (
-                            <span className="soon">Coming soon</span>
-                          ) : (
-                            <span className="soon">Live now</span>
-                          )}
-                          <h3>{c.title}</h3>
-                          <p className="d">{c.d}</p>
-                          <div className="facts">
-                            {c.facts.map((f, fi) => (
-                              <div key={fi}>
-                                <em>{f[0]}</em>
-                                <div><b>{f[1]}</b></div>
-                              </div>
+
+                        {/* Content Body */}
+                        <div className="all-course-card-content">
+                          {/* Topic Tag Pills */}
+                          <div className="card-tag-pills">
+                            {c.chips.map((chip, ci) => (
+                              <span className="card-tag-pill" key={ci}>{chip}</span>
                             ))}
+                            <span className="card-tag-pill">{c.facts[0][0]} {c.facts[0][1]}</span>
                           </div>
-                          <div className="price">
-                            Price <b>{c.price}</b><s>{c.was}</s><small>(+GST)</small>
+
+                          {/* Title */}
+                          <h3 className="card-course-title">{c.title}</h3>
+
+                          {/* Price & Badge Row */}
+                          <div className="card-price-row">
+                            <div className="price-label">
+                              Price <b>{c.price}</b> <s>{c.was}</s>
+                            </div>
+                            {c.soon ? (
+                              <span className="card-discount-badge">WAITLIST</span>
+                            ) : (
+                              <span className="card-discount-badge">POPULAR</span>
+                            )}
                           </div>
-                          <div>
-                            <button
-                              type="button"
-                              className={btnClass}
-                              onClick={() => handleSelectCourse(c)}
-                            >
-                              Check Course <span aria-hidden="true">→</span>
-                            </button>
-                          </div>
+
+                          {/* Action CTA Button */}
+                          <button
+                            type="button"
+                            className="card-cta-btn"
+                            onClick={() => handleSelectCourse(c)}
+                          >
+                            Check Course <span aria-hidden="true">→</span>
+                          </button>
                         </div>
                       </article>
                     );
@@ -2602,6 +2633,7 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
         to="/course"
         onClick={(e) => {
           e.preventDefault();
+          if (typeof setShowCourseLogin === 'function') setShowCourseLogin(false);
           setShowDashboard(false);
           navigate('/course');
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2616,6 +2648,7 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           to="/course" 
           onClick={(e) => {
             e.preventDefault();
+            if (typeof setShowCourseLogin === 'function') setShowCourseLogin(false);
             setShowDashboard(false);
             navigate('/course');
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2632,6 +2665,7 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           to="/course/all" 
           onClick={(e) => {
             e.preventDefault();
+            if (typeof setShowCourseLogin === 'function') setShowCourseLogin(false);
             setShowDashboard(false);
             navigate('/course/all');
           }}
@@ -2647,6 +2681,7 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           href="/course#faq" 
           onClick={(e) => {
             e.preventDefault();
+            if (typeof setShowCourseLogin === 'function') setShowCourseLogin(false);
             setShowDashboard(false);
             setTimeout(() => {
               const el = document.getElementById('faq');

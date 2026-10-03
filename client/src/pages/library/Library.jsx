@@ -40,7 +40,7 @@ export default function Library() {
   }, []);
 
   const [heroSettings, setHeroSettings] = useState({
-    headingText: 'What are you trying to *understand*?',
+    headingText: 'What are you trying to *understand?*',
     searchPlaceholder: "Describe what you're navigating...",
   });
 
@@ -52,7 +52,7 @@ export default function Library() {
         if (res.ok) {
           const data = await res.json();
           setHeroSettings({
-            headingText: data.headingText || 'What are you trying to *understand*?',
+            headingText: data.headingText || 'What are you trying to *understand?*',
             searchPlaceholder: data.searchPlaceholder || "Describe what you're navigating...",
           });
         }
@@ -80,7 +80,9 @@ export default function Library() {
   // Helper to render italicized words in hero heading
   const renderHeroHeading = (text) => {
     if (!text) return <>What are you trying to <em>understand?</em></>;
-    const parts = text.split(/(\*[^*]+\*)/g);
+    // If a question mark/exclamation directly follows an asterisk (e.g. *understand*?), include it inside the italic span
+    const normalizedText = text.replace(/\*([^*]+)\*(\?|!)/g, '*$1$2*');
+    const parts = normalizedText.split(/(\*[^*]+\*)/g);
     return parts.map((part, index) => {
       if (part.startsWith('*') && part.endsWith('*')) {
         return <em key={index}>{part.slice(1, -1)}</em>;
@@ -182,14 +184,98 @@ export default function Library() {
     )
   ];
 
+  // Helper to extract entire searchable body text from an article (titles, subtitles, HTML body, blocks, excerpts, callouts)
+  const extractArticleSearchText = (a) => {
+    if (!a) return '';
+    const parts = [];
+    if (a.title) parts.push(a.title);
+    if (a.titleMain) parts.push(a.titleMain);
+    if (a.subtitle) parts.push(a.subtitle);
+    if (a.excerpt) parts.push(a.excerpt);
+    if (a.description) parts.push(a.description);
+    if (a.category) parts.push(a.category);
+    if (a.categoryId) parts.push(a.categoryId);
+    if (a.dropCapText) parts.push(a.dropCapText);
+    if (a.endingHighlight) parts.push(a.endingHighlight);
+    if (a.quote) parts.push(a.quote);
+    if (Array.isArray(a.tags)) parts.push(a.tags.join(' '));
+
+    // Strip HTML from bodyHtml or plain content
+    if (a.bodyHtml && typeof a.bodyHtml === 'string') {
+      parts.push(a.bodyHtml.replace(/<[^>]+>/g, ' '));
+    }
+    if (a.content && typeof a.content === 'string') {
+      parts.push(a.content.replace(/<[^>]+>/g, ' '));
+    }
+
+    // Extract text from custom blocks structure (DB articles)
+    if (Array.isArray(a.blocks)) {
+      a.blocks.forEach(b => {
+        if (!b) return;
+        if (b.heading) parts.push(b.heading);
+        if (b.text) parts.push(b.text);
+        if (b.content) parts.push(b.content);
+        if (b.line1) parts.push(b.line1);
+        if (b.line2) parts.push(b.line2);
+        if (b.dropCapText) parts.push(b.dropCapText);
+        if (typeof b.callout === 'string') parts.push(b.callout);
+        else if (typeof b.callout === 'object' && b.callout) {
+          if (b.callout.line1) parts.push(b.callout.line1);
+          if (b.callout.line2) parts.push(b.callout.line2);
+          if (b.callout.text) parts.push(b.callout.text);
+        }
+        if (Array.isArray(b.paragraphs)) parts.push(b.paragraphs.join(' '));
+        if (Array.isArray(b.sections)) {
+          b.sections.forEach(s => {
+            if (s?.heading) parts.push(s.heading);
+            if (Array.isArray(s?.paragraphs)) parts.push(s.paragraphs.join(' '));
+            if (s?.callout?.line1) parts.push(s.callout.line1);
+            if (s?.callout?.line2) parts.push(s.callout.line2);
+          });
+        }
+      });
+    }
+
+    return parts.join(' ').toLowerCase().replace(/[*_\[\]\+\#]/g, ' ');
+  };
+
   const searchResults = (searchQuery.trim().length > 0)
-    ? allArticles.filter(a => {
-        const q = searchQuery.toLowerCase().trim();
-        const cleanTitle = `${a.title || ''} ${a.titleMain || ''}`
-          .toLowerCase()
-          .replace(/[*_\[\]\+\#]/g, '');
-        return cleanTitle.includes(q);
-      }).slice(0, 4)
+    ? allArticles
+        .map(a => {
+          const q = searchQuery.toLowerCase().trim();
+          const qWords = q.split(/\s+/).filter(w => w.length > 0);
+          
+          const cleanTitle = `${a.title || ''} ${a.titleMain || ''}`.toLowerCase().replace(/[*_\[\]\+\#]/g, '');
+          const cleanSubtitle = `${a.subtitle || ''} ${a.excerpt || ''} ${a.description || ''}`.toLowerCase().replace(/[*_\[\]\+\#]/g, '');
+          const fullText = extractArticleSearchText(a);
+
+          let score = 0;
+          if (cleanTitle.includes(q)) score += 100;
+          if (cleanSubtitle.includes(q)) score += 50;
+          if (fullText.includes(q)) score += 25;
+
+          // Multi-word / partial matching across deep text
+          if (qWords.length > 1) {
+            const titleMatches = qWords.filter(w => cleanTitle.includes(w)).length;
+            const subtitleMatches = qWords.filter(w => cleanSubtitle.includes(w)).length;
+            const fullMatches = qWords.filter(w => fullText.includes(w)).length;
+            
+            score += titleMatches * 30;
+            score += subtitleMatches * 15;
+            score += fullMatches * 8;
+          } else if (qWords.length === 1) {
+            const singleWord = qWords[0];
+            if (cleanTitle.includes(singleWord)) score += 40;
+            if (cleanSubtitle.includes(singleWord)) score += 20;
+            if (fullText.includes(singleWord)) score += 10;
+          }
+
+          return { article: a, score };
+        })
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.article)
+        .slice(0, 5)
     : [];
 
   const handleScrollTo = (id) => {
@@ -505,105 +591,67 @@ export default function Library() {
           }
         }
 
-        /* ---------- MARQUEE STRIP (FULL-HEIGHT SOLID COLOR BLOCKS) ---------- */
-        /* =========================================================
-           🎛️ MARQUEE BAR CONTROLS: Height, Font Size & Padding
-           ========================================================= */
-        .library-root .marquee {
-          --marquee-height: 54px;      /* ⬅️ Bar ki height yahan se adjust kar sakte hain */
-          --marquee-font-size: 14px;   /* ⬅️ Text ka font size */
-          --marquee-padding-x: 32px;   /* ⬅️ Har box ki left-right padding */
+        /* ---------- MARQUEE STRIP (CLASSIC BLACK WITH COLORFUL DIAMOND SPARKLES) ---------- */
+        @keyframes marqueeScroll {
+          0% {
+            transform: translate3d(0, 0, 0);
+          }
+          100% {
+            transform: translate3d(-50%, 0, 0);
+          }
+        }
 
+        .library-root .marquee {
           background: #111010;
           overflow: hidden;
-          padding: 0;
-          height: var(--marquee-height);
+          width: 100%;
+          height: 52px;
           display: flex;
-          align-items: stretch;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+          align-items: center;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          position: relative;
+          z-index: 20;
+          user-select: none;
+          pointer-events: none;
         }
 
         .library-root .marquee-track {
           display: flex;
-          align-items: stretch;
-          height: 100%;
-          gap: 0;
+          align-items: center;
           width: max-content;
-          animation: mq 34s linear infinite;
+          flex-shrink: 0;
+          white-space: nowrap;
+          will-change: transform;
+          animation: marqueeScroll 65s linear infinite !important;
         }
 
-        .library-root .marquee:hover .marquee-track {
-          animation-play-state: paused;
-        }
-
-        .library-root .marquee-box {
+        .library-root .marquee-item {
           display: inline-flex;
           align-items: center;
-          justify-content: center;
-          height: 100%;
-          padding: 0 var(--marquee-padding-x);
-          border-radius: 0;
+          gap: 28px;
+          padding: 0 20px;
+          background: transparent;
+          color: #ffffff;
           border: none;
           outline: none;
           font-family: 'Archivo Black', sans-serif;
           text-transform: uppercase;
-          font-size: var(--marquee-font-size);
-          letter-spacing: 0.08em;
+          font-size: 16px;
+          letter-spacing: 0.14em;
           white-space: nowrap;
-          cursor: pointer;
+          cursor: default;
           margin: 0;
-          transition: filter 0.2s ease, opacity 0.2s ease;
           user-select: none;
           box-shadow: none;
+          flex-shrink: 0;
         }
 
-        .library-root .marquee-box:hover {
-          filter: brightness(1.22);
-        }
-
-        .library-root .marquee-box.m-rel {
-          background: #3d1b37;
-          color: #ffffff;
-        }
-
-        .library-root .marquee-box.m-self {
-          background: #ffffff;
-          color: #111010;
-        }
-
-        .library-root .marquee-box.m-self:hover {
-          background: #eae6df;
-          filter: none;
-        }
-
-        .library-root .marquee-box.m-change {
-          background: #2f4a34;
-          color: #ffffff;
-        }
-
-        .library-root .marquee-box.m-dec {
-          background: #c85628;
-          color: #ffffff;
-        }
-
-        .library-root .marquee-box.m-diff {
-          background: #f0d9c9;
-          color: #2b1208;
-        }
-
-        .library-root .marquee-box.m-diff:hover {
-          background: #e4ccbb;
-          filter: none;
-        }
-
-        .library-root .marquee-box.m-comm {
-          background: #141314;
-          color: #ffffff;
-        }
-
-        @keyframes mq {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
+        .library-root .marquee-sparkle {
+          font-size: 13px;
+          line-height: 1;
+          display: inline-block;
+          transform: translateY(-0.5px);
         }
 
         /* ---------- HERO (BALANCED TO SHOW PREVIEW OF FIRST SECTION) ---------- */
@@ -1039,16 +1087,17 @@ export default function Library() {
           }
         }
 
-        /* Search Dropdown Menu */
+        /* Search Dropdown Menu - Wide, spacious and responsive */
         .library-root .search-dropdown-menu {
           position: absolute;
           top: calc(100% + 12px);
-          left: 0;
-          right: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: min(580px, calc(100vw - 32px));
           background: #ffffff;
           border: 1px solid rgba(0, 0, 0, 0.12);
           border-radius: 20px;
-          box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.06);
           overflow: hidden;
           z-index: 200;
           text-align: left;
@@ -1056,12 +1105,12 @@ export default function Library() {
         }
 
         @keyframes dropDownFadeIn {
-          from { opacity: 0; transform: translateY(-8px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+          from { opacity: 0; transform: translate(-50%, -8px) scale(0.98); }
+          to { opacity: 1; transform: translate(-50%, 0) scale(1); }
         }
 
         .library-root .search-dropdown-header {
-          padding: 14px 20px 10px;
+          padding: 14px 22px 10px;
           font-size: 10.5px;
           font-weight: 700;
           letter-spacing: 0.1em;
@@ -1078,12 +1127,13 @@ export default function Library() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 13px 20px;
+          padding: 14px 22px;
           border-bottom: 1px solid rgba(0, 0, 0, 0.05);
           cursor: pointer;
           transition: background-color 0.15s ease, padding-left 0.15s ease;
           text-decoration: none;
           color: var(--ink);
+          gap: 16px;
         }
 
         .library-root .search-dropdown-item:last-child {
@@ -1092,7 +1142,7 @@ export default function Library() {
 
         .library-root .search-dropdown-item:hover {
           background-color: #f7f3eb;
-          padding-left: 24px;
+          padding-left: 26px;
         }
 
         .library-root .search-dropdown-item .item-info {
@@ -1113,14 +1163,26 @@ export default function Library() {
 
         .library-root .search-dropdown-item .item-title {
           font-family: 'Fraunces', serif;
-          font-style: italic;
-          font-size: 15px;
+          font-style: normal;
+          font-size: 16px;
           font-weight: 500;
+          line-height: 1.35;
           color: var(--ink);
           margin: 0;
-          white-space: nowrap;
+          white-space: normal;
+          word-break: break-word;
+        }
+
+        .library-root .search-dropdown-item .item-subtitle {
+          font-family: 'Inter', sans-serif;
+          font-size: 12px;
+          color: #78716c;
+          margin: 0;
+          line-height: 1.45;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
           overflow: hidden;
-          text-overflow: ellipsis;
         }
 
         .library-root .search-dropdown-item .item-arrow {
@@ -1283,11 +1345,11 @@ export default function Library() {
         }
 
         .library-root .art-row {
-          display: grid;
-          grid-template-columns: 44px 1fr;
+          display: flex;
+          flex-direction: column;
           align-items: flex-start;
-          gap: 16px;
-          padding: 16px 0;
+          width: 100%;
+          padding: 18px 0;
           border-bottom: 1px solid var(--border-line);
           transition: background-color 0.2s, padding-left 0.2s;
         }
@@ -1296,24 +1358,18 @@ export default function Library() {
           padding-left: 6px;
         }
 
-        .library-root .art-row .n {
-          font-family: 'Archivo Black', sans-serif;
-          font-size: 11.5px;
-          padding-top: 2px;
-          opacity: 0.85;
-        }
-
         .library-root .art-content {
           display: flex;
           flex-direction: column;
           align-items: flex-start;
           gap: 4px;
+          width: 100%;
         }
 
         .library-root .art-row h4 {
           font-family: 'Fraunces', serif;
-          font-style: italic;
-          font-weight: 400;
+          font-style: normal;
+          font-weight: 500;
           font-size: 17px;
           margin: 0;
           line-height: 1.35;
@@ -1454,9 +1510,11 @@ export default function Library() {
         }
 
         .library-root .cta-nav .logo em {
-          font-style: italic;
+          font-style: normal;
           color: #fca283;
-          font-family: 'Fraunces', serif;
+          font-family: 'Fraunces', Georgia, serif;
+          font-weight: 600;
+          margin-left: 2px;
         }
 
         .library-root .cta-nav .navlinks {
@@ -1602,10 +1660,6 @@ export default function Library() {
             height: 220px;
             margin: 0 auto;
           }
-          .library-root .art-row {
-            grid-template-columns: 36px 1fr;
-            gap: 12px;
-          }
           .library-root footer {
             flex-direction: column;
             gap: 16px;
@@ -1734,16 +1788,34 @@ export default function Library() {
         </div>
       )}
 
-      {/* ---------- MARQUEE STRIP (FULL-HEIGHT SOLID COLOR BLOCKS) ---------- */}
+      {/* ---------- MARQUEE STRIP (BLACK STRIP WITH COLORFUL DIAMOND SPARKLES) ---------- */}
       <div className="marquee">
         <div className="marquee-track">
-          {[...Array(6)].flatMap((_, setIdx) => [
-            <button key={`rel-${setIdx}`} type="button" onClick={() => handleScrollTo('rel')} className="marquee-box m-rel">Relationships</button>,
-            <button key={`self-${setIdx}`} type="button" onClick={() => handleScrollTo('self')} className="marquee-box m-self">Self</button>,
-            <button key={`change-${setIdx}`} type="button" onClick={() => handleScrollTo('change')} className="marquee-box m-change">Change</button>,
-            <button key={`dec-${setIdx}`} type="button" onClick={() => handleScrollTo('dec')} className="marquee-box m-dec">Decisions</button>,
-            <button key={`diff-${setIdx}`} type="button" onClick={() => handleScrollTo('diff')} className="marquee-box m-diff">Difficult People</button>,
-            <button key={`comm-${setIdx}`} type="button" onClick={() => handleScrollTo('comm')} className="marquee-box m-comm">Communication</button>
+          {[...Array(8)].flatMap((_, setIdx) => [
+            <button key={`rel-${setIdx}`} type="button" onClick={() => handleScrollTo('rel')} className="marquee-item">
+              <span>RELATIONSHIPS</span>
+              <span className="marquee-sparkle" style={{ color: '#e288c4' }}>✦</span>
+            </button>,
+            <button key={`self-${setIdx}`} type="button" onClick={() => handleScrollTo('self')} className="marquee-item">
+              <span>SELF</span>
+              <span className="marquee-sparkle" style={{ color: '#ffffff' }}>✦</span>
+            </button>,
+            <button key={`change-${setIdx}`} type="button" onClick={() => handleScrollTo('change')} className="marquee-item">
+              <span>CHANGE</span>
+              <span className="marquee-sparkle" style={{ color: '#4ade80' }}>✦</span>
+            </button>,
+            <button key={`dec-${setIdx}`} type="button" onClick={() => handleScrollTo('dec')} className="marquee-item">
+              <span>DECISIONS</span>
+              <span className="marquee-sparkle" style={{ color: '#fb923c' }}>✦</span>
+            </button>,
+            <button key={`diff-${setIdx}`} type="button" onClick={() => handleScrollTo('diff')} className="marquee-item">
+              <span>DIFFICULT PEOPLE</span>
+              <span className="marquee-sparkle" style={{ color: '#fed7aa' }}>✦</span>
+            </button>,
+            <button key={`comm-${setIdx}`} type="button" onClick={() => handleScrollTo('comm')} className="marquee-item">
+              <span>COMMUNICATION</span>
+              <span className="marquee-sparkle" style={{ color: '#94a3b8' }}>✦</span>
+            </button>
           ])}
         </div>
       </div>
@@ -1823,18 +1895,16 @@ export default function Library() {
                           <h4 className="item-title">
                             {cleanTitle}
                           </h4>
+                          {article.subtitle && (
+                            <p className="item-subtitle">
+                              {article.subtitle.replace(/[*_\[\]\+\#]/g, '')}
+                            </p>
+                          )}
                         </div>
                         <span className="item-arrow">→</span>
                       </div>
                     );
                   })}
-
-                  <div 
-                    className="search-dropdown-footer"
-                    onClick={handleSearchSubmit}
-                  >
-                    View all results for "{searchQuery}" →
-                  </div>
                 </>
               ) : (
                 <div style={{ padding: '16px 20px', fontSize: '13px', color: '#8a857a', textAlign: 'center' }}>
@@ -1858,18 +1928,18 @@ export default function Library() {
         </button>
       </section>
 
-      {/* ---------- (01) RELATIONSHIPS (WORD LEFT, SPHERE RIGHT) ---------- */}
+      {/* ---------- RELATIONSHIPS (WORD LEFT, SPHERE RIGHT) ---------- */}
       {(() => {
         const catArticles = getCategoryArticles('relationships', 'Relationships');
         return (
           <section className="cat-sec" id="rel">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">(01) RELATIONSHIPS</span>
+                <span className="idx">RELATIONSHIPS</span>
                 <Link className="viewall" to="/articles?category=relationships">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
-                <h2 className="disp cat-word left">RELATIONSH<br />IPS</h2>
+                <h2 className="disp cat-word left">RELATION<br />SHIPS</h2>
                 <div className="circle-reveal g1">
                   <PlasmaRingSphere colors={['#f3a8e2', '#d97fc8', '#993388', '#ff44aa']} scale={76} speed={85} />
                 </div>
@@ -1884,7 +1954,6 @@ export default function Library() {
                     className="art-row" 
                     to={`/articles?article=${art.slug || art.id}&category=relationships`}
                   >
-                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
                     <div className="art-content">
                       <h4>{renderFormattedTitle(art.title, '#d97fc8')}</h4>
                       <span className="meta">{art.readTime} · {art.date}</span>
@@ -1897,14 +1966,14 @@ export default function Library() {
         );
       })()}
 
-      {/* ---------- (02) SELF (SPHERE LEFT, WORD RIGHT) ---------- */}
+      {/* ---------- SELF (SPHERE LEFT, WORD RIGHT) ---------- */}
       {(() => {
         const catArticles = getCategoryArticles('self', 'Self');
         return (
           <section className="cat-sec" id="self">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">(02) SELF</span>
+                <span className="idx">SELF</span>
                 <Link className="viewall" to="/articles?category=self">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -1923,7 +1992,6 @@ export default function Library() {
                     className="art-row" 
                     to={`/articles?article=${art.slug || art.id}&category=self`}
                   >
-                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
                     <div className="art-content">
                       <h4>{renderFormattedTitle(art.title, '#111010')}</h4>
                       <span className="meta">{art.readTime} · {art.date}</span>
@@ -1936,14 +2004,14 @@ export default function Library() {
         );
       })()}
 
-      {/* ---------- (03) CHANGE (WORD LEFT, SPHERE RIGHT) ---------- */}
+      {/* ---------- CHANGE (WORD LEFT, SPHERE RIGHT) ---------- */}
       {(() => {
         const catArticles = getCategoryArticles('change', 'Change');
         return (
           <section className="cat-sec" id="change">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">(03) CHANGE</span>
+                <span className="idx">CHANGE</span>
                 <Link className="viewall" to="/articles?category=change">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -1962,7 +2030,6 @@ export default function Library() {
                     className="art-row" 
                     to={`/articles?article=${art.slug || art.id}&category=change`}
                   >
-                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
                     <div className="art-content">
                       <h4>{renderFormattedTitle(art.title, '#8ee09f')}</h4>
                       <span className="meta">{art.readTime} · {art.date}</span>
@@ -1975,14 +2042,14 @@ export default function Library() {
         );
       })()}
 
-      {/* ---------- (04) DECISIONS (SPHERE LEFT, WORD RIGHT) ---------- */}
+      {/* ---------- DECISIONS (SPHERE LEFT, WORD RIGHT) ---------- */}
       {(() => {
         const catArticles = getCategoryArticles('decisions', 'Decisions');
         return (
           <section className="cat-sec" id="dec">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">(04) DECISIONS</span>
+                <span className="idx">DECISIONS</span>
                 <Link className="viewall" to="/articles?category=decisions">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -2001,7 +2068,6 @@ export default function Library() {
                     className="art-row" 
                     to={`/articles?article=${art.slug || art.id}&category=decisions`}
                   >
-                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
                     <div className="art-content">
                       <h4>{renderFormattedTitle(art.title, '#ffffff')}</h4>
                       <span className="meta">{art.readTime} · {art.date}</span>
@@ -2014,14 +2080,14 @@ export default function Library() {
         );
       })()}
 
-      {/* ---------- (05) DIFFICULT PEOPLE (WORD LEFT, SPHERE RIGHT) ---------- */}
+      {/* ---------- DIFFICULT PEOPLE (WORD LEFT, SPHERE RIGHT) ---------- */}
       {(() => {
         const catArticles = getCategoryArticles('difficult-people', 'Difficult People');
         return (
           <section className="cat-sec" id="diff">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">(05) DIFFICULT PEOPLE</span>
+                <span className="idx">DIFFICULT PEOPLE</span>
                 <Link className="viewall" to="/articles?category=difficult-people">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -2040,7 +2106,6 @@ export default function Library() {
                     className="art-row" 
                     to={`/articles?article=${art.slug || art.id}&category=difficult-people`}
                   >
-                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
                     <div className="art-content">
                       <h4>{renderFormattedTitle(art.title, '#7a2d0f')}</h4>
                       <span className="meta">{art.readTime} · {art.date}</span>
@@ -2053,14 +2118,14 @@ export default function Library() {
         );
       })()}
 
-      {/* ---------- (06) COMMUNICATION (SPHERE LEFT, WORD RIGHT) ---------- */}
+      {/* ---------- COMMUNICATION (SPHERE LEFT, WORD RIGHT) ---------- */}
       {(() => {
         const catArticles = getCategoryArticles('communication', 'Communication');
         return (
           <section className="cat-sec" id="comm">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">(06) COMMUNICATION</span>
+                <span className="idx">COMMUNICATION</span>
                 <Link className="viewall" to="/articles?category=communication">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -2079,7 +2144,6 @@ export default function Library() {
                     className="art-row" 
                     to={`/articles?article=${art.slug || art.id}&category=communication`}
                   >
-                    <span className="n">{String(idx + 1).padStart(2, '0')}</span>
                     <div className="art-content">
                       <h4>{renderFormattedTitle(art.title, '#ffffff')}</h4>
                       <span className="meta">{art.readTime} · {art.date}</span>
