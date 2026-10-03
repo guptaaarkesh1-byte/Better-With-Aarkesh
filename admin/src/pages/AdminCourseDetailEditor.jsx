@@ -504,9 +504,9 @@ export default function AdminCourseDetailEditor() {
 
   if (loading) {
     return (
-      <div className="w-full h-96 flex items-center justify-center gap-3 text-white/50 bg-[#0e070e]">
+      <div className="preserve-dark w-full h-96 flex items-center justify-center gap-3 text-white bg-[#0e070e]" data-preserve-dark="true">
         <ArrowClockwise size={24} className="animate-spin text-[#c9542f]" />
-        <span>Loading courses library...</span>
+        <span style={{ color: '#ffffff' }}>Loading courses library...</span>
       </div>
     );
   }
@@ -534,22 +534,25 @@ export default function AdminCourseDetailEditor() {
   // =========================================================================
   if (viewMode === 'catalog') {
     return (
-      <div className="w-full min-h-[calc(100vh-120px)] bg-gradient-to-b from-[#180e18] via-[#0f0810] to-[#080508] text-white flex flex-col">
+      <div 
+        className="preserve-dark w-full min-h-[calc(100vh-120px)] bg-gradient-to-b from-[#180e18] via-[#0f0810] to-[#080508] text-white flex flex-col"
+        data-preserve-dark="true"
+      >
         {/* Top Header Banner */}
-        <div className="w-full bg-[#110912]/90 backdrop-blur-md border-b border-white/10 px-6 sm:px-10 py-6 sm:py-8 sticky top-[57px] z-20 shadow-md">
+        <div className="w-full bg-[#110912]/95 backdrop-blur-md border-b border-white/10 px-6 sm:px-10 py-6 sm:py-8 sticky top-[57px] z-20 shadow-md">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#c9542f]/15 text-[#c9542f] text-[10px] uppercase font-mono font-bold tracking-widest border border-[#c9542f]/30">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#c9542f]/20 text-[#ff7347] text-[10px] uppercase font-mono font-bold tracking-widest border border-[#c9542f]/40">
                   3-THEME COURSE CATALOG & EDITOR
                 </span>
               </div>
-              <h1 className="font-serif text-2xl sm:text-3xl text-white font-medium flex items-center gap-3">
-                <GraduationCap size={30} className="text-[#c9542f]" />
-                Masterclasses Library
+              <h1 className="font-serif text-2xl sm:text-3xl text-white font-semibold flex items-center gap-3" style={{ color: '#ffffff' }}>
+                <GraduationCap size={32} className="text-[#c9542f]" />
+                <span style={{ color: '#ffffff' }}>Masterclasses Library</span>
               </h1>
-              <p className="text-white/60 text-xs sm:text-sm mt-1 max-w-2xl">
-                Showing your courses in their exact 3 visual themes: <strong className="text-white">Obsidian Black</strong>, <strong className="text-[#E3B8DE]">Royal Purple</strong>, and <strong className="text-white bg-white/10 px-1.5 py-0.5 rounded">Clean White</strong>. Click <strong className="text-[#c9542f]">"Edit 3-Sections"</strong> to customize.
+              <p className="text-xs sm:text-sm mt-1 max-w-2xl" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
+                Showing your courses in their exact 3 visual themes: <strong style={{ color: '#ffffff' }}>Obsidian Black</strong>, <strong style={{ color: '#E3B8DE' }}>Royal Purple</strong>, and <strong style={{ color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.12)' }} className="px-1.5 py-0.5 rounded">Clean White</strong>. Click <strong style={{ color: '#c9542f' }}>"Edit 3-Sections"</strong> to customize.
               </p>
             </div>
 
@@ -558,6 +561,7 @@ export default function AdminCourseDetailEditor() {
                 type="button"
                 onClick={() => setShowAddCourseModal(true)}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#c9542f]/25 cursor-pointer"
+                style={{ color: '#ffffff' }}
               >
                 <Plus size={16} weight="bold" />
                 <span>Create New Masterclass</span>
@@ -569,26 +573,26 @@ export default function AdminCourseDetailEditor() {
           <div className="max-w-7xl mx-auto mt-6 pt-5 border-t border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Quick Metrics Chips */}
             <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
-              <div className="flex items-center gap-2 text-xs text-white/70">
-                <span className="font-serif text-base text-white font-bold">{totalCourses}</span>
-                <span>Total Courses</span>
+              <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                <span className="font-serif text-base font-bold" style={{ color: '#ffffff' }}>{totalCourses}</span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Total Courses</span>
               </div>
-              <span className="text-white/20 hidden sm:inline">•</span>
-              <div className="flex items-center gap-2 text-xs text-white/70">
+              <span style={{ color: 'rgba(255, 255, 255, 0.2)' }} className="hidden sm:inline">•</span>
+              <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                 <span className="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span className="font-serif text-base text-emerald-400 font-bold">{liveCount}</span>
-                <span>Live Enrolling</span>
+                <span className="font-serif text-base font-bold" style={{ color: '#34d399' }}>{liveCount}</span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Live Enrolling</span>
               </div>
-              <span className="text-white/20 hidden sm:inline">•</span>
-              <div className="flex items-center gap-2 text-xs text-white/70">
+              <span style={{ color: 'rgba(255, 255, 255, 0.2)' }} className="hidden sm:inline">•</span>
+              <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                 <span className="inline-block w-2 h-2 rounded-full bg-[#c9542f]"></span>
-                <span className="font-serif text-base text-[#c9542f] font-bold">{waitlistCount}</span>
-                <span>Waitlist / Coming Soon</span>
+                <span className="font-serif text-base font-bold" style={{ color: '#c9542f' }}>{waitlistCount}</span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Waitlist / Coming Soon</span>
               </div>
-              <span className="text-white/20 hidden sm:inline">•</span>
-              <div className="flex items-center gap-2 text-xs text-white/70">
-                <span className="font-serif text-base text-[#E3B8DE] font-bold">{totalModules}</span>
-                <span>Total Modules</span>
+              <span style={{ color: 'rgba(255, 255, 255, 0.2)' }} className="hidden sm:inline">•</span>
+              <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                <span className="font-serif text-base font-bold" style={{ color: '#E3B8DE' }}>{totalModules}</span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Total Modules</span>
               </div>
             </div>
 
@@ -603,6 +607,7 @@ export default function AdminCourseDetailEditor() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search course title or slug..."
                   className="w-full bg-[#181119] border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#c9542f] placeholder-white/30"
+                  style={{ color: '#ffffff' }}
                 />
               </div>
 
@@ -614,6 +619,7 @@ export default function AdminCourseDetailEditor() {
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                     statusFilter === 'all' ? 'bg-[#c9542f] text-white' : 'text-white/60 hover:text-white'
                   }`}
+                  style={{ color: statusFilter === 'all' ? '#ffffff' : 'rgba(255,255,255,0.7)' }}
                 >
                   All ({totalCourses})
                 </button>
@@ -632,6 +638,7 @@ export default function AdminCourseDetailEditor() {
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                     statusFilter === 'waitlist' ? 'bg-[#c9542f] text-white' : 'text-white/60 hover:text-white'
                   }`}
+                  style={{ color: statusFilter === 'waitlist' ? '#ffffff' : 'rgba(255,255,255,0.7)' }}
                 >
                   Waitlist ({waitlistCount})
                 </button>
@@ -645,8 +652,8 @@ export default function AdminCourseDetailEditor() {
           {filteredSlugs.length === 0 ? (
             <div className="w-full bg-[#140c15] border border-dashed border-white/10 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
               <GraduationCap size={40} className="text-white/20" />
-              <h3 className="text-base font-semibold text-white/80">No courses match your search</h3>
-              <p className="text-xs text-white/40 max-w-sm">
+              <h3 className="text-base font-semibold" style={{ color: '#ffffff' }}>No courses match your search</h3>
+              <p className="text-xs max-w-sm" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                 Try clearing your search query or create a new masterclass course.
               </p>
               <button
@@ -667,20 +674,23 @@ export default function AdminCourseDetailEditor() {
                 // Setup theme-specific card container classes
                 let cardBgClass = 'bg-[#0B070B] text-white border border-[#c878be]/25 shadow-2xl shadow-black/80';
                 let visBgStyle = { background: 'radial-gradient(circle at 30% 25%, #8A2E80, #3D1A38 60%, #0A050A)' };
-                let titleColor = 'text-white';
+                let titleHex = '#ffffff';
+                let ledeHex = 'rgba(255, 255, 255, 0.75)';
                 let priceColor = 'text-[#E3B8DE]';
                 let badgeClass = 'bg-[#2E1A2B] text-[#E3B8DE] border border-[#c878be]/30';
 
                 if (cardTheme === 'purple') {
                   cardBgClass = 'bg-gradient-to-b from-[#58184E] to-[#2E0B29] text-white border border-white/20 shadow-2xl shadow-black/60';
                   visBgStyle = { background: 'radial-gradient(circle at 70% 25%, #1a1a1a, #080808 75%)' };
-                  titleColor = 'text-white';
+                  titleHex = '#ffffff';
+                  ledeHex = 'rgba(255, 255, 255, 0.8)';
                   priceColor = 'text-white';
                   badgeClass = 'bg-white/95 text-[#7A2A70]';
                 } else if (cardTheme === 'white') {
                   cardBgClass = 'bg-[#FFFFFF] text-[#110D13] border border-[#7A2A70]/15 shadow-2xl shadow-purple-950/15';
                   visBgStyle = { background: 'radial-gradient(circle at 30% 28%, #C878BE, #7A2A70 45%, #3D1A38 80%)' };
-                  titleColor = 'text-[#110D13]';
+                  titleHex = '#110D13';
+                  ledeHex = '#4A434E';
                   priceColor = 'text-[#7A2A70]';
                   badgeClass = 'bg-[#F6ECF4] text-[#7A2A70] border border-[#7A2A70]/20';
                 }
@@ -702,6 +712,7 @@ export default function AdminCourseDetailEditor() {
                             onClick={(e) => handleToggleCourseStatus(slug, e)}
                             title="Click to toggle status"
                             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-[#E11D48] text-[10px] font-bold uppercase tracking-wider shadow-md cursor-pointer hover:scale-105 transition-transform"
+                            style={{ color: '#E11D48' }}
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48] animate-pulse"></span>
                             Live
@@ -711,6 +722,7 @@ export default function AdminCourseDetailEditor() {
                             onClick={(e) => handleToggleCourseStatus(slug, e)}
                             title="Click to toggle status"
                             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/65 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider border border-white/20 shadow-md cursor-pointer hover:scale-105 transition-transform"
+                            style={{ color: '#ffffff' }}
                           >
                             Coming soon
                           </span>
@@ -718,20 +730,26 @@ export default function AdminCourseDetailEditor() {
                       </div>
 
                       {/* Center Huge Sequence Number */}
-                      <span className="font-sans font-bold text-7xl sm:text-8xl text-white/95 tracking-tighter leading-none drop-shadow-md">
+                      <span className="font-sans font-bold text-7xl sm:text-8xl text-white tracking-tighter leading-none drop-shadow-md" style={{ color: '#ffffff' }}>
                         {c.n || String(idx + 1).padStart(2, '0')}
                       </span>
 
                       {/* Top Right Tilted Chip Pill */}
                       {c.chips?.[0] && (
-                        <span className="absolute top-4 right-1 sm:right-2 rotate-[-12deg] bg-gradient-to-br from-[#C878BE] to-[#6E2266] text-white px-3.5 py-1.5 rounded-2xl text-[11px] sm:text-xs font-semibold shadow-lg shadow-black/40 border border-white/20">
+                        <span 
+                          className="absolute top-4 right-1 sm:right-2 rotate-[-12deg] bg-gradient-to-br from-[#C878BE] to-[#6E2266] text-white px-3.5 py-1.5 rounded-2xl text-[11px] sm:text-xs font-semibold shadow-lg shadow-black/40 border border-white/20"
+                          style={{ color: '#ffffff' }}
+                        >
                           {c.chips[0]}
                         </span>
                       )}
 
                       {/* Bottom Left Tilted Chip Pill */}
                       {c.chips?.[1] && (
-                        <span className="absolute bottom-4 left-1 sm:left-2 rotate-[9deg] bg-gradient-to-br from-[#8A6BFF] to-[#3A2A86] text-white px-3.5 py-1.5 rounded-2xl text-[11px] sm:text-xs font-semibold shadow-lg shadow-black/40 border border-white/20">
+                        <span 
+                          className="absolute bottom-4 left-1 sm:left-2 rotate-[9deg] bg-gradient-to-br from-[#8A6BFF] to-[#3A2A86] text-white px-3.5 py-1.5 rounded-2xl text-[11px] sm:text-xs font-semibold shadow-lg shadow-black/40 border border-white/20"
+                          style={{ color: '#ffffff' }}
+                        >
                           {c.chips[1]}
                         </span>
                       )}
@@ -741,22 +759,28 @@ export default function AdminCourseDetailEditor() {
                     <div className="flex-1 flex flex-col justify-between space-y-4">
                       <div>
                         {/* Course Title */}
-                        <h2 className={`font-serif text-2xl sm:text-3xl font-bold tracking-tight leading-tight ${titleColor} mb-2`}>
+                        <h2 
+                          className="font-serif text-2xl sm:text-3xl font-bold tracking-tight leading-tight mb-2"
+                          style={{ color: titleHex }}
+                        >
                           {c.title || slug}
                         </h2>
 
                         {/* Course Short Description */}
-                        <p className={`text-xs sm:text-sm line-clamp-2 leading-relaxed ${cardTheme === 'white' ? 'text-stone-600' : 'text-white/70'}`}>
+                        <p 
+                          className="text-xs sm:text-sm line-clamp-2 leading-relaxed"
+                          style={{ color: ledeHex }}
+                        >
                           {c.lede || c.d || 'Master the psychology and strategies to elevate your life.'}
                         </p>
                       </div>
 
                       {/* Price Row & Tag Badge */}
                       <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                        <div className={`flex items-baseline gap-2 font-serif text-base sm:text-lg ${cardTheme === 'white' ? 'text-[#110D13]' : 'text-white'}`}>
+                        <div className="flex items-baseline gap-2 font-serif text-base sm:text-lg" style={{ color: cardTheme === 'white' ? '#110D13' : '#ffffff' }}>
                           <span>Price</span>
                           <b className={`text-xl sm:text-2xl font-bold ${priceColor}`}>{c.price || '₹15,000'}</b>
-                          {c.was && <s className={`text-xs ${cardTheme === 'white' ? 'text-stone-400' : 'text-white/40'}`}>{c.was}</s>}
+                          {c.was && <s className="text-xs opacity-50">{c.was}</s>}
                         </div>
 
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
@@ -771,6 +795,7 @@ export default function AdminCourseDetailEditor() {
                           type="button"
                           onClick={() => handleOpenEditor(slug)}
                           className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#c9542f]/25 cursor-pointer hover:scale-[1.02]"
+                          style={{ color: '#ffffff' }}
                         >
                           <PencilSimple size={16} weight="bold" />
                           <span>Edit 3-Sections</span>
@@ -817,14 +842,17 @@ export default function AdminCourseDetailEditor() {
                   <Plus size={32} weight="bold" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-xl text-white font-medium group-hover:text-[#c9542f] transition-colors">
+                  <h3 className="font-serif text-xl font-medium group-hover:text-[#c9542f] transition-colors" style={{ color: '#ffffff' }}>
                     Add New Masterclass
                   </h3>
-                  <p className="text-white/50 text-xs max-w-xs mt-1 leading-relaxed">
+                  <p className="text-xs max-w-xs mt-1 leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                     Create a custom course with its own visual theme, sequence number, pricing, syllabus modules roadmap, and long-form narrative.
                   </p>
                 </div>
-                <span className="px-5 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider shadow-md shadow-[#c9542f]/20 transition-all">
+                <span 
+                  className="px-5 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider shadow-md shadow-[#c9542f]/20 transition-all"
+                  style={{ color: '#ffffff' }}
+                >
                   + Create Masterclass
                 </span>
               </div>
@@ -839,7 +867,7 @@ export default function AdminCourseDetailEditor() {
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <GraduationCap size={22} className="text-[#c9542f]" />
-                  <h3 className="font-serif text-lg text-white font-medium">Create New Masterclass</h3>
+                  <h3 className="font-serif text-lg font-medium" style={{ color: '#ffffff' }}>Create New Masterclass</h3>
                 </div>
                 <button
                   type="button"
@@ -852,32 +880,34 @@ export default function AdminCourseDetailEditor() {
 
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs uppercase tracking-wider text-white/70">Masterclass Title</label>
+                  <label className="text-xs uppercase tracking-wider" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Masterclass Title</label>
                   <input
                     type="text"
                     value={newCourseTitle}
                     onChange={(e) => setNewCourseTitle(e.target.value)}
                     placeholder="e.g. Executive Gravitas & Vocal Presence"
                     className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f]"
+                    style={{ color: '#ffffff' }}
                     autoFocus
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs uppercase tracking-wider text-white/70">Custom URL Slug (Optional)</label>
+                  <label className="text-xs uppercase tracking-wider" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Custom URL Slug (Optional)</label>
                   <input
                     type="text"
                     value={newCourseSlug}
                     onChange={(e) => setNewCourseSlug(e.target.value)}
                     placeholder="e.g. vocal-presence"
                     className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f] font-mono text-xs"
+                    style={{ color: '#ffffff' }}
                   />
                   <span className="text-[11px] text-white/40">Will be accessible at: /course/your-slug</span>
                 </div>
 
                 {/* Theme Selector */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs uppercase tracking-wider text-white/70">Visual Card Theme</label>
+                  <label className="text-xs uppercase tracking-wider" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Visual Card Theme</label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
@@ -887,6 +917,7 @@ export default function AdminCourseDetailEditor() {
                           ? 'bg-[#0B070B] text-white border-[#c9542f]'
                           : 'bg-[#1c121d] text-white/60 border-white/10'
                       }`}
+                      style={{ color: '#ffffff' }}
                     >
                       <span className="w-4 h-4 rounded-full bg-[#8A2E80]"></span>
                       <span>Obsidian</span>
@@ -900,6 +931,7 @@ export default function AdminCourseDetailEditor() {
                           ? 'bg-[#58184E] text-white border-[#c9542f]'
                           : 'bg-[#1c121d] text-white/60 border-white/10'
                       }`}
+                      style={{ color: '#ffffff' }}
                     >
                       <span className="w-4 h-4 rounded-full bg-[#1a1a1a]"></span>
                       <span>Royal Purple</span>
@@ -913,6 +945,7 @@ export default function AdminCourseDetailEditor() {
                           ? 'bg-white text-black border-[#c9542f]'
                           : 'bg-[#1c121d] text-white/60 border-white/10'
                       }`}
+                      style={{ color: newCourseTheme === 'white' ? '#110D13' : 'rgba(255,255,255,0.7)' }}
                     >
                       <span className="w-4 h-4 rounded-full bg-[#C878BE]"></span>
                       <span>Clean White</span>
@@ -933,6 +966,7 @@ export default function AdminCourseDetailEditor() {
                   type="button"
                   onClick={handleCreateNewCourse}
                   className="px-5 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#c9542f]/25 cursor-pointer"
+                  style={{ color: '#ffffff' }}
                 >
                   Create & Open Editor
                 </button>
@@ -948,7 +982,10 @@ export default function AdminCourseDetailEditor() {
   // VIEW 2: 3-SECTION EDITOR VIEW (FOR SELECTED COURSE)
   // =========================================================================
   return (
-    <div className="w-full min-h-[calc(100vh-120px)] bg-[#0a050b] text-white flex flex-col">
+    <div 
+      className="preserve-dark w-full min-h-[calc(100vh-120px)] bg-[#0a050b] text-white flex flex-col"
+      data-preserve-dark="true"
+    >
       {/* ── TOP ACTION & COURSE SELECTOR BAR ── */}
       <div className="w-full bg-[#110912] border-b border-white/10 px-6 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-[57px] z-20">
         <div className="flex items-center gap-3 flex-wrap">
@@ -957,6 +994,7 @@ export default function AdminCourseDetailEditor() {
             type="button"
             onClick={() => setViewMode('catalog')}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold border border-white/15 transition-colors cursor-pointer"
+            style={{ color: '#ffffff' }}
           >
             <ArrowLeft size={16} weight="bold" />
             <span>← All Courses</span>
@@ -966,7 +1004,7 @@ export default function AdminCourseDetailEditor() {
 
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase font-mono tracking-widest text-white/40 font-semibold hidden sm:inline">Editing:</span>
-            <span className="font-serif text-lg sm:text-xl text-white font-semibold">{currentCourse.title || activeSlug}</span>
+            <span className="font-serif text-lg sm:text-xl font-semibold" style={{ color: '#ffffff' }}>{currentCourse.title || activeSlug}</span>
             <span className={`text-[10px] px-2.5 py-0.5 rounded-full uppercase font-bold font-mono ${currentCourse.soon ? 'bg-[#c9542f]/20 text-[#ff8059] border border-[#c9542f]/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
               {currentCourse.soon ? 'Waitlist' : 'Live'}
             </span>
@@ -989,6 +1027,7 @@ export default function AdminCourseDetailEditor() {
                       ? 'bg-[#c9542f] text-white shadow-md shadow-[#c9542f]/20'
                       : 'text-white/60 hover:text-white hover:bg-white/5'
                   }`}
+                  style={{ color: isSelected ? '#ffffff' : 'rgba(255,255,255,0.7)' }}
                 >
                   <span>{c.title || slug}</span>
                 </button>
@@ -1004,6 +1043,7 @@ export default function AdminCourseDetailEditor() {
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-medium border border-white/10 transition-colors"
+            style={{ color: 'rgba(255,255,255,0.85)' }}
           >
             <ArrowSquareOut size={15} />
             <span>View Live Course</span>
@@ -1018,6 +1058,7 @@ export default function AdminCourseDetailEditor() {
                 ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
                 : 'bg-[#c9542f] hover:bg-[#b54522] text-white shadow-lg shadow-[#c9542f]/25'
             }`}
+            style={{ color: saveSuccess ? '#000000' : '#ffffff' }}
           >
             {saving ? (
               <>
@@ -1068,7 +1109,7 @@ export default function AdminCourseDetailEditor() {
                     {tab.icon}
                   </div>
                   <div>
-                    <h3 className={`text-xs font-semibold uppercase tracking-wider ${isActive ? 'text-[#ff7347]' : 'text-white/90'}`}>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: isActive ? '#ff7347' : '#ffffff' }}>
                       {tab.label}
                     </h3>
                     <p className="text-[11px] text-white/40 leading-snug mt-0.5 line-clamp-1 hidden sm:block">
@@ -1085,7 +1126,7 @@ export default function AdminCourseDetailEditor() {
             <div className="bg-[#181119] p-3 rounded-xl border border-white/10 flex items-center justify-between">
               <div>
                 <span className="text-[10px] uppercase font-mono text-white/40">Status</span>
-                <p className="text-xs font-semibold text-white">
+                <p className="text-xs font-semibold" style={{ color: '#ffffff' }}>
                   {currentCourse.soon ? 'Waitlist (Coming Soon)' : 'Live for Enrollment'}
                 </p>
               </div>
@@ -1133,8 +1174,8 @@ export default function AdminCourseDetailEditor() {
           {activeSectionTab === 'hero' && (
             <div className="space-y-8 animate-in fade-in duration-200">
               <div>
-                <h2 className="font-serif text-2xl text-white font-medium">Section 1: Hero & Pricing Sidebar</h2>
-                <p className="text-xs text-white/50 mt-1">
+                <h2 className="font-serif text-2xl font-medium" style={{ color: '#ffffff' }}>Section 1: Hero & Pricing Sidebar</h2>
+                <p className="text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                   Customize the visual card theme, tags, lede statement, pricing facts, and what's included checklist.
                 </p>
               </div>
@@ -1159,7 +1200,7 @@ export default function AdminCourseDetailEditor() {
                       01
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-white">1. Obsidian Black</h4>
+                      <h4 className="text-xs font-bold" style={{ color: '#ffffff' }}>1. Obsidian Black</h4>
                       <p className="text-[11px] text-white/50">Purple glow banner & black card</p>
                     </div>
                   </button>
@@ -1177,7 +1218,7 @@ export default function AdminCourseDetailEditor() {
                       02
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-white">2. Royal Purple</h4>
+                      <h4 className="text-xs font-bold" style={{ color: '#ffffff' }}>2. Royal Purple</h4>
                       <p className="text-[11px] text-white/50">Dark black banner & plum card</p>
                     </div>
                   </button>
@@ -1195,8 +1236,8 @@ export default function AdminCourseDetailEditor() {
                       03
                     </div>
                     <div>
-                      <h4 className={`text-xs font-bold ${currentCourse.theme === 'white' ? 'text-black' : 'text-white'}`}>3. Clean White</h4>
-                      <p className={`text-[11px] ${currentCourse.theme === 'white' ? 'text-stone-600' : 'text-white/50'}`}>Magenta banner & white card</p>
+                      <h4 className="text-xs font-bold" style={{ color: currentCourse.theme === 'white' ? '#110D13' : '#ffffff' }}>3. Clean White</h4>
+                      <p className="text-[11px]" style={{ color: currentCourse.theme === 'white' ? '#4A434E' : 'rgba(255,255,255,0.5)' }}>Magenta banner & white card</p>
                     </div>
                   </button>
                 </div>
@@ -1216,6 +1257,7 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.title || ''}
                       onChange={(e) => handleFieldChange('title', e.target.value)}
                       className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f]"
+                      style={{ color: '#ffffff' }}
                     />
                   </div>
 
@@ -1227,6 +1269,7 @@ export default function AdminCourseDetailEditor() {
                       onChange={(e) => handleFieldChange('n', e.target.value)}
                       placeholder="01"
                       className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#c9542f]"
+                      style={{ color: '#ffffff' }}
                     />
                   </div>
                 </div>
@@ -1239,6 +1282,7 @@ export default function AdminCourseDetailEditor() {
                     onChange={(e) => handleFieldChange('lede', e.target.value)}
                     placeholder="Master the psychology of calm authority..."
                     className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f] resize-none"
+                    style={{ color: '#ffffff' }}
                   />
                 </div>
 
@@ -1252,6 +1296,7 @@ export default function AdminCourseDetailEditor() {
                       onChange={(e) => handleChipChange(0, e.target.value)}
                       placeholder="Tag 1 (Top-Right: e.g. Calm Authority)"
                       className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c9542f]"
+                      style={{ color: '#ffffff' }}
                     />
                     <input
                       type="text"
@@ -1259,6 +1304,7 @@ export default function AdminCourseDetailEditor() {
                       onChange={(e) => handleChipChange(1, e.target.value)}
                       placeholder="Tag 2 (Bottom-Left: e.g. Self-Command)"
                       className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c9542f]"
+                      style={{ color: '#ffffff' }}
                     />
                   </div>
                 </div>
@@ -1279,6 +1325,7 @@ export default function AdminCourseDetailEditor() {
                       onChange={(e) => handleFieldChange('price', e.target.value)}
                       placeholder="₹15,000"
                       className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-semibold focus:outline-none focus:border-[#c9542f]"
+                      style={{ color: '#ffffff' }}
                     />
                   </div>
 
@@ -1301,6 +1348,7 @@ export default function AdminCourseDetailEditor() {
                       onChange={(e) => handleFieldChange('cta', e.target.value)}
                       placeholder="Check Course"
                       className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f]"
+                      style={{ color: '#ffffff' }}
                     />
                   </div>
                 </div>
@@ -1317,6 +1365,7 @@ export default function AdminCourseDetailEditor() {
                         onChange={(e) => handleHlChange(0, 0, e.target.value)}
                         placeholder="Primary title (e.g. Build Real Presence)"
                         className="w-full bg-[#261828] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white"
+                        style={{ color: '#ffffff' }}
                       />
                       <input
                         type="text"
@@ -1324,6 +1373,7 @@ export default function AdminCourseDetailEditor() {
                         onChange={(e) => handleHlChange(0, 1, e.target.value)}
                         placeholder="Subtitle (e.g. (Not Just Theory))"
                         className="w-full bg-[#261828] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/70"
+                        style={{ color: 'rgba(255,255,255,0.7)' }}
                       />
                     </div>
 
@@ -1335,6 +1385,7 @@ export default function AdminCourseDetailEditor() {
                         onChange={(e) => handleHlChange(1, 0, e.target.value)}
                         placeholder="Primary title (e.g. 3 Private Sessions)"
                         className="w-full bg-[#261828] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white"
+                        style={{ color: '#ffffff' }}
                       />
                       <input
                         type="text"
@@ -1342,6 +1393,7 @@ export default function AdminCourseDetailEditor() {
                         onChange={(e) => handleHlChange(1, 1, e.target.value)}
                         placeholder="Subtitle (e.g. with Aarkesh)"
                         className="w-full bg-[#261828] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/70"
+                        style={{ color: 'rgba(255,255,255,0.7)' }}
                       />
                     </div>
                   </div>
@@ -1369,6 +1421,7 @@ export default function AdminCourseDetailEditor() {
                           value={item}
                           onChange={(e) => handleInsideItemChange(idx, e.target.value)}
                           className="flex-1 bg-[#1c121d] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c9542f]"
+                          style={{ color: '#ffffff' }}
                         />
                         <button
                           type="button"
@@ -1392,8 +1445,8 @@ export default function AdminCourseDetailEditor() {
           {activeSectionTab === 'syllabus' && (
             <div className="space-y-8 animate-in fade-in duration-200">
               <div>
-                <h2 className="font-serif text-2xl text-white font-medium">Section 2: Syllabus & Modules Roadmap</h2>
-                <p className="text-xs text-white/50 mt-1">
+                <h2 className="font-serif text-2xl font-medium" style={{ color: '#ffffff' }}>Section 2: Syllabus & Modules Roadmap</h2>
+                <p className="text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                   Manage the curriculum section header and each step-by-step module breakdown.
                 </p>
               </div>
@@ -1412,6 +1465,7 @@ export default function AdminCourseDetailEditor() {
                     onChange={(e) => handleFieldChange('syllabusTitle', e.target.value)}
                     placeholder="e.g. Eight Modules To Total Self-Command"
                     className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-serif focus:outline-none focus:border-[#c9542f]"
+                    style={{ color: '#ffffff' }}
                   />
                 </div>
 
@@ -1423,6 +1477,7 @@ export default function AdminCourseDetailEditor() {
                     onChange={(e) => handleFieldChange('syllabusSubtitle', e.target.value)}
                     placeholder="A comprehensive, step-by-step roadmap from baseline nervousness to unshakeable gravitas."
                     className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f] resize-none"
+                    style={{ color: '#ffffff' }}
                   />
                 </div>
               </div>
@@ -1438,6 +1493,7 @@ export default function AdminCourseDetailEditor() {
                     type="button"
                     onClick={handleAddSyllabusModule}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#c9542f]/20 cursor-pointer"
+                    style={{ color: '#ffffff' }}
                   >
                     <Plus size={15} weight="bold" />
                     <span>Add New Module</span>
@@ -1462,6 +1518,7 @@ export default function AdminCourseDetailEditor() {
                             onChange={(e) => handleSyllabusChange(idx, 't', e.target.value)}
                             placeholder={`Module ${idx + 1} Title`}
                             className="flex-1 bg-[#1c121d] border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-[#c9542f]"
+                            style={{ color: '#ffffff' }}
                           />
                         </div>
 
@@ -1503,6 +1560,7 @@ export default function AdminCourseDetailEditor() {
                         onChange={(e) => handleSyllabusChange(idx, 'd', e.target.value)}
                         placeholder="Detailed psychological frameworks, actionable exercises, and real-world implementation."
                         className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/70 focus:outline-none focus:border-[#c9542f] resize-none"
+                        style={{ color: 'rgba(255,255,255,0.75)' }}
                       />
                     </div>
                   ))}
@@ -1517,8 +1575,8 @@ export default function AdminCourseDetailEditor() {
           {activeSectionTab === 'methodology' && (
             <div className="space-y-8 animate-in fade-in duration-200">
               <div>
-                <h2 className="font-serif text-2xl text-white font-medium">Section 3: Core Methodology & Deep Dive</h2>
-                <p className="text-xs text-white/50 mt-1">
+                <h2 className="font-serif text-2xl font-medium" style={{ color: '#ffffff' }}>Section 3: Core Methodology & Deep Dive</h2>
+                <p className="text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                   Craft the long-form narrative, quote box, and psychological breakdown that convinces students to enroll.
                 </p>
               </div>
@@ -1534,6 +1592,7 @@ export default function AdminCourseDetailEditor() {
                       onChange={(e) => handleWriteupChange('chip', e.target.value)}
                       placeholder="CORE METHODOLOGY"
                       className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2 text-white text-xs font-mono focus:outline-none focus:border-[#c9542f]"
+                      style={{ color: '#ffffff' }}
                     />
                   </div>
 
@@ -1545,6 +1604,7 @@ export default function AdminCourseDetailEditor() {
                       onChange={(e) => handleWriteupChange('h1', e.target.value)}
                       placeholder="Most Men Were Never Taught How to Hold Ground"
                       className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-serif font-bold focus:outline-none focus:border-[#c9542f]"
+                      style={{ color: '#ffffff' }}
                     />
                   </div>
                 </div>
@@ -1557,6 +1617,7 @@ export default function AdminCourseDetailEditor() {
                     onChange={(e) => handleWriteupChange('lede', e.target.value)}
                     placeholder="True charisma is not loud. It is the unhurried certainty of a man who does not need permission to take up space."
                     className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f] resize-none"
+                    style={{ color: '#ffffff' }}
                   />
                 </div>
 
@@ -1568,6 +1629,7 @@ export default function AdminCourseDetailEditor() {
                     onChange={(e) => handleWriteupChange('p1', e.target.value)}
                     placeholder="When pressure spikes in a meeting, negotiation, or relationship..."
                     className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c9542f] resize-none"
+                    style={{ color: 'rgba(255,255,255,0.85)' }}
                   />
                 </div>
 
@@ -1582,6 +1644,7 @@ export default function AdminCourseDetailEditor() {
                     onChange={(e) => handleWriteupChange('quote', e.target.value)}
                     placeholder="A room doesn't respond to volume. It responds to certainty."
                     className="w-full bg-[#261828] border border-white/10 rounded-xl px-4 py-2.5 text-white font-serif italic text-sm focus:outline-none focus:border-[#c9542f] resize-none"
+                    style={{ color: '#ffffff' }}
                   />
                 </div>
 
@@ -1593,6 +1656,7 @@ export default function AdminCourseDetailEditor() {
                     onChange={(e) => handleWriteupChange('p2', e.target.value)}
                     placeholder="Through structured modules, you dismantle reactive habits..."
                     className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c9542f] resize-none"
+                    style={{ color: 'rgba(255,255,255,0.85)' }}
                   />
                 </div>
 
@@ -1604,6 +1668,7 @@ export default function AdminCourseDetailEditor() {
                     onChange={(e) => handleWriteupChange('distinction', e.target.value)}
                     placeholder="Reactive men seek approval through fast speech. Anchored men lead through stillness and calibrated pauses."
                     className="w-full bg-[#1c121d] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f] resize-none"
+                    style={{ color: 'rgba(255,255,255,0.85)' }}
                   />
                 </div>
               </div>

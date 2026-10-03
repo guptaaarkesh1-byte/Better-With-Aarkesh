@@ -479,9 +479,46 @@ textarea::placeholder,
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
+/* Headings inside preserve-dark MUST be pure white */
+.preserve-dark h1,
+.preserve-dark h2,
+.preserve-dark h3,
+.preserve-dark h4,
+.preserve-dark h5,
+.preserve-dark h6,
+[data-preserve-dark="true"] h1,
+[data-preserve-dark="true"] h2,
+[data-preserve-dark="true"] h3,
+[data-preserve-dark="true"] h4,
+.live-preview-dark h1,
+.live-preview-dark h2,
+.live-preview-dark h3 {
+  color: #ffffff !important;
+}
+
+/* Headings on White Card theme specifically */
+.preserve-dark .bg-white h1,
+.preserve-dark .bg-white h2,
+.preserve-dark .bg-white h3,
+.preserve-dark .bg-white h4,
+.preserve-dark [class*="bg-[#FFFFFF]"] h1,
+.preserve-dark [class*="bg-[#FFFFFF]"] h2,
+.preserve-dark [class*="bg-[#FFFFFF]"] h3,
+.preserve-dark [class*="bg-[#FFFFFF]"] h4,
+.preserve-dark [class*="bg-white"] h1,
+.preserve-dark [class*="bg-white"] h2,
+.preserve-dark [class*="bg-white"] h3 {
+  color: #110D13 !important;
+}
+
+.preserve-dark [class*="text-[#110D13]"],
+[data-preserve-dark="true"] [class*="text-[#110D13]"] {
+  color: #110D13 !important;
+}
+
 /* Exempt ALL children of .preserve-dark from light-theme black text */
-.preserve-dark *,
-[data-preserve-dark="true"] *,
+.preserve-dark *:not(.bg-white *):not([class*="bg-white"] *):not([class*="bg-[#FFFFFF]"] *),
+[data-preserve-dark="true"] *:not(.bg-white *):not([class*="bg-white"] *):not([class*="bg-[#FFFFFF]"] *),
 .live-preview-dark * {
   color: inherit;
 }
