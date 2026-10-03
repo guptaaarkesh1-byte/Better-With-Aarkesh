@@ -7,6 +7,7 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
   'better-man': {
     slug: 'better-man',
     n: '01',
+    imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop',
     chips: ['Calm Authority', 'Self-Command'],
     soon: false,
     cls: 'v3',
@@ -58,6 +59,7 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
   'difficult-people': {
     slug: 'difficult-people',
     n: '02',
+    imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800&auto=format&fit=crop',
     chips: ['Boundaries', 'Conflict'],
     soon: true,
     cls: 'v2',
@@ -108,6 +110,7 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
   'decisions': {
     slug: 'decisions',
     n: '03',
+    imageUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop',
     chips: ['Clarity', 'Choice'],
     soon: true,
     cls: '',

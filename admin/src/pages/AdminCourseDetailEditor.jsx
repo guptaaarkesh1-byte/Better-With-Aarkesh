@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   GraduationCap, 
   Desktop, 
@@ -27,18 +27,26 @@ import {
   Eye,
   Clock,
   SquaresFour,
-  SlidersHorizontal
+  SlidersHorizontal,
+  UploadSimple,
+  Image as ImageIcon
 } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const DEFAULT_COURSE_FALLBACK_IMAGES = {
+  'better-man': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop',
+  'difficult-people': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800&auto=format&fit=crop',
+  'decisions': 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop'
+};
 
 const SECTION_TABS = [
   {
     id: 'hero',
     label: '1. Hero & Pricing Sidebar',
     icon: <Desktop size={18} />,
-    description: 'Header, thumbnail chips, price & summary card'
+    description: 'Image thumbnail, title, tags, price & summary card'
   },
   {
     id: 'syllabus',
@@ -56,6 +64,7 @@ const SECTION_TABS = [
 
 export default function AdminCourseDetailEditor() {
   const { showToast } = useToast();
+  const fileInputRef = useRef(null);
   const [coursesMap, setCoursesMap] = useState({});
   
   // viewMode: 'catalog' (card grid) | 'editor' (3-section editor)
@@ -66,7 +75,7 @@ export default function AdminCourseDetailEditor() {
       if (view === 'editor') return 'editor';
       if (view === 'catalog') return 'catalog';
     } catch (e) {}
-    return 'catalog'; // default to catalog view as requested!
+    return 'catalog'; // default to catalog view
   });
 
   const [activeSlug, setActiveSlug] = useState(() => {
@@ -95,10 +104,12 @@ export default function AdminCourseDetailEditor() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
   const [newCourseTitle, setNewCourseTitle] = useState('');
   const [newCourseSlug, setNewCourseSlug] = useState('');
+  const [newCourseImage, setNewCourseImage] = useState('');
 
   // Fetch all courses map
   const fetchAllCourses = async () => {
@@ -147,6 +158,35 @@ export default function AdminCourseDetailEditor() {
         [field]: value
       }
     }));
+  };
+
+  // Image Upload Handler
+  const handleImageUpload = async (file) => {
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      showToast('Image size must be under 3 MB', 'error');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      setUploadingImage(true);
+      const res = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Failed to upload image');
+      const data = await res.json();
+      const uploadedUrl = data.url || data.imageUrl;
+      handleFieldChange('imageUrl', uploadedUrl);
+      showToast('Course image uploaded successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Image upload failed', 'error');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   // Writeup (Methodology) Field Updater
@@ -438,6 +478,7 @@ export default function AdminCourseDetailEditor() {
     const newCourseObj = {
       slug: cleanSlug,
       n: String(nextCount).padStart(2, '0'),
+      imageUrl: newCourseImage.trim() || 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop',
       chips: ['Leadership', 'Mastery'],
       soon: true,
       cls: 'v3',
@@ -488,13 +529,21 @@ export default function AdminCourseDetailEditor() {
     setShowAddCourseModal(false);
     setNewCourseTitle('');
     setNewCourseSlug('');
+    setNewCourseImage('');
     showToast(`🎉 New course "${newCourseObj.title}" created! Now configure its 3 sections.`, 'success');
+  };
+
+  // Helper to get image URL for course card
+  const getCourseImage = (course, slug) => {
+    if (course.imageUrl && course.imageUrl.trim()) return course.imageUrl;
+    if (DEFAULT_COURSE_FALLBACK_IMAGES[slug]) return DEFAULT_COURSE_FALLBACK_IMAGES[slug];
+    return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop';
   };
 
   if (loading) {
     return (
       <div className="w-full h-96 flex items-center justify-center gap-3 text-white/50 bg-[#050505]">
-        <ArrowClockwise size={24} className="animate-spin text-[#c79c6e]" />
+        <ArrowClockwise size={24} className="animate-spin text-[#c9542f]" />
         <span>Loading courses library...</span>
       </div>
     );
@@ -518,14 +567,6 @@ export default function AdminCourseDetailEditor() {
   const waitlistCount = courseSlugs.filter(s => coursesMap[s]?.soon).length;
   const totalModules = courseSlugs.reduce((acc, s) => acc + (coursesMap[s]?.syllabus?.length || 0), 0);
 
-  // Gradient themes helper
-  const getBannerGradient = (cls, slug) => {
-    if (cls === 'v1' || slug === 'better-man') return 'from-[#2e0828] via-[#170928] to-[#0a0518] border-purple-500/20';
-    if (cls === 'v2' || slug === 'difficult-people') return 'from-[#0b2239] via-[#09152b] to-[#040817] border-cyan-500/20';
-    if (cls === 'v3' || slug === 'decisions') return 'from-[#062c21] via-[#081f1d] to-[#040d12] border-emerald-500/20';
-    return 'from-[#2a1708] via-[#1c100b] to-[#0e0705] border-[#c79c6e]/30';
-  };
-
   // =========================================================================
   // VIEW 1: CATALOG CARD GRID VIEW
   // =========================================================================
@@ -537,12 +578,12 @@ export default function AdminCourseDetailEditor() {
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#c79c6e]/15 text-[#c79c6e] text-[10px] uppercase font-mono font-bold tracking-widest border border-[#c79c6e]/30">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#c9542f]/15 text-[#c9542f] text-[10px] uppercase font-mono font-bold tracking-widest border border-[#c9542f]/30">
                   COURSE CATALOG & 3-SECTIONS BUILDER
                 </span>
               </div>
               <h1 className="font-serif text-2xl sm:text-3xl text-white font-medium flex items-center gap-3">
-                <GraduationCap size={30} className="text-[#c79c6e]" />
+                <GraduationCap size={30} className="text-[#c9542f]" />
                 Masterclasses Library
               </h1>
               <p className="text-white/50 text-xs sm:text-sm mt-1 max-w-2xl">
@@ -554,7 +595,7 @@ export default function AdminCourseDetailEditor() {
               <button
                 type="button"
                 onClick={() => setShowAddCourseModal(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c79c6e] hover:bg-[#b58b5e] text-black text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#c79c6e]/20 cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#c9542f]/25 cursor-pointer"
               >
                 <Plus size={16} weight="bold" />
                 <span>Create New Masterclass</span>
@@ -578,13 +619,13 @@ export default function AdminCourseDetailEditor() {
               </div>
               <span className="text-white/10 hidden sm:inline">•</span>
               <div className="flex items-center gap-2 text-xs text-white/60">
-                <span className="inline-block w-2 h-2 rounded-full bg-amber-400"></span>
-                <span className="font-serif text-base text-amber-400 font-bold">{waitlistCount}</span>
+                <span className="inline-block w-2 h-2 rounded-full bg-[#c9542f]"></span>
+                <span className="font-serif text-base text-[#c9542f] font-bold">{waitlistCount}</span>
                 <span>Waitlist / Coming Soon</span>
               </div>
               <span className="text-white/10 hidden sm:inline">•</span>
               <div className="flex items-center gap-2 text-xs text-white/60">
-                <span className="font-serif text-base text-[#c79c6e] font-bold">{totalModules}</span>
+                <span className="font-serif text-base text-white font-bold">{totalModules}</span>
                 <span>Total Modules</span>
               </div>
             </div>
@@ -599,7 +640,7 @@ export default function AdminCourseDetailEditor() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search course title or slug..."
-                  className="w-full bg-[#141414] border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#c79c6e] placeholder-white/30"
+                  className="w-full bg-[#141414] border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#c9542f] placeholder-white/30"
                 />
               </div>
 
@@ -609,7 +650,7 @@ export default function AdminCourseDetailEditor() {
                   type="button"
                   onClick={() => setStatusFilter('all')}
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                    statusFilter === 'all' ? 'bg-[#c79c6e] text-black' : 'text-white/60 hover:text-white'
+                    statusFilter === 'all' ? 'bg-[#c9542f] text-white' : 'text-white/60 hover:text-white'
                   }`}
                 >
                   All ({totalCourses})
@@ -627,7 +668,7 @@ export default function AdminCourseDetailEditor() {
                   type="button"
                   onClick={() => setStatusFilter('waitlist')}
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                    statusFilter === 'waitlist' ? 'bg-amber-500 text-black' : 'text-white/60 hover:text-white'
+                    statusFilter === 'waitlist' ? 'bg-[#c9542f] text-white' : 'text-white/60 hover:text-white'
                   }`}
                 >
                   Waitlist ({waitlistCount})
@@ -649,7 +690,7 @@ export default function AdminCourseDetailEditor() {
               <button
                 type="button"
                 onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}
-                className="mt-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-[#c79c6e] border border-[#c79c6e]/30"
+                className="mt-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-[#c9542f] border border-[#c9542f]/30"
               >
                 Clear Search Filter
               </button>
@@ -660,26 +701,36 @@ export default function AdminCourseDetailEditor() {
                 const c = coursesMap[slug] || {};
                 const isLive = !c.soon;
                 const moduleCount = c.syllabus?.length || 0;
-                const bannerStyle = getBannerGradient(c.cls, slug);
+                const courseImg = getCourseImage(c, slug);
 
                 return (
                   <div
                     key={slug}
-                    className="group bg-[#0e0e0e] border border-white/10 hover:border-[#c79c6e]/60 rounded-3xl overflow-hidden transition-all duration-300 flex flex-col shadow-xl hover:shadow-[0_10px_35px_rgba(199,156,110,0.12)] hover:-translate-y-1"
+                    className="group bg-[#0e0e0e] border border-white/10 hover:border-[#c9542f]/60 rounded-3xl overflow-hidden transition-all duration-300 flex flex-col shadow-xl hover:shadow-[0_10px_35px_rgba(201,84,47,0.15)] hover:-translate-y-1"
                   >
-                    {/* Top Artwork / Thumbnail Banner */}
-                    <div className={`p-6 bg-gradient-to-br ${bannerStyle} border-b relative overflow-hidden flex flex-col justify-between min-h-[175px]`}>
-                      {/* Ambient background glow & texture */}
-                      <div className="absolute inset-0 bg-radial from-white/[0.04] to-transparent pointer-events-none" />
+                    {/* Top Artwork / Thumbnail Banner With Real Image */}
+                    <div className="h-56 relative overflow-hidden flex flex-col justify-between p-5 bg-[#141414]">
+                      {/* Background Image */}
+                      <img 
+                        src={courseImg} 
+                        alt={c.title || slug}
+                        className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop';
+                        }}
+                      />
                       
+                      {/* Dark gradient overlay on top of image for maximum legibility */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/60 to-black/40 pointer-events-none" />
+
                       {/* Top Header Row in Card Banner */}
                       <div className="flex items-center justify-between gap-2 relative z-10">
                         {/* Course Number & Slug Badge */}
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-white/70 px-2 py-0.5 rounded-md bg-black/40 border border-white/10">
+                          <span className="font-mono text-xs font-bold text-white px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md border border-white/20">
                             #{c.n || '01'}
                           </span>
-                          <span className="font-mono text-[11px] text-white/40 tracking-wider">
+                          <span className="font-mono text-[11px] text-white/70 px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-md border border-white/10">
                             /{slug}
                           </span>
                         </div>
@@ -689,20 +740,20 @@ export default function AdminCourseDetailEditor() {
                           type="button"
                           onClick={(e) => handleToggleCourseStatus(slug, e)}
                           title="Click to toggle Live ↔ Waitlist status"
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border ${
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md transition-all cursor-pointer border ${
                             isLive
-                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25'
-                              : 'bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25'
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40 hover:bg-emerald-500/30'
+                              : 'bg-[#c9542f]/20 text-[#ff8059] border-[#c9542f]/40 hover:bg-[#c9542f]/30'
                           }`}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                          <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-400 animate-pulse' : 'bg-[#c9542f]'}`}></span>
                           <span>{isLive ? 'LIVE' : 'WAITLIST'}</span>
                         </button>
                       </div>
 
                       {/* Course Title & Category Chips */}
-                      <div className="relative z-10 mt-4 space-y-2.5">
-                        <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug group-hover:text-[#c79c6e] transition-colors line-clamp-2">
+                      <div className="relative z-10 space-y-2 mt-auto">
+                        <h2 className="font-serif text-2xl font-bold text-white tracking-tight leading-snug drop-shadow-md group-hover:text-[#ff7347] transition-colors line-clamp-2">
                           {c.title || slug}
                         </h2>
 
@@ -712,7 +763,7 @@ export default function AdminCourseDetailEditor() {
                             {c.chips.map((chip, idx) => (
                               <span
                                 key={idx}
-                                className="px-2 py-0.5 rounded-md bg-black/50 text-[10px] font-medium text-white/80 border border-white/10"
+                                className="px-2.5 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] font-medium text-white/90 border border-white/15"
                               >
                                 {chip}
                               </span>
@@ -725,12 +776,12 @@ export default function AdminCourseDetailEditor() {
                     {/* Card Body - Metadata & Summary */}
                     <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
                       {/* Course Short Lede */}
-                      <p className="text-white/60 text-xs sm:text-sm leading-relaxed line-clamp-2 min-h-[40px]">
+                      <p className="text-white/70 text-xs sm:text-sm leading-relaxed line-clamp-2 min-h-[40px]">
                         {c.lede || c.d || 'Master the psychology and strategies to elevate your life and career.'}
                       </p>
 
                       {/* 4-Column Mini Stats Grid */}
-                      <div className="grid grid-cols-2 gap-2.5 bg-[#141414] p-3 rounded-2xl border border-white/5">
+                      <div className="grid grid-cols-2 gap-2.5 bg-[#141414] p-3.5 rounded-2xl border border-white/5">
                         <div className="flex flex-col">
                           <span className="text-[10px] uppercase font-mono text-white/40">Enrollment Fee</span>
                           <div className="flex items-baseline gap-1.5 mt-0.5">
@@ -741,21 +792,21 @@ export default function AdminCourseDetailEditor() {
 
                         <div className="flex flex-col">
                           <span className="text-[10px] uppercase font-mono text-white/40">Curriculum</span>
-                          <span className="font-serif text-sm font-bold text-[#c79c6e] mt-0.5">
+                          <span className="font-serif text-sm font-bold text-[#c9542f] mt-0.5">
                             {moduleCount} Modules
                           </span>
                         </div>
 
                         <div className="flex flex-col border-t border-white/5 pt-2">
                           <span className="text-[10px] uppercase font-mono text-white/40">Format</span>
-                          <span className="text-xs text-white/70 font-medium mt-0.5">
+                          <span className="text-xs text-white/80 font-medium mt-0.5">
                             {c.sidebarChips?.[0]?.[1] || 'Self-Paced'}
                           </span>
                         </div>
 
                         <div className="flex flex-col border-t border-white/5 pt-2">
                           <span className="text-[10px] uppercase font-mono text-white/40">Mentorship</span>
-                          <span className="text-xs text-white/70 font-medium mt-0.5">
+                          <span className="text-xs text-white/80 font-medium mt-0.5">
                             {c.facts?.[1]?.[0] || '2'} {c.facts?.[1]?.[1] || '1-on-1 Sessions'}
                           </span>
                         </div>
@@ -765,8 +816,8 @@ export default function AdminCourseDetailEditor() {
                       {Array.isArray(c.hl) && c.hl.length > 0 && (
                         <div className="space-y-1.5">
                           {c.hl.slice(0, 2).map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-[11px] text-white/70">
-                              <CheckCircle size={13} weight="fill" className="text-[#c79c6e] shrink-0" />
+                            <div key={idx} className="flex items-center gap-2 text-[11px] text-white/80">
+                              <CheckCircle size={14} weight="fill" className="text-[#c9542f] shrink-0" />
                               <span className="line-clamp-1">{item[0]} <span className="text-white/40">{item[1]}</span></span>
                             </div>
                           ))}
@@ -779,7 +830,7 @@ export default function AdminCourseDetailEditor() {
                         <button
                           type="button"
                           onClick={() => handleOpenEditor(slug)}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#c79c6e] hover:bg-[#b58b5e] text-black text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#c79c6e]/20 cursor-pointer group-hover:scale-[1.02]"
+                          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#c9542f]/25 cursor-pointer group-hover:scale-[1.02]"
                         >
                           <PencilSimple size={15} weight="bold" />
                           <span>Edit 3-Sections</span>
@@ -816,20 +867,20 @@ export default function AdminCourseDetailEditor() {
               {/* ── "+ CREATE NEW MASTERCLASS" CARD ── */}
               <div
                 onClick={() => setShowAddCourseModal(true)}
-                className="group bg-[#0a0a0a] border-2 border-dashed border-white/10 hover:border-[#c79c6e]/60 rounded-3xl p-8 flex flex-col items-center justify-center text-center gap-4 transition-all duration-300 cursor-pointer min-h-[400px] hover:bg-[#110f11]"
+                className="group bg-[#0a0a0a] border-2 border-dashed border-white/10 hover:border-[#c9542f]/60 rounded-3xl p-8 flex flex-col items-center justify-center text-center gap-4 transition-all duration-300 cursor-pointer min-h-[420px] hover:bg-[#110f11]"
               >
-                <div className="w-16 h-16 rounded-2xl bg-[#c79c6e]/10 group-hover:bg-[#c79c6e]/20 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e] transition-transform duration-300 group-hover:scale-110">
+                <div className="w-16 h-16 rounded-2xl bg-[#c9542f]/10 group-hover:bg-[#c9542f]/20 border border-[#c9542f]/30 flex items-center justify-center text-[#c9542f] transition-transform duration-300 group-hover:scale-110">
                   <Plus size={32} weight="bold" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-lg text-white font-medium group-hover:text-[#c79c6e] transition-colors">
+                  <h3 className="font-serif text-lg text-white font-medium group-hover:text-[#c9542f] transition-colors">
                     Add New Masterclass
                   </h3>
                   <p className="text-white/40 text-xs max-w-xs mt-1 leading-relaxed">
-                    Create a custom course with a dedicated URL, pricing structure, interactive syllabus roadmap, and long-form narrative.
+                    Create a custom course with a dedicated URL, thumbnail image, pricing structure, interactive syllabus roadmap, and long-form narrative.
                   </p>
                 </div>
-                <span className="px-4 py-2 rounded-xl bg-white/5 group-hover:bg-[#c79c6e] group-hover:text-black text-xs font-bold uppercase tracking-wider text-[#c79c6e] border border-[#c79c6e]/30 transition-all">
+                <span className="px-5 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider shadow-md shadow-[#c9542f]/20 transition-all">
                   + Create Masterclass
                 </span>
               </div>
@@ -843,7 +894,7 @@ export default function AdminCourseDetailEditor() {
             <div className="w-full max-w-md bg-[#0e0e0e] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
               <div className="flex items-center justify-between border-b border-white/5 pb-3">
                 <div className="flex items-center gap-2">
-                  <GraduationCap size={20} className="text-[#c79c6e]" />
+                  <GraduationCap size={20} className="text-[#c9542f]" />
                   <h3 className="font-serif text-lg text-white font-medium">Create New Masterclass</h3>
                 </div>
                 <button
@@ -863,7 +914,7 @@ export default function AdminCourseDetailEditor() {
                     value={newCourseTitle}
                     onChange={(e) => setNewCourseTitle(e.target.value)}
                     placeholder="e.g. Executive Gravitas & Vocal Presence"
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c79c6e]"
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f]"
                     autoFocus
                   />
                 </div>
@@ -875,9 +926,20 @@ export default function AdminCourseDetailEditor() {
                     value={newCourseSlug}
                     onChange={(e) => setNewCourseSlug(e.target.value)}
                     placeholder="e.g. vocal-presence"
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c79c6e] font-mono text-xs"
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f] font-mono text-xs"
                   />
                   <span className="text-[11px] text-white/40">Will be accessible at: /course/your-slug</span>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs uppercase tracking-wider text-white/60">Thumbnail Image URL (Optional)</label>
+                  <input
+                    type="text"
+                    value={newCourseImage}
+                    onChange={(e) => setNewCourseImage(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c9542f] text-xs"
+                  />
                 </div>
               </div>
 
@@ -892,7 +954,7 @@ export default function AdminCourseDetailEditor() {
                 <button
                   type="button"
                   onClick={handleCreateNewCourse}
-                  className="px-5 py-2 rounded-xl bg-[#c79c6e] hover:bg-[#b58b5e] text-black text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#c79c6e]/20 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#c9542f]/25 cursor-pointer"
                 >
                   Create & Open Editor
                 </button>
@@ -916,18 +978,18 @@ export default function AdminCourseDetailEditor() {
           <button
             type="button"
             onClick={() => setViewMode('catalog')}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-semibold border border-white/10 transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold border border-white/10 transition-colors cursor-pointer"
           >
             <ArrowLeft size={16} weight="bold" />
-            <span>All Courses</span>
+            <span>← All Courses</span>
           </button>
 
           <span className="text-white/20">|</span>
 
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase font-mono tracking-widest text-white/40 font-semibold hidden sm:inline">Editing:</span>
-            <span className="font-serif text-lg sm:text-xl text-[#c79c6e] font-semibold">{currentCourse.title || activeSlug}</span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold font-mono ${currentCourse.soon ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
+            <span className="font-serif text-lg sm:text-xl text-white font-semibold">{currentCourse.title || activeSlug}</span>
+            <span className={`text-[10px] px-2.5 py-0.5 rounded-full uppercase font-bold font-mono ${currentCourse.soon ? 'bg-[#c9542f]/20 text-[#ff8059] border border-[#c9542f]/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
               {currentCourse.soon ? 'Waitlist' : 'Live'}
             </span>
           </div>
@@ -944,9 +1006,9 @@ export default function AdminCourseDetailEditor() {
                   key={slug}
                   type="button"
                   onClick={() => setActiveSlug(slug)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer whitespace-nowrap ${
                     isSelected
-                      ? 'bg-[#c79c6e] text-black shadow-md shadow-[#c79c6e]/20'
+                      ? 'bg-[#c9542f] text-white shadow-md shadow-[#c9542f]/20'
                       : 'text-white/60 hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -973,10 +1035,10 @@ export default function AdminCourseDetailEditor() {
             type="button"
             onClick={handleSaveCourse}
             disabled={saving}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
               saveSuccess 
                 ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
-                : 'bg-[#c79c6e] hover:bg-[#b58b5e] text-black shadow-lg shadow-[#c79c6e]/20'
+                : 'bg-[#c9542f] hover:bg-[#b54522] text-white shadow-lg shadow-[#c9542f]/25'
             }`}
           >
             {saving ? (
@@ -1007,7 +1069,7 @@ export default function AdminCourseDetailEditor() {
             <span className="text-[10px] uppercase font-mono tracking-widest text-white/40 font-semibold">
               3 PAGE SECTIONS
             </span>
-            <span className="text-[10px] text-[#c79c6e] font-mono">/course/{activeSlug}</span>
+            <span className="text-[10px] text-[#c9542f] font-mono">/course/{activeSlug}</span>
           </div>
 
           <nav className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
@@ -1020,15 +1082,15 @@ export default function AdminCourseDetailEditor() {
                   onClick={() => setActiveSectionTab(tab.id)}
                   className={`flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer whitespace-nowrap lg:whitespace-normal shrink-0 ${
                     isActive
-                      ? 'bg-[#141014] text-white border border-[#c79c6e]/40 shadow-[0_0_20px_rgba(199,156,110,0.1)]'
+                      ? 'bg-[#181111] text-white border border-[#c9542f]/50 shadow-[0_0_20px_rgba(201,84,47,0.15)]'
                       : 'hover:bg-white/5 text-white/60 hover:text-white border border-transparent'
                   }`}
                 >
-                  <div className={`mt-0.5 p-1.5 rounded-lg ${isActive ? 'bg-[#c79c6e]/20 text-[#c79c6e]' : 'bg-white/5 text-white/50'}`}>
+                  <div className={`mt-0.5 p-1.5 rounded-lg ${isActive ? 'bg-[#c9542f]/20 text-[#c9542f]' : 'bg-white/5 text-white/50'}`}>
                     {tab.icon}
                   </div>
                   <div>
-                    <h3 className={`text-xs font-semibold uppercase tracking-wider ${isActive ? 'text-[#c79c6e]' : 'text-white/90'}`}>
+                    <h3 className={`text-xs font-semibold uppercase tracking-wider ${isActive ? 'text-[#ff7347]' : 'text-white/90'}`}>
                       {tab.label}
                     </h3>
                     <p className="text-[11px] text-white/40 leading-snug mt-0.5 line-clamp-1 hidden sm:block">
@@ -1054,7 +1116,7 @@ export default function AdminCourseDetailEditor() {
                 onClick={() => handleFieldChange('soon', !currentCourse.soon)}
                 className={`text-[10px] px-2.5 py-1 rounded-md font-bold uppercase transition-colors cursor-pointer ${
                   currentCourse.soon
-                    ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                    ? 'bg-[#c9542f]/20 text-[#ff8059] hover:bg-[#c9542f]/30'
                     : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
                 }`}
               >
@@ -1095,14 +1157,94 @@ export default function AdminCourseDetailEditor() {
               <div>
                 <h2 className="font-serif text-2xl text-white font-medium">Section 1: Hero & Pricing Sidebar</h2>
                 <p className="text-xs text-white/50 mt-1">
-                  Customize the hero banner, tags, lede statement, pricing facts, and what's included checklist.
+                  Customize the hero banner image, tags, lede statement, pricing facts, and what's included checklist.
                 </p>
+              </div>
+
+              {/* Course Thumbnail Image Uploader */}
+              <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl p-5 sm:p-6 space-y-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
+                  <ImageIcon size={16} /> Course Thumbnail Artwork
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-center">
+                  {/* Image Preview */}
+                  <div className="relative h-44 rounded-2xl overflow-hidden bg-[#141414] border border-white/10 flex items-center justify-center group">
+                    <img
+                      src={getCourseImage(currentCourse, activeSlug)}
+                      alt="Course preview"
+                      className="w-full h-full object-cover object-center"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-xs text-white bg-black/70 px-3 py-1 rounded-lg">Preview</span>
+                    </div>
+                  </div>
+
+                  {/* Upload Actions & Direct URL */}
+                  <div className="md:col-span-2 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleImageUpload(e.target.files[0]);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-md shadow-[#c9542f]/20"
+                      >
+                        {uploadingImage ? (
+                          <>
+                            <ArrowClockwise size={15} className="animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <UploadSimple size={15} weight="bold" />
+                            <span>Upload Image</span>
+                          </>
+                        )}
+                      </button>
+
+                      {currentCourse.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange('imageUrl', '')}
+                          className="px-3 py-2 rounded-xl bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 text-xs transition-colors"
+                        >
+                          Clear Image
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs uppercase tracking-wider text-white/60">Or Paste Image URL</label>
+                      <input
+                        type="text"
+                        value={currentCourse.imageUrl || ''}
+                        onChange={(e) => handleFieldChange('imageUrl', e.target.value)}
+                        placeholder="https://images.unsplash.com/... or /assets/..."
+                        className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f]"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Course Title & Slug & Sequence */}
               <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl p-5 sm:p-6 space-y-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e] flex items-center gap-2">
-                  <Tag size={16} /> Course Identity
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
+                  <Tag size={16} /> Course Identity & Headline
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1112,7 +1254,7 @@ export default function AdminCourseDetailEditor() {
                       type="text"
                       value={currentCourse.title || ''}
                       onChange={(e) => handleFieldChange('title', e.target.value)}
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c79c6e]"
+                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
 
@@ -1123,7 +1265,7 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.n || '01'}
                       onChange={(e) => handleFieldChange('n', e.target.value)}
                       placeholder="01"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#c79c6e]"
+                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
                 </div>
@@ -1135,7 +1277,7 @@ export default function AdminCourseDetailEditor() {
                     value={currentCourse.lede || ''}
                     onChange={(e) => handleFieldChange('lede', e.target.value)}
                     placeholder="Master the psychology of calm authority..."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c79c6e] resize-none"
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
@@ -1148,14 +1290,14 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.chips?.[0] || ''}
                       onChange={(e) => handleChipChange(0, e.target.value)}
                       placeholder="Tag 1 (e.g. Calm Authority)"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c79c6e]"
+                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c9542f]"
                     />
                     <input
                       type="text"
                       value={currentCourse.chips?.[1] || ''}
                       onChange={(e) => handleChipChange(1, e.target.value)}
                       placeholder="Tag 2 (e.g. Self-Command)"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c79c6e]"
+                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
                 </div>
@@ -1163,7 +1305,7 @@ export default function AdminCourseDetailEditor() {
 
               {/* Pricing & Checkout Facts */}
               <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl p-5 sm:p-6 space-y-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e] flex items-center gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
                   <CurrencyInr size={16} /> Pricing & Primary CTA
                 </h3>
 
@@ -1175,7 +1317,7 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.price || ''}
                       onChange={(e) => handleFieldChange('price', e.target.value)}
                       placeholder="₹15,000"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-semibold focus:outline-none focus:border-[#c79c6e]"
+                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-semibold focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
 
@@ -1186,7 +1328,7 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.was || ''}
                       onChange={(e) => handleFieldChange('was', e.target.value)}
                       placeholder="₹25,000"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white/60 text-sm line-through focus:outline-none focus:border-[#c79c6e]"
+                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white/60 text-sm line-through focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
 
@@ -1197,7 +1339,7 @@ export default function AdminCourseDetailEditor() {
                       value={currentCourse.cta || 'Check Course'}
                       onChange={(e) => handleFieldChange('cta', e.target.value)}
                       placeholder="Check Course"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c79c6e]"
+                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
                 </div>
@@ -1207,7 +1349,7 @@ export default function AdminCourseDetailEditor() {
                   <label className="text-xs uppercase tracking-wider text-white/60">Top 2 Sidebar Highlight Bullets</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="bg-[#141414] p-3 rounded-xl border border-white/5 space-y-2">
-                      <span className="text-[10px] uppercase font-mono text-[#c79c6e]">Highlight 1</span>
+                      <span className="text-[10px] uppercase font-mono text-[#c9542f]">Highlight 1</span>
                       <input
                         type="text"
                         value={currentCourse.hl?.[0]?.[0] || ''}
@@ -1225,7 +1367,7 @@ export default function AdminCourseDetailEditor() {
                     </div>
 
                     <div className="bg-[#141414] p-3 rounded-xl border border-white/5 space-y-2">
-                      <span className="text-[10px] uppercase font-mono text-[#c79c6e]">Highlight 2</span>
+                      <span className="text-[10px] uppercase font-mono text-[#c9542f]">Highlight 2</span>
                       <input
                         type="text"
                         value={currentCourse.hl?.[1]?.[0] || ''}
@@ -1251,7 +1393,7 @@ export default function AdminCourseDetailEditor() {
                     <button
                       type="button"
                       onClick={handleAddInsideItem}
-                      className="flex items-center gap-1 text-xs text-[#c79c6e] hover:text-white cursor-pointer"
+                      className="flex items-center gap-1 text-xs text-[#c9542f] hover:text-white cursor-pointer font-semibold"
                     >
                       <Plus size={14} /> Add Checklist Item
                     </button>
@@ -1260,12 +1402,12 @@ export default function AdminCourseDetailEditor() {
                   <div className="space-y-2">
                     {(currentCourse.inside || []).map((item, idx) => (
                       <div key={idx} className="flex items-center gap-2">
-                        <CheckCircle size={16} weight="fill" className="text-[#c79c6e] shrink-0" />
+                        <CheckCircle size={16} weight="fill" className="text-[#c9542f] shrink-0" />
                         <input
                           type="text"
                           value={item}
                           onChange={(e) => handleInsideItemChange(idx, e.target.value)}
-                          className="flex-1 bg-[#151515] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c79c6e]"
+                          className="flex-1 bg-[#151515] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c9542f]"
                         />
                         <button
                           type="button"
@@ -1297,7 +1439,7 @@ export default function AdminCourseDetailEditor() {
 
               {/* Section Header Controls */}
               <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl p-5 sm:p-6 space-y-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e] flex items-center gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
                   <ListNumbers size={16} /> Section Header & Subtitle
                 </h3>
 
@@ -1308,7 +1450,7 @@ export default function AdminCourseDetailEditor() {
                     value={currentCourse.syllabusTitle || ''}
                     onChange={(e) => handleFieldChange('syllabusTitle', e.target.value)}
                     placeholder="e.g. Eight Modules To Total Self-Command"
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-serif focus:outline-none focus:border-[#c79c6e]"
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-serif focus:outline-none focus:border-[#c9542f]"
                   />
                 </div>
 
@@ -1319,7 +1461,7 @@ export default function AdminCourseDetailEditor() {
                     value={currentCourse.syllabusSubtitle || ''}
                     onChange={(e) => handleFieldChange('syllabusSubtitle', e.target.value)}
                     placeholder="A comprehensive, step-by-step roadmap from baseline nervousness to unshakeable gravitas."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c79c6e] resize-none"
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
               </div>
@@ -1327,14 +1469,14 @@ export default function AdminCourseDetailEditor() {
               {/* Modules List Editor */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e] flex items-center gap-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
                     <Kanban size={16} /> Course Modules ({(currentCourse.syllabus || []).length})
                   </h3>
 
                   <button
                     type="button"
                     onClick={handleAddSyllabusModule}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#c79c6e] hover:bg-[#b58b5e] text-black text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#c79c6e]/20 cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#c9542f]/20 cursor-pointer"
                   >
                     <Plus size={15} weight="bold" />
                     <span>Add New Module</span>
@@ -1345,11 +1487,11 @@ export default function AdminCourseDetailEditor() {
                   {(currentCourse.syllabus || []).map((mod, idx) => (
                     <div
                       key={idx}
-                      className="bg-[#0e0e0e] border border-white/10 hover:border-[#c79c6e]/30 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 transition-colors"
+                      className="bg-[#0e0e0e] border border-white/10 hover:border-[#c9542f]/40 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 flex-1">
-                          <span className="w-8 h-8 rounded-lg bg-[#181818] border border-white/10 flex items-center justify-center font-mono text-xs font-bold text-[#c79c6e]">
+                          <span className="w-8 h-8 rounded-lg bg-[#181818] border border-white/10 flex items-center justify-center font-mono text-xs font-bold text-[#c9542f]">
                             {mod.n || String(idx + 1).padStart(2, '0')}
                           </span>
 
@@ -1358,7 +1500,7 @@ export default function AdminCourseDetailEditor() {
                             value={mod.t || ''}
                             onChange={(e) => handleSyllabusChange(idx, 't', e.target.value)}
                             placeholder={`Module ${idx + 1} Title`}
-                            className="flex-1 bg-[#151515] border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-[#c79c6e]"
+                            className="flex-1 bg-[#151515] border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-[#c9542f]"
                           />
                         </div>
 
@@ -1399,7 +1541,7 @@ export default function AdminCourseDetailEditor() {
                         value={mod.d || ''}
                         onChange={(e) => handleSyllabusChange(idx, 'd', e.target.value)}
                         placeholder="Detailed psychological frameworks, actionable exercises, and real-world implementation."
-                        className="w-full bg-[#151515] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/70 focus:outline-none focus:border-[#c79c6e] resize-none"
+                        className="w-full bg-[#151515] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/70 focus:outline-none focus:border-[#c9542f] resize-none"
                       />
                     </div>
                   ))}
@@ -1430,7 +1572,7 @@ export default function AdminCourseDetailEditor() {
                       value={writeup.chip || 'CORE METHODOLOGY'}
                       onChange={(e) => handleWriteupChange('chip', e.target.value)}
                       placeholder="CORE METHODOLOGY"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-xs font-mono focus:outline-none focus:border-[#c79c6e]"
+                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-xs font-mono focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
 
@@ -1441,7 +1583,7 @@ export default function AdminCourseDetailEditor() {
                       value={writeup.h1 || ''}
                       onChange={(e) => handleWriteupChange('h1', e.target.value)}
                       placeholder="Most Men Were Never Taught How to Hold Ground"
-                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-serif font-bold focus:outline-none focus:border-[#c79c6e]"
+                      className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2 text-white text-sm font-serif font-bold focus:outline-none focus:border-[#c9542f]"
                     />
                   </div>
                 </div>
@@ -1453,7 +1595,7 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.lede || ''}
                     onChange={(e) => handleWriteupChange('lede', e.target.value)}
                     placeholder="True charisma is not loud. It is the unhurried certainty of a man who does not need permission to take up space."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c79c6e] resize-none"
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
@@ -1464,13 +1606,13 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.p1 || ''}
                     onChange={(e) => handleWriteupChange('p1', e.target.value)}
                     placeholder="When pressure spikes in a meeting, negotiation, or relationship..."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c79c6e] resize-none"
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
                 {/* Highlighted Quote Box */}
-                <div className="bg-[#141215] border border-[#c79c6e]/20 rounded-2xl p-4 sm:p-5 space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e] flex items-center gap-1.5">
+                <div className="bg-[#141212] border border-[#c9542f]/30 rounded-2xl p-4 sm:p-5 space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-1.5">
                     <Quotes size={16} /> Featured Quote Box
                   </label>
                   <textarea
@@ -1478,7 +1620,7 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.quote || ''}
                     onChange={(e) => handleWriteupChange('quote', e.target.value)}
                     placeholder="A room doesn't respond to volume. It responds to certainty."
-                    className="w-full bg-[#1c181f] border border-white/10 rounded-xl px-4 py-2.5 text-white font-serif italic text-sm focus:outline-none focus:border-[#c79c6e] resize-none"
+                    className="w-full bg-[#1c1818] border border-white/10 rounded-xl px-4 py-2.5 text-white font-serif italic text-sm focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
@@ -1489,7 +1631,7 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.p2 || ''}
                     onChange={(e) => handleWriteupChange('p2', e.target.value)}
                     placeholder="Through structured modules, you dismantle reactive habits..."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c79c6e] resize-none"
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white/80 text-xs focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
 
@@ -1500,7 +1642,7 @@ export default function AdminCourseDetailEditor() {
                     value={writeup.distinction || ''}
                     onChange={(e) => handleWriteupChange('distinction', e.target.value)}
                     placeholder="Reactive men seek approval through fast speech. Anchored men lead through stillness and calibrated pauses."
-                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c79c6e] resize-none"
+                    className="w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#c9542f] resize-none"
                   />
                 </div>
               </div>
