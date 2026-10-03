@@ -35,7 +35,7 @@
     headingAccent: 'built around you.',
     subtitle: 'A clear path from where you are, to where you want to be.',
     subnote: 'Simple. Effective.',
-    bgImg: '',
+    bgImg: 'https://api.aarkeshgupta.com/uploads/image-1790769351378.png',
     steps: [
       { num: '01', title: 'CONNECT', text: 'We start with a meaningful conversation to understand what matters to you.' },
       { num: '02', title: 'CLARIFY', text: "We dig deep to bring clarity to your thoughts, patterns, and what's keeping you stuck." },
@@ -45,10 +45,20 @@
     ]
   };
 
+  const getInitialCoachingData = () => {
+    try {
+      const cached = localStorage.getItem('cached_coaching_process');
+      if (cached) {
+        return { ...DEFAULT_COACHING_DATA, ...JSON.parse(cached) };
+      }
+    } catch (e) {}
+    return DEFAULT_COACHING_DATA;
+  };
+
   export default function CoachingPrinciple() {
     const container = useRef(null);
     const [activeStep, setActiveStep] = useState(null);
-    const [data, setData] = useState(DEFAULT_COACHING_DATA);
+    const [data, setData] = useState(getInitialCoachingData);
 
     useEffect(() => {
       let isMounted = true;
@@ -57,11 +67,17 @@
         const res = await fetch(`${API_URL}/api/home-settings/coachingProcess`);
         if (res.ok && isMounted) {
           const json = await res.json();
-          setData(prev => ({
-            ...prev,
-            ...json,
-            steps: json.steps && json.steps.length > 0 ? json.steps : prev.steps
-          }));
+          setData(prev => {
+            const updated = {
+              ...prev,
+              ...json,
+              steps: json.steps && json.steps.length > 0 ? json.steps : prev.steps
+            };
+            try {
+              localStorage.setItem('cached_coaching_process', JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
+          });
         }
       } catch (err) {
         console.error('Failed to load coaching process settings:', err);

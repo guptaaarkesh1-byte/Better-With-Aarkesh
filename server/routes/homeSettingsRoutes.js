@@ -13,8 +13,8 @@ const DEFAULT_SECTIONS = {
     ctaLink: '/book',
     secondaryCtaText: '',
     secondaryCtaLink: '',
-    bgImageUrl: '/images/hero-coach.jpg',
-    overlayOpacity: 0,
+    bgImageUrl: 'https://api.aarkeshgupta.com/uploads/image-1790768916697.png',
+    overlayOpacity: 16,
     showScrollIndicator: true,
   },
   problem: {

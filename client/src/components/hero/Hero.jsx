@@ -4,7 +4,7 @@ import HeroContent from './HeroContent';
 import HeroImage from './HeroImage';
 import ScrollIndicator from '../ui/ScrollIndicator';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
 const DEFAULT_HERO_DATA = {
   eyebrowText: 'CLARITY. HONESTY. INTENTION.',
@@ -13,13 +13,23 @@ const DEFAULT_HERO_DATA = {
   description: 'A space to think clearly, feel honestly and decide intentionally.',
   ctaText: 'Book a Session',
   ctaLink: '/book',
-  bgImageUrl: '/images/hero-coach.jpg',
-  overlayOpacity: 0,
+  bgImageUrl: 'https://api.aarkeshgupta.com/uploads/image-1790768916697.png',
+  overlayOpacity: 16,
   showScrollIndicator: true,
 };
 
+const getInitialHeroData = () => {
+  try {
+    const cached = localStorage.getItem('cached_hero_settings');
+    if (cached) {
+      return { ...DEFAULT_HERO_DATA, ...JSON.parse(cached) };
+    }
+  } catch (e) {}
+  return DEFAULT_HERO_DATA;
+};
+
 export default function Hero() {
-  const [heroData, setHeroData] = useState(DEFAULT_HERO_DATA);
+  const [heroData, setHeroData] = useState(getInitialHeroData);
 
   useEffect(() => {
     let isMounted = true;
@@ -30,7 +40,10 @@ export default function Hero() {
           const data = await res.json();
           const merged = { ...DEFAULT_HERO_DATA, ...data };
           setHeroData(merged);
-          const opacity = ((merged.overlayOpacity !== undefined ? merged.overlayOpacity : 40) / 100);
+          try {
+            localStorage.setItem('cached_hero_settings', JSON.stringify(merged));
+          } catch (e) {}
+          const opacity = ((merged.overlayOpacity !== undefined ? merged.overlayOpacity : 16) / 100);
           document.documentElement.style.setProperty('--overlay-opacity', opacity.toString());
         }
       } catch (err) {
