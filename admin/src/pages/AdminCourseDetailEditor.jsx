@@ -539,7 +539,7 @@ export default function AdminCourseDetailEditor() {
         data-preserve-dark="true"
       >
         {/* Top Header Banner */}
-        <div className="w-full bg-[#110912]/95 backdrop-blur-md border-b border-white/10 px-6 sm:px-10 py-6 sm:py-8 sticky top-[57px] z-20 shadow-md">
+        <div className="w-full bg-[#110912]/95 backdrop-blur-md border-b border-white/10 px-6 sm:px-10 py-6 sm:py-8 shadow-md">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
@@ -987,7 +987,7 @@ export default function AdminCourseDetailEditor() {
       data-preserve-dark="true"
     >
       {/* ── TOP ACTION & COURSE SELECTOR BAR ── */}
-      <div className="w-full bg-[#110912] border-b border-white/10 px-6 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-[57px] z-20">
+      <div className="w-full bg-[#110912] border-b border-white/10 px-6 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3 flex-wrap">
           {/* Back to All Courses Button */}
           <button
