@@ -193,9 +193,9 @@ p[class*="bg-black/50"] {
 }
 
 /* Uppercase Micro-Labels & Table Column Headers */
-[class*="uppercase"],
-[class*="tracking-widest"],
-[class*="tracking-wider"] {
+[class*="uppercase"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="tracking-widest"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="tracking-wider"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) {
   color: #3b362f !important;
   font-weight: 600 !important;
 }
@@ -274,12 +274,12 @@ a[class*="border-[#c79c6e]"] * {
 
 /* Borders */
 .border-border,
-[class*="border-white/5"],
-[class*="border-white/8"],
-[class*="border-white/10"],
-[class*="border-white/15"],
-[class*="border-white/20"],
-[class*="border-white/30"] {
+[class*="border-white/5"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="border-white/8"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="border-white/10"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="border-white/15"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="border-white/20"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+[class*="border-white/30"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) {
   border-color: rgba(0, 0, 0, 0.12) !important;
 }
 
@@ -289,35 +289,32 @@ a[class*="border-[#c79c6e]"] * {
 }
 
 /* Filter Dropdown Buttons */
-button[class*="border-white/10"],
-button[class*="border-white/20"],
-button[class*="border"] {
+button[class*="border-white/10"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+button[class*="border-white/20"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+button[class*="border"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) {
   border-color: rgba(0, 0, 0, 0.14) !important;
   background-color: #ffffff !important;
   color: #111010 !important;
 }
 
-button[class*="border-white/10"] span,
-button[class*="border-white/20"] span,
-button[class*="border"] span {
+button[class*="border-white/10"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) span,
+button[class*="border-white/20"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) span,
+button[class*="border"]:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) span {
   color: #2b2721 !important;
   font-weight: 500 !important;
 }
 
-/* Inputs, Textareas & Selects */
-input:not([type="checkbox"]):not([type="radio"]),
-textarea,
-select {
+/* Inputs, Textareas & Selects in standard light-theme pages */
+input:not([type="checkbox"]):not([type="radio"]):not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+textarea:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *),
+select:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *) {
   background-color: #ffffff !important;
   color: #111010 !important;
   border-color: rgba(0, 0, 0, 0.16) !important;
 }
 
-input::placeholder,
-textarea::placeholder,
-[class*="placeholder-white/20"]::placeholder,
-[class*="placeholder-white/30"]::placeholder,
-[class*="placeholder-white/40"]::placeholder {
+input:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *)::placeholder,
+textarea:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true"]):not([data-preserve-dark="true"] *)::placeholder {
   color: rgba(0, 0, 0, 0.45) !important;
 }
 
@@ -663,6 +660,109 @@ textarea::placeholder,
 .preserve-dark [class*="bg-[#0a0a0a]"],
 [data-preserve-dark="true"] [class*="bg-[#0a0a0a]"] {
   background-color: #0a0a0a !important;
+}
+
+/* Inputs, Textareas, Selects inside preserve-dark */
+.preserve-dark input:not([type="checkbox"]):not([type="radio"]),
+.preserve-dark textarea,
+.preserve-dark select,
+[data-preserve-dark="true"] input:not([type="checkbox"]):not([type="radio"]),
+[data-preserve-dark="true"] textarea,
+[data-preserve-dark="true"] select {
+  background-color: #1c121d !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.preserve-dark input::placeholder,
+.preserve-dark textarea::placeholder,
+[data-preserve-dark="true"] input::placeholder,
+[data-preserve-dark="true"] textarea::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.preserve-dark input:focus,
+.preserve-dark textarea:focus,
+[data-preserve-dark="true"] input:focus,
+[data-preserve-dark="true"] textarea:focus {
+  border-color: #c9542f !important;
+  outline: none !important;
+}
+
+/* Form labels inside preserve-dark */
+.preserve-dark label,
+[data-preserve-dark="true"] label {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 600 !important;
+}
+
+/* Sidebar navigation buttons inside preserve-dark */
+.preserve-dark aside button:not(.active-tab):not([class*="bg-red"]),
+[data-preserve-dark="true"] aside button:not(.active-tab):not([class*="bg-red"]) {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+.preserve-dark aside button:not(.active-tab):not([class*="bg-red"]):hover,
+[data-preserve-dark="true"] aside button:not(.active-tab):not([class*="bg-red"]):hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.preserve-dark aside button.active-tab,
+.preserve-dark aside button[class*="bg-[#1e101e]"],
+.preserve-dark aside button[class*="bg-[#201120]"],
+[data-preserve-dark="true"] aside button.active-tab,
+[data-preserve-dark="true"] aside button[class*="bg-[#1e101e]"],
+[data-preserve-dark="true"] aside button[class*="bg-[#201120]"] {
+  background-color: #221222 !important;
+  border-color: rgba(201, 84, 47, 0.6) !important;
+  box-shadow: 0 0 20px rgba(201, 84, 47, 0.18) !important;
+}
+
+.preserve-dark aside button h3,
+[data-preserve-dark="true"] aside button h3 {
+  color: #ffffff !important;
+}
+
+.preserve-dark aside button.active-tab h3,
+.preserve-dark aside button[class*="bg-[#1e101e]"] h3,
+.preserve-dark aside button[class*="bg-[#201120]"] h3,
+[data-preserve-dark="true"] aside button.active-tab h3,
+[data-preserve-dark="true"] aside button[class*="bg-[#1e101e]"] h3,
+[data-preserve-dark="true"] aside button[class*="bg-[#201120]"] h3 {
+  color: #ff7347 !important;
+}
+
+.preserve-dark aside button p,
+[data-preserve-dark="true"] aside button p {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Theme selector buttons inside Section 1 */
+.preserve-dark .theme-btn-black,
+[data-preserve-dark="true"] .theme-btn-black {
+  background-color: #0B070B !important;
+}
+
+.preserve-dark .theme-btn-purple,
+[data-preserve-dark="true"] .theme-btn-purple {
+  background-color: #58184E !important;
+}
+
+.preserve-dark .theme-btn-white,
+[data-preserve-dark="true"] .theme-btn-white {
+  background-color: #ffffff !important;
+}
+
+.preserve-dark .theme-btn-white h4,
+[data-preserve-dark="true"] .theme-btn-white h4 {
+  color: #110D13 !important;
+}
+
+.preserve-dark .theme-btn-white p,
+[data-preserve-dark="true"] .theme-btn-white p {
+  color: #4A434E !important;
 }
 
 /* Button text colors inside preserve-dark */

@@ -994,16 +994,16 @@ export default function AdminCourseDetailEditor() {
             type="button"
             onClick={() => setViewMode('catalog')}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold border border-white/15 transition-colors cursor-pointer"
-            style={{ color: '#ffffff' }}
+            style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: '#ffffff', borderColor: 'rgba(255,255,255,0.15)' }}
           >
             <ArrowLeft size={16} weight="bold" />
-            <span>← All Courses</span>
+            <span style={{ color: '#ffffff' }}>← All Courses</span>
           </button>
 
           <span className="text-white/20">|</span>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs uppercase font-mono tracking-widest text-white/40 font-semibold hidden sm:inline">Editing:</span>
+            <span className="text-xs uppercase font-mono tracking-widest text-white/50 font-semibold hidden sm:inline" style={{ color: 'rgba(255,255,255,0.6)' }}>Editing:</span>
             <span className="font-serif text-lg sm:text-xl font-semibold" style={{ color: '#ffffff' }}>{currentCourse.title || activeSlug}</span>
             <span className={`text-[10px] px-2.5 py-0.5 rounded-full uppercase font-bold font-mono ${currentCourse.soon ? 'bg-[#c9542f]/20 text-[#ff8059] border border-[#c9542f]/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
               {currentCourse.soon ? 'Waitlist' : 'Live'}
@@ -1027,9 +1027,12 @@ export default function AdminCourseDetailEditor() {
                       ? 'bg-[#c9542f] text-white shadow-md shadow-[#c9542f]/20'
                       : 'text-white/60 hover:text-white hover:bg-white/5'
                   }`}
-                  style={{ color: isSelected ? '#ffffff' : 'rgba(255,255,255,0.7)' }}
+                  style={{
+                    backgroundColor: isSelected ? '#c9542f' : 'transparent',
+                    color: isSelected ? '#ffffff' : 'rgba(255,255,255,0.7)',
+                  }}
                 >
-                  <span>{c.title || slug}</span>
+                  <span style={{ color: isSelected ? '#ffffff' : 'rgba(255,255,255,0.7)' }}>{c.title || slug}</span>
                 </button>
               );
             })}
@@ -1046,7 +1049,7 @@ export default function AdminCourseDetailEditor() {
             style={{ color: 'rgba(255,255,255,0.85)' }}
           >
             <ArrowSquareOut size={15} />
-            <span>View Live Course</span>
+            <span style={{ color: 'rgba(255,255,255,0.85)' }}>View Live Course</span>
           </a>
 
           <button
@@ -1085,7 +1088,7 @@ export default function AdminCourseDetailEditor() {
         {/* Left Section Navigation Sidebar */}
         <aside className="w-full lg:w-72 xl:w-80 bg-[#0e070e] border-b lg:border-b-0 lg:border-r border-white/10 p-4 sm:p-5 flex flex-col gap-2 shrink-0">
           <div className="px-3 py-1 flex items-center justify-between">
-            <span className="text-[10px] uppercase font-mono tracking-widest text-white/40 font-semibold">
+            <span className="text-[10px] uppercase font-mono tracking-widest font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>
               3 PAGE SECTIONS
             </span>
             <span className="text-[10px] text-[#c9542f] font-mono">/course/{activeSlug}</span>
@@ -1101,18 +1104,35 @@ export default function AdminCourseDetailEditor() {
                   onClick={() => setActiveSectionTab(tab.id)}
                   className={`flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer whitespace-nowrap lg:whitespace-normal shrink-0 ${
                     isActive
-                      ? 'bg-[#1e101e] text-white border border-[#c9542f]/50 shadow-[0_0_20px_rgba(201,84,47,0.15)]'
-                      : 'hover:bg-white/5 text-white/60 hover:text-white border border-transparent'
+                      ? 'active-tab bg-[#201120] text-white border border-[#c9542f]/60 shadow-[0_0_20px_rgba(201,84,47,0.18)]'
+                      : 'bg-transparent hover:bg-white/5 text-white/70 hover:text-white border border-transparent'
                   }`}
+                  style={{
+                    backgroundColor: isActive ? '#201120' : 'transparent',
+                    borderColor: isActive ? 'rgba(201,84,47,0.6)' : 'transparent',
+                    color: '#ffffff',
+                  }}
                 >
-                  <div className={`mt-0.5 p-1.5 rounded-lg ${isActive ? 'bg-[#c9542f]/20 text-[#c9542f]' : 'bg-white/5 text-white/50'}`}>
+                  <div 
+                    className={`mt-0.5 p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-[#c9542f]/25 text-[#ff8059]' : 'bg-white/5 text-white/60'}`}
+                    style={{
+                      backgroundColor: isActive ? 'rgba(201,84,47,0.25)' : 'rgba(255,255,255,0.05)',
+                      color: isActive ? '#ff8059' : 'rgba(255,255,255,0.7)',
+                    }}
+                  >
                     {tab.icon}
                   </div>
                   <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: isActive ? '#ff7347' : '#ffffff' }}>
+                    <h3 
+                      className="text-xs font-semibold uppercase tracking-wider" 
+                      style={{ color: isActive ? '#ff7347' : '#ffffff' }}
+                    >
                       {tab.label}
                     </h3>
-                    <p className="text-[11px] text-white/40 leading-snug mt-0.5 line-clamp-1 hidden sm:block">
+                    <p 
+                      className="text-[11px] leading-snug mt-0.5 line-clamp-1 hidden sm:block" 
+                      style={{ color: isActive ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.45)' }}
+                    >
                       {tab.description}
                     </p>
                   </div>
@@ -1123,9 +1143,9 @@ export default function AdminCourseDetailEditor() {
 
           {/* Course Status & Reset Helper Box */}
           <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-3">
-            <div className="bg-[#181119] p-3 rounded-xl border border-white/10 flex items-center justify-between">
+            <div className="bg-[#181119] p-3 rounded-xl border border-white/10 flex items-center justify-between" style={{ backgroundColor: '#181119' }}>
               <div>
-                <span className="text-[10px] uppercase font-mono text-white/40">Status</span>
+                <span className="text-[10px] uppercase font-mono" style={{ color: 'rgba(255,255,255,0.5)' }}>Status</span>
                 <p className="text-xs font-semibold" style={{ color: '#ffffff' }}>
                   {currentCourse.soon ? 'Waitlist (Coming Soon)' : 'Live for Enrollment'}
                 </p>
@@ -1147,8 +1167,9 @@ export default function AdminCourseDetailEditor() {
               <button
                 type="button"
                 onClick={handleResetCourse}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white text-xs transition-colors cursor-pointer"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs transition-colors cursor-pointer"
                 title="Reset this course to factory content"
+                style={{ color: 'rgba(255,255,255,0.7)', backgroundColor: 'rgba(255,255,255,0.05)' }}
               >
                 <ArrowClockwise size={14} />
                 <span>Reset Defaults</span>
@@ -1181,7 +1202,7 @@ export default function AdminCourseDetailEditor() {
               </div>
 
               {/* Theme Selector */}
-              <div className="bg-[#140c15] border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4">
+              <div className="bg-[#140c15] border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4" style={{ backgroundColor: '#140c15' }}>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#c9542f] flex items-center gap-2">
                   <Palette size={16} /> Course Visual Card Theme
                 </h3>
@@ -1190,54 +1211,69 @@ export default function AdminCourseDetailEditor() {
                   <button
                     type="button"
                     onClick={() => handleFieldChange('theme', 'black')}
-                    className={`p-3.5 rounded-2xl border flex flex-col items-start gap-2 cursor-pointer transition-all ${
+                    className={`theme-btn-black p-3.5 rounded-2xl border flex flex-col items-start gap-2 cursor-pointer transition-all ${
                       (currentCourse.theme || 'black') === 'black'
-                        ? 'bg-[#0B070B] text-white border-[#c9542f] shadow-lg shadow-[#c9542f]/15 ring-2 ring-[#c9542f]/30'
-                        : 'bg-[#1c121d] text-white/60 border-white/10 hover:border-white/20'
+                        ? 'border-[#c9542f] shadow-lg shadow-[#c9542f]/20 ring-2 ring-[#c9542f]/40'
+                        : 'border-white/10 hover:border-white/20'
                     }`}
+                    style={{
+                      backgroundColor: '#0B070B',
+                      borderColor: (currentCourse.theme || 'black') === 'black' ? '#c9542f' : 'rgba(255,255,255,0.12)',
+                      color: '#ffffff',
+                    }}
                   >
-                    <div className="w-full h-12 rounded-xl bg-radial from-[#8A2E80] via-[#3D1A38] to-[#0A050A] flex items-center justify-center font-bold text-lg text-white">
+                    <div className="w-full h-12 rounded-xl bg-radial from-[#8A2E80] via-[#3D1A38] to-[#0A050A] flex items-center justify-center font-bold text-lg text-white" style={{ color: '#ffffff' }}>
                       01
                     </div>
                     <div>
                       <h4 className="text-xs font-bold" style={{ color: '#ffffff' }}>1. Obsidian Black</h4>
-                      <p className="text-[11px] text-white/50">Purple glow banner & black card</p>
+                      <p className="text-[11px]" style={{ color: 'rgba(255, 255, 255, 0.55)' }}>Purple glow banner & black card</p>
                     </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleFieldChange('theme', 'purple')}
-                    className={`p-3.5 rounded-2xl border flex flex-col items-start gap-2 cursor-pointer transition-all ${
+                    className={`theme-btn-purple p-3.5 rounded-2xl border flex flex-col items-start gap-2 cursor-pointer transition-all ${
                       currentCourse.theme === 'purple'
-                        ? 'bg-[#58184E] text-white border-[#c9542f] shadow-lg shadow-[#c9542f]/15 ring-2 ring-[#c9542f]/30'
-                        : 'bg-[#1c121d] text-white/60 border-white/10 hover:border-white/20'
+                        ? 'border-[#c9542f] shadow-lg shadow-[#c9542f]/20 ring-2 ring-[#c9542f]/40'
+                        : 'border-white/10 hover:border-white/20'
                     }`}
+                    style={{
+                      backgroundColor: '#58184E',
+                      borderColor: currentCourse.theme === 'purple' ? '#c9542f' : 'rgba(255,255,255,0.12)',
+                      color: '#ffffff',
+                    }}
                   >
-                    <div className="w-full h-12 rounded-xl bg-radial from-[#1a1a1a] to-[#080808] flex items-center justify-center font-bold text-lg text-white">
+                    <div className="w-full h-12 rounded-xl bg-radial from-[#1a1a1a] to-[#080808] flex items-center justify-center font-bold text-lg text-white" style={{ color: '#ffffff' }}>
                       02
                     </div>
                     <div>
                       <h4 className="text-xs font-bold" style={{ color: '#ffffff' }}>2. Royal Purple</h4>
-                      <p className="text-[11px] text-white/50">Dark black banner & plum card</p>
+                      <p className="text-[11px]" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>Dark black banner & plum card</p>
                     </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleFieldChange('theme', 'white')}
-                    className={`p-3.5 rounded-2xl border flex flex-col items-start gap-2 cursor-pointer transition-all ${
+                    className={`theme-btn-white p-3.5 rounded-2xl border flex flex-col items-start gap-2 cursor-pointer transition-all ${
                       currentCourse.theme === 'white'
-                        ? 'bg-white text-black border-[#c9542f] shadow-lg shadow-[#c9542f]/15 ring-2 ring-[#c9542f]/30'
-                        : 'bg-[#1c121d] text-white/60 border-white/10 hover:border-white/20'
+                        ? 'border-[#c9542f] shadow-lg shadow-[#c9542f]/20 ring-2 ring-[#c9542f]/40'
+                        : 'border-white/10 hover:border-white/20'
                     }`}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      borderColor: currentCourse.theme === 'white' ? '#c9542f' : 'rgba(255,255,255,0.12)',
+                      color: '#110D13',
+                    }}
                   >
-                    <div className="w-full h-12 rounded-xl bg-radial from-[#C878BE] via-[#7A2A70] to-[#3D1A38] flex items-center justify-center font-bold text-lg text-white">
+                    <div className="w-full h-12 rounded-xl bg-radial from-[#C878BE] via-[#7A2A70] to-[#3D1A38] flex items-center justify-center font-bold text-lg text-white" style={{ color: '#ffffff' }}>
                       03
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold" style={{ color: currentCourse.theme === 'white' ? '#110D13' : '#ffffff' }}>3. Clean White</h4>
-                      <p className="text-[11px]" style={{ color: currentCourse.theme === 'white' ? '#4A434E' : 'rgba(255,255,255,0.5)' }}>Magenta banner & white card</p>
+                      <h4 className="text-xs font-bold" style={{ color: '#110D13' }}>3. Clean White</h4>
+                      <p className="text-[11px]" style={{ color: '#4A434E' }}>Magenta banner & white card</p>
                     </div>
                   </button>
                 </div>
