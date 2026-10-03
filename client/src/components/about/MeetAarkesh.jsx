@@ -229,7 +229,11 @@ export default function MeetAarkesh() {
                   <Icon className="text-[#c9542f] group-hover:text-white text-2xl transition-colors duration-300" weight="regular" />
                 </div>
                 
-                <h3 className="font-serif text-3xl md:text-4xl lg:text-[2.5rem] tracking-widest text-[#111010] mb-3 sm:mb-4 font-semibold">{role.title}</h3>
+                <div className="inline-flex items-center justify-center px-6 sm:px-8 py-1.5 sm:py-2 rounded-full border-2 border-[#c9542f] bg-white/85 backdrop-blur-sm shadow-[0_4px_16px_rgba(201,84,47,0.18)] mb-3 sm:mb-4 transition-all duration-300 group-hover:bg-white group-hover:shadow-[0_6px_22px_rgba(201,84,47,0.28)]">
+                  <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.2rem] tracking-widest text-[#111010] font-semibold m-0 leading-tight">
+                    {role.title}
+                  </h3>
+                </div>
                 
                 <div className="flex flex-col items-center gap-1.5 sm:gap-2 opacity-0 transform translate-y-6 transition-all duration-400 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible px-4">
                   <p className="text-[#111010] font-semibold text-sm sm:text-base md:text-[1.05rem] leading-snug">{role.sub1}</p>
