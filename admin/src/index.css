@@ -597,7 +597,7 @@ textarea:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true
 .live-preview-dark [class*="uppercase"],
 .live-preview-dark [class*="tracking-widest"],
 .live-preview-dark [class*="tracking-wider"] {
-  color: inherit !important;
+  color: #ffffff;
 }
 
 .preserve-dark p[class*="text-[#E3B8DE]"],
@@ -721,22 +721,40 @@ textarea:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true
 }
 
 .preserve-dark aside button h3,
-[data-preserve-dark="true"] aside button h3 {
+.preserve-dark aside button [class*="uppercase"],
+.preserve-dark .sidebar-tab-title,
+[data-preserve-dark="true"] aside button h3,
+[data-preserve-dark="true"] aside button [class*="uppercase"],
+[data-preserve-dark="true"] .sidebar-tab-title {
   color: #ffffff !important;
 }
 
 .preserve-dark aside button.active-tab h3,
+.preserve-dark aside button.active-tab [class*="uppercase"],
 .preserve-dark aside button[class*="bg-[#1e101e]"] h3,
 .preserve-dark aside button[class*="bg-[#201120]"] h3,
 [data-preserve-dark="true"] aside button.active-tab h3,
+[data-preserve-dark="true"] aside button.active-tab [class*="uppercase"],
 [data-preserve-dark="true"] aside button[class*="bg-[#1e101e]"] h3,
 [data-preserve-dark="true"] aside button[class*="bg-[#201120]"] h3 {
   color: #ff7347 !important;
 }
 
 .preserve-dark aside button p,
-[data-preserve-dark="true"] aside button p {
-  color: rgba(255, 255, 255, 0.45) !important;
+.preserve-dark .sidebar-tab-desc,
+[data-preserve-dark="true"] aside button p,
+[data-preserve-dark="true"] .sidebar-tab-desc {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.preserve-dark aside button svg,
+[data-preserve-dark="true"] aside button svg {
+  color: #ffffff !important;
+}
+
+.preserve-dark aside button.active-tab svg,
+[data-preserve-dark="true"] aside button.active-tab svg {
+  color: #ff8059 !important;
 }
 
 /* Theme selector buttons inside Section 1 */

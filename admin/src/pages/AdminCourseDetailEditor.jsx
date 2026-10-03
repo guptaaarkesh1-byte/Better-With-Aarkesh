@@ -1102,36 +1102,37 @@ export default function AdminCourseDetailEditor() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveSectionTab(tab.id)}
-                  className={`flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer whitespace-nowrap lg:whitespace-normal shrink-0 ${
+                  className={`flex items-start gap-3 p-3.5 rounded-xl text-left transition-all cursor-pointer whitespace-nowrap lg:whitespace-normal shrink-0 ${
                     isActive
                       ? 'active-tab bg-[#201120] text-white border border-[#c9542f]/60 shadow-[0_0_20px_rgba(201,84,47,0.18)]'
-                      : 'bg-transparent hover:bg-white/5 text-white/70 hover:text-white border border-transparent'
+                      : 'bg-[#160e17] hover:bg-[#221624] text-white border border-white/10 hover:border-white/20'
                   }`}
                   style={{
-                    backgroundColor: isActive ? '#201120' : 'transparent',
-                    borderColor: isActive ? 'rgba(201,84,47,0.6)' : 'transparent',
+                    backgroundColor: isActive ? '#201120' : '#160e17',
+                    borderColor: isActive ? 'rgba(201,84,47,0.6)' : 'rgba(255,255,255,0.1)',
                     color: '#ffffff',
                   }}
                 >
                   <div 
-                    className="mt-0.5 p-1.5 rounded-lg shrink-0"
+                    className="mt-0.5 p-1.5 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs"
                     style={{
                       backgroundColor: isActive ? 'rgba(201,84,47,0.25)' : 'rgba(255,255,255,0.08)',
                       color: isActive ? '#ff8059' : '#ffffff',
+                      border: isActive ? '1px solid rgba(201,84,47,0.4)' : '1px solid rgba(255,255,255,0.12)',
                     }}
                   >
                     {tab.icon}
                   </div>
-                  <div>
+                  <div className="flex flex-col gap-0.5">
                     <h3 
-                      className="text-xs font-semibold uppercase tracking-wider" 
+                      className="text-xs font-bold uppercase tracking-wider sidebar-tab-title" 
                       style={{ color: isActive ? '#ff7347' : '#ffffff' }}
                     >
                       {tab.label}
                     </h3>
                     <p 
-                      className="text-[11px] leading-snug mt-0.5 line-clamp-1 hidden sm:block" 
-                      style={{ color: isActive ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.6)' }}
+                      className="text-[11px] leading-snug line-clamp-2 hidden sm:block sidebar-tab-desc" 
+                      style={{ color: isActive ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.65)' }}
                     >
                       {tab.description}
                     </p>
