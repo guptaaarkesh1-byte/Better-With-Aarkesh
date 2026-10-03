@@ -533,7 +533,7 @@ export default function AdminCourseFaq() {
                 <span className="block text-[10px] font-sans uppercase tracking-widest text-white/40 mb-1.5">
                   Live Preview on Landing Page:
                 </span>
-                <div className="p-5 rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a]">
+                <div className="p-5 rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a] preserve-dark">
                   <h4 className="font-serif text-base text-white mb-1.5">
                     {formData.question || 'Your Question will appear here?'}
                   </h4>

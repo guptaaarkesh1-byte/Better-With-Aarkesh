@@ -12,13 +12,12 @@ export default function HeroImage({
 
   useGSAP(() => {
     gsap.fromTo(container.current,
-      { opacity: 0.9, scale: 0.995 },
-      { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' }
+      { opacity: 0.95 },
+      { opacity: 1, duration: 0.3, ease: 'power2.out' }
     );
   }, { scope: container });
 
   // Resolve image URL:
-  // If no URL or matching the current uploaded image, use the locally bundled high-res WebP asset instantly!
   const resolveHeroImg = (url) => {
     if (!url || url.includes('image-1790768916697.png') || url.includes('hero-coach')) {
       return defaultHeroImg;
@@ -38,7 +37,7 @@ export default function HeroImage({
   return (
     <div 
       ref={container} 
-      className="w-full h-full relative overflow-hidden bg-[#f5f1e8] pt-20 md:pt-24"
+      className="w-full h-full relative overflow-hidden bg-[#f5f1e8]"
     >
       <img
         ref={imageRef}
@@ -52,16 +51,16 @@ export default function HeroImage({
             e.currentTarget.src = defaultHeroImg;
           }
         }}
-        className="w-full h-full object-cover object-[85%_top] md:object-[88%_top] lg:object-[85%_top] filter contrast-[1.02] brightness-[0.99]"
+        className="w-full h-full object-cover object-[80%_top] sm:object-[82%_top] md:object-[82%_top] lg:object-[80%_top] pt-10 sm:pt-12 md:pt-14 lg:pt-10"
       />
 
-      {/* Left to right gentle cream gradient to ensure text on left is super readable and blends into #f5f1e8 */}
+      {/* Left to right gentle cream gradient to blend seamlessly into #f5f1e8 behind text */}
       <div 
-        className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/75 md:via-[#f5f1e8]/40 to-transparent w-full" 
+        className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/70 md:via-[#f5f1e8]/40 to-transparent w-full" 
       />
       
-      {/* Bottom gradient blending seamlessly into subsequent cream sections */}
-      <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-t from-[#f5f1e8] via-transparent to-transparent" />
+      {/* Subtle bottom transition */}
+      <div className="absolute inset-x-0 bottom-0 h-12 pointer-events-none bg-gradient-to-t from-[#f5f1e8] to-transparent" />
     </div>
   );
 }

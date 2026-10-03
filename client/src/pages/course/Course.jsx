@@ -49,6 +49,23 @@ import FlippingWordSwap from '../../components/ui/FlippingWordSwap';
 import { resolvePlayableVideoId } from '../../utils/videoSecurity';
 import './course-landing.css';
 
+// Helper to render headlines with asterisk boxed text: "THE *BETTER* MAN" -> THE <span className="sel">BETTER</span> MAN
+export const renderCourseHeadline = (text) => {
+  if (!text) return null;
+  const parts = text.split(/\*([^*]+)\*/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, index) => {
+    if (index % 2 === 1) {
+      return (
+        <span key={index} className="sel">
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+};
+
 const renderSocialIcon = (platform, size = 16) => {
   switch (platform?.toLowerCase()) {
     case 'instagram': return <InstagramLogo size={size} />;
@@ -204,6 +221,64 @@ export default function Course() {
     { question: 'Is this course beginner-friendly?', answer: 'Absolutely. The framework starts from the fundamental psychology of presence and builds step-by-step toward advanced leadership and magnetism.' },
   ]);
 
+  const [landingSettings, setLandingSettings] = useState({
+    hero: {
+      tag: 'Learn. Practise. Lead.',
+      headingPrefix: 'THE',
+      headingSelected: 'BETTER',
+      headingSuffix: 'MAN',
+      subheading: 'Masterclasses in calm authority, magnetic communication and self-command, taught by Aarkesh.',
+      proof1Bold: '3 private',
+      proof1Text: '1-on-1 sessions with Aarkesh',
+      proof2Bold: 'Lifetime',
+      proof2Text: 'access, no recurring charges',
+      primaryBtnText: 'Register Now',
+      showPrimaryBtn: true,
+      secondaryBtnText: 'Check Course',
+      secondaryBtnLink: '/course/better-man',
+      showSecondaryBtn: true,
+      navBtnText: 'Check Course',
+      navBtnLink: '/course/better-man',
+      showNavBtn: true,
+      bgImageUrl: '',
+      overlayOpacity: 40
+    },
+    moreCourses: {
+      eyebrowText: 'MORE MASTERCLASSES',
+      heading: 'More Masterclasses',
+      subheading: 'Each one is a standalone course with its own private sessions.',
+      viewAllBtnText: 'View All Masterclasses',
+      showViewAllBtn: true
+    },
+    allCoursesPage: {
+      tag: 'ALL PROGRAMS',
+      heading: 'All Masterclasses & Programs',
+      subheading: 'Each masterclass is an intensive, transformative curriculum paired with private 1-on-1 mentorship sessions with Aarkesh.',
+      backBtnText: '← Back to overview'
+    },
+    faq: {
+      tag: 'FAQS',
+      heading: 'Frequently Asked Questions From Our Students',
+      subheading: 'Clear answers about the masterclass, private mentorship, and enrollment.',
+      items: [
+        { question: 'How long do I have access to the course materials?', answer: 'You get lifetime access to all masterclass modules, downloadable resources, and all future updates with no recurring charges.' },
+        { question: 'How do the 3 private 1-on-1 sessions work?', answer: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
+        { question: 'Is this course suitable for professionals and introverts?', answer: 'Yes. The curriculum is specifically designed for professionals, entrepreneurs, and introverts who want to develop natural, calm authority without acting loud or fake.' },
+        { question: 'Is there a certificate provided upon completion?', answer: 'Yes. Upon completing all modules and your private sessions, you will receive an official Certificate of Completion signed by Aarkesh.' }
+      ]
+    },
+    cta: {
+      label: 'ENROLL TODAY',
+      heading: 'Ready To Become The Man People Trust?',
+      description: 'Master the psychology of calm authority, magnetic communication and effortless self-command with lifetime curriculum access and 3 private 1-on-1 coaching sessions.',
+      badge1: '3 Private Coaching Calls',
+      badge2: 'Lifetime Video Access',
+      primaryBtnText: 'Register Now',
+      exploreBtnText: 'Explore Courses',
+      bgImageUrl: ''
+    }
+  });
+
   const allLessons = curriculumModules.flatMap((m) => (m.lessons || []).map((l) => ({ ...l, module: m })));
   const currentLessonIndex = allLessons.findIndex(
     (l) => (l._id || l.id)?.toString() === (activeLesson?._id || activeLesson?.id)?.toString()
@@ -358,11 +433,63 @@ export default function Course() {
       }
     };
 
+    const fetchLandingSettings = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/courses/landing-settings`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            setLandingSettings((prev) => ({
+              ...prev,
+              ...data,
+              hero: { ...(prev?.hero || {}), ...(data?.hero || {}) },
+              moreCourses: { ...(prev?.moreCourses || {}), ...(data?.moreCourses || {}) },
+              allCoursesPage: { ...(prev?.allCoursesPage || {}), ...(data?.allCoursesPage || {}) },
+              faq: { ...(prev?.faq || {}), ...(data?.faq || {}) },
+              cta: { ...(prev?.cta || {}), ...(data?.cta || {}) },
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch course landing settings:', err);
+      }
+    };
+
+    fetchLandingSettings();
+    window.addEventListener('focus', fetchLandingSettings);
+
+    const handleStorage = (e) => {
+      if (e.key === 'bwa_landing_settings_updated') {
+        fetchLandingSettings();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    let bc;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('bwa_course_landing_channel');
+        bc.onmessage = () => {
+          fetchLandingSettings();
+        };
+      }
+    } catch (e) {}
+
+    const interval = setInterval(fetchLandingSettings, 3000);
+
     fetchCourseFooter();
     fetchSocialLinks();
     fetchCurriculumCards();
     fetchCourseFaqs();
-  }, []);
+
+    return () => {
+      window.removeEventListener('focus', fetchLandingSettings);
+      window.removeEventListener('storage', handleStorage);
+      if (bc) bc.close();
+      clearInterval(interval);
+    };
+  }, [location.pathname]);
 
 
 
@@ -1667,18 +1794,28 @@ export default function Course() {
           </a>
         </nav>
         <div className="nav-r flex items-center gap-3">
-          <button
-            type="button"
-            className="course-nav-check-btn"
-            onClick={() => {
-              setShowCourseLogin(false);
-              setShowDashboard(false);
-              const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
-              handleSelectCourse(betterMan);
-            }}
-          >
-            Check Course <span aria-hidden="true">→</span>
-          </button>
+          {landingSettings?.hero?.showNavBtn !== false && (
+            <button
+              type="button"
+              className="course-nav-check-btn"
+              onClick={() => {
+                setShowCourseLogin(false);
+                setShowDashboard(false);
+                const link = landingSettings?.hero?.navBtnLink;
+                if (link && link.startsWith('#')) {
+                  const el = document.querySelector(link);
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                } else if (link && !link.includes('better-man')) {
+                  navigate(link);
+                } else {
+                  const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
+                  handleSelectCourse(betterMan);
+                }
+              }}
+            >
+              {landingSettings?.hero?.navBtnText || 'Check Course'} <span aria-hidden="true">→</span>
+            </button>
+          )}
 
           {isLoggedIn ? (
             <>
@@ -1759,14 +1896,14 @@ export default function Course() {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >
-                ← Back to overview
+                {landingSettings?.allCoursesPage?.backBtnText || '← Back to overview'}
               </button>
 
               <div className="all-courses-hero">
-                <span className="tag">ALL PROGRAMS</span>
-                <h1>All Masterclasses & Programs</h1>
+                <span className="tag">{renderCourseHeadline(landingSettings?.allCoursesPage?.tag || 'ALL PROGRAMS')}</span>
+                <h1>{renderCourseHeadline(landingSettings?.allCoursesPage?.heading || 'All Masterclasses & Programs')}</h1>
                 <p className="sub">
-                  Each masterclass is an intensive, transformative curriculum paired with private 1-on-1 mentorship sessions with Aarkesh.
+                  {landingSettings?.allCoursesPage?.subheading || 'Each masterclass is an intensive, transformative curriculum paired with private 1-on-1 mentorship sessions with Aarkesh.'}
                 </p>
               </div>
 
@@ -1791,14 +1928,6 @@ export default function Course() {
 
                       {/* Content Body */}
                       <div className="all-course-card-content">
-                        {/* Topic Tag Pills */}
-                        <div className="card-tag-pills">
-                          {c.chips.map((chip, ci) => (
-                            <span className="card-tag-pill" key={ci}>{chip}</span>
-                          ))}
-                          <span className="card-tag-pill">{c.facts[0][0]} {c.facts[0][1]}</span>
-                        </div>
-
                         {/* Title */}
                         <h3 className="card-course-title">{c.title}</h3>
 
@@ -1835,18 +1964,30 @@ export default function Course() {
              ═══════════════════════════════════════════════════════════════ */
           <>
             {/* ── Hero Section ── */}
-            <section className="hero">
+            <section 
+              className="hero"
+              style={landingSettings?.hero?.bgImageUrl ? { 
+                backgroundImage: `url(${landingSettings.hero.bgImageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              } : {}}
+            >
               <div className="wrap">
-                <p className="tag">Learn. Practise. Lead.</p>
+                <p className="tag">{landingSettings?.hero?.tag || 'Learn. Practise. Lead.'}</p>
                 <h1>
-                  THE <span className="sel">BETTER</span> MAN
+                  {renderCourseHeadline(
+                    landingSettings?.hero?.heading ||
+                    (landingSettings?.hero?.headingPrefix
+                      ? `${landingSettings.hero.headingPrefix} *${landingSettings.hero.headingSelected || 'BETTER'}* ${landingSettings.hero.headingSuffix || 'MAN'}`
+                      : 'THE *BETTER* MAN')
+                  )}
                 </h1>
                 <p className="sub">
-                  Masterclasses in calm authority, magnetic communication and self-command, taught by Aarkesh.
+                  {landingSettings?.hero?.subheading || 'Masterclasses in calm authority, magnetic communication and self-command, taught by Aarkesh.'}
                 </p>
                 <div className="proof">
-                  <span><b>3 private</b> 1-on-1 sessions with Aarkesh</span>
-                  <span><b>Lifetime</b> access, no recurring charges</span>
+                  <span><b>{landingSettings?.hero?.proof1Bold || '3 private'}</b> {landingSettings?.hero?.proof1Text || '1-on-1 sessions with Aarkesh'}</span>
+                  <span><b>{landingSettings?.hero?.proof2Bold || 'Lifetime'}</b> {landingSettings?.hero?.proof2Text || 'access, no recurring charges'}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
                   {isPurchased ? (
@@ -1862,28 +2003,40 @@ export default function Course() {
                     </button>
                   ) : (
                     <>
-                      <button 
-                        type="button" 
-                        className="btn" 
-                        onClick={handleEnroll}
-                      >
-                        Register Now <span aria-hidden="true">→</span>
-                      </button>
-                      <button 
-                        type="button" 
-                        className="btn line" 
-                        onClick={() => {
-                          const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
-                          handleSelectCourse(betterMan);
-                        }}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.06)',
-                          border: '1px solid rgba(200, 120, 190, 0.4)',
-                          color: '#FFFFFF'
-                        }}
-                      >
-                        Check Course <span aria-hidden="true">→</span>
-                      </button>
+                      {landingSettings?.hero?.showPrimaryBtn !== false && (
+                        <button 
+                          type="button" 
+                          className="btn" 
+                          onClick={handleEnroll}
+                        >
+                          {landingSettings?.hero?.primaryBtnText || 'Register Now'} <span aria-hidden="true">→</span>
+                        </button>
+                      )}
+                      {landingSettings?.hero?.showSecondaryBtn !== false && (
+                        <button 
+                          type="button" 
+                          className="btn line" 
+                          onClick={() => {
+                            const link = landingSettings?.hero?.secondaryBtnLink;
+                            if (link && link.startsWith('#')) {
+                              const el = document.querySelector(link);
+                              if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            } else if (link && !link.includes('better-man')) {
+                              navigate(link);
+                            } else {
+                              const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
+                              handleSelectCourse(betterMan);
+                            }
+                          }}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.06)',
+                            border: '1px solid rgba(200, 120, 190, 0.4)',
+                            color: '#FFFFFF'
+                          }}
+                        >
+                          {landingSettings?.hero?.secondaryBtnText || 'Check Course'} <span aria-hidden="true">→</span>
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -1893,8 +2046,15 @@ export default function Course() {
             {/* ── More Masterclasses Stacked Section (Directly Below Hero Section) ── */}
             <section className="stack-sec" id="courses">
               <div className="stack">
-                <h2>More Masterclasses</h2>
-                <p className="lead">Each one is a standalone course with its own private sessions.</p>
+                {landingSettings?.moreCourses?.eyebrowText && (
+                  <p className="tag" style={{ textAlign: 'center', marginBottom: '8px' }}>
+                    {renderCourseHeadline(landingSettings.moreCourses.eyebrowText)}
+                  </p>
+                )}
+                <h2>{renderCourseHeadline(landingSettings?.moreCourses?.heading || 'More Masterclasses')}</h2>
+                <p className="lead">
+                  {landingSettings?.moreCourses?.subheading || 'Each one is a standalone course with its own private sessions.'}
+                </p>
                 <div className="all-courses-grid">
                   {coursesList.map((c, i) => {
                     const themeCls = getCardThemeClass(i);
@@ -1916,14 +2076,6 @@ export default function Course() {
 
                         {/* Content Body */}
                         <div className="all-course-card-content">
-                          {/* Topic Tag Pills */}
-                          <div className="card-tag-pills">
-                            {c.chips.map((chip, ci) => (
-                              <span className="card-tag-pill" key={ci}>{chip}</span>
-                            ))}
-                            <span className="card-tag-pill">{c.facts[0][0]} {c.facts[0][1]}</span>
-                          </div>
-
                           {/* Title */}
                           <h3 className="card-course-title">{c.title}</h3>
 
@@ -1954,67 +2106,81 @@ export default function Course() {
                 </div>
 
                 {/* ── View All Masterclasses Action Button ── */}
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '48px' }}>
-                  <button
-                    type="button"
-                    className="btn dark"
-                    onClick={() => {
-                      navigate('/course/all');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '16px 38px',
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      borderRadius: '999px',
-                      background: '#0E0C0B',
-                      color: '#ffffff',
-                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-                      cursor: 'pointer',
-                      transition: 'transform 0.25s ease, box-shadow 0.25s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 14px 36px rgba(0, 0, 0, 0.28)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.2)';
-                    }}
-                  >
-                    View All <ArrowRight size={18} weight="bold" />
-                  </button>
-                </div>
+                {landingSettings?.moreCourses?.showViewAllBtn !== false && (
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '48px' }}>
+                    <button
+                      type="button"
+                      className="btn dark"
+                      onClick={() => {
+                        const link = landingSettings?.moreCourses?.viewAllBtnLink || '/course/all';
+                        navigate(link);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '16px 38px',
+                        fontSize: '15px',
+                        fontWeight: '600',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        borderRadius: '999px',
+                        background: '#0E0C0B',
+                        color: '#ffffff',
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                        cursor: 'pointer',
+                        transition: 'transform 0.25s ease, box-shadow 0.25s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 14px 36px rgba(0, 0, 0, 0.28)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.2)';
+                      }}
+                    >
+                      {landingSettings?.moreCourses?.viewAllBtnText || 'View All Masterclasses'} <ArrowRight size={18} weight="bold" />
+                    </button>
+                  </div>
+                )}
               </div>
             </section>
 
             {/* ── FAQ Section ── */}
             <section className="faq center" id="faq">
               <div className="wrap">
-                <span className="label">FAQS</span>
-                <h2>Frequently Asked Questions From Our Students</h2>
+                <span className="label">
+                  {renderCourseHeadline(
+                    landingSettings?.faq?.tag
+                      ? (landingSettings.faq.tag.includes('*') ? landingSettings.faq.tag : `*${landingSettings.faq.tag}*`)
+                      : '*FAQS*'
+                  )}
+                </span>
+                <h2>
+                  {renderCourseHeadline(landingSettings?.faq?.heading || 'Frequently Asked Questions From Our Students')}
+                </h2>
                 <p className="lead">
-                  Clear answers about the masterclass, private mentorship, and enrollment.
+                  {landingSettings?.faq?.subheading || 'Clear answers about the masterclass, private mentorship, and enrollment.'}
                 </p>
 
                 <div className="acc">
-                  {(courseFaqs && courseFaqs.length > 0 ? courseFaqs : [
-                    { q: 'How do the 3 private 1-on-1 sessions work?', a: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
-                    { q: 'Is this course suitable for professionals and introverts?', a: 'Yes. The curriculum is specifically designed for professionals, entrepreneurs, and introverts who want to develop natural, calm authority without acting loud or fake.' },
-                    { q: 'How long do I have access to the materials?', a: 'You receive full lifetime access. You can revisit lessons, download the workbooks, and receive all future course updates at zero extra cost.' },
-                    { q: 'Is there a certificate provided upon completion?', a: 'Yes. Upon completing all modules and your private sessions, you will receive an official Certificate of Completion signed by Aarkesh.' }
-                  ]).map((f, idx) => (
+                  {((landingSettings?.faq?.items && Array.isArray(landingSettings.faq.items) && landingSettings.faq.items.length > 0)
+                    ? landingSettings.faq.items
+                    : (courseFaqs && courseFaqs.length > 0 ? courseFaqs : [
+                        { question: 'How long do I have access to the course materials?', answer: 'You get lifetime access to all masterclass modules, downloadable resources, and all future updates with no recurring charges.' },
+                        { question: 'How do the 3 private 1-on-1 sessions work?', answer: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
+                        { question: 'Is this course suitable for professionals and introverts?', answer: 'Yes. The curriculum is specifically designed for professionals, entrepreneurs, and introverts who want to develop natural, calm authority without acting loud or fake.' },
+                        { question: 'Is there a certificate provided upon completion?', answer: 'Yes. Upon completing all modules and your private sessions, you will receive an official Certificate of Completion signed by Aarkesh.' }
+                      ])
+                  ).map((f, idx) => (
                     <details className="a" key={idx} open={idx === 0}>
                       <summary>
                         <span className="n">Q{idx + 1}</span>
-                        <span className="t">{f.q || f.question}</span>
+                        <span className="t">{f.question || f.q}</span>
                       </summary>
-                      <p>{f.a || f.answer}</p>
+                      <p>{f.answer || f.a}</p>
                     </details>
                   ))}
                 </div>
@@ -2025,14 +2191,18 @@ export default function Course() {
             <section className="cta center">
               <div className="wrap">
                 <div className="cta-box">
-                  <span className="label" style={{ marginBottom: '16px' }}>ENROLL TODAY</span>
-                  <h2>Ready To Become The Man People Trust?</h2>
+                  <span className="label" style={{ marginBottom: '16px' }}>{renderCourseHeadline(landingSettings?.cta?.label || 'ENROLL TODAY')}</span>
+                  <h2>{renderCourseHeadline(landingSettings?.cta?.heading || 'Ready To Become The Man People Trust?')}</h2>
                   <p className="lead">
-                    Master the psychology of calm authority, magnetic communication and effortless self-command with lifetime curriculum access and 3 private 1-on-1 coaching sessions.
+                    {landingSettings?.cta?.description || 'Master the psychology of calm authority, magnetic communication and effortless self-command with lifetime curriculum access and 3 private 1-on-1 coaching sessions.'}
                   </p>
                   <div className="cta-badges">
-                    <span><Users size={16} weight="fill" /> 3 Private Coaching Calls</span>
-                    <span><Clock size={16} weight="fill" /> Lifetime Video Access</span>
+                    {landingSettings?.cta?.badge1 && (
+                      <span><Users size={16} weight="fill" /> {landingSettings.cta.badge1}</span>
+                    )}
+                    {landingSettings?.cta?.badge2 && (
+                      <span><Clock size={16} weight="fill" /> {landingSettings.cta.badge2}</span>
+                    )}
                   </div>
                   <div>
                     {isPurchased ? (
@@ -2055,11 +2225,11 @@ export default function Course() {
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                       >
-                        Explore Courses <span aria-hidden="true">→</span>
+                        {landingSettings?.cta?.exploreBtnText || 'Explore Courses'} <span aria-hidden="true">→</span>
                       </button>
                     ) : (
                       <button type="button" className="btn" onClick={handleEnroll}>
-                        Register Now <span aria-hidden="true">→</span>
+                        {landingSettings?.cta?.primaryBtnText || 'Register Now'} <span aria-hidden="true">→</span>
                       </button>
                     )}
                   </div>

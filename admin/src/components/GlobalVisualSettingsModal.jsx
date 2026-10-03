@@ -463,7 +463,7 @@ export default function GlobalVisualSettingsModal({ isOpen, onClose }) {
               </div>
 
               {/* Live Preview Sample */}
-              <div className="bg-[#121212] border border-white/5 rounded-xl p-4 flex flex-col gap-2.5">
+              <div className="bg-[#121212] border border-white/5 rounded-xl p-4 flex flex-col gap-2.5 preserve-dark">
                 <span className="text-[0.68rem] font-semibold uppercase tracking-widest text-white/50 flex items-center gap-1.5">
                   <Eye size={14} className="text-[#c79c6e]" />
                   <span>Simulated Visual Preview</span>

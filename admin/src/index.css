@@ -57,32 +57,38 @@ div[class*="bg-[#050505]/40"] {
 
 /* Cards, Tables, Modals, Sidebars & Elevated Surfaces -> Crisp White (#ffffff) */
 .bg-card,
-[class*="bg-[#0a0a0a]"]:not(header):not(nav),
-[class*="bg-[#0c0c0c]"],
-[class*="bg-[#0f0f10]"],
-[class*="bg-[#0f0f12]"],
-[class*="bg-[#0e0e0e]"],
-[class*="bg-[#0e0e10]"],
-[class*="bg-[#080809]"],
-[class*="bg-[#0a0a0b]"],
-[class*="bg-[#0b0b0c]"],
-[class*="bg-[#070707]"]:not(.preserve-dark),
-[class*="bg-[#080808]"]:not(.preserve-dark),
-[class*="bg-[#050505]"]:not(main):not(body),
-[class*="bg-[#111]"],
-[class*="bg-[#111111]"],
-[class*="bg-[#121212]"],
-[class*="bg-[#141414]"],
-[class*="bg-[#141416]"],
-[class*="bg-[#151515]"],
-[class*="bg-[#161618]"],
-[class*="bg-[#16171d]"],
-[class*="bg-[#1f2028]"],
-[class*="bg-[#12100e]"],
-[class*="bg-[#1a1510]"],
-[class*="bg-[#1a1a1a]"]:not(header),
+[class*="bg-[#0a0a0a]"]:not(header):not(nav):not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0A0A0A]"]:not(header):not(nav):not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0c0c0c]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0C0C0C]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0f0f10]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0f0f12]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0e0e0e]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0E0E0E]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0e0e10]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#080809]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0a0a0b]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#0b0b0c]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#070707]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#080808]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#050505]"]:not(main):not(body):not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#111]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#111111]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#121212]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#141414]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#141416]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#151515]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#161618]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#16171d]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#1f2028]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#12100e]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#1a1510]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#1a1a1a]"]:not(header):not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#1A1A1A]"]:not(header):not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#1b1b1b]"]:not(.preserve-dark):not(.preserve-dark *),
+[class*="bg-[#1B1B1B]"]:not(.preserve-dark):not(.preserve-dark *),
 aside[class*="bg-[#080808]"],
-.bg-black:not(.preserve-dark) {
+.bg-black:not(.preserve-dark):not(.preserve-dark *) {
   background-color: #ffffff !important;
   border-color: rgba(0, 0, 0, 0.12) !important;
 }
@@ -460,3 +466,187 @@ textarea::placeholder,
 .ProseMirror ol {
   color: #222222;
 }
+
+/* =========================================================
+   PRESERVE DARK CONTAINERS & LIVE PREVIEW HERO OVERRIDES
+   ========================================================= */
+
+.preserve-dark,
+[data-preserve-dark="true"],
+.live-preview-dark {
+  background-color: #0C060D !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Exempt ALL children of .preserve-dark from light-theme black text */
+.preserve-dark *,
+[data-preserve-dark="true"] *,
+.live-preview-dark * {
+  color: inherit;
+}
+
+.preserve-dark .text-white,
+[data-preserve-dark="true"] .text-white,
+.live-preview-dark .text-white {
+  color: #ffffff !important;
+}
+
+.preserve-dark .text-white\/90,
+[data-preserve-dark="true"] .text-white\/90,
+.live-preview-dark .text-white\/90 {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.preserve-dark .text-white\/80,
+[data-preserve-dark="true"] .text-white\/80,
+.live-preview-dark .text-white\/80 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.preserve-dark .text-white\/70,
+[data-preserve-dark="true"] .text-white\/70,
+.live-preview-dark .text-white\/70 {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.preserve-dark .text-white\/60,
+[data-preserve-dark="true"] .text-white\/60,
+.live-preview-dark .text-white\/60 {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.preserve-dark .text-white\/50,
+[data-preserve-dark="true"] .text-white\/50,
+.live-preview-dark .text-white\/50 {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.preserve-dark .text-white\/40,
+[data-preserve-dark="true"] .text-white\/40,
+.live-preview-dark .text-white\/40 {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.preserve-dark .text-white\/30,
+[data-preserve-dark="true"] .text-white\/30,
+.live-preview-dark .text-white\/30 {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Explicit colors inside preserve-dark */
+.preserve-dark [class*="text-[#E3B8DE]"],
+[data-preserve-dark="true"] [class*="text-[#E3B8DE]"],
+.live-preview-dark [class*="text-[#E3B8DE]"] {
+  color: #E3B8DE !important;
+}
+
+.preserve-dark [class*="text-[#C878BE]"],
+[data-preserve-dark="true"] [class*="text-[#C878BE]"],
+.live-preview-dark [class*="text-[#C878BE]"] {
+  color: #C878BE !important;
+}
+
+.preserve-dark [class*="text-[#c79c6e]"],
+[data-preserve-dark="true"] [class*="text-[#c79c6e]"],
+.live-preview-dark [class*="text-[#c79c6e]"] {
+  color: #c79c6e !important;
+}
+
+/* Allow uppercase & tracking inside preserve-dark without turning black */
+.preserve-dark [class*="uppercase"],
+.preserve-dark [class*="tracking-widest"],
+.preserve-dark [class*="tracking-wider"],
+[data-preserve-dark="true"] [class*="uppercase"],
+[data-preserve-dark="true"] [class*="tracking-widest"],
+[data-preserve-dark="true"] [class*="tracking-wider"],
+.live-preview-dark [class*="uppercase"],
+.live-preview-dark [class*="tracking-widest"],
+.live-preview-dark [class*="tracking-wider"] {
+  color: inherit !important;
+}
+
+.preserve-dark p[class*="text-[#E3B8DE]"],
+.preserve-dark span[class*="text-[#E3B8DE]"],
+.preserve-dark b[class*="text-[#E3B8DE]"] {
+  color: #E3B8DE !important;
+}
+
+.preserve-dark p[class*="text-[#c79c6e]"],
+.preserve-dark span[class*="text-[#c79c6e]"],
+.preserve-dark div[class*="text-[#c79c6e]"] {
+  color: #c79c6e !important;
+}
+
+/* Backgrounds & borders inside preserve-dark */
+.preserve-dark [class*="bg-white/5"],
+[data-preserve-dark="true"] [class*="bg-white/5"],
+.live-preview-dark [class*="bg-white/5"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.preserve-dark [class*="bg-white/10"],
+[data-preserve-dark="true"] [class*="bg-white/10"],
+.live-preview-dark [class*="bg-white/10"] {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.preserve-dark [class*="border-white/10"],
+[data-preserve-dark="true"] [class*="border-white/10"],
+.live-preview-dark [class*="border-white/10"] {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.preserve-dark [class*="border-white/20"],
+[data-preserve-dark="true"] [class*="border-white/20"],
+.live-preview-dark [class*="border-white/20"] {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.preserve-dark [class*="bg-[#2A0E28]"],
+[data-preserve-dark="true"] [class*="bg-[#2A0E28]"] {
+  background-color: #2A0E28 !important;
+}
+
+.preserve-dark [class*="border-[#C878BE]"],
+[data-preserve-dark="true"] [class*="border-[#C878BE]"] {
+  border-color: #C878BE !important;
+}
+
+.preserve-dark [class*="bg-[#141414]"],
+[data-preserve-dark="true"] [class*="bg-[#141414]"] {
+  background-color: #141414 !important;
+}
+
+.preserve-dark [class*="bg-[#111]"],
+[data-preserve-dark="true"] [class*="bg-[#111]"] {
+  background-color: #111111 !important;
+}
+
+.preserve-dark [class*="bg-[#0a0a0a]"],
+[data-preserve-dark="true"] [class*="bg-[#0a0a0a]"] {
+  background-color: #0a0a0a !important;
+}
+
+/* Button text colors inside preserve-dark */
+.preserve-dark button,
+[data-preserve-dark="true"] button,
+.live-preview-dark button {
+  color: #ffffff !important;
+}
+
+.preserve-dark button[class*="from-[#A83B96]"],
+[data-preserve-dark="true"] button[class*="from-[#A83B96]"] {
+  background-image: linear-gradient(to right, #A83B96, #7A2A70) !important;
+  color: #ffffff !important;
+}
+
+/* Ensure all signature purple boxed words always have bright white text */
+[class*="bg-[#2A0E28]"],
+[class*="bg-[#2a0e28]"],
+[class*="bg-[#2A0E28]"] *,
+[class*="bg-[#2a0e28]"] * {
+  color: #ffffff !important;
+  background-color: #2A0E28 !important;
+}
+

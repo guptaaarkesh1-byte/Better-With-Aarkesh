@@ -564,7 +564,7 @@ export default function AdminCourseControl() {
                 <span className="block text-[10px] font-sans uppercase tracking-widest text-white/40 mb-1.5">
                   Live Card Preview:
                 </span>
-                <div className="p-4 rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a] flex gap-3 items-start">
+                <div className="p-4 rounded-xl border border-[#c79c6e]/30 bg-[#0a0a0a] flex gap-3 items-start preserve-dark">
                   <CheckCircle size={20} weight="fill" className="text-[#c79c6e] shrink-0 mt-0.5" />
                   <div>
                     <h5 className="font-sans text-xs font-semibold text-white mb-0.5">
