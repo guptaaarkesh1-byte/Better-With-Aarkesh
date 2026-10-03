@@ -197,6 +197,32 @@
   transform: translateX(-2px);
 }
 
+.course-landing-scope .course-nav-check-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #A83B96, #6E2266);
+  border: 1px solid rgba(200, 120, 190, 0.4);
+  color: #FFFFFF;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: var(--head);
+  letter-spacing: -0.01em;
+  box-shadow: 0 4px 14px rgba(168, 59, 150, 0.3);
+  transition: all 0.25s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.course-landing-scope .course-nav-check-btn:hover {
+  background: linear-gradient(135deg, #BF4AA9, #852C7C);
+  border-color: #C878BE;
+  box-shadow: 0 6px 20px rgba(168, 59, 150, 0.5);
+  transform: translateY(-1px);
+}
+
 .course-landing-scope .sign-in-btn {
   color: #FFFFFF;
   background: rgba(255, 255, 255, 0.08);

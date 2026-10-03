@@ -1667,6 +1667,19 @@ export default function Course() {
           </a>
         </nav>
         <div className="nav-r flex items-center gap-3">
+          <button
+            type="button"
+            className="course-nav-check-btn"
+            onClick={() => {
+              setShowCourseLogin(false);
+              setShowDashboard(false);
+              const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
+              handleSelectCourse(betterMan);
+            }}
+          >
+            Check Course <span aria-hidden="true">→</span>
+          </button>
+
           {isLoggedIn ? (
             <>
               {isPurchased && (
@@ -1835,7 +1848,7 @@ export default function Course() {
                   <span><b>3 private</b> 1-on-1 sessions with Aarkesh</span>
                   <span><b>Lifetime</b> access, no recurring charges</span>
                 </div>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
                   {isPurchased ? (
                     <button 
                       type="button" 
@@ -1848,16 +1861,30 @@ export default function Course() {
                       <span aria-hidden="true">→</span>
                     </button>
                   ) : (
-                    <button 
-                      type="button" 
-                      className="btn" 
-                      onClick={() => {
-                        const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
-                        handleSelectCourse(betterMan);
-                      }}
-                    >
-                      Check Course <span aria-hidden="true">→</span>
-                    </button>
+                    <>
+                      <button 
+                        type="button" 
+                        className="btn" 
+                        onClick={handleEnroll}
+                      >
+                        Register Now <span aria-hidden="true">→</span>
+                      </button>
+                      <button 
+                        type="button" 
+                        className="btn line" 
+                        onClick={() => {
+                          const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
+                          handleSelectCourse(betterMan);
+                        }}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.06)',
+                          border: '1px solid rgba(200, 120, 190, 0.4)',
+                          color: '#FFFFFF'
+                        }}
+                      >
+                        Check Course <span aria-hidden="true">→</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
