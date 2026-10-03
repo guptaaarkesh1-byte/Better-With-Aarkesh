@@ -59,6 +59,7 @@
     const container = useRef(null);
     const [activeStep, setActiveStep] = useState(null);
     const [data, setData] = useState(getInitialCoachingData);
+    const [isImgLoaded, setIsImgLoaded] = useState(false);
 
     useEffect(() => {
       let isMounted = true;
@@ -110,32 +111,34 @@
     );
   }, { scope: container, dependencies: [data] });
 
+  const resolvedBgUrl = (() => {
+    const url = data.bgImg;
+    if (!url) return '';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
+    if (url.includes('localhost:5000/uploads/')) return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
+    if (url.startsWith('/uploads/')) return `${apiUrl}${url}`;
+    return url;
+  })();
+
   return (
     <section ref={container} id="coaching" className="principle-panel relative w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-[#f5f1e8] snap-start">
       
       {/* Background Image & Soft Blends */}
       <div className="absolute inset-0 z-0 pointer-events-none block overflow-hidden">
-        <img 
-          src={(() => {
-            const url = data.bgImg;
-            if (!url) return defaultBgImg;
-            const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
-            if (url.includes('localhost:5000/uploads/')) return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
-            if (url.startsWith('/uploads/')) return `${apiUrl}${url}`;
-            return url;
-          })()} 
-          alt="Coaching Process"
-          onError={(e) => {
-            if (e.currentTarget.src !== defaultBgImg) {
-              e.currentTarget.src = defaultBgImg;
-            }
-          }}
-          className="w-full h-full object-cover opacity-100 will-change-transform"
-          style={{
-            objectPosition: `${DESKTOP_IMAGE_CONTROLS.posX} ${DESKTOP_IMAGE_CONTROLS.posY}`,
-            transform: `scale(${DESKTOP_IMAGE_CONTROLS.zoom}) translate(${DESKTOP_IMAGE_CONTROLS.translateX}, ${DESKTOP_IMAGE_CONTROLS.translateY}) translateZ(0)`
-          }}
-        />
+        {resolvedBgUrl ? (
+          <img 
+            src={resolvedBgUrl} 
+            alt="Coaching Process"
+            onLoad={() => setIsImgLoaded(true)}
+            className={`w-full h-full object-cover will-change-transform transition-opacity duration-700 ${
+              isImgLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              objectPosition: `${DESKTOP_IMAGE_CONTROLS.posX} ${DESKTOP_IMAGE_CONTROLS.posY}`,
+              transform: `scale(${DESKTOP_IMAGE_CONTROLS.zoom}) translate(${DESKTOP_IMAGE_CONTROLS.translateX}, ${DESKTOP_IMAGE_CONTROLS.translateY}) translateZ(0)`
+            }}
+          />
+        ) : null}
         {/* Left-to-right soft white/cream gradient so text and step cards remain crisp and readable */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/95 via-25% md:via-[#f5f1e8]/80 md:via-40% lg:via-[#f5f1e8]/50 lg:via-55% to-transparent w-full md:w-[80%] lg:w-[68%]" />
         <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/40 to-transparent w-full md:w-[55%] lg:w-[45%]" />

@@ -19,7 +19,7 @@ import pilotImg from '../../assets/Page8/pilot.webp';
 import coachImg from '../../assets/Page8/Coach.webp';
 import humanImg from '../../assets/Page8/human.webp';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -34,9 +34,25 @@ export const MEET_SUBHEADING_CONTROLS = {
   shiftY: '0px',
 };
 
+const resolveMeetImg = (url, fallback) => {
+  if (!url) return fallback;
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
+  if (url.includes('localhost:5000/uploads/')) return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
+  if (url.startsWith('/uploads/')) return `${apiUrl}${url}`;
+  return url;
+};
+
+const getInitialAboutData = () => {
+  try {
+    const cached = localStorage.getItem('cached_about_data');
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+  return null;
+};
+
 export default function MeetAarkesh() {
   const container = useRef(null);
-  const [aboutData, setAboutData] = useState(null);
+  const [aboutData, setAboutData] = useState(getInitialAboutData);
   const [isMiddleHovered, setIsMiddleHovered] = useState(false);
 
   useEffect(() => {
@@ -47,6 +63,9 @@ export default function MeetAarkesh() {
         if (res.ok && isMounted) {
           const data = await res.json();
           setAboutData(data);
+          try {
+            localStorage.setItem('cached_about_data', JSON.stringify(data));
+          } catch (e) {}
         }
       } catch (err) {
         console.error('Failed to load about section:', err);
@@ -75,7 +94,7 @@ export default function MeetAarkesh() {
       sub1: pilotData.sub1 || 'Years in the cockpit.',
       sub2: pilotData.sub2 || 'High stakes. Clear decisions.',
       highlight: pilotData.highlight || 'I know what pressure feels like.',
-      bgImg: pilotData.bgImg || pilotImg,
+      bgImg: resolveMeetImg(pilotData.bgImg, pilotImg),
       imgPos: 'object-center'
     },
     {
@@ -84,7 +103,7 @@ export default function MeetAarkesh() {
       sub1: coachData.sub1 || 'ICF certified life coach.',
       sub2: coachData.sub2 || 'Evidence based. Human first.',
       highlight: coachData.highlight || 'I walk beside you, not ahead of you.',
-      bgImg: coachData.bgImg || coachImg,
+      bgImg: resolveMeetImg(coachData.bgImg, coachImg),
       imgPos: 'object-[center_85%]'
     },
     {
@@ -93,7 +112,7 @@ export default function MeetAarkesh() {
       sub1: humanData.sub1 || 'Flaws. Lessons. Growth.',
       sub2: humanData.sub2 || 'Still figuring things out.',
       highlight: humanData.highlight || 'Just like you.',
-      bgImg: humanData.bgImg || humanImg,
+      bgImg: resolveMeetImg(humanData.bgImg, humanImg),
       imgPos: 'object-center'
     }
   ];

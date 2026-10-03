@@ -19,7 +19,7 @@ import {
 
 gsap.registerPlugin(ScrollTrigger);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
 const ICONS = [Compass, Heart, GitFork, Mountains];
 
@@ -59,7 +59,7 @@ export const LEFT_4_STEPS_PILLS_CONTROLS = {
 };
 
 // =========================================================================
-// 📍 3. MOUNTAIN KE HAR POINT KI INDIVIDUAL POSITIONS (Agar alag se karni ho)
+// 📍 3. MOUNTAIN KE HAR POINT KI INDIVIDUAL POSITIONS (All on Right Side)
 // =========================================================================
 export const DESKTOP_NODE_POSITIONS = [
   // 📍 Point 1: CLARIFYING
@@ -77,7 +77,7 @@ export const DESKTOP_NODE_POSITIONS = [
     name: '02 CONNECT',
     top: '48%',
     left: '55%',
-    flip: true,
+    flip: false,
     mobTop: '50%',
     mobLeft: '50%',
   },
@@ -97,7 +97,7 @@ export const DESKTOP_NODE_POSITIONS = [
     name: '04 COMMIT',
     top: '14%',
     left: '55%',
-    flip: true,
+    flip: false,
     mobTop: '14%',
     mobLeft: '50%',
   },
@@ -135,9 +135,28 @@ const DEFAULT_JOURNEY_DATA = {
   transitionSubtext: 'A process that adapts to you—so you can create a life that lasts.'
 };
 
+const resolveJourneyImg = (url) => {
+  if (!url) return defaultBgImg;
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
+  if (url.includes('localhost:5000/uploads/')) return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
+  if (url.startsWith('/uploads/')) return `${apiUrl}${url}`;
+  return url;
+};
+
+const getInitialJourneyData = () => {
+  try {
+    const cached = localStorage.getItem('cached_coaching_journey');
+    if (cached) {
+      return { ...DEFAULT_JOURNEY_DATA, ...JSON.parse(cached) };
+    }
+  } catch (e) {}
+  return DEFAULT_JOURNEY_DATA;
+};
+
 export default function CoachingJourney() {
   const container = useRef(null);
-  const [data, setData] = useState(DEFAULT_JOURNEY_DATA);
+  const [data, setData] = useState(getInitialJourneyData);
+  const [isImgLoaded, setIsImgLoaded] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -146,12 +165,18 @@ export default function CoachingJourney() {
         const res = await fetch(`${API_URL}/api/home-settings/coachingJourney`);
         if (res.ok && isMounted) {
           const json = await res.json();
-          setData(prev => ({
-            ...prev,
-            ...json,
-            steps: json.steps && json.steps.length > 0 ? json.steps : prev.steps,
-            howItWorks: json.howItWorks && json.howItWorks.length > 0 ? json.howItWorks : prev.howItWorks
-          }));
+          setData(prev => {
+            const updated = {
+              ...prev,
+              ...json,
+              steps: json.steps && json.steps.length > 0 ? json.steps : prev.steps,
+              howItWorks: json.howItWorks && json.howItWorks.length > 0 ? json.howItWorks : prev.howItWorks
+            };
+            try {
+              localStorage.setItem('cached_coaching_journey', JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
+          });
         }
       } catch (err) {
         console.error('Failed to load coaching journey settings:', err);
@@ -213,20 +238,27 @@ export default function CoachingJourney() {
     );
   }, { scope: container, dependencies: [data] });
 
+  const resolvedJourneySrc = resolveJourneyImg(data.bgImg);
+
   return (
     <section ref={container} id="coaching-journey" className="principle-panel relative w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-[#f5f1e8] snap-start">
       
       {/* Background Image (Desktop Only) */}
       <div className="absolute inset-0 z-0 pointer-events-none pt-8 hidden lg:block overflow-hidden">
-        <img 
-          src={data.bgImg || defaultBgImg} 
-          alt="The Coaching Journey"
-          className="w-full h-full object-cover opacity-95 will-change-transform"
-          style={{
-            objectPosition: `${DESKTOP_IMAGE_CONTROLS.posX} ${DESKTOP_IMAGE_CONTROLS.posY}`,
-            transform: `scale(${DESKTOP_IMAGE_CONTROLS.zoom}) translate(${DESKTOP_IMAGE_CONTROLS.translateX}, ${DESKTOP_IMAGE_CONTROLS.translateY}) translateZ(0)`
-          }}
-        />
+        {resolvedJourneySrc ? (
+          <img 
+            src={resolvedJourneySrc} 
+            alt="The Coaching Journey"
+            onLoad={() => setIsImgLoaded(true)}
+            className={`w-full h-full object-cover will-change-transform transition-opacity duration-700 ${
+              isImgLoaded ? 'opacity-95' : 'opacity-0'
+            }`}
+            style={{
+              objectPosition: `${DESKTOP_IMAGE_CONTROLS.posX} ${DESKTOP_IMAGE_CONTROLS.posY}`,
+              transform: `scale(${DESKTOP_IMAGE_CONTROLS.zoom}) translate(${DESKTOP_IMAGE_CONTROLS.translateX}, ${DESKTOP_IMAGE_CONTROLS.translateY}) translateZ(0)`
+            }}
+          />
+        ) : null}
         {/* Soft cream gradients */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/85 via-30% md:via-[#f5f1e8]/50 to-transparent w-[55%] md:w-[48%] z-10" />
         
@@ -331,8 +363,13 @@ export default function CoachingJourney() {
             {/* Mobile Image (Visible below points on mobile) */}
             <div className="block lg:hidden w-[calc(100%+2rem)] -ml-4 mt-12 relative flex justify-center pointer-events-auto">
               <img 
-                src={data.bgImg || defaultBgImg} 
+                src={resolveJourneyImg(data.bgImg)} 
                 alt="The Coaching Journey"
+                onError={(e) => {
+                  if (e.currentTarget.src !== defaultBgImg) {
+                    e.currentTarget.src = defaultBgImg;
+                  }
+                }}
                 className="w-full min-h-[85vh] object-cover opacity-60 object-[75%_top]"
                 style={{
                   maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
@@ -353,11 +390,11 @@ export default function CoachingJourney() {
                       transform: 'translate(-50%, -50%)'
                     }}
                   >
-                    <div className="w-10 h-10 rounded-full border border-[#c9542f]/40 bg-white/95 shadow-md flex items-center justify-center shrink-0 z-10">
+                    <div className="w-10 h-10 rounded-full border border-[#c9542f]/40 bg-white/70 shadow-md flex items-center justify-center shrink-0 z-10">
                       <Icon className="text-[#c9542f] text-lg" weight="regular" />
                     </div>
                     <div 
-                      className={`absolute top-1/2 -translate-y-1/2 w-max select-none bg-white/85 backdrop-blur-md border border-white/70 rounded-xl px-2.5 py-1.5 shadow-xs ${
+                      className={`absolute top-1/2 -translate-y-1/2 w-max select-none bg-white/40 border border-white/70 rounded-xl px-3 py-2 shadow-xs ${
                         node.flip 
                           ? 'right-[calc(100%+0.5rem)] text-right' 
                           : 'left-[calc(100%+0.5rem)] text-left'
@@ -409,13 +446,13 @@ export default function CoachingJourney() {
               }}
             >
               {/* Crisp Node Icon (Zero-lag hardware rendered, centered on the straight vertical axis) */}
-              <div className="w-11 h-11 rounded-full border border-[#c9542f]/40 bg-white/95 flex items-center justify-center shrink-0 shadow-[0_4px_14px_rgba(0,0,0,0.06)] transition-transform duration-200 group-hover:scale-110 group-hover:border-[#c9542f] group-hover:bg-white z-10">
+              <div className="w-11 h-11 rounded-full border border-[#c9542f]/40 bg-white/70 flex items-center justify-center shrink-0 shadow-[0_4px_14px_rgba(0,0,0,0.06)] transition-all duration-200 group-hover:scale-110 group-hover:border-[#c9542f] group-hover:bg-white/90 z-10">
                 <Icon className="text-[#c9542f] text-lg" weight="regular" />
               </div>
 
-              {/* Crisp Text Content (Alternating Left and Right) */}
+              {/* Pure Translucent Text Card (Zero blur, clear glass) */}
               <div 
-                className={`absolute top-1/2 -translate-y-1/2 w-max select-none bg-white/80 backdrop-blur-md border border-white/70 rounded-2xl px-3.5 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-hover:bg-white/95 group-hover:border-[#c9542f]/30 transition-all duration-200 ${
+                className={`absolute top-1/2 -translate-y-1/2 w-max select-none bg-white/35 border border-white/70 rounded-2xl px-4 py-2.5 shadow-[0_4px_16px_rgba(0,0,0,0.06)] group-hover:bg-white/55 group-hover:border-[#c9542f]/40 transition-all duration-200 ${
                   node.flip 
                     ? 'right-[calc(100%+0.75rem)] text-right' 
                     : 'left-[calc(100%+0.75rem)] text-left'
