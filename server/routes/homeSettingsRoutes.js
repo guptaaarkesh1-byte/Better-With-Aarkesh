@@ -99,7 +99,7 @@ const DEFAULT_SECTIONS = {
   about: {
     eyebrowText: 'MEET AARKESH',
     headingLine: 'Three roles. One purpose.',
-    subheading: 'Different lenses. Same mission—your growth.',
+    subheading: 'Different lenses. Same mission your growth.',
     rolePilot: {
       title: 'PILOT',
       sub1: 'Years in the cockpit.',

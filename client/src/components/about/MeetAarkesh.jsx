@@ -77,7 +77,8 @@ export default function MeetAarkesh() {
 
   const eyebrowText = aboutData?.eyebrowText || 'MEET AARKESH';
   const headingLine = aboutData?.headingLine || 'Three roles. One purpose.';
-  const subheading = aboutData?.subheading || 'Different lenses. Same mission—your growth.';
+  const rawSubheading = aboutData?.subheading || 'Different lenses. Same mission your growth.';
+  const subheading = rawSubheading.replace(/—\s*|--\s*/g, ' ');
   const missionHeading = aboutData?.missionHeading || 'The journey that shaped the mission.';
   const missionDescription = aboutData?.missionDescription || "From the skies to the soul—here's the story behind why I do what I do.";
   const storyBtnText = aboutData?.storyBtnText || 'READ MY STORY';

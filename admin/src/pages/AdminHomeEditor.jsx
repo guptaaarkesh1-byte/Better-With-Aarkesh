@@ -1904,7 +1904,7 @@ export default function AdminHomeEditor() {
                       type="text"
                       value={currentAbout.subheading || ''}
                       onChange={(e) => handleSectionChange('subheading', e.target.value)}
-                      placeholder="Different lenses. Same mission—your growth."
+                      placeholder="Different lenses. Same mission your growth."
                       className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
                     />
                   </div>
