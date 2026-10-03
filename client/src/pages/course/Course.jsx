@@ -135,11 +135,21 @@ export default function Course() {
   const isAllCoursesPage = slug === 'all' || location.pathname === '/courses' || location.pathname === '/courses/all';
   const isDetailPage = Boolean(slug) && slug !== 'all';
 
-  const getCardThemeClass = (index) => {
+  const getCardThemeClass = (c, index) => {
+    if (c?.theme === 'white') return 'card-theme-white';
+    if (c?.theme === 'purple') return 'card-theme-purple';
+    if (c?.theme === 'black') return 'card-theme-black';
     const mod = index % 3;
     if (mod === 0) return 'card-theme-black';
     if (mod === 1) return 'card-theme-purple';
     return 'card-theme-white';
+  };
+
+  const getBannerCls = (c) => {
+    if (c?.theme === 'white') return '';
+    if (c?.theme === 'purple') return 'v2';
+    if (c?.theme === 'black') return 'v3';
+    return c?.cls || '';
   };
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showDashboard, setShowDashboard] = useState(() => {
@@ -721,6 +731,16 @@ export default function Course() {
     if (!slug) return coursesList[0];
     return coursesList.find((c) => c.slug === slug) || coursesList[0];
   }, [coursesList, slug]);
+
+  const detailThemeClass = useMemo(() => {
+    const t = activeCourse?.theme;
+    if (t === 'white') return '';
+    if (t === 'purple') return 'theme-purple';
+    if (t === 'black') return 'theme-dark';
+    if (activeCourse?.slug === 'difficult-people') return 'theme-purple';
+    if (activeCourse?.slug === 'decisions') return '';
+    return 'theme-dark';
+  }, [activeCourse]);
 
   const activeCourseBasePrice = useMemo(() => {
     if (activeCourse?.slug === 'better-man') return basePrice;
@@ -1964,11 +1984,12 @@ export default function Course() {
 
               <div className="all-courses-grid">
                 {coursesList.map((c, i) => {
-                  const themeCls = getCardThemeClass(i);
+                  const themeCls = getCardThemeClass(c, i);
+                  const bannerCls = getBannerCls(c);
                   return (
                     <article className={`all-course-card ${themeCls}`} key={c.n || c.slug}>
                       {/* Thumbnail Banner */}
-                      <div className={`vis ${c.cls}`} aria-hidden="true">
+                      <div className={`vis ${bannerCls}`} aria-hidden="true">
                         <div className="vis-badge-top">
                           {c.soon ? (
                             <span className="live-status-badge soon">Coming soon</span>
@@ -1977,8 +1998,8 @@ export default function Course() {
                           )}
                         </div>
                         <span className="no">{c.n}</span>
-                        <i>{c.chips[0]}</i>
-                        <i>{c.chips[1]}</i>
+                        <i>{c.chips?.[0]}</i>
+                        <i>{c.chips?.[1]}</i>
                       </div>
 
                       {/* Content Body */}
@@ -2112,11 +2133,12 @@ export default function Course() {
                 </p>
                 <div className="all-courses-grid">
                   {coursesList.map((c, i) => {
-                    const themeCls = getCardThemeClass(i);
+                    const themeCls = getCardThemeClass(c, i);
+                    const bannerCls = getBannerCls(c);
                     return (
                       <article className={`all-course-card ${themeCls}`} key={c.n || c.slug}>
                         {/* Thumbnail Banner */}
-                        <div className={`vis ${c.cls}`} aria-hidden="true">
+                        <div className={`vis ${bannerCls}`} aria-hidden="true">
                           <div className="vis-badge-top">
                             {c.soon ? (
                               <span className="live-status-badge soon">Coming soon</span>
@@ -2125,8 +2147,8 @@ export default function Course() {
                             )}
                           </div>
                           <span className="no">{c.n}</span>
-                          <i>{c.chips[0]}</i>
-                          <i>{c.chips[1]}</i>
+                          <i>{c.chips?.[0]}</i>
+                          <i>{c.chips?.[1]}</i>
                         </div>
 
                         {/* Content Body */}
@@ -2297,7 +2319,7 @@ export default function Course() {
              DEDICATED SINGLE-PAGE COURSE DETAILS VIEW (/course/:slug)
              ═══════════════════════════════════════════════════════════════ */
           <>
-            <section className={`d-top ${activeCourse.slug === 'better-man' ? 'theme-dark' : activeCourse.slug === 'difficult-people' ? 'theme-purple' : ''}`} id="course-detail">
+            <section className={`d-top ${detailThemeClass}`} id="course-detail">
               <div className="wrap">
                 <button
                   type="button"
@@ -2313,10 +2335,10 @@ export default function Course() {
                 <div className="d-grid">
                   {/* Left Column: Preview Canvas & Title */}
                   <div>
-                    <div className={`pv ${activeCourse.cls}`} aria-hidden="true">
-                      <span className="big">{activeCourse.title}</span>
-                      <i>{activeCourse.chips[0]}</i>
-                      <i>{activeCourse.chips[1]}</i>
+                    <div className={`pv ${getBannerCls(activeCourse)}`} aria-hidden="true">
+                      <span className="big">{activeCourse.n || '01'}</span>
+                      <i>{activeCourse.chips?.[0]}</i>
+                      <i>{activeCourse.chips?.[1]}</i>
                       <div className="pv-center-btn">
                         <Play size={24} weight="fill" />
                       </div>
@@ -2334,10 +2356,10 @@ export default function Course() {
                   {/* Right Column: Sidebar Card */}
                   <aside className="side" aria-label="Course summary">
                     {/* Key Highlights */}
-                    {activeCourse.hl.map((h, idx) => (
+                    {(activeCourse.hl || []).map((h, idx) => (
                       <p className="hl" key={idx}>
                         <span>
-                          <b>{h[0]}</b> {h[1]}
+                          <b>{h?.[0]}</b> {h?.[1]}
                         </span>
                       </p>
                     ))}
@@ -2347,7 +2369,7 @@ export default function Course() {
 
                     {/* Feature Checklist */}
                     <ul className="ck">
-                      {activeCourse.inside.map((item, idx) => (
+                      {(activeCourse.inside || []).map((item, idx) => (
                         <li key={idx}>{item}</li>
                       ))}
                     </ul>
@@ -2400,7 +2422,7 @@ export default function Course() {
             </section>
 
             {/* ── Curriculum Syllabus Section on Detail Page (Scroll to view) ── */}
-            <section className={`detail-syllabus-sec ${activeCourse.slug === 'better-man' ? 'theme-dark' : activeCourse.slug === 'difficult-people' ? 'theme-purple' : ''}`} id="detail-syllabus">
+            <section className={`detail-syllabus-sec ${detailThemeClass}`} id="detail-syllabus">
               <div className="wrap">
                 <div className="syllabus-head">
                   <span className="syllabus-tag sel">SYLLABUS</span>
@@ -2423,7 +2445,7 @@ export default function Course() {
 
             {/* ── Editorial Writeup Section for Detail Page (Below Syllabus) ── */}
             {activeCourse.writeup && (
-              <section className={`detail-writeup-sec ${activeCourse.slug === 'better-man' ? 'theme-dark' : activeCourse.slug === 'difficult-people' ? 'theme-purple' : ''}`} id="detail-writeup">
+              <section className={`detail-writeup-sec ${detailThemeClass}`} id="detail-writeup">
                 <div className="wrap">
                   <div className="writeup-card">
                     <article className="writeup-prose">

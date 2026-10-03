@@ -384,6 +384,17 @@ export default function AdminCourseDetailEditor() {
       const data = await res.json();
       setCoursesMap((prev) => ({ ...prev, [activeSlug]: data.data }));
       setSaveSuccess(true);
+
+      // Trigger cross-tab realtime sync for client and live preview
+      try {
+        localStorage.setItem('bwa_course_details_updated', Date.now().toString());
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('bwa_course_landing_channel');
+          bc.postMessage({ type: 'bwa_course_details_updated', slug: activeSlug });
+          bc.close();
+        }
+      } catch (e) {}
+
       showToast(`✨ Course "${currentCourse.title || activeSlug}" saved live!`, 'success');
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
