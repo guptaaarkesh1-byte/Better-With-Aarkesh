@@ -296,6 +296,7 @@ function ProtectedRoute({ isAuthenticated, children }) {
   return children;
 }
 
+import AdminOverview from './pages/AdminOverview';
 import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
 import AdminContent from './pages/AdminContent';
@@ -327,7 +328,7 @@ function App() {
     setIsAuthenticated(false);
   };
 
-  if (loading) return <div className="min-h-screen bg-[#050505]" />; // blank while checking
+  if (loading) return <div className="min-h-screen bg-[#F5F0E8]" />;
 
   return (
     <ToastProvider>
@@ -347,7 +348,7 @@ function App() {
               </ProtectedRoute>
             } 
           >
-            <Route path="/" element={<AdminDashboard />} />
+            <Route path="/" element={<AdminOverview />} />
             <Route path="/home-editor" element={<AdminHomeEditor />} />
             <Route path="/home" element={<AdminHomeEditor />} />
             <Route path="/library" element={<AdminLibraryEditor />} />

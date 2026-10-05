@@ -11,6 +11,7 @@ import Course from '../models/Course.js';
 import User from '../models/User.js';
 import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
 import { sendCoursePurchaseInvoiceEmail, sendCoursePaymentFailedEmail } from '../services/courseEmailService.js';
+import { DEFAULT_COURSE_DETAILS_MAP } from './courseDetailSettingsRoutes.js';
 
 const router = express.Router();
 
@@ -214,28 +215,74 @@ router.post('/settings', protect, admin, async (req, res) => {
 // @access  Public
 router.post('/course-order', async (req, res) => {
   try {
-    const { email, courseId } = req.body;
+    const { email, courseId, courseSlug, amount } = req.body;
     
-    // Fetch course for dynamic fee and GST
+    // 1. Check dynamic course settings from Settings collection or DEFAULT_COURSE_DETAILS_MAP
+    let matchedCourse = null;
+    try {
+      const doc = await Settings.findOne({ key: 'course_multi_details_settings' });
+      const allSettings = doc && doc.value ? doc.value : (DEFAULT_COURSE_DETAILS_MAP || {});
+      if (courseSlug && allSettings[courseSlug]) {
+        matchedCourse = allSettings[courseSlug];
+      } else if (!courseSlug) {
+        matchedCourse = allSettings['better-man'] || Object.values(allSettings)[0];
+      }
+    } catch (e) {
+      console.warn('Error reading course_multi_details_settings:', e);
+    }
+
+    // 2. Fallback to Course model if needed
     let course = null;
-    if (courseId) {
+    if (!matchedCourse && courseId) {
       course = await Course.findById(courseId);
     }
-    if (!course) {
+    if (!matchedCourse && !course) {
       course = (await Course.findOne({ status: 'Published' })) || (await Course.findOne());
     }
 
-    const basePrice = course?.price || 15000;
-    const gstRate = course?.gstRate !== undefined ? course.gstRate : 18;
-    const isGstIncluded = !!course?.isGstIncluded;
+    // Determine Base Price
+    let basePrice = 15000;
+    if (matchedCourse?.price !== undefined && matchedCourse?.price !== null) {
+      const parsed = typeof matchedCourse.price === 'number'
+        ? matchedCourse.price
+        : Number(String(matchedCourse.price).replace(/[^0-9]/g, ''));
+      if (!isNaN(parsed) && parsed > 0) {
+        basePrice = parsed;
+      }
+    } else if (course?.price) {
+      basePrice = course.price;
+    }
 
-    const gstAmount = isGstIncluded ? 0 : Math.round((basePrice * gstRate) / 100);
-    const finalAmount = isGstIncluded ? basePrice : (basePrice + gstAmount);
+    // Determine GST Rate and Mode
+    let isGstOn = true;
+    let gstRate = 18;
+    let isGstIncluded = false;
+
+    if (matchedCourse) {
+      isGstOn = matchedCourse.enableGst !== false && (matchedCourse.gstRate === undefined || Number(matchedCourse.gstRate) > 0 || matchedCourse.enableGst === true);
+      gstRate = isGstOn ? (matchedCourse.gstRate !== undefined ? Number(matchedCourse.gstRate) : 18) : 0;
+      isGstIncluded = Boolean(matchedCourse.isGstIncluded);
+    } else if (course) {
+      gstRate = course.gstRate !== undefined ? course.gstRate : 18;
+      isGstIncluded = !!course.isGstIncluded;
+    }
+
+    const gstAmount = (!isGstOn || gstRate === 0) 
+      ? 0 
+      : isGstIncluded 
+      ? Math.round(basePrice - (basePrice / (1 + gstRate / 100))) 
+      : Math.round((basePrice * gstRate) / 100);
+
+    const calculatedTotal = isGstIncluded ? basePrice : (basePrice + gstAmount);
+
+    // Use exact amount if passed by client, otherwise calculatedTotal
+    const clientAmount = Number(amount);
+    const finalAmount = (!isNaN(clientAmount) && clientAmount > 0) ? clientAmount : calculatedTotal;
     
     const instance = await getRazorpayInstance();
     
     const options = {
-      amount: finalAmount * 100, // in paise
+      amount: Math.round(finalAmount * 100), // in paise
       currency: 'INR',
       receipt: `course_${Date.now()}`,
     };
@@ -260,7 +307,7 @@ router.post('/course-order', async (req, res) => {
 // @access  Public
 router.post('/course-verify', async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, token } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, token, courseSlug, amount } = req.body;
 
     // Resolve Razorpay credentials using the same unified helper
     const { keySecret } = await getRazorpayKeys();
@@ -285,7 +332,15 @@ router.post('/course-verify', async (req, res) => {
       if (token) {
         try {
           const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-          const courseUser = await CourseUser.findByIdAndUpdate(decoded.id, { isPurchased: true }, { returnDocument: 'after' });
+          const targetSlug = courseSlug || 'better-man';
+          const courseUser = await CourseUser.findByIdAndUpdate(
+            decoded.id, 
+            { 
+              isPurchased: true,
+              $addToSet: { purchasedCourses: targetSlug }
+            }, 
+            { returnDocument: 'after' }
+          );
 
           if (courseUser && courseUser.email) {
             const email = courseUser.email.trim();
@@ -312,73 +367,85 @@ router.post('/course-verify', async (req, res) => {
               expiresIn: '30d',
             });
 
-            // Find main course or default course
+            // Find course details from dynamic multi-settings or fallback
+            let matchedCourse = null;
+            try {
+              const doc = await Settings.findOne({ key: 'course_multi_details_settings' });
+              const allSettings = doc && doc.value ? doc.value : (DEFAULT_COURSE_DETAILS_MAP || {});
+              if (targetSlug && allSettings[targetSlug]) {
+                matchedCourse = allSettings[targetSlug];
+              }
+            } catch (e) {}
+
             const primaryCourse = await Course.findOne().sort({ createdAt: 1 });
-            let courseTitle = 'The Better Man™';
+            let courseTitle = matchedCourse?.title || (targetSlug ? (targetSlug.charAt(0).toUpperCase() + targetSlug.slice(1)) : 'The Better Man™');
             let basePrice = 15000;
-            let gstRate = 18;
-            let isGstIncluded = false;
-            let gstAmount = 2700;
-            let finalAmount = 17700;
-
-            if (primaryCourse) {
-              courseTitle = primaryCourse.title || courseTitle;
-              basePrice = primaryCourse.price !== undefined ? primaryCourse.price : 15000;
-              gstRate = primaryCourse.gstRate !== undefined ? primaryCourse.gstRate : 18;
-              isGstIncluded = Boolean(primaryCourse.isGstIncluded);
-              gstAmount = isGstIncluded
-                ? Math.round(basePrice - (basePrice / (1 + (gstRate / 100))))
-                : Math.round((basePrice * gstRate) / 100);
-              finalAmount = isGstIncluded ? basePrice : basePrice + gstAmount;
-
-              await CoursePurchase.findOneAndUpdate(
-                { transactionId: razorpay_payment_id },
-                {
-                  userId: coachingUser._id,
-                  courseUserId: courseUser._id,
-                  courseId: primaryCourse._id,
-                  studentName: courseUser.fullName,
-                  studentEmail: email.toLowerCase(),
-                  amount: finalAmount,
-                  currency: 'INR',
-                  paymentStatus: 'Paid',
-                  enrollmentStatus: 'Active',
-                  transactionId: razorpay_payment_id,
-                  razorpayOrderId: razorpay_order_id,
-                  razorpayPaymentId: razorpay_payment_id,
-                  purchaseDate: new Date(),
-                },
-                { upsert: true, returnDocument: 'after' }
-              );
-
-              // Asynchronously dispatch official tax invoice + 3 free sessions email
-              sendCoursePurchaseInvoiceEmail({
-                studentEmail: email.toLowerCase(),
-                studentName: courseUser.fullName || 'Valued Student',
-                txnId: razorpay_payment_id,
-                orderId: razorpay_order_id,
-                amount: finalAmount,
-                basePrice: isGstIncluded ? (basePrice - gstAmount) : basePrice,
-                gstRate,
-                gstAmount,
-                isGstIncluded,
-                courseTitle,
-                invoiceItemTitle: primaryCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
-                invoiceItemSubtitle: primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
-                bonusItemTitle: primaryCourse?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
-                bonusItemSubtitle: primaryCourse?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus',
-                purchaseDate: new Date(),
-              }).catch(err => console.error('Background purchase invoice email error:', err));
+            if (matchedCourse?.price !== undefined) {
+              const p = typeof matchedCourse.price === 'number' ? matchedCourse.price : Number(String(matchedCourse.price).replace(/[^0-9]/g, ''));
+              if (!isNaN(p) && p > 0) basePrice = p;
+            } else if (primaryCourse?.price) {
+              basePrice = primaryCourse.price;
             }
+
+            let gstRate = matchedCourse?.gstRate !== undefined ? Number(matchedCourse.gstRate) : 18;
+            let isGstIncluded = matchedCourse?.isGstIncluded !== undefined ? Boolean(matchedCourse.isGstIncluded) : Boolean(primaryCourse?.isGstIncluded);
+            let gstAmount = isGstIncluded
+              ? Math.round(basePrice - (basePrice / (1 + (gstRate / 100))))
+              : Math.round((basePrice * gstRate) / 100);
+            let finalAmount = Number(amount) || (isGstIncluded ? basePrice : basePrice + gstAmount);
+
+            await CoursePurchase.findOneAndUpdate(
+              { transactionId: razorpay_payment_id },
+              {
+                userId: coachingUser._id,
+                courseUserId: courseUser._id,
+                courseId: primaryCourse?._id,
+                courseSlug: targetSlug,
+                courseTitle,
+                studentName: courseUser.fullName,
+                studentEmail: email.toLowerCase(),
+                amount: finalAmount,
+                currency: 'INR',
+                paymentStatus: 'Paid',
+                enrollmentStatus: 'Active',
+                transactionId: razorpay_payment_id,
+                razorpayOrderId: razorpay_order_id,
+                razorpayPaymentId: razorpay_payment_id,
+                purchaseDate: new Date(),
+              },
+              { upsert: true, returnDocument: 'after' }
+            );
+
+            // Asynchronously dispatch official tax invoice + 3 free sessions email
+            sendCoursePurchaseInvoiceEmail({
+              studentEmail: email.toLowerCase(),
+              studentName: courseUser.fullName || 'Valued Student',
+              txnId: razorpay_payment_id,
+              orderId: razorpay_order_id,
+              amount: finalAmount,
+              basePrice: isGstIncluded ? (basePrice - gstAmount) : basePrice,
+              gstRate,
+              gstAmount,
+              isGstIncluded,
+              courseTitle,
+              invoiceItemTitle: matchedCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
+              invoiceItemSubtitle: matchedCourse?.invoiceItemSubtitle || primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
+              bonusItemTitle: primaryCourse?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
+              bonusItemSubtitle: primaryCourse?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus',
+              purchaseDate: new Date(),
+            }).catch(err => console.error('Background purchase invoice email error:', err));
 
             return res.json({ 
               message: 'Payment verified successfully', 
               success: true,
               coachingToken,
               freeSessions,
+              purchasedCourses: courseUser.purchasedCourses || [targetSlug],
               purchase: {
                 transactionId: razorpay_payment_id,
                 orderId: razorpay_order_id,
+                courseSlug: targetSlug,
+                courseTitle,
                 amount: finalAmount,
                 basePrice: isGstIncluded ? (basePrice - gstAmount) : basePrice,
                 gstRate,
@@ -388,9 +455,8 @@ router.post('/course-verify', async (req, res) => {
                 purchaseDate: new Date().toISOString(),
                 studentName: courseUser.fullName,
                 studentEmail: email,
-                courseTitle,
-                invoiceItemTitle: primaryCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
-                invoiceItemSubtitle: primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
+                invoiceItemTitle: matchedCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
+                invoiceItemSubtitle: matchedCourse?.invoiceItemSubtitle || primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
                 bonusItemTitle: primaryCourse?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
                 bonusItemSubtitle: primaryCourse?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus',
                 freeSessionsGranted: 3

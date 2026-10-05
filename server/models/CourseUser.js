@@ -20,6 +20,10 @@ const courseUserSchema = new mongoose.Schema({
   isPurchased: {
     type: Boolean,
     default: false,
+  },
+  purchasedCourses: {
+    type: [String],
+    default: [],
   }
 }, { timestamps: true });
 

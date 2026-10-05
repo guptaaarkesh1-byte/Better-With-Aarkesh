@@ -29,49 +29,154 @@ const getAuthenticatedStudent = async (req) => {
   }
 };
 
+import Settings from '../models/Settings.js';
+import { DEFAULT_COURSE_DETAILS_MAP } from './courseDetailSettingsRoutes.js';
+
+// Helper to build unified dynamic curriculum
+export const buildCurriculumForCourse = async (targetSlug = 'better-man') => {
+  const clean = (targetSlug || 'better-man').toLowerCase().trim();
+  const slugKey = clean === 'the-better-man' || clean === 'the-presence-protocol' ? 'better-man' : clean;
+
+  const doc = await Settings.findOne({ key: 'course_multi_details_settings' });
+  const allCourses = doc && doc.value ? doc.value : DEFAULT_COURSE_DETAILS_MAP;
+  const courseSettings = allCourses[slugKey] || allCourses['better-man'] || {};
+
+  let formattedModules = [];
+
+  // 1. If days are defined in settings (from AdminCourseEditor)
+  if (Array.isArray(courseSettings.days) && courseSettings.days.length > 0) {
+    formattedModules = courseSettings.days.map((d, dIdx) => ({
+      _id: d.id || `mod_${dIdx + 1}`,
+      id: d.id || `mod_${dIdx + 1}`,
+      title: d.t || `Module ${String(dIdx + 1).padStart(2, '0')}`,
+      description: d.desc || '',
+      position: dIdx,
+      lessons: (d.lessons || []).map((l, lIdx) => {
+        const playbackId = l.src?.type === 'mux' ? l.src.val : (l.muxPlaybackId || null);
+        const ytId = l.src?.type === 'youtube' ? l.src.val : (l.youtubeVideoId || l.youtubeUrl || '');
+        const encryptedToken = ytId ? encryptVideoPayload(ytId) : '';
+        return {
+          _id: l.id || `les_${dIdx + 1}_${lIdx + 1}`,
+          id: l.id || `les_${dIdx + 1}_${lIdx + 1}`,
+          title: l.t || `Lesson ${lIdx + 1}`,
+          description: l.desc || '',
+          duration: l.dur || '12:30',
+          position: lIdx,
+          isFreePreview: !!l.free,
+          videoSourceType: playbackId ? 'mux' : (ytId ? 'youtube' : 'none'),
+          videoToken: encryptedToken,
+          encryptedVideoToken: encryptedToken,
+          videoStatus: playbackId ? 'ready' : (l.src?.status || 'none'),
+          muxPlaybackId: playbackId,
+          resources: l.resources || [],
+          isCompleted: false,
+        };
+      }),
+    }));
+  }
+
+  // 2. If syllabus exists but no days
+  if (!formattedModules.length && Array.isArray(courseSettings.syllabus) && courseSettings.syllabus.length > 0) {
+    formattedModules = courseSettings.syllabus.map((s, sIdx) => ({
+      _id: `mod_${sIdx + 1}`,
+      id: `mod_${sIdx + 1}`,
+      title: `Module ${s.n || String(sIdx + 1).padStart(2, '0')}: ${s.t}`,
+      description: s.d || '',
+      position: sIdx,
+      lessons: [
+        {
+          _id: `les_${sIdx + 1}_1`,
+          id: `les_${sIdx + 1}_1`,
+          title: `Lesson 1: ${s.t}`,
+          description: s.d || '',
+          duration: '12:30',
+          position: 0,
+          isFreePreview: sIdx === 0,
+          videoSourceType: 'none',
+          videoToken: '',
+          encryptedVideoToken: '',
+          videoStatus: 'none',
+          muxPlaybackId: null,
+          resources: [],
+          isCompleted: false,
+        },
+      ],
+    }));
+  }
+
+  // 3. Fallback to DB CourseModule if needed
+  if (!formattedModules.length) {
+    const dbCourse = await Course.findOne({
+      $or: [{ slug: slugKey }, { slug: 'better-man' }, { slug: 'the-presence-protocol' }],
+    });
+    if (dbCourse) {
+      const modules = await CourseModule.find({ courseId: dbCourse._id, isPublished: true }).sort({ position: 1 });
+      const lessons = await CourseLesson.find({ courseId: dbCourse._id, isPublished: true }).sort({ position: 1 });
+      formattedModules = modules.map((mod) => ({
+        _id: mod._id,
+        id: mod._id,
+        title: mod.title,
+        description: mod.description,
+        position: mod.position,
+        lessons: lessons
+          .filter((l) => l.moduleId.toString() === mod._id.toString())
+          .map((l) => {
+            const ytId = l.youtubeVideoId || '';
+            const encryptedToken = ytId ? encryptVideoPayload(ytId) : '';
+            return {
+              _id: l._id,
+              id: l._id,
+              title: l.title,
+              description: l.description,
+              duration: l.duration,
+              position: l.position,
+              isFreePreview: l.isFreePreview,
+              videoSourceType: l.videoSourceType || (l.muxPlaybackId ? 'mux' : 'youtube'),
+              videoToken: encryptedToken,
+              encryptedVideoToken: encryptedToken,
+              videoStatus: l.videoStatus,
+              muxPlaybackId: l.muxPlaybackId,
+              resources: l.resources || [],
+              isCompleted: false,
+            };
+          }),
+      }));
+    }
+  }
+
+  const courseInfo = {
+    title: courseSettings.title || 'The Better Man™',
+    slug: slugKey,
+    subtitle: courseSettings.lede || '',
+    description: courseSettings.d || '',
+    thumbnail: courseSettings.imageUrl || courseSettings.thumbnailUrl || '',
+    price: courseSettings.price || 15000,
+    comparePrice: courseSettings.was || 25000,
+    isPublished: courseSettings.live !== false,
+  };
+
+  return { course: courseInfo, modules: formattedModules };
+};
+
+// @desc    Get dynamic curriculum by course slug
+// @route   GET /api/courses/curriculum/:slug
+router.get('/curriculum/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const result = await buildCurriculumForCourse(slug);
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching curriculum by slug:', error);
+    res.status(500).json({ message: 'Server error fetching curriculum' });
+  }
+});
+
 // @desc    Get primary course curriculum
 // @route   GET /api/courses/primary/curriculum
 router.get('/primary/curriculum', async (req, res) => {
   try {
-    const course = await Course.findOne();
-    if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
-    }
-
-    const modules = await CourseModule.find({ courseId: course._id, isPublished: true }).sort({ position: 1 });
-    const lessons = await CourseLesson.find({ courseId: course._id, isPublished: true }).sort({ position: 1 });
-
-    const formattedModules = modules.map((mod) => ({
-      _id: mod._id,
-      id: mod._id,
-      title: mod.title,
-      description: mod.description,
-      position: mod.position,
-      lessons: lessons
-        .filter((l) => l.moduleId.toString() === mod._id.toString())
-        .map((l) => {
-          const ytId = l.youtubeVideoId || '';
-          const encryptedToken = ytId ? encryptVideoPayload(ytId) : '';
-          return {
-            _id: l._id,
-            id: l._id,
-            title: l.title,
-            description: l.description,
-            duration: l.duration,
-            position: l.position,
-            isFreePreview: l.isFreePreview,
-            videoSourceType: l.videoSourceType || (l.muxPlaybackId ? 'mux' : 'youtube'),
-            videoToken: encryptedToken,
-            encryptedVideoToken: encryptedToken,
-            videoStatus: l.videoStatus,
-            muxPlaybackId: l.muxPlaybackId,
-            resources: l.resources || [],
-            isCompleted: false,
-          };
-        }),
-    }));
-
-    res.json({ course, modules: formattedModules });
+    const result = await buildCurriculumForCourse('better-man');
+    res.json(result);
   } catch (error) {
     console.error('Error fetching primary curriculum:', error);
     res.status(500).json({ message: 'Server error fetching curriculum' });

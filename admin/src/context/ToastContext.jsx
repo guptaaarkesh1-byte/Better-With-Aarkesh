@@ -147,8 +147,17 @@ export function ToastProvider({ children }) {
     document.body
   ) : null;
 
+  const value = React.useMemo(() => ({
+    showToast,
+    addToast: showToast,
+    showSuccess,
+    showError,
+    showInfo,
+    removeToast
+  }), [showToast, showSuccess, showError, showInfo, removeToast]);
+
   return (
-    <ToastContext.Provider value={{ showToast, addToast: showToast, showSuccess, showError, showInfo, removeToast }}>
+    <ToastContext.Provider value={value}>
       {children}
       {toastContainer}
     </ToastContext.Provider>
@@ -179,9 +188,6 @@ export function useToast() {
       removeToast: () => {},
     };
   }
-  return {
-    ...context,
-    addToast: context.addToast || context.showToast,
-  };
+  return context;
 }
 

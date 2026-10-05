@@ -23,16 +23,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// =========================================================================
-// 🎛️ SUBHEADING ('Different lenses...') POSITION CONTROLS
-// Adjust distance from heading / position near chest here!
-// =========================================================================
-export const MEET_SUBHEADING_CONTROLS = {
-  // ↕️ Space from heading down towards chest: e.g. '70px', '90px', '120px'
-  marginTop: '210px',
-  // 🎯 Fine-tune Up (-) or Down (+) nudge: e.g. '+15px', '-20px'
-  shiftY: '0px',
-};
 
 const resolveMeetImg = (url, fallback) => {
   if (!url) return fallback;
@@ -200,28 +190,31 @@ export default function MeetAarkesh() {
 
               {/* Three roles. One purpose. Heading inside the middle column image */}
               {i === 1 && (
-                <div 
-                  className={`hidden md:flex absolute top-6 sm:top-8 inset-x-0 flex-col items-center justify-center text-center z-20 px-6 transition-all duration-300 ease-out pointer-events-none ${
-                    isMiddleHovered ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'
-                  }`}
-                >
-                  <h2 
-                    className="font-serif text-2xl md:text-3xl lg:text-[1.95rem] font-medium tracking-tight mb-1 text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]"
-                    style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                <>
+                  <div 
+                    className={`hidden md:flex absolute top-5 sm:top-6 lg:top-8 inset-x-0 flex-col items-center justify-center text-center z-20 px-4 sm:px-6 transition-all duration-300 ease-out pointer-events-none ${
+                      isMiddleHovered ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'
+                    }`}
                   >
-                    {headingLine}
-                  </h2>
-                  
-                  <p 
-                    className="text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)] text-xs md:text-sm font-normal tracking-wide px-4"
-                    style={{
-                      marginTop: MEET_SUBHEADING_CONTROLS.marginTop,
-                      transform: `translateY(${MEET_SUBHEADING_CONTROLS.shiftY || '0px'})`
-                    }}
+                    <h2 
+                      className="font-serif text-xl sm:text-2xl md:text-[1.65rem] lg:text-[1.95rem] font-medium tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]"
+                      style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                    >
+                      {headingLine}
+                    </h2>
+                  </div>
+
+                  <div 
+                    className={`hidden md:flex absolute top-[52%] inset-x-0 flex-col items-center justify-center text-center z-20 px-4 transition-all duration-300 ease-out pointer-events-none ${
+                      isMiddleHovered ? 'opacity-0 -translate-y-4' : 'opacity-100 -translate-y-1/2'
+                    }`}
+                    style={{ transform: isMiddleHovered ? 'translateY(-1rem)' : 'translateY(-50%)' }}
                   >
-                    {subheading}
-                  </p>
-                </div>
+                    <p className="text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.75)] text-xs md:text-[0.88rem] font-normal tracking-wide max-w-[90%] mx-auto">
+                      {subheading}
+                    </p>
+                  </div>
+                </>
               )}
 
               <div className="relative z-10 flex flex-col items-center text-center transition-transform duration-500 ease-out group-hover:-translate-y-2">
@@ -229,11 +222,17 @@ export default function MeetAarkesh() {
                   <Icon className="text-[#c9542f] group-hover:text-white text-2xl transition-colors duration-300" weight="regular" />
                 </div>
                 
-                <div className="inline-flex items-center justify-center px-6 sm:px-8 py-1.5 sm:py-2 rounded-full border-2 border-[#c9542f] bg-white/85 backdrop-blur-sm shadow-[0_4px_16px_rgba(201,84,47,0.18)] mb-3 sm:mb-4 transition-all duration-300 group-hover:bg-white group-hover:shadow-[0_6px_22px_rgba(201,84,47,0.28)]">
-                  <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.2rem] tracking-widest text-[#111010] font-semibold m-0 leading-tight">
-                    {role.title}
-                  </h3>
-                </div>
+                <h3 
+                  className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.3rem] tracking-widest font-bold mb-3 sm:mb-4 leading-tight transition-all duration-300 select-none group-hover:scale-105"
+                  style={{
+                    color: '#111010',
+                    WebkitTextStroke: '0.45px #ffffff',
+                    textShadow: '0 2px 8px rgba(0, 0, 0, 0.5), 0 0 6px rgba(255, 255, 255, 0.25)',
+                    fontFamily: 'Fraunces, Georgia, serif'
+                  }}
+                >
+                  {role.title}
+                </h3>
                 
                 <div className="flex flex-col items-center gap-1.5 sm:gap-2 opacity-0 transform translate-y-6 transition-all duration-400 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible px-4">
                   <p className="text-[#111010] font-semibold text-sm sm:text-base md:text-[1.05rem] leading-snug">{role.sub1}</p>

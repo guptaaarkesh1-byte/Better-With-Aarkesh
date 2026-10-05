@@ -47,71 +47,61 @@ export default function AdminLayout({ children, onLogout }) {
   ];
 
   return (
-    <div className="w-full h-screen bg-[#050505] text-white font-sans flex flex-col overflow-hidden">
-      {/* Top Bar (Header + Tabs) */}
-      <header className="w-full bg-[#0a0a0a] border-b border-white/5 flex flex-col z-30 shrink-0">
-        <div className="px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded bg-[#c79c6e]/10 border border-[#c79c6e]/30 flex items-center justify-center">
-              <span className="text-[#c79c6e] font-serif font-bold text-lg leading-none">B</span>
-            </div>
-            <h2 className="font-serif text-xl text-[#c79c6e]">BWA Admin</h2>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowVisualModal(true)}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-[#c79c6e]/10 border border-white/10 hover:border-[#c79c6e]/40 text-white/80 hover:text-[#c79c6e] text-xs font-semibold uppercase tracking-wider transition-all shadow-sm"
-              title="Global Master Controls (Font Size, Contrast, Brightness & Overlay)"
-            >
-              <SlidersHorizontal size={16} className="text-[#c79c6e]" weight="bold" />
-              <span className="hidden sm:inline">Master Controls</span>
-            </button>
-
-            <button 
-              onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors text-sm"
-            >
-              <SignOut size={16} />
-              <span className="hidden md:inline tracking-wide">Logout</span>
-            </button>
-          </div>
-        </div>
-
-        <GlobalVisualSettingsModal
-          isOpen={showVisualModal}
-          onClose={() => setShowVisualModal(false)}
-        />
+    <div className="bwa-admin-root w-full min-h-screen flex flex-col">
+      {/* Top Header */}
+      <header className="bwa-top">
+        <Link to="/" className="bwa-brand">
+          <div className="bwa-logo">B</div>
+          <span>BWA Admin</span>
+        </Link>
         
-        {/* Horizontal Tabs */}
-        <div className="px-6 flex items-center gap-1 overflow-x-auto scrollbar-hide border-t border-black/10 bg-[#ede7d8]/90">
-          {topTabs.map(tab => {
-            const isActive = activeTab === tab.id;
-            return (
-              <Link
-                key={tab.id}
-                to={tab.path}
-                className={`flex items-center gap-2 px-6 py-3.5 border-b-2 transition-all whitespace-nowrap ${
-                  isActive 
-                    ? 'border-[#c9542f] text-[#c9542f] bg-[#c9542f]/10 font-bold shadow-xs' 
-                    : 'border-transparent text-[#4a453d] hover:text-[#111010] hover:bg-black/5 font-medium'
-                }`}
-              >
-                {tab.icon}
-                <span className="text-sm tracking-wide">{tab.label}</span>
-              </Link>
-            );
-          })}
+        <div className="bwa-top-r">
+          <button
+            type="button"
+            onClick={() => setShowVisualModal(true)}
+            className="bwa-btn-ghost"
+            title="Global Master Controls"
+          >
+            <SlidersHorizontal size={15} className="text-[#C8532F]" weight="bold" />
+            <span>MASTER CONTROLS</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={onLogout}
+            className="bwa-logout"
+          >
+            <SignOut size={16} />
+            <span>Logout</span>
+          </button>
         </div>
       </header>
 
-      {/* Main Layout */}
-      <div className="flex-1 flex overflow-hidden w-full">
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-[#050505] relative flex flex-col">
-          {children || <Outlet />}
-        </main>
-      </div>
+      <GlobalVisualSettingsModal
+        isOpen={showVisualModal}
+        onClose={() => setShowVisualModal(false)}
+      />
+      
+      {/* Module Tabs Navigation */}
+      <nav className="bwa-mods" aria-label="Module Sections">
+        {topTabs.map(tab => {
+          const isActive = activeTab === tab.id;
+          return (
+            <Link
+              key={tab.id}
+              to={tab.path}
+              className={isActive ? 'on' : ''}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Main Page Area */}
+      <main className="flex-1 w-full bg-[#F5F0E8]">
+        {children || <Outlet />}
+      </main>
     </div>
   );
 }

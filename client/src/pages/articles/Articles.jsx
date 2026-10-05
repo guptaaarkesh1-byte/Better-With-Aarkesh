@@ -505,16 +505,21 @@ export default function Articles() {
           font-style: italic;
         }
 
-        /* Top Nav (Matching Main Navbar) */
+        /* Sticky Top Header (Navbar + Category Switcher Bar) */
+        .themed-category-root .cat-sticky-header {
+          position: sticky;
+          top: 0;
+          z-index: 90;
+          background: ${currentCat.bg};
+          border-bottom: 1px solid ${currentCat.borderLine};
+        }
+
         .themed-category-root header.cat-page-nav {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 22px 40px;
+          padding: 16px 48px;
           border-bottom: 1px solid ${currentCat.borderLine};
-          position: sticky;
-          top: 0;
-          z-index: 90;
           background: ${currentCat.bg};
         }
 
@@ -721,14 +726,19 @@ export default function Articles() {
           overflow: visible;
         }
 
-        /* Topic Switcher Bar - Flush right below Navbar */
+        /* Topic Switcher Bar - Inside Sticky Header */
+        .themed-category-root .topic-switcher-wrapper {
+          padding: 10px 48px 14px;
+          max-width: 1380px;
+          margin: 0 auto;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
         .themed-category-root .topic-switcher-bar {
           display: grid;
           grid-template-columns: repeat(6, 1fr);
           gap: 12px;
-          padding: 14px 0 16px;
-          border-bottom: 1px solid ${currentCat.borderLine};
-          margin-bottom: 30px;
           width: 100%;
           box-sizing: border-box;
         }
@@ -980,49 +990,78 @@ export default function Articles() {
           .themed-category-root .category-hero { padding: 0 20px 40px; }
           .themed-category-root .articles-cards-grid { grid-template-columns: 1fr; }
           .themed-category-root footer.cat-page-footer { flex-direction: column; gap: 14px; text-align: center; padding: 24px 20px; }
-          .themed-category-root .cat-sphere { width: 200px; height: 200px; }
+          .themed-category-root .topic-switcher-wrapper {
+            padding: 8px 20px 12px;
+          }
           .themed-category-root .topic-switcher-bar {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
           }
           .themed-category-root .topic-pill {
-            padding: 10px 10px;
-            font-size: 11.5px;
+            padding: 9px 8px;
+            font-size: 11px;
           }
         }
       `}</style>
 
-      {/* ---------- TOP NAVIGATION (MAIN NAVBAR WITH THEMED AARKESH & BUTTON) ---------- */}
-      <header className="cat-page-nav">
-        <div className="logo">
-          <Link to="/">BetterWith<em>Aarkesh</em></Link>
+      {/* ---------- STICKY TOP HEADER (NAVBAR + CATEGORY PILLS BAR) ---------- */}
+      <div className="cat-sticky-header">
+        <header className="cat-page-nav">
+          <div className="logo">
+            <Link to="/">BetterWith<em>Aarkesh</em></Link>
+          </div>
+
+          <nav className="navlinks">
+            <Link to="/">Home</Link>
+            <Link to="/#coaching">Coaching</Link>
+            <Link to="/#meet-aarkesh">About</Link>
+            <Link to="/#testimonials">Testimonials</Link>
+            <Link to="/library" className="active">Library</Link>
+            <Link to="/#faq">FAQ</Link>
+          </nav>
+
+          <div className="navcta">
+            <Link to="/course" className="course-pill-btn">
+              <Play size={12} weight="fill" /> Course
+            </Link>
+            <Link to="/my-journey" className="my-journey-btn">My Journey</Link>
+            <button onClick={handleBookClick} className="book-pill">Book a Session</button>
+
+            <button 
+              className="mobile-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <List size={24} />}
+            </button>
+          </div>
+        </header>
+
+        {/* Topic Switcher Pills (Sticky with Navbar) */}
+        <div className="topic-switcher-wrapper">
+          <div className="topic-switcher-bar">
+            {Object.values(CATEGORY_CONFIGS).map((cat) => (
+              <Link
+                key={cat.id}
+                to={`/articles?category=${cat.id}`}
+                className={`topic-pill ${cat.id === currentCat.id ? 'active' : ''}`}
+                onClick={() => {
+                  if (cat.id !== currentCat.id) {
+                    sessionStorage.setItem(`articles_scroll_${cat.id}`, '0');
+                    if (window.lenis) {
+                      window.lenis.scrollTo(0, { immediate: true });
+                    } else {
+                      window.scrollTo(0, 0);
+                    }
+                  }
+                }}
+              >
+                <span>{cat.name.toUpperCase()}</span>
+              </Link>
+            ))}
+          </div>
         </div>
-
-        <nav className="navlinks">
-          <Link to="/">Home</Link>
-          <Link to="/#coaching">Coaching</Link>
-          <Link to="/#meet-aarkesh">About</Link>
-          <Link to="/#testimonials">Testimonials</Link>
-          <Link to="/library" className="active">Library</Link>
-          <Link to="/#faq">FAQ</Link>
-        </nav>
-
-        <div className="navcta">
-          <Link to="/course" className="course-pill-btn">
-            <Play size={12} weight="fill" /> Course
-          </Link>
-          <Link to="/my-journey" className="my-journey-btn">My Journey</Link>
-          <button onClick={handleBookClick} className="book-pill">Book a Session</button>
-
-          <button 
-            className="mobile-toggle"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <List size={24} />}
-          </button>
-        </div>
-      </header>
+      </div>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
@@ -1040,28 +1079,6 @@ export default function Articles() {
 
       {/* ---------- CATEGORY SHOWCASE & HERO ---------- */}
       <main className="category-hero">
-        {/* Topic Switcher Pills (Positioned right below Navbar) */}
-        <div className="topic-switcher-bar">
-          {Object.values(CATEGORY_CONFIGS).map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/articles?category=${cat.id}`}
-              className={`topic-pill ${cat.id === currentCat.id ? 'active' : ''}`}
-              onClick={() => {
-                if (cat.id !== currentCat.id) {
-                  sessionStorage.setItem(`articles_scroll_${cat.id}`, '0');
-                  if (window.lenis) {
-                    window.lenis.scrollTo(0, { immediate: true });
-                  } else {
-                    window.scrollTo(0, 0);
-                  }
-                }
-              }}
-            >
-              <span>{cat.name.toUpperCase()}</span>
-            </Link>
-          ))}
-        </div>
 
         <div className="cat-header-top">
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>

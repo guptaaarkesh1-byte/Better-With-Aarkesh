@@ -1,5 +1,9 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Settings from '../models/Settings.js';
+import Course from '../models/Course.js';
+import CourseModule from '../models/CourseModule.js';
+import CourseLesson from '../models/CourseLesson.js';
 
 const router = express.Router();
 
@@ -7,11 +11,11 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
   'better-man': {
     slug: 'better-man',
     n: '01',
-    imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop',
+    imageUrl: '',
     chips: ['Calm Authority', 'Self-Command'],
     soon: false,
     cls: 'v3',
-    title: 'The Better Man',
+    title: 'The Better Man™',
     lede: 'Master the psychology of calm authority, magnetic communication and effortless self-command.',
     d: 'Calm authority, magnetic communication and self-command, taught in eight modules with three private sessions.',
     sidebarChips: [
@@ -33,6 +37,9 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
     facts: [['8', 'Modules'], ['3 Free', '1-on-1 Sessions']],
     price: '₹15,000',
     was: '₹25,000',
+    enableGst: true,
+    gstRate: 18,
+    isGstIncluded: false,
     cta: 'Check Course',
     syllabusTitle: 'Eight Modules To Total Self-Command',
     syllabusSubtitle: 'A comprehensive, step-by-step roadmap from baseline nervousness to unshakeable gravitas.',
@@ -59,7 +66,7 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
   'difficult-people': {
     slug: 'difficult-people',
     n: '02',
-    imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800&auto=format&fit=crop',
+    imageUrl: '',
     chips: ['Boundaries', 'Conflict'],
     soon: true,
     cls: 'v2',
@@ -86,6 +93,9 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
     facts: [['6', 'Modules'], ['2 Free', '1-on-1 Sessions']],
     price: '₹3,999',
     was: '₹7,999',
+    enableGst: true,
+    gstRate: 18,
+    isGstIncluded: false,
     cta: 'Check Course',
     syllabusTitle: 'Six Modules To Emotional Sovereignty',
     syllabusSubtitle: 'The practical psychological playbook to disarm manipulation, establish firm boundaries, and protect your inner peace.',
@@ -110,7 +120,7 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
   'decisions': {
     slug: 'decisions',
     n: '03',
-    imageUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop',
+    imageUrl: '',
     chips: ['Clarity', 'Choice'],
     soon: true,
     cls: '',
@@ -136,6 +146,9 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
     facts: [['5', 'Modules'], ['2 Free', '1-on-1 Sessions']],
     price: '₹3,999',
     was: '₹7,999',
+    enableGst: true,
+    gstRate: 18,
+    isGstIncluded: false,
     cta: 'Check Course',
     syllabusTitle: 'Five Modules To High-Conviction Choices',
     syllabusSubtitle: 'Cut through analysis paralysis, eliminate regret, and make high-stakes career and life choices with complete confidence.',
@@ -181,16 +194,61 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const defaultData = DEFAULT_COURSE_DETAILS_MAP[slug] || null;
+    const cleanSlug = (slug || '').toString().toLowerCase().trim();
+    const defaultData = DEFAULT_COURSE_DETAILS_MAP[cleanSlug] || DEFAULT_COURSE_DETAILS_MAP[slug] || null;
     const doc = await Settings.findOne({ key: 'course_multi_details_settings' });
 
-    if (!doc || !doc.value || !doc.value[slug]) {
-      if (defaultData) return res.json(defaultData);
-      return res.status(404).json({ message: 'Course not found' });
+    if (doc && doc.value && doc.value[slug]) {
+      const merged = { ...(defaultData || {}), ...(doc.value[slug] || {}), slug };
+      return res.json(merged);
     }
 
-    const merged = { ...(defaultData || {}), ...(doc.value[slug] || {}) };
-    res.json(merged);
+    if (doc && doc.value && doc.value[cleanSlug]) {
+      const merged = { ...(defaultData || {}), ...(doc.value[cleanSlug] || {}), slug: cleanSlug };
+      return res.json(merged);
+    }
+
+    if (defaultData) {
+      return res.json({ ...defaultData, slug: cleanSlug });
+    }
+
+    // Check if course exists in MongoDB Course collection
+    const dbCourse = await Course.findOne({
+      $or: [
+        { slug: cleanSlug },
+        { slug: slug },
+        ...(mongoose.Types.ObjectId.isValid(slug) ? [{ _id: slug }] : [])
+      ]
+    });
+
+    if (dbCourse) {
+      return res.json({
+        slug: dbCourse.slug || cleanSlug,
+        title: dbCourse.title,
+        lede: dbCourse.description || dbCourse.subtitle || '',
+        price: dbCourse.price ? `₹${dbCourse.price.toLocaleString('en-IN')}` : '₹4,999',
+        imageUrl: dbCourse.thumbnail || '',
+        soon: !dbCourse.isPublished,
+        isPublished: dbCourse.isPublished ?? true,
+        live: dbCourse.isPublished ?? true
+      });
+    }
+
+    // Fallback template for any unknown slug instead of 404
+    const humanTitle = cleanSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return res.json({
+      slug: cleanSlug,
+      title: humanTitle || 'Masterclass',
+      lede: 'Master the psychology and strategies to elevate your sovereignty and leadership.',
+      price: '₹4,999',
+      was: '₹9,999',
+      soon: false,
+      live: true,
+      isPublished: true,
+      chips: ['Leadership', 'Mastery'],
+      hl: [['Real-World Transformation', '(Not Just Theory)'], ['3 Private Sessions', 'with Aarkesh']],
+      inside: ['HD video modules & frameworks', 'Downloadable workbooks', '3 private 1-on-1 sessions', 'Lifetime access']
+    });
   } catch (err) {
     console.error(`Error fetching course ${req.params.slug}:`, err);
     res.status(500).json({ message: 'Failed to fetch course details' });
@@ -204,22 +262,98 @@ router.put('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
     const courseData = req.body;
+    const cleanSlug = (slug || '').toString().toLowerCase().trim();
 
     let doc = await Settings.findOne({ key: 'course_multi_details_settings' });
     let allCourses = doc && doc.value ? JSON.parse(JSON.stringify(doc.value)) : { ...DEFAULT_COURSE_DETAILS_MAP };
+
+    const trailerVal = courseData.trailer || courseData.trailerVideo || courseData.heroSection?.trailerVideo || courseData.trailerVideoUrl || '';
+    const thumbVal = courseData.imageUrl || courseData.thumbnailUrl || courseData.thumb || courseData.heroSection?.cardThumbnail || '';
 
     allCourses[slug] = {
       ...(DEFAULT_COURSE_DETAILS_MAP[slug] || {}),
       ...(allCourses[slug] || {}),
       ...courseData,
+      trailer: trailerVal,
+      trailerVideo: trailerVal,
+      trailerVideoUrl: trailerVal,
+      trailerMuxPlaybackId: trailerVal,
+      imageUrl: thumbVal,
+      thumbnailUrl: thumbVal,
       slug
     };
+
+    if (cleanSlug !== slug) {
+      allCourses[cleanSlug] = { ...allCourses[slug], slug: cleanSlug };
+    }
 
     const updated = await Settings.findOneAndUpdate(
       { key: 'course_multi_details_settings' },
       { $set: { value: allCourses } },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
+
+    // Synchronize MongoDB Course collection if exists
+    try {
+      const dbCourse = await Course.findOne({
+        $or: [
+          { slug: cleanSlug },
+          { slug: slug },
+          ...(cleanSlug === 'better-man' ? [{ slug: 'the-better-man' }] : [])
+        ]
+      });
+
+      if (dbCourse) {
+        dbCourse.title = courseData.title || dbCourse.title;
+        dbCourse.description = courseData.lede || dbCourse.description;
+        dbCourse.thumbnail = thumbVal || dbCourse.thumbnail;
+        dbCourse.thumbnailUrl = thumbVal || dbCourse.thumbnailUrl;
+        dbCourse.trailerVideoUrl = trailerVal;
+        dbCourse.trailerMuxPlaybackId = trailerVal;
+        dbCourse.isPublished = courseData.isPublished ?? courseData.live ?? true;
+        await dbCourse.save();
+
+        if (Array.isArray(courseData.days) && courseData.days.length > 0) {
+          await CourseLesson.deleteMany({ courseId: dbCourse._id });
+          await CourseModule.deleteMany({ courseId: dbCourse._id });
+
+          for (let mIdx = 0; mIdx < courseData.days.length; mIdx++) {
+            const mod = courseData.days[mIdx];
+            const newMod = await CourseModule.create({
+              courseId: dbCourse._id,
+              title: mod.t || `Module ${mIdx + 1}`,
+              position: mIdx,
+              isPublished: true
+            });
+
+            if (Array.isArray(mod.lessons)) {
+              for (let lIdx = 0; lIdx < mod.lessons.length; lIdx++) {
+                const l = mod.lessons[lIdx];
+                const playbackId = l.src?.type === 'mux' ? l.src.val : (l.muxPlaybackId || null);
+                const ytVal = l.src?.type === 'youtube' ? l.src.val : (l.youtubeUrl || null);
+                await CourseLesson.create({
+                  courseId: dbCourse._id,
+                  moduleId: newMod._id,
+                  title: l.t || `Lesson ${lIdx + 1}`,
+                  description: l.desc || '',
+                  duration: l.dur || '12:30',
+                  position: lIdx,
+                  isPublished: true,
+                  isFreePreview: false,
+                  videoSourceType: ytVal ? 'youtube' : (playbackId ? 'mux' : 'custom'),
+                  muxPlaybackId: playbackId,
+                  muxUploadId: l.src?.uploadId || null,
+                  videoStatus: playbackId ? 'ready' : (l.src?.status || 'none'),
+                  youtubeUrl: ytVal
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.warn('Syncing to Course collection error:', dbErr.message);
+    }
 
     res.json({ message: `Course "${courseData.title || slug}" updated successfully`, data: updated.value[slug] });
   } catch (err) {
@@ -262,19 +396,33 @@ router.post('/:slug/reset', async (req, res) => {
 router.delete('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
+    const cleanSlug = (slug || '').toString().toLowerCase().trim();
+
+    // 1. Delete from Settings collection
     let doc = await Settings.findOne({ key: 'course_multi_details_settings' });
-    if (!doc || !doc.value) {
-      return res.json({ message: 'Course removed' });
+    if (doc && doc.value) {
+      let allCourses = { ...doc.value };
+      delete allCourses[slug];
+      delete allCourses[cleanSlug];
+      if (cleanSlug === 'better-man') {
+        delete allCourses['the-better-man'];
+      }
+
+      await Settings.findOneAndUpdate(
+        { key: 'course_multi_details_settings' },
+        { $set: { value: allCourses } },
+        { new: true }
+      );
     }
 
-    let allCourses = { ...doc.value };
-    delete allCourses[slug];
-
-    await Settings.findOneAndUpdate(
-      { key: 'course_multi_details_settings' },
-      { $set: { value: allCourses } },
-      { new: true }
-    );
+    // 2. Also delete from Course collection in MongoDB if present
+    await Course.deleteMany({
+      $or: [
+        { slug: cleanSlug },
+        { slug: slug },
+        ...(mongoose.Types.ObjectId.isValid(slug) ? [{ _id: slug }] : [])
+      ]
+    }).catch(() => {});
 
     res.json({ message: `Course "${slug}" removed successfully` });
   } catch (err) {

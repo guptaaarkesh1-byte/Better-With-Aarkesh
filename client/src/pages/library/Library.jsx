@@ -1248,14 +1248,9 @@ export default function Library() {
 
         .library-root .cat-top {
           display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 30px;
-        }
-
-        .library-root .cat-top .idx {
-          font-family: 'Archivo Black', sans-serif;
-          font-size: 14px;
+          justify-content: flex-end;
+          align-items: center;
+          margin-bottom: 24px;
         }
 
         .library-root .cat-top .viewall {
@@ -1935,7 +1930,6 @@ export default function Library() {
           <section className="cat-sec" id="rel">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">RELATIONSHIPS</span>
                 <Link className="viewall" to="/articles?category=relationships">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -1973,7 +1967,6 @@ export default function Library() {
           <section className="cat-sec" id="self">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">SELF</span>
                 <Link className="viewall" to="/articles?category=self">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -2011,7 +2004,6 @@ export default function Library() {
           <section className="cat-sec" id="change">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">CHANGE</span>
                 <Link className="viewall" to="/articles?category=change">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -2049,7 +2041,6 @@ export default function Library() {
           <section className="cat-sec" id="dec">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">DECISIONS</span>
                 <Link className="viewall" to="/articles?category=decisions">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -2087,7 +2078,6 @@ export default function Library() {
           <section className="cat-sec" id="diff">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">DIFFICULT PEOPLE</span>
                 <Link className="viewall" to="/articles?category=difficult-people">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">
@@ -2125,7 +2115,6 @@ export default function Library() {
           <section className="cat-sec" id="comm">
             <div className="cat-inner">
               <div className="cat-top">
-                <span className="idx">COMMUNICATION</span>
                 <Link className="viewall" to="/articles?category=communication">VIEW ALL →</Link>
               </div>
               <div className="cat-layout">

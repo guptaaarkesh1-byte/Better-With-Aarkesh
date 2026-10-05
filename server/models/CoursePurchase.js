@@ -12,8 +12,16 @@ const coursePurchaseSchema = new mongoose.Schema({
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course',
-    required: true,
     index: true,
+  },
+  courseSlug: {
+    type: String,
+    default: 'better-man',
+    index: true,
+  },
+  courseTitle: {
+    type: String,
+    default: 'The Better Man™',
   },
   studentName: {
     type: String,

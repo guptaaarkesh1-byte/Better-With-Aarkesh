@@ -229,7 +229,7 @@ export default function Booking() {
   // Check free sessions ONLY when user is logged in
   useEffect(() => {
     const checkFreeSessions = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('courseToken');
       if (!token) {
         setFreeSessionInfo({ hasFreeSessions: false, freeSessions: 0, isCoursePurchaser: false, courseUserName: '' });
         return;
@@ -564,7 +564,7 @@ export default function Booking() {
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <span className="text-[#111010] text-xs sm:text-sm font-semibold">Mastery Course Benefit Active</span>
                   <span className="px-2 py-0.5 rounded-full bg-[#e5f2e8] border border-[#a8d5b1] text-[#2f4a34] text-[0.6rem] sm:text-[0.65rem] font-bold uppercase tracking-wider">
-                    {freeSessionInfo.freeSessions} of 3 Free Sessions Available
+                    {freeSessionInfo.freeSessions} {freeSessionInfo.freeSessions === 1 ? 'Free Session' : 'Free Sessions'} Available
                   </span>
                 </div>
                 <p className="text-[#555047] text-[0.72rem] sm:text-xs font-normal mt-1 break-words">

@@ -446,6 +446,7 @@ export default function ProtectedYouTubePlayer({
   }, [isPlaying, isMuted, volume, duration, currentTime, togglePlay, toggleMute, toggleFullscreen]);
 
   const isValidYoutubeId = Boolean(actualVideoId && typeof actualVideoId === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(actualVideoId.trim()));
+  const progressPercent = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
 
   if (!isValidYoutubeId) {
     return (

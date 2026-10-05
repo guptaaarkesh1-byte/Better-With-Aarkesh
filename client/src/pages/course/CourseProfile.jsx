@@ -37,7 +37,8 @@ import {
   X,
   ChatsCircle,
   LightbulbFilament,
-  CheckSquareOffset
+  CheckSquareOffset,
+  ImageSquare
 } from '@phosphor-icons/react';
 import FlippingWordSwap from '../../components/ui/FlippingWordSwap';
 import './course-landing.css';
@@ -374,7 +375,7 @@ export default function CourseProfile() {
 
       {/* ── Top Fixed Navigation (Exact Match with Home Page Navbar & Blur) ── */}
       <header className="course-nav">
-        <Link className="course-logo" to="/course">
+        <Link className="course-logo" to="/">
           BetterWith<b>Aarkesh</b>
         </Link>
 
@@ -590,7 +591,7 @@ export default function CourseProfile() {
                 <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
                   <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 text-center">
                     <span className="text-2xl font-bold text-white block" style={{ fontFamily: 'var(--head)' }}>
-                      {isPurchased ? '1' : '0'}
+                      {isPurchased ? (user?.enrolledCourses?.length || user?.purchasedCourses?.length || 1) : '0'}
                     </span>
                     <span className="text-[10px] uppercase tracking-widest text-white/50 block mt-1">
                       Purchased Programs
@@ -598,7 +599,7 @@ export default function CourseProfile() {
                   </div>
                   <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 text-center">
                     <span className="text-2xl font-bold text-[#E3B8DE] block" style={{ fontFamily: 'var(--head)' }}>
-                      {isPurchased ? (user?.freeSessions ?? 3) : '0'}
+                      {isPurchased ? (user?.freeSessions ?? ((user?.enrolledCourses?.length || user?.purchasedCourses?.length || 1) * 3)) : '0'}
                     </span>
                     <span className="text-[10px] uppercase tracking-widest text-white/50 block mt-1">
                       1-on-1 Sessions
@@ -894,116 +895,145 @@ export default function CourseProfile() {
               {activeTab === 'MY_PROGRAMS' && (
                 <div className="space-y-6">
                   {isPurchased ? (
-                    /* Compact Masterclass Card (Sleek, well-proportioned) */
-                    <div className="max-w-[480px] rounded-2xl border border-[#C878BE]/25 bg-gradient-to-b from-[#130a1c] to-[#09040f] overflow-hidden shadow-xl">
-                      {/* Thumbnail Cover with Paid Badge */}
-                      <div className="relative w-full h-36 sm:h-40 bg-gradient-to-tr from-[#160d24] via-[#2a133d] to-[#0f0717] overflow-hidden group">
-                        <img 
-                          src="/course_hero_bg.jpg" 
-                          alt="Better With Aarkesh Masterclass"
-                          className="w-full h-full object-cover object-center opacity-85 group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#09040f] via-transparent to-black/20" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {(Array.isArray(user?.enrolledCourses) && user.enrolledCourses.length > 0
+                        ? user.enrolledCourses
+                        : [{
+                            slug: 'better-man',
+                            title: 'Better With Aarkesh: The Mastery Course',
+                            modulesCount: 8,
+                            imageUrl: '',
+                            lede: '4 Transformation pillars, 14 high-impact video lessons, executive blueprints & lifetime updates.'
+                          }]
+                      ).map((item, idx) => (
+                        <div 
+                          key={item.slug || idx} 
+                          className="rounded-2xl border border-[#C878BE]/25 bg-gradient-to-b from-[#130a1c] to-[#09040f] overflow-hidden shadow-xl flex flex-col justify-between"
+                        >
+                          {/* Thumbnail Cover with Paid Badge */}
+                          <div className="relative w-full h-44 sm:h-48 bg-gradient-to-tr from-[#160d24] via-[#241036] to-[#0c0514] overflow-hidden group flex items-center justify-center">
+                            {item.imageUrl && item.imageUrl.trim() !== '' ? (
+                              <img 
+                                src={item.imageUrl} 
+                                alt={item.title}
+                                className="w-full h-full object-cover object-center opacity-90 group-hover:scale-105 transition-transform duration-500"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  const placeholder = e.currentTarget.parentElement?.querySelector('.no-image-box');
+                                  if (placeholder) placeholder.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
 
-                        {/* Top Badges */}
-                        <div className="absolute top-3 right-3 flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Paid • Active
-                          </span>
-                        </div>
-
-                        <div className="absolute bottom-2.5 left-4 right-4">
-                          <span className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[#E3B8DE] bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded border border-white/10">
-                            Executive Life Coaching
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Course Body Details */}
-                      <div className="p-4 sm:p-5 space-y-4">
-                        <div>
-                          <h2 
-                            className="text-lg sm:text-xl text-white font-bold tracking-tight"
-                            style={{ fontFamily: 'var(--head)' }}
-                          >
-                            Better With Aarkesh: The Mastery Course
-                          </h2>
-                          <p className="text-xs text-white/50 mt-1 font-sans leading-relaxed line-clamp-2">
-                            4 Transformation pillars, 14 high-impact video lessons, executive blueprints &amp; lifetime updates.
-                          </p>
-                        </div>
-
-                        {/* Compact Meta Specs Row */}
-                        <div className="grid grid-cols-3 gap-2 py-1">
-                          <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-                            <p className="text-[9px] uppercase tracking-wider text-white/40">Curriculum</p>
-                            <p className="text-[11px] font-bold text-white mt-0.5">14 Lessons</p>
-                          </div>
-
-                          <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-                            <p className="text-[9px] uppercase tracking-wider text-white/40">Access</p>
-                            <p className="text-[11px] font-bold text-white mt-0.5">Lifetime</p>
-                          </div>
-
-                          <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-                            <p className="text-[9px] uppercase tracking-wider text-white/40">Mentorship</p>
-                            <p className="text-[11px] font-bold text-[#E3B8DE] mt-0.5">3 Sessions</p>
-                          </div>
-                        </div>
-
-                        {/* Primary CTA Button: GO TO COURSE */}
-                        <div>
-                          <Link
-                            to="/course"
-                            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#A83B96] via-[#C878BE] to-[#7A2A70] text-white text-xs uppercase tracking-[0.18em] font-bold flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(200,120,190,0.35)] hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(200,120,190,0.5)] transition-all"
-                          >
-                            <BookOpen size={16} weight="bold" /> Go to Course <ArrowRight size={15} weight="bold" />
-                          </Link>
-                        </div>
-
-                        {/* 1-on-1 Coaching Sessions Bonus Box (Compact INSIDE Course Card) */}
-                        <div className="rounded-xl border border-[#C878BE]/20 bg-white/[0.02] p-3.5 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#E3B8DE]">
-                              <Sparkle size={12} weight="fill" className="text-[#C878BE]" /> 3 Free 1-on-1 Sessions
-                            </div>
-                            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                              {user?.freeSessions ?? 3} Left
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-3 pt-1">
-                            <p className="text-[11px] text-white/50 font-sans leading-tight">
-                              Schedule your private executive session with Aarkesh at ₹0.
-                            </p>
-                            <button
-                              onClick={handleBookFreeSession}
-                              disabled={isSyncingCoaching}
-                              className="shrink-0 px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-[#C878BE]/30 text-[#E3B8DE] hover:text-white text-[10px] uppercase tracking-wider font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+                            <div 
+                              className="no-image-box flex flex-col items-center justify-center text-white/35 space-y-1.5 select-none py-6"
+                              style={{ display: item.imageUrl && item.imageUrl.trim() !== '' ? 'none' : 'flex' }}
                             >
-                              <CalendarPlus size={13} weight="bold" /> {isSyncingCoaching ? 'Opening...' : 'Book Call'}
-                            </button>
+                              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-[#E3B8DE]/50 shadow-inner">
+                                <ImageSquare size={24} weight="duotone" />
+                              </div>
+                              <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-white/40">No Image</span>
+                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#09040f] via-transparent to-black/30 pointer-events-none" />
+
+                            {/* Top Badges */}
+                            <div className="absolute top-3 right-3 flex items-center gap-2">
+                              <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Paid • Active
+                              </span>
+                            </div>
+
+                            <div className="absolute bottom-2.5 left-4 right-4">
+                              <span className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[#E3B8DE] bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded border border-white/10">
+                                {item.slug === 'better-man' ? 'Executive Life Coaching' : 'Masterclass Series'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Course Body Details */}
+                          <div className="p-4 sm:p-5 space-y-4 flex-1 flex flex-col justify-between">
+                            <div>
+                              <h2 
+                                className="text-lg sm:text-xl text-white font-bold tracking-tight"
+                                style={{ fontFamily: 'var(--head)' }}
+                              >
+                                {item.title}
+                              </h2>
+                              <p className="text-xs text-white/50 mt-1 font-sans leading-relaxed line-clamp-2">
+                                {item.lede || `${item.modulesCount || 8} modular frameworks, executive blueprints & lifetime updates.`}
+                              </p>
+                            </div>
+
+                            {/* Compact Meta Specs Row */}
+                            <div className="grid grid-cols-3 gap-2 py-1">
+                              <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                                <p className="text-[9px] uppercase tracking-wider text-white/40">Curriculum</p>
+                                <p className="text-[11px] font-bold text-white mt-0.5">{item.modulesCount || 8} Modules</p>
+                              </div>
+
+                              <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                                <p className="text-[9px] uppercase tracking-wider text-white/40">Access</p>
+                                <p className="text-[11px] font-bold text-white mt-0.5">Lifetime</p>
+                              </div>
+
+                              <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                                <p className="text-[9px] uppercase tracking-wider text-white/40">Mentorship</p>
+                                <p className="text-[11px] font-bold text-[#E3B8DE] mt-0.5">3 Sessions</p>
+                              </div>
+                            </div>
+
+                            {/* Primary CTA Button: GO TO COURSE */}
+                            <div>
+                              <Link
+                                to={item.slug === 'better-man' ? '/course?learn=true' : `/course/${item.slug}?learn=true`}
+                                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#A83B96] via-[#C878BE] to-[#7A2A70] text-white text-xs uppercase tracking-[0.18em] font-bold flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(200,120,190,0.35)] hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(200,120,190,0.5)] transition-all"
+                              >
+                                <BookOpen size={16} weight="bold" /> Resume Learning <ArrowRight size={15} weight="bold" />
+                              </Link>
+                            </div>
+
+                            {/* 1-on-1 Coaching Sessions Bonus Box */}
+                            <div className="rounded-xl border border-[#C878BE]/20 bg-white/[0.02] p-3.5 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#E3B8DE]">
+                                  <Sparkle size={12} weight="fill" className="text-[#C878BE]" /> 3 Free 1-on-1 Sessions
+                                </div>
+                                <span className="text-[10px] font-semibold text-[#E3B8DE] bg-[#C878BE]/15 px-2 py-0.5 rounded border border-[#C878BE]/30">
+                                  3 Sessions Included
+                                </span>
+                              </div>
+
+                              <div className="flex items-center justify-between gap-3 pt-1">
+                                <p className="text-[11px] text-white/50 font-sans leading-tight">
+                                  Schedule your private executive session with Aarkesh at ₹0.
+                                </p>
+                                <button
+                                  onClick={handleBookFreeSession}
+                                  disabled={isSyncingCoaching}
+                                  className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-[#A83B96] via-[#C878BE] to-[#7A2A70] hover:from-[#BA42A7] hover:to-[#8E3283] text-white text-xs uppercase tracking-[0.18em] font-bold shadow-[0_0_15px_rgba(200,120,190,0.3)] hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(200,120,190,0.5)] transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                                >
+                                  <CalendarPlus size={15} weight="bold" /> {isSyncingCoaching ? 'Opening...' : 'Book Call'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Official Tax Invoice Link */}
+                            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
+                              <span className="text-[11px] text-white/40 font-mono truncate max-w-[200px]">
+                                Txn: {user?.latestPurchase?.transactionId?.slice(0, 14) || 'pay_verified'}...
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setShowInvoiceModal(true)}
+                                className="text-[11px] text-[#E3B8DE] hover:text-white hover:underline flex items-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <Receipt size={13} /> View Invoice
+                              </button>
+                            </div>
+
                           </div>
                         </div>
-
-                        {/* Official Tax Invoice Link (Compact INSIDE Course Card) */}
-                        <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
-                          <span className="text-[11px] text-white/40 font-mono truncate max-w-[200px]">
-                            Txn: {user?.latestPurchase?.transactionId?.slice(0, 14) || 'pay_verified'}...
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setShowInvoiceModal(true)}
-                            className="text-[11px] text-[#E3B8DE] hover:text-white hover:underline flex items-center gap-1 transition-colors cursor-pointer"
-                          >
-                            <Receipt size={13} /> View Invoice
-                          </button>
-                        </div>
-
-                      </div>
+                      ))}
                     </div>
                   ) : (
                     /* Not Enrolled Banner */

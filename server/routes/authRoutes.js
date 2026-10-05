@@ -354,25 +354,38 @@ router.post('/check-free-sessions', async (req, res) => {
     const coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
 
     if (courseUser) {
-      if (!coachingUser) {
-        return res.json({
-          hasFreeSessions: true,
-          freeSessions: 3,
-          isCoursePurchaser: true,
-          courseUserName: courseUser.fullName
-        });
+      const distinctPurchasedCourses = new Set();
+      if (Array.isArray(courseUser.purchasedCourses)) {
+        courseUser.purchasedCourses.forEach(s => s && distinctPurchasedCourses.add(s));
       }
+      const purchases = await CoursePurchase.find({
+        $or: [{ courseUserId: courseUser._id }, { studentEmail: emailRegex }],
+        paymentStatus: 'Paid'
+      });
+      purchases.forEach(p => { if (p.courseSlug) distinctPurchasedCourses.add(p.courseSlug); });
+      if (distinctPurchasedCourses.size === 0) distinctPurchasedCourses.add('better-man');
 
-      if (!coachingUser.courseSessionsGranted) {
-        coachingUser.freeSessions = 3;
+      const totalCoursesCount = distinctPurchasedCourses.size || 1;
+      const totalGrantedSessions = totalCoursesCount * 3;
+
+      const claimedAppointments = await Appointment.countDocuments({
+        email: emailRegex,
+        $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }],
+        status: { $ne: 'CANCELLED' }
+      });
+
+      const freeSessions = Math.max(0, totalGrantedSessions - claimedAppointments);
+
+      if (coachingUser) {
+        coachingUser.freeSessions = freeSessions;
         coachingUser.courseSessionsGranted = true;
         await coachingUser.save();
       }
 
-      const freeSessions = coachingUser.freeSessions ?? 0;
       return res.json({
         hasFreeSessions: freeSessions > 0,
         freeSessions,
+        totalGranted: totalGrantedSessions,
         isCoursePurchaser: true,
         courseUserName: courseUser.fullName
       });

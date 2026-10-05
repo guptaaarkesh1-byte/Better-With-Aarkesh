@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
 import PolicyModal from '../../components/ui/PolicyModal';
 import { 
@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   Lightning,
   PencilSimple,
+  NotePencil,
   Info,
   FileText,
   ChatCenteredDots,
@@ -39,15 +40,37 @@ import {
   DiscordLogo,
   TiktokLogo,
   Globe,
-  Quotes
+  Quotes,
+  CornersOut,
+  VideoCamera,
+  CalendarPlus,
+  List,
+  Pause,
+  ArrowCounterClockwise,
+  ArrowClockwise,
+  SpeakerHigh,
+  SpeakerSlash
 } from '@phosphor-icons/react';
 import Button from '../../components/ui/Button';
 import LessonComments from '../../components/course/LessonComments';
+import MuxPlayer from '@mux/mux-player-react';
 import ProtectedYouTubePlayer from '../../components/course/ProtectedYouTubePlayer';
 import CoursePaymentSuccess from './CoursePaymentSuccess';
 import FlippingWordSwap from '../../components/ui/FlippingWordSwap';
 import { resolvePlayableVideoId } from '../../utils/videoSecurity';
 import './course-landing.css';
+
+const resolveImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  if (url.startsWith('/')) {
+    return `${apiUrl}${url}`;
+  }
+  return `${apiUrl}/${url}`;
+};
 
 // Helper to render headlines with asterisk boxed text: "THE *BETTER* MAN" -> THE <span className="sel">BETTER</span> MAN
 export const renderCourseHeadline = (text) => {
@@ -80,6 +103,27 @@ const renderSocialIcon = (platform, size = 16) => {
   }
 };
 
+export const extractMuxPlaybackId = (val) => {
+  if (!val) return '';
+  const clean = String(val).trim();
+  if (clean.includes('stream.mux.com/')) {
+    const match = clean.match(/stream\.mux\.com\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) return match[1].replace('.m3u8', '');
+  }
+  if (clean.includes('player.mux.com/')) {
+    const match = clean.match(/player\.mux\.com\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) return match[1].split('?')[0];
+  }
+  if (clean.includes('mux.com/')) {
+    const match = clean.match(/mux\.com\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) return match[1];
+  }
+  if (/^[a-zA-Z0-9_-]{15,60}$/.test(clean) && !clean.startsWith('http')) {
+    return clean;
+  }
+  return '';
+};
+
 const extractYoutubeVideoId = (url) => {
   if (!url) return '';
   const trimmed = url.trim();
@@ -91,39 +135,78 @@ const extractYoutubeVideoId = (url) => {
   return (match && match[2].length === 11) ? match[2] : '';
 };
 
-// Dummy course data
+// Default 8-module masterclass curriculum fallback
 const MODULES = [
   {
     id: 1,
-    title: 'Module 1: The Foundation of Presence',
-    duration: '45 mins',
-    progress: 100,
+    title: 'Module 01: The Foundation of Presence',
+    duration: '12:30',
+    progress: 0,
     lessons: [
-      { id: 101, title: 'Introduction to Inner Stillness', duration: '12:30', isCompleted: true, isLocked: false },
-      { id: 102, title: 'Breaking the Reactive Cycle', duration: '18:15', isCompleted: true, isLocked: false },
-      { id: 103, title: 'Guided Grounding Meditation', duration: '15:00', isCompleted: false, isLocked: false },
+      { id: 'l1', title: 'Lesson 1: The Foundation of Presence', duration: '12:30', isCompleted: false, isLocked: false }
     ]
   },
   {
     id: 2,
-    title: 'Module 2: Mastering Conversations',
-    duration: '1h 15m',
+    title: 'Module 02: Breaking the Reactive Cycle',
+    duration: '12:30',
     progress: 0,
     lessons: [
-      { id: 201, title: 'The Art of Active Listening', duration: '22:10', isCompleted: false, isLocked: true },
-      { id: 202, title: 'Reading Non-Verbal Cues', duration: '28:45', isCompleted: false, isLocked: true },
-      { id: 203, title: 'Expressing Authentic Boundaries', duration: '24:20', isCompleted: false, isLocked: true },
+      { id: 'l2', title: 'Lesson 1: Breaking the Reactive Cycle', duration: '12:30', isCompleted: false, isLocked: false }
     ]
   },
   {
     id: 3,
-    title: 'Module 3: Leadership & Magnetism',
-    duration: '1h 30m',
+    title: 'Module 03: Mastering Vocal Gravitas & Tone',
+    duration: '12:30',
     progress: 0,
     lessons: [
-      { id: 301, title: 'Cultivating Charisma', duration: '30:00', isCompleted: false, isLocked: true },
-      { id: 302, title: 'Leading with Vulnerability', duration: '25:15', isCompleted: false, isLocked: true },
-      { id: 303, title: 'The Ripple Effect', duration: '35:45', isCompleted: false, isLocked: true },
+      { id: 'l3', title: 'Lesson 1: Mastering Vocal Gravitas & Tone', duration: '12:30', isCompleted: false, isLocked: false }
+    ]
+  },
+  {
+    id: 4,
+    title: 'Module 04: Non-Verbal Dominance & Spatial Calibration',
+    duration: '12:30',
+    progress: 0,
+    lessons: [
+      { id: 'l4', title: 'Lesson 1: Non-Verbal Dominance & Spatial Calibration', duration: '12:30', isCompleted: false, isLocked: false }
+    ]
+  },
+  {
+    id: 5,
+    title: 'Module 05: High-Stakes Conversations & Holding Frame',
+    duration: '12:30',
+    progress: 0,
+    lessons: [
+      { id: 'l5', title: 'Lesson 1: High-Stakes Conversations & Holding Frame', duration: '12:30', isCompleted: false, isLocked: false }
+    ]
+  },
+  {
+    id: 6,
+    title: 'Module 06: Decision Making & Decisive Action',
+    duration: '12:30',
+    progress: 0,
+    lessons: [
+      { id: 'l6', title: 'Lesson 1: Decision Making & Decisive Action', duration: '12:30', isCompleted: false, isLocked: false }
+    ]
+  },
+  {
+    id: 7,
+    title: 'Module 07: Conflict Resolution Without Compromise',
+    duration: '12:30',
+    progress: 0,
+    lessons: [
+      { id: 'l7', title: 'Lesson 1: Conflict Resolution Without Compromise', duration: '12:30', isCompleted: false, isLocked: false }
+    ]
+  },
+  {
+    id: 8,
+    title: 'Module 08: Integration & Lifetime Standard',
+    duration: '12:30',
+    progress: 0,
+    lessons: [
+      { id: 'l8', title: 'Lesson 1: Integration & Lifetime Standard', duration: '12:30', isCompleted: false, isLocked: false }
     ]
   }
 ];
@@ -152,6 +235,15 @@ export default function Course() {
     return c?.cls || '';
   };
   const [showPricingModal, setShowPricingModal] = useState(false);
+  const getPurchasedSlugs = () => {
+    try {
+      const u = JSON.parse(localStorage.getItem('courseUser') || '{}');
+      if (Array.isArray(u.purchasedCourses) && u.purchasedCourses.length > 0) return u.purchasedCourses;
+    } catch {}
+    return localStorage.getItem('isCoursePurchased') === 'true' ? ['better-man'] : [];
+  };
+  const [purchasedCourses, setPurchasedCourses] = useState(getPurchasedSlugs);
+
   const [showDashboard, setShowDashboard] = useState(() => {
     const isPurchasedStored = localStorage.getItem('isCoursePurchased') === 'true';
     const hasToken = !!localStorage.getItem('courseToken');
@@ -173,8 +265,66 @@ export default function Course() {
   const [checkoutAgreed, setCheckoutAgreed] = useState(false);
   const [showPreRegSuccessModal, setShowPreRegSuccessModal] = useState(false);
   const [showSyllabusModal, setShowSyllabusModal] = useState(false);
+  const [showTrailerModal, setShowTrailerModal] = useState(false);
+  const [isPlayingInlineTrailer, setIsPlayingInlineTrailer] = useState(false);
   const profileMenuRef = useRef(null);
   const leftColumnRef = useRef(null);
+
+  const [freeSessionsRemaining, setFreeSessionsRemaining] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('courseUser') || '{}');
+      if (u.freeSessions !== undefined) return Number(u.freeSessions);
+      const fs = localStorage.getItem('freeSessions');
+      if (fs !== null && !isNaN(Number(fs))) return Number(fs);
+    } catch {}
+    return 3;
+  });
+
+  // Sync user profile on mount & focus to get accurate purchasedCourses and freeSessions remaining
+  const syncProfile = useCallback(async () => {
+    const token = localStorage.getItem('courseToken');
+    if (!token) return;
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/course-auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('courseUser', JSON.stringify(data));
+        if (data.isPurchased) {
+          localStorage.setItem('isCoursePurchased', 'true');
+          setIsPurchased(true);
+        }
+        if (Array.isArray(data.purchasedCourses)) {
+          setPurchasedCourses(data.purchasedCourses);
+        }
+        if (data.freeSessions !== undefined) {
+          const count = Math.max(0, Number(data.freeSessions));
+          setFreeSessionsRemaining(count);
+          localStorage.setItem('freeSessions', String(count));
+        }
+      }
+    } catch (e) {
+      console.warn('Error syncing profile:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    syncProfile();
+    const handleFocus = () => syncProfile();
+    const handleStorage = (e) => {
+      if (e.key === 'freeSessions' || e.key === 'courseUser') {
+        syncProfile();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [syncProfile]);
 
   // Auth Modal State
   const [showCourseLogin, setShowCourseLogin] = useState(false);
@@ -214,6 +364,174 @@ export default function Course() {
   const [activeMobileTab, setActiveMobileTab] = useState('playlist'); // 'playlist' | 'overview' | 'resources' | 'comments'
   const [landscapeView, setLandscapeView] = useState('list'); // 'list' | 'player'
   const [purchaseSuccessData, setPurchaseSuccessData] = useState(null);
+  
+  // Clean Player State
+  const [playerTab, setPlayerTab] = useState('overview'); // 'overview' | 'discussion' | 'notes'
+  const [openPlayerModules, setOpenPlayerModules] = useState(() => [0, 1, 2, 3, 4, 5, 6, 7]);
+  const [lessonNotes, setLessonNotes] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('bwa_lesson_notes_v2') || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const [notesSavedStatus, setNotesSavedStatus] = useState('Saved ✓');
+  const notesSaveTimeoutRef = useRef(null);
+  const notesTextareaRef = useRef(null);
+
+  // Video Resume & Progress Tracking
+  const muxPlayerRef = useRef(null);
+  const [resumePrompt, setResumePrompt] = useState(null);
+
+  useEffect(() => {
+    const lesId = activeLesson?._id || activeLesson?.id;
+    if (!lesId) {
+      setResumePrompt(null);
+      return;
+    }
+    const saved = Number(localStorage.getItem(`bwa_lesson_progress_${lesId}`)) || 0;
+    if (saved > 6) {
+      const mins = Math.floor(saved / 60);
+      const secs = Math.floor(saved % 60);
+      const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      setResumePrompt({ time: saved, formatted });
+    } else {
+      setResumePrompt(null);
+    }
+  }, [activeLesson?._id, activeLesson?.id]);
+
+  const handleResumeClick = () => {
+    if (resumePrompt && muxPlayerRef.current) {
+      try {
+        muxPlayerRef.current.currentTime = resumePrompt.time;
+        muxPlayerRef.current.play?.();
+      } catch {}
+    }
+    setResumePrompt(null);
+  };
+
+  const handleStartOverClick = () => {
+    if (muxPlayerRef.current) {
+      try {
+        muxPlayerRef.current.currentTime = 0;
+        muxPlayerRef.current.play?.();
+      } catch {}
+    }
+    const lesId = activeLesson?._id || activeLesson?.id;
+    if (lesId) {
+      localStorage.removeItem(`bwa_lesson_progress_${lesId}`);
+    }
+    setResumePrompt(null);
+  };
+
+  const handleNotesChange = (lessonId, text) => {
+    setNotesSavedStatus('Saving…');
+    setLessonNotes((prev) => {
+      const updated = { ...prev, [lessonId]: text };
+      if (notesSaveTimeoutRef.current) clearTimeout(notesSaveTimeoutRef.current);
+      notesSaveTimeoutRef.current = setTimeout(() => {
+        try {
+          localStorage.setItem('bwa_lesson_notes_v2', JSON.stringify(updated));
+        } catch {}
+        setNotesSavedStatus('Saved ✓');
+      }, 500);
+      return updated;
+    });
+  };
+
+  const handleInsertTimestamp = (lessonId) => {
+    const ta = notesTextareaRef.current;
+    if (!ta) return;
+    const durStr = activeLesson?.duration || '00:00';
+    const s = ta.selectionStart || 0;
+    const e = ta.selectionEnd || 0;
+    const ts = `[${durStr}] `;
+    const curVal = lessonNotes[lessonId] || '';
+    const newVal = curVal.slice(0, s) + ts + curVal.slice(e);
+    handleNotesChange(lessonId, newVal);
+    setTimeout(() => {
+      ta.focus();
+      ta.setSelectionRange(s + ts.length, s + ts.length);
+    }, 50);
+  };
+
+  const togglePlayerModule = (modIdx) => {
+    setOpenPlayerModules((prev) => 
+      prev.includes(modIdx) ? prev.filter((i) => i !== modIdx) : [...prev, modIdx]
+    );
+  };
+
+  const toggleLessonCompletionLocal = (lesson) => {
+    if (!lesson) return;
+    const isNowCompleted = !lesson.isCompleted;
+    const updatedLesson = { ...lesson, isCompleted: isNowCompleted };
+    setActiveLesson(updatedLesson);
+
+    setCurriculumModules((prev) =>
+      prev.map((mod) => ({
+        ...mod,
+        lessons: (mod.lessons || []).map((l) =>
+          ((l._id || l.id)?.toString() === (lesson._id || lesson.id)?.toString())
+            ? { ...l, isCompleted: isNowCompleted }
+            : l
+        )
+      }))
+    );
+
+    try {
+      const completedIds = JSON.parse(localStorage.getItem('bwa_completed_lessons_cache') || '[]');
+      const targetId = (lesson._id || lesson.id)?.toString();
+      const nextCompleted = isNowCompleted
+        ? [...new Set([...completedIds, targetId])]
+        : completedIds.filter(id => id !== targetId);
+      localStorage.setItem('bwa_completed_lessons_cache', JSON.stringify(nextCompleted));
+    } catch {}
+
+    showToast(isNowCompleted ? 'Lesson completed ✓' : 'Marked as not completed');
+  };
+
+  const [demoPlaying, setDemoPlaying] = useState(false);
+  const [demoProgress, setDemoProgress] = useState(0);
+  const [demoSpeed, setDemoSpeed] = useState(1);
+  const [demoMuted, setDemoMuted] = useState(false);
+
+  const lessonSeconds = useMemo(() => {
+    if (!activeLesson?.duration) return 750;
+    const parts = String(activeLesson.duration).split(':');
+    if (parts.length === 2) return (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+    if (parts.length === 3) return (parseInt(parts[0]) || 0) * 3600 + (parseInt(parts[1]) || 0) * 60 + (parseInt(parts[2]) || 0);
+    return 750;
+  }, [activeLesson?.duration]);
+
+  const formatSeconds = (sec) => {
+    sec = Math.floor(sec || 0);
+    const m = Math.floor(sec / 60);
+    const s = String(sec % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  useEffect(() => {
+    if (!demoPlaying) return;
+    const interval = setInterval(() => {
+      setDemoProgress((prev) => {
+        if (prev >= lessonSeconds) {
+          setDemoPlaying(false);
+          if (!activeLesson?.isCompleted) {
+            toggleLessonCompletionLocal(activeLesson);
+          }
+          return lessonSeconds;
+        }
+        return Math.min(lessonSeconds, prev + 1 * demoSpeed);
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [demoPlaying, lessonSeconds, demoSpeed, activeLesson]);
+
+  useEffect(() => {
+    setDemoPlaying(false);
+    setDemoProgress(0);
+  }, [activeLesson?._id, activeLesson?.id]);
+
   const [curriculumCards, setCurriculumCards] = useState([
     { title: 'The Foundation of Presence', description: 'Discover how to anchor yourself in any high-pressure situation with calm, unshakeable energy.' },
     { title: 'Breaking Reactive Patterns', description: 'Identify and dissolve the emotional triggers that cause you to react instead of respond.' },
@@ -231,7 +549,14 @@ export default function Course() {
     { question: 'Is this course beginner-friendly?', answer: 'Absolutely. The framework starts from the fundamental psychology of presence and builds step-by-step toward advanced leadership and magnetism.' },
   ]);
 
-  const [courseDetailsMap, setCourseDetailsMap] = useState({});
+  const [courseDetailsMap, setCourseDetailsMap] = useState(() => {
+    try {
+      const cached = localStorage.getItem('bwa_course_details_map_cache');
+      return cached ? JSON.parse(cached) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const [landingSettings, setLandingSettings] = useState({
     hero: {
@@ -329,7 +654,8 @@ export default function Course() {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const token = localStorage.getItem('courseToken');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch(`${apiUrl}/api/courses/primary/curriculum`, { headers });
+        const targetSlug = slug && slug !== 'all' ? slug : 'better-man';
+        const res = await fetch(`${apiUrl}/api/courses/curriculum/${targetSlug}`, { headers });
         if (res.ok) {
           const data = await res.json();
           if (data && data.course) {
@@ -337,6 +663,7 @@ export default function Course() {
           }
           if (data && data.modules && data.modules.length > 0) {
             setCurriculumModules(data.modules);
+            setOpenPlayerModules(data.modules.map((_, i) => i));
 
             const savedLessonId = localStorage.getItem('lastActiveCourseLessonId');
             let matchedLesson = null;
@@ -379,14 +706,45 @@ export default function Course() {
       window.removeEventListener('focus', fetchPublishedCurriculum);
       clearInterval(interval);
     };
-  }, [isPurchased]);
+  }, [isPurchased, slug]);
 
-  // Reset left column scroll to top whenever active lesson changes
+  // Reset scroll to top whenever active lesson or dashboard changes
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (leftColumnRef.current) {
       leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [activeLesson?._id, activeLesson?.id]);
+  }, [activeLesson?._id, activeLesson?.id, showDashboard]);
+
+  // Keyboard shortcuts for clean player
+  useEffect(() => {
+    if (!showDashboard) return;
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const key = e.key.toLowerCase();
+      if (key === 'n' && nextLesson) {
+        handleSelectLesson(nextLesson, nextLesson.module);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (key === 'p' && prevLesson) {
+        handleSelectLesson(prevLesson, prevLesson.module);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (key === 'm' && activeLesson) {
+        toggleLessonCompletionLocal(activeLesson);
+      } else if (key === 'f') {
+        const stage = document.querySelector('.player-stage');
+        if (stage) {
+          if (document.fullscreenElement) {
+            document.exitFullscreen?.();
+          } else {
+            stage.requestFullscreen?.();
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showDashboard, nextLesson, prevLesson, activeLesson]);
 
   useEffect(() => {
     const fetchCourseFooter = async () => {
@@ -476,6 +834,9 @@ export default function Course() {
           const data = await res.json();
           if (data && typeof data === 'object') {
             setCourseDetailsMap(data);
+            try {
+              localStorage.setItem('bwa_course_details_map_cache', JSON.stringify(data));
+            } catch {}
           }
         }
       } catch (err) {
@@ -549,6 +910,7 @@ export default function Course() {
       {
         slug: "better-man",
         n: "01",
+        theme: "white",
         chips: ["Calm Authority", "Self-Command"],
         soon: false,
         cls: "v3",
@@ -600,6 +962,7 @@ export default function Course() {
       {
         slug: "difficult-people",
         n: "02",
+        theme: "purple",
         chips: ["Boundaries", "Conflict"],
         soon: true,
         cls: "v2",
@@ -650,6 +1013,7 @@ export default function Course() {
       {
         slug: "decisions",
         n: "03",
+        theme: "white",
         chips: ["Clarity", "Choice"],
         soon: true,
         cls: "",
@@ -702,20 +1066,22 @@ export default function Course() {
       return defaultList;
     }
 
-    const mergedList = defaultList.map(item => {
-      const dynamicCourse = courseDetailsMap[item.slug];
-      if (!dynamicCourse) return item;
-      return {
-        ...item,
-        ...dynamicCourse,
-        writeup: { ...(item.writeup || {}), ...(dynamicCourse.writeup || {}) },
-        syllabus: dynamicCourse.syllabus || item.syllabus,
-        inside: dynamicCourse.inside || item.inside,
-        hl: dynamicCourse.hl || item.hl,
-        chips: dynamicCourse.chips || item.chips,
-        sidebarChips: dynamicCourse.sidebarChips || item.sidebarChips
-      };
-    });
+    const mergedList = defaultList
+      .filter(item => !courseDetailsMap || courseDetailsMap[item.slug] !== undefined)
+      .map(item => {
+        const dynamicCourse = courseDetailsMap[item.slug];
+        if (!dynamicCourse) return item;
+        return {
+          ...item,
+          ...dynamicCourse,
+          writeup: { ...(item.writeup || {}), ...(dynamicCourse.writeup || {}) },
+          syllabus: dynamicCourse.syllabus || item.syllabus,
+          inside: dynamicCourse.inside || item.inside,
+          hl: dynamicCourse.hl || item.hl,
+          chips: dynamicCourse.chips || item.chips,
+          sidebarChips: dynamicCourse.sidebarChips || item.sidebarChips
+        };
+      });
 
     // Append newly created courses from admin
     Object.keys(courseDetailsMap).forEach(slug => {
@@ -724,13 +1090,53 @@ export default function Course() {
       }
     });
 
-    return mergedList;
+    return mergedList.filter(item => item && item.hidden !== true && item.isPublished !== false);
   }, [basePrice, comparePrice, courseDetailsMap]);
 
   const activeCourse = useMemo(() => {
     if (!slug) return coursesList[0];
-    return coursesList.find((c) => c.slug === slug) || coursesList[0];
-  }, [coursesList, slug]);
+    if (courseDetailsMap && courseDetailsMap[slug]) {
+      return courseDetailsMap[slug];
+    }
+    const found = coursesList.find((c) => c.slug === slug);
+    if (found) return found;
+    return {
+      slug: slug,
+      title: slug.charAt(0).toUpperCase() + slug.slice(1),
+      price: '₹4,999',
+      was: '₹9,999',
+      soon: true,
+      theme: 'white',
+      n: '01',
+      chips: [],
+      hl: [],
+      inside: [],
+      syllabus: []
+    };
+  }, [coursesList, courseDetailsMap, slug]);
+
+  const isThisCoursePurchased = useMemo(() => {
+    const targetSlug = activeCourse?.slug || 'better-man';
+    return purchasedCourses.includes(targetSlug);
+  }, [purchasedCourses, activeCourse?.slug]);
+
+  const hasAnyCoursePurchased = useMemo(() => {
+    return (Array.isArray(purchasedCourses) && purchasedCourses.length > 0) || isPurchased;
+  }, [purchasedCourses, isPurchased]);
+
+  // Sync custom course video modules if defined in course settings
+  useEffect(() => {
+    if (activeCourse?.videoModules && Array.isArray(activeCourse.videoModules) && activeCourse.videoModules.length > 0) {
+      setCurriculumModules(activeCourse.videoModules);
+      const currentModExists = activeCourse.videoModules.some(m => String(m.id || m._id) === String(activeModuleObj?.id || activeModuleObj?._id));
+      if (!currentModExists && activeCourse.videoModules[0]) {
+        setActiveModuleObj(activeCourse.videoModules[0]);
+        if (activeCourse.videoModules[0].lessons?.length > 0) {
+          setActiveLesson(activeCourse.videoModules[0].lessons[0]);
+        }
+      }
+    }
+  }, [activeCourse?.slug, activeCourse?.videoModules]);
 
   const detailThemeClass = useMemo(() => {
     const t = activeCourse?.theme;
@@ -738,11 +1144,17 @@ export default function Course() {
     if (t === 'purple') return 'theme-purple';
     if (t === 'black') return 'theme-dark';
     if (activeCourse?.slug === 'difficult-people') return 'theme-purple';
-    if (activeCourse?.slug === 'decisions') return '';
-    return 'theme-dark';
+    if (activeCourse?.slug === 'decisions' || activeCourse?.slug === 'better-man') return '';
+    return '';
   }, [activeCourse]);
 
   const activeCourseBasePrice = useMemo(() => {
+    if (activeCourse?.price !== undefined && activeCourse?.price !== null && activeCourse?.price !== '') {
+      const parsed = typeof activeCourse.price === 'number'
+        ? activeCourse.price
+        : Number(String(activeCourse.price).replace(/[^0-9]/g, ''));
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
     if (activeCourse?.slug === 'better-man') return basePrice;
     if (activeCourse?.slug === 'difficult-people') return 3999;
     if (activeCourse?.slug === 'decisions') return 3499;
@@ -750,11 +1162,31 @@ export default function Course() {
   }, [activeCourse, basePrice]);
 
   const activeCourseComparePrice = useMemo(() => {
+    if (activeCourse?.was !== undefined && activeCourse?.was !== null && activeCourse?.was !== '') {
+      const parsed = typeof activeCourse.was === 'number'
+        ? activeCourse.was
+        : Number(String(activeCourse.was).replace(/[^0-9]/g, ''));
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
     if (activeCourse?.slug === 'better-man') return comparePrice;
     if (activeCourse?.slug === 'difficult-people') return 7999;
     if (activeCourse?.slug === 'decisions') return 6999;
     return comparePrice;
   }, [activeCourse, comparePrice]);
+
+  const currentGstRate = useMemo(() => {
+    if (activeCourse?.enableGst === false) return 0;
+    if (activeCourse?.gstRate !== undefined && activeCourse?.gstRate !== null && activeCourse?.gstRate !== '') {
+      const r = Number(activeCourse.gstRate);
+      return isNaN(r) ? 0 : r;
+    }
+    return gstRate;
+  }, [activeCourse, gstRate]);
+
+  const currentIsGstIncluded = useMemo(() => {
+    if (activeCourse?.isGstIncluded !== undefined) return Boolean(activeCourse.isGstIncluded);
+    return isGstIncluded;
+  }, [activeCourse, isGstIncluded]);
 
   const discountAmount = useMemo(() => {
     return appliedCoupon ? Math.round((activeCourseBasePrice * (appliedCoupon.percent || 0)) / 100) : 0;
@@ -763,13 +1195,14 @@ export default function Course() {
   const discountedBasePrice = Math.max(0, activeCourseBasePrice - discountAmount);
 
   const gstAmount = useMemo(() => {
-    return isGstIncluded
-      ? Math.round(discountedBasePrice - (discountedBasePrice / (1 + (gstRate / 100))))
-      : Math.round((discountedBasePrice * gstRate) / 100);
-  }, [discountedBasePrice, isGstIncluded, gstRate]);
+    if (currentGstRate <= 0) return 0;
+    return currentIsGstIncluded
+      ? Math.round(discountedBasePrice - (discountedBasePrice / (1 + (currentGstRate / 100))))
+      : Math.round((discountedBasePrice * currentGstRate) / 100);
+  }, [discountedBasePrice, currentIsGstIncluded, currentGstRate]);
 
-  const baseBeforeGst = isGstIncluded ? discountedBasePrice - gstAmount : discountedBasePrice;
-  const finalPayable = isGstIncluded ? discountedBasePrice : discountedBasePrice + gstAmount;
+  const baseBeforeGst = (currentIsGstIncluded && currentGstRate > 0) ? discountedBasePrice - gstAmount : discountedBasePrice;
+  const finalPayable = currentIsGstIncluded ? discountedBasePrice : (discountedBasePrice + gstAmount);
 
   const handleApplyCoupon = (codeToApply) => {
     const code = (codeToApply || couponCode).trim().toUpperCase();
@@ -905,6 +1338,8 @@ export default function Course() {
   };
 
   const handleCloseCheckout = () => {
+    setIsLoading(false);
+    setError('');
     setShowCheckout(false);
     sessionStorage.removeItem('course_checkout_active');
     setSearchParams((prev) => {
@@ -975,7 +1410,9 @@ export default function Course() {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-                token: token
+                token: token,
+                courseSlug: activeCourse?.slug || 'better-man',
+                amount: finalPayable
               })
             });
             const verifyData = await safeJson(verifyRes);
@@ -983,6 +1420,16 @@ export default function Course() {
               // Mark course as purchased
               localStorage.setItem('isCoursePurchased', 'true');
               setIsPurchased(true);
+              const targetSlug = activeCourse?.slug || 'better-man';
+              const updatedPurchasedSlugs = verifyData.purchasedCourses || [targetSlug];
+              setPurchasedCourses(prev => Array.from(new Set([...(prev || []), ...updatedPurchasedSlugs])));
+              try {
+                const storedUser = JSON.parse(localStorage.getItem('courseUser') || '{}');
+                storedUser.isPurchased = true;
+                storedUser.purchasedCourses = Array.from(new Set([...(storedUser.purchasedCourses || []), ...updatedPurchasedSlugs]));
+                localStorage.setItem('courseUser', JSON.stringify(storedUser));
+              } catch {}
+
               setShowCheckout(false);
               setShowPricingModal(false);
               sessionStorage.removeItem('course_checkout_active');
@@ -1005,9 +1452,9 @@ export default function Course() {
                 orderId: response.razorpay_order_id,
                 amount: finalPayable,
                 basePrice: baseBeforeGst,
-                gstRate,
+                gstRate: currentGstRate,
                 gstAmount,
-                isGstIncluded,
+                isGstIncluded: currentIsGstIncluded,
                 finalAmount: finalPayable,
                 purchaseDate: new Date().toISOString(),
                 studentName: fullName || email?.split('@')[0] || 'Valued Student',
@@ -1034,6 +1481,14 @@ export default function Course() {
         },
         prefill: { email, contact: phoneNumber },
         theme: { color: activeTheme.accent || '#C878BE' },
+        modal: {
+          ondismiss: function () {
+            console.log('Razorpay checkout cancelled/dismissed by user');
+            setIsLoading(false);
+          },
+          escape: true,
+          backdropclose: false
+        }
       };
 
       const rzp = new window.Razorpay(options);
@@ -1047,9 +1502,9 @@ export default function Course() {
           errorCode: response.error?.code || 'PAYMENT_FAILED',
           amount: finalPayable,
           basePrice: baseBeforeGst,
-          gstRate,
+          gstRate: currentGstRate,
           gstAmount,
-          isGstIncluded,
+          isGstIncluded: currentIsGstIncluded,
           finalAmount: finalPayable,
           purchaseDate: new Date().toISOString(),
           studentName: fullName || email?.split('@')[0] || 'Valued Student',
@@ -1272,6 +1727,15 @@ export default function Course() {
         } else {
           localStorage.setItem('courseToken', data.token);
           localStorage.setItem('courseUser', JSON.stringify(data));
+          if (data.freeSessions !== undefined) {
+            const count = Math.max(0, Number(data.freeSessions));
+            setFreeSessionsRemaining(count);
+            localStorage.setItem('freeSessions', String(count));
+          }
+          const userSlugs = Array.isArray(data.purchasedCourses) && data.purchasedCourses.length > 0
+            ? data.purchasedCourses
+            : (data.isPurchased ? ['better-man'] : []);
+          setPurchasedCourses(userSlugs);
           if (data.isPurchased && !isComingSoon) {
             localStorage.setItem('isCoursePurchased', 'true');
             setIsPurchased(true);
@@ -1336,38 +1800,149 @@ export default function Course() {
     const resolvedActiveVid = resolvePlayableVideoId(activeLesson);
     const hasActivePlayableVideo = Boolean(
       resolvedActiveVid && 
-      resolvedActiveVid.trim().length >= 8 && 
-      resolvedActiveVid !== 'dummy' && 
-      !resolvedActiveVid.includes('undefined')
+      typeof resolvedActiveVid === 'string' &&
+      /^[a-zA-Z0-9_-]{11}$/.test(resolvedActiveVid.trim()) &&
+      resolvedActiveVid !== 'dummy'
     );
+    const activeMuxPlaybackId = activeLesson?.muxPlaybackId || activeLesson?.src?.val || activeLesson?.src?.playbackId || (typeof activeLesson?.videoUrl === 'string' && !activeLesson?.videoUrl.includes('youtube') && !activeLesson?.videoUrl.includes('youtu.be') ? activeLesson.videoUrl : null);
+    const hasMux = Boolean(activeMuxPlaybackId && typeof activeMuxPlaybackId === 'string' && activeMuxPlaybackId.trim() && !activeMuxPlaybackId.includes('dummy'));
+
+    const completedCount = allLessons.filter(l => l.isCompleted).length;
+    const totalCount = allLessons.length;
+    const overallPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    const remainingCount = totalCount - completedCount;
+
+    // Find module index of active lesson
+    const activeModIndex = curriculumModules.findIndex(m => 
+      (m._id || m.id)?.toString() === (activeModuleObj?._id || activeModuleObj?.id)?.toString()
+    );
+    const displayModNum = activeModIndex >= 0 ? activeModIndex + 1 : 1;
+    const lessonNumInMod = (activeModuleObj?.lessons || []).findIndex(
+      l => (l._id || l.id)?.toString() === (activeLesson?._id || activeLesson?.id)?.toString()
+    ) + 1 || (currentLessonIndex + 1);
+
+    const formattedLessonNumber = String(currentLessonIndex >= 0 ? currentLessonIndex + 1 : 1).padStart(2, '0');
 
     return (
-      <div className="course-landing-scope h-screen bg-[#070408] text-white flex flex-col overflow-hidden">
-        <CourseNavbar
-          isLoggedIn={isLoggedIn}
-          isPurchased={isPurchased}
-          showDashboard={showDashboard}
-          setShowDashboard={setShowDashboard}
-          profileMenuRef={profileMenuRef}
-          showProfileMenu={showProfileMenu}
-          setShowProfileMenu={setShowProfileMenu}
-          handleLogout={handleLogout}
-          setShowCourseLogin={setShowCourseLogin}
-          completedCount={allLessons.filter(l => l.isCompleted).length}
-          totalCount={allLessons.length}
-        />
-
-        {/* Main Dashboard Layout: Responsive Vertical on Mobile, Split on Desktop */}
-        <div className="flex-grow flex flex-col lg:flex-row h-[calc(100vh-66px)] sm:h-[calc(100vh-76px)] overflow-hidden" data-lenis-prevent="true">
-          
-          {/* ── LEFT / MAIN COLUMN (Scrollable on both mobile and desktop) ── */}
-          <div 
-            ref={leftColumnRef}
-            data-lenis-prevent="true"
-            className="flex-1 flex flex-col bg-[#070408] overflow-y-auto border-r border-white/10 scroll-smooth overscroll-contain h-full"
+      <div className="course-landing-scope min-h-screen bg-[#060309] text-[#F6EEF8] flex flex-col font-sans">
+        {/* ── 1. FIXED TOP HEADER ── */}
+        <header className="player-hdr">
+          <Link 
+            className="player-logo" 
+            to="/"
+            onClick={() => {
+              setShowDashboard(false);
+              window.scrollTo({ top: 0, behavior: 'instant' });
+            }}
           >
-            {/* ── 1. CINEMATIC VIDEO PLAYER ── */}
-            <div className="w-full aspect-video shrink-0 bg-black relative flex items-center justify-center border-b border-white/10 overflow-hidden z-20 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
+            BetterWith<b>Aarkesh</b>
+          </Link>
+          <nav className="player-nav">
+            <button 
+              type="button"
+              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-semibold text-sm cursor-pointer transition-colors"
+              onClick={() => {
+                setShowDashboard(false);
+                navigate('/course');
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }}
+            >
+              Home
+            </button>
+            <button 
+              type="button"
+              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-semibold text-sm cursor-pointer transition-colors"
+              onClick={() => {
+                setShowDashboard(false);
+                navigate('/course/all');
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }}
+            >
+              Courses
+            </button>
+            <button 
+              type="button"
+              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-semibold text-sm cursor-pointer transition-colors"
+              onClick={() => {
+                setShowDashboard(false);
+                navigate('/course');
+                setTimeout(() => {
+                  const el = document.getElementById('faq');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
+            >
+              FAQ
+            </button>
+          </nav>
+          <div className="player-hr">
+            <Link to="/my-course" className="player-pill on" title="My Enrolled Courses">
+              <BookOpen size={16} weight="bold" />
+              <span>My Course</span>
+            </Link>
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="player-avt cursor-pointer hover:border-[#C878BE] transition-colors"
+                title="Student Profile"
+              >
+                <User size={18} weight="bold" />
+              </button>
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                  <Link
+                    to="/my-course"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  >
+                    <BookOpen size={18} className="text-[#C878BE]" /> My Course
+                  </Link>
+                  <Link
+                    to="/course/profile"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  >
+                    <User size={18} className="text-[#C878BE]" /> Profile
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer"
+                  >
+                    <SignOut size={18} /> Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* ── 2. SUB BAR (Breadcrumb & Progress) ── */}
+        <div className="player-sub-bar">
+          <div className="player-crumb">
+            <Link to="/my-course">
+              <ArrowLeft size={16} />
+              <span>My Course</span>
+            </Link>
+            <span>/</span>
+            <b>{activeCourse?.title || 'The Better Man'}</b>
+          </div>
+          <div className="player-subp">
+            <span>Lesson {currentLessonIndex + 1} of {totalCount}</span>
+            <div className="player-progress-track">
+              <i className="player-progress-fill" style={{ width: `${overallPct}%` }} />
+            </div>
+            <span>{overallPct}%</span>
+          </div>
+        </div>
+
+        {/* ── 3. MAIN SHELL (STAGE + META + TABS + SIDEBAR) ── */}
+        <div className="player-shell">
+          {/* Main Stage & Content Area */}
+          <main>
+            {/* Video Stage */}
+            <div className={`player-stage ${demoPlaying ? 'playing' : ''}`}>
               {hasActivePlayableVideo ? (
                 <ProtectedYouTubePlayer 
                   key={activeLesson?._id || activeLesson?.id || 'yt_active'}
@@ -1376,409 +1951,298 @@ export default function Course() {
                   videoId={resolvedActiveVid}
                   title={activeLesson?.title}
                 />
-              ) : activeLesson?.muxPlaybackId ? (
-                <iframe
-                  src={`https://player.mux.com/${activeLesson.muxPlaybackId}?accentColor=C878BE`}
-                  className="w-full h-full border-0"
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                  allowFullScreen
-                  title={activeLesson.title}
-                />
-              ) : (
-                <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-br from-[#150614] via-[#0B040B] to-[#040204] overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(200,120,190,0.18),transparent_70%)]" />
-                  
-                  {/* Subtle Grid Background */}
-                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#C878BE_1px,transparent_1px)] [background-size:24px_24px]" />
-                  
-                  <div className="relative z-10 flex flex-col items-center text-center p-6 max-w-lg">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C878BE]/15 border border-[#C878BE]/30 text-[#E3B8DE] text-xs font-semibold uppercase tracking-wider mb-4" style={{ fontFamily: 'var(--head)' }}>
-                      <Sparkle size={13} weight="fill" />
-                      <span>{activeModuleObj?.title || 'Masterclass Session'}</span>
+              ) : hasMux ? (
+                <div className="w-full h-full relative group">
+                  <MuxPlayer
+                    ref={muxPlayerRef}
+                    playbackId={activeMuxPlaybackId}
+                    metadata={{
+                      video_title: activeLesson?.title || 'Lesson Video',
+                      player_name: 'Better With Aarkesh Course Player'
+                    }}
+                    streamType="on-demand"
+                    accentColor="#C878BE"
+                    startTime={Number(localStorage.getItem(`bwa_lesson_progress_${activeLesson?._id || activeLesson?.id}`)) || 0}
+                    onTimeUpdate={(e) => {
+                      const t = e.target.currentTime;
+                      const dur = e.target.duration;
+                      const lesId = activeLesson?._id || activeLesson?.id;
+                      if (lesId && t > 2) {
+                        if (dur && t >= dur - 5) {
+                          localStorage.removeItem(`bwa_lesson_progress_${lesId}`);
+                        } else {
+                          localStorage.setItem(`bwa_lesson_progress_${lesId}`, Math.floor(t));
+                        }
+                      }
+                    }}
+                    onEnded={() => {
+                      const lesId = activeLesson?._id || activeLesson?.id;
+                      if (lesId) localStorage.removeItem(`bwa_lesson_progress_${lesId}`);
+                      toggleLessonCompletionLocal(activeLesson);
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      maxHeight: '100%',
+                      maxWidth: '100%',
+                      display: 'block'
+                    }}
+                    className="w-full h-full"
+                  />
+
+                  {/* Elegant Resume Prompt Toast */}
+                  {resumePrompt && (
+                    <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-40 bg-[#160B1C]/95 border border-[#C878BE]/50 shadow-2xl backdrop-blur-md rounded-xl p-3 sm:p-4 flex items-center justify-between gap-4 text-white transition-all">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-[#C878BE]/20 border border-[#C878BE]/40 flex items-center justify-center text-[#E090D6] flex-none">
+                          <Clock size={18} weight="bold" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-[#E090D6] font-semibold uppercase tracking-wider">Resume Playback?</p>
+                          <p className="text-xs text-white/80 truncate">
+                            You left off at <strong className="text-white font-mono">{resumePrompt.formatted}</strong>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-none">
+                        <button
+                          type="button"
+                          onClick={handleResumeClick}
+                          className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#B8449F] to-[#7D2B8B] hover:brightness-110 text-white text-xs font-semibold shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <Play size={13} weight="fill" /> Resume
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleStartOverClick}
+                          className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[#A99AB0] hover:text-white text-xs font-semibold border border-white/10 transition-all flex items-center gap-1 cursor-pointer"
+                          title="Start from beginning"
+                        >
+                          <ArrowCounterClockwise size={13} /> Restart
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setResumePrompt(null)}
+                          className="p-1.5 text-white/50 hover:text-white rounded-lg transition-colors cursor-pointer"
+                          aria-label="Dismiss"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
                     </div>
-
-                    <h2 className="text-2xl sm:text-3xl text-white font-semibold mb-3 drop-shadow-md tracking-tight" style={{ fontFamily: 'var(--head)' }}>
-                      {activeLesson?.title || 'Lesson Stream Ready'}
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-full min-h-[380px] flex flex-col items-center justify-center text-center p-8 bg-gradient-to-br from-[#1b0a24] via-[#100617] to-[#0a030f] relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(196,91,184,0.18)_0%,transparent_70%)] pointer-events-none" />
+                  <div className="relative z-10 max-w-lg space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#C878BE]/15 border border-[#C878BE]/30 text-[#E090D6] text-xs font-semibold uppercase tracking-wider">
+                      <Sparkle size={14} weight="fill" />
+                      Day {displayModNum} · Lesson {lessonNumInMod}
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white font-serif tracking-tight">
+                      {activeLesson?.title || 'Lesson Overview'}
                     </h2>
-                    
-                    <p className="text-white/60 text-xs sm:text-sm font-sans mb-6 max-w-md line-clamp-2">
-                      {activeLesson?.description || 'Learn calm authority, magnetic communication and self-command directly with Aarkesh.'}
+                    <p className="text-[#A99AB0] text-sm leading-relaxed">
+                      {activeLesson?.description || 'Video lecture will be available once uploaded in the admin portal. You can review the lesson notes, worksheets, and resources below.'}
                     </p>
-
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const updated = { ...activeLesson, isCompleted: !activeLesson?.isCompleted };
-                        setActiveLesson(updated);
-                      }}
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white font-medium text-xs sm:text-sm hover:opacity-95 transition-all shadow-[0_0_30px_rgba(200,120,190,0.35)] cursor-pointer"
-                      style={{ fontFamily: 'var(--head)' }}
-                    >
-                      <Play size={16} weight="fill" />
-                      <span>Start Session</span>
-                    </button>
-                  </div>
-
-                  <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-10">
-                    <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[#C878BE] font-bold mb-0.5 block" style={{ fontFamily: 'var(--head)' }}>NOW PLAYING</span>
-                    <h3 className="text-sm sm:text-base text-white/90 drop-shadow-md truncate max-w-xs sm:max-w-md font-semibold" style={{ fontFamily: 'var(--head)' }}>{activeLesson?.title}</h3>
+                    <div className="flex items-center justify-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setPlayerTab('notes')}
+                        className="px-4 py-2 rounded-xl bg-[#C878BE]/25 hover:bg-[#C878BE]/35 text-[#F6EEF8] text-xs font-semibold border border-[#C878BE]/40 transition-all flex items-center gap-2"
+                      >
+                        <NotePencil size={16} /> Open Lesson Notes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleLessonCompletionLocal(activeLesson)}
+                        className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#A99AB0] hover:text-white text-xs font-semibold border border-white/10 transition-all flex items-center gap-2"
+                      >
+                        <CheckCircle size={16} weight={activeLesson?.isCompleted ? 'fill' : 'regular'} className={activeLesson?.isCompleted ? 'text-emerald-400' : ''} />
+                        {activeLesson?.isCompleted ? 'Completed' : 'Mark Complete'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ── 2. LESSON CONTROL & QUICK NAVIGATION BAR ── */}
-            <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 bg-[#0C060D] border-b border-white/10 shrink-0 gap-3">
-              {/* Prev Lesson */}
-              <button
-                type="button"
-                disabled={!prevLesson}
-                onClick={() => {
-                  if (prevLesson) {
-                    handleSelectLesson(prevLesson, prevLesson.module);
-                    if (leftColumnRef.current) leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
-                }}
-                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  prevLesson 
-                    ? 'bg-white/5 border border-white/10 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/20 cursor-pointer' 
-                    : 'opacity-30 cursor-not-allowed border border-white/5 text-white/40'
-                }`}
-                style={{ fontFamily: 'var(--head)' }}
-              >
-                <ArrowLeft size={13} weight="bold" />
-                <span className="hidden sm:inline">Previous</span>
-              </button>
-
-              {/* Lesson Title & Module Info (Center on mobile/desktop) */}
-              <div className="text-center truncate min-w-0 px-2">
-                <span className="text-[0.62rem] uppercase tracking-[0.18em] text-[#C878BE] font-bold block truncate" style={{ fontFamily: 'var(--head)' }}>
-                  {activeModuleObj?.title || 'Masterclass Curriculum'}
-                </span>
-                <h3 className="text-xs sm:text-sm text-white font-medium truncate" style={{ fontFamily: 'var(--head)' }}>
-                  {activeLesson?.title}
-                </h3>
+            {/* Lesson Meta Row */}
+            <div className="player-meta">
+              <div>
+                <div className="player-k">
+                  Day {displayModNum} · {activeModuleObj?.title || 'Course Curriculum'}
+                </div>
+                <h1>{activeLesson?.title || 'Lesson Overview'}</h1>
+                <div className="player-chips">
+                  <span className="player-chip">
+                    <Clock size={14} className="text-[#C878BE]" />
+                    <span>{activeLesson?.duration || '15:00'}</span>
+                  </span>
+                  <span className="player-chip">
+                    <User size={14} className="text-[#C878BE]" />
+                    <span>Aarkesh Gupta</span>
+                  </span>
+                </div>
               </div>
 
-              {/* Next Lesson / Mark Complete */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
+              <div className="player-acts">
+                <button 
+                  type="button" 
+                  className="player-btn player-ib"
+                  aria-label="Previous lesson"
+                  disabled={!prevLesson}
                   onClick={() => {
-                    const updated = { ...activeLesson, isCompleted: !activeLesson?.isCompleted };
-                    setActiveLesson(updated);
+                    if (prevLesson) {
+                      handleSelectLesson(prevLesson, prevLesson.module);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                   }}
-                  className={`px-3 sm:px-4 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
-                    activeLesson?.isCompleted
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                      : 'bg-[#C878BE]/15 border-[#C878BE]/40 text-[#E3B8DE] hover:bg-[#C878BE]/25'
-                  }`}
-                  style={{ fontFamily: 'var(--head)' }}
                 >
-                  <CheckCircle size={15} weight={activeLesson?.isCompleted ? 'fill' : 'regular'} />
-                  <span className="hidden sm:inline">{activeLesson?.isCompleted ? 'Completed' : 'Mark Complete'}</span>
+                  <ArrowLeft size={18} weight="bold" />
                 </button>
 
-                <button
-                  type="button"
+                <button 
+                  type="button" 
+                  className={`player-btn ${activeLesson?.isCompleted ? 'player-done' : ''}`}
+                  onClick={() => toggleLessonCompletionLocal(activeLesson)}
+                >
+                  <CheckCircle size={16} weight={activeLesson?.isCompleted ? 'fill' : 'regular'} />
+                  <span>{activeLesson?.isCompleted ? 'Completed' : 'Mark complete'}</span>
+                </button>
+
+                <button 
+                  type="button" 
+                  className="player-btn player-pri"
                   disabled={!nextLesson}
                   onClick={() => {
                     if (nextLesson) {
                       handleSelectLesson(nextLesson, nextLesson.module);
-                      if (leftColumnRef.current) leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    nextLesson 
-                      ? 'bg-gradient-to-r from-[#8A2E80] to-[#58184E] border border-[#C878BE]/40 text-white hover:opacity-90 shadow-md cursor-pointer' 
-                      : 'opacity-30 cursor-not-allowed border border-white/5 text-white/40'
-                  }`}
-                  style={{ fontFamily: 'var(--head)' }}
                 >
-                  <span className="hidden sm:inline">Next</span>
-                  <ArrowRight size={13} weight="bold" />
+                  <span>Next lesson</span>
+                  <ArrowRight size={16} weight="bold" />
                 </button>
               </div>
             </div>
 
-            {/* ── 3. MOBILE TAB SELECTOR (Curriculum Playlist & Comments) ── */}
-            <div className="lg:hidden flex items-center border-b border-white/10 bg-[#0A050A] px-3.5 py-2.5 gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveMobileTab('playlist')}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
-                  activeMobileTab === 'playlist'
-                    ? 'bg-[#C878BE]/20 border border-[#C878BE]/50 text-[#E3B8DE] shadow-sm'
-                    : 'bg-white/[0.03] border border-white/5 text-white/60 hover:text-white'
-                }`}
-                style={{ fontFamily: 'var(--head)' }}
-              >
-                <Play size={13} weight="fill" />
-                <span>Playlist</span>
-                <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-mono">
-                  {allLessons.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveMobileTab('comments')}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
-                  activeMobileTab === 'comments'
-                    ? 'bg-[#C878BE]/20 border border-[#C878BE]/50 text-[#E3B8DE] shadow-sm'
-                    : 'bg-white/[0.03] border border-white/5 text-white/60 hover:text-white'
-                }`}
-                style={{ fontFamily: 'var(--head)' }}
-              >
-                <ChatCenteredDots size={14} weight="bold" />
-                <span>Discussions</span>
-              </button>
+            {/* Keyboard Shortcuts Hint */}
+            <div className="player-kbd">
+              <span><kbd>N</kbd> <kbd>P</kbd> next / previous</span>
+              <span><kbd>M</kbd> mark complete</span>
+              <span><kbd>F</kbd> fullscreen</span>
             </div>
 
-            {/* ── MOBILE PLAYLIST VIEW ── */}
-            {activeMobileTab === 'playlist' && (
-              <div className="lg:hidden p-4 space-y-4 bg-[#070408]">
-                <div className="flex items-center justify-between px-1">
-                  <h4 className="text-base text-white font-semibold" style={{ fontFamily: 'var(--head)' }}>Course Curriculum</h4>
-                  <span className="text-xs text-[#E3B8DE] font-mono font-medium">{allLessons.filter(l => l.isCompleted).length} / {allLessons.length} Completed</span>
+            {/* Discussion & Student Comments */}
+            <div className="player-panel" style={{ paddingTop: '28px' }}>
+              <LessonComments
+                lessonId={activeLesson?._id || activeLesson?.id}
+                lessonTitle={activeLesson?.title}
+                onRequireAuth={() => {
+                  setShowCourseLogin(true);
+                  setLoginMode('login');
+                }}
+              />
+            </div>
+          </main>
+
+          {/* ── 4. RIGHT SIDEBAR (Curriculum & Sessions) ── */}
+          <aside className="player-side" aria-label="Course curriculum">
+            {/* Progress Card */}
+            <div className="player-card player-prog">
+              <div className="t">
+                <b>
+                  <List size={15} weight="bold" />
+                  Curriculum
+                </b>
+                <span>{completedCount} / {totalCount} completed</span>
+              </div>
+              <div className="bar">
+                <i style={{ width: `${overallPct}%` }} />
+              </div>
+              <div className="s">
+                <span>{overallPct}% complete</span>
+                <span>{completedCount === totalCount ? 'All done' : `${remainingCount} lessons left`}</span>
+              </div>
+            </div>
+
+            {/* Modules Accordion Cards */}
+            {curriculumModules.map((module, di) => {
+              const modLessons = module.lessons || [];
+              const modCompletedCount = modLessons.filter(l => l.isCompleted).length;
+              const isOpen = openPlayerModules.includes(di);
+
+              return (
+                <div key={module._id || module.id || di} className={`player-card player-day ${isOpen ? 'open' : ''}`}>
+                  <button 
+                    type="button"
+                    className="player-dh"
+                    aria-expanded={isOpen}
+                    onClick={() => togglePlayerModule(di)}
+                  >
+                    <div>
+                      <div className="k">Day {di + 1}</div>
+                      <div className="tt">{module.title}</div>
+                    </div>
+                    <div className="r">
+                      <span>{modCompletedCount}/{modLessons.length}</span>
+                      <CaretDown size={18} className="transition-transform" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="player-ls">
+                      {modLessons.map((l, li) => {
+                        const isCur = (l._id || l.id)?.toString() === (activeLesson?._id || activeLesson?.id)?.toString();
+                        const done = Boolean(l.isCompleted);
+
+                        return (
+                          <button
+                            key={l._id || l.id || li}
+                            type="button"
+                            className={`${isCur ? 'cur' : ''} ${done ? 'isdone' : ''}`}
+                            onClick={() => {
+                              handleSelectLesson(l, module);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                          >
+                            <span className={`player-st ${done ? 'done' : isCur ? 'now' : ''}`}>
+                              {done ? (
+                                <CheckCircle size={13} weight="fill" />
+                              ) : isCur ? (
+                                <Play size={10} weight="fill" />
+                              ) : (
+                                li + 1
+                              )}
+                            </span>
+                            <span className="ti">{l.title}</span>
+                            <span className="du">{l.duration || '12:00'}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
+              );
+            })}
 
-                <div className="space-y-3">
-                  {curriculumModules.map((module) => {
-                    const isCurrentMod = activeModuleObj?._id === module._id || activeModuleObj?.id === module.id;
-                    const lessons = module.lessons || [];
-
-                    return (
-                      <div key={module._id || module.id} className="border border-white/10 rounded-2xl bg-[#0F0710] overflow-hidden">
-                        <button
-                          type="button"
-                          className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left group"
-                          onClick={() => setActiveModuleObj(isCurrentMod ? null : module)}
-                        >
-                          <div className="pr-3">
-                            <h5 className={`text-sm mb-0.5 leading-snug font-semibold ${isCurrentMod ? 'text-[#E3B8DE]' : 'text-white'}`} style={{ fontFamily: 'var(--head)' }}>
-                              {module.title}
-                            </h5>
-                            <p className="text-[0.6rem] uppercase tracking-[0.15em] text-white/40" style={{ fontFamily: 'var(--head)' }}>
-                              {lessons.length} {lessons.length === 1 ? 'LESSON' : 'LESSONS'}
-                            </p>
-                          </div>
-                          <CaretDown size={14} className={`text-white/40 transition-transform shrink-0 ${isCurrentMod ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {isCurrentMod && (
-                          <div className="bg-[#070408] p-2 pt-0 border-t border-white/5 space-y-1">
-                            {lessons.map((lesson) => {
-                              const isActive = (activeLesson?._id && activeLesson._id === lesson._id) || (activeLesson?.id && activeLesson.id === lesson.id);
-
-                              return (
-                                <button
-                                  key={lesson._id || lesson.id}
-                                  type="button"
-                                  onClick={() => {
-                                    handleSelectLesson(lesson, module);
-                                    if (leftColumnRef.current) {
-                                      leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                                    }
-                                  }}
-                                  className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl transition-all text-left ${
-                                    isActive ? 'bg-[#2E122A] border border-[#C878BE]/50 shadow-[0_0_15px_rgba(200,120,190,0.15)]' : 'hover:bg-white/5 border border-transparent'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                                    {lesson.isCompleted ? (
-                                      <CheckCircle size={15} weight="fill" className="text-emerald-400 shrink-0" />
-                                    ) : (
-                                      <Play size={14} weight={isActive ? 'fill' : 'regular'} className={`shrink-0 ${isActive ? 'text-[#C878BE]' : 'text-white/40'}`} />
-                                    )}
-                                    <span className={`text-xs truncate ${isActive ? 'text-white font-medium' : 'text-white/70'}`} style={{ fontFamily: 'var(--head)' }}>
-                                      {lesson.title}
-                                    </span>
-                                  </div>
-                                  <span className="text-[0.6rem] text-white/40 whitespace-nowrap ml-2 shrink-0 font-mono">
-                                    {lesson.duration || '12:00'}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+            {/* Private Sessions Booking Card (Only shown if student has remaining sessions > 0) */}
+            {freeSessionsRemaining > 0 && (
+              <div className="player-card player-sess">
+                <div>
+                  <b>{freeSessionsRemaining} private 1-on-1 {freeSessionsRemaining === 1 ? 'session' : 'sessions'}</b>
+                  <span>Included with your course access</span>
                 </div>
+                <Link to="/book" className="player-btn player-pri player-btn-sm" style={{ textDecoration: 'none' }}>
+                  <CalendarPlus size={15} weight="bold" />
+                  <span>Schedule</span>
+                </Link>
               </div>
             )}
-
-            {/* ── 4. LESSON OVERVIEW, 1-ON-1 COACHING PERKS & WORKSHEETS ── */}
-            <div className="p-4 sm:p-8 space-y-6">
-              {/* About Lesson Card */}
-              <div className="bg-[#0E0710] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_100%_0%,rgba(200,120,190,0.12),transparent_70%)] pointer-events-none" />
-
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-4 border-b border-white/10">
-                  <div>
-                    <span className="text-[0.65rem] uppercase tracking-[0.18em] text-[#C878BE] font-bold block mb-1" style={{ fontFamily: 'var(--head)' }}>
-                      SESSION OVERVIEW
-                    </span>
-                    <h3 className="text-xl sm:text-2xl text-white font-semibold tracking-tight" style={{ fontFamily: 'var(--head)' }}>{activeLesson?.title}</h3>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-xs uppercase tracking-[0.15em] text-white/60" style={{ fontFamily: 'var(--head)' }}>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
-                      <Clock size={15} className="text-[#C878BE]" /> {activeLesson?.duration || '15:00'}
-                    </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
-                      <span className="w-4 h-4 rounded-full bg-[#C878BE]/20 text-[#E3B8DE] flex items-center justify-center text-[8px] font-bold">A</span>
-                      AARKESH GUPTA
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-white/75 text-sm sm:text-base leading-relaxed mb-6">
-                  {activeLesson?.description || 'In this session, we dive deep into the mechanics of presence. You will learn how to anchor yourself in high-pressure situations, tune out internal noise, and project a calm, magnetic energy.'}
-                </p>
-
-                {/* 3 Complimentary 1-on-1 Mentorship Sessions Banner */}
-                <div className="p-4 sm:p-5 rounded-xl bg-gradient-to-r from-[#200D1E] via-[#150914] to-[#0D050D] border border-[#C878BE]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-[#C878BE]/20 border border-[#C878BE]/40 flex items-center justify-center text-[#E3B8DE] shrink-0">
-                      <Sparkle size={20} weight="fill" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-white mb-0.5" style={{ fontFamily: 'var(--head)' }}>3 Private 1-on-1 Mentorship Sessions Included</h4>
-                      <p className="text-xs text-white/60">Schedule your private deep-dive sessions directly with Aarkesh anytime during your course access.</p>
-                    </div>
-                  </div>
-
-                  <Link
-                    to="/book"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-all shadow-[0_0_20px_rgba(200,120,190,0.3)] shrink-0"
-                    style={{ fontFamily: 'var(--head)' }}
-                  >
-                    <span>Schedule Session</span>
-                    <ArrowRight size={13} weight="bold" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* ── 5. DISCUSSIONS & COMMENTS SECTION ── */}
-            <div className={`${activeMobileTab === 'comments' ? 'block' : 'hidden lg:block'} p-4 sm:p-8 pt-0`}>
-              <div className="bg-[#0E0710] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
-                  <ChatCenteredDots size={20} className="text-[#C878BE]" />
-                  <h4 className="text-lg text-white font-semibold" style={{ fontFamily: 'var(--head)' }}>Lesson Discussion & Student Q&A</h4>
-                </div>
-                <LessonComments
-                  lessonId={activeLesson?._id || activeLesson?.id}
-                  lessonTitle={activeLesson?.title}
-                  onRequireAuth={() => {
-                    setShowCourseLogin(true);
-                    setLoginMode('login');
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* ── DESKTOP RIGHT COLUMN - Curriculum Playlist & Progress ── */}
-          <div 
-            data-lenis-prevent="true"
-            className="hidden lg:flex w-[400px] xl:w-[440px] bg-[#0A050A] flex-col h-full overflow-y-auto p-6 gap-5 border-l border-white/10 overscroll-contain"
-          >
-            {/* Playlist Header & Overall Progress */}
-            <div className="sticky top-0 bg-[#0A050A]/95 backdrop-blur-md z-10 pb-4 border-b border-white/10">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[0.68rem] uppercase tracking-widest text-[#E3B8DE] font-bold flex items-center gap-2" style={{ fontFamily: 'var(--head)' }}>
-                  <BookOpen size={14} className="text-[#C878BE]" />
-                  Masterclass Curriculum
-                </h3>
-                <span className="text-xs text-white/50 font-mono font-medium">
-                  {allLessons.filter(l => l.isCompleted).length} / {allLessons.length} Completed
-                </span>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-[#A83B96] to-[#C878BE] rounded-full transition-all duration-500"
-                  style={{
-                    width: `${allLessons.length > 0 ? Math.round((allLessons.filter(l => l.isCompleted).length / allLessons.length) * 100) : 0}%`
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Modules Accordion List */}
-            <div className="flex flex-col gap-3.5">
-              {curriculumModules.map((module) => {
-                const isCurrentMod = activeModuleObj?._id === module._id || activeModuleObj?.id === module.id;
-                const lessons = module.lessons || [];
-                const completedInMod = lessons.filter(l => l.isCompleted).length;
-
-                return (
-                  <div key={module._id || module.id} className="border border-white/10 rounded-2xl bg-[#0E060F] overflow-hidden transition-colors hover:border-white/20">
-                    <button
-                      className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-white/5 transition-colors text-left group cursor-pointer"
-                      onClick={() => setActiveModuleObj(isCurrentMod ? null : module)}
-                    >
-                      <div className="pr-3">
-                        <h4 className={`text-sm sm:text-base mb-1 transition-colors leading-snug font-semibold ${isCurrentMod ? 'text-[#E3B8DE]' : 'text-white group-hover:text-[#E3B8DE]'}`} style={{ fontFamily: 'var(--head)' }}>
-                          {module.title}
-                        </h4>
-                        <div className="flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.16em] text-white/40" style={{ fontFamily: 'var(--head)' }}>
-                          <span>{lessons.length} {lessons.length === 1 ? 'LESSON' : 'LESSONS'}</span>
-                          <span>•</span>
-                          <span className={completedInMod === lessons.length && lessons.length > 0 ? 'text-emerald-400 font-semibold' : ''}>
-                            {completedInMod}/{lessons.length} DONE
-                          </span>
-                        </div>
-                      </div>
-                      <CaretDown size={15} className={`text-white/40 transition-transform shrink-0 ${isCurrentMod ? 'rotate-180 text-[#C878BE]' : ''}`} />
-                    </button>
-
-                    {isCurrentMod && (
-                      <div className="bg-[#070308] p-2 pt-0 border-t border-white/5 space-y-1">
-                        {lessons.map((lesson) => {
-                          const isActive = (activeLesson?._id && activeLesson._id === lesson._id) || (activeLesson?.id && activeLesson.id === lesson.id);
-
-                          return (
-                            <button
-                              key={lesson._id || lesson.id}
-                              onClick={() => {
-                                handleSelectLesson(lesson, module);
-                                if (leftColumnRef.current) leftColumnRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                              }}
-                              className={`w-full flex items-center justify-between py-3 px-3.5 rounded-xl transition-all text-left group cursor-pointer ${
-                                isActive 
-                                  ? 'bg-[#2A1026] border border-[#C878BE]/60 shadow-[0_0_20px_rgba(200,120,190,0.2)]' 
-                                  : 'hover:bg-white/5 border border-transparent'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3 min-w-0 pr-2">
-                                {lesson.isCompleted ? (
-                                  <CheckCircle size={16} weight="fill" className="text-emerald-400 shrink-0" />
-                                ) : (
-                                  <Play size={15} weight={isActive ? 'fill' : 'regular'} className={`shrink-0 ${isActive ? 'text-[#C878BE]' : 'text-white/40 group-hover:text-white'}`} />
-                                )}
-                                <span className={`text-xs truncate ${isActive ? 'text-white font-semibold' : 'text-white/70 group-hover:text-white'}`} style={{ fontFamily: 'var(--head)' }}>
-                                  {lesson.title}
-                                </span>
-                              </div>
-                              <span className="text-[0.62rem] text-white/40 whitespace-nowrap ml-2 shrink-0 font-mono">
-                                {lesson.duration || '12:00'}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          </aside>
         </div>
       </div>
     );
@@ -1790,14 +2254,10 @@ export default function Course() {
       <header className="course-nav">
         <Link 
           className="course-logo" 
-          to="/course"
-          onClick={(e) => {
+          to="/"
+          onClick={() => {
             setShowCourseLogin(false);
             setShowDashboard(false);
-            if (location.pathname === '/course' || location.pathname === '/course/') {
-              e.preventDefault();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
           }}
         >
           BetterWith<b>Aarkesh</b>
@@ -1894,7 +2354,7 @@ export default function Course() {
 
           {isLoggedIn ? (
             <>
-              {isPurchased && (
+              {hasAnyCoursePurchased && (
                 <Link
                   to="/my-course"
                   className="course-nav-mycourse-btn"
@@ -1989,7 +2449,7 @@ export default function Course() {
                   return (
                     <article className={`all-course-card ${themeCls}`} key={c.n || c.slug}>
                       {/* Thumbnail Banner */}
-                      <div className={`vis ${bannerCls}`} aria-hidden="true">
+                      <div className={`vis ${bannerCls}`} aria-hidden="true" style={(c.thumbnailUrl || c.imageUrl) ? { padding: 0, overflow: 'hidden' } : {}}>
                         <div className="vis-badge-top">
                           {c.soon ? (
                             <span className="live-status-badge soon">Coming soon</span>
@@ -1997,9 +2457,19 @@ export default function Course() {
                             <span className="live-status-badge live"><span className="pulse-dot"></span> Live</span>
                           )}
                         </div>
-                        <span className="no">{c.n}</span>
-                        <i>{c.chips?.[0]}</i>
-                        <i>{c.chips?.[1]}</i>
+                        {(c.thumbnailUrl || c.imageUrl) ? (
+                          <img 
+                            src={resolveImageUrl(c.thumbnailUrl || c.imageUrl)} 
+                            alt={c.title} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          />
+                        ) : (
+                          <>
+                            <span className="no">{c.n}</span>
+                            <i>{c.chips?.[0]}</i>
+                            <i>{c.chips?.[1]}</i>
+                          </>
+                        )}
                       </div>
 
                       {/* Content Body */}
@@ -2007,16 +2477,11 @@ export default function Course() {
                         {/* Title */}
                         <h3 className="card-course-title">{c.title}</h3>
 
-                        {/* Price & Badge Row */}
+                        {/* Price Row */}
                         <div className="card-price-row">
                           <div className="price-label">
                             Price <b>{c.price}</b> <s>{c.was}</s>
                           </div>
-                          {c.soon ? (
-                            <span className="card-discount-badge">WAITLIST</span>
-                          ) : (
-                            <span className="card-discount-badge">POPULAR</span>
-                          )}
                         </div>
 
                         {/* Action CTA Button */}
@@ -2138,7 +2603,7 @@ export default function Course() {
                     return (
                       <article className={`all-course-card ${themeCls}`} key={c.n || c.slug}>
                         {/* Thumbnail Banner */}
-                        <div className={`vis ${bannerCls}`} aria-hidden="true">
+                        <div className={`vis ${bannerCls}`} aria-hidden="true" style={(c.thumbnailUrl || c.imageUrl) ? { padding: 0, overflow: 'hidden' } : {}}>
                           <div className="vis-badge-top">
                             {c.soon ? (
                               <span className="live-status-badge soon">Coming soon</span>
@@ -2146,9 +2611,19 @@ export default function Course() {
                               <span className="live-status-badge live"><span className="pulse-dot"></span> Live</span>
                             )}
                           </div>
-                          <span className="no">{c.n}</span>
-                          <i>{c.chips?.[0]}</i>
-                          <i>{c.chips?.[1]}</i>
+                          {(c.thumbnailUrl || c.imageUrl) ? (
+                            <img 
+                              src={resolveImageUrl(c.thumbnailUrl || c.imageUrl)} 
+                              alt={c.title} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            />
+                          ) : (
+                            <>
+                              <span className="no">{c.n}</span>
+                              <i>{c.chips?.[0]}</i>
+                              <i>{c.chips?.[1]}</i>
+                            </>
+                          )}
                         </div>
 
                         {/* Content Body */}
@@ -2156,16 +2631,11 @@ export default function Course() {
                           {/* Title */}
                           <h3 className="card-course-title">{c.title}</h3>
 
-                          {/* Price & Badge Row */}
+                          {/* Price Row */}
                           <div className="card-price-row">
                             <div className="price-label">
                               Price <b>{c.price}</b> <s>{c.was}</s>
                             </div>
-                            {c.soon ? (
-                              <span className="card-discount-badge">WAITLIST</span>
-                            ) : (
-                              <span className="card-discount-badge">POPULAR</span>
-                            )}
                           </div>
 
                           {/* Action CTA Button */}
@@ -2282,7 +2752,7 @@ export default function Course() {
                     )}
                   </div>
                   <div>
-                    {isPurchased ? (
+                    {hasAnyCoursePurchased ? (
                       <button 
                         type="button" 
                         className="btn" 
@@ -2335,13 +2805,141 @@ export default function Course() {
                 <div className="d-grid">
                   {/* Left Column: Preview Canvas & Title */}
                   <div>
-                    <div className={`pv ${getBannerCls(activeCourse)}`} aria-hidden="true">
-                      <span className="big">{activeCourse.n || '01'}</span>
-                      <i>{activeCourse.chips?.[0]}</i>
-                      <i>{activeCourse.chips?.[1]}</i>
-                      <div className="pv-center-btn">
-                        <Play size={24} weight="fill" />
-                      </div>
+                    <div 
+                      className={`pv ${getBannerCls(activeCourse)} group select-none relative`} 
+                      style={{
+                        padding: 0,
+                        overflow: 'hidden',
+                        aspectRatio: '16/10',
+                        borderRadius: '20px',
+                        background: '#000000',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+                      }}
+                    >
+                      {isPlayingInlineTrailer ? (
+                        /* ── INLINE VIDEO PLAYER (SHORT/COMPACT HERO BOX) ── */
+                        <div className="w-full h-full relative bg-black flex items-center justify-center">
+                          {(() => {
+                            const rawTrailer = activeCourse?.trailer ||
+                                              activeCourse?.trailerVideo ||
+                                              activeCourse?.heroSection?.trailerVideo ||
+                                              activeCourse?.trailerMuxPlaybackId || 
+                                              activeCourse?.muxPlaybackId ||
+                                              activeCourse?.trailerVideoUrl || 
+                                              activeCourse?.previewVideoUrl || 
+                                              activeCourse?.videoUrl ||
+                                              activeCourse?.youtubeUrl || 
+                                              activeCourse?.videoModules?.[0]?.lessons?.[0]?.muxPlaybackId || 
+                                              activeCourse?.videoModules?.[0]?.lessons?.[0]?.youtubeUrl || 
+                                              activeCourse?.videoModules?.[0]?.lessons?.[0]?.videoUrl || 
+                                              '';
+                            const muxId = extractMuxPlaybackId(rawTrailer) || 
+                                          extractMuxPlaybackId(activeCourse?.trailerVideo) ||
+                                          extractMuxPlaybackId(activeCourse?.heroSection?.trailerVideo) ||
+                                          extractMuxPlaybackId(activeCourse?.trailer) ||
+                                          activeCourse?.trailerMuxPlaybackId || 
+                                          activeCourse?.muxPlaybackId || 
+                                          activeCourse?.videoModules?.[0]?.lessons?.[0]?.muxPlaybackId;
+                            const ytId = extractYoutubeVideoId(rawTrailer);
+
+                            if (muxId) {
+                              return (
+                                <iframe
+                                  src={`https://player.mux.com/${muxId}?accentColor=C878BE&autoplay=1`}
+                                  title={activeCourse?.title || 'Course Preview Trailer'}
+                                  className="w-full h-full border-0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                  allowFullScreen
+                                />
+                              );
+                            }
+
+                            if (ytId) {
+                              return (
+                                <iframe
+                                  src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1`}
+                                  title={activeCourse?.title || 'Course Preview'}
+                                  className="w-full h-full border-0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                  allowFullScreen
+                                />
+                              );
+                            }
+
+                            if (rawTrailer && !rawTrailer.startsWith('data:') && !rawTrailer.startsWith('blob:') && rawTrailer.includes('/')) {
+                              return (
+                                <video
+                                  src={resolveImageUrl(rawTrailer)}
+                                  controls
+                                  autoPlay
+                                  className="w-full h-full object-contain"
+                                />
+                              );
+                            }
+
+                            return (
+                              <div className="text-center p-6 space-y-2">
+                                <VideoCamera size={36} className="text-white/40 mx-auto" />
+                                <p className="text-white text-xs font-medium">Trailer Video Coming Soon</p>
+                                <button 
+                                  type="button" 
+                                  onClick={() => setIsPlayingInlineTrailer(false)}
+                                  className="text-[10px] text-[#ff8059] underline cursor-pointer"
+                                >
+                                  Back to Thumbnail
+                                </button>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Top-Right Close Button */}
+                          <div className="absolute top-2.5 right-2.5 z-30">
+                            <button
+                              type="button"
+                              onClick={() => setIsPlayingInlineTrailer(false)}
+                              className="w-7 h-7 rounded-full bg-black/80 hover:bg-black text-white/80 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-white/20 shadow-xl"
+                              title="Close video"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* ── THUMBNAIL / GRAPHIC WITH GLOWING CENTER PLAY BUTTON ── */
+                        <div 
+                          className="w-full h-full relative cursor-pointer flex items-center justify-center"
+                          onClick={() => setIsPlayingInlineTrailer(true)}
+                          title="Click to play preview video"
+                        >
+                          {(activeCourse.thumbnailUrl || activeCourse.imageUrl) ? (
+                            <img 
+                              src={resolveImageUrl(activeCourse.thumbnailUrl || activeCourse.imageUrl)} 
+                              alt={activeCourse.title} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            />
+                          ) : (
+                            <>
+                              <span className="big">{activeCourse.n || '01'}</span>
+                              <i>{activeCourse.chips?.[0]}</i>
+                              <i>{activeCourse.chips?.[1]}</i>
+                            </>
+                          )}
+
+                          {/* Top Right Live / Coming Soon Status Pill */}
+                          <div className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 z-20 pointer-events-none">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-[10px] sm:text-[11px] font-semibold backdrop-blur-md">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                              {activeCourse.soon ? 'Coming soon' : 'Live now'}
+                            </span>
+                          </div>
+
+                          {/* Glowing Centered Play Button */}
+                          <div className="pv-center-btn" title="Click to play video">
+                            <Play size={24} weight="fill" />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="dtitle">
@@ -2385,18 +2983,12 @@ export default function Course() {
                     {activeCourse.soon ? (
                       <button
                         type="button"
-                        className="btn block"
-                        onClick={() => {
-                          if (!isLoggedIn) {
-                            setShowCourseLogin(true);
-                          } else {
-                            setShowPreRegSuccessModal(true);
-                          }
-                        }}
+                        disabled
+                        className="btn block btn-coming-soon select-none"
                       >
-                        Join the Waitlist <span aria-hidden="true">→</span>
+                        Coming Soon
                       </button>
-                    ) : isPurchased ? (
+                    ) : isThisCoursePurchased ? (
                       <button
                         type="button"
                         className="btn block"
@@ -2557,11 +3149,13 @@ export default function Course() {
 
                 {/* Course Display: Dummy Visual Graphic Card + Info */}
                 <div className="flex flex-col gap-4">
-                  {/* Dummy Graphic Card Mockup matching Course Themes */}
+                  {/* Dummy Graphic Card Mockup or Custom Uploaded Thumbnail */}
                   <div 
-                    className="w-full aspect-[16/10] sm:aspect-[16/10.5] rounded-2xl overflow-hidden border border-white/15 relative shadow-2xl flex items-center justify-center select-none"
+                    className="w-full aspect-[16/10] sm:aspect-[16/10.5] rounded-2xl overflow-hidden border border-white/15 relative shadow-2xl flex items-center justify-center select-none bg-black"
                     style={{
-                      background: activeCourse?.slug === 'difficult-people'
+                      background: (activeCourse?.thumbnailUrl || activeCourse?.imageUrl) 
+                        ? '#0a050b'
+                        : activeCourse?.slug === 'difficult-people'
                         ? 'radial-gradient(circle at 35% 25%, #2a2a2a 0%, #141414 55%, #050505 100%)'
                         : activeCourse?.slug === 'decisions'
                         ? 'radial-gradient(circle at 35% 25%, #3d246c 0%, #1d1038 55%, #080312 100%)'
@@ -2576,42 +3170,52 @@ export default function Course() {
                       </span>
                     </div>
 
-                    {/* Big Center Number */}
-                    <span 
-                      className="text-white font-extrabold tracking-tighter"
-                      style={{ 
-                        fontFamily: 'var(--head)',
-                        fontSize: 'clamp(4.5rem, 9vw, 6.8rem)',
-                        lineHeight: 1,
-                        textShadow: '0 10px 30px rgba(0,0,0,0.5)'
-                      }}
-                    >
-                      {activeCourse?.n || '01'}
-                    </span>
+                    {(activeCourse?.thumbnailUrl || activeCourse?.imageUrl) ? (
+                      <img 
+                        src={resolveImageUrl(activeCourse?.thumbnailUrl || activeCourse?.imageUrl)} 
+                        alt={activeCourse.title} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <>
+                        {/* Big Center Number */}
+                        <span 
+                          className="text-white font-extrabold tracking-tighter"
+                          style={{ 
+                            fontFamily: 'var(--head)',
+                            fontSize: 'clamp(4.5rem, 9vw, 6.8rem)',
+                            lineHeight: 1,
+                            textShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                          }}
+                        >
+                          {activeCourse?.n || '01'}
+                        </span>
 
-                    {/* Top Right Rotated Pill */}
-                    <span 
-                      className="absolute right-2.5 top-[20%] -rotate-12 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold text-white shadow-xl pointer-events-none"
-                      style={{
-                        background: 'linear-gradient(135deg, #C878BE, #7A2A70)',
-                        border: '1px solid rgba(255,255,255,0.25)',
-                        fontFamily: 'var(--head)'
-                      }}
-                    >
-                      {activeCourse?.chips?.[0] || 'Calm Authority'}
-                    </span>
+                        {/* Top Right Rotated Pill */}
+                        <span 
+                          className="absolute right-2.5 top-[20%] -rotate-12 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold text-white shadow-xl pointer-events-none"
+                          style={{
+                            background: 'linear-gradient(135deg, #C878BE, #7A2A70)',
+                            border: '1px solid rgba(255,255,255,0.25)',
+                            fontFamily: 'var(--head)'
+                          }}
+                        >
+                          {activeCourse?.chips?.[0] || 'Calm Authority'}
+                        </span>
 
-                    {/* Bottom Left Rotated Pill */}
-                    <span 
-                      className="absolute left-2.5 bottom-[18%] rotate-6 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold text-white shadow-xl pointer-events-none"
-                      style={{
-                        background: 'linear-gradient(135deg, #8A6BFF, #3A2A86)',
-                        border: '1px solid rgba(255,255,255,0.25)',
-                        fontFamily: 'var(--head)'
-                      }}
-                    >
-                      {activeCourse?.chips?.[1] || 'Self-Command'}
-                    </span>
+                        {/* Bottom Left Rotated Pill */}
+                        <span 
+                          className="absolute left-2.5 bottom-[18%] rotate-6 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold text-white shadow-xl pointer-events-none"
+                          style={{
+                            background: 'linear-gradient(135deg, #8A6BFF, #3A2A86)',
+                            border: '1px solid rgba(255,255,255,0.25)',
+                            fontFamily: 'var(--head)'
+                          }}
+                        >
+                          {activeCourse?.chips?.[1] || 'Self-Command'}
+                        </span>
+                      </>
+                    )}
                   </div>
 
                   {/* Title & Pricing */}
@@ -2652,17 +3256,13 @@ export default function Course() {
                       <span className="font-semibold text-white">₹{baseBeforeGst.toLocaleString('en-IN')}</span>
                     </div>
 
-                    {/* Platform Fee */}
-                    <div className="flex items-center justify-between text-white/70">
-                      <span>Platform fee</span>
-                      <span className="font-semibold text-white">₹0</span>
-                    </div>
-
                     {/* GST */}
-                    <div className="flex items-center justify-between text-white/70">
-                      <span>GST({gstRate}%)</span>
-                      <span className="font-semibold text-white">₹{gstAmount.toLocaleString('en-IN')}</span>
-                    </div>
+                    {currentGstRate > 0 && (
+                      <div className="flex items-center justify-between text-white/70">
+                        <span>GST({currentGstRate}%)</span>
+                        <span className="font-semibold text-white">₹{gstAmount.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
 
                     {/* Divider */}
                     <div className="border-t border-white/10 pt-3 my-2" />
@@ -2682,24 +3282,40 @@ export default function Course() {
 
                   {/* T&C Agreement Checkbox */}
                   <div className="mt-5 mb-1">
-                    <label className="flex items-start gap-2.5 cursor-pointer group select-none">
-                      <div
-                        onClick={() => setCheckoutAgreed(!checkoutAgreed)}
-                        className="w-4 h-4 mt-0.5 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-all"
+                    <div className="flex items-start gap-2.5 select-none">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCheckoutAgreed((prev) => !prev);
+                        }}
+                        className="w-4 h-4 mt-0.5 shrink-0 rounded border flex items-center justify-center cursor-pointer transition-all focus:outline-none"
                         style={{
                           background: checkoutAgreed ? (activeTheme.accent || '#C878BE') : 'transparent',
                           borderColor: checkoutAgreed ? (activeTheme.accent || '#C878BE') : 'rgba(255,255,255,0.25)',
                           boxShadow: checkoutAgreed ? `0 0 8px ${activeTheme.accent || '#C878BE'}60` : 'none'
                         }}
+                        title="Agree to Terms"
                       >
                         {checkoutAgreed && (
                           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
                             <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         )}
-                      </div>
-                      <span className="font-sans text-xs text-white/65 leading-relaxed group-hover:text-white/85 transition-colors">
-                        I agree to the{' '}
+                      </button>
+
+                      <div className="font-sans text-xs text-white/65 leading-relaxed">
+                        <span 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setCheckoutAgreed((prev) => !prev);
+                          }}
+                          className="cursor-pointer hover:text-white/85 transition-colors"
+                        >
+                          I agree to the{' '}
+                        </span>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -2711,13 +3327,13 @@ export default function Course() {
                             );
                             setActivePolicySlug(termsDoc?.slug || 'course-terms-and-conditions');
                           }}
-                          className="font-semibold underline underline-offset-2 inline cursor-pointer transition-colors"
+                          className="font-semibold underline underline-offset-2 inline cursor-pointer transition-colors hover:brightness-125"
                           style={{ color: activeTheme.accentLight || '#E3B8DE' }}
                         >
                           Terms &amp; Conditions
                         </button>
-                      </span>
-                    </label>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Error message if any */}
@@ -2740,7 +3356,7 @@ export default function Course() {
                         <span>PROCESSING...</span>
                       </>
                     ) : (
-                      <span>Proceed to checkout</span>
+                      <span>Proceed to checkout • ₹{finalPayable.toLocaleString('en-IN')}</span>
                     )}
                   </button>
 
@@ -2758,6 +3374,138 @@ export default function Course() {
                 </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── COURSE TRAILER / FREE PREVIEW VIDEO MODAL ── */}
+      {showTrailerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" style={{ zIndex: 9999 }}>
+          <div className="relative w-full max-w-4xl bg-[#110912] border border-white/20 rounded-3xl overflow-hidden shadow-2xl shadow-black flex flex-col max-h-[92vh]">
+            {/* Top Header */}
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-white/10 bg-white/[0.02]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#c9542f]/20 border border-[#c9542f]/40 flex items-center justify-center text-[#ff8059]">
+                  <Play size={18} weight="fill" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                    {activeCourse?.title || 'Masterclass'} • Free Course Preview
+                  </h3>
+                  <p className="text-[11px] text-white/50">Watch the introductory trailer and overview</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowTrailerModal(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Close preview"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* 16:9 Video Canvas */}
+            <div className="w-full aspect-video bg-black relative flex items-center justify-center">
+              {(() => {
+                const rawTrailer = activeCourse?.trailer ||
+                                  activeCourse?.trailerVideo ||
+                                  activeCourse?.heroSection?.trailerVideo ||
+                                  activeCourse?.trailerMuxPlaybackId || 
+                                  activeCourse?.muxPlaybackId || 
+                                  activeCourse?.trailerVideoUrl || 
+                                  activeCourse?.previewVideoUrl || 
+                                  activeCourse?.videoUrl || 
+                                  activeCourse?.youtubeUrl || 
+                                  activeCourse?.videoModules?.[0]?.lessons?.[0]?.muxPlaybackId || 
+                                  activeCourse?.videoModules?.[0]?.lessons?.[0]?.youtubeUrl || 
+                                  activeCourse?.videoModules?.[0]?.lessons?.[0]?.videoUrl || 
+                                  '';
+                const muxId = extractMuxPlaybackId(rawTrailer) || 
+                              extractMuxPlaybackId(activeCourse?.trailerVideo) ||
+                              extractMuxPlaybackId(activeCourse?.heroSection?.trailerVideo) ||
+                              extractMuxPlaybackId(activeCourse?.trailer) ||
+                              activeCourse?.trailerMuxPlaybackId || 
+                              activeCourse?.muxPlaybackId || 
+                              activeCourse?.videoModules?.[0]?.lessons?.[0]?.muxPlaybackId;
+                const ytId = extractYoutubeVideoId(rawTrailer);
+
+                if (muxId) {
+                  return (
+                    <iframe
+                      src={`https://player.mux.com/${muxId}?accentColor=C878BE&autoplay=1`}
+                      title={activeCourse?.title || 'Course Preview Trailer'}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  );
+                }
+
+                if (ytId) {
+                  return (
+                    <iframe
+                      src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1`}
+                      title={activeCourse?.title || 'Course Preview'}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  );
+                }
+
+                if (rawTrailer && !rawTrailer.startsWith('data:') && !rawTrailer.startsWith('blob:') && rawTrailer.includes('/')) {
+                  return (
+                    <video
+                      src={resolveImageUrl(rawTrailer)}
+                      controls
+                      autoPlay
+                      className="w-full h-full object-contain"
+                    />
+                  );
+                }
+
+                return (
+                  <div className="text-center p-8 space-y-3">
+                    <VideoCamera size={44} className="text-white/30 mx-auto" />
+                    <h4 className="text-white font-medium text-base">Course Preview Video Coming Soon</h4>
+                    <p className="text-white/50 text-xs max-w-sm mx-auto">
+                      The masterclass trailer for {activeCourse?.title} is being prepared. You can explore the full curriculum and modules below.
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Bottom Footer CTA */}
+            <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10 bg-[#0c070d]">
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs text-white/50 uppercase font-mono">Course Price:</span>
+                <span className="text-lg font-bold text-white font-serif">{activeCourse?.price || '₹15,000'}</span>
+                {activeCourse?.was && <s className="text-xs text-white/40">{activeCourse.was}</s>}
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setShowTrailerModal(false)}
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTrailerModal(false);
+                    handleEnrollClick(activeCourse);
+                  }}
+                  className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b54522] text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#c9542f]/25 cursor-pointer"
+                >
+                  Enroll in Masterclass →
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2904,13 +3652,10 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
       {/* Brand Logo */}
       <Link 
         className="course-logo" 
-        to="/course"
-        onClick={(e) => {
-          e.preventDefault();
+        to="/"
+        onClick={() => {
           if (typeof setShowCourseLogin === 'function') setShowCourseLogin(false);
           setShowDashboard(false);
-          navigate('/course');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       >
         BetterWith<b>Aarkesh</b>

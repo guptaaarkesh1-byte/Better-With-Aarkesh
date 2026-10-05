@@ -6,6 +6,8 @@ import CourseUser from '../models/CourseUser.js';
 import User from '../models/User.js';
 import CoursePurchase from '../models/CoursePurchase.js';
 import Course from '../models/Course.js';
+import Settings from '../models/Settings.js';
+import { DEFAULT_COURSE_DETAILS_MAP } from './courseDetailSettingsRoutes.js';
 import Appointment from '../models/Appointment.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -152,6 +154,7 @@ router.post('/register-verify', async (req, res) => {
         email: user.email,
         phoneNumber: user.phoneNumber,
         isPurchased: user.isPurchased,
+        purchasedCourses: user.purchasedCourses || [],
         token: generateToken(user._id),
       });
       pendingRegistrations.delete(email);
@@ -178,12 +181,25 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
+      const emailRegex = new RegExp(`^${user.email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      const coachingUser = await User.findOne({ email: emailRegex });
+      const claimedAppointments = await Appointment.countDocuments({
+        email: emailRegex,
+        $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }],
+        status: { $ne: 'CANCELLED' }
+      });
+      const freeSessions = coachingUser && coachingUser.freeSessions !== undefined
+        ? Math.max(0, coachingUser.freeSessions)
+        : (user.isPurchased ? Math.max(0, 3 - claimedAppointments) : 0);
+
       res.json({
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
         phoneNumber: user.phoneNumber,
         isPurchased: user.isPurchased,
+        purchasedCourses: user.purchasedCourses || (user.isPurchased ? ['better-man'] : []),
+        freeSessions,
         token: generateToken(user._id),
       });
     } else {
@@ -324,17 +340,6 @@ router.get('/me', protectCourse, async (req, res) => {
       const escapedEmail = email.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
       const coachingUser = await User.findOne({ email: emailRegex });
-      if (coachingUser) {
-        courseUserObj.freeSessions = coachingUser.freeSessions ?? 0;
-        courseUserObj.courseSessionsGranted = coachingUser.courseSessionsGranted ?? false;
-      } else if (courseUserObj.isPurchased) {
-        courseUserObj.freeSessions = 3;
-        courseUserObj.courseSessionsGranted = true;
-      } else {
-        courseUserObj.freeSessions = 0;
-        courseUserObj.courseSessionsGranted = false;
-      }
-
       // Fetch official purchase records for this student
       const purchases = await CoursePurchase.find({
         $or: [
@@ -346,7 +351,46 @@ router.get('/me', protectCourse, async (req, res) => {
       courseUserObj.purchases = purchases;
       courseUserObj.latestPurchase = purchases[0] || null;
 
-      // Primary course pricing info
+      // Consolidate all purchased course slugs
+      const purchasedSlugs = new Set();
+      if (Array.isArray(courseUserObj.purchasedCourses)) {
+        courseUserObj.purchasedCourses.forEach(s => s && purchasedSlugs.add(s));
+      }
+      purchases.forEach(p => {
+        if (p.courseSlug && p.paymentStatus === 'Paid') purchasedSlugs.add(p.courseSlug);
+      });
+      if (courseUserObj.isPurchased && purchasedSlugs.size === 0) {
+        purchasedSlugs.add('better-man');
+      }
+      courseUserObj.purchasedCourses = Array.from(purchasedSlugs);
+      courseUserObj.isPurchased = courseUserObj.purchasedCourses.length > 0;
+
+      const totalCoursesCount = courseUserObj.purchasedCourses.length;
+      const totalSessionsGranted = totalCoursesCount * 3;
+
+      const claimedAppointments = await Appointment.countDocuments({
+        email: emailRegex,
+        $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }],
+        status: { $ne: 'CANCELLED' }
+      });
+
+      const calculatedRemaining = Math.max(0, totalSessionsGranted - claimedAppointments);
+
+      if (coachingUser) {
+        coachingUser.freeSessions = calculatedRemaining;
+        coachingUser.courseSessionsGranted = true;
+        await coachingUser.save();
+        courseUserObj.freeSessions = calculatedRemaining;
+        courseUserObj.courseSessionsGranted = true;
+      } else if (courseUserObj.isPurchased) {
+        courseUserObj.freeSessions = calculatedRemaining;
+        courseUserObj.courseSessionsGranted = true;
+      } else {
+        courseUserObj.freeSessions = 0;
+        courseUserObj.courseSessionsGranted = false;
+      }
+
+      // Primary course doc
       const primaryCourse = await Course.findOne().sort({ createdAt: 1 });
       if (primaryCourse) {
         courseUserObj.coursePricing = {
@@ -355,6 +399,45 @@ router.get('/me', protectCourse, async (req, res) => {
           isGstIncluded: primaryCourse.isGstIncluded,
           title: primaryCourse.title
         };
+      }
+
+      // Fetch dynamic course details for all enrolled courses
+      try {
+        const multiDetailsSetting = await Settings.findOne({ key: 'course_multi_details_settings' });
+        const allCourseDetails = {
+          ...DEFAULT_COURSE_DETAILS_MAP,
+          ...(multiDetailsSetting?.value || {})
+        };
+
+        const enrolledCourses = Array.from(purchasedSlugs).map(slug => {
+          const cData = allCourseDetails[slug] || DEFAULT_COURSE_DETAILS_MAP[slug] || {};
+          const purchase = purchases.find(p => p.courseSlug === slug);
+          const imgUrl = cData.imageUrl || cData.thumbnailUrl || (slug === 'better-man' ? (primaryCourse?.thumbnail || DEFAULT_COURSE_DETAILS_MAP['better-man']?.imageUrl || '') : '') || '';
+          return {
+            slug,
+            title: cData.title || purchase?.courseTitle || (slug === 'better-man' ? 'The Better Man™' : slug),
+            imageUrl: imgUrl,
+            thumbnailUrl: imgUrl,
+            modulesCount: Array.isArray(cData.syllabus) && cData.syllabus.length > 0 ? cData.syllabus.length : 8,
+            purchaseDate: purchase?.purchaseDate || purchase?.createdAt || courseUserObj.createdAt || new Date(),
+            invoiceNumber: purchase?.invoiceNumber || null,
+            amount: purchase?.amount || null,
+            chips: cData.chips || [],
+            lede: cData.lede || cData.d || ''
+          };
+        });
+
+        courseUserObj.enrolledCourses = enrolledCourses;
+      } catch (settingsErr) {
+        console.error('Error attaching enrolledCourses metadata:', settingsErr.message);
+        courseUserObj.enrolledCourses = Array.from(purchasedSlugs).map(slug => ({
+          slug,
+          title: slug === 'better-man' ? 'The Better Man™' : slug,
+          imageUrl: '',
+          thumbnailUrl: '',
+          modulesCount: 8,
+          purchaseDate: courseUserObj.createdAt || new Date()
+        }));
       }
     }
     

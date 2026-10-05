@@ -15,11 +15,24 @@ import {
 import FlippingWordSwap from '../../components/ui/FlippingWordSwap';
 import './course-landing.css';
 
+const resolveImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  if (url.startsWith('/')) {
+    return `${apiUrl}${url}`;
+  }
+  return `${apiUrl}/${url}`;
+};
+
 export default function MyCourses() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [coursesMap, setCoursesMap] = useState({});
 
   // Navbar Profile Dropdown
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -34,6 +47,23 @@ export default function MyCourses() {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    // Fetch dynamic course settings map for thumbnails and metadata
+    const fetchCoursesMap = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${API_URL}/api/courses/details-settings`);
+        if (res.ok) {
+          const data = await res.json();
+          setCoursesMap(data || {});
+        }
+      } catch (e) {
+        console.error('Error fetching course detail settings:', e);
+      }
+    };
+    fetchCoursesMap();
   }, []);
 
   useEffect(() => {
@@ -141,9 +171,11 @@ export default function MyCourses() {
     }
   };
 
-  const getCourseProgress = () => {
+  const [selectedInvoiceItem, setSelectedInvoiceItem] = useState(null);
+
+  const getCourseProgress = (courseSlug = 'better-man') => {
     try {
-      const saved = localStorage.getItem('course_completed_lessons');
+      const saved = localStorage.getItem(`course_completed_lessons_${courseSlug}`) || localStorage.getItem('course_completed_lessons');
       if (saved) {
         const arr = JSON.parse(saved);
         if (Array.isArray(arr) && arr.length > 0) {
@@ -154,26 +186,66 @@ export default function MyCourses() {
         }
       }
     } catch (e) {}
-    return { percent: 3.56, count: 1 };
+    return { percent: 0, count: 0 };
   };
 
-  const courseProgressInfo = getCourseProgress();
-
   const enrolledCourseList = useMemo(() => {
-    return [
-      {
-        id: 'better-with-aarkesh-mastery',
-        title: 'Better With Aarkesh: The Mastery Course',
-        subtitle: '4 Transformation Pillars • 14 High-Impact Video Lessons',
-        purchaseDate: formatPurchaseDate(user?.latestPurchase?.createdAt || user?.createdAt),
-        progress: courseProgressInfo.percent,
-        completedLessonsCount: courseProgressInfo.count,
-        totalLessons: 14,
-        image: '/course_hero_bg.jpg',
-        freeSessions: user?.freeSessions ?? 3
-      }
-    ];
-  }, [user, courseProgressInfo.percent, courseProgressInfo.count]);
+    if (Array.isArray(user?.enrolledCourses) && user.enrolledCourses.length > 0) {
+      return user.enrolledCourses.map((c) => {
+        const slug = c.slug || 'better-man';
+        const progressInfo = getCourseProgress(slug);
+        const dynamicCourse = coursesMap[slug] || {};
+        const courseImg = c.imageUrl || c.thumbnailUrl || dynamicCourse.imageUrl || dynamicCourse.thumbnailUrl || '';
+
+        return {
+          id: slug,
+          slug: slug,
+          title: c.title || dynamicCourse.title || (slug === 'better-man' ? 'The Better Man™' : slug),
+          subtitle: `${c.modulesCount || dynamicCourse.syllabus?.length || 8} High-Impact Modules • Actionable Blueprints`,
+          purchaseDate: formatPurchaseDate(c.purchaseDate || user?.latestPurchase?.createdAt || user?.createdAt),
+          progress: progressInfo.percent,
+          completedLessonsCount: progressInfo.count,
+          totalLessons: c.modulesCount || (Array.isArray(dynamicCourse.syllabus) && dynamicCourse.syllabus.length > 0 ? dynamicCourse.syllabus.length : 8),
+          image: courseImg,
+          freeSessions: user?.freeSessions ?? 3,
+          invoiceNumber: c.invoiceNumber || user?.latestPurchase?.invoiceNumber,
+          amount: c.amount || user?.latestPurchase?.amount,
+          chips: c.chips?.length ? c.chips : (dynamicCourse.chips || [])
+        };
+      });
+    }
+
+    if (isPurchased) {
+      const purchasedSlugs = Array.isArray(user?.purchasedCourses) && user.purchasedCourses.length > 0
+        ? user.purchasedCourses
+        : ['better-man'];
+      return purchasedSlugs.map((slug) => {
+        const progressInfo = getCourseProgress(slug);
+        const dynamicCourse = coursesMap[slug] || {};
+        const courseImg = (dynamicCourse.imageUrl && !dynamicCourse.imageUrl.includes('unsplash.com'))
+          ? dynamicCourse.imageUrl
+          : ((dynamicCourse.thumbnailUrl && !dynamicCourse.thumbnailUrl.includes('unsplash.com')) ? dynamicCourse.thumbnailUrl : '');
+
+        return {
+          id: slug,
+          slug: slug,
+          title: dynamicCourse.title || (slug === 'better-man' ? 'The Better Man™' : slug),
+          subtitle: 'Executive Masterclass Series',
+          purchaseDate: formatPurchaseDate(user?.latestPurchase?.createdAt || user?.createdAt),
+          progress: progressInfo.percent,
+          completedLessonsCount: progressInfo.count,
+          totalLessons: Array.isArray(dynamicCourse.syllabus) && dynamicCourse.syllabus.length > 0 ? dynamicCourse.syllabus.length : 8,
+          image: courseImg,
+          freeSessions: user?.freeSessions ?? 3,
+          invoiceNumber: user?.latestPurchase?.invoiceNumber,
+          amount: user?.latestPurchase?.amount,
+          chips: dynamicCourse.chips || []
+        };
+      });
+    }
+
+    return [];
+  }, [user, isPurchased, coursesMap]);
 
   return (
     <div className="course-landing-scope min-h-screen bg-[#07040a] text-[#F5F2EB] flex flex-col relative overflow-x-hidden selection:bg-[#C878BE]/30 selection:text-white">
@@ -185,7 +257,7 @@ export default function MyCourses() {
           TOP GLOBAL NAVIGATION (Unified With Home & Course Pages)
           ═══════════════════════════════════════════════════════════════ */}
       <header className="course-nav">
-        <Link className="course-logo" to="/course">
+        <Link className="course-logo" to="/">
           BetterWith<b>Aarkesh</b>
         </Link>
 
@@ -335,26 +407,38 @@ export default function MyCourses() {
                       className="group rounded-2xl border border-white/10 bg-[#120916] p-4 sm:p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-6 hover:border-[#C878BE]/40 hover:shadow-[0_0_30px_rgba(200,120,190,0.15)] transition-all duration-300"
                     >
                       {/* Left: 16:9 Thumbnail Preview */}
-                      <div className="relative w-full xl:w-80 h-44 sm:h-52 xl:h-40 rounded-xl overflow-hidden shrink-0 border border-white/10 bg-[#1c0e29]">
-                        <img
-                          src="/course_hero_bg.jpg"
-                          alt={item.title}
-                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                      <div className="relative w-full xl:w-80 h-44 sm:h-52 xl:h-40 rounded-xl overflow-hidden shrink-0 border border-white/10 bg-gradient-to-tr from-[#160d24] via-[#2a133d] to-[#0f0717] flex items-center justify-center">
+                        {item.image && item.image !== '' ? (
+                          <img
+                            src={resolveImageUrl(item.image)}
+                            alt={item.title}
+                            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-gradient-to-tr from-[#1e0e2e] via-[#12081c] to-[#250d3a]">
+                            <div className="w-12 h-12 rounded-2xl bg-[#C878BE]/15 border border-[#C878BE]/30 flex items-center justify-center text-[#E3B8DE] mb-2 shadow-[0_0_20px_rgba(200,120,190,0.2)]">
+                              <Crown size={24} weight="duotone" />
+                            </div>
+                            <p className="text-white font-bold text-xs tracking-wider line-clamp-1 uppercase px-2" style={{ fontFamily: 'var(--head)' }}>
+                              {item.title}
+                            </p>
+                            <span className="text-[10px] text-[#E3B8DE]/70 mt-0.5 font-mono">Masterclass Edition</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
                         
                         {/* Top Badge */}
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
                           <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active Access
                           </span>
                         </div>
 
-                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-white/70">
-                          <span className="font-mono uppercase tracking-widest text-[#E3B8DE]">14 Modules</span>
+                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-white/70 z-10">
+                          <span className="font-mono uppercase tracking-widest text-[#E3B8DE]">{item.totalLessons} Modules</span>
                           <span className="bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] border border-white/10">Full HD</span>
                         </div>
                       </div>
@@ -380,7 +464,7 @@ export default function MyCourses() {
                               Progress <strong className="text-white">{item.progress}%</strong>
                             </span>
                             <span className="text-[11px] text-[#E3B8DE] font-mono">
-                              {item.completedLessonsCount} / 14 Lessons
+                              {item.completedLessonsCount} / {item.totalLessons} Lessons
                             </span>
                           </div>
                           
@@ -392,41 +476,27 @@ export default function MyCourses() {
                             />
                           </div>
                         </div>
-
-                        {/* Extra Perks / Mentorship Row */}
-                        <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#C878BE]/10 text-[#E3B8DE] border border-[#C878BE]/20 text-[11px] font-medium">
-                            <Sparkle size={13} weight="fill" /> {user?.freeSessions ?? 3} Free 1-on-1 Sessions Included
-                          </span>
-                          
-                          <button
-                            type="button"
-                            onClick={() => setShowInvoiceModal(true)}
-                            className="text-[11px] text-white/50 hover:text-white flex items-center gap-1 underline transition-colors cursor-pointer"
-                          >
-                            <Receipt size={13} /> View Invoice
-                          </button>
-                        </div>
                       </div>
 
                       {/* Right: Harmonized Matching CTA Buttons */}
                       <div className="flex flex-row xl:flex-col items-center gap-3 shrink-0 pt-2 xl:pt-0 min-w-[210px]">
-                        {/* Primary Button: Resume Learning (Royal Purple Gradient) */}
+                        {/* Primary Button: Resume Learning */}
                         <Link
-                          to="/course?learn=true"
-                          className="flex-1 xl:flex-none w-full px-6 py-3 rounded-xl bg-gradient-to-r from-[#A83B96] via-[#C878BE] to-[#7A2A70] hover:brightness-110 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_22px_rgba(200,120,190,0.4)] hover:shadow-[0_0_32px_rgba(200,120,190,0.6)] hover:scale-[1.02] transition-all text-center"
+                          to={item.slug === 'better-man' ? '/course?learn=true' : `/course/${item.slug}?learn=true`}
+                          className="my-course-action-btn resume flex-1 xl:flex-none w-full"
                         >
-                          <Play size={14} weight="fill" /> Resume Learning
+                          <Play size={14} weight="fill" />
+                          <span>Resume Learning</span>
                         </Link>
 
-                        {/* Secondary Button: Book a Session (Matching Glowing Royal Purple Glass) */}
+                        {/* Secondary Button: Book a Session */}
                         <button
                           type="button"
                           onClick={handleBookFreeSession}
                           disabled={isSyncingCoaching}
-                          className="flex-1 xl:flex-none w-full px-5 py-3 rounded-xl border border-[#C878BE]/60 bg-gradient-to-r from-[#C878BE]/20 to-[#7A2A70]/25 hover:from-[#C878BE]/30 hover:to-[#7A2A70]/40 text-[#F5E6F3] hover:text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(200,120,190,0.22)] hover:shadow-[0_0_30px_rgba(200,120,190,0.45)] hover:scale-[1.02] transition-all cursor-pointer disabled:opacity-50 text-center backdrop-blur-md"
+                          className="my-course-action-btn book flex-1 xl:flex-none w-full"
                         >
-                          <CalendarPlus size={15} weight="bold" className="text-[#E3B8DE]" />
+                          <CalendarPlus size={15} weight="bold" />
                           <span>{isSyncingCoaching ? 'Opening...' : 'Book a Session'}</span>
                         </button>
                       </div>
@@ -447,14 +517,14 @@ export default function MyCourses() {
                       No Enrolled Programs Found
                     </h3>
                     <p className="text-xs text-white/50 mt-1.5 font-sans leading-relaxed">
-                      You have not enrolled in Better With Aarkesh: The Mastery Course yet. Enroll now to unlock lifetime video access, blueprints, and 3 free 1-on-1 executive coaching calls.
+                      You have not enrolled in any masterclasses yet. Enroll now to unlock lifetime video access, blueprints, and 3 free 1-on-1 executive coaching calls.
                     </p>
                   </div>
                   <Link
-                    to="/course?checkout=true"
+                    to="/course/all"
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white text-xs font-bold uppercase tracking-wider hover:shadow-[0_0_20px_rgba(200,120,190,0.4)] transition-all"
                   >
-                    <Crown size={16} weight="fill" /> Enroll in Masterclass <ArrowRight size={14} />
+                    <Crown size={16} weight="fill" /> Explore Masterclasses <ArrowRight size={14} />
                   </Link>
                 </div>
               )}
@@ -498,7 +568,7 @@ export default function MyCourses() {
                 </div>
                 <div className="text-right">
                   <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">PAID</span>
-                  <p className="text-white/60 mt-1 font-mono">{user?.latestPurchase?.transactionId || 'pay_verified'}</p>
+                  <p className="text-white/60 mt-1 font-mono">{selectedInvoiceItem?.invoiceNumber || user?.latestPurchase?.transactionId || 'pay_verified'}</p>
                 </div>
               </div>
 
@@ -510,8 +580,8 @@ export default function MyCourses() {
                 </div>
                 <div className="text-right">
                   <p className="text-white/40 uppercase tracking-wider text-[10px]">Program</p>
-                  <p className="text-white font-semibold">Mastery Course Lifetime</p>
-                  <p className="text-[#E3B8DE] font-bold">₹{(user?.latestPurchase?.amount || 11800).toLocaleString('en-IN')}</p>
+                  <p className="text-white font-semibold">{selectedInvoiceItem?.title || user?.latestPurchase?.courseTitle || 'Mastery Course Lifetime'}</p>
+                  <p className="text-[#E3B8DE] font-bold">₹{((selectedInvoiceItem?.amount || user?.latestPurchase?.amount) || 11800).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             </div>

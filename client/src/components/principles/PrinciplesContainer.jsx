@@ -64,7 +64,7 @@ export default function PrinciplesContainer({ children }) {
         and stays fixed on the screen while scrolling through them.
       */}
       <div className="absolute inset-0 pointer-events-none z-50">
-        <div className="sticky top-0 h-screen w-full flex items-center justify-end pr-6 md:pr-8 xl:pr-10 pointer-events-none">
+        <div className="sticky top-20 h-[calc(100dvh-5.5rem)] w-full flex items-center justify-end pr-6 md:pr-8 xl:pr-10 pointer-events-none">
           <div className={`hidden lg:flex transition-all duration-500 ${isProgressVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6 pointer-events-none'}`}>
             <div className="pointer-events-auto">
               <PrincipleProgress activeStep={activeStep} />
