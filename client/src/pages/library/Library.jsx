@@ -360,19 +360,24 @@ export default function Library() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 20px 48px;
+          padding: 14px clamp(16px, 3.2vw, 44px);
           border-bottom: 1px solid var(--line);
           position: relative;
           z-index: 10;
           background: var(--cream);
+          width: 100%;
+          box-sizing: border-box;
+          gap: 16px;
         }
 
         .library-root .logo {
           font-family: 'Fraunces', Georgia, serif;
-          font-size: clamp(26px, 2.5vw, 34px);
+          font-size: clamp(20px, 1.8vw, 27px);
           font-weight: 600;
           letter-spacing: -0.02em;
           line-height: 1.1;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .library-root .logo em {
@@ -386,11 +391,13 @@ export default function Library() {
         .library-root .navlinks {
           display: flex;
           align-items: center;
-          gap: clamp(18px, 2.2vw, 34px);
-          font-size: 13px;
+          gap: clamp(12px, 1.5vw, 24px);
+          font-size: clamp(10px, 0.8vw, 11.5px);
           font-weight: 700;
-          letter-spacing: 0.16em;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
+          white-space: nowrap;
+          flex-shrink: 1;
         }
 
         .library-root .navlinks a {
@@ -416,30 +423,33 @@ export default function Library() {
         .library-root .navcta {
           display: flex;
           align-items: center;
-          gap: 12px;
-          font-size: 12px;
+          gap: clamp(6px, 0.8vw, 10px);
+          font-size: 11px;
           font-weight: 700;
-          letter-spacing: 0.14em;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
+          flex-shrink: 0;
+          white-space: nowrap;
         }
 
         .library-root .navcta .nav-btn-outline {
-          padding: 8px 16px;
+          padding: 6.5px clamp(10px, 0.9vw, 14px);
           border-radius: 2px;
           border: 1px solid rgba(0, 0, 0, 0.22);
           color: #111010;
           font-family: 'Inter', sans-serif;
-          font-size: 11px;
+          font-size: clamp(9px, 0.75vw, 10.5px);
           font-weight: 600;
-          letter-spacing: 0.16em;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
           transition: all 0.2s ease;
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 5px;
           cursor: pointer;
           background: transparent;
           text-decoration: none;
+          white-space: nowrap;
         }
 
         .library-root .navcta .nav-btn-outline:hover {
@@ -532,16 +542,17 @@ export default function Library() {
         .library-root .navcta .book {
           background: var(--ink);
           color: var(--cream);
-          padding: 9px 20px;
+          padding: 7.5px clamp(12px, 1.1vw, 18px);
           border-radius: 2px;
-          font-size: 11px;
+          font-size: clamp(9.5px, 0.78vw, 11px);
           font-weight: 700;
-          letter-spacing: 0.16em;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
           transition: transform 0.2s, background 0.2s;
           cursor: pointer;
           display: inline-block;
           border: none;
+          white-space: nowrap;
         }
 
         .library-root .navcta .book:hover {
@@ -562,9 +573,9 @@ export default function Library() {
           display: none;
         }
 
-        @media (max-width: 980px) {
+        @media (max-width: 1080px) {
           .library-root .navlinks { display: none; }
-          .library-root header.nav { padding: 16px 20px; }
+          .library-root header.nav { padding: 14px 20px; }
           .library-root .mobile-toggle { display: block; }
           .library-root .navcta .nav-btn-outline,
           .library-root .navcta .account-wrapper { display: none; }

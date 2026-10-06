@@ -167,7 +167,7 @@ export default function Navbar() {
             <div className="flex-shrink-0 flex items-center">
               <Link 
                 to="/" 
-                className="text-[26px] sm:text-[32px] md:text-[36px] font-semibold text-[#111010] tracking-tight relative z-10 flex items-center whitespace-nowrap leading-tight"
+                className="text-[22px] sm:text-[26px] md:text-[28px] lg:text-[32px] font-semibold text-[#111010] tracking-tight relative z-10 flex items-center whitespace-nowrap leading-tight"
                 style={{ fontFamily: 'Fraunces, Georgia, serif' }}
               >
                 BetterWith<em className="text-[#c9542f] font-normal not-italic ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>

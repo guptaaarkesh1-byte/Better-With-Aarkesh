@@ -523,12 +523,27 @@ export default function Articles() {
           background: ${currentCat.bg};
         }
 
+        .themed-category-root header.cat-page-nav {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px clamp(16px, 3.2vw, 44px);
+          border-bottom: 1px solid ${currentCat.borderLine};
+          background: ${currentCat.bg};
+          width: 100%;
+          box-sizing: border-box;
+          gap: 16px;
+        }
+
         .themed-category-root .logo {
           font-family: 'Fraunces', Georgia, serif;
-          font-size: clamp(26px, 2.5vw, 32px);
+          font-size: clamp(20px, 1.8vw, 27px);
           font-weight: 600;
-          letter-spacing: -0.01em;
+          letter-spacing: -0.02em;
+          line-height: 1.1;
           color: ${currentCat.ink};
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .themed-category-root .logo em {
@@ -541,11 +556,14 @@ export default function Articles() {
 
         .themed-category-root .navlinks {
           display: flex;
-          gap: 28px;
-          font-size: 13.5px;
+          align-items: center;
+          gap: clamp(12px, 1.5vw, 24px);
+          font-size: clamp(10px, 0.8vw, 11.5px);
           font-weight: 700;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
+          white-space: nowrap;
+          flex-shrink: 1;
         }
 
         .themed-category-root .navlinks a {
@@ -567,29 +585,33 @@ export default function Articles() {
         .themed-category-root .navcta {
           display: flex;
           align-items: center;
-          gap: 16px;
-          font-size: 13px;
+          gap: clamp(6px, 0.8vw, 10px);
+          font-size: 11px;
           font-weight: 700;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
+          flex-shrink: 0;
+          white-space: nowrap;
         }
 
         .themed-category-root .navcta .course-pill-btn {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          padding: 8.5px 15px;
+          gap: 5px;
+          padding: 6.5px clamp(10px, 0.9vw, 14px);
           border-radius: 2px;
           border: 1px solid ${currentCat.borderLine};
           color: ${currentCat.ink};
           font-family: 'Inter', sans-serif;
-          font-size: 12.5px;
+          font-size: clamp(9px, 0.75vw, 10.5px);
           font-weight: 700;
-          letter-spacing: 0.1em;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
           transition: all 0.2s ease;
           background: transparent;
           text-decoration: none;
           cursor: pointer;
+          white-space: nowrap;
         }
 
         .themed-category-root .navcta .course-pill-btn:hover {
@@ -601,29 +623,37 @@ export default function Articles() {
         .themed-category-root .navcta .my-journey-btn {
           color: ${currentCat.ink};
           opacity: 0.85;
-          font-size: 13px;
-          letter-spacing: 0.04em;
+          font-size: clamp(9.5px, 0.75vw, 11px);
+          letter-spacing: 0.1em;
           transition: opacity 0.2s;
+          padding: 6.5px clamp(10px, 0.9vw, 14px);
+          border-radius: 2px;
+          border: 1px solid ${currentCat.borderLine};
+          font-weight: 600;
+          text-decoration: none;
+          white-space: nowrap;
         }
 
         .themed-category-root .navcta .my-journey-btn:hover {
-          opacity: 0.6;
+          border-color: ${currentCat.accent};
+          color: ${currentCat.accent};
         }
 
         .themed-category-root .navcta .book-pill {
           background: ${currentCat.btnBg};
           color: ${currentCat.btnInk};
-          padding: 11px 22px;
+          padding: 7.5px clamp(12px, 1.1vw, 18px);
           border-radius: 2px;
           transition: transform 0.2s, background-color 0.2s, color 0.2s;
           cursor: pointer;
           border: none;
           font-family: 'Inter', sans-serif;
-          font-size: 13px;
+          font-size: clamp(9.5px, 0.78vw, 11px);
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
           display: inline-block;
+          white-space: nowrap;
         }
 
         .themed-category-root .navcta .book-pill:hover {
@@ -645,11 +675,12 @@ export default function Articles() {
           display: none;
         }
 
-        @media (max-width: 980px) {
+        @media (max-width: 1080px) {
           .themed-category-root .navlinks { display: none; }
-          .themed-category-root header.cat-page-nav { padding: 16px 20px; }
+          .themed-category-root header.cat-page-nav { padding: 14px 20px; }
           .themed-category-root .mobile-toggle { display: block; }
-          .themed-category-root .navcta .my-journey-btn { display: none; }
+          .themed-category-root .navcta .my-journey-btn,
+          .themed-category-root .navcta .course-pill-btn { display: none; }
           .themed-category-root .mobile-drawer {
             display: flex;
             flex-direction: column;

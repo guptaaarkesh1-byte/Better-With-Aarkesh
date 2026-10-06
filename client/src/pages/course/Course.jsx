@@ -19,6 +19,7 @@ import {
   CaretLeft, 
   Sparkle,
   BookOpen,
+  Books,
   Users,
   Infinity,
   UsersThree,
@@ -2328,29 +2329,15 @@ export default function Course() {
             />
           </a>
         </nav>
-        <div className="nav-r flex items-center gap-3">
-          {landingSettings?.hero?.showNavBtn !== false && (
-            <button
-              type="button"
-              className="course-nav-check-btn"
-              onClick={() => {
-                setShowCourseLogin(false);
-                setShowDashboard(false);
-                const link = landingSettings?.hero?.navBtnLink;
-                if (link && link.startsWith('#')) {
-                  const el = document.querySelector(link);
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                } else if (link && !link.includes('better-man')) {
-                  navigate(link);
-                } else {
-                  const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
-                  handleSelectCourse(betterMan);
-                }
-              }}
-            >
-              {landingSettings?.hero?.navBtnText || 'Check Course'} <span aria-hidden="true">→</span>
-            </button>
-          )}
+        <div className="nav-r flex items-center gap-2.5 sm:gap-3">
+          <Link
+            to="/library"
+            className="course-nav-library-btn"
+            title="Explore Library"
+          >
+            <Books size={16} weight="bold" />
+            <span>Library</span>
+          </Link>
 
           {isLoggedIn ? (
             <>
@@ -2376,6 +2363,13 @@ export default function Course() {
                 </button>
               {showProfileMenu && (
                 <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                  <Link
+                    to="/library"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  >
+                    <Books size={18} className="text-[#C878BE]" /> Library
+                  </Link>
                   <Link
                     to="/my-course"
                     onClick={() => setShowProfileMenu(false)}
@@ -3717,8 +3711,17 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
         </a>
       </nav>
 
-      {/* Right Controls: My Course button + round profile icon */}
-      <div className="nav-r flex items-center gap-3">
+      {/* Right Controls: Library button + My Course button + round profile icon */}
+      <div className="nav-r flex items-center gap-2.5 sm:gap-3">
+        <Link
+          to="/library"
+          className="course-nav-library-btn"
+          title="Explore Library"
+        >
+          <Books size={16} weight="bold" />
+          <span>Library</span>
+        </Link>
+
         <Link
           to="/my-course"
           className="course-nav-mycourse-btn"
@@ -3740,6 +3743,13 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
             </button>
             {showProfileMenu && (
               <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                <Link
+                  to="/library"
+                  onClick={() => setShowProfileMenu(false)}
+                  className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                >
+                  <Books size={18} className="text-[#C878BE]" /> Library
+                </Link>
                 <Link
                   to="/my-course"
                   onClick={() => setShowProfileMenu(false)}

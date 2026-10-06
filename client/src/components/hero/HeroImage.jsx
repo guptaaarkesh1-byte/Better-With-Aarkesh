@@ -39,28 +39,31 @@ export default function HeroImage({
       ref={container} 
       className="w-full h-full relative overflow-hidden bg-[#f5f1e8]"
     >
-      <img
-        ref={imageRef}
-        src={imgSrc}
-        alt="Aarkesh - Life Coach"
-        loading="eager"
-        fetchPriority="high"
-        decoding="sync"
-        onError={(e) => {
-          if (e.currentTarget.src !== defaultHeroImg) {
-            e.currentTarget.src = defaultHeroImg;
-          }
-        }}
-        className="w-full h-full object-cover object-[80%_top] sm:object-[82%_top] md:object-[82%_top] lg:object-[80%_top] pt-10 sm:pt-12 md:pt-14 lg:pt-10"
-      />
+      {/* Character Image wrapper pinned below navbar to protect head from being cut */}
+      <div className="absolute inset-x-0 bottom-0 top-[115px] sm:top-[125px] md:top-[135px] lg:top-[130px] flex items-end justify-end">
+        <img
+          ref={imageRef}
+          src={imgSrc}
+          alt="Aarkesh - Life Coach"
+          loading="eager"
+          fetchPriority="high"
+          decoding="sync"
+          onError={(e) => {
+            if (e.currentTarget.src !== defaultHeroImg) {
+              e.currentTarget.src = defaultHeroImg;
+            }
+          }}
+          className="w-full h-full object-cover object-[70%_top] sm:object-[82%_top] md:object-[84%_top] lg:object-[82%_top]"
+        />
+      </div>
 
       {/* Left to right gentle cream gradient to blend seamlessly into #f5f1e8 behind text */}
       <div 
-        className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/70 md:via-[#f5f1e8]/40 to-transparent w-full" 
+        className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/75 md:via-[#f5f1e8]/45 to-transparent w-full" 
       />
       
       {/* Subtle bottom transition */}
-      <div className="absolute inset-x-0 bottom-0 h-12 pointer-events-none bg-gradient-to-t from-[#f5f1e8] to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-24 pointer-events-none bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/80 to-transparent z-10" />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   SignOut,
   Crown,
   BookOpen,
+  Books,
   ArrowRight,
   Sparkle,
   CalendarPlus,
@@ -284,7 +285,16 @@ export default function MyCourses() {
         </nav>
 
         {/* Right Controls: Avatar with Dropdown or Sign In */}
-        <div className="nav-r flex items-center gap-3">
+        <div className="nav-r flex items-center gap-2.5 sm:gap-3">
+          <Link
+            to="/library"
+            className="course-nav-library-btn"
+            title="Explore Library"
+          >
+            <Books size={16} weight="bold" />
+            <span>Library</span>
+          </Link>
+
           {localStorage.getItem('courseToken') ? (
             <>
               <Link
@@ -308,6 +318,13 @@ export default function MyCourses() {
 
               {profileDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left animate-fadeIn">
+                  <Link
+                    to="/library"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  >
+                    <Books size={18} className="text-[#C878BE]" /> Library
+                  </Link>
                   <Link
                     to="/my-course"
                     onClick={() => setProfileDropdownOpen(false)}
