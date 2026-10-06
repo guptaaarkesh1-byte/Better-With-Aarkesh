@@ -347,24 +347,33 @@ export function resolvePlayableVideoId(lessonOrToken) {
   
   if (typeof lessonOrToken === 'string') {
     if (lessonOrToken.startsWith('enc_')) {
-      return decryptVideoTokenSync(lessonOrToken);
+      const dec = decryptVideoTokenSync(lessonOrToken);
+      if (dec) return resolvePlayableVideoId(dec);
     }
-    return lessonOrToken;
+    const match = lessonOrToken.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/) || (lessonOrToken.trim().length === 11 && !lessonOrToken.includes('/') && !lessonOrToken.includes('.') ? [null, lessonOrToken.trim()] : null);
+    return match ? match[1] : lessonOrToken.trim();
   }
 
   // If lesson object passed
   if (lessonOrToken.videoToken) {
-    return decryptVideoTokenSync(lessonOrToken.videoToken);
+    const dec = decryptVideoTokenSync(lessonOrToken.videoToken);
+    if (dec) return resolvePlayableVideoId(dec);
   }
   if (lessonOrToken.encryptedVideoToken) {
-    return decryptVideoTokenSync(lessonOrToken.encryptedVideoToken);
+    const dec = decryptVideoTokenSync(lessonOrToken.encryptedVideoToken);
+    if (dec) return resolvePlayableVideoId(dec);
   }
   if (lessonOrToken.youtubeVideoId) {
-    return lessonOrToken.youtubeVideoId;
+    return resolvePlayableVideoId(lessonOrToken.youtubeVideoId);
   }
   if (lessonOrToken.youtubeUrl) {
-    const match = lessonOrToken.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-    return match ? match[1] : '';
+    return resolvePlayableVideoId(lessonOrToken.youtubeUrl);
+  }
+  if (lessonOrToken.src?.val) {
+    return resolvePlayableVideoId(lessonOrToken.src.val);
+  }
+  if (lessonOrToken.videoUrl) {
+    return resolvePlayableVideoId(lessonOrToken.videoUrl);
   }
 
   return '';

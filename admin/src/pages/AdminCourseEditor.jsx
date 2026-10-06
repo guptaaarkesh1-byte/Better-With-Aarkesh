@@ -1155,9 +1155,21 @@ export default function AdminCourseEditor() {
     let src = null;
     if (!remove) {
       if (currentSrc && (currentSrc.val || currentSrc.uploadId || currentSrc.playbackId)) {
-        src = currentSrc;
+        const info = srcInfo(currentSrc.val);
+        const ytMatch = String(currentSrc.val || '').match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/) || (String(currentSrc.val || '').trim().length === 11 && !String(currentSrc.val || '').includes('/') && !String(currentSrc.val || '').includes('.') ? [null, String(currentSrc.val).trim()] : null);
+        if (ytMatch || currentSrc.type === 'youtube' || info?.t === 'YouTube') {
+          const cleanId = ytMatch ? ytMatch[1] : currentSrc.val;
+          src = { ...currentSrc, type: 'youtube', val: cleanId, fileName: 'YouTube Video', status: 'ready' };
+        } else {
+          src = currentSrc;
+        }
       } else if (val && val.trim()) {
-        src = { type: 'mux', val: val.trim(), fileName: file || 'Lesson Video', status: 'ready' };
+        const info = srcInfo(val.trim());
+        const ytMatch = String(val).match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/) || (String(val).trim().length === 11 && !String(val).includes('/') && !String(val).includes('.') ? [null, String(val).trim()] : null);
+        const isYt = Boolean(ytMatch || info?.t === 'YouTube');
+        const type = isYt ? 'youtube' : 'mux';
+        const cleanVal = ytMatch ? ytMatch[1] : val.trim();
+        src = { type, val: cleanVal, fileName: isYt ? 'YouTube Video' : (file || 'Mux Stream'), status: 'ready' };
       }
     }
 
@@ -2624,7 +2636,7 @@ export default function AdminCourseEditor() {
               {drawerLessonInfo.src && !drawerLessonInfo.remove && (
                 <div className="bwa-cur" style={{ marginBottom: '14px' }}>
                   <span>
-                    <Icon name="check" size={14} /> {drawerLessonInfo.file || (drawerLessonInfo.src.type === 'mux' ? `Mux Stream (${String(drawerLessonInfo.src.val).slice(0, 16)}...)` : 'Video Attached')}
+                    <Icon name="check" size={14} /> {drawerLessonInfo.file || (drawerLessonInfo.src?.type === 'youtube' ? `YouTube Video (ID: ${String(drawerLessonInfo.src.val).slice(0, 11)})` : drawerLessonInfo.src?.type === 'mux' ? `Mux Stream (${String(drawerLessonInfo.src.val).slice(0, 16)}...)` : 'Video Attached')}
                   </span>
                   <button
                     type="button"
@@ -2681,21 +2693,37 @@ export default function AdminCourseEditor() {
               />
 
               <div className="bwa-f" style={{ marginTop: '14px' }}>
-                <label style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600 }}>Or enter Mux Playback ID / Stream URL</label>
+                <label style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600 }}>
+                  Or paste YouTube Video URL / Video ID or Mux Stream Playback ID
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. nv1DXr61Ab00KZ8wMs7v5Wb1gkn02Jbw801Tdt01G57Gw8k"
+                  placeholder="e.g. https://www.youtube.com/watch?v=... or YouTube ID or Mux Playback ID"
                   value={drawerLessonInfo.src?.val || drawerLessonInfo.val || ''}
                   onChange={(e) => {
-                    const val = e.target.value.trim();
+                    const raw = e.target.value.trim();
+                    const ytMatch = String(raw).match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/) || (String(raw).trim().length === 11 && !String(raw).includes('/') && !String(raw).includes('.') ? [null, String(raw).trim()] : null);
+                    const info = srcInfo(raw);
+                    const isYt = Boolean(ytMatch || info?.t === 'YouTube');
+                    const type = isYt ? 'youtube' : 'mux';
+                    const cleanVal = ytMatch ? ytMatch[1] : raw;
                     setDrawerLessonInfo(prev => ({
                       ...prev,
-                      val,
-                      src: val ? { type: 'mux', val, fileName: 'Mux Stream', status: 'ready' } : null,
-                      remove: !val
+                      val: raw,
+                      src: raw ? { type, val: cleanVal, fileName: isYt ? 'YouTube Video' : 'Mux Stream', status: 'ready' } : null,
+                      remove: !raw
                     }));
                   }}
                 />
+                <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>
+                  {drawerLessonInfo.src?.type === 'youtube' ? (
+                    <span style={{ color: 'var(--green)', fontWeight: 600 }}>✓ YouTube video detected (ID: {drawerLessonInfo.src.val})</span>
+                  ) : drawerLessonInfo.src?.type === 'mux' ? (
+                    <span style={{ color: 'var(--accent)', fontWeight: 600 }}>✓ Mux stream detected</span>
+                  ) : (
+                    'Paste any YouTube video link or Mux playback ID. Detected automatically.'
+                  )}
+                </div>
               </div>
 
               {/* Live Upload Progress */}

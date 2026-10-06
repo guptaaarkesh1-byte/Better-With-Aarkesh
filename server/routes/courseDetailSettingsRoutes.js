@@ -269,8 +269,20 @@ router.put('/:slug', async (req, res) => {
             if (Array.isArray(mod.lessons)) {
               for (let lIdx = 0; lIdx < mod.lessons.length; lIdx++) {
                 const l = mod.lessons[lIdx];
-                const playbackId = l.src?.type === 'mux' ? l.src.val : (l.muxPlaybackId || null);
-                const ytVal = l.src?.type === 'youtube' ? l.src.val : (l.youtubeUrl || null);
+                const rawVal = l.src?.val || l.youtubeUrl || l.youtubeVideoId || l.muxPlaybackId || l.videoUrl || '';
+                const ytMatch = String(rawVal).match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/) || (String(rawVal).trim().length === 11 && !String(rawVal).includes('/') && !String(rawVal).includes('.') ? [null, String(rawVal).trim()] : null);
+
+                let playbackId = null;
+                let ytVal = null;
+
+                if (ytMatch || l.src?.type === 'youtube' || l.youtubeUrl || l.youtubeVideoId) {
+                  ytVal = ytMatch ? ytMatch[1] : (l.src?.val || l.youtubeUrl || l.youtubeVideoId);
+                } else if (l.src?.type === 'mux' || l.muxPlaybackId) {
+                  playbackId = l.src?.val || l.muxPlaybackId;
+                } else if (rawVal && !rawVal.includes('youtube') && !rawVal.includes('youtu.be')) {
+                  playbackId = rawVal;
+                }
+
                 await CourseLesson.create({
                   courseId: dbCourse._id,
                   moduleId: newMod._id,
@@ -283,8 +295,9 @@ router.put('/:slug', async (req, res) => {
                   videoSourceType: ytVal ? 'youtube' : (playbackId ? 'mux' : 'custom'),
                   muxPlaybackId: playbackId,
                   muxUploadId: l.src?.uploadId || null,
-                  videoStatus: playbackId ? 'ready' : (l.src?.status || 'none'),
-                  youtubeUrl: ytVal
+                  videoStatus: (playbackId || ytVal) ? 'ready' : (l.src?.status || 'none'),
+                  youtubeUrl: ytVal ? `https://www.youtube.com/watch?v=${ytVal}` : null,
+                  youtubeVideoId: ytVal
                 });
               }
             }

@@ -52,8 +52,20 @@ export const buildCurriculumForCourse = async (targetSlug = 'better-man') => {
       description: d.desc || '',
       position: dIdx,
       lessons: (d.lessons || []).map((l, lIdx) => {
-        const playbackId = l.src?.type === 'mux' ? l.src.val : (l.muxPlaybackId || null);
-        const ytId = l.src?.type === 'youtube' ? l.src.val : (l.youtubeVideoId || l.youtubeUrl || '');
+        const rawVal = l.src?.val || l.youtubeUrl || l.youtubeVideoId || l.muxPlaybackId || l.videoUrl || '';
+        const ytMatch = String(rawVal).match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/) || (String(rawVal).trim().length === 11 && !String(rawVal).includes('/') && !String(rawVal).includes('.') ? [null, String(rawVal).trim()] : null);
+        
+        let playbackId = null;
+        let ytId = '';
+
+        if (ytMatch || l.src?.type === 'youtube' || l.youtubeUrl || l.youtubeVideoId) {
+          ytId = ytMatch ? ytMatch[1] : (l.src?.val || l.youtubeVideoId || l.youtubeUrl || '');
+        } else if (l.src?.type === 'mux' || l.muxPlaybackId) {
+          playbackId = l.src?.val || l.muxPlaybackId;
+        } else if (rawVal && !rawVal.includes('youtube') && !rawVal.includes('youtu.be')) {
+          playbackId = rawVal;
+        }
+
         const encryptedToken = ytId ? encryptVideoPayload(ytId) : '';
         return {
           _id: l.id || `les_${dIdx + 1}_${lIdx + 1}`,
@@ -63,11 +75,14 @@ export const buildCurriculumForCourse = async (targetSlug = 'better-man') => {
           duration: l.dur || '12:30',
           position: lIdx,
           isFreePreview: !!l.free,
-          videoSourceType: playbackId ? 'mux' : (ytId ? 'youtube' : 'none'),
+          videoSourceType: ytId ? 'youtube' : (playbackId ? 'mux' : 'none'),
           videoToken: encryptedToken,
           encryptedVideoToken: encryptedToken,
-          videoStatus: playbackId ? 'ready' : (l.src?.status || 'none'),
+          youtubeVideoId: ytId,
+          youtubeUrl: ytId ? `https://www.youtube.com/watch?v=${ytId}` : '',
+          videoStatus: (playbackId || ytId) ? 'ready' : (l.src?.status || 'none'),
           muxPlaybackId: playbackId,
+          src: l.src || (ytId ? { type: 'youtube', val: ytId } : (playbackId ? { type: 'mux', val: playbackId } : null)),
           resources: l.resources || [],
           isCompleted: false,
         };
