@@ -643,24 +643,33 @@ router.get('/admin', protect, admin, async (req, res) => {
   }
 });
 
-// PUT /api/appointments/admin/:id/status - Update appointment status
-router.put('/admin/:id/status', protect, admin, async (req, res) => {
+// Status update handler (admin only)
+const handleStatusUpdate = async (req, res) => {
   try {
-    const { status } = req.body;
+    const rawStatus = req.body.status || '';
+    const normalizedStatus = rawStatus.toUpperCase();
+    const validStatuses = ['UPCOMING', 'COMPLETED', 'DRAFTS', 'CANCELLED', 'REFUNDED'];
+    const finalStatus = validStatuses.includes(normalizedStatus) ? normalizedStatus : rawStatus;
+
     const appointment = await Appointment.findById(req.params.id);
     
     if (appointment) {
-      appointment.status = status;
+      appointment.status = finalStatus;
       const updatedAppointment = await appointment.save();
       res.json(updatedAppointment);
     } else {
       res.status(404).json({ message: 'Appointment not found' });
     }
   } catch (error) {
-    console.error(error);
+    console.error('Server error updating appointment status:', error);
     res.status(500).json({ message: 'Server error updating appointment status' });
   }
-});
+};
+
+// PUT /api/appointments/admin/:id/status & PUT /api/appointments/:id/status - Update appointment status
+router.put('/admin/:id/status', protect, admin, handleStatusUpdate);
+router.put('/:id/status', protect, admin, handleStatusUpdate);
+
 
 // PUT /api/appointments/admin/:id/notes - Update coach's session notes
 router.put('/admin/:id/notes', protect, admin, async (req, res) => {

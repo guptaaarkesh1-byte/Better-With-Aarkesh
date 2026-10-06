@@ -88,14 +88,15 @@ export default function AdminAppointmentsView() {
 
   // Compute needs-action flag
   const isNeedsAction = (app) => {
-    if (app.status === 'Refunded' || app.status === 'Completed' || app.status === 'Cancelled') return false;
+    const s = (app.status || '').toUpperCase();
+    if (s === 'REFUNDED' || s === 'COMPLETED' || s === 'CANCELLED') return false;
     if (app.rescheduleRequested) return true;
     if (app.paymentStatus === 'Pending') return true;
     
     // Check if session date has passed without completion
     try {
       const appDateTime = new Date(`${app.date} ${app.time}`);
-      if (!isNaN(appDateTime.getTime()) && appDateTime < new Date() && app.status !== 'Completed') {
+      if (!isNaN(appDateTime.getTime()) && appDateTime < new Date() && s !== 'COMPLETED') {
         return true;
       }
     } catch (e) {}
@@ -160,13 +161,14 @@ export default function AdminAppointmentsView() {
   const filteredAppointments = useMemo(() => {
     return appointments.filter(app => {
       // Tab filter
+      const s = (app.status || '').toUpperCase();
       if (activeTab === 'needs-action' && !isNeedsAction(app)) return false;
       if (activeTab === 'today' && !isTodaySession(app)) return false;
       if (activeTab === 'upcoming') {
-        if (app.status === 'Completed' || app.status === 'Refunded' || isTodaySession(app)) return false;
+        if (s === 'COMPLETED' || s === 'REFUNDED' || isTodaySession(app)) return false;
       }
-      if (activeTab === 'past' && app.status !== 'Completed') return false;
-      if (activeTab === 'refunded' && app.status !== 'Refunded') return false;
+      if (activeTab === 'past' && s !== 'COMPLETED') return false;
+      if (activeTab === 'refunded' && s !== 'REFUNDED') return false;
 
       // Search query
       if (searchQuery.trim()) {
@@ -221,19 +223,20 @@ export default function AdminAppointmentsView() {
   const handleStatusChange = async (appId, newStatus) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await fetch(`${API_URL}/api/appointments/${appId}/status`, {
+      const normalizedStatus = (newStatus || '').toUpperCase();
+      const res = await fetch(`${API_URL}/api/appointments/admin/${appId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: normalizedStatus })
       });
       if (!res.ok) throw new Error('Status update failed');
-      showSuccess(`Appointment marked as ${newStatus}`);
+      showSuccess(`Appointment marked as ${normalizedStatus === 'COMPLETED' ? 'Completed' : normalizedStatus}`);
       fetchData();
       if (selectedAppointment?._id === appId) {
-        setSelectedAppointment(prev => ({ ...prev, status: newStatus }));
+        setSelectedAppointment(prev => ({ ...prev, status: normalizedStatus }));
       }
     } catch (err) {
       showError('Failed to update appointment status.');
@@ -653,14 +656,14 @@ export default function AdminAppointmentsView() {
                             <td>
                               {app.rescheduleRequested ? (
                                 <span className="bwa-chip a">Reschedule Pending</span>
-                              ) : app.status === 'Completed' ? (
+                              ) : (app.status || '').toUpperCase() === 'COMPLETED' ? (
                                 <span className="bwa-chip g">Completed</span>
-                              ) : app.status === 'Refunded' ? (
+                              ) : (app.status || '').toUpperCase() === 'REFUNDED' ? (
                                 <span className="bwa-chip r">Refunded</span>
                               ) : isTodaySession(app) ? (
                                 <span className="bwa-chip b">Today</span>
                               ) : (
-                                <span className="bwa-chip n">{app.status || 'Upcoming'}</span>
+                                <span className="bwa-chip n">{(app.status || 'Upcoming').toUpperCase() === 'UPCOMING' ? 'Upcoming' : app.status}</span>
                               )}
                             </td>
                             <td>
@@ -926,11 +929,11 @@ export default function AdminAppointmentsView() {
               </button>
             )}
             <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-              {selectedAppointment?.status !== 'Completed' && (
+              {(selectedAppointment?.status || '').toUpperCase() !== 'COMPLETED' && (
                 <button
                   type="button"
                   className="bwa-btn pri sm"
-                  onClick={() => handleStatusChange(selectedAppointment._id, 'Completed')}
+                  onClick={() => handleStatusChange(selectedAppointment._id, 'COMPLETED')}
                 >
                   Mark completed
                 </button>
