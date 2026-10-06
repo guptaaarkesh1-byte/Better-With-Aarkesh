@@ -7,7 +7,7 @@ import ProblemContent from './ProblemContent';
 import WordCloud from './WordCloud';
 import TransitionIntro from './TransitionIntro';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -176,7 +176,7 @@ export default function ProblemSection() {
 
         {/* Word Cloud stretches across full width to act as background */}
         <div className="absolute inset-0 z-10 w-full h-full pointer-events-none">
-          <WordCloud />
+          <WordCloud customImg={problemData?.bgImg || problemData?.silhouetteImg || ''} />
         </div>
 
       </div>

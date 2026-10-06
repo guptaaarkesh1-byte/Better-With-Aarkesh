@@ -10,6 +10,7 @@ gsap.registerPlugin(ScrollTrigger);
 export default function PrincipleSection({
   id,
   bgImg,
+  fallbackImg,
   eyebrow,
   headlineWhite,
   headlineGold,
@@ -60,6 +61,11 @@ export default function PrincipleSection({
           <img 
             src={bgImg} 
             alt="Principle Background"
+            onError={(e) => {
+              if (fallbackImg && e.currentTarget.src !== fallbackImg) {
+                e.currentTarget.src = fallbackImg;
+              }
+            }}
             className={`w-full h-full object-cover opacity-100 contrast-[1.08] saturate-[1.05] ${imagePosition || 'object-[75%_center] lg:object-[78%_center]'}`}
             style={{ imageRendering: '-webkit-optimize-contrast' }}
           />

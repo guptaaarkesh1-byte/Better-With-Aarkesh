@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Container from '../ui/Container';
 import defaultBgImg from '../../assets/Page9/testimonials-doorway.webp';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
   Quotes, 
   ArrowRight, 
@@ -106,7 +107,7 @@ export default function TestimonialsSection() {
   const heading1 = data?.headingLine1 || 'Their words.';
   const headingAccent = data?.headingAccent || 'Their transformation.';
   const description = data?.description || 'People from different walks of life. Different challenges. Same results that matter.';
-  const bgImg = data?.bgImg || defaultBgImg;
+  const bgImg = resolveImageUrl(data?.bgImg, defaultBgImg);
   const testimonials = (data?.items && data.items.length > 0) ? data.items : DEFAULT_TESTIMONIALS;
 
   return (
@@ -117,6 +118,11 @@ export default function TestimonialsSection() {
         <img 
           src={bgImg} 
           alt="Glowing Doorway" 
+          onError={(e) => {
+            if (e.currentTarget.src !== defaultBgImg) {
+              e.currentTarget.src = defaultBgImg;
+            }
+          }}
           className="w-full h-full object-cover opacity-100 contrast-[1.05] saturate-[1.05] will-change-transform"
           style={{
             objectPosition: `${DESKTOP_IMAGE_CONTROLS.posX} ${DESKTOP_IMAGE_CONTROLS.posY}`,
@@ -184,7 +190,7 @@ export default function TestimonialsSection() {
                       <div className="flex items-center gap-3 mt-auto pt-2 border-t border-black/8">
                         {t.image ? (
                           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#c9542f]/30 shrink-0 bg-white/80 shadow-xs">
-                            <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                            <img src={resolveImageUrl(t.image)} alt={t.name} className="w-full h-full object-cover" />
                           </div>
                         ) : (
                           <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${color} text-white flex items-center justify-center shrink-0 shadow-xs`}>

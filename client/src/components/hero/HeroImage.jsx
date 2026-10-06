@@ -39,8 +39,8 @@ export default function HeroImage({
       ref={container} 
       className="w-full h-full relative overflow-hidden bg-[#f5f1e8]"
     >
-      {/* Character Image wrapper pinned below navbar to protect head from being cut */}
-      <div className="absolute inset-x-0 bottom-0 top-[115px] sm:top-[125px] md:top-[135px] lg:top-[130px] flex items-end justify-end">
+      {/* Character Image wrapper pinned below navbar to close gap */}
+      <div className="absolute inset-x-0 bottom-0 top-[75px] sm:top-[80px] md:top-[85px] lg:top-[85px] flex items-end justify-end">
         <img
           ref={imageRef}
           src={imgSrc}

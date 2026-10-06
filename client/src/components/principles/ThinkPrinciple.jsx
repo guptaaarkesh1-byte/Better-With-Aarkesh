@@ -1,6 +1,7 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
 import defaultBgImg from '../../assets/Page3/think-clearly.png';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import { Sparkle, SunDim, TextT, Coffee, Circle } from '@phosphor-icons/react';
 
 const DEFAULT_THINK_DATA = {
@@ -36,12 +37,13 @@ export default function ThinkPrinciple() {
     `<span class='font-serif text-base lg:text-lg font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif; font-style: normal;'>${descText}</span>`
   ];
   const buttonText = data?.buttonText || 'SCROLL FOR NEXT PRINCIPLE';
-  const bgImg = data?.bgImg || defaultBgImg;
+  const bgImg = resolveImageUrl(data?.bgImg, defaultBgImg);
 
   return (
     <PrincipleSection 
       id="think-principle"
       bgImg={bgImg}
+      fallbackImg={defaultBgImg}
       imagePosition="object-[70%_center] md:object-[74%_center] lg:object-[78%_center]"
       eyebrow={eyebrow}
       headlineWhite={headlineWhite}

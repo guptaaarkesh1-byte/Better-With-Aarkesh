@@ -1,20 +1,21 @@
-  import { useRef, useState, useEffect } from 'react';
-  import gsap from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
-  import { useGSAP } from '@gsap/react';
-  import Container from '../ui/Container';
-  import defaultBgImg from '../../assets/Page6/coaching-process.webp';
-  import { 
-    ChatTeardropText, 
-    MagnifyingGlass, 
-    Compass, 
-    Flag, 
-    ChartLineUp
-  } from '@phosphor-icons/react';
+import { useRef, useState, useEffect } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
+import Container from '../ui/Container';
+import defaultBgImg from '../../assets/Page6/coaching-process.webp';
+import { resolveImageUrl } from '../../utils/imageUrl';
+import { 
+  ChatTeardropText, 
+  MagnifyingGlass, 
+  Compass, 
+  Flag, 
+  ChartLineUp
+} from '@phosphor-icons/react';
 
-  gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
   const ICONS = [ChatTeardropText, MagnifyingGlass, Compass, Flag, ChartLineUp];
 
@@ -111,14 +112,7 @@
     );
   }, { scope: container, dependencies: [data] });
 
-  const resolvedBgUrl = (() => {
-    const url = data.bgImg;
-    if (!url) return '';
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
-    if (url.includes('localhost:5000/uploads/')) return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
-    if (url.startsWith('/uploads/')) return `${apiUrl}${url}`;
-    return url;
-  })();
+  const resolvedBgUrl = resolveImageUrl(data.bgImg, defaultBgImg);
 
   return (
     <section ref={container} id="coaching" className="principle-panel relative w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-[#f5f1e8] snap-start">
@@ -130,6 +124,11 @@
             src={resolvedBgUrl} 
             alt="Coaching Process"
             onLoad={() => setIsImgLoaded(true)}
+            onError={(e) => {
+              if (e.currentTarget.src !== defaultBgImg) {
+                e.currentTarget.src = defaultBgImg;
+              }
+            }}
             className={`w-full h-full object-cover will-change-transform transition-opacity duration-700 ${
               isImgLoaded ? 'opacity-100' : 'opacity-0'
             }`}

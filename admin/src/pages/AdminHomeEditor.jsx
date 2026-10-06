@@ -63,7 +63,7 @@ import defaultHumanImg from '../../../client/src/assets/Page8/human.webp';
 import defaultTestimonialsImg from '../../../client/src/assets/Page9/testimonials-doorway.webp';
 import defaultCtaImg from '../../../client/src/assets/Page10/next-chapter-cozy.webp';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:5000' : 'https://api.aarkeshgupta.com');
 
 const SIDEBAR_TABS = [
   { id: 'hero', label: 'Hero Section', icon: <Desktop size={18} />, description: 'Main banner, title & background' },

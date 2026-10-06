@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Container from '../ui/Container';
 import defaultBgImg from '../../assets/Page10/next-chapter-cozy.webp';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
   ArrowRight, 
   LockKey,
@@ -10,7 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
 // =========================================================================
 // 🎛️ DESKTOP IMAGE CONTROLS (Adjust zoom & position here!)
@@ -51,7 +52,7 @@ export default function FinalCtaSection() {
   const ctaText = data?.ctaText || 'BOOK YOUR SESSION';
   const ctaLink = data?.ctaLink || '/book';
   const confidentialText = data?.confidentialText || '100% Confidential & Safe Space';
-  const bgImg = data?.bgImg || defaultBgImg;
+  const bgImg = resolveImageUrl(data?.bgImg, defaultBgImg);
   const quote1 = data?.quoteLine1 || "You don't have to have it all figured out.";
   const quote2 = data?.quoteLine2 || "You just have to be willing to begin.";
 
@@ -63,6 +64,11 @@ export default function FinalCtaSection() {
         <img 
           src={bgImg} 
           alt="Your next chapter starts here" 
+          onError={(e) => {
+            if (e.currentTarget.src !== defaultBgImg) {
+              e.currentTarget.src = defaultBgImg;
+            }
+          }}
           className="w-full h-full object-cover opacity-100 contrast-[1.02] saturate-[1.03] will-change-transform"
           style={{
             objectPosition: `${DESKTOP_IMAGE_CONTROLS.posX} ${DESKTOP_IMAGE_CONTROLS.posY}`,

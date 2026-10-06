@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import Container from '../ui/Container';
 import defaultBgImg from '../../assets/Page7/coaching-journey.webp';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
   Compass, 
   Heart, 
@@ -238,7 +239,7 @@ export default function CoachingJourney() {
     );
   }, { scope: container, dependencies: [data] });
 
-  const resolvedJourneySrc = resolveJourneyImg(data.bgImg);
+  const resolvedJourneySrc = resolveImageUrl(data.bgImg, defaultBgImg);
 
   return (
     <section ref={container} id="coaching-journey" className="principle-panel relative w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-[#f5f1e8] snap-start">
@@ -250,6 +251,11 @@ export default function CoachingJourney() {
             src={resolvedJourneySrc} 
             alt="The Coaching Journey"
             onLoad={() => setIsImgLoaded(true)}
+            onError={(e) => {
+              if (e.currentTarget.src !== defaultBgImg) {
+                e.currentTarget.src = defaultBgImg;
+              }
+            }}
             className={`w-full h-full object-cover will-change-transform transition-opacity duration-700 ${
               isImgLoaded ? 'opacity-95' : 'opacity-0'
             }`}

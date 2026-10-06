@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import silhouetteImg from '../../assets/Page2/problem_silhouette.png';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -35,8 +36,9 @@ const WORDS = [
   { text: 'Comparison',       top: '70%',  left: '75%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-75' },
 ];
 
-export default function WordCloud() {
+export default function WordCloud({ customImg = '' }) {
   const container = useRef(null);
+  const imgSrc = resolveImageUrl(customImg, silhouetteImg);
 
   useGSAP(() => {
     const words = gsap.utils.toArray('.floating-word');
@@ -70,9 +72,14 @@ export default function WordCloud() {
       {/* Silhouette Image Full Background - 100% Clear & High Contrast */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
-          src={silhouetteImg} 
+          src={imgSrc} 
           alt="Silhouette" 
-          className="w-full h-full object-cover object-center opacity-100 contrast-[1.2] saturate-[1.15]"
+          onError={(e) => {
+            if (e.currentTarget.src !== silhouetteImg) {
+              e.currentTarget.src = silhouetteImg;
+            }
+          }}
+          className="w-full h-full object-cover object-[58%_center] sm:object-[62%_center] lg:object-[64%_center] opacity-100 contrast-[1.05] saturate-[1.05]"
         />
       </div>
 

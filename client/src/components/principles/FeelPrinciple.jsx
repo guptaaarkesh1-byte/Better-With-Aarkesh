@@ -1,6 +1,7 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
 import defaultBgImg from '../../assets/Page4/feel-honestly.webp';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import { Sparkle, CloudRain, Waves, Heart, SunDim } from '@phosphor-icons/react';
 
 const DEFAULT_FEEL_DATA = {
@@ -38,12 +39,13 @@ export default function FeelPrinciple() {
     `<span class='font-serif text-base lg:text-lg font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif; font-style: normal;'>${descText}</span>`
   ];
   const buttonText = data?.buttonText || '';
-  const bgImg = data?.bgImg || defaultBgImg;
+  const bgImg = resolveImageUrl(data?.bgImg, defaultBgImg);
 
   return (
     <PrincipleSection 
       id="feel-principle"
       bgImg={bgImg}
+      fallbackImg={defaultBgImg}
       imagePosition="object-[70%_center] md:object-[75%_center] lg:object-[80%_center]"
       eyebrow={eyebrow}
       headlineWhite={headlineWhite}
