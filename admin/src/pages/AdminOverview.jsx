@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import Icon from '../components/common/AdminIcons';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../utils/apiUrl';
 const inr = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
 
 export default function AdminOverview() {

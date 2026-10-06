@@ -6,8 +6,9 @@ import AdminDrawer from '../components/common/AdminDrawer';
 import AdminStickyBar from '../components/common/AdminStickyBar';
 import AdminCourseStudents from './AdminCourseStudents';
 import AdminCourseLandingCatalogEditor from './AdminCourseLandingCatalogEditor';
+import AdminCourseComments from './AdminCourseComments';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../utils/apiUrl';
 
 const STEPS = [
   ['basics', 'layout', 'Basics', 'Title, description, status', 'Course page'],
@@ -968,24 +969,48 @@ export default function AdminCourseEditor() {
 
   // Thumbnail upload
   const fileInputRef = useRef(null);
-  const handleThumbUpload = (e) => {
+  const handleThumbUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) {
+    if (!/^image\/(png|jpe?g|webp|gif|svg\+xml)$/.test(file.type)) {
       showError('Please choose a JPG, PNG or WebP image');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      showError('Image is larger than 5 MB');
+    if (file.size > 15 * 1024 * 1024) {
+      showError('Image is larger than 15 MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateField('thumb', reader.result);
-      updateField('thumbName', file.name);
-      showSuccess('Thumbnail uploaded');
-    };
-    reader.readAsDataURL(file);
+
+    try {
+      showInfo('Uploading image...');
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      const uploadedUrl = data.url || data.imageUrl || data.filePath;
+      if (uploadedUrl) {
+        updateField('thumb', uploadedUrl);
+        updateField('thumbName', file.name);
+        showSuccess('Thumbnail uploaded successfully');
+      } else {
+        throw new Error('No URL returned from server');
+      }
+    } catch (err) {
+      console.error('Image upload failed, falling back to local preview:', err);
+      const reader = new FileReader();
+      reader.onload = () => {
+        updateField('thumb', reader.result);
+        updateField('thumbName', file.name);
+        showSuccess('Thumbnail loaded');
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      if (e.target) e.target.value = '';
+    }
   };
 
   // Open Lesson Drawer
@@ -1132,6 +1157,13 @@ export default function AdminCourseEditor() {
         >
           Students &amp; purchases
         </button>
+        <button
+          type="button"
+          className={subTab === 'comments' ? 'on' : ''}
+          onClick={() => setSubTab('comments')}
+        >
+          Discussions &amp; comments
+        </button>
       </div>
 
       {subTab === 'catalog' ? (
@@ -1139,6 +1171,10 @@ export default function AdminCourseEditor() {
       ) : subTab === 'students' ? (
         <div className="p-6 md:p-8 max-w-[1500px] mx-auto">
           <AdminCourseStudents />
+        </div>
+      ) : subTab === 'comments' ? (
+        <div className="p-6 md:p-8 max-w-[1500px] mx-auto">
+          <AdminCourseComments />
         </div>
       ) : (
         <>

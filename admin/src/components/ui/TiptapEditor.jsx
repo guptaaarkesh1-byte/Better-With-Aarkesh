@@ -33,8 +33,7 @@ import {
   ArrowsOutSimple,
   DotsSixVertical
 } from '@phosphor-icons/react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../../utils/apiUrl';
 
 // Dedicated Dynamic Color Mark supporting any Category Accent Color (e.g. Pink, Mint Green, Coral, Sand, White, Gold)
 export const ColorMark = Mark.create({

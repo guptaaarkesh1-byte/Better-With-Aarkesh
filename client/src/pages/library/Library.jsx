@@ -6,6 +6,7 @@ import { CURATED_LIBRARY_ARTICLES } from '../../constants/libraryArticlesData';
 import { renderFormattedTitle } from '../articles/ArticleReaderView';
 import LoginModal from '../../components/layout/LoginModal';
 import PlasmaRingSphere from '../../components/library/PlasmaRingSphere';
+import { API_URL } from '../../utils/apiUrl';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function Library() {
   useEffect(() => {
     const fetchHeroSettings = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/library-settings/hero`);
+        const res = await fetch(`${API_URL}/api/library-settings/hero`);
         if (res.ok) {
           const data = await res.json();
           setHeroSettings({
@@ -63,7 +64,7 @@ export default function Library() {
 
     const fetchArticles = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/articles/published`);
+        const res = await fetch(`${API_URL}/api/articles/published`);
         if (res.ok) {
           const data = await res.json();
           setPublishedArticles(data);
@@ -363,7 +364,7 @@ export default function Library() {
           padding: 14px clamp(16px, 3.2vw, 44px);
           border-bottom: 1px solid var(--line);
           position: relative;
-          z-index: 10;
+          z-index: 1200;
           background: var(--cream);
           width: 100%;
           box-sizing: border-box;
@@ -460,6 +461,7 @@ export default function Library() {
 
         .library-root .navcta .account-wrapper {
           position: relative;
+          z-index: 1210;
         }
 
         .library-root .navcta .account-wrapper:hover .account-dropdown {
@@ -480,7 +482,7 @@ export default function Library() {
           transform: translateY(8px);
           transition: all 0.25s ease;
           pointer-events: none;
-          z-index: 200;
+          z-index: 1220;
         }
 
         .library-root .navcta .account-card {
@@ -622,7 +624,7 @@ export default function Library() {
           border-top: 1px solid rgba(255, 255, 255, 0.08);
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
           position: relative;
-          z-index: 20;
+          z-index: 10;
           user-select: none;
           pointer-events: none;
         }

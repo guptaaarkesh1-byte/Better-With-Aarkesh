@@ -18,7 +18,7 @@ import {
   ChatCircleText
 } from '@phosphor-icons/react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../utils/apiUrl';
 
 const INITIAL_DEFAULT_FAQS = [
   {

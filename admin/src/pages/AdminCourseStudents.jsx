@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../utils/apiUrl';
 import { 
   GraduationCap, 
   MagnifyingGlass, 
@@ -47,7 +48,7 @@ export default function AdminCourseStudents() {
     setLoading(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
 
       const [studentsRes, statsRes] = await Promise.all([
         fetch(`${apiUrl}/api/course-auth/admin/students`, {

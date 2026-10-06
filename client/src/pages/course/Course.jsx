@@ -59,6 +59,7 @@ import ProtectedYouTubePlayer from '../../components/course/ProtectedYouTubePlay
 import CoursePaymentSuccess from './CoursePaymentSuccess';
 import FlippingWordSwap from '../../components/ui/FlippingWordSwap';
 import { resolvePlayableVideoId } from '../../utils/videoSecurity';
+import { API_URL } from '../../utils/apiUrl';
 import './course-landing.css';
 
 const resolveImageUrl = (url) => {
@@ -66,7 +67,7 @@ const resolveImageUrl = (url) => {
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
     return url;
   }
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const apiUrl = API_URL;
   if (url.startsWith('/')) {
     return `${apiUrl}${url}`;
   }
@@ -286,7 +287,7 @@ export default function Course() {
     const token = localStorage.getItem('courseToken');
     if (!token) return;
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       const res = await fetch(`${apiUrl}/api/course-auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -652,7 +653,7 @@ export default function Course() {
   useEffect(() => {
     const fetchPublishedCurriculum = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         const token = localStorage.getItem('courseToken');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         const targetSlug = slug && slug !== 'all' ? slug : 'better-man';
@@ -750,7 +751,7 @@ export default function Course() {
   useEffect(() => {
     const fetchCourseFooter = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         const res = await fetch(`${apiUrl}/api/footer-documents/published?category=course`);
         if (res.ok) {
           const data = await res.json();
@@ -763,7 +764,7 @@ export default function Course() {
 
     const fetchSocialLinks = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         const res = await fetch(`${apiUrl}/api/social-links`);
         if (res.ok) {
           const data = await res.json();
@@ -776,7 +777,7 @@ export default function Course() {
 
     const fetchCurriculumCards = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         const res = await fetch(`${apiUrl}/api/courses/cards/public`);
         if (res.ok) {
           const cardsData = await res.json();
@@ -791,7 +792,7 @@ export default function Course() {
 
     const fetchCourseFaqs = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         const res = await fetch(`${apiUrl}/api/courses/faqs/public`);
         if (res.ok) {
           const faqsData = await res.json();
@@ -806,7 +807,7 @@ export default function Course() {
 
     const fetchLandingSettings = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         const res = await fetch(`${apiUrl}/api/courses/landing-settings`);
         if (res.ok) {
           const data = await res.json();
@@ -829,7 +830,7 @@ export default function Course() {
 
     const fetchCourseDetailsMap = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         const res = await fetch(`${apiUrl}/api/courses/details-settings`);
         if (res.ok) {
           const data = await res.json();
@@ -2051,34 +2052,14 @@ export default function Course() {
               ) : (
                 <div className="w-full h-full min-h-[380px] flex flex-col items-center justify-center text-center p-8 bg-gradient-to-br from-[#1b0a24] via-[#100617] to-[#0a030f] relative overflow-hidden">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(196,91,184,0.18)_0%,transparent_70%)] pointer-events-none" />
-                  <div className="relative z-10 max-w-lg space-y-4">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#C878BE]/15 border border-[#C878BE]/30 text-[#E090D6] text-xs font-semibold uppercase tracking-wider">
+                  <div className="relative z-10 max-w-lg space-y-3 flex flex-col items-center justify-center">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#C878BE]/15 border border-[#C878BE]/30 text-[#E090D6] text-xs font-semibold uppercase tracking-wider">
                       <Sparkle size={14} weight="fill" />
                       Day {displayModNum} · Lesson {lessonNumInMod}
                     </div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-white font-serif tracking-tight">
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white font-serif tracking-tight max-w-md">
                       {activeLesson?.title || 'Lesson Overview'}
                     </h2>
-                    <p className="text-[#A99AB0] text-sm leading-relaxed">
-                      {activeLesson?.description || 'Video lecture will be available once uploaded in the admin portal. You can review the lesson notes, worksheets, and resources below.'}
-                    </p>
-                    <div className="flex items-center justify-center gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setPlayerTab('notes')}
-                        className="px-4 py-2 rounded-xl bg-[#C878BE]/25 hover:bg-[#C878BE]/35 text-[#F6EEF8] text-xs font-semibold border border-[#C878BE]/40 transition-all flex items-center gap-2"
-                      >
-                        <NotePencil size={16} /> Open Lesson Notes
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleLessonCompletionLocal(activeLesson)}
-                        className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#A99AB0] hover:text-white text-xs font-semibold border border-white/10 transition-all flex items-center gap-2"
-                      >
-                        <CheckCircle size={16} weight={activeLesson?.isCompleted ? 'fill' : 'regular'} className={activeLesson?.isCompleted ? 'text-emerald-400' : ''} />
-                        {activeLesson?.isCompleted ? 'Completed' : 'Mark Complete'}
-                      </button>
-                    </div>
                   </div>
                 </div>
               )}
@@ -2155,6 +2136,8 @@ export default function Course() {
             {/* Discussion & Student Comments */}
             <div className="player-panel" style={{ paddingTop: '28px' }}>
               <LessonComments
+                courseSlug={slug || 'better-man'}
+                courseTitle={courseData?.title || 'The Better Man'}
                 lessonId={activeLesson?._id || activeLesson?.id}
                 lessonTitle={activeLesson?.title}
                 onRequireAuth={() => {

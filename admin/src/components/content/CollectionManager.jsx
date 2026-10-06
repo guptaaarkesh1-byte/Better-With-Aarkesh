@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { articleTaxonomy } from '../../constants/articleTaxonomy';
 import CustomSelect from '../ui/CustomSelect';
+import { API_URL } from '../../utils/apiUrl';
 
 export default function CollectionManager() {
   const [collections, setCollections] = useState([]);
@@ -44,7 +45,7 @@ export default function CollectionManager() {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       
       const [collectionsRes, articlesRes, videosRes] = await Promise.all([
         fetch(`${apiUrl}/api/collections/admin`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -106,7 +107,7 @@ export default function CollectionManager() {
     
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       
       const res = await fetch(`${apiUrl}/api/collections/admin/${id}`, {
         method: 'DELETE',
@@ -161,7 +162,7 @@ export default function CollectionManager() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       
       const method = currentCollection ? 'PUT' : 'POST';
       const url = currentCollection 

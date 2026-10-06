@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useToast } from '../context/ToastContext';
+import { API_URL } from '../utils/apiUrl';
 import { 
   MagnifyingGlass, 
   CaretDown, 
@@ -169,7 +170,7 @@ export default function AdminUsers() {
     setIsSavingNotes(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       const res = await fetch(`${apiUrl}/api/appointments/admin/${selectedSession.id}/notes`, {
         method: 'PUT',
         headers: {
@@ -237,7 +238,7 @@ export default function AdminUsers() {
   const updateAppointmentStatus = async (userId, sessionId, newStatus) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       
       // Try to update via API if it's a real MongoDB ID (not a mock number ID)
       if (typeof sessionId === 'string' && sessionId.length > 10) {
@@ -293,7 +294,7 @@ export default function AdminUsers() {
     setIsProcessingReschedule(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       
       const endpoint = action === 'approve' ? 'approve-reschedule' : 'reject-reschedule';
       
@@ -434,7 +435,7 @@ export default function AdminUsers() {
     setIsRefunding(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       const res = await fetch(`${apiUrl}/api/appointments/admin/${refundModalSession.id}/issue-refund`, {
         method: 'POST',
         headers: {
@@ -504,7 +505,7 @@ export default function AdminUsers() {
     const fetchRealData = async () => {
       try {
         const token = localStorage.getItem('adminToken');
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         const res = await fetch(`${apiUrl}/api/appointments/admin`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -616,7 +617,7 @@ export default function AdminUsers() {
   React.useEffect(() => {
     const fetchFees = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         const res = await fetch(`${apiUrl}/api/payment/fees`);
         if (res.ok) {
           const data = await res.json();
@@ -638,7 +639,7 @@ export default function AdminUsers() {
     setFeeMessage('');
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       const res = await fetch(`${apiUrl}/api/payment/fees`, {
         method: 'POST',
         headers: {
@@ -1819,7 +1820,7 @@ export default function AdminUsers() {
                       </div>
                     </div>
                     <a
-                      href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/appointments/${selectedSession.id || selectedSession._id}/agreement-pdf`}
+                      href={`${API_URL}/api/appointments/${selectedSession.id || selectedSession._id}/agreement-pdf`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3.5 py-2 rounded-lg bg-[#c79c6e] hover:bg-white text-black text-xs font-semibold uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1.5"

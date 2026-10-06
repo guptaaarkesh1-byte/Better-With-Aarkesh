@@ -15,8 +15,7 @@ import {
 } from '@phosphor-icons/react';
 
 import heroPreviewImg from '../../../client/src/assets/hero.webp';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../utils/apiUrl';
 
 const FONT_PRESETS = [
   { label: 'Compact', scale: 90, desc: '90% Scale' },

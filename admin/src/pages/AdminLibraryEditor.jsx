@@ -27,7 +27,7 @@ import {
 import { CURATED_LIBRARY_ARTICLES } from '../../../client/src/constants/libraryArticlesData';
 import TiptapEditor from '../components/ui/TiptapEditor';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../utils/apiUrl';
 
 // Fixed 6 Core Categories
 export const FIXED_LIBRARY_CATEGORIES = [

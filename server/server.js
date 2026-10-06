@@ -34,6 +34,9 @@ import visualSettingsRoutes from './routes/visualSettingsRoutes.js';
 import courseLandingSettingsRoutes from './routes/courseLandingSettingsRoutes.js';
 import courseDetailSettingsRoutes from './routes/courseDetailSettingsRoutes.js';
 
+import http from 'http';
+import { Server } from 'socket.io';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -41,6 +44,37 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    credentials: true,
+  },
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  // Join lesson discussion room
+  socket.on('join_lesson', (lessonId) => {
+    if (lessonId) {
+      socket.join(`lesson:${lessonId}`);
+    }
+  });
+
+  socket.on('leave_lesson', (lessonId) => {
+    if (lessonId) {
+      socket.leave(`lesson:${lessonId}`);
+    }
+  });
+
+  // Join admin discussion room
+  socket.on('join_admin', () => {
+    socket.join('admin');
+  });
+});
 
 // Middleware
 app.use(cors());
@@ -106,6 +140,6 @@ const connectDB = async () => {
 
 connectDB();
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server is running with Socket.io on port ${PORT}`);
 });

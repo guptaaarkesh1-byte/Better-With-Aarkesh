@@ -49,7 +49,7 @@ import {
 } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../utils/apiUrl';
 
 export const resolveImageUrl = (url) => {
   if (!url) return '';

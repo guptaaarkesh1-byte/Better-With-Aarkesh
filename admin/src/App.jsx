@@ -13,10 +13,10 @@ import {
   GraduationCap
 } from '@phosphor-icons/react';
 import AdminCourseStudents from './pages/AdminCourseStudents';
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
+import { API_URL } from './utils/apiUrl';
 
 // --- Login Component ---
 function AdminLogin({ onLogin }) {
@@ -27,7 +27,7 @@ function AdminLogin({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       const res = await fetch(`${apiUrl}/api/auth/admin/login`, {
         method: 'POST',
         headers: {
@@ -109,7 +109,7 @@ function AdminDashboard() {
     const fetchDashboardData = async () => {
       try {
         const token = localStorage.getItem('adminToken');
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = API_URL;
         
         const [appRes, courseRes] = await Promise.all([
           fetch(`${apiUrl}/api/appointments/admin`, {

@@ -20,7 +20,7 @@ import {
   WarningCircle
 } from '@phosphor-icons/react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../utils/apiUrl';
 
 const GST_PRESETS = [0, 5, 12, 18, 28];
 

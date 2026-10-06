@@ -17,8 +17,8 @@ import {
   Question,
   ShieldCheck
 } from '@phosphor-icons/react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { io } from 'socket.io-client';
+import API_URL from '../../utils/apiUrl';
 
 // Helper to format relative timestamps
 const formatRelativeTime = (dateString) => {
@@ -56,6 +56,8 @@ const getInitials = (name) => {
 };
 
 export default function LessonComments({ 
+  courseSlug = 'better-man',
+  courseTitle = '',
   lessonId, 
   lessonTitle = 'this lesson', 
   onRequireAuth 
@@ -228,6 +230,92 @@ export default function LessonComments({
     };
   }, [lessonId, getAuthDetails]);
 
+  // Real-Time Socket.io Live Updates
+  useEffect(() => {
+    if (!lessonId) return;
+
+    const socketUrl = API_URL.startsWith('http') ? API_URL : window.location.origin;
+    const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+
+    socket.emit('join_lesson', lessonId);
+
+    socket.on('comment:new', (newComment) => {
+      if (newComment && newComment.lessonId === lessonId) {
+        setComments((prev) => {
+          if (prev.some((c) => c._id === newComment._id)) return prev;
+          return [newComment, ...prev];
+        });
+        setTotalComments((prev) => prev + 1);
+      }
+    });
+
+    socket.on('comment:reply', ({ parentCommentId, reply, isAnswered }) => {
+      setComments((prev) =>
+        prev.map((c) => {
+          if (c._id === parentCommentId) {
+            const currentReplies = c.replies || [];
+            if (currentReplies.some((r) => r._id === reply._id)) return c;
+            return {
+              ...c,
+              isAnswered: isAnswered !== undefined ? isAnswered : c.isAnswered,
+              replies: [...currentReplies, reply],
+              replyCount: (c.replyCount || 0) + 1,
+            };
+          }
+          return c;
+        })
+      );
+    });
+
+    socket.on('comment:liked', ({ commentId, likesCount }) => {
+      setComments((prev) =>
+        prev.map((c) => {
+          if (c._id === commentId) {
+            return { ...c, likesCount };
+          }
+          if (c.replies?.some((r) => r._id === commentId)) {
+            return {
+              ...c,
+              replies: c.replies.map((r) => (r._id === commentId ? { ...r, likesCount } : r)),
+            };
+          }
+          return c;
+        })
+      );
+    });
+
+    socket.on('comment:pinned', ({ commentId, isPinned }) => {
+      setComments((prev) =>
+        prev.map((c) => (c._id === commentId ? { ...c, isPinned } : c))
+      );
+    });
+
+    socket.on('comment:status', ({ commentId, status }) => {
+      if (status === 'hidden') {
+        setComments((prev) => prev.filter((c) => c._id !== commentId));
+      }
+    });
+
+    socket.on('comment:deleted', ({ commentId, parentId }) => {
+      if (parentId) {
+        setComments((prev) =>
+          prev.map((c) =>
+            c._id === parentId
+              ? { ...c, replies: (c.replies || []).filter((r) => r._id !== commentId) }
+              : c
+          )
+        );
+      } else {
+        setComments((prev) => prev.filter((c) => c._id !== commentId));
+      }
+    });
+
+    return () => {
+      socket.emit('leave_lesson', lessonId);
+      socket.disconnect();
+    };
+  }, [lessonId]);
+
   // Load More Comments
   const handleLoadMore = async () => {
     if (isLoadingMore || !hasMore) return;
@@ -289,6 +377,8 @@ export default function LessonComments({
           content: trimmed,
           type: commentType,
           lessonTitle,
+          courseSlug,
+          courseTitle,
         }),
       });
 
@@ -679,17 +769,17 @@ export default function LessonComments({
         </div>
       ) : comments.length === 0 ? (
         /* Empty State */
-        <div className="p-10 md:p-14 text-center rounded-2xl bg-gradient-to-b from-[#140b20]/60 to-transparent border border-[#C878BE]/15">
-          <div className="w-12 h-12 rounded-full bg-[#C878BE]/15 border border-[#C878BE]/30 text-[#E3B8DE] flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(200,120,190,0.2)]">
+        <div className="w-full py-12 md:py-16 px-6 text-center flex flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-[#140b20]/60 to-[#0c0512]/40 border border-[#C878BE]/15 shadow-inner">
+          <div className="w-12 h-12 rounded-full bg-[#C878BE]/15 border border-[#C878BE]/30 text-[#E3B8DE] flex items-center justify-center mb-3.5 shadow-[0_0_20px_rgba(200,120,190,0.2)]">
             <Sparkle size={22} weight="duotone" />
           </div>
           <h4 
-            className="text-lg md:text-xl text-white font-semibold mb-1"
+            className="text-lg md:text-xl text-white font-semibold mb-1.5 text-center"
             style={{ fontFamily: 'var(--head)' }}
           >
             Start the conversation
           </h4>
-          <p className="text-white/50 text-xs md:text-sm max-w-sm mx-auto leading-relaxed">
+          <p className="text-white/50 text-xs md:text-sm max-w-md mx-auto text-center leading-relaxed">
             Be the first to share your takeaways, insights, or ask a question regarding this lesson.
           </p>
         </div>

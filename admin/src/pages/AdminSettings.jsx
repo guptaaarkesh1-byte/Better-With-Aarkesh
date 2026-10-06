@@ -3,6 +3,7 @@ import { useToast } from '../context/ToastContext';
 import { Gear, Key, FloppyDisk, LockKey, Eye, EyeSlash } from '@phosphor-icons/react';
 import AdminBreadcrumb from '../components/ui/AdminBreadcrumb';
 import AdminCardPills from '../components/ui/AdminCardPills';
+import { API_URL } from '../utils/apiUrl';
 
 export default function AdminSettings() {
   const { showSuccess, showError } = useToast();
@@ -30,7 +31,7 @@ export default function AdminSettings() {
   const fetchSettings = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       const res = await fetch(`${apiUrl}/api/payment/settings`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -53,7 +54,7 @@ export default function AdminSettings() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       const res = await fetch(`${apiUrl}/api/payment/settings`, {
         method: 'POST',
         headers: {
@@ -91,7 +92,7 @@ export default function AdminSettings() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = API_URL;
       const res = await fetch(`${apiUrl}/api/auth/admin/change-password`, {
         method: 'POST',
         headers: {

@@ -14,6 +14,7 @@ import {
   Play
 } from '@phosphor-icons/react';
 import FlippingWordSwap from '../../components/ui/FlippingWordSwap';
+import { API_URL } from '../../utils/apiUrl';
 import './course-landing.css';
 
 const resolveImageUrl = (url) => {
@@ -21,7 +22,7 @@ const resolveImageUrl = (url) => {
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
     return url;
   }
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const apiUrl = API_URL;
   if (url.startsWith('/')) {
     return `${apiUrl}${url}`;
   }

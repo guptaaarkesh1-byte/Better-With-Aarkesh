@@ -8,6 +8,22 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
+// Helper to emit real-time updates via Socket.io
+const emitSocket = (req, event, payload, lessonId) => {
+  try {
+    const io = req.app.get('io');
+    if (io) {
+      if (lessonId) {
+        io.to(`lesson:${lessonId}`).emit(event, payload);
+      }
+      io.to('admin').emit(event, payload);
+      io.emit(event, payload);
+    }
+  } catch (err) {
+    console.error('Socket emit error:', err);
+  }
+};
+
 // Helper to sanitize text (strip script tags, dangerous HTML tags)
 const sanitizeContent = (str) => {
   if (!str) return '';
@@ -304,7 +320,7 @@ router.get('/lesson/:lessonId', optionalAuthenticateUser, async (req, res) => {
 router.post('/lesson/:lessonId', authenticateUser, async (req, res) => {
   try {
     const { lessonId } = req.params;
-    const { content, type, lessonTitle } = req.body;
+    const { content, type, lessonTitle, courseSlug, courseTitle } = req.body;
 
     if (!lessonId || !lessonId.trim()) {
       return res.status(400).json({ message: 'Lesson ID is required' });
@@ -323,6 +339,8 @@ router.post('/lesson/:lessonId', authenticateUser, async (req, res) => {
     const isInstructor = req.user.isAdmin;
 
     const newComment = await Comment.create({
+      courseSlug: (courseSlug || 'better-man').trim().toLowerCase(),
+      courseTitle: (courseTitle || '').trim(),
       lessonId: lessonId.toString().trim(),
       lessonTitle: (lessonTitle || '').trim(),
       userId: req.user._id,
@@ -341,12 +359,16 @@ router.post('/lesson/:lessonId', authenticateUser, async (req, res) => {
       isPinned: false,
     });
 
-    res.status(201).json({
+    const responseData = {
       ...newComment.toObject(),
       hasLiked: false,
       replies: [],
       replyCount: 0,
-    });
+    };
+
+    emitSocket(req, 'comment:new', responseData, newComment.lessonId);
+
+    res.status(201).json(responseData);
   } catch (error) {
     console.error('Error posting comment:', error);
     res.status(500).json({ message: 'Failed to post comment. Please try again.' });
@@ -384,6 +406,8 @@ router.post('/:commentId/reply', authenticateUser, async (req, res) => {
     const isInstructor = req.user.isAdmin;
 
     const reply = await Comment.create({
+      courseSlug: parentComment.courseSlug || 'better-man',
+      courseTitle: parentComment.courseTitle || '',
       lessonId: parentComment.lessonId,
       lessonTitle: parentComment.lessonTitle,
       userId: req.user._id,
@@ -404,10 +428,18 @@ router.post('/:commentId/reply', authenticateUser, async (req, res) => {
       await Comment.findByIdAndUpdate(targetParentId, { isAnswered: true });
     }
 
-    res.status(201).json({
+    const replyData = {
       ...reply.toObject(),
       hasLiked: false,
-    });
+    };
+
+    emitSocket(req, 'comment:reply', {
+      parentCommentId: targetParentId.toString(),
+      reply: replyData,
+      isAnswered: isInstructor ? true : undefined,
+    }, parentComment.lessonId);
+
+    res.status(201).json(replyData);
   } catch (error) {
     console.error('Error posting reply:', error);
     res.status(500).json({ message: 'Failed to post reply. Please try again.' });
@@ -432,6 +464,11 @@ router.post('/:commentId/pin', authenticateUser, requireAdmin, async (req, res) 
 
     comment.isPinned = !comment.isPinned;
     await comment.save();
+
+    emitSocket(req, 'comment:pinned', {
+      commentId: comment._id.toString(),
+      isPinned: comment.isPinned,
+    }, comment.lessonId);
 
     res.json({
       success: true,
@@ -471,6 +508,11 @@ router.post('/:commentId/hide', authenticateUser, requireAdmin, async (req, res)
       { status: 'hidden', moderatedAt: now }
     );
 
+    emitSocket(req, 'comment:status', {
+      commentId: comment._id.toString(),
+      status: 'hidden',
+    }, comment.lessonId);
+
     res.json({
       success: true,
       status: 'hidden',
@@ -507,6 +549,11 @@ router.post('/:commentId/restore', authenticateUser, requireAdmin, async (req, r
       { parentId: comment._id },
       { status: 'active', moderatedAt: null }
     );
+
+    emitSocket(req, 'comment:status', {
+      commentId: comment._id.toString(),
+      status: 'active',
+    }, comment.lessonId);
 
     res.json({
       success: true,
@@ -565,26 +612,33 @@ router.get('/admin/all', authenticateUser, requireAdmin, async (req, res) => {
     const skip = (page - 1) * limit;
 
     const filter = req.query.filter || 'all';
+    const courseSlug = req.query.courseSlug;
     const lessonId = req.query.lessonId;
     const search = (req.query.search || '').trim();
 
     const query = { parentId: null };
 
-    if (lessonId) {
+    if (courseSlug && courseSlug !== 'all') {
+      query.courseSlug = courseSlug.toString().toLowerCase().trim();
+    }
+
+    if (lessonId && lessonId !== 'all') {
       query.lessonId = lessonId;
     }
 
-    if (filter === 'unanswered') {
-      query.type = 'question';
+    if (filter === 'unanswered' || filter === 'needs') {
       query.isAnswered = false;
       query.status = { $ne: 'hidden' };
     } else if (filter === 'answered') {
-      query.type = 'question';
       query.isAnswered = true;
     } else if (filter === 'pinned') {
       query.isPinned = true;
     } else if (filter === 'hidden') {
       query.status = 'hidden';
+    } else if (filter === 'pending') {
+      query.status = 'pending';
+    } else if (filter === 'flagged') {
+      query.status = 'flagged';
     }
 
     if (search) {
@@ -618,11 +672,31 @@ router.get('/admin/all', authenticateUser, requireAdmin, async (req, res) => {
       repliesMap[pid].push(rep);
     });
 
-    const formatted = comments.map((c) => ({
-      ...c,
-      replies: repliesMap[c._id.toString()] || [],
-      replyCount: (repliesMap[c._id.toString()] || []).length,
-    }));
+    // Check admin liked status
+    let userLikedCommentIds = new Set();
+    if (req.user) {
+      const allCommentIds = [...topIds, ...replies.map((r) => r._id)];
+      if (allCommentIds.length > 0) {
+        const userLikes = await CommentLike.find({
+          commentId: { $in: allCommentIds },
+          userId: req.user._id.toString(),
+        }).select('commentId');
+        userLikedCommentIds = new Set(userLikes.map((l) => l.commentId.toString()));
+      }
+    }
+
+    const formatted = comments.map((c) => {
+      const cReplies = (repliesMap[c._id.toString()] || []).map((r) => ({
+        ...r,
+        hasLiked: userLikedCommentIds.has(r._id.toString()),
+      }));
+      return {
+        ...c,
+        hasLiked: userLikedCommentIds.has(c._id.toString()),
+        replies: cReplies,
+        replyCount: cReplies.length,
+      };
+    });
 
     res.json({
       comments: formatted,
@@ -673,6 +747,11 @@ router.patch('/:commentId', authenticateUser, async (req, res) => {
     comment.isEdited = true;
     await comment.save();
 
+    emitSocket(req, 'comment:edited', {
+      commentId: comment._id.toString(),
+      content: comment.content,
+    }, comment.lessonId);
+
     res.json({
       success: true,
       comment: {
@@ -716,6 +795,12 @@ router.delete('/:commentId', authenticateUser, async (req, res) => {
 
     // Delete replies and parent comment
     await Comment.deleteMany({ _id: { $in: commentIdsToDelete } });
+
+    emitSocket(req, 'comment:deleted', {
+      commentId: comment._id.toString(),
+      lessonId: comment.lessonId,
+      parentId: comment.parentId ? comment.parentId.toString() : null,
+    }, comment.lessonId);
 
     res.json({
       success: true,
@@ -763,6 +848,11 @@ router.post('/:commentId/like', authenticateUser, async (req, res) => {
         await Comment.findByIdAndUpdate(comment._id, { likesCount: 0 });
       }
 
+      emitSocket(req, 'comment:liked', {
+        commentId: comment._id.toString(),
+        likesCount,
+      }, comment.lessonId);
+
       return res.json({
         success: true,
         hasLiked: false,
@@ -779,10 +869,17 @@ router.post('/:commentId/like', authenticateUser, async (req, res) => {
         { returnDocument: 'after' }
       );
 
+      const likesCount = updated ? updated.likesCount : comment.likesCount + 1;
+
+      emitSocket(req, 'comment:liked', {
+        commentId: comment._id.toString(),
+        likesCount,
+      }, comment.lessonId);
+
       return res.json({
         success: true,
         hasLiked: true,
-        likesCount: updated ? updated.likesCount : comment.likesCount + 1,
+        likesCount,
       });
     }
   } catch (error) {

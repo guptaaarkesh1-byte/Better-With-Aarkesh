@@ -38,7 +38,7 @@ import {
 import TiptapEditor from '../components/ui/TiptapEditor';
 import { sanitizeDocumentHtml } from '../utils/sanitizeHtml';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../utils/apiUrl';
 
 const DEFAULT_FOOTER_SECTIONS = [
   'QUICK LINKS',

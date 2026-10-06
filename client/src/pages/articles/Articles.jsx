@@ -5,8 +5,7 @@ import { useBooking } from '../../context/BookingContext';
 import ArticleReaderView, { renderFormattedTitle } from './ArticleReaderView';
 import { CURATED_LIBRARY_ARTICLES, getCuratedArticle } from '../../constants/libraryArticlesData';
 import PlasmaRingSphere from '../../components/library/PlasmaRingSphere';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../../utils/apiUrl';
 
 const CATEGORY_CONFIGS = {
   relationships: {

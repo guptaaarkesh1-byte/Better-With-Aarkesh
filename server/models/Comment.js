@@ -2,6 +2,17 @@ import mongoose from 'mongoose';
 
 const commentSchema = new mongoose.Schema(
   {
+    courseSlug: {
+      type: String,
+      default: 'better-man',
+      index: true,
+      trim: true,
+    },
+    courseTitle: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     lessonId: {
       type: String,
       required: [true, 'Lesson ID is required'],

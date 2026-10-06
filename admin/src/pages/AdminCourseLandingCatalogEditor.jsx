@@ -4,7 +4,7 @@ import Icon from '../components/common/AdminIcons';
 import AdminStickyBar from '../components/common/AdminStickyBar';
 import AdminConfirmModal from '../components/common/AdminConfirmModal';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../utils/apiUrl';
 
 const CATALOG_STEPS = [
   { id: 'hero', icon: 'layout', label: 'Hero Banner', subtitle: 'Main title, proof points & buttons' },
