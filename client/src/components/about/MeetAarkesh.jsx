@@ -25,7 +25,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 
 const resolveMeetImg = (url, fallback) => {
-  if (!url) return fallback;
+  if (!url || typeof url !== 'string' || url.trim() === '') return fallback;
   const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
   if (url.includes('localhost:5000/uploads/')) return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
   if (url.startsWith('/uploads/')) return `${apiUrl}${url}`;
@@ -86,6 +86,7 @@ export default function MeetAarkesh() {
       sub2: pilotData.sub2 || 'High stakes. Clear decisions.',
       highlight: pilotData.highlight || 'I know what pressure feels like.',
       bgImg: resolveMeetImg(pilotData.bgImg, pilotImg),
+      fallbackImg: pilotImg,
       imgPos: 'object-center'
     },
     {
@@ -95,6 +96,7 @@ export default function MeetAarkesh() {
       sub2: coachData.sub2 || 'Evidence based. Human first.',
       highlight: coachData.highlight || 'I walk beside you, not ahead of you.',
       bgImg: resolveMeetImg(coachData.bgImg, coachImg),
+      fallbackImg: coachImg,
       imgPos: 'object-[center_85%]'
     },
     {
@@ -104,6 +106,7 @@ export default function MeetAarkesh() {
       sub2: humanData.sub2 || 'Still figuring things out.',
       highlight: humanData.highlight || 'Just like you.',
       bgImg: resolveMeetImg(humanData.bgImg, humanImg),
+      fallbackImg: humanImg,
       imgPos: 'object-center'
     }
   ];
@@ -176,11 +179,16 @@ export default function MeetAarkesh() {
               onMouseEnter={() => { if (i === 1) setIsMiddleHovered(true); }}
               onMouseLeave={() => { if (i === 1) setIsMiddleHovered(false); }}
             >
-              {/* Background Image - Full Visibility */}
+              {/* Background Image - Full Visibility with Automatic Fallback */}
               <div className="absolute inset-0 z-0 overflow-hidden">
                 <img 
-                  src={role.bgImg} 
+                  src={role.bgImg || role.fallbackImg} 
                   alt={role.title} 
+                  onError={(e) => {
+                    if (role.fallbackImg && e.currentTarget.src !== role.fallbackImg) {
+                      e.currentTarget.src = role.fallbackImg;
+                    }
+                  }}
                   className={`w-full h-full object-cover ${role.imgPos || 'object-center'} opacity-100 contrast-[1.02] will-change-transform transition-transform duration-[1.2s] ease-out group-hover:scale-105`} 
                 />
               </div>
