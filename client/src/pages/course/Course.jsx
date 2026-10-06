@@ -2374,7 +2374,7 @@ export default function Course() {
                 setShowCourseLogin(true);
               }}
             >
-              Sign In
+              SIGN IN
             </button>
           )}
         </div>
@@ -3772,7 +3772,7 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
             onClick={() => setShowCourseLogin(true)}
             title="Sign In"
           >
-            Sign In
+            SIGN IN
           </button>
         )}
       </div>

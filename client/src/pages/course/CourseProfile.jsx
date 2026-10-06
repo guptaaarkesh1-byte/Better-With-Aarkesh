@@ -476,7 +476,7 @@ export default function CourseProfile() {
               to="/course"
               className="sign-in-btn"
             >
-              Sign In
+              SIGN IN
             </Link>
           )}
         </div>

@@ -432,7 +432,7 @@ export default function MyCourses() {
               to="/course"
               className="sign-in-btn"
             >
-              Sign In
+              SIGN IN
             </Link>
           )}
         </div>
