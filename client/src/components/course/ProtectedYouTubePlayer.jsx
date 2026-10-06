@@ -29,12 +29,12 @@ export default function ProtectedYouTubePlayer({
     );
   }
 
-  // Construct optimized privacy-enhanced embed URL with full settings, controls, and modest branding
+  // Construct privacy-enhanced embed URL with controls & settings
   const embedUrl = `https://www.youtube-nocookie.com/embed/${actualVideoId}?enablejsapi=1&rel=0&modestbranding=1&controls=1&showinfo=0&fs=1&playsinline=1&iv_load_policy=3&disablekb=0&autoplay=0`;
 
   return (
     <div 
-      className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden group select-none"
+      className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden select-none"
       style={{ width: '100%', height: '100%', minHeight: '360px', aspectRatio: '16/9' }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -49,9 +49,25 @@ export default function ProtectedYouTubePlayer({
         onError={() => setHasError(true)}
       />
 
-      {/* Top Banner Click-Blocker (Hides/blocks top title & share buttons) */}
+      {/* ── TOP HEADER COVER ──
+          Hides Channel Profile Avatar, Video Title, and Copy Link / Share button */}
       <div 
-        className="absolute top-0 left-0 right-0 h-14 z-10 pointer-events-auto cursor-default bg-transparent"
+        className="absolute top-0 left-0 right-0 h-[56px] z-20 pointer-events-auto cursor-default bg-[#000000] flex items-center px-4"
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        title=""
+      >
+        <span className="text-xs font-semibold tracking-wider text-white/70 uppercase">
+          {title || 'Course Masterclass'}
+        </span>
+      </div>
+
+      {/* ── BOTTOM-RIGHT 'WATCH ON YOUTUBE' COVER ──
+          Hides the 'Watch on YouTube' pill button */}
+      <div 
+        className="absolute bottom-10 right-2 w-[176px] h-[44px] z-10 pointer-events-auto cursor-default bg-black/95 rounded-lg"
         onClick={(e) => {
           e.stopPropagation();
           e.preventDefault();
@@ -59,17 +75,9 @@ export default function ProtectedYouTubePlayer({
         title=""
       />
 
-      {/* Bottom Corner Click-Blockers (Blocks 'Watch on YouTube' / external share pills) */}
+      {/* ── BOTTOM-LEFT SHARE / WATCH LATER COVER ── */}
       <div 
-        className="absolute bottom-12 right-2 w-44 h-12 z-10 pointer-events-auto cursor-default bg-transparent"
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        title=""
-      />
-      <div 
-        className="absolute bottom-12 left-2 w-28 h-12 z-10 pointer-events-auto cursor-default bg-transparent"
+        className="absolute bottom-10 left-2 w-[110px] h-[44px] z-10 pointer-events-auto cursor-default bg-black/95 rounded-lg"
         onClick={(e) => {
           e.stopPropagation();
           e.preventDefault();
@@ -78,7 +86,7 @@ export default function ProtectedYouTubePlayer({
       />
 
       {hasError && (
-        <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center p-6 text-white z-20">
+        <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center p-6 text-white z-30">
           <p className="text-base font-semibold text-red-400 mb-2">Unable to load YouTube video</p>
           <p className="text-xs text-white/60 max-w-sm mb-4">
             Please check if the video ID ({actualVideoId}) is valid and set to "Unlisted" or "Public" on YouTube.
