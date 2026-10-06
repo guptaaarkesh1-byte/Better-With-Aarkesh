@@ -30,12 +30,18 @@ export default function ProtectedYouTubePlayer({
   }
 
   // Official YouTube embed URL with native settings, fullscreen, and quality options
-  const embedUrl = `https://www.youtube.com/embed/${actualVideoId}?rel=0&playsinline=1&enablejsapi=1`;
+  const embedUrl = `https://www.youtube.com/embed/${actualVideoId}?rel=0&playsinline=1&enablejsapi=1&modestbranding=1`;
+
+  const preventClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
 
   return (
     <div 
-      className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden"
+      className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden select-none"
       style={{ width: '100%', height: '100%', minHeight: '380px', aspectRatio: '16/9' }}
+      onContextMenu={preventClick}
     >
       <iframe
         key={actualVideoId}
@@ -48,8 +54,37 @@ export default function ProtectedYouTubePlayer({
         onError={() => setHasError(true)}
       />
 
+      {/* ── TOP BAR CLICK-BLOCKER ──
+          Makes Channel Name, Avatar, Share, and Watch Later 100% NON-CLICKABLE */}
+      <div 
+        className="absolute top-0 left-0 right-0 h-14 z-20 pointer-events-auto cursor-default bg-transparent"
+        onClick={preventClick}
+        onMouseDown={preventClick}
+        onMouseUp={preventClick}
+        title=""
+      />
+
+      {/* ── BOTTOM-RIGHT YOUTUBE LOGO CLICK-BLOCKER ──
+          Makes YouTube Watermark Logo 100% NON-CLICKABLE */}
+      <div 
+        className="absolute bottom-0 right-0 w-24 h-12 z-20 pointer-events-auto cursor-default bg-transparent"
+        onClick={preventClick}
+        onMouseDown={preventClick}
+        onMouseUp={preventClick}
+        title=""
+      />
+
+      {/* ── BOTTOM-LEFT SHARE / WATCH LATER CLICK-BLOCKER ── */}
+      <div 
+        className="absolute bottom-0 left-0 w-24 h-12 z-20 pointer-events-auto cursor-default bg-transparent"
+        onClick={preventClick}
+        onMouseDown={preventClick}
+        onMouseUp={preventClick}
+        title=""
+      />
+
       {hasError && (
-        <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center p-6 text-white z-20">
+        <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center p-6 text-white z-30">
           <p className="text-base font-semibold text-red-400 mb-2">Unable to load video</p>
           <p className="text-xs text-white/60 max-w-sm">
             Please verify the YouTube video ID ({actualVideoId}) is set to "Unlisted" or "Public" on YouTube.
