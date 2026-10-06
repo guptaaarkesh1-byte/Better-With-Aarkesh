@@ -3,13 +3,30 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Ensure uploads directory exists with absolute path
+// Configure Cloudinary with credentials from environment
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+  console.log(`Cloudinary configured successfully for cloud: ${process.env.CLOUDINARY_CLOUD_NAME}`);
+} else if (process.env.CLOUDINARY_URL) {
+  cloudinary.config({
+    secure: true,
+  });
+  console.log('Cloudinary configured using CLOUDINARY_URL');
+}
+
+// Ensure local uploads directory exists with absolute path as fallback / cache
 const uploadDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -46,7 +63,6 @@ const upload = multer({
 
 // Middleware to handle multer execution and capture errors cleanly
 const uploadMiddleware = (req, res, next) => {
-  // Accept 'image', 'file', 'photo', 'coverImage', or any field
   const uploadHandler = upload.any();
   uploadHandler(req, res, (err) => {
     if (err instanceof multer.MulterError) {
@@ -60,24 +76,62 @@ const uploadMiddleware = (req, res, next) => {
   });
 };
 
-// @desc    Upload image
-// @route   POST /api/upload and POST /api/upload/image
+// @desc    Upload image to Cloudinary (with fallback to local storage)
+// @route   POST /api/upload, POST /api/upload/image, POST /api/upload/single
 // @access  Public / Admin
-const handleUpload = (req, res) => {
-  const uploadedFile = req.file || (req.files && req.files[0]);
-  if (!uploadedFile) {
-    return res.status(400).json({ message: 'No image file provided in request.' });
-  }
+const handleUpload = async (req, res) => {
+  try {
+    const uploadedFile = req.file || (req.files && req.files[0]);
+    if (!uploadedFile) {
+      return res.status(400).json({ message: 'No image file provided in request.' });
+    }
 
-  const relativeUrl = `/uploads/${uploadedFile.filename}`;
-  res.json({
-    message: 'Image Uploaded Successfully',
-    imageUrl: relativeUrl,
-    url: relativeUrl,
-    filename: uploadedFile.filename,
-    originalName: uploadedFile.originalname,
-    size: uploadedFile.size,
-  });
+    const localRelativeUrl = `/uploads/${uploadedFile.filename}`;
+
+    // Try uploading to Cloudinary if credentials are present
+    const hasCloudinary = (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) || process.env.CLOUDINARY_URL;
+
+    if (hasCloudinary) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(uploadedFile.path, {
+          folder: 'better_with_aarkesh',
+          resource_type: 'auto',
+        });
+
+        // Optionally remove temp local file after successful upload to Cloudinary
+        try {
+          if (fs.existsSync(uploadedFile.path)) {
+            fs.unlinkSync(uploadedFile.path);
+          }
+        } catch (_) {}
+
+        return res.json({
+          message: 'Image Uploaded to Cloudinary Successfully',
+          imageUrl: uploadResult.secure_url,
+          url: uploadResult.secure_url,
+          publicId: uploadResult.public_id,
+          format: uploadResult.format,
+          bytes: uploadResult.bytes,
+          originalName: uploadedFile.originalname,
+        });
+      } catch (cloudErr) {
+        console.error('Cloudinary upload error, falling back to local storage:', cloudErr.message || cloudErr);
+      }
+    }
+
+    // Fallback response with local file URL
+    res.json({
+      message: 'Image Uploaded Successfully (Local)',
+      imageUrl: localRelativeUrl,
+      url: localRelativeUrl,
+      filename: uploadedFile.filename,
+      originalName: uploadedFile.originalname,
+      size: uploadedFile.size,
+    });
+  } catch (error) {
+    console.error('Upload processing error:', error);
+    res.status(500).json({ message: 'Server error processing file upload' });
+  }
 };
 
 router.post('/', uploadMiddleware, handleUpload);
