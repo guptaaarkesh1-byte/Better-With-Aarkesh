@@ -34,9 +34,9 @@ export default function ProblemSection() {
       scrollTrigger: {
         trigger: containerRef.current,
         start: 'top top',
-        end: '+=4000', // Pin for 4000px of scrolling
+        end: '+=1600',
         pin: true,
-        scrub: 1, // Smooth scrub
+        scrub: 0.6,
         anticipatePin: 1,
       }
     });
