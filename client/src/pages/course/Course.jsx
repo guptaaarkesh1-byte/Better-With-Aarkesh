@@ -1866,6 +1866,17 @@ export default function Course() {
               className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-semibold text-sm cursor-pointer transition-colors"
               onClick={() => {
                 setShowDashboard(false);
+                navigate('/library');
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }}
+            >
+              Library
+            </button>
+            <button 
+              type="button"
+              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-semibold text-sm cursor-pointer transition-colors"
+              onClick={() => {
+                setShowDashboard(false);
                 navigate('/course');
                 setTimeout(() => {
                   const el = document.getElementById('faq');
@@ -1876,7 +1887,11 @@ export default function Course() {
               FAQ
             </button>
           </nav>
-          <div className="player-hr">
+          <div className="player-hr flex items-center gap-2.5">
+            <Link to="/library" className="player-pill" title="Explore Articles & Library">
+              <Books size={16} weight="bold" />
+              <span>Library</span>
+            </Link>
             <Link to="/my-course" className="player-pill on" title="My Enrolled Courses">
               <BookOpen size={16} weight="bold" />
               <span>My Course</span>
@@ -2299,6 +2314,21 @@ export default function Course() {
               word1="Courses" 
               word2="Courses" 
               active={isAllCoursesPage} 
+              toClassName="text-[#C878BE]"
+            />
+          </Link>
+          <Link 
+            to="/library" 
+            onClick={() => {
+              setShowCourseLogin(false);
+              setShowDashboard(false);
+            }}
+            className={`course-nav-link ${location.pathname.startsWith('/library') || location.pathname.startsWith('/articles') ? 'active' : ''}`}
+          >
+            <FlippingWordSwap 
+              word1="Library" 
+              word2="Library" 
+              active={location.pathname.startsWith('/library') || location.pathname.startsWith('/articles')} 
               toClassName="text-[#C878BE]"
             />
           </Link>
@@ -3687,6 +3717,22 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           <FlippingWordSwap 
             word1="Courses" 
             word2="Courses" 
+            toClassName="text-[#C878BE]"
+          />
+        </Link>
+        <Link 
+          to="/library" 
+          onClick={(e) => {
+            e.preventDefault();
+            if (typeof setShowCourseLogin === 'function') setShowCourseLogin(false);
+            setShowDashboard(false);
+            navigate('/library');
+          }}
+          className="course-nav-link"
+        >
+          <FlippingWordSwap 
+            word1="Library" 
+            word2="Library" 
             toClassName="text-[#C878BE]"
           />
         </Link>

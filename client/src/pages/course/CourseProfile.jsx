@@ -395,6 +395,12 @@ export default function CourseProfile() {
             <FlippingWordSwap word1="Courses" word2="Courses" toClassName="text-[#C878BE]" />
           </Link>
           <Link
+            to="/library"
+            className="course-nav-link"
+          >
+            <FlippingWordSwap word1="Library" word2="Library" toClassName="text-[#C878BE]" />
+          </Link>
+          <Link
             to="/course#faq"
             className="course-nav-link"
           >
