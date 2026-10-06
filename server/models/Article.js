@@ -7,6 +7,10 @@ const articleSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    order: {
+      type: Number,
+      default: 0,
+    },
     categoryId: {
       type: String,
       required: true,

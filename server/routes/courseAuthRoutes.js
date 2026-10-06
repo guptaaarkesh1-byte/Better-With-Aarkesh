@@ -183,11 +183,15 @@ router.post('/login', async (req, res) => {
     if (isMatch) {
       const emailRegex = new RegExp(`^${user.email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
       const coachingUser = await User.findOne({ email: emailRegex });
-      const claimedAppointments = await Appointment.countDocuments({
+      const relevantAppointments = await Appointment.find({
         email: emailRegex,
-        $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }],
         status: { $ne: 'CANCELLED' }
       });
+      let claimedAppointments = 0;
+      for (const app of relevantAppointments) {
+        if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') claimedAppointments += 1;
+        if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) claimedAppointments += 1;
+      }
       const freeSessions = coachingUser && coachingUser.freeSessions !== undefined
         ? Math.max(0, coachingUser.freeSessions)
         : (user.isPurchased ? Math.max(0, 3 - claimedAppointments) : 0);
@@ -368,11 +372,15 @@ router.get('/me', protectCourse, async (req, res) => {
       const totalCoursesCount = courseUserObj.purchasedCourses.length;
       const totalSessionsGranted = totalCoursesCount * 3;
 
-      const claimedAppointments = await Appointment.countDocuments({
+      const relevantAppointments = await Appointment.find({
         email: emailRegex,
-        $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }],
         status: { $ne: 'CANCELLED' }
       });
+      let claimedAppointments = 0;
+      for (const app of relevantAppointments) {
+        if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') claimedAppointments += 1;
+        if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) claimedAppointments += 1;
+      }
 
       const calculatedRemaining = Math.max(0, totalSessionsGranted - claimedAppointments);
 
@@ -555,7 +563,13 @@ router.get('/admin/students', protect, admin, async (req, res) => {
       const latestFailed = failedPurchases[0] || null;
       const totalPaidAmount = paidPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-      const freeSessionsClaimed = appointments.filter(a => a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION').length;
+      let freeSessionsClaimed = 0;
+      for (const a of appointments) {
+        if (a.status !== 'CANCELLED') {
+          if (a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION') freeSessionsClaimed += 1;
+          if (a.rescheduleRequest && a.rescheduleRequest.usedFreeSessionCredit === true) freeSessionsClaimed += 1;
+        }
+      }
       const totalAppointments = appointments.length;
 
       return {
@@ -594,9 +608,10 @@ router.get('/admin/students', protect, admin, async (req, res) => {
           date: app.date,
           time: app.time,
           status: app.status,
-          isFreeSession: !!app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION',
+          isFreeSession: !!app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION' || !!app.rescheduleRequest?.usedFreeSessionCredit,
           paymentStatus: app.paymentStatus,
-          orderId: app.orderId
+          orderId: app.orderId,
+          rescheduleRequest: app.rescheduleRequest
         }))
       };
     }));
@@ -682,13 +697,19 @@ router.get('/admin/purchases', protect, admin, async (req, res) => {
 // @access  Private (Admin)
 router.get('/admin/stats', protect, admin, async (req, res) => {
   try {
-    const [totalRegistered, totalPurchased, freeSessionAppointments, totalFailedPurchases, primaryCourse] = await Promise.all([
+    const [totalRegistered, totalPurchased, totalFailedPurchases, primaryCourse, nonCancelledAppointments] = await Promise.all([
       CourseUser.countDocuments(),
       CourseUser.countDocuments({ isPurchased: true }),
-      Appointment.countDocuments({ $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }] }),
       CoursePurchase.countDocuments({ paymentStatus: 'Failed' }),
-      Course.findOne().sort({ createdAt: 1 })
+      Course.findOne().sort({ createdAt: 1 }),
+      Appointment.find({ status: { $ne: 'CANCELLED' } })
     ]);
+
+    let freeSessionAppointments = 0;
+    for (const a of nonCancelledAppointments) {
+      if (a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION') freeSessionAppointments += 1;
+      if (a.rescheduleRequest && a.rescheduleRequest.usedFreeSessionCredit === true) freeSessionAppointments += 1;
+    }
 
     const basePrice = primaryCourse?.price || 10000;
     const gstRate = primaryCourse?.gstRate !== undefined ? primaryCourse.gstRate : 18;

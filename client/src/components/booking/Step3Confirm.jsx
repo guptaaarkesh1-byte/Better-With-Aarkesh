@@ -173,9 +173,9 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
       </div>
 
       {/* Checkbox and Submit */}
-      <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-black/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">
+      <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-black/10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6">
         
-        <div className="flex w-full md:w-auto">
+        <div className="flex w-full lg:w-auto flex-1">
           <div 
             className="flex items-start gap-3 cursor-pointer group"
             onClick={() => setAgreed(!agreed)}
@@ -195,31 +195,33 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
           </div>
         </div>
 
-        <div className="flex flex-col-reverse md:flex-row items-stretch md:items-center gap-3 sm:gap-4 md:gap-6 w-full md:w-auto mt-2 md:mt-0">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 shrink-0 w-full sm:w-auto">
           <button
             onClick={onBack}
-            className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-black/10 hover:border-[#c9542f]/40 bg-white/90 hover:bg-white font-sans text-xs sm:text-sm font-semibold tracking-wide text-[#111010] transition-all w-full md:w-auto shadow-xs cursor-pointer"
+            className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-black/10 hover:border-[#c9542f]/40 bg-white/90 hover:bg-white font-sans text-xs sm:text-sm font-semibold tracking-wide text-[#111010] transition-all whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
           >
-            <ArrowLeft className="text-base sm:text-lg text-[#c9542f]" />
-            {settings.backButtonText || 'BACK'}
+            <ArrowLeft className="text-base sm:text-lg text-[#c9542f] shrink-0" />
+            <span>{settings.backButtonText || 'BACK'}</span>
           </button>
           
-          <div className="flex flex-col gap-2 w-full md:w-auto">
+          <div className="flex flex-col gap-2 shrink-0">
             <button
               onClick={onNext}
               disabled={!agreed || isLoading}
-              className={`flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-bold tracking-wider uppercase transition-all w-full md:w-auto cursor-pointer
+              className={`flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-bold tracking-wider uppercase transition-all whitespace-nowrap shrink-0 cursor-pointer
                 ${(!agreed || isLoading)
                   ? 'bg-black/5 text-black/30 border border-black/10 cursor-not-allowed' 
                   : 'bg-[#c9542f] text-white hover:bg-[#111010] shadow-md hover:-translate-y-0.5'
                 }
               `}
             >
-              {isLoading 
-                ? (isFreeSession ? 'RESERVING SESSION...' : 'BOOKING...') 
-                : (isFreeSession ? (settings.confirmFreeButtonText || 'CONFIRM FREE SESSION') : (settings.confirmButtonText || 'CONFIRM & BOOK'))
-              }
-              {!isLoading && <LockKey className="text-base sm:text-lg" weight="bold" />}
+              <span>
+                {isLoading 
+                  ? (isFreeSession ? 'RESERVING SESSION...' : 'BOOKING...') 
+                  : (isFreeSession ? (settings.confirmFreeButtonText || 'CONFIRM FREE SESSION') : (settings.confirmButtonText || 'CONFIRM & BOOK'))
+                }
+              </span>
+              {!isLoading && <LockKey className="text-base sm:text-lg shrink-0" weight="bold" />}
             </button>
             {error && <p className="text-red-600 font-sans text-xs text-center font-medium">{error}</p>}
           </div>

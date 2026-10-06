@@ -2,6 +2,7 @@ import express from 'express';
 import Appointment from '../models/Appointment.js';
 import User from '../models/User.js';
 import CourseUser from '../models/CourseUser.js';
+import CoursePurchase from '../models/CoursePurchase.js';
 import Settings from '../models/Settings.js';
 import PastClient from '../models/PastClient.js';
 import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
@@ -122,6 +123,75 @@ router.post('/check-session-type', optionalAuth, async (req, res) => {
       }
     }
 
+    let freeSessions = 0;
+    const lookupEmail = (rawEmail || (req.user && req.user.email) || '').toLowerCase().trim();
+    if (lookupEmail) {
+      const escapedEmail = lookupEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
+
+      const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
+      const coachingUser = await User.findOne({ email: emailRegex });
+
+      if (courseUser) {
+        const distinctPurchasedCourses = new Set();
+        if (Array.isArray(courseUser.purchasedCourses)) {
+          courseUser.purchasedCourses.forEach(s => s && distinctPurchasedCourses.add(s));
+        }
+        const purchases = await CoursePurchase.find({
+          $or: [{ courseUserId: courseUser._id }, { studentEmail: emailRegex }],
+          paymentStatus: 'Paid'
+        });
+        purchases.forEach(p => { if (p.courseSlug) distinctPurchasedCourses.add(p.courseSlug); });
+        if (distinctPurchasedCourses.size === 0) distinctPurchasedCourses.add('better-man');
+
+        const totalCoursesCount = distinctPurchasedCourses.size || 1;
+        const totalGrantedSessions = totalCoursesCount * 3;
+
+        const relevantAppointments = await Appointment.find({
+          email: emailRegex,
+          status: { $ne: 'CANCELLED' }
+        });
+
+        let claimedAppointmentsCount = 0;
+        for (const app of relevantAppointments) {
+          if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
+            claimedAppointmentsCount += 1;
+          }
+          if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
+            claimedAppointmentsCount += 1;
+          }
+        }
+
+        freeSessions = Math.max(0, totalGrantedSessions - claimedAppointmentsCount);
+        if (coachingUser && coachingUser.freeSessions !== freeSessions) {
+          coachingUser.freeSessions = freeSessions;
+          await coachingUser.save();
+        }
+      } else if (coachingUser) {
+        const relevantAppointments = await Appointment.find({
+          email: emailRegex,
+          status: { $ne: 'CANCELLED' }
+        });
+
+        let claimedAppointmentsCount = 0;
+        for (const app of relevantAppointments) {
+          if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
+            claimedAppointmentsCount += 1;
+          }
+          if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
+            claimedAppointmentsCount += 1;
+          }
+        }
+
+        const totalGranted = coachingUser.courseSessionsGranted ? 3 : (typeof coachingUser.freeSessions === 'number' ? (coachingUser.freeSessions + claimedAppointmentsCount) : 0);
+        freeSessions = Math.max(0, totalGranted - claimedAppointmentsCount);
+        if (coachingUser.freeSessions !== freeSessions) {
+          coachingUser.freeSessions = freeSessions;
+          await coachingUser.save();
+        }
+      }
+    }
+
     const duration = isFirstSession ? 60 : 90;
     const fee = duration === 90 ? fee90min : fee60min;
 
@@ -130,7 +200,9 @@ router.post('/check-session-type', optionalAuth, async (req, res) => {
       duration,
       fee,
       fee60min,
-      fee90min
+      fee90min,
+      freeSessions,
+      hasFreeSessions: freeSessions > 0
     });
   } catch (error) {
     console.error('Error checking session type:', error);
@@ -525,12 +597,17 @@ router.get('/admin', protect, admin, async (req, res) => {
 
     // Fetch fee settings to ensure accurate fallback
     const feeSettings = await Settings.findOne({ key: 'fees' });
-    const fee60 = feeSettings?.value?.fee60min || 1000;
-    const fee90 = feeSettings?.value?.fee90min || 1500;
-
-    // Fetch all course purchasers emails for fast lookup
-    const coursePurchasers = await CourseUser.find({ isPurchased: true }).select('email');
-    const coursePurchaserEmails = new Set(coursePurchasers.map(c => (c.email || '').toLowerCase().trim()));
+    // Fetch all course purchasers for phone & email lookup
+    const courseUsers = await CourseUser.find().select('email phoneNumber');
+    const coursePurchaserEmails = new Set();
+    const courseUserPhoneMap = new Map();
+    courseUsers.forEach(c => {
+      const em = (c.email || '').toLowerCase().trim();
+      if (em) {
+        coursePurchaserEmails.add(em);
+        if (c.phoneNumber) courseUserPhoneMap.set(em, c.phoneNumber);
+      }
+    });
 
     const enrichedAppointments = appointments.map(app => {
       const appObj = app.toObject();
@@ -543,8 +620,14 @@ router.get('/admin', protect, admin, async (req, res) => {
             ? appObj.amount 
             : (appObj.duration === 90 ? fee90 : fee60));
       
+      const resolvedPhone = appObj.phoneNumber || appObj.phone || (appObj.userId && (appObj.userId.phoneNumber || appObj.userId.phone)) || courseUserPhoneMap.get(appEmail) || '';
+      const resolvedCountryCode = appObj.countryCode || (appObj.userId && appObj.userId.countryCode) || '';
+
       return {
         ...appObj,
+        phoneNumber: resolvedPhone,
+        phone: resolvedPhone,
+        countryCode: resolvedCountryCode,
         amount: calculatedAmount,
         isCourseMember: isCoursePurchaser || isFree,
         isFreeSession: isFree,
@@ -581,6 +664,27 @@ router.put('/admin/:id/status', protect, admin, async (req, res) => {
 
 // PUT /api/appointments/admin/:id/notes - Update coach's session notes
 router.put('/admin/:id/notes', protect, admin, async (req, res) => {
+  try {
+    const { notes, coachNotes } = req.body;
+    const notesToSave = notes !== undefined ? notes : (coachNotes !== undefined ? coachNotes : '');
+    
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    appointment.coachNotes = notesToSave;
+    const updatedAppointment = await appointment.save();
+    
+    res.json(updatedAppointment);
+  } catch (error) {
+    console.error('Failed to update coach notes:', error);
+    res.status(500).json({ message: 'Server error updating coach notes' });
+  }
+});
+
+// PUT & POST /api/appointments/:id/notes - Update coach notes (Public/Admin endpoint)
+router.all('/:id/notes', optionalAuth, async (req, res) => {
   try {
     const { notes, coachNotes } = req.body;
     const notesToSave = notes !== undefined ? notes : (coachNotes !== undefined ? coachNotes : '');
@@ -817,6 +921,236 @@ router.post('/:id/reschedule-paid', optionalAuth, async (req, res) => {
   } catch (error) {
     console.error('Error processing paid reschedule:', error);
     res.status(500).json({ message: 'Server error processing paid reschedule' });
+  }
+});
+
+// POST /api/appointments/:id/reschedule-credit - Reschedule using 1 Free Session Credit (e.g. within 48h)
+router.post('/:id/reschedule-credit', optionalAuth, async (req, res) => {
+  try {
+    const { date, time, reason } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+    
+    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+    if (req.user && appointment.userId && !req.user.isAdmin) {
+      const isOwnerId = appointment.userId.toString() === req.user._id.toString();
+      const isOwnerEmail = appointment.email && req.user.email && appointment.email.toLowerCase() === req.user.email.toLowerCase();
+      if (!isOwnerId && !isOwnerEmail) {
+        return res.status(401).json({ message: 'Not authorized for this appointment' });
+      }
+    }
+
+    if (!date || !time) {
+      return res.status(400).json({ message: 'New date and time are required.' });
+    }
+
+    // Find User and verify free session credit
+    const normalizedEmail = (appointment.email || (req.user && req.user.email) || '').toLowerCase().trim();
+    const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
+    
+    let coachingUser = await User.findOne({ email: emailRegex });
+    if (!coachingUser && req.user?._id) {
+      coachingUser = await User.findById(req.user._id);
+    }
+    const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
+
+    // Calculate real remaining credits
+    const relevantAppointments = await Appointment.find({
+      email: emailRegex,
+      status: { $ne: 'CANCELLED' }
+    });
+
+    let claimedAppointmentsCount = 0;
+    for (const app of relevantAppointments) {
+      if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
+        claimedAppointmentsCount += 1;
+      }
+      if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
+        claimedAppointmentsCount += 1;
+      }
+    }
+
+    let totalGranted = 0;
+    if (courseUser) {
+      const distinctPurchasedCourses = new Set();
+      if (Array.isArray(courseUser.purchasedCourses)) {
+        courseUser.purchasedCourses.forEach(s => s && distinctPurchasedCourses.add(s));
+      }
+      const purchases = await CoursePurchase.find({
+        $or: [{ courseUserId: courseUser._id }, { studentEmail: emailRegex }],
+        paymentStatus: 'Paid'
+      });
+      purchases.forEach(p => { if (p.courseSlug) distinctPurchasedCourses.add(p.courseSlug); });
+      if (distinctPurchasedCourses.size === 0) distinctPurchasedCourses.add('better-man');
+      totalGranted = (distinctPurchasedCourses.size || 1) * 3;
+    } else if (coachingUser) {
+      totalGranted = coachingUser.courseSessionsGranted ? 3 : (typeof coachingUser.freeSessions === 'number' ? (coachingUser.freeSessions + claimedAppointmentsCount) : 0);
+    }
+
+    const availableCredits = Math.max(0, totalGranted - claimedAppointmentsCount);
+
+    if (availableCredits <= 0) {
+      return res.status(400).json({ message: 'You have no free session credits remaining.' });
+    }
+
+    // Deduct 1 free session credit
+    const newRemainingCredits = Math.max(0, availableCredits - 1);
+    if (coachingUser) {
+      coachingUser.freeSessions = newRemainingCredits;
+      await coachingUser.save();
+    }
+
+    // --- Cal.com Integration: Cancel old & create new slot ---
+    if (process.env.CAL_API_KEY) {
+      try {
+        if (appointment.calBookingUid) {
+          await fetch(`https://api.cal.com/v2/bookings/${appointment.calBookingUid}/cancel`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
+              'Content-Type': 'application/json',
+              'cal-api-version': '2024-08-13'
+            },
+            body: JSON.stringify({ reason: "Rescheduled by user using complimentary session credit" })
+          });
+        }
+
+        const startDate = new Date(`${date} ${time} GMT+0530`);
+        const startISO = startDate.toISOString();
+        
+        const eventTypeId = appointment.isFirstSession 
+          ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
+          : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
+
+        const payload = {
+          eventTypeId: parseInt(eventTypeId),
+          start: startISO,
+          attendee: {
+            name: appointment.name,
+            email: appointment.email,
+            timeZone: "Asia/Calcutta",
+            language: "en"
+          }
+        };
+
+        const calRes = await fetch('https://api.cal.com/v2/bookings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
+            'Content-Type': 'application/json',
+            'cal-api-version': '2024-08-13'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (calRes.ok) {
+          const calData = await calRes.json();
+          if (calData?.data?.uid) appointment.calBookingUid = calData.data.uid;
+          else if (calData?.booking?.uid) appointment.calBookingUid = calData.booking.uid;
+          
+          const possibleMeetLink = calData?.data?.meetingUrl || calData?.data?.location || calData?.data?.videoCallUrl || calData?.booking?.meetingUrl || calData?.booking?.location || calData?.data?.metadata?.videoCallUrl;
+          if (possibleMeetLink && typeof possibleMeetLink === 'string' && possibleMeetLink.startsWith('http')) {
+            appointment.meetLink = possibleMeetLink;
+          }
+        }
+      } catch (calError) {
+        console.error("Failed to sync credit reschedule with Cal.com:", calError);
+      }
+    }
+
+    // Update appointment details to new date & time
+    appointment.date = date;
+    appointment.time = time;
+    appointment.status = 'UPCOMING';
+    appointment.paymentStatus = 'Paid';
+
+    appointment.rescheduleRequest = {
+      date,
+      time,
+      reason,
+      status: 'APPROVED',
+      requestedAt: new Date(),
+      isWithin48Hours: true,
+      hoursRemainingAtRequest: 0,
+      rescheduleFeePaid: false,
+      usedFreeSessionCredit: true,
+      reschedulePaymentId: 'FREE_CREDIT_USED',
+      rescheduleOrderId: 'FREE_CREDIT_RESCHEDULE',
+      rescheduleAmount: 0,
+      paidAt: new Date(),
+    };
+
+    await appointment.save();
+
+    // Send confirmation emails
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const emailHtmlTemplate = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <h2 style="color: #c9542f;">Your Session Has Been Rescheduled & Confirmed</h2>
+            <p>Hi ${appointment.name},</p>
+            <p>Your 1-on-1 coaching session has been successfully rescheduled using <strong>1 Complimentary Session Credit</strong>.</p>
+            <div style="background: #fbf0eb; border: 1px solid #e8c4e2; padding: 20px; border-radius: 12px; margin: 20px 0;">
+              <strong>New Date:</strong> ${appointment.date}<br>
+              <strong>New Time:</strong> ${appointment.time}<br>
+              <strong>Duration:</strong> ${appointment.duration || 60} Minutes<br>
+              <strong>Remaining Credits:</strong> ${coachingUser.freeSessions} Complimentary Sessions<br>
+              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Click here to join</a><br>` : ''}
+            </div>
+            <p>We look forward to connecting with you!</p>
+          </div>
+        `;
+
+        const coachEmailTemplate = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <h2 style="color: #111010;">Session Rescheduled (Free Credit Used)</h2>
+            <p><strong>${appointment.name}</strong> has rescheduled their session within the 48h window using 1 Complimentary Session Credit.</p>
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <strong>Client:</strong> ${appointment.name} (${appointment.email})<br>
+              <strong>New Date:</strong> ${appointment.date}<br>
+              <strong>New Time:</strong> ${appointment.time}<br>
+              <strong>Remaining Credits:</strong> ${coachingUser.freeSessions}<br>
+              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Click here to join</a><br>` : ''}
+            </div>
+          </div>
+        `;
+
+        const allowChangesEmail = coachingUser?.notificationPreferences?.emailChanges ?? true;
+
+        const emailPromises = [
+          resend.emails.send({
+            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+            to: process.env.ADMIN_EMAIL || 'support@yashrajtech.online',
+            subject: `Session Rescheduled (Free Credit) for ${appointment.name}`,
+            html: coachEmailTemplate,
+          })
+        ];
+
+        if (allowChangesEmail) {
+          emailPromises.push(
+            resend.emails.send({
+              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+              to: appointment.email,
+              subject: 'Your session has been rescheduled & confirmed',
+              html: emailHtmlTemplate,
+            })
+          );
+        }
+
+        await Promise.all(emailPromises);
+      } catch (emailErr) {
+        console.error("Failed to send reschedule email", emailErr);
+      }
+    }
+
+    res.json({
+      ...appointment.toObject(),
+      freeSessionsRemaining: coachingUser.freeSessions
+    });
+  } catch (error) {
+    console.error('Error processing credit reschedule:', error);
+    res.status(500).json({ message: 'Server error processing credit reschedule' });
   }
 });
 

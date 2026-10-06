@@ -221,20 +221,19 @@ export default function Course() {
   const isDetailPage = Boolean(slug) && slug !== 'all';
 
   const getCardThemeClass = (c, index) => {
-    if (c?.theme === 'white') return 'card-theme-white';
-    if (c?.theme === 'purple') return 'card-theme-purple';
-    if (c?.theme === 'black') return 'card-theme-black';
-    const mod = index % 3;
-    if (mod === 0) return 'card-theme-black';
-    if (mod === 1) return 'card-theme-purple';
-    return 'card-theme-white';
+    const t = (c?.theme || c?.cardTheme || c?.heroSection?.cardTheme || '').toLowerCase().trim();
+    if (t === 'white' || t === 'whi' || t === 'clean white') return 'card-theme-white';
+    if (t === 'purple' || t === 'roy' || t === 'royal' || t === 'royal purple') return 'card-theme-purple';
+    if (t === 'black' || t === 'obs' || t === 'obsidian' || t === 'obsidian black') return 'card-theme-black';
+    return 'card-theme-purple';
   };
 
   const getBannerCls = (c) => {
-    if (c?.theme === 'white') return '';
-    if (c?.theme === 'purple') return 'v2';
-    if (c?.theme === 'black') return 'v3';
-    return c?.cls || '';
+    const t = (c?.theme || c?.cardTheme || c?.heroSection?.cardTheme || '').toLowerCase().trim();
+    if (t === 'white' || t === 'whi' || t === 'clean white') return '';
+    if (t === 'purple' || t === 'roy' || t === 'royal' || t === 'royal purple') return 'v2';
+    if (t === 'black' || t === 'obs' || t === 'obsidian' || t === 'obsidian black') return 'v3';
+    return c?.cls || 'v2';
   };
   const [showPricingModal, setShowPricingModal] = useState(false);
   const getPurchasedSlugs = () => {
@@ -355,6 +354,60 @@ export default function Course() {
   const otpRefs = [otpRef0, otpRef1, otpRef2, otpRef3];
 
   const navigate = useNavigate();
+
+  const handleExitToMainHome = useCallback((e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    setShowDashboard(false);
+    setShowCheckout(false);
+    setShowCourseLogin(false);
+    try {
+      sessionStorage.removeItem('course_checkout_active');
+    } catch {}
+    navigate('/');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [navigate]);
+
+  const handleExitToCourseHome = useCallback((e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    setShowDashboard(false);
+    setShowCheckout(false);
+    setShowCourseLogin(false);
+    try {
+      sessionStorage.removeItem('course_checkout_active');
+      window.history.replaceState(null, '', '/course');
+    } catch {}
+    navigate('/course', { replace: true });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [navigate]);
+
+  const handleExitToAllCourses = useCallback((e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    setShowDashboard(false);
+    setShowCheckout(false);
+    setShowCourseLogin(false);
+    try {
+      sessionStorage.removeItem('course_checkout_active');
+      window.history.replaceState(null, '', '/course/all');
+    } catch {}
+    navigate('/course/all', { replace: true });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [navigate]);
+
+  const handleExitToFaq = useCallback((e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    setShowDashboard(false);
+    setShowCheckout(false);
+    setShowCourseLogin(false);
+    try {
+      sessionStorage.removeItem('course_checkout_active');
+      window.history.replaceState(null, '', '/course');
+    } catch {}
+    navigate('/course', { replace: true });
+    setTimeout(() => {
+      const el = document.getElementById('faq');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 120);
+  }, [navigate]);
   const [curriculumModules, setCurriculumModules] = useState(MODULES);
   const [activeModuleObj, setActiveModuleObj] = useState(MODULES[0]);
   const [activeLesson, setActiveLesson] = useState(MODULES[0]?.lessons?.[0] || null);
@@ -465,6 +518,7 @@ export default function Course() {
 
   const toggleLessonCompletionLocal = (lesson) => {
     if (!lesson) return;
+    const targetId = (lesson._id || lesson.id)?.toString();
     const isNowCompleted = !lesson.isCompleted;
     const updatedLesson = { ...lesson, isCompleted: isNowCompleted };
     setActiveLesson(updatedLesson);
@@ -473,7 +527,7 @@ export default function Course() {
       prev.map((mod) => ({
         ...mod,
         lessons: (mod.lessons || []).map((l) =>
-          ((l._id || l.id)?.toString() === (lesson._id || lesson.id)?.toString())
+          ((l._id || l.id)?.toString() === targetId)
             ? { ...l, isCompleted: isNowCompleted }
             : l
         )
@@ -482,14 +536,36 @@ export default function Course() {
 
     try {
       const completedIds = JSON.parse(localStorage.getItem('bwa_completed_lessons_cache') || '[]');
-      const targetId = (lesson._id || lesson.id)?.toString();
       const nextCompleted = isNowCompleted
         ? [...new Set([...completedIds, targetId])]
         : completedIds.filter(id => id !== targetId);
       localStorage.setItem('bwa_completed_lessons_cache', JSON.stringify(nextCompleted));
+      const targetSlug = slug && slug !== 'all' ? slug : 'better-man';
+      localStorage.setItem(`course_completed_lessons_${targetSlug}`, JSON.stringify(nextCompleted));
+      localStorage.setItem('course_completed_lessons', JSON.stringify(nextCompleted));
     } catch {}
 
-    showToast(isNowCompleted ? 'Lesson completed ✓' : 'Marked as not completed');
+    // Persist to backend progress API
+    try {
+      const token = localStorage.getItem('courseToken');
+      if (token) {
+        const targetCourseId = activeCourse?._id || activeCourse?.slug || (slug && slug !== 'all' ? slug : 'better-man');
+        fetch(`${API_URL}/api/courses/progress`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            courseId: targetCourseId,
+            lessonId: targetId,
+            isCompleted: isNowCompleted
+          })
+        }).catch(() => {});
+      }
+    } catch {}
+
+    showToast(isNowCompleted ? 'Lesson marked as completed ✓' : 'Marked as incomplete');
   };
 
   const [demoPlaying, setDemoPlaying] = useState(false);
@@ -664,7 +740,21 @@ export default function Course() {
             setCourseData(data.course);
           }
           if (data && data.modules && data.modules.length > 0) {
-            setCurriculumModules(data.modules);
+            let completedIds = [];
+            try {
+              completedIds = JSON.parse(localStorage.getItem('bwa_completed_lessons_cache') || '[]');
+            } catch {}
+
+            const mergedModules = data.modules.map(m => ({
+              ...m,
+              lessons: (m.lessons || []).map(l => {
+                const lId = (l._id || l.id)?.toString();
+                const isDone = Boolean(l.isCompleted || completedIds.includes(lId));
+                return { ...l, isCompleted: isDone };
+              })
+            }));
+
+            setCurriculumModules(mergedModules);
             setOpenPlayerModules(data.modules.map((_, i) => i));
 
             const savedLessonId = localStorage.getItem('lastActiveCourseLessonId');
@@ -672,7 +762,7 @@ export default function Course() {
             let matchedModule = null;
 
             if (savedLessonId) {
-              for (const mod of data.modules) {
+              for (const mod of mergedModules) {
                 const found = (mod.lessons || []).find(
                   (l) => (l._id || l.id)?.toString() === savedLessonId.toString()
                 );
@@ -687,10 +777,10 @@ export default function Course() {
             if (matchedLesson && matchedModule) {
               setActiveModuleObj(matchedModule);
               setActiveLesson(matchedLesson);
-            } else {
-              setActiveModuleObj(data.modules[0]);
-              if (data.modules[0].lessons && data.modules[0].lessons.length > 0) {
-                setActiveLesson(data.modules[0].lessons[0]);
+            } else if (!activeLesson) {
+              setActiveModuleObj(mergedModules[0]);
+              if (mergedModules[0].lessons && mergedModules[0].lessons.length > 0) {
+                setActiveLesson(mergedModules[0].lessons[0]);
               }
             }
           }
@@ -912,7 +1002,7 @@ export default function Course() {
       {
         slug: "better-man",
         n: "01",
-        theme: "white",
+        theme: "roy",
         chips: ["Calm Authority", "Self-Command"],
         soon: false,
         cls: "v3",
@@ -960,107 +1050,6 @@ export default function Course() {
           p2: "Through 8 structured modules, you dismantle the nervous system habits that cause rushing, stammering, and over-explaining. You learn how to anchor your physical presence, speak with calm resonance, and command respectful silence before uttering a single sentence.",
           distinction: "Reactive men seek approval through fast speech and validation. Anchored men lead through stillness, calibrated pauses, and clear boundaries."
         }
-      },
-      {
-        slug: "difficult-people",
-        n: "02",
-        theme: "purple",
-        chips: ["Boundaries", "Conflict"],
-        soon: true,
-        cls: "v2",
-        title: "Difficult People",
-        lede: "Stay steady with the boss, partner or parent who pushes every button you have.",
-        d: "Stay steady with the boss, partner or parent who pushes every button you have.",
-        sidebarChips: [
-          ["Schedule", "Self-Paced"],
-          ["Certificate", "Yes"],
-          ["Language", "Hinglish / English"],
-          ["Access", "Lifetime"]
-        ],
-        hl: [
-          ["Hold Your Ground", "(Without a Fight)"],
-          ["2 Private Sessions", "with Aarkesh"]
-        ],
-        inside: [
-          "6 HD video modules",
-          "Downloadable conflict frameworks",
-          "2 private 1-on-1 coaching sessions",
-          "Lifetime access",
-          "Early-access price for waitlist members"
-        ],
-        facts: [["6", "Modules"], ["3 Free", "1-on-1 Sessions"]],
-        price: "₹3,999",
-        was: "₹7,999",
-        cta: "Check Course",
-        syllabusTitle: "Six Modules To Emotional Sovereignty",
-        syllabusSubtitle: "The practical psychological playbook to disarm manipulation, establish firm boundaries, and protect your inner peace.",
-        syllabus: [
-          { n: '01', t: 'Mapping Toxic Patterns & Triggers', d: 'Recognizing manipulative archetypes, passive-aggressive traps, and subtle emotional manipulation tactics before they drain you.' },
-          { n: '02', t: 'The Unshakeable Boundary Framework', d: 'Setting clear, non-negotiable boundaries with bosses, partners, or parents without anger, defensiveness, or guilt.' },
-          { n: '03', t: 'Disarming High-Conflict Personalities', d: 'Verbal de-escalation strategies, avoiding defensive traps, and maintaining quiet emotional detachment in heated moments.' },
-          { n: '04', t: 'Holding Ground in High-Stakes Confrontations', d: 'Staying centered during intense arguments, asserting your authority, and never breaking composure under pressure.' },
-          { n: '05', t: 'Navigating Difficult Workplace Dynamics', d: 'Managing micro-managers, corporate politics, and aggressive colleagues while protecting your professional standing.' },
-          { n: '06', t: 'Reclaiming Your Mental Sovereignty', d: 'Overcoming post-conflict rumination, establishing internal calm, and permanent emotional freedom from difficult dynamics.' }
-        ],
-        writeup: {
-          chip: "CONFLICT FRAMEWORK",
-          h1: "Stop Absorbing Other People's Emotional Chaos",
-          lede: "High-conflict personalities don't look for resolution—they look for reaction. The moment you react, you lose ground.",
-          p1: "Whether it's a demanding boss, a passive-aggressive colleague, or a volatile family member, their emotional turbulence is designed to pull you off-center and put you on the defensive.",
-          quote: "You don't defeat difficult people by fighting back. You defeat them by becoming impossible to trigger.",
-          p2: "In this 6-module masterclass, you get the exact psychological tools to stay completely unshakeable. You will learn how to set ironclad boundaries, disarm manipulative tactics in real-time, and hold your frame without shouting or apologizing.",
-          distinction: "Weak responses either explode with anger or shrink with compliance. Strategic self-command stays neutral, unbothered, and in total control."
-        }
-      },
-      {
-        slug: "decisions",
-        n: "03",
-        theme: "white",
-        chips: ["Clarity", "Choice"],
-        soon: true,
-        cls: "",
-        title: "Decisions",
-        lede: "A clear method for the choices you keep putting off, and for living with them once made.",
-        d: "A clear method for the choices you keep putting off, and for living with them once made.",
-        sidebarChips: [
-          ["Schedule", "Self-Paced"],
-          ["Certificate", "Yes"],
-          ["Language", "Hinglish / English"],
-          ["Access", "Lifetime"]
-        ],
-        hl: [
-          ["Decide With Clarity", "(Not Certainty)"],
-          ["2 Private Sessions", "with Aarkesh"]
-        ],
-        inside: [
-          "5 HD video modules",
-          "Downloadable decision matrix workbooks",
-          "2 private 1-on-1 coaching sessions",
-          "Lifetime access",
-          "Early-access price for waitlist members"
-        ],
-        facts: [["5", "Modules"], ["3 Free", "1-on-1 Sessions"]],
-        price: "₹3,499",
-        was: "₹6,999",
-        cta: "Check Course",
-        syllabusTitle: "Five Modules To High-Conviction Clarity",
-        syllabusSubtitle: "A proven framework to overcome analysis paralysis, evaluate high-stakes tradeoffs, and execute decisions without second-guessing.",
-        syllabus: [
-          { n: '01', t: 'Deconstructing Analysis Paralysis', d: 'Understanding why smart people delay critical choices, the psychology of overthinking, and how fear masks itself as research.' },
-          { n: '02', t: 'The 4-Step Clarity Architecture', d: 'A structured cognitive framework to filter out background noise, rank core priorities, and pinpoint optimal paths with speed.' },
-          { n: '03', t: 'Risk Calibration & Asymmetric Upside', d: 'Evaluating worst-case scenarios realistically, managing regret risk, and taking calculated, high-reward decisive action.' },
-          { n: '04', t: 'Execution & Living With The Choice', d: 'Ending chronic second-guessing, owning outcomes with conviction, and leading teams and family members through ambiguity.' },
-          { n: '05', t: 'Building a Decisive Mindset for Life', d: 'Daily decision-making heuristics to eliminate cognitive fatigue and maintain effortless clarity across business and personal life.' }
-        ],
-        writeup: {
-          chip: "DECISION ARCHITECTURE",
-          h1: "Analysis Paralysis Is Simply Fear in Disguise",
-          lede: "Great leaders do not wait for 100% certainty. They master the art of moving with high conviction through ambiguity.",
-          p1: "The agonizing delay on career pivots, relationship choices, or major investments isn't a lack of information—it is fear of regret masquerading as research.",
-          quote: "Indecision is the most expensive decision you will ever make.",
-          p2: "Through 5 focused modules, you receive a repeatable cognitive architecture to strip away emotion, evaluate asymmetric upside, and make high-stakes choices rapidly—without second-guessing yourself once committed.",
-          distinction: "Indecisive minds seek guarantees that never exist. Decisive leaders manage risk, commit with clarity, and create the outcome."
-        }
       }
     ];
 
@@ -1076,6 +1065,14 @@ export default function Course() {
         return {
           ...item,
           ...dynamicCourse,
+          theme: dynamicCourse.theme || dynamicCourse.cardTheme || dynamicCourse.heroSection?.cardTheme || item.theme,
+          enableGst: dynamicCourse.enableGst !== undefined ? dynamicCourse.enableGst : dynamicCourse.pricingSection?.enableGst ?? item.enableGst,
+          gstRate: dynamicCourse.gstRate !== undefined ? dynamicCourse.gstRate : dynamicCourse.pricingSection?.gstRate ?? item.gstRate,
+          isGstIncluded: dynamicCourse.isGstIncluded !== undefined 
+            ? dynamicCourse.isGstIncluded 
+            : (dynamicCourse.pricingSection?.gstMode ? dynamicCourse.pricingSection.gstMode === 'included' : item.isGstIncluded),
+          price: dynamicCourse.price || (dynamicCourse.pricingSection?.currentPrice ? `₹${Number(dynamicCourse.pricingSection.currentPrice).toLocaleString('en-IN')}` : item.price),
+          was: dynamicCourse.was || (dynamicCourse.pricingSection?.originalPrice ? `₹${Number(dynamicCourse.pricingSection.originalPrice).toLocaleString('en-IN')}` : item.was),
           writeup: { ...(item.writeup || {}), ...(dynamicCourse.writeup || {}) },
           syllabus: dynamicCourse.syllabus || item.syllabus,
           inside: dynamicCourse.inside || item.inside,
@@ -1085,23 +1082,53 @@ export default function Course() {
         };
       });
 
-    // Append newly created courses from admin
+    // Newly created courses from admin (excluding deleted ones and baseline)
+    const newCourses = [];
     Object.keys(courseDetailsMap).forEach(slug => {
-      if (!defaultList.some(item => item.slug === slug)) {
-        mergedList.push(courseDetailsMap[slug]);
+      if (slug !== 'better-man' && slug !== 'difficult-people' && slug !== 'decisions' && !defaultList.some(item => item.slug === slug)) {
+        newCourses.push(courseDetailsMap[slug]);
       }
     });
 
-    return mergedList.filter(item => item && item.hidden !== true && item.isPublished !== false);
+    // Sort newest courses first (reverse chronological) so new courses appear on the LEFT
+    newCourses.reverse();
+    newCourses.sort((a, b) => {
+      const dateA = new Date(a?.createdAt || 0).getTime();
+      const dateB = new Date(b?.createdAt || 0).getTime();
+      if (dateA && dateB && dateA !== dateB) return dateB - dateA;
+      return 0;
+    });
+
+    // New courses go to the LEFT, baseline/older courses (The Better Man) go to the RIGHT
+    const fullList = [...newCourses, ...mergedList];
+
+    return fullList.filter(item => item && item.hidden !== true && item.isPublished !== false && item.slug !== 'difficult-people' && item.slug !== 'decisions');
   }, [basePrice, comparePrice, courseDetailsMap]);
 
   const activeCourse = useMemo(() => {
     if (!slug) return coursesList[0];
+    const foundInList = coursesList.find((c) => c.slug === slug);
     if (courseDetailsMap && courseDetailsMap[slug]) {
-      return courseDetailsMap[slug];
+      const dynamicCourse = courseDetailsMap[slug];
+      return {
+        ...(foundInList || {}),
+        ...dynamicCourse,
+        theme: dynamicCourse.theme || dynamicCourse.cardTheme || dynamicCourse.heroSection?.cardTheme || foundInList?.theme || 'roy',
+        cardTheme: dynamicCourse.cardTheme || dynamicCourse.theme || dynamicCourse.heroSection?.cardTheme || foundInList?.cardTheme,
+        enableGst: dynamicCourse.enableGst !== undefined ? dynamicCourse.enableGst : dynamicCourse.pricingSection?.enableGst ?? foundInList?.enableGst,
+        gstRate: dynamicCourse.gstRate !== undefined ? dynamicCourse.gstRate : dynamicCourse.pricingSection?.gstRate ?? foundInList?.gstRate,
+        isGstIncluded: dynamicCourse.isGstIncluded !== undefined 
+          ? dynamicCourse.isGstIncluded 
+          : (dynamicCourse.pricingSection?.gstMode ? dynamicCourse.pricingSection.gstMode === 'included' : foundInList?.isGstIncluded),
+        writeup: { ...(foundInList?.writeup || {}), ...(dynamicCourse.writeup || {}) },
+        syllabus: dynamicCourse.syllabus || foundInList?.syllabus,
+        inside: dynamicCourse.inside || foundInList?.inside,
+        hl: dynamicCourse.hl || foundInList?.hl,
+        chips: dynamicCourse.chips || foundInList?.chips,
+        sidebarChips: dynamicCourse.sidebarChips || foundInList?.sidebarChips
+      };
     }
-    const found = coursesList.find((c) => c.slug === slug);
-    if (found) return found;
+    if (foundInList) return foundInList;
     return {
       slug: slug,
       title: slug.charAt(0).toUpperCase() + slug.slice(1),
@@ -1141,20 +1168,19 @@ export default function Course() {
   }, [activeCourse?.slug, activeCourse?.videoModules]);
 
   const detailThemeClass = useMemo(() => {
-    const t = activeCourse?.theme;
-    if (t === 'white') return '';
-    if (t === 'purple') return 'theme-purple';
-    if (t === 'black') return 'theme-dark';
-    if (activeCourse?.slug === 'difficult-people') return 'theme-purple';
-    if (activeCourse?.slug === 'decisions' || activeCourse?.slug === 'better-man') return '';
+    const t = (activeCourse?.theme || activeCourse?.cardTheme || activeCourse?.heroSection?.cardTheme || activeCourse?.cls || '').toLowerCase().trim();
+    if (t === 'black' || t === 'obs' || t === 'obsidian' || t === 'obsidian black' || t === 'v3') return 'theme-dark';
+    if (t === 'purple' || t === 'roy' || t === 'royal' || t === 'royal purple' || t === 'v2') return 'theme-purple';
+    if (t === 'white' || t === 'whi' || t === 'clean white') return '';
     return '';
   }, [activeCourse]);
 
   const activeCourseBasePrice = useMemo(() => {
-    if (activeCourse?.price !== undefined && activeCourse?.price !== null && activeCourse?.price !== '') {
-      const parsed = typeof activeCourse.price === 'number'
-        ? activeCourse.price
-        : Number(String(activeCourse.price).replace(/[^0-9]/g, ''));
+    const rawP = activeCourse?.pricingSection?.currentPrice ?? activeCourse?.price ?? activeCourse?.rawPrice;
+    if (rawP !== undefined && rawP !== null && rawP !== '') {
+      const parsed = typeof rawP === 'number'
+        ? rawP
+        : Number(String(rawP).replace(/[^0-9.]/g, ''));
       if (!isNaN(parsed) && parsed > 0) return parsed;
     }
     if (activeCourse?.slug === 'better-man') return basePrice;
@@ -1164,10 +1190,11 @@ export default function Course() {
   }, [activeCourse, basePrice]);
 
   const activeCourseComparePrice = useMemo(() => {
-    if (activeCourse?.was !== undefined && activeCourse?.was !== null && activeCourse?.was !== '') {
-      const parsed = typeof activeCourse.was === 'number'
-        ? activeCourse.was
-        : Number(String(activeCourse.was).replace(/[^0-9]/g, ''));
+    const rawW = activeCourse?.pricingSection?.originalPrice ?? activeCourse?.was ?? activeCourse?.rawWas;
+    if (rawW !== undefined && rawW !== null && rawW !== '') {
+      const parsed = typeof rawW === 'number'
+        ? rawW
+        : Number(String(rawW).replace(/[^0-9.]/g, ''));
       if (!isNaN(parsed) && parsed > 0) return parsed;
     }
     if (activeCourse?.slug === 'better-man') return comparePrice;
@@ -1177,9 +1204,13 @@ export default function Course() {
   }, [activeCourse, comparePrice]);
 
   const currentGstRate = useMemo(() => {
-    if (activeCourse?.enableGst === false) return 0;
-    if (activeCourse?.gstRate !== undefined && activeCourse?.gstRate !== null && activeCourse?.gstRate !== '') {
-      const r = Number(activeCourse.gstRate);
+    const isGstOn = activeCourse?.enableGst !== undefined 
+      ? Boolean(activeCourse.enableGst)
+      : (activeCourse?.pricingSection?.enableGst !== undefined ? Boolean(activeCourse.pricingSection.enableGst) : (gstRate > 0));
+    if (!isGstOn) return 0;
+    const rateVal = activeCourse?.gstRate ?? activeCourse?.pricingSection?.gstRate;
+    if (rateVal !== undefined && rateVal !== null && rateVal !== '') {
+      const r = Number(rateVal);
       return isNaN(r) ? 0 : r;
     }
     return gstRate;
@@ -1187,6 +1218,8 @@ export default function Course() {
 
   const currentIsGstIncluded = useMemo(() => {
     if (activeCourse?.isGstIncluded !== undefined) return Boolean(activeCourse.isGstIncluded);
+    if (activeCourse?.pricingSection?.gstMode) return activeCourse.pricingSection.gstMode === 'included';
+    if (activeCourse?.gstMode) return activeCourse.gstMode === 'included';
     return isGstIncluded;
   }, [activeCourse, isGstIncluded]);
 
@@ -1832,58 +1865,29 @@ export default function Course() {
           <Link 
             className="player-logo" 
             to="/"
-            onClick={() => {
-              setShowDashboard(false);
-              window.scrollTo({ top: 0, behavior: 'instant' });
-            }}
+            onClick={handleExitToMainHome}
           >
             BetterWith<b>Aarkesh</b>
           </Link>
           <nav className="player-nav">
             <button 
               type="button"
-              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-semibold text-sm cursor-pointer transition-colors"
-              onClick={() => {
-                setShowDashboard(false);
-                navigate('/course');
-                window.scrollTo({ top: 0, behavior: 'instant' });
-              }}
+              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-bold text-xs uppercase tracking-wider cursor-pointer transition-colors"
+              onClick={handleExitToCourseHome}
             >
-              Home
+              HOME
             </button>
             <button 
               type="button"
-              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-semibold text-sm cursor-pointer transition-colors"
-              onClick={() => {
-                setShowDashboard(false);
-                navigate('/course/all');
-                window.scrollTo({ top: 0, behavior: 'instant' });
-              }}
+              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-bold text-xs uppercase tracking-wider cursor-pointer transition-colors"
+              onClick={handleExitToAllCourses}
             >
-              Courses
+              COURSES
             </button>
             <button 
               type="button"
-              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-semibold text-sm cursor-pointer transition-colors"
-              onClick={() => {
-                setShowDashboard(false);
-                navigate('/library');
-                window.scrollTo({ top: 0, behavior: 'instant' });
-              }}
-            >
-              Library
-            </button>
-            <button 
-              type="button"
-              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-semibold text-sm cursor-pointer transition-colors"
-              onClick={() => {
-                setShowDashboard(false);
-                navigate('/course');
-                setTimeout(() => {
-                  const el = document.getElementById('faq');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }}
+              className="bg-transparent border-0 p-0 text-[#A99AB0] hover:text-[#F6EEF8] font-bold text-xs uppercase tracking-wider cursor-pointer transition-colors"
+              onClick={handleExitToFaq}
             >
               FAQ
             </button>
@@ -1891,11 +1895,11 @@ export default function Course() {
           <div className="player-hr flex items-center gap-2.5">
             <Link to="/library" className="player-pill" title="Explore Articles & Library">
               <Books size={16} weight="bold" />
-              <span>Library</span>
+              <span>LIBRARY</span>
             </Link>
             <Link to="/my-course" className="player-pill on" title="My Enrolled Courses">
               <BookOpen size={16} weight="bold" />
-              <span>My Course</span>
+              <span>MY COURSE</span>
             </Link>
             <div className="relative" ref={profileMenuRef}>
               <button
@@ -2254,85 +2258,38 @@ export default function Course() {
         <Link 
           className="course-logo" 
           to="/"
-          onClick={() => {
-            setShowCourseLogin(false);
-            setShowDashboard(false);
-          }}
+          onClick={handleExitToMainHome}
         >
           BetterWith<b>Aarkesh</b>
         </Link>
         <nav className="course-nav-center-links">
           <Link 
             to="/course" 
-            onClick={(e) => {
-              setShowCourseLogin(false);
-              setShowDashboard(false);
-              if (location.pathname === '/course' || location.pathname === '/course/') {
-                e.preventDefault();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }}
-            className={`course-nav-link ${location.pathname === '/course' ? 'active' : ''}`}
+            onClick={handleExitToCourseHome}
+            className={`course-nav-link ${location.pathname === '/course' && !searchParams.get('learn') ? 'active' : ''}`}
           >
             <FlippingWordSwap 
-              word1="Home" 
-              word2="Home" 
-              active={location.pathname === '/course'} 
+              word1="HOME" 
+              word2="HOME" 
+              active={location.pathname === '/course' && !searchParams.get('learn')} 
               toClassName="text-[#C878BE]"
             />
           </Link>
           <Link 
             to="/course/all" 
-            onClick={(e) => {
-              setShowCourseLogin(false);
-              setShowDashboard(false);
-              if (isAllCoursesPage) {
-                e.preventDefault();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }}
+            onClick={handleExitToAllCourses}
             className={`course-nav-link ${isAllCoursesPage ? 'active' : ''}`}
           >
             <FlippingWordSwap 
-              word1="Courses" 
-              word2="Courses" 
+              word1="COURSES" 
+              word2="COURSES" 
               active={isAllCoursesPage} 
-              toClassName="text-[#C878BE]"
-            />
-          </Link>
-          <Link 
-            to="/library" 
-            onClick={() => {
-              setShowCourseLogin(false);
-              setShowDashboard(false);
-            }}
-            className={`course-nav-link ${location.pathname.startsWith('/library') || location.pathname.startsWith('/articles') ? 'active' : ''}`}
-          >
-            <FlippingWordSwap 
-              word1="Library" 
-              word2="Library" 
-              active={location.pathname.startsWith('/library') || location.pathname.startsWith('/articles')} 
               toClassName="text-[#C878BE]"
             />
           </Link>
           <a 
             href="/course#faq" 
-            onClick={(e) => {
-              setShowCourseLogin(false);
-              setShowDashboard(false);
-              if (location.pathname === '/course' || location.pathname === '/course/') {
-                e.preventDefault();
-                const el = document.getElementById('faq');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              } else {
-                e.preventDefault();
-                navigate('/course');
-                setTimeout(() => {
-                  const el = document.getElementById('faq');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }, 150);
-              }
-            }}
+            onClick={handleExitToFaq}
             className="course-nav-link"
           >
             <FlippingWordSwap 
@@ -2349,7 +2306,7 @@ export default function Course() {
             title="Explore Library"
           >
             <Books size={16} weight="bold" />
-            <span>Library</span>
+            <span>LIBRARY</span>
           </Link>
 
           {isLoggedIn ? (
@@ -2361,7 +2318,7 @@ export default function Course() {
                   title="My Enrolled Courses"
                 >
                   <BookOpen size={16} weight="bold" />
-                  <span>My Course</span>
+                  <span>MY COURSE</span>
                 </Link>
               )}
 
@@ -2449,7 +2406,7 @@ export default function Course() {
                 </p>
               </div>
 
-              <div className="all-courses-grid">
+              <div className={`all-courses-grid ${coursesList.length === 1 ? 'single-course-centered' : ''}`}>
                 {coursesList.map((c, i) => {
                   const themeCls = getCardThemeClass(c, i);
                   const bannerCls = getBannerCls(c);
@@ -2603,8 +2560,8 @@ export default function Course() {
                 <p className="lead">
                   {landingSettings?.moreCourses?.subheading || 'Each one is a standalone course with its own private sessions.'}
                 </p>
-                <div className="all-courses-grid">
-                  {coursesList.map((c, i) => {
+                <div className={`all-courses-grid ${coursesList.slice(0, 3).length === 1 ? 'single-course-centered' : ''}`}>
+                  {coursesList.slice(0, 3).map((c, i) => {
                     const themeCls = getCardThemeClass(c, i);
                     const bannerCls = getBannerCls(c);
                     return (
@@ -2981,9 +2938,17 @@ export default function Course() {
 
                     {/* Pricing */}
                     <p className="sprice">
-                      Price <b>{activeCourse.price}</b>
-                      <s>{activeCourse.was}</s>
-                      <small>(+GST)</small>
+                      Price <b>₹{activeCourseBasePrice.toLocaleString('en-IN')}</b>
+                      {activeCourseComparePrice > activeCourseBasePrice && (
+                        <s>₹{activeCourseComparePrice.toLocaleString('en-IN')}</s>
+                      )}
+                      <small>
+                        {currentGstRate <= 0
+                          ? ''
+                          : currentIsGstIncluded
+                          ? '(incl. GST)'
+                          : '(+GST)'}
+                      </small>
                     </p>
 
                     {/* Action Buttons */}
@@ -3660,9 +3625,12 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
       <Link 
         className="course-logo" 
         to="/"
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault();
           if (typeof setShowCourseLogin === 'function') setShowCourseLogin(false);
           setShowDashboard(false);
+          navigate('/');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       >
         BetterWith<b>Aarkesh</b>
@@ -3682,8 +3650,8 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           className="course-nav-link"
         >
           <FlippingWordSwap 
-            word1="Home" 
-            word2="Home" 
+            word1="HOME" 
+            word2="HOME" 
             toClassName="text-[#C878BE]"
           />
         </Link>
@@ -3698,24 +3666,8 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           className="course-nav-link"
         >
           <FlippingWordSwap 
-            word1="Courses" 
-            word2="Courses" 
-            toClassName="text-[#C878BE]"
-          />
-        </Link>
-        <Link 
-          to="/library" 
-          onClick={(e) => {
-            e.preventDefault();
-            if (typeof setShowCourseLogin === 'function') setShowCourseLogin(false);
-            setShowDashboard(false);
-            navigate('/library');
-          }}
-          className="course-nav-link"
-        >
-          <FlippingWordSwap 
-            word1="Library" 
-            word2="Library" 
+            word1="COURSES" 
+            word2="COURSES" 
             toClassName="text-[#C878BE]"
           />
         </Link>
@@ -3748,7 +3700,7 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           title="Explore Library"
         >
           <Books size={16} weight="bold" />
-          <span>Library</span>
+          <span>LIBRARY</span>
         </Link>
 
         <Link
@@ -3757,7 +3709,7 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           title="My Enrolled Courses"
         >
           <BookOpen size={16} weight="bold" />
-          <span>My Course</span>
+          <span>MY COURSE</span>
         </Link>
 
         {isLoggedIn ? (

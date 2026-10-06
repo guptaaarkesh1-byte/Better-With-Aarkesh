@@ -89,6 +89,8 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
   const [isPolicyOpen, setIsPolicyOpen] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [fees, setFees] = useState({ fee60min: 5000, fee90min: 7500 });
+  const [freeSessionsRemaining, setFreeSessionsRemaining] = useState(0);
+  const [useFreeCredit, setUseFreeCredit] = useState(false);
   const [successData, setSuccessData] = useState(null);
 
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
@@ -114,14 +116,35 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
       })
     : '';
 
-  // Fetch fees from backend
+  // Determine exact session duration & fee
+  const sessionDuration = Number(session?.duration) || (session?.isFirstSession ? 60 : (session?.amount === 7500 ? 90 : 60));
+
+  // Fetch fees & real-time remaining free session balance from backend
   useEffect(() => {
-    const fetchFees = async () => {
+    const fetchFeesAndCredits = async () => {
+      let resolvedEmail = (session?.email || session?.userId?.email || '').trim().toLowerCase();
+      if (!resolvedEmail) {
+        try {
+          const uStr = localStorage.getItem('user') || localStorage.getItem('courseUser') || localStorage.getItem('userInfo');
+          if (uStr) {
+            const u = JSON.parse(uStr);
+            if (u?.email) resolvedEmail = u.email.trim().toLowerCase();
+          }
+        } catch {}
+      }
+
+      const token = localStorage.getItem('token') || localStorage.getItem('courseToken');
+      const authHeaders = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+
       try {
+        // 1. Fetch fees
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/appointments/check-session-type`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: session?.email || '' })
+          headers: authHeaders,
+          body: JSON.stringify({ email: resolvedEmail })
         });
         if (res.ok) {
           const data = await res.json();
@@ -129,15 +152,39 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
             fee60min: data.fee60min || 5000,
             fee90min: data.fee90min || 7500
           });
+          if (typeof data.freeSessions === 'number') {
+            const count = Math.max(0, data.freeSessions);
+            setFreeSessionsRemaining(count);
+            localStorage.setItem('freeSessions', String(count));
+            setUseFreeCredit(count > 0);
+          }
+        }
+
+        // 2. Fetch free sessions from /api/auth/check-free-sessions (exact same endpoint used on Booking page)
+        if (resolvedEmail) {
+          const freeRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/check-free-sessions`, {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify({ email: resolvedEmail })
+          });
+          if (freeRes.ok) {
+            const freeData = await freeRes.json();
+            if (typeof freeData.freeSessions === 'number') {
+              const count = Math.max(0, freeData.freeSessions);
+              setFreeSessionsRemaining(count);
+              localStorage.setItem('freeSessions', String(count));
+              setUseFreeCredit(count > 0);
+            }
+          }
         }
       } catch (err) {
-        console.error('Failed to load session fees:', err);
+        console.error('Failed to load session fees & free session count:', err);
       }
     };
-    fetchFees();
-  }, [session?.email]);
+    fetchFeesAndCredits();
+  }, [session]);
 
-  const rescheduleFee = session?.duration === 90 
+  const rescheduleFee = sessionDuration === 90 
     ? (fees.fee90min || 7500) 
     : (fees.fee60min || 5000);
 
@@ -208,8 +255,54 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     };
 
-    // Case 1: Within 48 Hours -> Payment flow with Razorpay
+    // Case 1: Within 48 Hours
     if (notice48h && notice48h.isWithin48h) {
+      // 1A. User opted to use 1 Free Session Credit
+      if (useFreeCredit && freeSessionsRemaining > 0) {
+        try {
+          const creditRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/appointments/${session._id || session.id}/reschedule-credit`, {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify({
+              date: selectedDateStr,
+              time: selectedTime,
+              reason
+            })
+          });
+
+          const resJson = await creditRes.json().catch(() => null);
+
+          if (creditRes.ok) {
+            const newRemaining = resJson?.freeSessionsRemaining ?? Math.max(0, freeSessionsRemaining - 1);
+            setFreeSessionsRemaining(newRemaining);
+            localStorage.setItem('freeSessions', String(newRemaining));
+            setShowConfirmPopup(false);
+            setSuccessData({
+              date: formattedNewDate,
+              time: selectedTime,
+              duration: sessionDuration,
+              isPaid: false,
+              isCredit: true,
+              amount: 0,
+              freeSessionsRemaining: newRemaining,
+              paymentId: '',
+              orderId: '',
+              email: session?.email || '',
+              reason: reason
+            });
+          } else {
+            alert(resJson?.message || 'Failed to reschedule using free session credit.');
+          }
+        } catch (err) {
+          console.error('Error rescheduling with credit:', err);
+          alert('Network error while processing reschedule. Please check your connection.');
+        } finally {
+          setSubmitting(false);
+        }
+        return;
+      }
+
+      // 1B. Paid late reschedule flow with Razorpay
       try {
         const scriptLoaded = await loadRazorpayScript();
         if (!scriptLoaded) {
@@ -227,14 +320,16 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
           return;
         }
 
-        // Create Razorpay order
+        // Create Razorpay order with exact session duration and fee
         const orderRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payment/create-order`, {
           method: 'POST',
           headers: authHeaders,
           body: JSON.stringify({
             email: session.email,
             phoneNumber: session.phoneNumber,
-            sessionDuration: session.duration || 60,
+            sessionDuration: sessionDuration,
+            duration: sessionDuration,
+            amount: rescheduleFee,
             currency: 'INR',
             receipt: `resched_${(session._id || session.id || '').toString().slice(-6)}_${Date.now()}`
           })
@@ -257,7 +352,7 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
           amount: orderData.amount,
           currency: orderData.currency || 'INR',
           name: 'Better With Aarkesh',
-          description: `Late Reschedule Fee (${session.duration || 60} mins)`,
+          description: `Late Reschedule Fee (${sessionDuration} mins)`,
           order_id: orderData.id,
           prefill: {
             name: session.name || '',
@@ -290,8 +385,9 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                 setSuccessData({
                   date: formattedNewDate,
                   time: selectedTime,
-                  duration: session?.duration || 60,
+                  duration: sessionDuration,
                   isPaid: true,
+                  isCredit: false,
                   amount: finalChargeAmount,
                   paymentId: response.razorpay_payment_id,
                   orderId: response.razorpay_order_id,
@@ -340,8 +436,9 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
         setSuccessData({
           date: formattedNewDate,
           time: selectedTime,
-          duration: session?.duration || 60,
+          duration: sessionDuration,
           isPaid: false,
+          isCredit: false,
           amount: 0,
           paymentId: '',
           orderId: '',
@@ -423,7 +520,11 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
 
             {/* Success Heading */}
             <h2 className="font-serif text-2xl sm:text-4xl text-[#111010] font-normal mb-2">
-              {successData.isPaid ? 'Payment & Reschedule Confirmed!' : 'Reschedule Confirmed!'}
+              {successData.isPaid 
+                ? 'Payment & Reschedule Confirmed!' 
+                : successData.isCredit 
+                  ? 'Rescheduled with Free Credit!' 
+                  : 'Reschedule Confirmed!'}
             </h2>
             <p className="text-[#555047] text-xs sm:text-sm font-sans max-w-md mb-6 sm:mb-8 leading-relaxed">
               Your 1-on-1 coaching session has been successfully rescheduled. Your calendar invites and session links have been updated.
@@ -448,13 +549,31 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                 </div>
               </div>
 
+              {/* Free Credit Used Info */}
+              {successData.isCredit && (
+                <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Sparkle size={18} className="text-emerald-600" weight="fill" />
+                    <div>
+                      <span className="font-sans text-xs font-bold text-emerald-950 uppercase tracking-wider block">
+                        Complimentary Credit Used
+                      </span>
+                      <span className="text-[0.7rem] text-emerald-800">
+                        {successData.freeSessionsRemaining} credit(s) remaining on your account
+                      </span>
+                    </div>
+                  </div>
+                  <span className="font-serif text-base font-bold text-emerald-800">₹0</span>
+                </div>
+              )}
+
               {/* Payment & Transaction Info (if paid) */}
               {successData.isPaid && (
                 <div className="bg-[#f9faf7] border border-[#d6e2d1] rounded-xl p-4 flex flex-col gap-2.5">
                   <div className="flex items-center justify-between border-b border-[#e2ece0] pb-2">
                     <span className="font-sans text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
                       <CreditCard size={15} className="text-emerald-600" weight="bold" />
-                      Late Reschedule Fee
+                      Late Reschedule Fee ({successData.duration} mins)
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="font-serif text-base sm:text-lg font-bold text-emerald-800">
@@ -511,7 +630,7 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                   Reschedule Session
                 </h2>
                 <p className="text-[#7a756b] text-xs sm:text-sm font-sans">
-                  Current Session: <span className="font-semibold text-[#111010]">{session?.formattedDate || session?.date}</span> at <span className="font-semibold text-[#111010]">{session?.time}</span>
+                  Current Session: <span className="font-semibold text-[#111010]">{session?.formattedDate || session?.date}</span> at <span className="font-semibold text-[#111010]">{session?.time}</span> ({sessionDuration} mins)
                 </p>
               </div>
               <button 
@@ -531,10 +650,18 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                 <div className="bg-[#fef2f0] border border-[#f5c6cb] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
                   <div className="flex flex-col gap-1">
                     <span className="font-bold text-[#c9542f] uppercase tracking-wider text-xs flex items-center gap-1.5">
-                      ⚠️ Late Reschedule Window ({notice48h.hoursLeft > 0 ? `${notice48h.hoursLeft} hours remaining` : 'Immediate Window'})
+                      ⚠️ Late Reschedule Window ({notice48h.hoursLeft > 0 ? `${notice48h.hoursLeft} hours remaining` : 'Under 48 Hours'})
                     </span>
                     <span className="text-[#555047] text-xs leading-relaxed">
-                      Per our rescheduling policy, sessions rescheduled less than 48 hours in advance require a session fee of <strong className="text-[#111010] font-bold">₹{rescheduleFee.toLocaleString('en-IN')}</strong> to secure your new slot.
+                      {freeSessionsRemaining > 0 ? (
+                        <>
+                          You have <strong className="text-emerald-700 font-bold">{freeSessionsRemaining} Free Session{freeSessionsRemaining === 1 ? '' : 's'} Remaining</strong>. You can use 1 remaining free session to reschedule immediately at <strong className="text-emerald-700 font-bold">₹0</strong>, or pay the late reschedule fee of <strong className="text-[#111010] font-bold">₹{rescheduleFee.toLocaleString('en-IN')}</strong> ({sessionDuration} mins).
+                        </>
+                      ) : (
+                        <>
+                          Per our rescheduling policy, sessions rescheduled less than 48 hours in advance require a session fee of <strong className="text-[#111010] font-bold">₹{rescheduleFee.toLocaleString('en-IN')}</strong> ({sessionDuration} mins) to secure your new slot.
+                        </>
+                      )}
                     </span>
                     <button
                       type="button"
@@ -545,8 +672,17 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                     </button>
                   </div>
                   <div className="shrink-0 flex items-center gap-2 bg-[#fbf0eb] border border-[#e8c4e2] px-3.5 py-2 rounded-xl">
-                    <CreditCard size={18} className="text-[#c9542f]" weight="bold" />
-                    <span className="font-sans font-bold text-xs text-[#c9542f]">Fee: ₹{rescheduleFee.toLocaleString('en-IN')}</span>
+                    {freeSessionsRemaining > 0 ? (
+                      <>
+                        <Sparkle size={18} className="text-emerald-600" weight="fill" />
+                        <span className="font-sans font-bold text-xs text-emerald-800">{freeSessionsRemaining} Free Session{freeSessionsRemaining === 1 ? '' : 's'} Remaining</span>
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard size={18} className="text-[#c9542f]" weight="bold" />
+                        <span className="font-sans font-bold text-xs text-[#c9542f]">Fee: ₹{rescheduleFee.toLocaleString('en-IN')}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -872,7 +1008,7 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
               <div className="flex items-center gap-2 text-[#7a756b]">
                 <CalendarBlank className="text-lg text-[#c9542f] shrink-0" weight="light" />
                 <span className="font-sans text-xs">
-                  All sessions are 1-on-1 and last {session?.duration || 60} minutes.
+                  All sessions are 1-on-1 and last {sessionDuration} minutes.
                 </span>
               </div>
 
@@ -890,15 +1026,24 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                   onClick={() => setShowConfirmPopup(true)}
                   className={`px-6 py-2.5 rounded-full text-white text-xs font-sans uppercase tracking-wider font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-center flex items-center gap-2 ${
                     notice48h && notice48h.isWithin48h
-                      ? 'bg-[#c9542f] hover:bg-[#b04523]'
+                      ? useFreeCredit && freeSessionsRemaining > 0
+                        ? 'bg-emerald-700 hover:bg-emerald-800'
+                        : 'bg-[#c9542f] hover:bg-[#b04523]'
                       : 'bg-[#111010] hover:bg-[#c9542f]'
                   }`}
                 >
                   {notice48h && notice48h.isWithin48h ? (
-                    <>
-                      <CreditCard size={15} weight="bold" />
-                      <span>Pay ₹{rescheduleFee.toLocaleString('en-IN')} &amp; Reschedule</span>
-                    </>
+                    useFreeCredit && freeSessionsRemaining > 0 ? (
+                      <>
+                        <Sparkle size={15} weight="fill" />
+                        <span>Reschedule with 1 Credit (₹0)</span>
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard size={15} weight="bold" />
+                        <span>Pay ₹{rescheduleFee.toLocaleString('en-IN')} &amp; Reschedule</span>
+                      </>
+                    )
                   ) : (
                     <span>Confirm Reschedule</span>
                   )}
@@ -982,7 +1127,7 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                   <div className="flex items-center gap-2 font-sans text-xs sm:text-sm text-[#111010] font-semibold pl-6">
                     <Clock size={16} className="text-[#c9542f] shrink-0" />
                     <span>{selectedTime}</span>
-                    <span className="text-xs font-normal text-[#7a756b]">({session?.duration || 60} mins)</span>
+                    <span className="text-xs font-normal text-[#7a756b]">({sessionDuration} mins)</span>
                   </div>
                 </div>
 
@@ -996,20 +1141,87 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
 
               {/* Pricing & 48h Notice in Popup */}
               {notice48h && notice48h.isWithin48h ? (
-                <div className="bg-[#fef2f0] border border-[#f5c6cb] rounded-2xl p-4 flex flex-col gap-2 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-[#f5c6cb] pb-2">
-                    <span className="font-sans text-xs font-bold text-[#721c24] uppercase tracking-wider flex items-center gap-1.5">
-                      <LockSimple size={14} weight="bold" />
-                      Late Reschedule Fee
+                freeSessionsRemaining > 0 ? (
+                  /* Free Session Credit Selector */
+                  <div className="flex flex-col gap-2.5 pt-1">
+                    <span className="font-sans text-[0.65rem] uppercase tracking-wider text-[#555047] font-bold">
+                      Reschedule Payment Option (Late Window &lt; 48h)
                     </span>
-                    <span className="font-serif text-lg font-bold text-[#c9542f]">
-                      ₹{rescheduleFee.toLocaleString('en-IN')}
-                    </span>
+                    
+                    {/* Option 1: Use Free Session Credit */}
+                    <div 
+                      onClick={() => setUseFreeCredit(true)}
+                      className={`cursor-pointer rounded-2xl p-3.5 border transition-all flex items-center justify-between ${
+                        useFreeCredit 
+                          ? 'bg-[#f0fdf4] border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs' 
+                          : 'bg-white border-[#eadcd3] hover:border-emerald-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          useFreeCredit ? 'border-emerald-600 bg-emerald-600' : 'border-gray-300'
+                        }`}>
+                          {useFreeCredit && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-sans text-xs font-bold text-[#111010] flex items-center gap-1.5">
+                            <Sparkle size={14} className="text-emerald-600" weight="fill" />
+                            Use 1 Free Session Credit
+                          </span>
+                          <span className="text-[0.68rem] text-emerald-800 font-medium">
+                            {freeSessionsRemaining} credit{freeSessionsRemaining === 1 ? '' : 's'} available • Instant confirm
+                          </span>
+                        </div>
+                      </div>
+                      <span className="font-serif text-base font-bold text-emerald-800">₹0</span>
+                    </div>
+
+                    {/* Option 2: Pay Reschedule Fee */}
+                    <div 
+                      onClick={() => setUseFreeCredit(false)}
+                      className={`cursor-pointer rounded-2xl p-3.5 border transition-all flex items-center justify-between ${
+                        !useFreeCredit 
+                          ? 'bg-[#fef2f0] border-[#c9542f] ring-2 ring-[#c9542f]/20 shadow-xs' 
+                          : 'bg-white border-[#eadcd3] hover:border-[#c9542f]/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          !useFreeCredit ? 'border-[#c9542f] bg-[#c9542f]' : 'border-gray-300'
+                        }`}>
+                          {!useFreeCredit && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-sans text-xs font-bold text-[#111010] flex items-center gap-1.5">
+                            <CreditCard size={14} className="text-[#c9542f]" weight="bold" />
+                            Pay Late Reschedule Fee
+                          </span>
+                          <span className="text-[0.68rem] text-[#7a756b]">
+                            Pay securely via Razorpay ({sessionDuration} mins)
+                          </span>
+                        </div>
+                      </div>
+                      <span className="font-serif text-base font-bold text-[#c9542f]">
+                        ₹{rescheduleFee.toLocaleString('en-IN')}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-[0.72rem] text-[#721c24] leading-relaxed">
-                    As this reschedule is within 48 hours, completing the payment securely via Razorpay will immediately confirm your new slot and update your session links.
-                  </p>
-                </div>
+                ) : (
+                  <div className="bg-[#fef2f0] border border-[#f5c6cb] rounded-2xl p-4 flex flex-col gap-2 shadow-xs">
+                    <div className="flex items-center justify-between border-b border-[#f5c6cb] pb-2">
+                      <span className="font-sans text-xs font-bold text-[#721c24] uppercase tracking-wider flex items-center gap-1.5">
+                        <LockSimple size={14} weight="bold" />
+                        Late Reschedule Fee ({sessionDuration} mins)
+                      </span>
+                      <span className="font-serif text-lg font-bold text-[#c9542f]">
+                        ₹{rescheduleFee.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <p className="text-[0.72rem] text-[#721c24] leading-relaxed">
+                      As this reschedule is within 48 hours, completing the payment securely via Razorpay will immediately confirm your new slot and update your session links.
+                    </p>
+                  </div>
+                )
               ) : (
                 <div className="bg-[#f0f9f4] border border-[#c3e6cb] rounded-xl p-3.5 text-[0.72rem] text-emerald-900 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1037,7 +1249,9 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                 onClick={handleSubmit}
                 className={`px-6 py-2.5 rounded-full text-white text-xs font-sans uppercase tracking-wider font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 ${
                   notice48h && notice48h.isWithin48h
-                    ? 'bg-[#c9542f] hover:bg-[#b04523]'
+                    ? useFreeCredit && freeSessionsRemaining > 0
+                      ? 'bg-emerald-700 hover:bg-emerald-800'
+                      : 'bg-[#c9542f] hover:bg-[#b04523]'
                     : 'bg-[#111010] hover:bg-[#c9542f]'
                 }`}
               >
@@ -1047,10 +1261,17 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                     <span>Processing...</span>
                   </>
                 ) : notice48h && notice48h.isWithin48h ? (
-                  <>
-                    <CreditCard size={15} weight="bold" />
-                    <span>Pay ₹{rescheduleFee.toLocaleString('en-IN')} &amp; Confirm</span>
-                  </>
+                  useFreeCredit && freeSessionsRemaining > 0 ? (
+                    <>
+                      <Sparkle size={15} weight="fill" />
+                      <span>Use 1 Free Credit &amp; Confirm</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard size={15} weight="bold" />
+                      <span>Pay ₹{rescheduleFee.toLocaleString('en-IN')} &amp; Confirm</span>
+                    </>
+                  )
                 ) : (
                   <span>Yes, Confirm Reschedule</span>
                 )}

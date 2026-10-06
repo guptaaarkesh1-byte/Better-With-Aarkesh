@@ -174,6 +174,10 @@ export default function AdminLibraryEditor() {
   const [dbArticles, setDbArticles] = useState([]);
   const [loadingArticles, setLoadingArticles] = useState(true);
 
+  // Drag and drop article reordering states
+  const [draggedArticleIndex, setDraggedArticleIndex] = useState(null);
+  const [dragOverArticleIndex, setDragOverArticleIndex] = useState(null);
+
   // Article Form State in Studio
   const [editingArticleId, setEditingArticleId] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -235,6 +239,85 @@ export default function AdminLibraryEditor() {
     fetchArticles();
   }, []);
 
+  // Drag & Drop Handlers for Article Reordering
+  const handleDragStart = (index, e) => {
+    if (articlesSearchQuery) return;
+    setDraggedArticleIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    try {
+      e.dataTransfer.setData('text/plain', String(index));
+    } catch (_) {}
+  };
+
+  const handleDragOver = (index, e) => {
+    if (articlesSearchQuery) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverArticleIndex !== index) {
+      setDragOverArticleIndex(index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedArticleIndex(null);
+    setDragOverArticleIndex(null);
+  };
+
+  const handleDrop = async (targetIndex, e) => {
+    e.preventDefault();
+    if (articlesSearchQuery) return;
+    if (draggedArticleIndex === null || draggedArticleIndex === targetIndex) {
+      setDraggedArticleIndex(null);
+      setDragOverArticleIndex(null);
+      return;
+    }
+
+    const currentList = getCategoryArticles();
+    const reordered = [...currentList];
+    const [moved] = reordered.splice(draggedArticleIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    setDraggedArticleIndex(null);
+    setDragOverArticleIndex(null);
+
+    // Optimistically update dbArticles with new orders
+    const articleIds = reordered.map(a => a._id || a.id || a.slug);
+    const reorderedMap = new Map();
+    reordered.forEach((a, idx) => {
+      const key = a._id || a.id || a.slug;
+      reorderedMap.set(key, idx + 1);
+    });
+
+    setDbArticles(prev => prev.map(a => {
+      const key = a._id || a.id || a.slug;
+      if (reorderedMap.has(key)) {
+        return { ...a, order: reorderedMap.get(key) };
+      }
+      return a;
+    }));
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/articles/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ articleIds })
+      });
+      if (res.ok) {
+        addToast('Article order updated and saved!', 'success');
+      } else {
+        throw new Error('Failed to save article order');
+      }
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to save reordered articles', 'error');
+      fetchArticles();
+    }
+  };
+
   // Save Hero Heading & Search Bar Settings
   const handleSaveHero = async () => {
     setSavingHero(true);
@@ -277,6 +360,15 @@ export default function AdminLibraryEditor() {
       const aCatId = (a.categoryId || a.category?.toLowerCase() || '').replace(/\s+/g, '-');
       const aCat = (a.category || '').toUpperCase();
       return aCatId === catId || aCatId.includes(catId) || aCat === catKey;
+    });
+
+    matchingDb.sort((a, b) => {
+      const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 9999;
+      const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 9999;
+      if (orderA !== orderB) return orderA - orderB;
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return timeA - timeB;
     });
 
     if (!articlesSearchQuery.trim()) return matchingDb;
@@ -418,6 +510,7 @@ export default function AdminLibraryEditor() {
     setUploadingImage(true);
     const formData = new FormData();
     formData.append('image', file);
+    formData.append('file', file);
 
     try {
       const token = localStorage.getItem('adminToken');
@@ -429,21 +522,24 @@ export default function AdminLibraryEditor() {
         body: formData,
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json().catch(() => null);
+
+      if (res.ok && (data?.imageUrl || data?.url)) {
+        const uploadedPath = data.imageUrl || data.url;
         setArticleForm((prev) => ({
           ...prev,
-          featuredImage: data.imageUrl,
+          featuredImage: uploadedPath,
         }));
         addToast('Cover image uploaded successfully!', 'success');
       } else {
-        throw new Error('Upload failed');
+        throw new Error(data?.message || 'Upload failed');
       }
     } catch (err) {
       console.error('Image upload error:', err);
-      addToast('Failed to upload image', 'error');
+      addToast(err.message || 'Failed to upload image', 'error');
     } finally {
       setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -785,7 +881,7 @@ export default function AdminLibraryEditor() {
               <div className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 flex flex-col gap-6 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-stone-200">
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <span className="text-xs font-bold font-mono tracking-widest text-[#c9542f]">
                         ({activeCategory.num}) {activeCategory.key}
                       </span>
@@ -793,6 +889,11 @@ export default function AdminLibraryEditor() {
                       <span className="text-xs text-stone-600 font-semibold">
                         {categoryArticlesList.length} Articles Total
                       </span>
+                      {!articlesSearchQuery && categoryArticlesList.length > 1 && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#c9542f]/10 text-[#c9542f] px-2.5 py-0.5 rounded-full border border-[#c9542f]/20">
+                          <DotsSixVertical size={13} weight="bold" /> Drag & drop cards to reorder
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-stone-600 max-w-xl mt-0.5">
                       {activeCategory.subtitle}
@@ -855,11 +956,24 @@ export default function AdminLibraryEditor() {
                     {categoryArticlesList.map((article, index) => {
                       const isPublished = article.status !== 'Draft';
                       const coverImg = resolveImageUrl(article.featuredImage || article.image);
+                      const isDragging = draggedArticleIndex === index;
+                      const isOver = dragOverArticleIndex === index && draggedArticleIndex !== index;
 
                       return (
                         <div
                           key={article._id || article.id || article.slug || index}
-                          className="bg-[#faf7f0] border border-stone-200 hover:border-[#c9542f]/40 rounded-xl p-5 flex flex-col justify-between gap-4 transition-all group relative overflow-hidden shadow-xs hover:shadow-md"
+                          draggable={!articlesSearchQuery}
+                          onDragStart={(e) => handleDragStart(index, e)}
+                          onDragOver={(e) => handleDragOver(index, e)}
+                          onDragEnd={handleDragEnd}
+                          onDrop={(e) => handleDrop(index, e)}
+                          className={`bg-[#faf7f0] rounded-xl p-5 flex flex-col justify-between gap-4 transition-all group relative overflow-hidden select-none ${
+                            isDragging
+                              ? 'opacity-40 scale-95 border-2 border-dashed border-[#c9542f] shadow-none cursor-grabbing'
+                              : isOver
+                              ? 'border-2 border-[#c9542f] shadow-xl ring-2 ring-[#c9542f]/40 scale-[1.02] bg-[#fcf4ed] cursor-grabbing'
+                              : 'border border-stone-200 hover:border-[#c9542f]/40 shadow-xs hover:shadow-md cursor-grab active:cursor-grabbing'
+                          }`}
                         >
                           <div className="flex flex-col gap-3">
                             {/* Cover Image & Badges */}
@@ -886,6 +1000,17 @@ export default function AdminLibraryEditor() {
                                   {article.status || 'Published'}
                                 </span>
                               </div>
+
+                              {/* Drag Grip Handle */}
+                              {!articlesSearchQuery && (
+                                <div
+                                  className="absolute top-2.5 right-2.5 p-1 rounded bg-black/60 backdrop-blur-md text-white/80 hover:text-white cursor-grab active:cursor-grabbing hover:bg-black/80 transition-all shadow-xs"
+                                  title="Drag & drop to reorder"
+                                >
+                                  <DotsSixVertical size={16} weight="bold" />
+                                </div>
+                              )}
+
                               <div className="absolute bottom-2.5 right-2.5 text-[10px] font-bold bg-black/70 backdrop-blur-md text-white px-2 py-0.5 rounded">
                                 {article.readTime || '6 MIN'}
                               </div>
@@ -918,8 +1043,8 @@ export default function AdminLibraryEditor() {
                                 type="button"
                                 onClick={() => handleToggleStatus(article)}
                                 title={isPublished ? 'Switch to Draft' : 'Publish Article'}
-                                className={`p-1.5 rounded hover:bg-white/10 transition-colors ${
-                                  isPublished ? 'text-emerald-400' : 'text-amber-400'
+                                className={`p-1.5 rounded hover:bg-stone-200 transition-colors ${
+                                  isPublished ? 'text-emerald-600' : 'text-amber-600'
                                 }`}
                               >
                                 {isPublished ? <Eye size={15} /> : <EyeSlash size={15} />}
@@ -930,7 +1055,7 @@ export default function AdminLibraryEditor() {
                                 type="button"
                                 onClick={() => handleOpenEditArticle(article)}
                                 title="Edit Article in Studio"
-                                className="p-1.5 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+                                className="p-1.5 rounded hover:bg-stone-200 text-stone-600 hover:text-stone-900 transition-colors"
                               >
                                 <Pen size={15} />
                               </button>
@@ -940,7 +1065,7 @@ export default function AdminLibraryEditor() {
                                 type="button"
                                 onClick={() => setDeleteConfirmArticle(article)}
                                 title="Delete Article"
-                                className="p-1.5 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                                className="p-1.5 rounded hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors"
                               >
                                 <Trash size={15} />
                               </button>

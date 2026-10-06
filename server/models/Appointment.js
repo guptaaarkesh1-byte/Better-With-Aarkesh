@@ -119,6 +119,10 @@ const appointmentSchema = new mongoose.Schema({
       type: Boolean,
       default: false,
     },
+    usedFreeSessionCredit: {
+      type: Boolean,
+      default: false,
+    },
     reschedulePaymentId: String,
     rescheduleOrderId: String,
     rescheduleAmount: Number,

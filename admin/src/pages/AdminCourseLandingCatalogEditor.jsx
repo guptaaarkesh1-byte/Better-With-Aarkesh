@@ -354,6 +354,53 @@ export default function AdminCourseLandingCatalogEditor() {
                   />
                 </div>
               </div>
+
+              {/* View All Masterclasses Action Button Card */}
+              <div className="bwa-card">
+                <div className="bwa-row">
+                  <div>
+                    <h3>"View All Masterclasses" Button</h3>
+                    <p className="sub" style={{ margin: 0 }}>
+                      Show or hide the black pill button (<strong>VIEW ALL MASTERCLASSES →</strong>) placed below the course cards.
+                    </p>
+                  </div>
+                  <label className="bwa-row" style={{ gap: '10px', fontWeight: 600 }}>
+                    <span>{settings.moreCourses?.showViewAllBtn !== false ? 'Shown' : 'Hidden'}</span>
+                    <span className="bwa-sw">
+                      <input
+                        type="checkbox"
+                        checked={settings.moreCourses?.showViewAllBtn !== false}
+                        onChange={(e) => updateField('moreCourses.showViewAllBtn', e.target.checked)}
+                        aria-label="Toggle View All Masterclasses button"
+                      />
+                      <i />
+                    </span>
+                  </label>
+                </div>
+
+                {settings.moreCourses?.showViewAllBtn !== false && (
+                  <div style={{ marginTop: '16px' }} className="bwa-grid2">
+                    <div className="bwa-f">
+                      <label>Button text</label>
+                      <input
+                        type="text"
+                        value={settings.moreCourses?.viewAllBtnText || 'View All Masterclasses'}
+                        onChange={(e) => updateField('moreCourses.viewAllBtnText', e.target.value)}
+                        placeholder="View All Masterclasses"
+                      />
+                    </div>
+                    <div className="bwa-f">
+                      <label>Button link</label>
+                      <input
+                        type="text"
+                        value={settings.moreCourses?.viewAllBtnLink || '/course/all'}
+                        onChange={(e) => updateField('moreCourses.viewAllBtnLink', e.target.value)}
+                        placeholder="/course/all"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

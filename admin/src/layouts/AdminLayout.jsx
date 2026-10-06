@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { 
   SquaresFour, 
@@ -9,14 +9,11 @@ import {
   House,
   Books,
   CalendarBlank,
-  SlidersHorizontal,
   Sun,
   Gear
 } from '@phosphor-icons/react';
-import GlobalVisualSettingsModal from '../components/GlobalVisualSettingsModal';
 
 export default function AdminLayout({ children, onLogout }) {
-  const [showVisualModal, setShowVisualModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
@@ -56,16 +53,6 @@ export default function AdminLayout({ children, onLogout }) {
         </Link>
         
         <div className="bwa-top-r">
-          <button
-            type="button"
-            onClick={() => setShowVisualModal(true)}
-            className="bwa-btn-ghost"
-            title="Global Master Controls"
-          >
-            <SlidersHorizontal size={15} className="text-[#C8532F]" weight="bold" />
-            <span>MASTER CONTROLS</span>
-          </button>
-
           <button 
             type="button"
             onClick={onLogout}
@@ -76,11 +63,6 @@ export default function AdminLayout({ children, onLogout }) {
           </button>
         </div>
       </header>
-
-      <GlobalVisualSettingsModal
-        isOpen={showVisualModal}
-        onClose={() => setShowVisualModal(false)}
-      />
       
       {/* Module Tabs Navigation */}
       <nav className="bwa-mods" aria-label="Module Sections">

@@ -1,49 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useToast } from '../context/ToastContext';
 import { API_URL } from '../utils/apiUrl';
-import { 
-  MagnifyingGlass, 
-  CaretDown, 
-  CaretUp, 
-  Eye, 
-  CalendarBlank, 
-  Plus, 
-  CaretLeft, 
-  CaretRight,
-  X,
-  Phone,
-  User,
-  FileText,
-  Clock,
-  CurrencyCircleDollar,
-  GraduationCap,
-  Megaphone,
-  Question,
-  CheckCircle,
-  Sparkle,
-  WarningCircle,
-  ShieldCheck,
-  ArrowCounterClockwise,
-  Receipt,
-  Info
-} from '@phosphor-icons/react';
+import './AdminAppointments.css';
 
-const formatSource = (src) => {
-  if (!src) return '';
-  const lower = src.toLowerCase();
-  if (lower === 'social') return 'Social Media';
-  if (lower === 'referral') return 'Referral';
-  if (lower === 'search') return 'Search Engine';
-  if (lower === 'other') return 'Other';
-  return src;
+// Helper date formatters
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const parseDateObj = (dateVal, timeStr = '10:00 AM') => {
+  if (!dateVal) return new Date();
+  if (dateVal instanceof Date) return dateVal;
+  try {
+    const d = new Date(dateVal);
+    if (!isNaN(d.getTime())) return d;
+  } catch {}
+  return new Date();
 };
 
+const fD = (d) => {
+  if (!d) return '—';
+  const dt = parseDateObj(d);
+  return `${dt.getDate()} ${MON[dt.getMonth()]} ${dt.getFullYear()}`;
+};
+
+const fDay = (d) => {
+  if (!d) return '—';
+  const dt = parseDateObj(d);
+  return `${DAY[dt.getDay()]}, ${dt.getDate()} ${MON[dt.getMonth()]}`;
+};
+
+const inr = (n) => '₹' + (Number(n) || 0).toLocaleString('en-IN');
+
 const formatTimeRange = (timeStr, duration = 60) => {
-  if (!timeStr) return '';
+  if (!timeStr) return '10:00 AM – 11:00 AM';
   if (timeStr.includes('–') || timeStr.includes(' - ') || timeStr.includes(' to ')) {
     return timeStr;
   }
-
   const match = timeStr.match(/(\d+):?(\d*)\s*(AM|PM)?/i);
   if (!match) return timeStr;
 
@@ -52,1933 +44,1704 @@ const formatTimeRange = (timeStr, duration = 60) => {
   let minutes = minutesStr ? parseInt(minutesStr, 10) : 0;
   let ampm = ampmStr ? ampmStr.toUpperCase() : 'AM';
 
-  let totalMinutes = (hours % 12 + (ampm === 'PM' ? 12 : 0)) * 60 + minutes;
-  let endTotalMinutes = totalMinutes + (parseInt(duration, 10) || 60);
+  if (ampm === 'PM' && hours < 12) hours += 12;
+  if (ampm === 'AM' && hours === 12) hours = 0;
 
-  let endHours = Math.floor((endTotalMinutes / 60) % 24);
-  let endMinutes = endTotalMinutes % 60;
-  let endAmpm = endHours >= 12 ? 'PM' : 'AM';
-  let endDisplayHours = endHours % 12 === 0 ? 12 : endHours % 12;
+  const startD = new Date(2026, 0, 1, hours, minutes);
+  const endD = new Date(startD.getTime() + duration * 60000);
 
-  const formattedStartTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-  const formattedEndTime = `${endDisplayHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')} ${endAmpm}`;
+  const formatT = (date) => {
+    let h = date.getHours();
+    let m = date.getMinutes();
+    const ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${String(m).padStart(2, '0')} ${ap}`;
+  };
 
-  return `${formattedStartTime} – ${formattedEndTime}`;
+  return `${formatT(startD)} – ${formatT(endD)}`;
 };
 
-const formatDisplayDate = (dateVal) => {
-  if (!dateVal) return '—';
-  try {
-    const str = String(dateVal).trim();
-    
-    // Case 1: Format "YYYY-MM-DD" e.g. "2026-10-08" or "2026-10-1"
-    const ymdMatch = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    if (ymdMatch) {
-      const year = parseInt(ymdMatch[1], 10);
-      const month = parseInt(ymdMatch[2], 10) - 1;
-      const day = parseInt(ymdMatch[3], 10);
-      const d = new Date(year, month, day);
-      if (!isNaN(d.getTime())) {
-        const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
-        const monthName = d.toLocaleDateString('en-US', { month: 'short' });
-        return `${weekday}, ${day} ${monthName} ${year}`;
-      }
-    }
-
-    // Case 2: Parse standard date formats (like "Thursday, October 1, 2026" or ISO)
-    const d = new Date(str);
-    if (!isNaN(d.getTime())) {
-      const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
-      const day = d.getDate();
-      const monthName = d.toLocaleDateString('en-US', { month: 'short' });
-      const year = d.getFullYear();
-      return `${weekday}, ${day} ${monthName} ${year}`;
-    }
-  } catch (e) {
-    console.error('Error in formatDisplayDate:', e);
-  }
-  return dateVal;
+const badPhone = (p) => {
+  if (!p) return true;
+  const clean = p.replace(/[\s+-]/g, '');
+  return clean.length < 10 || /^\+?1000/.test(p) || p.includes('000-0000');
 };
 
 export default function AdminUsers() {
   const { showSuccess, showError, showInfo } = useToast();
-  const [expandedUser, setExpandedUser] = useState(() => {
-    const saved = sessionStorage.getItem('admin_users_expanded');
-    return saved ? parseInt(saved, 10) : 1;
-  }); // Default expand first user
-  
-  const [activeTab, setActiveTab] = useState('appointments');
+
+  // Primary data state
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fee settings state
   const [feeSettings, setFeeSettings] = useState({ fee60min: 5000, fee90min: 7500 });
+  const [feeModalOpen, setFeeModalOpen] = useState(false);
   const [isSavingFees, setIsSavingFees] = useState(false);
-  const [feeMessage, setFeeMessage] = useState('');
-  
-  // Sidebar State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    return sessionStorage.getItem('admin_users_sidebar_open') === 'true';
+
+  // View state: 'clients' | 'appts'
+  const [viewMode, setViewMode] = useState('clients');
+
+  // Filter state
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'needs' | 'today' | 'upcoming' | 'past' | 'refunded'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPopOpen, setFilterPopOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    pay: 'all',     // 'all' | 'paid' | 'pending' | 'refunded'
+    rs: 'all',      // 'all' | 'pending' | 'approved' | 'rejected' | 'fee' | 'none'
+    acct: 'all',    // 'all' | 'course' | 'regular'
+    when: 'all'     // 'all' | '7d' | '30d' | 'month'
   });
-  const [selectedUser, setSelectedUser] = useState(() => {
-    const saved = sessionStorage.getItem('admin_users_selected_user');
-    return saved ? JSON.parse(saved) : null;
+
+  // Drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedApptId, setSelectedApptId] = useState(null);
+  const [drawerTab, setDrawerTab] = useState('overview'); // 'overview' | 'reschedule' | 'answers' | 'notes'
+
+  // Notes state inside drawer
+  const [notesText, setNotesText] = useState('');
+  const [notesStatus, setNotesStatus] = useState('Saved ✓');
+  const notesTimeoutRef = useRef(null);
+
+  // Emergency Refund modal state
+  const [refundModal, setRefundModal] = useState({
+    isOpen: false,
+    user: null,
+    appt: null,
+    reason: '',
+    isProcessing: false
   });
-  const [selectedSession, setSelectedSession] = useState(() => {
-    const saved = sessionStorage.getItem('admin_users_selected_session');
-    return saved ? JSON.parse(saved) : null;
-  });
 
-  // Coach Session Notes State
-  const [sessionNotesText, setSessionNotesText] = useState(() => {
-    const saved = sessionStorage.getItem('admin_users_selected_session');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.coachNotes || '';
-      } catch (e) {}
-    }
-    return '';
-  });
-  const [isSavingNotes, setIsSavingNotes] = useState(false);
-  const [notesSuccessMessage, setNotesSuccessMessage] = useState(false);
-
-  // Persist states
-  React.useEffect(() => {
-    sessionStorage.setItem('admin_users_expanded', expandedUser);
-    sessionStorage.setItem('admin_users_sidebar_open', isSidebarOpen);
-    if (selectedUser) sessionStorage.setItem('admin_users_selected_user', JSON.stringify(selectedUser));
-    else sessionStorage.removeItem('admin_users_selected_user');
-    if (selectedSession) sessionStorage.setItem('admin_users_selected_session', JSON.stringify(selectedSession));
-    else sessionStorage.removeItem('admin_users_selected_session');
-  }, [expandedUser, isSidebarOpen, selectedUser, selectedSession]);
-
-  const openProfile = (user) => {
-    setSelectedSession(null);
-    setSelectedUser(user);
-    setSessionNotesText('');
-    setNotesSuccessMessage(false);
-    setIsSidebarOpen(true);
-  };
-
-  const openSessionDetails = (user, session) => {
-    setSelectedUser(user);
-    setSelectedSession(session);
-    setSessionNotesText(session.coachNotes || '');
-    setNotesSuccessMessage(false);
-    setIsSidebarOpen(true);
-  };
-
-  const handleSaveSessionNotes = async () => {
-    if (!selectedSession || !selectedSession.id) return;
-    setIsSavingNotes(true);
+  // Fetch all appointments from backend
+  const fetchAppointmentsData = useCallback(async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = API_URL;
-      const res = await fetch(`${apiUrl}/api/appointments/admin/${selectedSession.id}/notes`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ notes: sessionNotesText })
+      const res = await fetch(`${API_URL}/api/appointments/admin`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.ok) {
-        const updated = await res.json();
-        showSuccess('Session notes saved successfully!');
-        setNotesSuccessMessage(true);
-        setTimeout(() => setNotesSuccessMessage(false), 3000);
+        const appointments = await res.json();
+        const userMap = {};
 
-        // Update selectedSession in state and storage
-        const updatedSession = { ...selectedSession, coachNotes: sessionNotesText };
-        setSelectedSession(updatedSession);
-        sessionStorage.setItem('admin_users_selected_session', JSON.stringify(updatedSession));
+        appointments.forEach((app) => {
+          const uId = app.userId && app.userId._id ? app.userId._id : 'guest_' + app._id;
+          const isFreeSession = !!app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION' || app.isComplimentary;
+          const isCourseMember = !!app.isCourseMember || isFreeSession;
 
-        // Update users state
-        setUsers(prevUsers => prevUsers.map(u => {
-          if (u.id === selectedUser.id) {
-            const updatedHistory = u.history.map(s => s.id === selectedSession.id ? { ...s, coachNotes: sessionNotesText } : s);
-            return { ...u, history: updatedHistory };
+          if (!userMap[uId]) {
+            userMap[uId] = {
+              id: uId,
+              name: (app.userId && (app.userId.fullName || app.userId.name)) ? (app.userId.fullName || app.userId.name) : app.name || 'Unknown Client',
+              email: (app.userId && app.userId.email) ? app.userId.email : app.email || 'No Email',
+              phone: (app.userId && (app.userId.phoneNumber || app.userId.phone)) ? (app.userId.phoneNumber || app.userId.phone) : app.phone || '',
+              joined: parseDateObj((app.userId && app.userId.createdAt) ? app.userId.createdAt : (app.createdAt || Date.now())),
+              course: isCourseMember,
+              appts: []
+            };
+          } else {
+            if (isCourseMember) userMap[uId].course = true;
           }
-          return u;
-        }));
-      } else {
-        showError('Failed to save session notes');
-      }
-    } catch (err) {
-      console.error('Save session notes error:', err);
-      showError('An error occurred while saving notes.');
-    } finally {
-      setIsSavingNotes(false);
-    }
-  };
 
-  const closeProfile = () => {
-    setIsSidebarOpen(false);
-    setTimeout(() => {
-      // Clear after closing animation to prevent flickering content
-      setSelectedSession(null);
-    }, 300);
-  };
+          const appDateObj = parseDateObj(app.date, app.time);
+          const duration = Number(app.duration) || 60;
+          const isRefunded = app.status === 'REFUNDED' || app.refundStatus === 'REFUNDED' || app.payment === 'Refunded';
 
-  // Filter States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [paymentFilter, setPaymentFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [bookingFilter, setBookingFilter] = useState('All');
-  const [accountFilter, setAccountFilter] = useState('All');
-  const [rescheduleFilter, setRescheduleFilter] = useState('All');
+          let payStatus = 'paid';
+          if (isRefunded) payStatus = 'refunded';
+          else if (isFreeSession) payStatus = 'paid';
+          else if (app.paymentId || app.paymentStatus === 'PAID' || app.paymentStatus === 'paid' || app.payment === 'Paid') payStatus = 'paid';
+          else payStatus = 'pending';
 
-  // Dropdown UI states
-  const [activeDropdown, setActiveDropdown] = useState(null);
+          const reschedReq = app.rescheduleRequest ? {
+            status: (app.rescheduleRequest.status || 'pending').toLowerCase(),
+            from: {
+              s: parseDateObj(app.date, app.time),
+              time: app.time
+            },
+            to: {
+              s: parseDateObj(app.rescheduleRequest.date || app.date, app.rescheduleRequest.time || app.time),
+              time: app.rescheduleRequest.time || app.time
+            },
+            reason: app.rescheduleRequest.reason || app.reason || 'Requested new slot',
+            feePaid: Number(app.rescheduleRequest.feePaid) || 0,
+            paidOn: app.rescheduleRequest.paidOn || ''
+          } : null;
 
-  // Mock data with appointment history & payment details
-  const mockUsers = [];
+          const baseFee = Number(app.amount) || (duration === 90 ? feeSettings.fee90min : feeSettings.fee60min) || (duration === 90 ? 7500 : 5000);
 
-  const [users, setUsers] = useState(mockUsers);
-  const [statusDropdownOpenId, setStatusDropdownOpenId] = useState(null);
-
-  const updateAppointmentStatus = async (userId, sessionId, newStatus) => {
-    try {
-      const token = localStorage.getItem('adminToken');
-      const apiUrl = API_URL;
-      
-      // Try to update via API if it's a real MongoDB ID (not a mock number ID)
-      if (typeof sessionId === 'string' && sessionId.length > 10) {
-        const res = await fetch(`${apiUrl}/api/appointments/admin/${sessionId}/status`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ status: newStatus })
+          userMap[uId].appts.push({
+            id: app._id,
+            s: appDateObj,
+            time: app.time || '10:00 AM',
+            duration: duration,
+            type: isFreeSession ? 'Course Free Session' : (app.type || 'Life Coaching Session'),
+            fee: isFreeSession ? 0 : baseFee,
+            pay: payStatus,
+            done: app.status === 'COMPLETED' || app.status === 'completed',
+            status: app.status || 'UPCOMING',
+            resched: reschedReq,
+            heard: app.source || '',
+            brings: app.reason || '',
+            extra: app.extra || '',
+            qa: Array.isArray(app.questionnaireAnswers) ? app.questionnaireAnswers : [],
+            notes: app.coachNotes || '',
+            payId: app.paymentId || (isFreeSession ? 'COURSE_INCLUDED' : 'pay_' + app._id.slice(-8)),
+            order: app.orderId || (isFreeSession ? 'COURSE_FREE_SESSION' : 'order_' + app._id.slice(-8)),
+            isFreeSession: isFreeSession
+          });
         });
-        
-        if (!res.ok) {
-          console.error('Failed to update status in backend', res.status);
-          showError('Failed to update status on the server.');
-          return;
-        } else {
-          showSuccess(`Appointment status changed to ${newStatus}`);
-        }
-      }
 
-      setUsers(prevUsers => prevUsers.map(user => {
-        if (user.id === userId) {
-          const updatedHistory = user.history.map(session => 
-            session.id === sessionId ? { ...session, status: newStatus } : session
-          );
-          let nextAppointmentStatus = user.nextAppointmentStatus;
-          // Note: we assume the first item in history is the next appointment if we update it
-          if (updatedHistory.length > 0 && updatedHistory[0].id === sessionId) {
-            nextAppointmentStatus = updatedHistory[0].status;
-          }
-          return { ...user, history: updatedHistory, nextAppointmentStatus };
-        }
-        return user;
-      }));
+        const loadedUsers = Object.values(userMap);
+        setUsers(loadedUsers);
+      }
     } catch (err) {
-      console.error('Failed to update status:', err);
-      showError('An error occurred while communicating with the server.');
+      console.error('Failed to fetch appointments:', err);
     } finally {
-      setStatusDropdownOpenId(null);
+      setLoading(false);
     }
-  };
+  }, [feeSettings.fee60min, feeSettings.fee90min]);
 
-  const [isProcessingReschedule, setIsProcessingReschedule] = useState(false);
-
-  const handleRescheduleAction = async (userId, sessionId, action) => {
-    const targetSessionId = sessionId || selectedSession?._id || selectedSession?.id;
-    if (!targetSessionId) {
-      showError('Session ID is missing');
-      return;
-    }
-
-    setIsProcessingReschedule(true);
-    try {
-      const token = localStorage.getItem('adminToken');
-      const apiUrl = API_URL;
-      
-      const endpoint = action === 'approve' ? 'approve-reschedule' : 'reject-reschedule';
-      
-      const res = await fetch(`${apiUrl}/api/appointments/admin/${targetSessionId}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || 'Failed to perform action');
-      }
-
-      const updatedAppointment = await res.json();
-      const newStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
-      
-      // Immediately update selectedSession in UI
-      setSelectedSession(prev => {
-        if (!prev) return prev;
-        const updated = {
-          ...prev,
-          date: action === 'approve' ? (updatedAppointment.date || prev.rescheduleRequest?.date || prev.date) : prev.date,
-          time: action === 'approve' ? (updatedAppointment.time || prev.rescheduleRequest?.time || prev.time) : prev.time,
-          rescheduleRequest: {
-            ...(prev.rescheduleRequest || {}),
-            status: newStatus
-          }
-        };
-        sessionStorage.setItem('admin_users_selected_session', JSON.stringify(updated));
-        return updated;
-      });
-
-      // Update user in users list state
-      setUsers(prevUsers => prevUsers.map(user => {
-        const isTargetUser = (user.id === userId || user._id === userId || (selectedUser && (user.id === selectedUser.id || user._id === selectedUser._id)));
-        if (isTargetUser) {
-          const updatedHistory = (user.history || []).map(session => {
-            const isMatch = (session.id === targetSessionId || session._id === targetSessionId || session.id === sessionId || session._id === sessionId);
-            if (isMatch) {
-              return { 
-                ...session, 
-                date: action === 'approve' ? (updatedAppointment.date || session.rescheduleRequest?.date || session.date) : session.date,
-                time: action === 'approve' ? (updatedAppointment.time || session.rescheduleRequest?.time || session.time) : session.time,
-                rescheduleRequest: {
-                  ...(session.rescheduleRequest || {}),
-                  status: newStatus
-                }
-              };
-            }
-            return session;
-          });
-          return { ...user, history: updatedHistory };
-        }
-        return user;
-      }));
-
-      showSuccess(`Reschedule request ${action === 'approve' ? 'approved' : 'declined'} successfully!`);
-    } catch (err) {
-      console.error('handleRescheduleAction error:', err);
-      showError(`Failed to ${action} reschedule request: ${err.message}`);
-    } finally {
-      setIsProcessingReschedule(false);
-    }
-  };
-
-  // 48-Hour Reschedule Window Calculator
-  const get48HoursNoticeInfo = (date, time) => {
-    if (!date || !time) return null;
-    try {
-      const scheduled = new Date(`${date} ${time} GMT+0530`);
-      if (isNaN(scheduled.getTime())) return null;
-      const now = new Date();
-      const diffMs = scheduled - now;
-      const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-      
-      if (diffMs <= 0) {
-        return {
-          status: 'PAST',
-          hours: Math.abs(diffHours),
-          badgeText: 'Past Session',
-          badgeClass: 'bg-zinc-800/80 text-zinc-400 border-zinc-700/60',
-          isSafe: false,
-          isLate: false,
-        };
-      }
-      if (diffHours >= 48) {
-        return {
-          status: 'SAFE',
-          hours: diffHours,
-          badgeText: `> 48h Safe (${diffHours}h left)`,
-          badgeSub: 'Free Reschedule Eligible',
-          badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-          isSafe: true,
-          isLate: false,
-        };
-      }
-      return {
-        status: 'LATE',
-        hours: diffHours,
-        badgeText: `< 48h Window (${diffHours}h left)`,
-        badgeSub: 'Late / Locked Window',
-        badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-        isSafe: false,
-        isLate: true,
-      };
-    } catch {
-      return null;
-    }
-  };
-
-  // Refund Modal State & Actions
-  const [refundModalSession, setRefundModalSession] = useState(null);
-  const [refundReason, setRefundReason] = useState('');
-  const [refundAmount, setRefundAmount] = useState('');
-  const [isRefunding, setIsRefunding] = useState(false);
-
-  const openRefundModal = (session, user) => {
-    const defaultAmt = session.amount !== undefined && session.amount !== null 
-      ? session.amount 
-      : (session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min);
-
-    setRefundModalSession({
-      ...session,
-      userId: user.id,
-      userName: user.name,
-      userEmail: user.email,
-      defaultAmount: defaultAmt
-    });
-    setRefundReason('Client Emergency / Cancellation Request');
-    setRefundAmount(defaultAmt);
-  };
-
-  const handleIssueRefund = async () => {
-    if (!refundModalSession) return;
-    setIsRefunding(true);
-    try {
-      const token = localStorage.getItem('adminToken');
-      const apiUrl = API_URL;
-      const res = await fetch(`${apiUrl}/api/appointments/admin/${refundModalSession.id}/issue-refund`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          reason: refundReason || 'Admin issued emergency refund',
-          refundAmount: refundAmount !== '' ? Number(refundAmount) : refundModalSession.defaultAmount
-        })
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to issue refund');
-      }
-
-      const data = await res.json();
-      const refundedAmt = data.appointment?.refundAmount !== undefined ? data.appointment.refundAmount : refundAmount;
-      showSuccess(`Refund of ₹${Number(refundedAmt).toLocaleString('en-IN')} processed successfully!`);
-
-      // Update local state
-      setUsers(prevUsers => prevUsers.map(u => {
-        if (u.id === refundModalSession.userId) {
-          const updatedHistory = u.history.map(s => 
-            s.id === refundModalSession.id 
-              ? { 
-                  ...s, 
-                  status: 'REFUNDED', 
-                  payment: 'Refunded', 
-                  refundStatus: 'REFUNDED', 
-                  refundReason: data.appointment?.refundReason || refundReason, 
-                  refundAmount: refundedAmt,
-                  refundedAt: data.appointment?.refundedAt || new Date()
-                } 
-              : s
-          );
-          return { ...u, history: updatedHistory };
-        }
-        return u;
-      }));
-
-      if (selectedSession && selectedSession.id === refundModalSession.id) {
-        setSelectedSession(prev => ({
-          ...prev,
-          status: 'REFUNDED',
-          payment: 'Refunded',
-          refundStatus: 'REFUNDED',
-          refundReason: data.appointment?.refundReason || refundReason,
-          refundAmount: refundedAmt,
-          refundedAt: data.appointment?.refundedAt || new Date()
-        }));
-      }
-
-      setRefundModalSession(null);
-      setRefundReason('');
-      setRefundAmount('');
-    } catch (err) {
-      console.error('Refund error:', err);
-      showError('Failed to process refund.');
-    } finally {
-      setIsRefunding(false);
-    }
-  };
-
-  // Fetch real appointments on load
-  React.useEffect(() => {
-    const fetchRealData = async () => {
-      try {
-        const token = localStorage.getItem('adminToken');
-        const apiUrl = API_URL;
-        const res = await fetch(`${apiUrl}/api/appointments/admin`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (res.ok) {
-          const appointments = await res.json();
-          // Group by user
-          const userMap = {};
-          
-          appointments.forEach(app => {
-            const uId = (app.userId && app.userId._id) ? app.userId._id : 'guest_' + app._id;
-            const isFreeSession = !!app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION';
-            const isCourseMember = !!app.isCourseMember || isFreeSession;
-            const isUserDeleted = !!app.isUserDeleted || (app.userId && !!app.userId.isDeleted);
-            const userDeletedAt = app.userDeletedAt || (app.userId ? app.userId.deletedAt : null);
-
-            if (!userMap[uId]) {
-              userMap[uId] = {
-                id: uId,
-                name: (app.userId && (app.userId.fullName || app.userId.name)) ? (app.userId.fullName || app.userId.name) : app.name || 'Unknown User',
-                email: (app.userId && app.userId.email) ? app.userId.email : app.email || 'No Email',
-                phone: (app.userId && (app.userId.phoneNumber || app.userId.phone)) ? (app.userId.phoneNumber || app.userId.phone) : '+1 000-0000',
-                joined: new Date((app.userId && app.userId.createdAt) ? app.userId.createdAt : Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-                appointmentsCount: 0,
-                nextAppointmentDate: null,
-                nextAppointmentTime: null,
-                nextAppointmentStatus: null,
-                isCourseMember: isCourseMember,
-                isDeleted: isUserDeleted,
-                deletedAt: userDeletedAt,
-                source: app.source || '',
-                history: []
-              };
-            } else {
-              if (isUserDeleted) {
-                userMap[uId].isDeleted = true;
-                userMap[uId].deletedAt = userDeletedAt;
-              }
-              if (isCourseMember) {
-                userMap[uId].isCourseMember = true;
-              }
-              if (!userMap[uId].source && app.source) {
-                userMap[uId].source = app.source;
-              }
-            }
-            
-            // Format appointment
-            const appDateObj = new Date(app.date);
-            const today = new Date();
-            const isToday = appDateObj.getDate() === today.getDate() &&
-                            appDateObj.getMonth() === today.getMonth() &&
-                            appDateObj.getFullYear() === today.getFullYear();
-            
-            let calculatedStatus = app.status || 'Upcoming';
-            if (calculatedStatus.toLowerCase() !== 'completed' && calculatedStatus.toLowerCase() !== 'refunded' && isToday) {
-              calculatedStatus = 'Today';
-            }
-
-            const isRefunded = app.status === 'REFUNDED' || app.refundStatus === 'REFUNDED';
-
-            userMap[uId].history.push({
-              id: app._id,
-              date: app.date,
-              time: app.time,
-              type: isFreeSession ? '🎓 Course Complimentary Session' : (app.type || 'Life Coaching Session'),
-              status: calculatedStatus,
-              txnId: isFreeSession ? 'COURSE_FREE_SESSION' : (app.orderId || 'TXN-PENDING'),
-              paymentId: app.paymentId || '',
-              orderId: app.orderId || '',
-              payment: isRefunded ? 'Refunded' : (isFreeSession ? 'Free' : (app.paymentId ? 'Paid' : (app.paymentStatus || 'Failed'))),
-              beforeWeSpeak: app.reason || '',
-              reason: app.reason || '',
-              extra: app.extra || '',
-              source: app.source || '',
-              duration: app.duration || (app.isFirstSession ? 60 : 90),
-              rescheduleRequest: app.rescheduleRequest || null,
-              isFreeSession: isFreeSession,
-              isCourseMember: isCourseMember,
-              amount: app.amount,
-              refundStatus: app.refundStatus || 'NONE',
-              refundAmount: app.refundAmount || 0,
-              refundReason: app.refundReason || '',
-              refundedAt: app.refundedAt || null,
-              coachNotes: app.coachNotes || '',
-              questionnaireAnswers: app.questionnaireAnswers || null
-            });
-            userMap[uId].appointmentsCount++;
-          });
-
-          const realUsers = Object.values(userMap).map(u => {
-            if (u.history.length > 0) {
-              u.nextAppointmentDate = u.history[0].date;
-              u.nextAppointmentTime = u.history[0].time;
-              u.nextAppointmentStatus = u.history[0].status;
-            }
-            return u;
-          });
-
-          setUsers([...realUsers, ...mockUsers]);
-        }
-      } catch (err) {
-        console.error('Failed to fetch real appointments:', err);
-      }
-    };
-    
-    fetchRealData();
-  }, []);
-
-  React.useEffect(() => {
+  // Fetch fees on mount
+  useEffect(() => {
     const fetchFees = async () => {
       try {
-        const apiUrl = API_URL;
-        const res = await fetch(`${apiUrl}/api/payment/fees`);
+        const res = await fetch(`${API_URL}/api/payment/fees`);
         if (res.ok) {
           const data = await res.json();
-          setFeeSettings({ 
-            fee60min: data.fee60min || 5000, 
-            fee90min: data.fee90min || 7500 
-          });
+          if (data.fee60min && data.fee90min) {
+            setFeeSettings({
+              fee60min: Number(data.fee60min) || 5000,
+              fee90min: Number(data.fee90min) || 7500
+            });
+          }
         }
-      } catch (err) {
-        console.error('Failed to fetch fees:', err);
-      }
+      } catch (err) {}
     };
     fetchFees();
   }, []);
 
-  const handleSaveFees = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    fetchAppointmentsData();
+  }, [fetchAppointmentsData]);
+
+  // Save fee settings
+  const handleSaveFees = async () => {
     setIsSavingFees(true);
-    setFeeMessage('');
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = API_URL;
-      const res = await fetch(`${apiUrl}/api/payment/fees`, {
+      const res = await fetch(`${API_URL}/api/payment/fees`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(feeSettings)
       });
       if (res.ok) {
-        showSuccess('Booking fee configuration saved successfully!');
-        setFeeMessage('Fees updated successfully!');
-        setTimeout(() => setFeeMessage(''), 3000);
+        showSuccess('Session fees updated successfully!');
+        setFeeModalOpen(false);
       } else {
-        showError('Failed to update fees.');
-        setFeeMessage('Failed to update fees.');
+        showError('Failed to update fees');
       }
     } catch (err) {
-      console.error(err);
-      showError('Error communicating with server.');
-      setFeeMessage('Error communicating with server.');
+      showError('Error updating fees');
     } finally {
       setIsSavingFees(false);
     }
   };
 
-  const toggleExpand = (userId) => {
-    setExpandedUser(expandedUser === userId ? null : userId);
+  // Helper calculation functions
+  const NOW = useMemo(() => new Date(), []);
+
+  const sameDay = (a, b) => {
+    if (!a || !b) return false;
+    const d1 = parseDateObj(a);
+    const d2 = parseDateObj(b);
+    return d1.toDateString() === d2.toDateString();
   };
 
-  const getStatusPillColor = (status) => {
-    switch(status.toLowerCase()) {
-      case 'upcoming': return 'text-[#c79c6e] border-[#c79c6e]/40';
-      case 'completed': return 'text-green-500 border-green-500/40';
-      case 'cancelled': return 'text-red-500 border-red-500/40';
-      case 'refunded': return 'text-purple-400 border-purple-500/40 bg-purple-500/10';
-      case 'today': return 'text-blue-400 border-blue-400/40';
-      default: return 'text-white/60 border-white/20';
+  const hoursLeft = (a) => {
+    if (!a?.s) return 0;
+    return (parseDateObj(a.s).getTime() - NOW.getTime()) / 36e5;
+  };
+
+  const stateOf = useCallback((a) => {
+    if (!a) return 'upcoming';
+    if (a.pay === 'refunded' || a.status === 'REFUNDED') return 'refunded';
+    if (a.done || a.status === 'COMPLETED') return 'completed';
+    if (sameDay(a.s, NOW) || a.status === 'Today') return 'today';
+    if (parseDateObj(a.s) < NOW) return 'overdue';
+    return 'upcoming';
+  }, [NOW]);
+
+  const rsPending = (a) => Boolean(a.resched && a.resched.status === 'pending');
+
+  const actionOf = useCallback((a) => {
+    if (rsPending(a)) return 'Reschedule request';
+    if (a.pay === 'pending') return 'Payment pending';
+    if (stateOf(a) === 'overdue') return 'Update status';
+    return null;
+  }, [stateOf]);
+
+  const paidAmount = (a) => {
+    if (a.pay === 'paid') {
+      return a.fee + (a.resched?.feePaid || 0);
     }
+    return 0;
   };
 
-  const getPaymentPillColor = (payment) => {
-    switch(payment.toLowerCase()) {
-      case 'paid': return 'text-green-500 bg-green-500/10 border-green-500/20';
-      case 'free': 
-      case 'complimentary': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30 font-semibold';
-      case 'failed': return 'text-red-500 bg-red-500/10 border-red-500/20';
-      case 'pending': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
-      case 'refunded': return 'text-purple-400 bg-purple-500/10 border-purple-500/30 font-semibold';
-      default: return 'text-white/60 border-white/20';
+  // All appointments flattened list
+  const allAppts = useMemo(() => {
+    return users.flatMap((c) => c.appts.map((a) => ({ c, a })));
+  }, [users]);
+
+  // Tab & Filter Matching
+  const tabMatch = useCallback((a, tab) => {
+    const s = stateOf(a);
+    switch (tab) {
+      case 'needs':
+        return !!actionOf(a);
+      case 'today':
+        return s === 'today';
+      case 'upcoming':
+        return s === 'upcoming' || s === 'today';
+      case 'past':
+        return s === 'completed' || s === 'overdue';
+      case 'refunded':
+        return s === 'refunded';
+      default:
+        return true;
     }
-  };
+  }, [actionOf, stateOf]);
 
-  const clearFilters = () => {
+  const matchAppt = useCallback((c, a, tab = activeTab) => {
+    if (!tabMatch(a, tab)) return false;
+
+    if (filters.pay !== 'all' && a.pay !== filters.pay) return false;
+
+    if (filters.rs !== 'all') {
+      const r = a.resched;
+      if (filters.rs === 'none' && r) return false;
+      if (filters.rs === 'pending' && !(r && r.status === 'pending')) return false;
+      if (filters.rs === 'approved' && !(r && (r.status === 'approved' || r.status === 'auto'))) return false;
+      if (filters.rs === 'rejected' && !(r && r.status === 'rejected')) return false;
+      if (filters.rs === 'fee' && !(r && r.feePaid > 0)) return false;
+    }
+
+    if (filters.acct === 'course' && !c.course) return false;
+    if (filters.acct === 'regular' && c.course) return false;
+
+    if (filters.when !== 'all') {
+      const h = hoursLeft(a);
+      if (filters.when === '7d' && !(h >= -12 && h <= 168)) return false;
+      if (filters.when === '30d' && !(h >= -12 && h <= 720)) return false;
+      if (filters.when === 'month') {
+        const appD = parseDateObj(a.s);
+        if (!(appD.getMonth() === NOW.getMonth() && appD.getFullYear() === NOW.getFullYear())) return false;
+      }
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const nMatch = c.name?.toLowerCase().includes(q);
+      const eMatch = c.email?.toLowerCase().includes(q);
+      const pMatch = c.phone?.includes(q);
+      if (!nMatch && !eMatch && !pMatch) return false;
+    }
+
+    return true;
+  }, [activeTab, filters, hoursLeft, NOW, searchQuery, tabMatch]);
+
+  // KPI counts
+  const kpiData = useMemo(() => {
+    const needs = allAppts.filter((x) => actionOf(x.a)).length;
+    const today = allAppts.filter((x) => stateOf(x.a) === 'today').length;
+    const rs = allAppts.filter((x) => rsPending(x.a)).length;
+    const rev = allAppts.reduce((sum, x) => sum + paidAmount(x.a), 0);
+    return { needs, today, rs, rev };
+  }, [actionOf, allAppts, stateOf]);
+
+  const handleKpiClick = (k) => {
+    setFilters({ pay: 'all', rs: 'all', acct: 'all', when: 'all' });
     setSearchQuery('');
-    setPaymentFilter('All');
-    setStatusFilter('All');
-    setBookingFilter('All');
-    setAccountFilter('All');
-    setRescheduleFilter('All');
+    if (k === 'needs') setActiveTab('needs');
+    else if (k === 'today') setActiveTab('today');
+    else if (k === 'rs') {
+      setActiveTab('all');
+      setFilters((prev) => ({ ...prev, rs: 'pending' }));
+    } else if (k === 'rev') {
+      setActiveTab('all');
+      setFilters((prev) => ({ ...prev, pay: 'paid' }));
+    }
   };
 
-  // Filtering Logic
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.phone.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesPayment = paymentFilter === 'All' || 
-      user.history.some(h => h.payment.toLowerCase() === paymentFilter.toLowerCase());
+  // Status Chips Helper
+  const renderStateChip = (a) => {
+    const s = stateOf(a);
+    const map = {
+      upcoming: ['bwa-c-blue', 'Upcoming'],
+      today: ['bwa-c-acc', 'Today'],
+      completed: ['bwa-c-green', 'Completed'],
+      overdue: ['bwa-c-amber', 'Update status'],
+      refunded: ['bwa-c-grey', 'Refunded']
+    };
+    const [cls, label] = map[s] || ['bwa-c-blue', 'Upcoming'];
+    return <span className={`bwa-chip ${cls}`}>{label}</span>;
+  };
 
-    const matchesStatus = statusFilter === 'All' || 
-      user.history.some(h => h.status.toLowerCase() === statusFilter.toLowerCase());
+  const renderPayChip = (a) => {
+    if (a.pay === 'paid') return <span className="bwa-chip bwa-c-green">{a.isFreeSession ? 'Included in Course' : 'Paid'}</span>;
+    if (a.pay === 'pending') return <span className="bwa-chip bwa-c-amber">Pending</span>;
+    return <span className="bwa-chip bwa-c-grey">Refunded</span>;
+  };
 
-    let matchesBooking = true;
-    if (bookingFilter === 'Booked') matchesBooking = user.appointmentsCount > 0;
-    if (bookingFilter === 'No Bookings') matchesBooking = user.appointmentsCount === 0;
+  // Reschedule Info helper
+  const renderRsLine = (a) => {
+    const r = a.resched;
+    if (!r) return <span className="bwa-mut">—</span>;
+    const statusMap = {
+      pending: ['bwa-c-amber', 'Requested'],
+      approved: ['bwa-c-green', 'Approved'],
+      auto: ['bwa-c-green', 'Approved · fee paid'],
+      rejected: ['bwa-c-red', 'Declined']
+    };
+    const [cls, label] = statusMap[r.status] || ['bwa-c-grey', r.status];
+    const fromTime = formatTimeRange(r.from?.time || a.time);
+    const toTime = formatTimeRange(r.to?.time || a.time);
+    return (
+      <div>
+        <span className={`bwa-chip ${cls}`}>{label}</span>
+        <div className="bwa-mut bwa-diff" style={{ marginTop: '4px', fontSize: '12px' }}>
+          {fromTime} → {toTime}
+        </div>
+      </div>
+    );
+  };
 
-    let matchesAccount = true;
-    if (accountFilter === 'Active') matchesAccount = !user.isDeleted;
-    if (accountFilter === 'Deleted') matchesAccount = !!user.isDeleted;
+  // Drawer handlers
+  const selectedClient = useMemo(() => {
+    return users.find((c) => c.id === selectedUserId) || null;
+  }, [users, selectedUserId]);
 
-    let matchesReschedule = true;
-    if (rescheduleFilter === 'Has Reschedule') {
-      matchesReschedule = user.history.some(h => !!h.rescheduleRequest);
-    } else if (rescheduleFilter === 'Paid Reschedule') {
-      matchesReschedule = user.history.some(h => h.rescheduleRequest?.rescheduleFeePaid);
-    } else if (rescheduleFilter === 'Pending Reschedule') {
-      matchesReschedule = user.history.some(h => h.rescheduleRequest?.status === 'PENDING');
-    } else if (rescheduleFilter === 'Approved Reschedule') {
-      matchesReschedule = user.history.some(h => h.rescheduleRequest?.status === 'APPROVED');
-    } else if (rescheduleFilter === 'Rejected Reschedule') {
-      matchesReschedule = user.history.some(h => h.rescheduleRequest?.status === 'REJECTED');
-    } else if (rescheduleFilter === '< 48h Late') {
-      matchesReschedule = user.history.some(h => h.rescheduleRequest?.isWithin48Hours);
-    } else if (rescheduleFilter === '> 48h Safe') {
-      matchesReschedule = user.history.some(h => h.rescheduleRequest && !h.rescheduleRequest.isWithin48Hours);
+  const selectedAppt = useMemo(() => {
+    if (!selectedClient || !selectedApptId) return null;
+    return selectedClient.appts.find((a) => a.id === selectedApptId) || null;
+  }, [selectedClient, selectedApptId]);
+
+  const openClientDrawer = (cId) => {
+    setSelectedUserId(cId);
+    setSelectedApptId(null);
+    setDrawerOpen(true);
+  };
+
+  const openApptDrawer = (cId, aId) => {
+    setSelectedUserId(cId);
+    setSelectedApptId(aId);
+    const clientObj = users.find((c) => c.id === cId);
+    const apptObj = clientObj?.appts.find((a) => a.id === aId);
+    setNotesText(apptObj?.notes || '');
+    setDrawerTab('overview');
+    setDrawerOpen(true);
+  };
+
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+  };
+
+  // Saving notes
+  const saveNotesNow = async (val) => {
+    if (notesTimeoutRef.current) clearTimeout(notesTimeoutRef.current);
+    setNotesStatus('Saving…');
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (selectedApptId) {
+        await fetch(`${API_URL}/api/appointments/admin/${selectedApptId}/notes`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ notes: val, coachNotes: val })
+        });
+        setUsers((prev) =>
+          prev.map((c) => {
+            if (c.id === selectedUserId) {
+              return {
+                ...c,
+                appts: c.appts.map((a) => (a.id === selectedApptId ? { ...a, notes: val, coachNotes: val } : a))
+              };
+            }
+            return c;
+          })
+        );
+      }
+      setNotesStatus('Saved ✓');
+    } catch {
+      setNotesStatus('Error saving');
     }
+  };
 
-    return matchesSearch && matchesPayment && matchesStatus && matchesBooking && matchesAccount && matchesReschedule;
-  });
+  const handleNotesChange = (val) => {
+    setNotesText(val);
+    setNotesStatus('Unsaved');
+    if (notesTimeoutRef.current) clearTimeout(notesTimeoutRef.current);
+    notesTimeoutRef.current = setTimeout(() => {
+      saveNotesNow(val);
+    }, 600);
+  };
+
+  // Reschedule resolution
+  const handleResolveRs = async (ok) => {
+    if (!selectedApptId) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const endpoint = ok ? 'approve-reschedule' : 'reject-reschedule';
+      const res = await fetch(`${API_URL}/api/appointments/admin/${selectedApptId}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        showSuccess(ok ? 'Reschedule approved!' : 'Reschedule declined.');
+        setUsers((prev) =>
+          prev.map((c) => {
+            if (c.id === selectedUserId) {
+              return {
+                ...c,
+                appts: c.appts.map((a) => {
+                  if (a.id === selectedApptId) {
+                    const nextStatus = ok ? 'approved' : 'rejected';
+                    return {
+                      ...a,
+                      time: ok && a.resched?.to?.time ? a.resched.to.time : a.time,
+                      s: ok && a.resched?.to?.s ? a.resched.to.s : a.s,
+                      resched: a.resched ? { ...a.resched, status: nextStatus } : null
+                    };
+                  }
+                  return a;
+                })
+              };
+            }
+            return c;
+          })
+        );
+      } else {
+        showError('Failed to process reschedule action');
+      }
+    } catch {
+      showError('Network error');
+    }
+  };
+
+  // Mark Completed
+  const handleMarkCompleted = async () => {
+    if (!selectedApptId) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/appointments/admin/${selectedApptId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'COMPLETED' })
+      });
+      if (res.ok) {
+        showSuccess('Marked appointment as completed');
+        setUsers((prev) =>
+          prev.map((c) => {
+            if (c.id === selectedUserId) {
+              return {
+                ...c,
+                appts: c.appts.map((a) => (a.id === selectedApptId ? { ...a, done: true, status: 'COMPLETED' } : a))
+              };
+            }
+            return c;
+          })
+        );
+      }
+    } catch {
+      showError('Error updating status');
+    }
+  };
+
+  // Execute Refund
+  const handleExecuteRefund = async () => {
+    const { appt, user, reason } = refundModal;
+    if (!appt) return;
+    setRefundModal((prev) => ({ ...prev, isProcessing: true }));
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/appointments/admin/${appt.id}/issue-refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          reason: reason || 'Admin emergency refund',
+          refundAmount: appt.fee
+        })
+      });
+      if (res.ok) {
+        showSuccess(`Refund of ${inr(appt.fee)} issued successfully!`);
+        setRefundModal({ isOpen: false, user: null, appt: null, reason: '', isProcessing: false });
+        setUsers((prev) =>
+          prev.map((c) => {
+            if (c.id === user.id) {
+              return {
+                ...c,
+                appts: c.appts.map((a) => (a.id === appt.id ? { ...a, pay: 'refunded', status: 'REFUNDED' } : a))
+              };
+            }
+            return c;
+          })
+        );
+      } else {
+        showError('Refund failed on server');
+      }
+    } catch {
+      showError('Network error issuing refund');
+    } finally {
+      setRefundModal((prev) => ({ ...prev, isProcessing: false }));
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      showSuccess('Copied to clipboard');
+    }
+  };
+
+  // Active filter chip labels
+  const filterChips = useMemo(() => {
+    const chips = [];
+    const labels = {
+      pay: { paid: 'Paid', pending: 'Payment pending', refunded: 'Refunded' },
+      rs: { pending: 'Reschedule pending', approved: 'Reschedule approved', rejected: 'Reschedule declined', fee: 'Paid reschedule fee', none: 'No reschedule' },
+      acct: { course: 'Course member', regular: 'Regular client' },
+      when: { '7d': 'Next 7 days', '30d': 'Next 30 days', month: 'This month' }
+    };
+    ['pay', 'rs', 'acct', 'when'].forEach((k) => {
+      if (filters[k] !== 'all') {
+        chips.push({ key: k, label: labels[k][filters[k]] });
+      }
+    });
+    return chips;
+  }, [filters]);
+
+  // Render client list rows
+  const clientsList = useMemo(() => {
+    return users
+      .map((c) => ({
+        c,
+        matchedAppts: c.appts.filter((a) => matchAppt(c, a))
+      }))
+      .filter((x) => x.matchedAppts.length > 0);
+  }, [matchAppt, users]);
+
+  // Render all appointments grouped list
+  const groupedApptsList = useMemo(() => {
+    const matched = allAppts.filter((x) => matchAppt(x.c, x.a));
+    const groups = [
+      { name: 'Needs action', test: (x) => !!actionOf(x.a), sort: (a, b) => parseDateObj(a.a.s) - parseDateObj(b.a.s) },
+      { name: 'Today', test: (x) => !actionOf(x.a) && stateOf(x.a) === 'today', sort: (a, b) => parseDateObj(a.a.s) - parseDateObj(b.a.s) },
+      { name: 'Upcoming', test: (x) => !actionOf(x.a) && stateOf(x.a) === 'upcoming', sort: (a, b) => parseDateObj(a.a.s) - parseDateObj(b.a.s) },
+      { name: 'Past', test: (x) => !actionOf(x.a) && stateOf(x.a) === 'completed', sort: (a, b) => parseDateObj(b.a.s) - parseDateObj(a.a.s) },
+      { name: 'Refunded', test: (x) => stateOf(x.a) === 'refunded', sort: (a, b) => parseDateObj(b.a.s) - parseDateObj(a.a.s) }
+    ];
+
+    return groups
+      .map((g) => ({
+        name: g.name,
+        items: matched.filter(g.test).sort(g.sort)
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [actionOf, allAppts, matchAppt, stateOf]);
 
   return (
-    <div className="p-8 md:p-10 w-full max-w-[1400px] mx-auto flex flex-col gap-6 animate-in fade-in duration-500 font-sans">
-      
-      {/* Header & Tabs */}
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="font-serif text-3xl text-white">Appointments & Fees</h1>
-            <p className="font-sans text-sm text-white/50">Manage your client sessions and update your pricing structure.</p>
+    <div className="bwa-appts-container">
+      <main className="bwa-appts-wrap">
+        {/* ── Top Header ── */}
+        <div className="bwa-appts-head">
+          <div>
+            <h1>Appointments &amp; Fees</h1>
+            <p className="bwa-sub">Manage your client sessions and update your pricing structure.</p>
           </div>
-        </div>
-        
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-6 border-b border-white/10 pb-px">
-          <button 
-            onClick={() => setActiveTab('appointments')}
-            className={`pb-3 font-sans text-xs uppercase tracking-widest transition-colors relative ${activeTab === 'appointments' ? 'text-[#c79c6e] font-semibold' : 'text-white/50 hover:text-white'}`}
-          >
-            Client Appointments
-            {activeTab === 'appointments' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#c79c6e]" />}
-          </button>
-          <button 
-            onClick={() => setActiveTab('fees')}
-            className={`pb-3 font-sans text-xs uppercase tracking-widest transition-colors relative ${activeTab === 'fees' ? 'text-[#c79c6e] font-semibold' : 'text-white/50 hover:text-white'}`}
-          >
-            Fee Settings
-            {activeTab === 'fees' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#c79c6e]" />}
-          </button>
-        </div>
-      </div>
 
-      {activeTab === 'fees' ? (
-        <div className="w-full max-w-2xl bg-[#111] border border-white/5 rounded-xl p-8 mt-4">
-          <div className="flex flex-col gap-2 mb-8">
-            <h2 className="font-serif text-2xl text-white">Session Pricing</h2>
-            <p className="font-sans text-sm text-white/50">Update the fees for your coaching sessions. These will be automatically reflected during checkout via Razorpay.</p>
-          </div>
-          
-          <form onSubmit={handleSaveFees} className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-              <label className="font-sans text-xs uppercase tracking-widest text-white/60">First Session (60 mins) - ₹</label>
-              <input 
-                type="number"
-                value={feeSettings.fee60min}
-                onChange={e => setFeeSettings({...feeSettings, fee60min: e.target.value === '' ? '' : parseInt(e.target.value)})}
-                className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors font-mono"
-                required
-              />
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div className="bwa-seg" role="tablist" aria-label="View mode">
+              <button
+                type="button"
+                className={viewMode === 'clients' ? 'on' : ''}
+                onClick={() => setViewMode('clients')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="9" cy="8" r="3.5" />
+                  <path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5" />
+                  <path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .7 3.2 2.4 3.5 5.2" />
+                </svg>
+                By client
+              </button>
+
+              <button
+                type="button"
+                className={viewMode === 'appts' ? 'on' : ''}
+                onClick={() => setViewMode('appts')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="5" width="18" height="16" rx="2" />
+                  <path d="M3 10h18M8 3v4M16 3v4" />
+                </svg>
+                All appointments
+              </button>
             </div>
-            
-            <div className="flex flex-col gap-2">
-              <label className="font-sans text-xs uppercase tracking-widest text-white/60">Returning Session (90 mins) - ₹</label>
-              <input 
-                type="number"
-                value={feeSettings.fee90min}
-                onChange={e => setFeeSettings({...feeSettings, fee90min: e.target.value === '' ? '' : parseInt(e.target.value)})}
-                className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors font-mono"
-                required
-              />
-            </div>
-            
-            {feeMessage && (
-              <div className={`p-4 rounded-lg border font-sans text-sm ${feeMessage.includes('success') ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
-                {feeMessage}
-              </div>
-            )}
-            
-            <button 
-              type="submit"
-              disabled={isSavingFees}
-              className="mt-4 px-6 py-3 rounded-lg bg-[#c79c6e] text-black font-sans text-sm font-semibold tracking-wide hover:bg-white transition-all disabled:opacity-50"
+
+            <button
+              type="button"
+              className="bwa-btn pri"
+              onClick={() => setFeeModalOpen(true)}
+              style={{ padding: '9px 16px' }}
             >
-              {isSavingFees ? 'SAVING...' : 'SAVE PRICING'}
+              Fee Settings
             </button>
-          </form>
+          </div>
         </div>
-      ) : (
-        <>
-          {/* Filter Bar */}
-      <div className="flex flex-wrap items-center gap-4 bg-[#111] border border-white/5 p-4 rounded-xl relative z-20">
-        <div className="relative flex-1 min-w-[250px]">
-          <MagnifyingGlass size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
-          <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search clients by name, email or phone..."
-            className="w-full bg-[#050505] border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-sm font-sans text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
-          />
-        </div>
-        
-        {(searchQuery || paymentFilter !== 'All' || statusFilter !== 'All' || bookingFilter !== 'All' || accountFilter !== 'All' || rescheduleFilter !== 'All') && (
-          <button 
-            onClick={clearFilters}
-            className="text-[#c79c6e] hover:text-white text-xs uppercase tracking-widest font-semibold transition-colors px-2"
+
+        {/* ── KPI Cards ── */}
+        <section className="bwa-kpis">
+          <button
+            type="button"
+            className={`bwa-kpi ${kpiData.needs > 0 ? 'hot' : ''}`}
+            onClick={() => handleKpiClick('needs')}
           >
-            Clear filters
+            <div className="n">{kpiData.needs}</div>
+            <div className="l">Need your action</div>
           </button>
+
+          <button
+            type="button"
+            className="bwa-kpi"
+            onClick={() => handleKpiClick('today')}
+          >
+            <div className="n">{kpiData.today}</div>
+            <div className="l">Sessions today</div>
+          </button>
+
+          <button
+            type="button"
+            className="bwa-kpi"
+            onClick={() => handleKpiClick('rs')}
+          >
+            <div className="n">{kpiData.rs}</div>
+            <div className="l">Reschedule requests</div>
+          </button>
+
+          <button
+            type="button"
+            className="bwa-kpi"
+            onClick={() => handleKpiClick('rev')}
+          >
+            <div className="n">{inr(kpiData.rev)}</div>
+            <div className="l">Collected revenue</div>
+          </button>
+        </section>
+
+        {/* ── Filter Tabs ── */}
+        <div className="bwa-tabs" role="tablist">
+          {[
+            ['all', 'All'],
+            ['needs', 'Needs action'],
+            ['today', 'Today'],
+            ['upcoming', 'Upcoming'],
+            ['past', 'Past'],
+            ['refunded', 'Refunded']
+          ].map(([k, label]) => {
+            const count = allAppts.filter((x) => tabMatch(x.a, k)).length;
+            return (
+              <button
+                key={k}
+                type="button"
+                role="tab"
+                className={activeTab === k ? 'on' : ''}
+                onClick={() => setActiveTab(k)}
+              >
+                {label} <span className="c">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Search & Filter Tools ── */}
+        <div className="bwa-tools">
+          <div className="bwa-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              type="search"
+              placeholder="Search by client name, email, or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search"
+            />
+          </div>
+
+          <button
+            type="button"
+            className="bwa-fbtn"
+            onClick={() => setFilterPopOpen(!filterPopOpen)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+            Filters {filterChips.length > 0 && <span className="b">{filterChips.length}</span>}
+          </button>
+
+          {/* Filter Popup Modal */}
+          <div className={`bwa-pop ${filterPopOpen ? 'open' : ''}`}>
+            <div className="grid">
+              <div>
+                <label>Payment</label>
+                <select
+                  value={filters.pay}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, pay: e.target.value }))}
+                >
+                  <option value="all">All</option>
+                  <option value="paid">Paid</option>
+                  <option value="pending">Payment pending</option>
+                  <option value="refunded">Refunded</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Reschedule</label>
+                <select
+                  value={filters.rs}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, rs: e.target.value }))}
+                >
+                  <option value="all">All</option>
+                  <option value="pending">Request pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Declined</option>
+                  <option value="fee">Paid reschedule fee</option>
+                  <option value="none">No reschedule</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Account type</label>
+                <select
+                  value={filters.acct}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, acct: e.target.value }))}
+                >
+                  <option value="all">All</option>
+                  <option value="course">Course member</option>
+                  <option value="regular">Regular</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Session date</label>
+                <select
+                  value={filters.when}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, when: e.target.value }))}
+                >
+                  <option value="all">Any time</option>
+                  <option value="7d">Next 7 days</option>
+                  <option value="30d">Next 30 days</option>
+                  <option value="month">This month</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="foot">
+              <button
+                type="button"
+                className="bwa-link"
+                onClick={() => setFilters({ pay: 'all', rs: 'all', acct: 'all', when: 'all' })}
+              >
+                Clear all
+              </button>
+              <button
+                type="button"
+                className="bwa-btn pri sm"
+                onClick={() => setFilterPopOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Active Filter Chips ── */}
+        {filterChips.length > 0 && (
+          <div className="bwa-chips">
+            {filterChips.map((chip) => (
+              <span className="bwa-fchip" key={chip.key}>
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={() => setFilters((prev) => ({ ...prev, [chip.key]: 'all' }))}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
         )}
 
-        <div className="h-8 w-px bg-white/10 mx-2 hidden md:block"></div>
-
-        {/* Dropdowns */}
-        <div className="flex flex-wrap items-center gap-3">
-          
-          {/* Reschedule Filter */}
-          <div className="relative">
-            <button 
-              onClick={() => setActiveDropdown(activeDropdown === 'reschedule' ? null : 'reschedule')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs transition-colors ${
-                rescheduleFilter !== 'All' 
-                  ? 'border-amber-500/50 bg-amber-500/10 text-amber-300 font-semibold' 
-                  : 'border-white/10 bg-[#050505] text-white/70 hover:text-white'
-              }`}
-            >
-              <span className="text-white/40 uppercase tracking-widest text-[0.65rem] mr-2">Reschedule</span>
-              <span className={rescheduleFilter === 'Paid Reschedule' ? 'text-emerald-400 font-semibold' : rescheduleFilter === 'Pending Reschedule' ? 'text-yellow-400 font-semibold' : ''}>
-                {rescheduleFilter}
-              </span>
-              <CaretDown size={12} className="ml-2" />
-            </button>
-            {activeDropdown === 'reschedule' && (
-              <div className="absolute top-full left-0 mt-2 w-56 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                {[
-                  { label: 'All', value: 'All' },
-                  { label: 'Any Reschedule Request', value: 'Has Reschedule' },
-                  { label: '💳 Paid Reschedules', value: 'Paid Reschedule', badge: 'bg-emerald-500/20 text-emerald-300' },
-                  { label: '⏳ Pending Requests', value: 'Pending Reschedule', badge: 'bg-yellow-500/20 text-yellow-300' },
-                  { label: '✅ Approved Reschedules', value: 'Approved Reschedule', badge: 'bg-green-500/20 text-green-300' },
-                  { label: '❌ Rejected Reschedules', value: 'Rejected Reschedule', badge: 'bg-red-500/20 text-red-300' },
-                  { label: '⚠️ < 48h Late Window', value: '< 48h Late', badge: 'bg-rose-500/20 text-rose-300' },
-                  { label: '🟢 > 48h Safe Window', value: '> 48h Safe', badge: 'bg-emerald-500/20 text-emerald-300' },
-                ].map(opt => (
-                  <button 
-                    key={opt.value} 
-                    onClick={() => { setRescheduleFilter(opt.value); setActiveDropdown(null); }} 
-                    className={`px-4 py-2 text-left text-xs transition-colors hover:bg-white/5 flex items-center justify-between ${
-                      rescheduleFilter === opt.value 
-                        ? 'text-[#c79c6e] font-semibold bg-white/[0.03]' 
-                        : 'text-white/70 hover:text-white'
-                    }`}
+        {/* ── Main Data Table ── */}
+        <section className="bwa-card">
+          <div className="bwa-scroller">
+            {viewMode === 'clients' ? (
+              clientsList.length === 0 ? (
+                <div className="bwa-empty">
+                  <h3>No client records found</h3>
+                  <p className="bwa-mut">Try searching for a different name, email, or clear your filters.</p>
+                  <button
+                    type="button"
+                    className="bwa-btn pri"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setActiveTab('all');
+                      setFilters({ pay: 'all', rs: 'all', acct: 'all', when: 'all' });
+                    }}
                   >
-                    <span>{opt.label}</span>
-                    {opt.badge && (
-                      <span className={`text-[0.58rem] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider ${opt.badge}`}>
-                        {opt.value.split(' ')[0]}
-                      </span>
-                    )}
+                    Clear filters
                   </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Payment Filter */}
-          <div className="relative">
-            <button 
-              onClick={() => setActiveDropdown(activeDropdown === 'payment' ? null : 'payment')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-[#050505] text-white/70 hover:text-white text-xs transition-colors"
-            >
-              <span className="text-white/40 uppercase tracking-widest text-[0.65rem] mr-2">Payment</span>
-              {paymentFilter}
-              <CaretDown size={12} className="ml-2" />
-            </button>
-            {activeDropdown === 'payment' && (
-              <div className="absolute top-full left-0 mt-2 w-40 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                {['All', 'Paid', 'Failed', 'Pending'].map(opt => (
-                  <button key={opt} onClick={() => { setPaymentFilter(opt); setActiveDropdown(null); }} className="px-4 py-2 text-left text-xs text-white/70 hover:text-white hover:bg-white/5 transition-colors">
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {/* Status Filter */}
-          <div className="relative">
-            <button 
-              onClick={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-[#050505] text-white/70 hover:text-white text-xs transition-colors"
-            >
-              <span className="text-white/40 uppercase tracking-widest text-[0.65rem] mr-2">Session</span>
-              {statusFilter}
-              <CaretDown size={12} className="ml-2" />
-            </button>
-            {activeDropdown === 'status' && (
-              <div className="absolute top-full left-0 mt-2 w-40 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                {['All', 'Upcoming', 'Today', 'Completed'].map(opt => (
-                  <button key={opt} onClick={() => { setStatusFilter(opt); setActiveDropdown(null); }} className="px-4 py-2 text-left text-xs text-white/70 hover:text-white hover:bg-white/5 transition-colors">
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {/* Booking Filter */}
-          <div className="relative">
-            <button 
-              onClick={() => setActiveDropdown(activeDropdown === 'booking' ? null : 'booking')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-[#050505] text-white/70 hover:text-white text-xs transition-colors"
-            >
-              <span className="text-white/40 uppercase tracking-widest text-[0.65rem] mr-2">Booking</span>
-              {bookingFilter}
-              <CaretDown size={12} className="ml-2" />
-            </button>
-            {activeDropdown === 'booking' && (
-              <div className="absolute top-full left-0 mt-2 w-40 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                {['All', 'Booked', 'No Bookings'].map(opt => (
-                  <button key={opt} onClick={() => { setBookingFilter(opt); setActiveDropdown(null); }} className="px-4 py-2 text-left text-xs text-white/70 hover:text-white hover:bg-white/5 transition-colors">
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Account Status Filter (All / Active / Deleted) */}
-          <div className="relative">
-            <button 
-              onClick={() => setActiveDropdown(activeDropdown === 'account' ? null : 'account')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs transition-colors ${accountFilter === 'Deleted' ? 'border-red-500/50 bg-red-950/20 text-red-400' : 'border-white/10 bg-[#050505] text-white/70 hover:text-white'}`}
-            >
-              <span className="text-white/40 uppercase tracking-widest text-[0.65rem] mr-2">Account</span>
-              <span className={accountFilter === 'Deleted' ? 'text-red-400 font-semibold' : (accountFilter === 'Active' ? 'text-emerald-400 font-semibold' : '')}>
-                {accountFilter}
-              </span>
-              <CaretDown size={12} className="ml-2" />
-            </button>
-            {activeDropdown === 'account' && (
-              <div className="absolute top-full left-0 mt-2 w-44 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                {[
-                  { label: 'All', value: 'All' },
-                  { label: 'Active', value: 'Active' },
-                  { label: 'Deleted Accounts', value: 'Deleted' }
-                ].map(opt => (
-                  <button 
-                    key={opt.value} 
-                    onClick={() => { setAccountFilter(opt.value); setActiveDropdown(null); }} 
-                    className={`px-4 py-2 text-left text-xs transition-colors hover:bg-white/5 flex items-center justify-between ${
-                      accountFilter === opt.value 
-                        ? 'text-[#c79c6e] font-semibold bg-white/[0.03]' 
-                        : opt.value === 'Deleted' 
-                          ? 'text-red-400 hover:text-red-300' 
-                          : 'text-white/70 hover:text-white'
-                    }`}
-                  >
-                    <span>{opt.label}</span>
-                    {opt.value === 'Deleted' && <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>}
-                    {opt.value === 'Active' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-      </div>
-
-      {/* Users Table */}
-      <div className="w-full bg-[#111] border border-white/5 rounded-xl overflow-hidden flex flex-col z-10">
-        
-        {/* Table Header */}
-        <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_1.5fr_1.2fr_80px] gap-4 px-6 py-4 bg-[#1a1a1a] border-b border-white/5 text-white/40 text-[0.65rem] uppercase tracking-widest font-semibold">
-          <div>Client Name</div>
-          <div>Email Address</div>
-          <div>Phone No.</div>
-          <div>Joined Date</div>
-          <div className="text-center">Appointments</div>
-          <div>Next Appointment</div>
-          <div>Reschedule Req</div>
-          <div className="text-right">Actions</div>
-        </div>
-
-        {/* Table Body */}
-        <div className="flex flex-col min-h-[300px]">
-          {filteredUsers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-white/30 text-sm gap-2">
-              <MagnifyingGlass size={32} />
-              <span>No clients match your filters.</span>
-            </div>
-          ) : (
-            filteredUsers.map((user) => (
-              <React.Fragment key={user.id}>
-                {/* Main Row */}
-                <div 
-                  className={`grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_1.5fr_1.2fr_80px] gap-4 px-6 py-5 border-b border-white/5 items-center transition-colors cursor-pointer group ${expandedUser === user.id ? 'bg-white/[0.02]' : 'hover:bg-white/[0.02]'}`}
-                  onClick={() => toggleExpand(user.id)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 text-[#c79c6e] flex items-center justify-center font-serif text-lg shrink-0">
-                      {user.name.charAt(0)}
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="text-white/90 text-sm font-medium">{user.name}</span>
-                        {user.isDeleted && (
-                          <span className="text-[0.6rem] px-2 py-0.5 rounded bg-red-950/80 text-red-400 border border-red-800/40 uppercase tracking-widest font-semibold font-sans">
-                            DELETED
-                          </span>
-                        )}
-                      </div>
-                      {user.isCourseMember && (
-                        <span className="text-[0.65rem] text-[#c79c6e] flex items-center gap-1 font-sans">
-                          <GraduationCap size={11} /> Course Member
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="text-[#c79c6e] text-sm">{user.email}</div>
-                  
-                  <div className="text-white/70 text-sm">{user.phone}</div>
-                  
-                  <div className="text-white/70 text-sm">{user.joined}</div>
-                  
-                  <div className="text-center text-white/90 font-medium text-sm">
-                    {user.appointmentsCount}
-                  </div>
-                  
-                  <div className="flex flex-col items-start gap-1">
-                    {user.nextAppointmentDate ? (
-                      <>
-                        <div className="flex flex-col">
-                          <span className="text-white/90 text-sm">{formatDisplayDate(user.nextAppointmentDate)}</span>
-                          <span className="text-white/50 text-xs">{formatTimeRange(user.nextAppointmentTime, user.history?.[0]?.duration || 60)}</span>
-                        </div>
-                        <div className="relative inline-block">
-                          {user.history.length > 0 ? (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setStatusDropdownOpenId(statusDropdownOpenId === `main-${user.id}` ? null : `main-${user.id}`);
-                              }}
-                              className={`px-2 py-0.5 rounded-full border text-[0.65rem] uppercase tracking-wider hover:opacity-80 transition-opacity flex items-center gap-1 ${getStatusPillColor(user.nextAppointmentStatus)}`}
-                            >
-                              {user.nextAppointmentStatus}
-                              <CaretDown size={10} />
-                            </button>
-                          ) : (
-                            <span className={`px-2 py-0.5 rounded-full border text-[0.65rem] uppercase tracking-wider ${getStatusPillColor(user.nextAppointmentStatus)}`}>
-                              {user.nextAppointmentStatus}
-                            </span>
-                          )}
-                          
-                          {statusDropdownOpenId === `main-${user.id}` && (
-                            <div className="absolute top-full mt-1 left-0 w-28 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                              {user.nextAppointmentStatus.toUpperCase() !== 'COMPLETED' && (() => {
-                                // Disable "Mark as Completed" for future appointments
-                                const rawDate = user.history[0]?.date;
-                                const d = rawDate ? new Date(rawDate) : null;
-                                const today = new Date(); today.setHours(0,0,0,0);
-                                const isFuture = d && !isNaN(d) && d > today;
-                                return (
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (!isFuture) updateAppointmentStatus(user.id, user.history[0].id, 'COMPLETED');
-                                    }} 
-                                    disabled={isFuture}
-                                    title={isFuture ? 'Cannot mark a future appointment as completed' : 'Mark as completed'}
-                                    className={`px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest transition-colors ${isFuture ? 'text-green-500/30 cursor-not-allowed' : 'text-green-500 hover:bg-white/5'}`}
-                                  >
-                                    Completed
-                                  </button>
-                                );
-                              })()}
-                              {user.nextAppointmentStatus.toUpperCase() !== 'UPCOMING' && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateAppointmentStatus(user.id, user.history[0].id, 'UPCOMING');
-                                  }} 
-                                  className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-[#c79c6e] hover:bg-white/5 transition-colors"
-                                >
-                                  Upcoming
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex flex-col text-white/30 text-sm">
-                        <span>—</span>
-                        <span className="text-xs">No appointments</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex flex-col items-start gap-1">
-                    {user.history.some(h => h.rescheduleRequest?.status === 'PENDING') ? (
-                      <span className="text-yellow-400 text-xs font-medium px-2 py-0.5 bg-yellow-500/10 rounded-full border border-yellow-500/20">Pending</span>
-                    ) : user.history.some(h => h.rescheduleRequest?.rescheduleFeePaid) ? (
-                      <span className="text-emerald-300 text-xs font-medium px-2 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">Paid Reschedule</span>
-                    ) : user.history.some(h => h.rescheduleRequest?.status === 'APPROVED') ? (
-                      <span className="text-green-400 text-xs font-medium px-2 py-0.5 bg-green-500/10 rounded-full border border-green-500/20">Approved</span>
-                    ) : user.history.some(h => h.rescheduleRequest?.status === 'REJECTED') ? (
-                      <span className="text-red-400 text-xs font-medium px-2 py-0.5 bg-red-500/10 rounded-full border border-red-500/20">Rejected</span>
-                    ) : (
-                      <span className="text-white/30 text-sm">—</span>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center justify-end gap-3 text-white/50">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openProfile(user);
-                      }}
-                      className="hover:text-[#c79c6e] transition-colors p-1" 
-                      title="View Profile"
-                    >
-                      <Eye size={18} />
-                    </button>
-                    <button className="hover:text-white transition-colors p-1">
-                      <CaretDown size={16} className={`transition-transform duration-300 ${expandedUser === user.id ? 'rotate-180' : ''}`} />
-                    </button>
-                  </div>
                 </div>
-
-                {/* Expanded History Row (Animated) */}
-                <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${expandedUser === user.id ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                  <div className="overflow-hidden">
-                    {(() => {
-                      const filteredHistory = user.history.filter(h => {
-                        const matchesPayment = paymentFilter === 'All' || h.payment.toLowerCase() === paymentFilter.toLowerCase();
-                        const matchesStatus = statusFilter === 'All' || h.status.toLowerCase() === statusFilter.toLowerCase();
-                        
-                        let matchesReschedule = true;
-                        if (rescheduleFilter === 'Has Reschedule') {
-                          matchesReschedule = !!h.rescheduleRequest;
-                        } else if (rescheduleFilter === 'Paid Reschedule') {
-                          matchesReschedule = !!h.rescheduleRequest?.rescheduleFeePaid;
-                        } else if (rescheduleFilter === 'Pending Reschedule') {
-                          matchesReschedule = h.rescheduleRequest?.status === 'PENDING';
-                        } else if (rescheduleFilter === 'Approved Reschedule') {
-                          matchesReschedule = h.rescheduleRequest?.status === 'APPROVED';
-                        } else if (rescheduleFilter === 'Rejected Reschedule') {
-                          matchesReschedule = h.rescheduleRequest?.status === 'REJECTED';
-                        } else if (rescheduleFilter === '< 48h Late') {
-                          matchesReschedule = !!h.rescheduleRequest?.isWithin48Hours;
-                        } else if (rescheduleFilter === '> 48h Safe') {
-                          matchesReschedule = !!h.rescheduleRequest && !h.rescheduleRequest.isWithin48Hours;
-                        }
-
-                        return matchesPayment && matchesStatus && matchesReschedule;
-                      });
-
-                      if (filteredHistory.length === 0) {
-                        return (
-                          <div className="bg-[#0a0a0a] border-b border-white/5 px-6 py-6 flex flex-col items-center justify-center text-white/30 text-sm">
-                            No appointments match your filters.
-                          </div>
-                        );
-                      }
+              ) : (
+                <table className="bwa-table">
+                  <thead>
+                    <tr>
+                      <th>Client</th>
+                      <th>Contact</th>
+                      <th>Sessions</th>
+                      <th>Next session</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientsList.map(({ c, matchedAppts }) => {
+                      const upcoming = matchedAppts
+                        .filter((a) => ['today', 'upcoming'].includes(stateOf(a)))
+                        .sort((a, b) => parseDateObj(a.s) - parseDateObj(b.s))[0];
+                      const next = upcoming || matchedAppts.slice().sort((a, b) => parseDateObj(b.s) - parseDateObj(a.s))[0];
+                      const totalPaid = c.appts.reduce((sum, a) => sum + paidAmount(a), 0);
+                      const acts = c.appts.map(actionOf).filter(Boolean);
+                      const firstAction = acts[0];
 
                       return (
-                        <div className="bg-[#0a0a0a] border-b border-white/5 px-6 py-6 flex flex-col">
-                          <div className="flex items-center gap-2 mb-4 px-2">
-                            <span className="text-white/40 text-[0.65rem] uppercase tracking-widest font-semibold">Appointment History</span>
-                            <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                            <span className="text-white/60 text-[0.65rem] font-medium">{filteredHistory.length}</span>
-                          </div>
-                          
-                          <div className="flex flex-col gap-2 pl-4 border-l border-white/10 ml-2">
-                            {filteredHistory.map((session) => {
-                              const notice48h = get48HoursNoticeInfo(session.date, session.time);
-                              return (
-                            <div key={session.id} className="grid grid-cols-[1.3fr_2fr_1fr_1.3fr_1fr_1.4fr_110px] gap-4 items-center px-4 py-3 bg-[#111] border border-white/5 rounded-lg hover:border-white/10 transition-colors">
-                              
-                              <div className="flex items-start gap-3">
-                                <CalendarBlank size={16} className="text-white/30 mt-0.5 shrink-0" />
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-white/80 text-sm font-medium">{formatDisplayDate(session.date)}</span>
-                                  <span className="text-white/40 text-xs">{formatTimeRange(session.time, session.duration || 60)}</span>
-                                  {notice48h && session.status.toUpperCase() === 'UPCOMING' && (
-                                    <span 
-                                      className={`text-[0.6rem] px-2 py-0.5 rounded border inline-flex items-center gap-1 font-medium w-fit ${notice48h.badgeClass}`}
-                                      title={notice48h.badgeSub}
-                                    >
-                                      <span className={`w-1.5 h-1.5 rounded-full ${notice48h.isSafe ? 'bg-emerald-400' : notice48h.isLate ? 'bg-rose-400' : 'bg-zinc-400'}`} />
-                                      {notice48h.badgeText}
-                                    </span>
-                                  )}
+                        <tr
+                          className={`bwa-row ${acts.length > 0 ? 'bwa-flag' : ''}`}
+                          key={c.id}
+                          onClick={() => openClientDrawer(c.id)}
+                        >
+                          <td>
+                            <div className="bwa-who">
+                              <div className="bwa-av">{c.name?.[0]?.toUpperCase() || 'U'}</div>
+                              <div>
+                                <div className="bwa-nm">{c.name}</div>
+                                {c.course && <div className="bwa-mem">Course member</div>}
+                              </div>
+                            </div>
+                          </td>
+
+                          <td>
+                            <div>{c.email}</div>
+                            <div className={badPhone(c.phone) ? 'bwa-bad' : 'bwa-mut'}>
+                              {c.phone || 'No phone'}
+                              {badPhone(c.phone) && ' · check number'}
+                            </div>
+                          </td>
+
+                          <td>
+                            <b>{c.appts.length}</b>{' '}
+                            <span className="bwa-mut">{c.appts.length === 1 ? 'session' : 'sessions'}</span>
+                            <div className="bwa-mut">{inr(totalPaid)} paid</div>
+                          </td>
+
+                          <td>
+                            {next ? (
+                              <>
+                                <div className="bwa-nm">{fDay(next.s)}</div>
+                                <div className="bwa-mut">{formatTimeRange(next.time, next.duration)}</div>
+                              </>
+                            ) : (
+                              <span className="bwa-mut">—</span>
+                            )}
+                          </td>
+
+                          <td>{next ? renderStateChip(next) : <span className="bwa-mut">—</span>}</td>
+
+                          <td>
+                            {firstAction ? (
+                              <button
+                                type="button"
+                                className="bwa-btn sm pri"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openClientDrawer(c.id);
+                                }}
+                              >
+                                {acts.length > 1
+                                  ? `${acts.length} to review`
+                                  : firstAction === 'Reschedule request'
+                                  ? 'Review request'
+                                  : firstAction === 'Payment pending'
+                                  ? 'Check payment'
+                                  : 'Update status'}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="bwa-btn sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openClientDrawer(c.id);
+                                }}
+                              >
+                                View detail
+                              </button>
+                            )}
+                          </td>
+
+                          <td className="bwa-chev">›</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )
+            ) : (
+              /* All Appointments View */
+              groupedApptsList.length === 0 ? (
+                <div className="bwa-empty">
+                  <h3>No appointments match your filters</h3>
+                  <p className="bwa-mut">Try choosing a different tab or resetting search terms.</p>
+                  <button
+                    type="button"
+                    className="bwa-btn pri"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setActiveTab('all');
+                      setFilters({ pay: 'all', rs: 'all', acct: 'all', when: 'all' });
+                    }}
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              ) : (
+                <table className="bwa-table">
+                  <thead>
+                    <tr>
+                      <th>Client</th>
+                      <th>Date &amp; Time</th>
+                      <th>Type &amp; Duration</th>
+                      <th>Status</th>
+                      <th>Payment</th>
+                      <th>Reschedule</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupedApptsList.map((group) => (
+                      <React.Fragment key={group.name}>
+                        <tr className="bwa-grp">
+                          <td colSpan={7}>
+                            {group.name} · {group.items.length}
+                          </td>
+                        </tr>
+                        {group.items.map(({ c, a }) => {
+                          const act = actionOf(a);
+                          return (
+                            <tr
+                              className={`bwa-row ${act ? 'bwa-flag' : ''}`}
+                              key={a.id}
+                              onClick={() => openApptDrawer(c.id, a.id)}
+                            >
+                              <td>
+                                <div className="bwa-who">
+                                  <div className="bwa-av" style={{ width: '34px', height: '34px', fontSize: '13px' }}>
+                                    {c.name?.[0]?.toUpperCase() || 'U'}
+                                  </div>
+                                  <div>
+                                    <div className="bwa-nm">{c.name}</div>
+                                    <div className="bwa-mut">{c.course ? 'Course member' : c.email}</div>
+                                  </div>
                                 </div>
-                              </div>
+                              </td>
 
-                              <div className="flex flex-col">
-                                <span className="text-white/70 text-sm">{session.type}</span>
-                                {session.source && (
-                                  <span className="text-white/40 text-[0.65rem] flex items-center gap-1 mt-0.5">
-                                    <Megaphone size={11} className="text-[#c79c6e]" />
-                                    <span className="text-white/50">Heard via:</span>
-                                    <span className="text-[#c79c6e] font-medium">{formatSource(session.source)}</span>
-                                  </span>
+                              <td>
+                                <div className="bwa-nm">{fDay(a.s)}, {parseDateObj(a.s).getFullYear()}</div>
+                                <div className="bwa-mut">{formatTimeRange(a.time, a.duration)}</div>
+                              </td>
+
+                              <td>
+                                <div className="bwa-nm">{a.duration} mins</div>
+                                <div className="bwa-mut">{a.type}</div>
+                              </td>
+
+                              <td>
+                                {renderStateChip(a)}
+                                {act && stateOf(a) !== 'overdue' && (
+                                  <div className="bwa-mut" style={{ marginTop: '4px', color: 'var(--bwa-accent-d)', fontWeight: '600', fontSize: '12px' }}>
+                                    {act}
+                                  </div>
                                 )}
-                              </div>
+                              </td>
 
-                                <div className="relative">
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (session.status.toUpperCase() !== 'CANCELLED' && session.status.toUpperCase() !== 'REFUNDED') {
-                                        setStatusDropdownOpenId(statusDropdownOpenId === session.id ? null : session.id);
-                                      }
-                                    }}
-                                    className={`px-2.5 py-1 rounded-full border text-[0.65rem] uppercase tracking-wider hover:opacity-80 transition-opacity flex items-center gap-1 ${getStatusPillColor(session.status)} ${(session.status.toUpperCase() === 'CANCELLED' || session.status.toUpperCase() === 'REFUNDED') ? 'cursor-default opacity-90' : ''}`}
-                                  >
-                                    {session.status}
-                                    {session.status.toUpperCase() !== 'CANCELLED' && session.status.toUpperCase() !== 'REFUNDED' && <CaretDown size={10} />}
-                                  </button>
-                                  
-                                  {statusDropdownOpenId === session.id && (
-                                    <div className="absolute top-full mt-1 left-0 w-28 bg-[#050505] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-                                      {session.status.toUpperCase() !== 'COMPLETED' && (
-                                        <button 
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            updateAppointmentStatus(user.id, session.id, 'COMPLETED');
-                                          }} 
-                                          className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-green-500 hover:bg-white/5 transition-colors cursor-pointer"
-                                        >
-                                          Completed
-                                        </button>
-                                      )}
-                                      {session.status.toUpperCase() !== 'UPCOMING' && (
-                                        <button 
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            updateAppointmentStatus(user.id, session.id, 'UPCOMING');
-                                          }} 
-                                          className="px-3 py-1.5 text-left text-[0.65rem] uppercase tracking-widest text-[#c79c6e] hover:bg-white/5 transition-colors cursor-pointer"
-                                        >
-                                          Upcoming
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
+                              <td>
+                                {renderPayChip(a)}
+                                <div className="bwa-mut" style={{ marginTop: '2px', fontSize: '12px' }}>
+                                  {a.isFreeSession ? 'Free 1-on-1' : inr(a.fee + (a.resched?.feePaid || 0))}
                                 </div>
+                              </td>
 
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-white/40 text-[0.6rem] uppercase tracking-wider">Transaction ID</span>
-                                <span className="text-white/80 text-xs font-mono">{session.txnId}</span>
-                              </div>
+                              <td>{renderRsLine(a)}</td>
 
-                              <div className="flex flex-col items-center gap-1.5">
-                                <span className={`px-2 py-0.5 rounded border text-[0.65rem] uppercase tracking-wider ${getPaymentPillColor(session.payment)}`}>
-                                  {session.payment}
-                                </span>
-                                <span className="text-white/80 text-[0.65rem] font-medium font-mono">
-                                  {session.status === 'REFUNDED' ? (
-                                    <span className="text-purple-400 font-bold">₹{Number(session.refundAmount || session.amount || 0).toLocaleString('en-IN')}</span>
-                                  ) : session.isFreeSession ? (
-                                    <span className="text-emerald-400 font-semibold">₹0 FREE</span>
-                                  ) : session.rescheduleRequest?.rescheduleFeePaid ? (
-                                    <div className="flex flex-col items-start">
-                                      <span>₹{Number(session.amount || (session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}</span>
-                                      <span className="text-emerald-400 text-[0.58rem] font-semibold">+ ₹{Number(session.rescheduleRequest.rescheduleAmount || 5000).toLocaleString('en-IN')} Fee</span>
-                                    </div>
-                                  ) : (
-                                    `₹${Number(session.amount !== undefined && session.amount !== null ? session.amount : (session.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}`
-                                  )}
-                                </span>
-                              </div>
-
-                              <div className="flex flex-col gap-0.5">
-                                {session.rescheduleRequest ? (
-                                  <>
-                                    <div className="flex items-center gap-1.5">
-                                      {session.rescheduleRequest.rescheduleFeePaid ? (
-                                        <span className="text-[0.6rem] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                          PAID RESCHEDULE
-                                        </span>
-                                      ) : (
-                                        <span className={`text-[0.65rem] uppercase tracking-wider font-semibold ${session.rescheduleRequest.status === 'PENDING' ? 'text-yellow-500' : session.rescheduleRequest.status === 'APPROVED' ? 'text-green-500' : 'text-red-500'}`}>
-                                          {session.rescheduleRequest.status}
-                                        </span>
-                                      )}
-                                      {session.rescheduleRequest.isWithin48Hours !== undefined && !session.rescheduleRequest.rescheduleFeePaid && (
-                                        <span className={`text-[0.55rem] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider ${session.rescheduleRequest.isWithin48Hours ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                                          {session.rescheduleRequest.isWithin48Hours ? '<48h Late' : '>48h Safe'}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className="text-white/80 text-xs">{formatDisplayDate(session.rescheduleRequest.date)}</span>
-                                    <span className="text-white/50 text-[0.6rem]">{formatTimeRange(session.rescheduleRequest.time, session.duration || 60)}</span>
-                                  </>
-                                ) : (
-                                  <span className="text-white/30 text-sm">—</span>
-                                )}
-                              </div>
-
-                              <div className="text-right flex items-center justify-end">
-                                <button 
+                              <td>
+                                <button
+                                  type="button"
+                                  className="bwa-btn sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    openSessionDetails(user, session);
+                                    openApptDrawer(c.id, a.id);
                                   }}
-                                  className="text-[#c79c6e] hover:text-white text-xs flex items-center justify-end gap-1 transition-colors group cursor-pointer"
                                 >
-                                  View Details
-                                  <CaretRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                                  View detail
                                 </button>
-                              </div>
-                              
-                            </div>
-                            );
-                            })}
-                        </div>
-                      </div>
-                    );
-                    })()}
-                  </div>
-                </div>
-              </React.Fragment>
-            ))
-          )}
-        </div>
-
-        {/* Pagination Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-white/5 bg-[#111]">
-          <span className="text-white/40 text-sm">Showing 1 to {Math.min(filteredUsers.length, 5)} of {filteredUsers.length} clients</span>
-          
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <button className="p-1 text-white/30 hover:text-white transition-colors">
-                <CaretLeft size={16} />
-              </button>
-              <div className="flex items-center gap-1">
-                <button className="w-7 h-7 rounded border border-[#c79c6e] text-[#c79c6e] flex items-center justify-center text-xs font-medium">1</button>
-              </div>
-              <button className="p-1 text-white/60 hover:text-white transition-colors">
-                <CaretRight size={16} />
-              </button>
-            </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            )}
           </div>
-        </div>
+        </section>
+      </main>
 
-      </div>
-      </>
-      )}
-
-      {/* Profile/Session Sidebar Overlay */}
-      <div 
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ${
-          isSidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-        }`}
-        onClick={closeProfile}
+      {/* ── Right Detail Drawer (Client / Appointment Details) ── */}
+      <div
+        className={`bwa-scrim ${drawerOpen ? 'on' : ''}`}
+        onClick={closeDrawer}
       />
-
-      {/* Profile/Session Sidebar Panel */}
-      <div 
-        className={`fixed right-0 top-0 h-screen w-full md:w-[450px] bg-[#0a0a0a] border-l border-white/10 z-50 transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-y-auto ${
-          isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {selectedUser && (
-          <div className="flex flex-col h-full">
-            {/* Sidebar Header */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#0a0a0a]/95 backdrop-blur z-10">
-              <h2 className="font-serif text-xl text-white">
-                {selectedSession ? 'Session Details' : 'Client Profile'}
-              </h2>
-              <button 
-                onClick={closeProfile}
-                className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Sidebar Content */}
-            <div className="p-8 flex flex-col gap-8">
-              
-              {/* Identity Section */}
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 rounded-full bg-[#c79c6e]/20 text-[#c79c6e] flex items-center justify-center font-serif text-2xl shrink-0">
-                  {selectedUser.name.charAt(0)}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="font-sans text-xl text-white font-medium">{selectedUser.name}</span>
-                  <span className="font-sans text-sm text-white/50">{selectedUser.email}</span>
-                  {selectedUser.isCourseMember && (
-                    <span className="text-[0.65rem] text-[#c79c6e] flex items-center gap-1 font-sans mt-0.5">
-                      <GraduationCap size={12} /> Course Member
-                    </span>
-                  )}
-                  {!selectedSession && (
-                    <div className="flex flex-wrap items-center gap-3 text-white/40 mt-1">
-                      <div className="flex items-center gap-1.5">
-                        <Phone size={14} />
-                        <span className="font-sans text-xs">{selectedUser.phone}</span>
-                      </div>
-                      {selectedUser.source && (
-                        <div className="flex items-center gap-1.5 text-white/60">
-                          <Megaphone size={13} className="text-[#c79c6e]" />
-                          <span className="font-sans text-xs">Heard via: <span className="text-white/90 font-medium">{formatSource(selectedUser.source)}</span></span>
-                        </div>
-                      )}
+      <aside className={`bwa-drawer ${drawerOpen ? 'on' : ''}`} aria-label="Details Drawer">
+        {selectedClient && (
+          selectedAppt ? (
+            /* Appointment Detailed View */
+            <>
+              <div className="bwa-dh">
+                <div className="bwa-dtop">
+                  <div>
+                    <div style={{ fontFamily: 'var(--bwa-serif)', fontSize: '24px', fontWeight: '400', color: 'var(--bwa-ink)' }}>
+                      Appointment with {selectedClient.name}
                     </div>
-                  )}
+                    <div className="bwa-mut" style={{ marginTop: '2px', fontSize: '13.5px' }}>
+                      {parseDateObj(selectedAppt.s).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at {selectedAppt.time || '10:00 AM'}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="bwa-x"
+                    onClick={closeDrawer}
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="bwa-dtabs" role="tablist" style={{ marginTop: '16px' }}>
+                  {[
+                    ['overview', 'Overview'],
+                    ['reschedule', 'Reschedule'],
+                    ['answers', 'Client answers'],
+                    ['notes', 'Coach notes']
+                  ].map(([k, label]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      className={drawerTab === k ? 'on' : ''}
+                      onClick={() => setDrawerTab(k)}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {selectedSession ? (
-                /* Session Specific Details */
-                <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                  {/* Session Info Grid */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-[#111] border border-white/5 p-4 rounded-xl flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-white/40">
-                        <Clock size={16} />
-                        <span className="text-[0.65rem] uppercase tracking-widest">Date & Time</span>
-                      </div>
-                      <span className="text-white text-sm font-medium">{formatDisplayDate(selectedSession.date)}</span>
-                      <span className="text-white/60 text-xs">{formatTimeRange(selectedSession.time, selectedSession.duration || 60)}</span>
-                    </div>
-                    <div className="bg-[#111] border border-white/5 p-4 rounded-xl flex flex-col gap-2">
-                      <div className="flex items-center justify-between text-white/40">
-                        <div className="flex items-center gap-2">
-                          <CurrencyCircleDollar size={16} />
-                          <span className="text-[0.65rem] uppercase tracking-widest">Payment</span>
-                        </div>
-                        {selectedSession.rescheduleRequest?.rescheduleFeePaid && (
-                          <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold uppercase tracking-wider">
-                            + Paid Reschedule Fee
+              <div className="bwa-dbody">
+                {/* 1. Overview Tab */}
+                {drawerTab === 'overview' && (
+                  <div>
+                    {actionOf(selectedAppt) && (
+                      <div className="bwa-alert">
+                        <div>
+                          <b>{actionOf(selectedAppt)}</b>
+                          <span className="bwa-mut" style={{ fontSize: '13px' }}>
+                            {actionOf(selectedAppt) === 'Reschedule request'
+                              ? 'The client asked for a new session time. Approve or decline below or in the Reschedule tab.'
+                              : actionOf(selectedAppt) === 'Payment pending'
+                              ? 'The session has not been paid yet.'
+                              : 'This session date has passed. Please update its status.'}
                           </span>
-                        )}
+                        </div>
                       </div>
-                      <div className="flex items-baseline justify-between">
-                        <span className={`text-sm font-medium ${selectedSession.payment === 'Paid' ? 'text-green-500' : selectedSession.payment === 'Refunded' ? 'text-purple-400' : 'text-red-500'}`}>
-                          {selectedSession.payment}
-                        </span>
-                        <span className="text-white text-xs font-mono font-bold">
-                          {selectedSession.isFreeSession ? (
-                            <span className="text-emerald-400 font-semibold">₹0 FREE</span>
-                          ) : selectedSession.rescheduleRequest?.rescheduleFeePaid ? (
-                            `₹${(Number(selectedSession.amount || 0) + Number(selectedSession.rescheduleRequest.rescheduleAmount || 5000)).toLocaleString('en-IN')} Total`
-                          ) : (
-                            `₹${Number(selectedSession.amount !== undefined && selectedSession.amount !== null ? selectedSession.amount : (selectedSession.duration === 90 ? feeSettings.fee90min : feeSettings.fee60min)).toLocaleString('en-IN')}`
-                          )}
-                        </span>
+                    )}
+
+                    {/* Client information Card */}
+                    <div className="bwa-box">
+                      <h3 style={{ fontFamily: 'var(--bwa-serif)', fontSize: '19px', fontWeight: '400', margin: '0 0 2px', color: 'var(--bwa-ink)' }}>
+                        Client information
+                      </h3>
+                      <p className="bwa-mut" style={{ fontSize: '13px', margin: '0 0 16px' }}>
+                        Contact and intake reference.
+                      </p>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--bwa-muted)', fontWeight: '600', marginBottom: '3px' }}>
+                            Name
+                          </label>
+                          <b style={{ fontSize: '14.5px', color: 'var(--bwa-ink)' }}>{selectedClient.name}</b>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--bwa-muted)', fontWeight: '600', marginBottom: '3px' }}>
+                            Email
+                          </label>
+                          <b style={{ fontSize: '14.5px', color: 'var(--bwa-ink)', wordBreak: 'break-all' }}>{selectedClient.email}</b>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--bwa-muted)', fontWeight: '600', marginBottom: '3px' }}>
+                            Phone
+                          </label>
+                          <b style={{ fontSize: '14px', color: selectedClient.phone ? 'var(--bwa-ink)' : 'var(--bwa-muted)' }}>
+                            {selectedClient.phone || '—'}
+                          </b>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--bwa-muted)', fontWeight: '600', marginBottom: '3px' }}>
+                            Session Duration
+                          </label>
+                          <b style={{ fontSize: '14.5px', color: 'var(--bwa-ink)' }}>{selectedAppt.duration || 60} Minutes</b>
+                        </div>
                       </div>
-                      {selectedSession.isFreeSession ? (
-                        <span className="text-emerald-400 text-[0.65rem] font-semibold">Course Free Session</span>
-                      ) : (
-                        <div className="flex flex-col gap-0.5 text-white/40 text-[0.65rem] font-mono">
-                          {selectedSession.paymentId && <span>Payment ID: {selectedSession.paymentId}</span>}
-                          {selectedSession.txnId && selectedSession.txnId !== 'TXN-PENDING' && <span>Order ID: {selectedSession.txnId}</span>}
+
+                      {selectedClient.course && (
+                        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--bwa-line2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="bwa-chip bwa-c-acc" style={{ fontSize: '11px' }}>Course Student</span>
+                          <span className="bwa-mut" style={{ fontSize: '12.5px' }}>Complimentary 1-on-1 private mentoring included</span>
                         </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* 48-Hour Rescheduling Notice Window Card */}
-                  {(() => {
-                    const noticeInfo = get48HoursNoticeInfo(selectedSession.date, selectedSession.time);
-                    if (!noticeInfo) return null;
-                    return (
-                      <div className={`p-4 rounded-xl border flex flex-col gap-2 ${noticeInfo.badgeClass}`}>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[0.68rem] uppercase tracking-widest font-bold flex items-center gap-1.5">
-                            <Clock size={14} />
-                            {noticeInfo.isSafe ? '🟢 > 48h Safe Window' : noticeInfo.isLate ? '🔴 < 48h Late Window' : '⚪ Session Concluded'}
-                          </span>
-                          <span className="text-xs font-mono font-bold">
-                            {noticeInfo.badgeText}
-                          </span>
+                    {/* Payment breakdown Card */}
+                    <div className="bwa-box">
+                      <h3 style={{ fontFamily: 'var(--bwa-serif)', fontSize: '19px', fontWeight: '400', margin: '0 0 2px', color: 'var(--bwa-ink)' }}>
+                        Payment breakdown
+                      </h3>
+                      <p className="bwa-mut" style={{ fontSize: '13px', margin: '0 0 16px' }}>
+                        Razorpay transaction record.
+                      </p>
+
+                      <div style={{ background: 'var(--bwa-bg)', border: '1px solid var(--bwa-line)', borderRadius: '12px', padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13.5px' }}>
+                          <span className="bwa-mut">Session fee</span>
+                          <b>{selectedAppt.isFreeSession ? '₹0 (Course Free)' : inr(selectedAppt.fee)}</b>
                         </div>
-                        <p className="text-xs opacity-85 leading-relaxed">
-                          {noticeInfo.isSafe 
-                            ? 'Client is eligible for automated 100% free rescheduling. Over 48 hours remaining before appointment.'
-                            : noticeInfo.isLate
-                            ? 'Session is within the locked 48-hour window. Rescheduling requires coach/admin review or fresh booking.'
-                            : 'This session has already taken place or is currently ongoing.'}
-                        </p>
-                      </div>
-                    );
-                  })()}
 
-                  {/* Emergency Refund / Cancellation Card */}
-                  <div className="flex flex-col gap-2 bg-[#111] border border-white/5 p-4 rounded-xl">
-                    <div className="flex items-center justify-between text-white/40 pb-1 border-b border-white/5">
-                      <div className="flex items-center gap-2">
-                        <Receipt size={16} className="text-[#c79c6e]" />
-                        <span className="text-[0.65rem] uppercase tracking-widest text-white/70 font-semibold">Emergency Refund / Cancellation</span>
+                        {selectedAppt.resched?.feePaid > 0 && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13.5px' }}>
+                            <span className="bwa-mut">Reschedule fee</span>
+                            <b>{inr(selectedAppt.resched.feePaid)}</b>
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '10px', borderTop: '1px solid var(--bwa-line)', fontSize: '16px', fontWeight: '700', color: 'var(--bwa-ink)' }}>
+                          <span>Total</span>
+                          <span>{selectedAppt.isFreeSession ? '₹0' : inr(paidAmount(selectedAppt) || selectedAppt.fee)}</span>
+                        </div>
                       </div>
-                      <span className={`text-[0.65rem] font-medium px-2 py-0.5 rounded border uppercase ${
-                        selectedSession.status === 'REFUNDED' 
-                          ? 'text-purple-400 bg-purple-500/10 border-purple-500/30' 
-                          : 'text-white/40 border-white/10'
-                      }`}>
-                        {selectedSession.status === 'REFUNDED' ? 'REFUNDED' : 'ACTIVE / BOOKED'}
-                      </span>
+
+                      <div style={{ marginTop: '12px', fontSize: '12.5px', color: 'var(--bwa-muted)' }}>
+                        <span>Payment ID: </span>
+                        <span style={{ fontFamily: 'Consolas, monospace', background: 'var(--bwa-grey-s)', padding: '2px 6px', borderRadius: '4px', color: 'var(--bwa-ink)' }}>
+                          {selectedAppt.isFreeSession ? 'N/A (Free Call)' : (selectedAppt.payId || 'N/A')}
+                        </span>
+                        {selectedAppt.payId && !selectedAppt.isFreeSession && (
+                          <button
+                            type="button"
+                            className="bwa-copy"
+                            onClick={() => copyToClipboard(selectedAppt.payId)}
+                          >
+                            Copy
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    {selectedSession.status === 'REFUNDED' ? (
-                      <div className="flex flex-col gap-1.5 pt-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-white/60">Amount Refunded:</span>
-                          <span className="text-purple-400 font-bold font-mono text-sm">₹{Number(selectedSession.refundAmount || selectedSession.amount || 0).toLocaleString('en-IN')}</span>
-                        </div>
-                        {selectedSession.refundReason && (
-                          <p className="text-xs text-white/70 italic bg-purple-500/5 p-2 rounded border border-purple-500/20">
-                            Reason: "{selectedSession.refundReason}"
-                          </p>
-                        )}
-                        {selectedSession.refundedAt && (
-                          <span className="text-[0.65rem] text-white/40">
-                            Processed on {new Date(selectedSession.refundedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2.5 pt-2">
-                        <p className="text-xs text-white/60 leading-relaxed">
-                          If the client has a genuine emergency or cancellation need, you can process a full refund and release the calendar slot.
-                        </p>
+                    {/* Danger zone: Emergency refund */}
+                    <div className="bwa-danger-zone">
+                      <h4 style={{ fontFamily: 'var(--bwa-serif)', fontSize: '17px', fontWeight: '400', color: 'var(--bwa-red)', margin: '0 0 4px' }}>
+                        Danger zone: Emergency refund
+                      </h4>
+                      <p className="bwa-mut" style={{ margin: '0 0 12px', fontSize: '13px' }}>
+                        Refund payment directly back to client's original method via Razorpay.
+                      </p>
+                      {selectedAppt.isFreeSession ? (
+                        <span className="bwa-mut" style={{ fontSize: '12.5px', fontStyle: 'italic' }}>
+                          This is a free course complimentary session. No transaction refund is applicable.
+                        </span>
+                      ) : selectedAppt.pay === 'refunded' ? (
+                        <span className="bwa-chip bwa-c-grey">Already Refunded</span>
+                      ) : (
                         <button
                           type="button"
-                          onClick={() => openRefundModal(selectedSession, selectedUser)}
-                          className="w-full py-2 px-3 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500 hover:text-white transition-all text-xs uppercase tracking-wider font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                          className="bwa-btn danger"
+                          onClick={() =>
+                            setRefundModal({
+                              isOpen: true,
+                              user: selectedClient,
+                              appt: selectedAppt,
+                              reason: '',
+                              isProcessing: false
+                            })
+                          }
                         >
-                          <ArrowCounterClockwise size={14} weight="bold" />
-                          <span>Issue Emergency Refund</span>
+                          Issue emergency refund
                         </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Reschedule Tab */}
+                {drawerTab === 'reschedule' && (
+                  <div>
+                    {!selectedAppt.resched ? (
+                      <div className="bwa-empty">
+                        <h3>No reschedule requested</h3>
+                        <p className="bwa-mut">The client has not requested any time change for this session.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="bwa-box">
+                          <h3 style={{ fontFamily: 'var(--bwa-serif)', fontSize: '19px', fontWeight: '400', margin: '0 0 2px', color: 'var(--bwa-ink)' }}>
+                            Time change comparison
+                          </h3>
+                          <p className="bwa-mut" style={{ fontSize: '13px', margin: '0 0 14px' }}>
+                            Review original vs newly requested time slot.
+                          </p>
+
+                          <div className="bwa-tl">
+                            <div className="s">
+                              <small>Original</small>
+                              {fDay(selectedAppt.resched.from.s)}
+                              <br />
+                              {formatTimeRange(selectedAppt.resched.from.time)}
+                            </div>
+                            <div style={{ textAlign: 'center', color: 'var(--bwa-accent)', fontWeight: 'bold' }}>→</div>
+                            <div className="s new">
+                              <small>{selectedAppt.resched.status === 'pending' ? 'Requested New Time' : 'Updated Time'}</small>
+                              {fDay(selectedAppt.resched.to.s)}
+                              <br />
+                              {formatTimeRange(selectedAppt.resched.to.time)}
+                            </div>
+                          </div>
+                          <div style={{ marginTop: '12px' }}>
+                            {renderRsLine(selectedAppt)}
+                          </div>
+                        </div>
+
+                        <div className="bwa-box">
+                          <h4>Client's Reason</h4>
+                          <p style={{ margin: 0, fontStyle: 'italic', color: 'var(--bwa-ink)' }}>
+                            “{selectedAppt.resched.reason || 'No specific reason entered.'}”
+                          </p>
+                        </div>
+
+                        <div className="bwa-box">
+                          <h4>Reschedule Fee</h4>
+                          <div>
+                            {selectedAppt.resched.feePaid > 0 ? (
+                              <span style={{ color: 'var(--bwa-green)', fontWeight: '600' }}>
+                                {inr(selectedAppt.resched.feePaid)} paid on {selectedAppt.resched.paidOn || 'Online'}
+                              </span>
+                            ) : (
+                              <span className="bwa-mut">No reschedule fee charged (within 48h free policy window).</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {rsPending(selectedAppt) && (
+                          <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                            <button
+                              type="button"
+                              className="bwa-btn pri"
+                              onClick={() => handleResolveRs(true)}
+                            >
+                              Approve new time
+                            </button>
+                            <button
+                              type="button"
+                              className="bwa-btn"
+                              onClick={() => handleResolveRs(false)}
+                            >
+                              Decline request
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* 3. Client Answers Tab */}
+                {drawerTab === 'answers' && (
+                  <div>
+                    <div className="bwa-box">
+                      <h3 style={{ fontFamily: 'var(--bwa-serif)', fontSize: '19px', fontWeight: '400', margin: '0 0 2px', color: 'var(--bwa-ink)' }}>
+                        Client Intake Responses
+                      </h3>
+                      <p className="bwa-mut" style={{ fontSize: '13px', margin: '0 0 16px' }}>
+                        Submitted during session booking.
+                      </p>
+
+                      <div className="bwa-qa">
+                        <small>WHAT BRINGS YOU HERE?</small>
+                        <b style={{ fontWeight: '600', color: 'var(--bwa-ink)', fontSize: '14px' }}>
+                          {selectedAppt.brings || <i className="bwa-mut">No response provided</i>}
+                        </b>
+                      </div>
+
+                      <div className="bwa-qa">
+                        <small>HOW DID YOU HEAR ABOUT ME?</small>
+                        <b style={{ fontWeight: '600', color: 'var(--bwa-ink)', fontSize: '14px' }}>
+                          {selectedAppt.heard || <i className="bwa-mut">No response provided</i>}
+                        </b>
+                      </div>
+
+                      <div className="bwa-qa">
+                        <small>ANYTHING ELSE I SHOULD KNOW?</small>
+                        <b style={{ fontWeight: '600', color: 'var(--bwa-ink)', fontSize: '14px' }}>
+                          {selectedAppt.extra || <i className="bwa-mut">No extra notes provided</i>}
+                        </b>
+                      </div>
+                    </div>
+
+                    {selectedAppt.qa && selectedAppt.qa.length > 0 && (
+                      <div className="bwa-box" style={{ marginTop: '16px' }}>
+                        <div className="bwa-sec" style={{ margin: '0 0 14px' }}>
+                          Questionnaire Answers
+                          <span>{selectedAppt.qa.length} answered</span>
+                        </div>
+                        {selectedAppt.qa.map((item, idx) => {
+                          const question = Array.isArray(item) ? item[0] : item.question || item.q || `Question ${idx + 1}`;
+                          const answer = Array.isArray(item) ? item[1] : item.answer || item.a || 'Answered';
+                          return (
+                            <div className="bwa-qa" key={idx}>
+                              <small>Q{idx + 1}: {question}</small>
+                              <span className="bwa-ans">{answer}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
+                )}
 
-                  {/* Reschedule Request & Payment Details */}
-                  {selectedSession.rescheduleRequest && (
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between text-amber-500 border-b border-white/5 pb-2">
-                        <div className="flex items-center gap-2">
-                          <CalendarBlank size={18} />
-                          <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Reschedule Details</h3>
-                        </div>
-                        {selectedSession.rescheduleRequest.rescheduleFeePaid ? (
-                          <span className="text-[0.62rem] px-2 py-0.5 rounded font-semibold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                            <CheckCircle size={12} weight="fill" />
-                            <span>Paid Late Reschedule (Auto-Approved)</span>
-                          </span>
-                        ) : selectedSession.rescheduleRequest.isWithin48Hours !== undefined ? (
-                          <span className={`text-[0.62rem] px-2 py-0.5 rounded font-semibold uppercase tracking-wider ${
-                            selectedSession.rescheduleRequest.isWithin48Hours 
-                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
-                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          }`}>
-                            {selectedSession.rescheduleRequest.isWithin48Hours ? '⚠️ Requested in <48h Window' : '✅ Requested >48h in advance'}
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className={`border rounded-xl p-5 flex flex-col gap-4 ${
-                        selectedSession.rescheduleRequest.rescheduleFeePaid 
-                          ? 'bg-emerald-950/20 border-emerald-500/30' 
-                          : 'bg-amber-500/10 border-amber-500/20'
-                      }`}>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-white/60 text-[0.65rem] uppercase tracking-widest font-semibold">Rescheduled Session Time</span>
-                          <span className="text-white font-medium text-sm">
-                            {formatDisplayDate(selectedSession.rescheduleRequest.date)} at {formatTimeRange(selectedSession.rescheduleRequest.time, selectedSession.duration || 60)}
-                          </span>
-                        </div>
-
-                        {/* Late Reschedule Payment Information Card */}
-                        {selectedSession.rescheduleRequest.rescheduleFeePaid && (
-                          <div className="bg-black/50 border border-emerald-500/30 rounded-lg p-3.5 flex flex-col gap-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-emerald-400 text-xs uppercase tracking-wider font-bold flex items-center gap-1.5">
-                                <CheckCircle size={14} weight="fill" />
-                                Reschedule Fee Paid
-                              </span>
-                              <span className="text-emerald-300 font-mono font-bold text-sm">
-                                ₹{Number(selectedSession.rescheduleRequest.rescheduleAmount || 5000).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[0.68rem] text-white/70 font-mono pt-2 border-t border-white/10">
-                              {selectedSession.rescheduleRequest.reschedulePaymentId && (
-                                <div>
-                                  <span className="text-white/40 block text-[0.6rem] uppercase">Payment ID</span>
-                                  <span className="text-emerald-300">{selectedSession.rescheduleRequest.reschedulePaymentId}</span>
-                                </div>
-                              )}
-                              {selectedSession.rescheduleRequest.rescheduleOrderId && (
-                                <div>
-                                  <span className="text-white/40 block text-[0.6rem] uppercase">Order ID</span>
-                                  <span className="text-white/80">{selectedSession.rescheduleRequest.rescheduleOrderId}</span>
-                                </div>
-                              )}
-                              {selectedSession.rescheduleRequest.paidAt && (
-                                <div className="sm:col-span-2 text-white/50 text-[0.65rem]">
-                                  Paid on: {new Date(selectedSession.rescheduleRequest.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="flex flex-col gap-1">
-                          <span className="text-white/60 text-[0.65rem] uppercase tracking-widest font-semibold">Client's Reason</span>
-                          <span className="text-white/90 text-sm italic">
-                            {selectedSession.rescheduleRequest.reason ? `"${selectedSession.rescheduleRequest.reason}"` : <span className="text-white/40">No reason provided.</span>}
-                          </span>
-                        </div>
-
-                        {selectedSession.rescheduleRequest.status === 'PENDING' && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <button 
-                              disabled={isProcessingReschedule}
-                              onClick={() => handleRescheduleAction(selectedUser?.id || selectedUser?._id, selectedSession?._id || selectedSession?.id, 'approve')}
-                              className="flex-1 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs uppercase tracking-widest transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2"
-                            >
-                              {isProcessingReschedule ? 'Processing...' : 'Accept'}
-                            </button>
-                            <button 
-                              disabled={isProcessingReschedule}
-                              onClick={() => handleRescheduleAction(selectedUser?.id || selectedUser?._id, selectedSession?._id || selectedSession?.id, 'reject')}
-                              className="flex-1 py-2.5 rounded-lg border border-amber-500/30 text-amber-500 font-semibold text-xs uppercase tracking-widest hover:bg-amber-500/10 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        )}
-                        {selectedSession.rescheduleRequest.status !== 'PENDING' && !selectedSession.rescheduleRequest.rescheduleFeePaid && (
-                          <div className="mt-2 text-xs uppercase tracking-widest font-semibold opacity-60">
-                            Status: {selectedSession.rescheduleRequest.status}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Client's Booking Submission Details */}
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2 text-[#c79c6e] border-b border-white/5 pb-2">
-                      <User size={18} />
-                      <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Client's Submission Details</h3>
+                {/* 4. Coach Notes Tab */}
+                {drawerTab === 'notes' && (
+                  <div>
+                    <div className="bwa-sec" style={{ marginTop: 0 }}>
+                      Session Notes &amp; Action Points
+                      <span className="bwa-saved">{notesStatus}</span>
                     </div>
 
-                    {/* What Brings You Here? */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[#c79c6e]/80 text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
-                        What Brings You Here?
-                      </span>
-                      <div className="bg-[#111] border border-white/5 rounded-xl p-4 text-white/80 font-sans text-sm leading-relaxed">
-                        {(selectedSession.reason || selectedSession.beforeWeSpeak) ? (
-                          <p className="text-white/90 whitespace-pre-wrap">{selectedSession.reason || selectedSession.beforeWeSpeak}</p>
-                        ) : (
-                          <p className="text-white/30 italic text-xs">No response provided.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* How Did You Hear About Me? */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-1.5 text-[#c79c6e]/80">
-                        <Megaphone size={14} className="text-[#c79c6e]" />
-                        <span className="text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
-                          How Did You Hear About Me?
-                        </span>
-                      </div>
-                      <div className="bg-[#111] border border-white/5 rounded-xl p-4 text-white/90 font-sans text-sm">
-                        {selectedSession.source ? (
-                          <div className="flex items-center gap-2">
-                            <span className="px-3 py-1 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] text-xs font-medium inline-block">
-                              {formatSource(selectedSession.source)}
-                            </span>
-                          </div>
-                        ) : (
-                          <p className="text-white/30 italic text-xs">No response provided.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Anything Else You Want Me To Know? */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[#c79c6e]/80 text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
-                        Anything Else You Want Me To Know? (Optional)
-                      </span>
-                      <div className="bg-[#111] border border-white/5 rounded-xl p-4 text-white/80 font-sans text-sm leading-relaxed">
-                        {selectedSession.extra ? (
-                          <p className="text-white/90 whitespace-pre-wrap">{selectedSession.extra}</p>
-                        ) : (
-                          <p className="text-white/30 italic text-xs">No additional information provided.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Questionnaire Responses */}
-                    <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
-                      <div className="flex items-center justify-between text-[#c79c6e]/80">
-                        <div className="flex items-center gap-1.5">
-                          <Question size={15} className="text-[#c79c6e]" weight="bold" />
-                          <span className="text-[0.65rem] uppercase tracking-widest font-semibold font-sans">
-                            Questionnaire Responses
-                          </span>
-                        </div>
-                        {selectedSession.questionnaireAnswers && (
-                          <span className="text-[0.62rem] px-2 py-0.5 rounded bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] font-mono font-semibold">
-                            {Array.isArray(selectedSession.questionnaireAnswers) 
-                              ? `${selectedSession.questionnaireAnswers.length} Answered` 
-                              : `${Object.keys(selectedSession.questionnaireAnswers).length} Answered`}
-                          </span>
-                        )}
-                      </div>
-
-                      {selectedSession.questionnaireAnswers && (
-                        (Array.isArray(selectedSession.questionnaireAnswers) && selectedSession.questionnaireAnswers.length > 0) ||
-                        (typeof selectedSession.questionnaireAnswers === 'object' && Object.keys(selectedSession.questionnaireAnswers).length > 0)
-                      ) ? (
-                        <div className="flex flex-col gap-2.5">
-                          {Array.isArray(selectedSession.questionnaireAnswers) ? (
-                            selectedSession.questionnaireAnswers.map((item, idx) => (
-                              <div key={idx} className="bg-[#111] border border-white/8 rounded-xl p-3.5 flex flex-col gap-2 hover:border-[#c79c6e]/30 transition-colors">
-                                <div className="flex items-start gap-2">
-                                  <span className="text-[0.65rem] font-mono px-1.5 py-0.5 rounded bg-white/5 text-[#c79c6e] shrink-0 mt-0.5">
-                                    Q{idx + 1}
-                                  </span>
-                                  <p className="font-serif text-white/90 text-sm leading-snug">
-                                    {item.question || item.questionText || `Question ${idx + 1}`}
-                                  </p>
-                                </div>
-                                <div className="pl-7">
-                                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-xs font-sans text-[#c79c6e] font-medium">
-                                    <CheckCircle size={14} weight="fill" className="text-[#c79c6e] shrink-0" />
-                                    <span>{item.answer || item.answerText || item.optionId || 'Selected'}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            Object.entries(selectedSession.questionnaireAnswers).map(([qKey, val], idx) => {
-                              const qText = typeof val === 'object' ? (val.question || val.questionText || qKey) : qKey;
-                              const aText = typeof val === 'object' ? (val.answer || val.answerText || val.optionId || '') : String(val);
-                              return (
-                                <div key={idx} className="bg-[#111] border border-white/8 rounded-xl p-3.5 flex flex-col gap-2 hover:border-[#c79c6e]/30 transition-colors">
-                                  <div className="flex items-start gap-2">
-                                    <span className="text-[0.65rem] font-mono px-1.5 py-0.5 rounded bg-white/5 text-[#c79c6e] shrink-0 mt-0.5">
-                                      Q{idx + 1}
-                                    </span>
-                                    <p className="font-serif text-white/90 text-sm leading-snug">
-                                      {qText}
-                                    </p>
-                                  </div>
-                                  <div className="pl-7">
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-xs font-sans text-[#c79c6e] font-medium">
-                                      <CheckCircle size={14} weight="fill" className="text-[#c79c6e] shrink-0" />
-                                      <span>{aText}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      ) : (
-                        <div className="bg-[#111] border border-white/5 rounded-xl p-4 text-white/30 italic text-xs font-sans">
-                          No questionnaire submitted for this session (skipped or not filled).
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Official Coaching Agreement PDF */}
-                  <div className="bg-[#111] border border-white/10 rounded-xl p-4 flex items-center justify-between gap-3 shadow-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center text-[#c79c6e] shrink-0">
-                        <FileText size={20} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-white text-xs font-semibold">Coaching Agreement</span>
-                        <span className="text-white/40 text-[0.68rem]">Official legal coaching agreement (PDF)</span>
-                      </div>
-                    </div>
-                    <a
-                      href={`${API_URL}/api/appointments/${selectedSession.id || selectedSession._id}/agreement-pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3.5 py-2 rounded-lg bg-[#c79c6e] hover:bg-white text-black text-xs font-semibold uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1.5"
-                    >
-                      <FileText size={14} weight="bold" />
-                      Download PDF
-                    </a>
-                  </div>
-
-                  {/* Coach's Session Notes */}
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                      <div className="flex items-center gap-2 text-[#c79c6e]">
-                        <FileText size={18} />
-                        <h3 className="font-sans text-sm font-medium uppercase tracking-widest">Coach's Session Notes</h3>
-                      </div>
-                      {notesSuccessMessage && (
-                        <span className="text-emerald-400 text-xs font-sans flex items-center gap-1 animate-in fade-in">
-                          ✓ Saved successfully
-                        </span>
-                      )}
-                    </div>
-                    <textarea 
-                      value={sessionNotesText}
-                      onChange={(e) => setSessionNotesText(e.target.value)}
-                      className="w-full h-40 bg-[#111] border border-white/10 rounded-xl p-4 text-white font-sans text-sm resize-none focus:outline-none focus:border-[#c79c6e] transition-colors placeholder-white/20"
-                      placeholder="Write your notes for this session here. These notes will be visible to the client in their appointment details..."
+                    <textarea
+                      className="bwa-textarea"
+                      placeholder="Write confidential private or shared notes for this session..."
+                      value={notesText}
+                      onChange={(e) => handleNotesChange(e.target.value)}
                     />
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-[0.65rem] text-white/40 font-sans">
-                        Notes will appear in the client's "View Appointment" & "Shared Notes" view.
-                      </span>
-                      <button 
-                        onClick={handleSaveSessionNotes}
-                        disabled={isSavingNotes}
-                        className="px-5 py-2.5 rounded bg-[#c79c6e] text-black hover:bg-white font-sans text-xs uppercase tracking-widest font-semibold transition-all disabled:opacity-50"
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', gap: '12px', flexWrap: 'wrap' }}>
+                      <p className="bwa-mut" style={{ fontSize: '12.5px', margin: 0, flex: 1 }}>
+                        Notes are auto-saved in real-time and synced to the client's session summary.
+                      </p>
+                      <button
+                        type="button"
+                        className="bwa-btn pri sm"
+                        onClick={() => saveNotesNow(notesText)}
+                        disabled={notesStatus === 'Saving…'}
+                        style={{ minWidth: '100px' }}
                       >
-                        {isSavingNotes ? 'Saving...' : 'Save Session Notes'}
+                        {notesStatus === 'Saving…' ? 'Saving…' : notesStatus === 'Saved ✓' ? 'Save Notes ✓' : 'Save Notes'}
                       </button>
                     </div>
                   </div>
+                )}
+              </div>
+
+              {/* Drawer Footer Actions */}
+              <div style={{ padding: '16px 26px', background: '#fff', borderTop: '1px solid var(--bwa-line)', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                {!selectedAppt.done && (stateOf(selectedAppt) === 'today' || stateOf(selectedAppt) === 'overdue' || stateOf(selectedAppt) === 'upcoming') && (
+                  <button
+                    type="button"
+                    className="bwa-btn pri"
+                    onClick={handleMarkCompleted}
+                  >
+                    Mark completed
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="bwa-btn"
+                  onClick={closeDrawer}
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          ) : (
+            /* Client Overview View */
+            <>
+              <div className="bwa-dh">
+                <div className="bwa-dtop">
+                  <span className="bwa-mut">Client Profile</span>
+                  <button
+                    type="button"
+                    className="bwa-x"
+                    onClick={closeDrawer}
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
                 </div>
-              ) : (
-                /* General Profile Details */
-                <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-left-4 duration-300">
-                  {/* Status Cards */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-[#111] border border-white/5 p-4 rounded-xl flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-white/40">
-                        <User size={16} />
-                        <span className="text-[0.65rem] uppercase tracking-widest">Member Since</span>
-                      </div>
-                      <span className="text-white text-sm font-medium">{selectedUser.joined}</span>
+
+                <div className="bwa-who" style={{ paddingBottom: '16px' }}>
+                  <div className="bwa-av" style={{ width: '56px', height: '56px', fontSize: '22px' }}>
+                    {selectedClient.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--bwa-serif)', fontSize: '24px', color: 'var(--bwa-ink)' }}>
+                      {selectedClient.name}
                     </div>
-                    <div className="bg-[#111] border border-white/5 p-4 rounded-xl flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-white/40">
-                        <CalendarBlank size={16} />
-                        <span className="text-[0.65rem] uppercase tracking-widest">Next Booking</span>
-                      </div>
-                      <span className={`text-sm font-medium ${selectedUser.appointmentsCount > 0 ? 'text-[#c79c6e]' : 'text-white'}`}>
-                        {selectedUser.appointmentsCount > 0 ? formatDisplayDate(selectedUser.nextAppointmentDate) : 'None scheduled'}
+                    <div className="bwa-mut">
+                      {selectedClient.email} ·{' '}
+                      <span className={badPhone(selectedClient.phone) ? 'bwa-bad' : ''}>
+                        {selectedClient.phone || 'No phone'}
                       </span>
                     </div>
+                    {selectedClient.course && <div className="bwa-mem">Course member</div>}
                   </div>
-
-
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+
+              <div className="bwa-dbody">
+                {/* Contact Quick Actions */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                  <a
+                    className="bwa-btn sm"
+                    style={{ textDecoration: 'none' }}
+                    href={`mailto:${selectedClient.email}`}
+                  >
+                    Email Client
+                  </a>
+                  {!badPhone(selectedClient.phone) && (
+                    <a
+                      className="bwa-btn sm"
+                      style={{ textDecoration: 'none' }}
+                      target="_blank"
+                      rel="noreferrer"
+                      href={`https://wa.me/91${selectedClient.phone.replace(/\D/g, '').slice(-10)}`}
+                    >
+                      WhatsApp
+                    </a>
+                  )}
+                </div>
+
+                {/* Client Stats */}
+                <div className="bwa-stats">
+                  <div className="bwa-stat">
+                    <span className="bwa-mut">Sessions</span>
+                    <b>{selectedClient.appts.length}</b>
+                  </div>
+                  <div className="bwa-stat">
+                    <span className="bwa-mut">Total Paid</span>
+                    <b>{inr(selectedClient.appts.reduce((sum, a) => sum + paidAmount(a), 0))}</b>
+                  </div>
+                  <div className="bwa-stat">
+                    <span className="bwa-mut">Joined</span>
+                    <b style={{ fontSize: '15px', paddingTop: '4px' }}>{fD(selectedClient.joined)}</b>
+                  </div>
+                </div>
+
+                {/* Client Appointments List Sections */}
+                {(() => {
+                  const upcoming = selectedClient.appts
+                    .filter((a) => ['today', 'upcoming'].includes(stateOf(a)))
+                    .sort((a, b) => parseDateObj(a.s) - parseDateObj(b.s));
+                  const past = selectedClient.appts
+                    .filter((a) => ['completed', 'overdue'].includes(stateOf(a)))
+                    .sort((a, b) => parseDateObj(b.s) - parseDateObj(a.s));
+                  const refunded = selectedClient.appts
+                    .filter((a) => stateOf(a) === 'refunded')
+                    .sort((a, b) => parseDateObj(b.s) - parseDateObj(a.s));
+
+                  const renderApptCards = (title, list) => {
+                    if (list.length === 0) return null;
+                    return (
+                      <div style={{ marginTop: '20px' }}>
+                        <div className="bwa-sec">
+                          {title} <span>{list.length}</span>
+                        </div>
+                        {list.map((a) => {
+                          const act = actionOf(a);
+                          return (
+                            <div
+                              className={`bwa-acard ${act ? 'flag' : ''}`}
+                              key={a.id}
+                              onClick={() => openApptDrawer(selectedClient.id, a.id)}
+                            >
+                              <div>
+                                <div className="t">
+                                  {fDay(a.s)} · {formatTimeRange(a.time, a.duration)}
+                                </div>
+                                <div className="bwa-mut">{a.type}</div>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                {renderStateChip(a)}
+                                <div className="bwa-mut" style={{ marginTop: '4px', fontSize: '12px' }}>
+                                  {a.isFreeSession ? 'Included' : inr(paidAmount(a) || a.fee)}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <>
+                      {renderApptCards('Upcoming Sessions', upcoming)}
+                      {renderApptCards('Past Sessions', past)}
+                      {renderApptCards('Refunded Sessions', refunded)}
+                    </>
+                  );
+                })()}
+              </div>
+            </>
+          )
         )}
-      </div>
+      </aside>
 
       {/* ── Emergency Refund Confirmation Modal ── */}
-      {refundModalSession && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-[#12100e] border border-rose-500/40 rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col gap-5 relative">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2.5 text-rose-400">
-                <ArrowCounterClockwise size={20} weight="bold" />
-                <h3 className="font-serif text-lg text-white font-medium">Issue Emergency Refund</h3>
-              </div>
-              <button 
-                onClick={() => setRefundModalSession(null)}
-                disabled={isRefunding}
-                className="p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
+      <div className={`bwa-modal ${refundModal.isOpen ? 'on' : ''}`}>
+        <div className="bwa-mbox" role="dialog" aria-modal="true">
+          <h3>Refund {refundModal.appt ? inr(refundModal.appt.fee) : ''}?</h3>
+          <p className="bwa-mut" style={{ fontSize: '13.5px' }}>
+            {refundModal.appt && `${fDay(refundModal.appt.s)} · ${formatTimeRange(refundModal.appt.time, refundModal.appt.duration)}. The appointment slot will be released and payment refunded in full.`}
+          </p>
 
-            <div className="bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col gap-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-white/50">Client Name:</span>
-                <span className="text-white font-semibold">{refundModalSession.userName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/50">Client Email:</span>
-                <span className="text-white/80 font-mono">{refundModalSession.userEmail}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/50">Scheduled Time:</span>
-                <span className="text-[#c79c6e] font-medium">{formatDisplayDate(refundModalSession.date)} at {refundModalSession.time}</span>
-              </div>
-            </div>
+          <label style={{ display: 'block', fontSize: '13px', color: 'var(--bwa-muted)', marginTop: '12px' }}>
+            Reason for refund (internal records):
+          </label>
+          <textarea
+            rows={3}
+            placeholder="e.g. Client requested emergency cancellation due to illness"
+            value={refundModal.reason}
+            onChange={(e) => setRefundModal((prev) => ({ ...prev, reason: e.target.value }))}
+          />
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                Refund Amount (₹)
-              </label>
-              <input 
-                type="number"
-                value={refundAmount}
-                onChange={(e) => setRefundAmount(e.target.value)}
-                placeholder="Amount to refund"
-                className="w-full px-3.5 py-2.5 rounded-lg bg-black/60 border border-white/15 text-white font-mono text-sm focus:outline-none focus:border-rose-400"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                Reason / Note for Client
-              </label>
-              <textarea 
-                value={refundReason}
-                onChange={(e) => setRefundReason(e.target.value)}
-                rows={3}
-                placeholder="E.g., Client medical emergency, mutual cancellation agreement..."
-                className="w-full px-3.5 py-2.5 rounded-lg bg-black/60 border border-white/15 text-white text-xs resize-none focus:outline-none focus:border-rose-400 placeholder-white/20"
-              />
-            </div>
-
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-[11px] text-rose-300 leading-relaxed">
-              ⚠️ This will mark the session as <strong>REFUNDED</strong>, release the calendar slot, and dispatch an automated confirmation email to the client.
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setRefundModalSession(null)}
-                disabled={isRefunding}
-                className="px-4 py-2 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleIssueRefund}
-                disabled={isRefunding}
-                className="px-5 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-lg flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-              >
-                {isRefunding ? 'Processing...' : 'Confirm & Process Refund'}
-              </button>
-            </div>
+          <div className="bwa-mact">
+            <button
+              type="button"
+              className="bwa-btn"
+              onClick={() => setRefundModal({ isOpen: false, user: null, appt: null, reason: '', isProcessing: false })}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="bwa-btn danger"
+              style={{ background: 'var(--bwa-red)', borderColor: 'var(--bwa-red)', color: '#fff' }}
+              disabled={refundModal.isProcessing}
+              onClick={handleExecuteRefund}
+            >
+              {refundModal.isProcessing ? 'Processing Refund…' : `Refund ${refundModal.appt ? inr(refundModal.appt.fee) : ''}`}
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
+      {/* ── Fee Settings Modal ── */}
+      <div className={`bwa-modal ${feeModalOpen ? 'on' : ''}`}>
+        <div className="bwa-mbox" role="dialog" aria-modal="true">
+          <h3>Coaching Fee Settings</h3>
+          <p className="bwa-sub" style={{ marginBottom: '16px' }}>
+            Update the pricing structure for 60-minute and 90-minute live 1-on-1 coaching sessions.
+          </p>
+
+          <div style={{ marginBottom: '14px' }}>
+            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: 'var(--bwa-muted)' }}>
+              60-Min Session Fee (₹)
+            </label>
+            <input
+              type="number"
+              value={feeSettings.fee60min}
+              onChange={(e) => setFeeSettings((prev) => ({ ...prev, fee60min: Number(e.target.value) || 0 }))}
+            />
+          </div>
+
+          <div style={{ marginBottom: '18px' }}>
+            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: 'var(--bwa-muted)' }}>
+              90-Min Session Fee (₹)
+            </label>
+            <input
+              type="number"
+              value={feeSettings.fee90min}
+              onChange={(e) => setFeeSettings((prev) => ({ ...prev, fee90min: Number(e.target.value) || 0 }))}
+            />
+          </div>
+
+          <div className="bwa-mact">
+            <button
+              type="button"
+              className="bwa-btn"
+              onClick={() => setFeeModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="bwa-btn pri"
+              disabled={isSavingFees}
+              onClick={handleSaveFees}
+            >
+              {isSavingFees ? 'Saving Changes…' : 'Save Fee Settings'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

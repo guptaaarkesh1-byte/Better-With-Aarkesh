@@ -15,6 +15,7 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
     chips: ['Calm Authority', 'Self-Command'],
     soon: false,
     cls: 'v3',
+    theme: 'roy',
     title: 'The Better Man™',
     lede: 'Master the psychology of calm authority, magnetic communication and effortless self-command.',
     d: 'Calm authority, magnetic communication and self-command, taught in eight modules with three private sessions.',
@@ -62,112 +63,6 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
       p2: 'Through 8 structured modules, you dismantle the nervous system habits that cause rushing, stammering, and over-explaining. You learn how to anchor your physical presence, speak with calm resonance, and command respectful silence before uttering a single sentence.',
       distinction: 'Reactive men seek approval through fast speech and validation. Anchored men lead through stillness, calibrated pauses, and clear boundaries.'
     }
-  },
-  'difficult-people': {
-    slug: 'difficult-people',
-    n: '02',
-    imageUrl: '',
-    chips: ['Boundaries', 'Conflict'],
-    soon: true,
-    cls: 'v2',
-    title: 'Difficult People',
-    lede: 'Stay steady with the boss, partner or parent who pushes every button you have.',
-    d: 'Stay steady with the boss, partner or parent who pushes every button you have.',
-    sidebarChips: [
-      ['Schedule', 'Self-Paced'],
-      ['Certificate', 'Yes'],
-      ['Language', 'Hinglish / English'],
-      ['Access', 'Lifetime']
-    ],
-    hl: [
-      ['Hold Your Ground', '(Without a Fight)'],
-      ['2 Private Sessions', 'with Aarkesh']
-    ],
-    inside: [
-      '6 HD video modules',
-      'Downloadable conflict frameworks',
-      '2 private 1-on-1 coaching sessions',
-      'Lifetime access',
-      'Early-access price for waitlist members'
-    ],
-    facts: [['6', 'Modules'], ['2 Free', '1-on-1 Sessions']],
-    price: '₹3,999',
-    was: '₹7,999',
-    enableGst: true,
-    gstRate: 18,
-    isGstIncluded: false,
-    cta: 'Check Course',
-    syllabusTitle: 'Six Modules To Emotional Sovereignty',
-    syllabusSubtitle: 'The practical psychological playbook to disarm manipulation, establish firm boundaries, and protect your inner peace.',
-    syllabus: [
-      { n: '01', t: 'Mapping Toxic Patterns & Triggers', d: 'Recognizing manipulative archetypes, passive-aggressive traps, and subtle emotional manipulation tactics before they drain you.' },
-      { n: '02', t: 'The Unshakeable Boundary Framework', d: 'Setting clear, non-negotiable boundaries with bosses, partners, or parents without anger, defensiveness, or guilt.' },
-      { n: '03', t: 'Disarming High-Conflict Personalities', d: 'Verbal de-escalation strategies, avoiding defensive traps, and maintaining quiet emotional detachment in heated moments.' },
-      { n: '04', t: 'Holding Ground in High-Stakes Confrontations', d: 'Staying centered during intense arguments, asserting your authority, and never breaking composure under pressure.' },
-      { n: '05', t: 'Navigating Difficult Workplace Dynamics', d: 'Managing micro-managers, corporate politics, and aggressive colleagues while protecting your professional standing.' },
-      { n: '06', t: 'Reclaiming Your Mental Sovereignty', d: 'Overcoming post-conflict rumination, establishing internal calm, and permanent emotional freedom from difficult dynamics.' }
-    ],
-    writeup: {
-      chip: 'CONFLICT FRAMEWORK',
-      h1: "Stop Absorbing Other People's Emotional Chaos",
-      lede: "High-conflict personalities don't look for resolution—they look for reaction. The moment you react, you lose ground.",
-      p1: "Whether it's a demanding boss, a passive-aggressive colleague, or a volatile family member, their emotional turbulence is designed to pull you off-center and put you on the defensive.",
-      quote: "You don't defeat difficult people by fighting back. You defeat them by becoming impossible to trigger.",
-      p2: 'In this 6-module masterclass, you get the exact psychological tools to stay completely unshakeable. You will learn how to set ironclad boundaries, disarm manipulative tactics in real-time, and hold your frame without shouting or apologizing.',
-      distinction: 'Weak responses either explode with anger or shrink with compliance. Strategic self-command stays neutral, unbothered, and in total control.'
-    }
-  },
-  'decisions': {
-    slug: 'decisions',
-    n: '03',
-    imageUrl: '',
-    chips: ['Clarity', 'Choice'],
-    soon: true,
-    cls: '',
-    title: 'Decisions',
-    lede: 'Stop agonizing over what to do next. Learn the art of high-conviction decision-making.',
-    d: 'Stop agonizing over what to do next. Learn the art of high-conviction decision-making.',
-    sidebarChips: [
-      ['Schedule', 'Self-Paced'],
-      ['Certificate', 'Yes'],
-      ['Language', 'Hinglish / English'],
-      ['Access', 'Lifetime']
-    ],
-    hl: [
-      ['Kill Second-Guessing', '(Forever)'],
-      ['2 Private Sessions', 'with Aarkesh']
-    ],
-    inside: [
-      '5 HD video modules',
-      'Mental models decision matrix',
-      '2 private 1-on-1 coaching sessions',
-      'Lifetime access'
-    ],
-    facts: [['5', 'Modules'], ['2 Free', '1-on-1 Sessions']],
-    price: '₹3,999',
-    was: '₹7,999',
-    enableGst: true,
-    gstRate: 18,
-    isGstIncluded: false,
-    cta: 'Check Course',
-    syllabusTitle: 'Five Modules To High-Conviction Choices',
-    syllabusSubtitle: 'Cut through analysis paralysis, eliminate regret, and make high-stakes career and life choices with complete confidence.',
-    syllabus: [
-      { n: '01', t: 'The Psychology of Indecision & Overthinking', d: 'Identifying the fear-based traps that cause analysis paralysis, second-guessing, and delayed execution.' },
-      { n: '02', t: 'The Core Values Alignment Matrix', d: 'Creating your personal decision-making filter based on core life priorities and non-negotiables.' },
-      { n: '03', t: 'Risk Calibration & Worst-Case Inversion', d: 'De-catastrophizing fear, calculating reversible vs non-reversible decisions, and acting boldly under uncertainty.' },
-      { n: '04', t: 'Executing Without Regret or Hesitation', d: 'Moving from thought to commitment without looking back, eliminating post-decision anxiety.' },
-      { n: '05', t: 'The Decisive Leader Operating System', d: 'Communicating difficult decisions to teams, stakeholders, and partners with unwavering conviction.' }
-    ],
-    writeup: {
-      chip: 'DECISION ENGINE',
-      h1: 'Indecision Is Not Caution. It Is Slow Poison.',
-      lede: 'Most people do not lack information. They lack a decision-making framework they can trust under pressure.',
-      p1: 'When you hesitate, opportunities expire, momentum dies, and self-trust erodes. High-performing individuals do not have better luck—they make cleaner, faster choices and commit fully.',
-      quote: 'A good decision executed with 100% conviction beats a perfect decision delayed by fear.',
-      p2: 'In this masterclass, you will learn the exact mental models used by elite operators to make high-stakes choices without second-guessing or regret.',
-      distinction: 'Indecisive people wait for certainty that never comes. Decisive leaders generate certainty through aligned action.'
-    }
   }
 };
 
@@ -180,8 +75,11 @@ router.get('/', async (req, res) => {
     if (!doc || !doc.value) {
       return res.json(DEFAULT_COURSE_DETAILS_MAP);
     }
-    const merged = { ...DEFAULT_COURSE_DETAILS_MAP, ...(doc.value || {}) };
-    res.json(merged);
+    const cleanMap = { ...DEFAULT_COURSE_DETAILS_MAP, ...(doc.value || {}) };
+    // Remove difficult-people and decisions if not explicitly kept
+    delete cleanMap['difficult-people'];
+    delete cleanMap['decisions'];
+    res.json(cleanMap);
   } catch (err) {
     console.error('Error fetching course detail settings:', err);
     res.status(500).json({ message: 'Failed to fetch course detail settings' });
@@ -270,10 +168,13 @@ router.put('/:slug', async (req, res) => {
     const trailerVal = courseData.trailer || courseData.trailerVideo || courseData.heroSection?.trailerVideo || courseData.trailerVideoUrl || '';
     const thumbVal = courseData.imageUrl || courseData.thumbnailUrl || courseData.thumb || courseData.heroSection?.cardThumbnail || '';
 
+    const existingCourse = allCourses[slug] || allCourses[cleanSlug] || {};
     allCourses[slug] = {
       ...(DEFAULT_COURSE_DETAILS_MAP[slug] || {}),
-      ...(allCourses[slug] || {}),
+      ...existingCourse,
       ...courseData,
+      createdAt: existingCourse.createdAt || courseData.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       trailer: trailerVal,
       trailerVideo: trailerVal,
       trailerVideoUrl: trailerVal,
@@ -311,6 +212,45 @@ router.put('/:slug', async (req, res) => {
         dbCourse.trailerVideoUrl = trailerVal;
         dbCourse.trailerMuxPlaybackId = trailerVal;
         dbCourse.isPublished = courseData.isPublished ?? courseData.live ?? true;
+
+        const parsedPrice = typeof courseData.price === 'number' 
+          ? courseData.price 
+          : Number(String(courseData.price || '').replace(/[^\d.]/g, ''));
+        if (!isNaN(parsedPrice) && parsedPrice > 0) {
+          dbCourse.price = parsedPrice;
+        } else if (courseData.pricingSection?.currentPrice) {
+          dbCourse.price = Number(courseData.pricingSection.currentPrice);
+        }
+
+        const parsedWas = typeof courseData.was === 'number' 
+          ? courseData.was 
+          : Number(String(courseData.was || '').replace(/[^\d.]/g, ''));
+        if (!isNaN(parsedWas) && parsedWas > 0) {
+          dbCourse.comparePrice = parsedWas;
+        } else if (courseData.pricingSection?.originalPrice) {
+          dbCourse.comparePrice = Number(courseData.pricingSection.originalPrice);
+        }
+
+        if (courseData.enableGst !== undefined) {
+          dbCourse.enableGst = Boolean(courseData.enableGst);
+        } else if (courseData.pricingSection?.enableGst !== undefined) {
+          dbCourse.enableGst = Boolean(courseData.pricingSection.enableGst);
+        }
+
+        if (courseData.gstRate !== undefined) {
+          dbCourse.gstRate = Number(courseData.gstRate);
+        } else if (courseData.pricingSection?.gstRate !== undefined) {
+          dbCourse.gstRate = Number(courseData.pricingSection.gstRate);
+        }
+
+        if (courseData.isGstIncluded !== undefined) {
+          dbCourse.isGstIncluded = Boolean(courseData.isGstIncluded);
+        } else if (courseData.pricingSection?.gstMode) {
+          dbCourse.isGstIncluded = courseData.pricingSection.gstMode === 'included';
+        } else if (courseData.gstMode) {
+          dbCourse.isGstIncluded = courseData.gstMode === 'included';
+        }
+
         await dbCourse.save();
 
         if (Array.isArray(courseData.days) && courseData.days.length > 0) {
@@ -402,11 +342,15 @@ router.delete('/:slug', async (req, res) => {
     let doc = await Settings.findOne({ key: 'course_multi_details_settings' });
     if (doc && doc.value) {
       let allCourses = { ...doc.value };
+      
+      // Delete all matching variants
       delete allCourses[slug];
       delete allCourses[cleanSlug];
-      if (cleanSlug === 'better-man') {
-        delete allCourses['the-better-man'];
-      }
+      Object.keys(allCourses).forEach((k) => {
+        if (k.toLowerCase().trim() === cleanSlug || k.toLowerCase().trim() === slug.toLowerCase().trim()) {
+          delete allCourses[k];
+        }
+      });
 
       await Settings.findOneAndUpdate(
         { key: 'course_multi_details_settings' },
@@ -415,14 +359,33 @@ router.delete('/:slug', async (req, res) => {
       );
     }
 
-    // 2. Also delete from Course collection in MongoDB if present
-    await Course.deleteMany({
+    // 2. Also delete from Course, CourseModule, and CourseLesson collections in MongoDB
+    const matchedCourses = await Course.find({
       $or: [
         { slug: cleanSlug },
         { slug: slug },
+        { slug: { $regex: new RegExp(`^${cleanSlug}`, 'i') } },
+        { title: { $regex: new RegExp(`^${cleanSlug}$`, 'i') } },
         ...(mongoose.Types.ObjectId.isValid(slug) ? [{ _id: slug }] : [])
       ]
-    }).catch(() => {});
+    });
+
+    const courseIds = matchedCourses.map(c => c._id);
+    if (courseIds.length > 0) {
+      await Promise.all([
+        Course.deleteMany({ _id: { $in: courseIds } }),
+        CourseModule.deleteMany({ courseId: { $in: courseIds } }),
+        CourseLesson.deleteMany({ courseId: { $in: courseIds } })
+      ]);
+    } else {
+      await Course.deleteMany({
+        $or: [
+          { slug: cleanSlug },
+          { slug: slug },
+          { title: { $regex: new RegExp(`^${cleanSlug}$`, 'i') } }
+        ]
+      });
+    }
 
     res.json({ message: `Course "${slug}" removed successfully` });
   } catch (err) {

@@ -100,12 +100,13 @@
 
 .course-landing-scope .course-nav-link {
   font-family: var(--head);
-  font-size: 16.5px;
-  font-weight: 500;
+  font-size: 14.5px;
+  font-weight: 600;
   color: #FFFFFF;
   text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   padding: 4px 6px;
-  letter-spacing: -0.01em;
   transition: color 0.25s ease;
   position: relative;
   background: transparent !important;
@@ -125,7 +126,7 @@
 
 .course-landing-scope .course-nav-link.active {
   color: #C878BE;
-  font-weight: 600;
+  font-weight: 700;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -148,10 +149,11 @@
   border: 1px solid rgba(200, 120, 190, 0.4);
   color: #E3B8DE;
   text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 12.5px;
+  font-weight: 700;
   font-family: var(--head);
-  letter-spacing: -0.01em;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 0 16px rgba(200, 120, 190, 0.15);
@@ -178,6 +180,10 @@
   align-items: center;
   gap: 7px;
   padding: 7px 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 12.5px;
+  font-weight: 700;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -3411,6 +3417,22 @@
   box-sizing: border-box;
 }
 
+.course-landing-scope .all-courses-grid.single-course-centered,
+.course-landing-scope .all-courses-grid:has(.all-course-card:only-child) {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+  max-width: 440px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.course-landing-scope .all-courses-grid.single-course-centered .all-course-card,
+.course-landing-scope .all-courses-grid:has(.all-course-card:only-child) .all-course-card {
+  max-width: 420px !important;
+  width: 100% !important;
+}
+
 .course-landing-scope .all-course-card {
   border-radius: 26px;
   padding: clamp(20px, 1.8vw, 30px);
@@ -3796,18 +3818,25 @@
 .course-landing-scope .player-nav {
   display: flex;
   gap: 34px;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.course-landing-scope .player-nav a {
+.course-landing-scope .player-nav a,
+.course-landing-scope .player-nav button {
   color: #F6EEF8;
   text-decoration: none;
   opacity: 0.85;
   transition: opacity 0.2s, color 0.2s;
-  font-size: 15px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.course-landing-scope .player-nav a:hover {
+.course-landing-scope .player-nav a:hover,
+.course-landing-scope .player-nav button:hover {
   color: #C878BE;
   opacity: 1;
 }
@@ -3825,9 +3854,11 @@
   border: 1px solid rgba(196, 91, 184, 0.25);
   background: #130A18;
   border-radius: 99px;
-  padding: 8px 16px;
-  font-weight: 600;
-  font-size: 14px;
+  padding: 7px 16px;
+  font-weight: 700;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: #fff;
   text-decoration: none;
   transition: all 0.2s ease;

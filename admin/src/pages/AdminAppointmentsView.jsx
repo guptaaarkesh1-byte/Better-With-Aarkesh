@@ -119,7 +119,7 @@ export default function AdminAppointmentsView() {
   const metrics = useMemo(() => {
     const todayCount = appointments.filter(isTodaySession).length;
     const needsActionCount = appointments.filter(isNeedsAction).length;
-    const rescheduleCount = appointments.filter(a => a.rescheduleRequested).length;
+    const rescheduleCount = appointments.filter(a => a.rescheduleRequested || a.rescheduleRequest?.status === 'PENDING').length;
     const totalCollected = appointments
       .filter(a => a.paymentStatus === 'Paid')
       .reduce((sum, a) => sum + (Number(a.amount) || 5000), 0);
@@ -141,7 +141,7 @@ export default function AdminAppointmentsView() {
         map.set(email, {
           name: app.name || app.userId?.name || 'Anonymous Client',
           email,
-          phone: app.phone || app.userId?.phone || '',
+          phone: app.phoneNumber ? `${app.countryCode || ''} ${app.phoneNumber}`.trim() : (app.phone || app.userId?.phone || ''),
           appointments: [],
           totalPaid: 0,
           joined: app.createdAt || app.date
@@ -173,15 +173,16 @@ export default function AdminAppointmentsView() {
         const q = searchQuery.toLowerCase();
         const matchName = (app.name || '').toLowerCase().includes(q);
         const matchEmail = (app.email || '').toLowerCase().includes(q);
-        const matchPhone = (app.phone || '').includes(q);
+        const matchPhone = (app.phoneNumber || app.phone || '').includes(q);
         if (!matchName && !matchEmail && !matchPhone) return false;
       }
 
       // Popover filters
       if (filters.paymentStatus && app.paymentStatus !== filters.paymentStatus) return false;
       if (filters.rescheduleStatus) {
-        if (filters.rescheduleStatus === 'Requested' && !app.rescheduleRequested) return false;
-        if (filters.rescheduleStatus === 'None' && app.rescheduleRequested) return false;
+        const hasReschedule = app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING';
+        if (filters.rescheduleStatus === 'Requested' && !hasReschedule) return false;
+        if (filters.rescheduleStatus === 'None' && hasReschedule) return false;
       }
       if (filters.accountType) {
         if (filters.accountType === 'free' && !app.isFreeSession) return false;
@@ -299,38 +300,54 @@ export default function AdminAppointmentsView() {
     }
   };
 
-  // Coach Notes Autosave
+  // Save Coach Notes (Manual or Autosave)
+  const saveCoachNotes = async (textToSave) => {
+    if (!selectedAppointment?._id) return;
+    clearTimeout(notesTimerRef.current);
+    setNotesSaveStatus('saving');
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/appointments/admin/${selectedAppointment._id}/notes`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          notes: textToSave,
+          coachNotes: textToSave
+        })
+      });
+
+      if (res.ok) {
+        setNotesSaveStatus('saved');
+        // Update selectedAppointment and appointments list in local state
+        setSelectedAppointment(prev => prev ? { ...prev, coachNotes: textToSave, notes: textToSave } : prev);
+        setAppointments(prev => prev.map(a => a._id === selectedAppointment._id ? { ...a, coachNotes: textToSave, notes: textToSave } : a));
+      } else {
+        setNotesSaveStatus('dirty');
+      }
+    } catch (err) {
+      console.error('Failed to save coach notes:', err);
+      setNotesSaveStatus('dirty');
+    }
+  };
+
+  // Coach Notes Autosave on keystroke
   const handleNotesChange = (text) => {
     setCoachNotes(text);
     setNotesSaveStatus('dirty');
     clearTimeout(notesTimerRef.current);
-    notesTimerRef.current = setTimeout(async () => {
-      if (!selectedAppointment?._id) return;
-      setNotesSaveStatus('saving');
-      try {
-        const token = localStorage.getItem('adminToken');
-        await fetch(`${API_URL}/api/notes`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            appointmentId: selectedAppointment._id,
-            coachNotes: text
-          })
-        });
-        setNotesSaveStatus('saved');
-      } catch (err) {
-        setNotesSaveStatus('dirty');
-      }
-    }, 800);
+    notesTimerRef.current = setTimeout(() => {
+      saveCoachNotes(text);
+    }, 600);
   };
 
   // Open Appointment inside drawer
   const openAppointmentDetail = (app) => {
     setSelectedAppointment(app);
     setCoachNotes(app.coachNotes || app.notes || '');
+    setNotesSaveStatus('saved');
     setDetailTab('overview');
   };
 
@@ -610,7 +627,7 @@ export default function AdminAppointmentsView() {
                             <td>
                               <b>{app.name || 'Anonymous Client'}</b>
                               <div style={{ color: 'var(--muted)', fontSize: '12px' }}>
-                                {app.email} · {app.phone || 'No phone'}
+                                {app.email} · {app.phoneNumber ? `${app.countryCode ? app.countryCode + ' ' : ''}${app.phoneNumber}` : (app.phone || app.userId?.phoneNumber || app.userId?.phone || 'No phone')}
                               </div>
                             </td>
                             <td>
@@ -707,7 +724,7 @@ export default function AdminAppointmentsView() {
                           </td>
                           <td>
                             <div>{c.email}</div>
-                            <small style={{ color: 'var(--muted)' }}>{c.phone || 'No phone'}</small>
+                            <small style={{ color: 'var(--muted)' }}>{c.phone || c.phoneNumber || 'No phone'}</small>
                           </td>
                           <td>
                             <span className="bwa-chip n">{c.appointments.length} sessions</span>
@@ -982,7 +999,7 @@ export default function AdminAppointmentsView() {
                     </div>
                     <div>
                       <span style={{ color: 'var(--muted)', fontSize: '12px', display: 'block' }}>Phone</span>
-                      <b>{selectedAppointment.phone || '—'}</b>
+                      <b>{selectedAppointment.phoneNumber ? `${selectedAppointment.countryCode ? selectedAppointment.countryCode + ' ' : ''}${selectedAppointment.phoneNumber}`.trim() : (selectedAppointment.phone || selectedAppointment.userId?.phoneNumber || selectedAppointment.userId?.phone || '—')}</b>
                     </div>
                     <div>
                       <span style={{ color: 'var(--muted)', fontSize: '12px', display: 'block' }}>Session Duration</span>
@@ -1003,6 +1020,12 @@ export default function AdminAppointmentsView() {
                       <div>
                         <span>Reschedule fee</span>
                         <span>{inr(selectedAppointment.rescheduleFee)}</span>
+                      </div>
+                    )}
+                    {selectedAppointment.rescheduleRequest?.usedFreeSessionCredit && (
+                      <div>
+                        <span>Reschedule</span>
+                        <span style={{ color: 'var(--green)', fontWeight: 600 }}>1 Free Credit Used (₹0)</span>
                       </div>
                     )}
                     <div className="tot">
@@ -1043,9 +1066,9 @@ export default function AdminAppointmentsView() {
               <div>
                 <div className="bwa-card">
                   <h3>Reschedule timeline</h3>
-                  <p className="sub">Review requested schedule change.</p>
+                  <p className="sub">Review requested and confirmed schedule changes.</p>
 
-                  {selectedAppointment.rescheduleRequested ? (
+                  {(selectedAppointment.rescheduleRequested || selectedAppointment.rescheduleRequest?.status === 'PENDING') ? (
                     <div style={{ background: 'var(--amber-s)', border: '1px solid #EBCB85', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                       <div style={{ fontSize: '13px', color: 'var(--amber)', fontWeight: 700, marginBottom: '6px' }}>
                         RESCHEDULE REQUESTED
@@ -1059,15 +1082,21 @@ export default function AdminAppointmentsView() {
                         <div>
                           <small style={{ color: 'var(--muted)', display: 'block' }}>Requested slot</small>
                           <b style={{ color: 'var(--accent)' }}>
-                            {selectedAppointment.requestedDate || selectedAppointment.date} at {selectedAppointment.requestedTime}
+                            {selectedAppointment.rescheduleRequest?.date || selectedAppointment.requestedDate || selectedAppointment.date} at {selectedAppointment.rescheduleRequest?.time || selectedAppointment.requestedTime || '—'}
                           </b>
                         </div>
                       </div>
 
-                      {selectedAppointment.rescheduleReason && (
+                      {(selectedAppointment.rescheduleRequest?.reason || selectedAppointment.rescheduleReason) && (
                         <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#5b4d43' }}>
-                          <b>Reason:</b> {selectedAppointment.rescheduleReason}
+                          <b>Reason:</b> {selectedAppointment.rescheduleRequest?.reason || selectedAppointment.rescheduleReason}
                         </p>
+                      )}
+
+                      {selectedAppointment.rescheduleRequest?.isWithin48Hours && (
+                        <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--amber)', fontWeight: 600 }}>
+                          ⚠ Request was made within 48 hours of the session
+                        </div>
                       )}
 
                       <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
@@ -1087,9 +1116,74 @@ export default function AdminAppointmentsView() {
                         </button>
                       </div>
                     </div>
+                  ) : selectedAppointment.rescheduleRequest?.status === 'APPROVED' || selectedAppointment.rescheduleRequest?.usedFreeSessionCredit || selectedAppointment.rescheduleRequest?.rescheduleFeePaid ? (
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span style={{ fontSize: '12px', color: '#166534', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          ✓ Reschedule Confirmed &amp; Active
+                        </span>
+                        <span style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                          {selectedAppointment.rescheduleRequest?.usedFreeSessionCredit
+                            ? 'Free Credit Used'
+                            : selectedAppointment.rescheduleRequest?.rescheduleFeePaid
+                              ? 'Paid Reschedule'
+                              : 'Standard / Approved'}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '14.5px', color: '#1f2937', marginBottom: '8px' }}>
+                        <small style={{ color: '#6b7280', display: 'block', fontSize: '12px' }}>Confirmed Slot</small>
+                        <b style={{ color: '#111010', fontSize: '16px' }}>
+                          {selectedAppointment.rescheduleRequest?.date || selectedAppointment.date} at {selectedAppointment.rescheduleRequest?.time || selectedAppointment.time}
+                        </b>
+                      </div>
+
+                      {selectedAppointment.rescheduleRequest?.usedFreeSessionCredit && (
+                        <div style={{ marginTop: '8px', fontSize: '12.5px', color: '#15803d', fontWeight: 600, background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 12px' }}>
+                          ✨ 1 Complimentary Course Session Credit was consumed (₹0 Fee)
+                        </div>
+                      )}
+
+                      {selectedAppointment.rescheduleRequest?.rescheduleFeePaid && (
+                        <div style={{ marginTop: '8px', fontSize: '12.5px', color: '#9a3412', background: '#fff7ed', border: '1px solid #ffedd5', borderRadius: '8px', padding: '8px 12px' }}>
+                          💳 Late Reschedule Fee Paid: <b>₹{Number(selectedAppointment.rescheduleRequest?.rescheduleAmount || 5000).toLocaleString('en-IN')}</b>
+                          {selectedAppointment.rescheduleRequest?.reschedulePaymentId && (
+                            <div style={{ fontSize: '11.5px', color: '#7c2d12', marginTop: '2px', fontFamily: 'monospace' }}>
+                              Payment ID: {selectedAppointment.rescheduleRequest.reschedulePaymentId}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: '10px', background: '#ffffff', border: '1px solid #d1fae5', borderRadius: '8px', padding: '10px 14px' }}>
+                        <div style={{ fontSize: '11px', color: '#047857', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: '3px' }}>
+                          Reason for Reschedule
+                        </div>
+                        <div style={{ fontSize: '13.5px', color: '#1f2937', lineHeight: '1.4' }}>
+                          {selectedAppointment.rescheduleRequest?.reason || selectedAppointment.rescheduleReason || (
+                            <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>No reason specified</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {selectedAppointment.rescheduleRequest?.paidAt && (
+                        <div style={{ marginTop: '8px', fontSize: '11.5px', color: '#6b7280' }}>
+                          Rescheduled on: {new Date(selectedAppointment.rescheduleRequest.paidAt).toLocaleString('en-IN')}
+                        </div>
+                      )}
+                    </div>
+                  ) : selectedAppointment.rescheduleRequest?.status === 'REJECTED' ? (
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+                      <div style={{ fontSize: '13px', color: '#b91c1c', fontWeight: 700, marginBottom: '4px' }}>
+                        ✕ RESCHEDULE REQUEST DECLINED
+                      </div>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#7f1d1d' }}>
+                        The reschedule request for this appointment was declined.
+                      </p>
+                    </div>
                   ) : (
                     <p style={{ color: 'var(--muted)', fontSize: '13.5px' }}>
-                      No pending reschedule request for this appointment.
+                      No reschedule history for this appointment.
                     </p>
                   )}
                 </div>
@@ -1102,23 +1196,102 @@ export default function AdminAppointmentsView() {
                 <h3>Intake questionnaire</h3>
                 <p className="sub">Form answers submitted during booking.</p>
 
-                {selectedAppointment.answers && Object.keys(selectedAppointment.answers).length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {Object.entries(selectedAppointment.answers).map(([q, ans], i) => (
-                      <div key={i} style={{ borderBottom: '1px solid var(--line2)', paddingBottom: '10px' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, display: 'block' }}>
-                          {q}
-                        </span>
-                        <p style={{ margin: '4px 0 0', fontSize: '14px', color: 'var(--ink)' }}>
-                          {String(ans)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
+                {/* Check if any intake data exists */}
+                {(() => {
+                  const qa = selectedAppointment.questionnaireAnswers;
+                  const hasQA = Array.isArray(qa) ? qa.length > 0 : (qa && Object.keys(qa).length > 0);
+                  const hasAny = selectedAppointment.reason || selectedAppointment.source || selectedAppointment.extra || hasQA;
+                  return !hasAny;
+                })() ? (
                   <p style={{ color: 'var(--muted)', fontSize: '13.5px' }}>
                     No intake questionnaire submitted for this booking.
                   </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+                    {/* Source: How did they hear about Aarkesh */}
+                    {selectedAppointment.source && (() => {
+                      const sourceMap = { social: 'Social Media', referral: 'Referral', search: 'Search Engine', other: 'Other' };
+                      const raw = selectedAppointment.source;
+                      // Handle "Other: YouTube" format (free text stored inline)
+                      const displaySource = raw.startsWith('Other: ')
+                        ? raw
+                        : (sourceMap[raw] || raw);
+                      return (
+                        <div style={{ borderBottom: '1px solid var(--line2)', paddingBottom: '14px' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, display: 'block', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+                            How did they hear about Aarkesh?
+                          </span>
+                          <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--ink)', lineHeight: 1.5 }}>
+                            {displaySource}
+                          </p>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Reason: What brings them here */}
+                    {selectedAppointment.reason && (
+                      <div style={{ borderBottom: '1px solid var(--line2)', paddingBottom: '14px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, display: 'block', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+                          What brings them here?
+                        </span>
+                        <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--ink)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                          {selectedAppointment.reason}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Extra: Anything else */}
+                    {selectedAppointment.extra && (
+                      <div style={{ borderBottom: '1px solid var(--line2)', paddingBottom: '14px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, display: 'block', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+                          Anything else they shared
+                        </span>
+                        <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--ink)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                          {selectedAppointment.extra}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Structured questionnaireAnswers (array of {question, answer} objects) */}
+                    {Array.isArray(selectedAppointment.questionnaireAnswers) && selectedAppointment.questionnaireAnswers.length > 0 ? (
+                      <div>
+                        <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, display: 'block', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                          Additional questionnaire
+                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {selectedAppointment.questionnaireAnswers.map((item, i) => (
+                            <div key={i} style={{ borderBottom: '1px solid var(--line2)', paddingBottom: '10px' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
+                                {item.question || `Question ${i + 1}`}
+                              </span>
+                              <p style={{ margin: 0, fontSize: '14px', color: 'var(--ink)', lineHeight: 1.5 }}>
+                                {item.answer || String(item)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : selectedAppointment.questionnaireAnswers && !Array.isArray(selectedAppointment.questionnaireAnswers) && Object.keys(selectedAppointment.questionnaireAnswers).length > 0 ? (
+                      <div>
+                        <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, display: 'block', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                          Additional questionnaire
+                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {Object.entries(selectedAppointment.questionnaireAnswers).map(([q, ans], i) => (
+                            <div key={i} style={{ borderBottom: '1px solid var(--line2)', paddingBottom: '10px' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
+                                {q}
+                              </span>
+                              <p style={{ margin: 0, fontSize: '14px', color: 'var(--ink)', lineHeight: 1.5 }}>
+                                {typeof ans === 'object' ? (ans.answer || JSON.stringify(ans)) : String(ans)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 )}
               </div>
             )}
@@ -1137,7 +1310,7 @@ export default function AdminAppointmentsView() {
                   Private coaching observations and action items for this session. Notes autosave automatically as you type.
                 </p>
 
-                <div className="bwa-f">
+                <div className="bwa-f" style={{ marginBottom: '12px' }}>
                   <textarea
                     rows={8}
                     value={coachNotes}
@@ -1145,8 +1318,26 @@ export default function AdminAppointmentsView() {
                     placeholder="Write session takeaways, action items, and personal breakthroughs..."
                   />
                 </div>
-                <div className="hint">
-                  Client can view their shared action items in their private appointment view.
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <div className="hint" style={{ margin: 0, flex: 1 }}>
+                    Client can view their shared action items in their private appointment view.
+                  </div>
+                  <button
+                    type="button"
+                    className="bwa-btn pri sm"
+                    onClick={() => saveCoachNotes(coachNotes)}
+                    disabled={notesSaveStatus === 'saving'}
+                    style={{ minWidth: '110px', height: '36px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    {notesSaveStatus === 'saving' ? (
+                      <>Saving...</>
+                    ) : notesSaveStatus === 'saved' ? (
+                      <>Save Notes ✓</>
+                    ) : (
+                      <>Save Notes</>
+                    )}
+                  </button>
                 </div>
               </div>
             )}

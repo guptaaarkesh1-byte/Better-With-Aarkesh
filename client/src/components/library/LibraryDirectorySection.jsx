@@ -1128,42 +1128,40 @@ export default function LibraryDirectorySection() {
           const dbArticles = await res.json();
           if (Array.isArray(dbArticles) && dbArticles.length > 0) {
             setCategoriesData(prev => {
-              const updated = prev.map(cat => ({ ...cat, articles: [...cat.articles] }));
-              dbArticles.forEach(dbA => {
-                const catId = (dbA.categoryId || dbA.category || '').toLowerCase();
-                const targetCat = updated.find(c => 
-                  (c.id || '').toLowerCase() === catId || 
-                  (c.title || '').toLowerCase() === catId
-                );
-                if (targetCat) {
-                  const existingIdx = targetCat.articles.findIndex(a => a.id === dbA._id || a.id === dbA.id || a.slug === dbA.slug);
-                  const articleObj = {
-                    id: dbA._id || dbA.id || dbA.slug,
-                    title: dbA.title,
-                    slug: dbA.slug || dbA.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                    category: targetCat.title.toUpperCase(),
-                    categoryNum: dbA.categoryNum || '01 / 03',
-                    readTime: dbA.readTime || '5 MIN READ',
-                    meta: `IDEAS · ${targetCat.title.toUpperCase()}`,
-                    badgeText: dbA.badgeText || 'ATTENTION IS NOT ALWAYS AFFECTION',
-                    image: dbA.featuredImage || dbA.image || '/library_preview_silhouette.jpg',
-                    excerpt: dbA.description || dbA.subtitle || dbA.excerpt || '',
-                    highlightText: dbA.highlightText || '',
-                    quote: dbA.quote || '',
-                    dropCap: dbA.dropCap,
-                    dropCapText: dbA.dropCapText,
-                    blocks: dbA.blocks,
-                    sections: dbA.sections,
-                    bodyHtml: dbA.bodyHtml
-                  };
-                  if (existingIdx !== -1) {
-                    targetCat.articles[existingIdx] = { ...targetCat.articles[existingIdx], ...articleObj };
-                  } else {
-                    targetCat.articles.unshift(articleObj);
-                  }
-                }
-              });
+              const updated = prev.map(cat => {
+                const catId = (cat.id || '').toLowerCase();
+                const catTitle = (cat.title || '').toLowerCase();
+                const catArticles = dbArticles.filter(dbA => {
+                  const dbCat = (dbA.categoryId || dbA.category || '').toLowerCase();
+                  return dbCat === catId || dbCat === catTitle;
+                });
 
+                if (catArticles.length > 0) {
+                  return {
+                    ...cat,
+                    articles: catArticles.map((dbA, aIdx) => ({
+                      id: dbA._id || dbA.id || dbA.slug,
+                      title: dbA.title,
+                      slug: dbA.slug || dbA.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                      category: cat.title.toUpperCase(),
+                      categoryNum: dbA.categoryNum || `${aIdx + 1 < 10 ? '0' + (aIdx + 1) : aIdx + 1} / ${catArticles.length < 10 ? '0' + catArticles.length : catArticles.length}`,
+                      readTime: dbA.readTime || '5 MIN READ',
+                      meta: `IDEAS · ${cat.title.toUpperCase()}`,
+                      badgeText: dbA.badgeText || 'WISDOM & PERSPECTIVE',
+                      image: dbA.featuredImage || dbA.image || '/library_preview_silhouette.jpg',
+                      excerpt: dbA.description || dbA.subtitle || dbA.excerpt || '',
+                      highlightText: dbA.highlightText || '',
+                      quote: dbA.quote || '',
+                      dropCap: dbA.dropCap,
+                      dropCapText: dbA.dropCapText,
+                      blocks: dbA.blocks,
+                      sections: dbA.sections,
+                      bodyHtml: dbA.bodyHtml
+                    }))
+                  };
+                }
+                return cat;
+              });
               return updated;
             });
           }

@@ -1,0 +1,308 @@
+[
+  {
+    "category": "Change",
+    "order": 1,
+    "code": null,
+    "title": "You Are Allowed to Become Inconvenient to Your Past",
+    "slug": "you-are-allowed-to-become-inconvenient-to-your-past",
+    "file": "Change/01-you-are-allowed-to-become-inconvenient-to-your-past.md",
+    "word_count": 902
+  },
+  {
+    "category": "Change",
+    "order": 2,
+    "code": null,
+    "title": "If You Change, Are You Still You?",
+    "slug": "if-you-change-are-you-still-you",
+    "file": "Change/02-if-you-change-are-you-still-you.md",
+    "word_count": 863
+  },
+  {
+    "category": "Change",
+    "order": 3,
+    "code": null,
+    "title": "Everybody Says They’ve Changed",
+    "slug": "everybody-says-theyve-changed",
+    "file": "Change/03-everybody-says-theyve-changed.md",
+    "word_count": 1107
+  },
+  {
+    "category": "Change",
+    "order": 4,
+    "code": null,
+    "title": "The In-Between Is a Part of the Process",
+    "slug": "the-in-between-is-a-part-of-the-process",
+    "file": "Change/04-the-in-between-is-a-part-of-the-process.md",
+    "word_count": 1083
+  },
+  {
+    "category": "Communication",
+    "order": 1,
+    "code": null,
+    "title": "Say Less, Say Better",
+    "slug": "say-less-say-better",
+    "file": "Communication/01-say-less-say-better.md",
+    "word_count": 1137
+  },
+  {
+    "category": "Communication",
+    "order": 2,
+    "code": null,
+    "title": "What You Meant and What They Heard",
+    "slug": "what-you-meant-and-what-they-heard",
+    "file": "Communication/02-what-you-meant-and-what-they-heard.md",
+    "word_count": 1114
+  },
+  {
+    "category": "Communication",
+    "order": 3,
+    "code": null,
+    "title": "Honesty Can Be Kind",
+    "slug": "honesty-can-be-kind",
+    "file": "Communication/03-honesty-can-be-kind.md",
+    "word_count": 1178
+  },
+  {
+    "category": "Communication",
+    "order": 4,
+    "code": null,
+    "title": "Apology ≠ Repair",
+    "slug": "apology-not-equal-repair",
+    "file": "Communication/04-apology-not-equal-repair.md",
+    "word_count": 784
+  },
+  {
+    "category": "Communication",
+    "order": 5,
+    "code": null,
+    "title": "Trust is a prediction.",
+    "slug": "trust-is-a-prediction",
+    "file": "Communication/05-trust-is-a-prediction.md",
+    "word_count": 368
+  },
+  {
+    "category": "Decisions",
+    "order": 1,
+    "code": null,
+    "title": "The Life Everyone Understands Except You",
+    "slug": "the-life-everyone-understands-except-you",
+    "file": "Decisions/01-the-life-everyone-understands-except-you.md",
+    "word_count": 1039
+  },
+  {
+    "category": "Decisions",
+    "order": 2,
+    "code": null,
+    "title": "More Options, A Less Happy You",
+    "slug": "more-options-a-less-happy-you",
+    "file": "Decisions/02-more-options-a-less-happy-you.md",
+    "word_count": 1215
+  },
+  {
+    "category": "Decisions",
+    "order": 3,
+    "code": null,
+    "title": "The Cost of a “Safe” Decision",
+    "slug": "the-cost-of-a-safe-decision",
+    "file": "Decisions/03-the-cost-of-a-safe-decision.md",
+    "word_count": 1126
+  },
+  {
+    "category": "Decisions",
+    "order": 4,
+    "code": null,
+    "title": "Clarity Comes After Action",
+    "slug": "clarity-comes-after-action",
+    "file": "Decisions/04-clarity-comes-after-action.md",
+    "word_count": 1151
+  },
+  {
+    "category": "Difficult People",
+    "order": 1,
+    "code": null,
+    "title": "When Understanding Becomes an Excuse",
+    "slug": "when-understanding-becomes-an-excuse",
+    "file": "Difficult_People/01-when-understanding-becomes-an-excuse.md",
+    "word_count": 1129
+  },
+  {
+    "category": "Difficult People",
+    "order": 2,
+    "code": null,
+    "title": "The Peace in Not Reacting",
+    "slug": "the-peace-in-not-reacting",
+    "file": "Difficult_People/02-the-peace-in-not-reacting.md",
+    "word_count": 1136
+  },
+  {
+    "category": "Difficult People",
+    "order": 3,
+    "code": null,
+    "title": "You Can’t Make Everyone Like You",
+    "slug": "you-cant-make-everyone-like-you",
+    "file": "Difficult_People/03-you-cant-make-everyone-like-you.md",
+    "word_count": 1109
+  },
+  {
+    "category": "Difficult People",
+    "order": 4,
+    "code": null,
+    "title": "How Many Times Must a Boundary Explain Itself?",
+    "slug": "how-many-times-must-a-boundary-explain-itself",
+    "file": "Difficult_People/04-how-many-times-must-a-boundary-explain-itself.md",
+    "word_count": 1102
+  },
+  {
+    "category": "Relationships",
+    "order": 1,
+    "code": "1.1.1",
+    "title": "Are You Solving the Conflict or Trying to Win It?",
+    "slug": "are-you-solving-the-conflict-or-trying-to-win-it",
+    "file": "Relationships/1.1.1-are-you-solving-the-conflict-or-trying-to-win-it.md",
+    "word_count": 400
+  },
+  {
+    "category": "Relationships",
+    "order": 2,
+    "code": "1.1.2",
+    "title": "When the Argument Is Older Than the Conversation",
+    "slug": "when-the-argument-is-older-than-the-conversation",
+    "file": "Relationships/1.1.2-when-the-argument-is-older-than-the-conversation.md",
+    "word_count": 437
+  },
+  {
+    "category": "Relationships",
+    "order": 3,
+    "code": "1.1.3",
+    "title": "The Conflict You Cannot Afford to Make Messy",
+    "slug": "the-conflict-you-cannot-afford-to-make-messy",
+    "file": "Relationships/1.1.3-the-conflict-you-cannot-afford-to-make-messy.md",
+    "word_count": 410
+  },
+  {
+    "category": "Relationships",
+    "order": 4,
+    "code": "1.2.1",
+    "title": "The Relationship Ended. Your Life Has Not Caught Up Yet.",
+    "slug": "the-relationship-ended-your-life-has-not-caught-up-yet",
+    "file": "Relationships/1.2.1-the-relationship-ended-your-life-has-not-caught-up-yet.md",
+    "word_count": 465
+  },
+  {
+    "category": "Relationships",
+    "order": 5,
+    "code": "1.2.2",
+    "title": "What Are You Still Holding On To?",
+    "slug": "what-are-you-still-holding-on-to",
+    "file": "Relationships/1.2.2-what-are-you-still-holding-on-to.md",
+    "word_count": 546
+  },
+  {
+    "category": "Relationships",
+    "order": 6,
+    "code": "1.2.3",
+    "title": "Do You Miss the Person or the Relief of Having Them Back?",
+    "slug": "do-you-miss-the-person-or-the-relief-of-having-them-back",
+    "file": "Relationships/1.2.3-do-you-miss-the-person-or-the-relief-of-having-them-back.md",
+    "word_count": 469
+  },
+  {
+    "category": "Relationships",
+    "order": 7,
+    "code": "1.3.1",
+    "title": "Different Day. Same Argument. Better Vocabulary.",
+    "slug": "different-day-same-argument-better-vocabulary",
+    "file": "Relationships/1.3.1-different-day-same-argument-better-vocabulary.md",
+    "word_count": 454
+  },
+  {
+    "category": "Relationships",
+    "order": 8,
+    "code": "1.3.2",
+    "title": "Why Does Distance Feel So Desirable?",
+    "slug": "why-does-distance-feel-so-desirable",
+    "file": "Relationships/1.3.2-why-does-distance-feel-so-desirable.md",
+    "word_count": 451
+  },
+  {
+    "category": "Relationships",
+    "order": 9,
+    "code": "1.3.3",
+    "title": "It Feels Powerful. Is It Actually Good?",
+    "slug": "it-feels-powerful-is-it-actually-good",
+    "file": "Relationships/1.3.3-it-feels-powerful-is-it-actually-good.md",
+    "word_count": 455
+  },
+  {
+    "category": "Relationships",
+    "order": 10,
+    "code": "1.4.1",
+    "title": "When Did Your Own Opinion Stop Being Enough?",
+    "slug": "when-did-your-own-opinion-stop-being-enough",
+    "file": "Relationships/1.4.1-when-did-your-own-opinion-stop-being-enough.md",
+    "word_count": 630
+  },
+  {
+    "category": "Relationships",
+    "order": 11,
+    "code": "1.4.2",
+    "title": "How Many Votes Does Your Life Require?",
+    "slug": "how-many-votes-does-your-life-require",
+    "file": "Relationships/1.4.2-how-many-votes-does-your-life-require.md",
+    "word_count": 923
+  },
+  {
+    "category": "Relationships",
+    "order": 12,
+    "code": "1.4.3",
+    "title": "The Price You Pay to Keep Someone Close",
+    "slug": "the-price-you-pay-to-keep-someone-close",
+    "file": "Relationships/1.4.3-the-price-you-pay-to-keep-someone-close.md",
+    "word_count": 839
+  },
+  {
+    "category": "Self",
+    "order": 1,
+    "code": null,
+    "title": "A Need Is Not an Embarrassing Request",
+    "slug": "a-need-is-not-an-embarrassing-request",
+    "file": "Self/01-a-need-is-not-an-embarrassing-request.md",
+    "word_count": 856
+  },
+  {
+    "category": "Self",
+    "order": 2,
+    "code": null,
+    "title": "The Explanation You Have Repeated Into Certainty",
+    "slug": "the-explanation-you-have-repeated-into-certainty",
+    "file": "Self/02-the-explanation-you-have-repeated-into-certainty.md",
+    "word_count": 929
+  },
+  {
+    "category": "Self",
+    "order": 3,
+    "code": null,
+    "title": "The Missing Detail in Your Own Explanation",
+    "slug": "the-missing-detail-in-your-own-explanation",
+    "file": "Self/03-the-missing-detail-in-your-own-explanation.md",
+    "word_count": 949
+  },
+  {
+    "category": "Self",
+    "order": 4,
+    "code": null,
+    "title": "Being Wrong Without Becoming Worthless",
+    "slug": "being-wrong-without-becoming-worthless",
+    "file": "Self/04-being-wrong-without-becoming-worthless.md",
+    "word_count": 1174
+  },
+  {
+    "category": "Self",
+    "order": 5,
+    "code": null,
+    "title": "Accountability Is Not Self-Punishment",
+    "slug": "accountability-is-not-self-punishment",
+    "file": "Self/05-accountability-is-not-self-punishment.md",
+    "word_count": 1005
+  }
+]

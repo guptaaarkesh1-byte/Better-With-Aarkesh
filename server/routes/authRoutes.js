@@ -368,13 +368,22 @@ router.post('/check-free-sessions', async (req, res) => {
       const totalCoursesCount = distinctPurchasedCourses.size || 1;
       const totalGrantedSessions = totalCoursesCount * 3;
 
-      const claimedAppointments = await Appointment.countDocuments({
+      const relevantAppointments = await Appointment.find({
         email: emailRegex,
-        $or: [{ isFreeSession: true }, { orderId: 'COURSE_FREE_SESSION' }],
         status: { $ne: 'CANCELLED' }
       });
 
-      const freeSessions = Math.max(0, totalGrantedSessions - claimedAppointments);
+      let claimedSessionsCount = 0;
+      for (const app of relevantAppointments) {
+        if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
+          claimedSessionsCount += 1;
+        }
+        if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
+          claimedSessionsCount += 1;
+        }
+      }
+
+      const freeSessions = Math.max(0, totalGrantedSessions - claimedSessionsCount);
 
       if (coachingUser) {
         coachingUser.freeSessions = freeSessions;
@@ -391,12 +400,37 @@ router.post('/check-free-sessions', async (req, res) => {
       });
     }
 
-    if (coachingUser && coachingUser.freeSessions > 0) {
-      return res.json({
-        hasFreeSessions: true,
-        freeSessions: coachingUser.freeSessions,
-        isCoursePurchaser: coachingUser.courseSessionsGranted || false
+    if (coachingUser) {
+      const relevantAppointments = await Appointment.find({
+        email: emailRegex,
+        status: { $ne: 'CANCELLED' }
       });
+
+      let claimedSessionsCount = 0;
+      for (const app of relevantAppointments) {
+        if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
+          claimedSessionsCount += 1;
+        }
+        if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
+          claimedSessionsCount += 1;
+        }
+      }
+
+      const totalGranted = coachingUser.courseSessionsGranted ? 3 : (typeof coachingUser.freeSessions === 'number' ? (coachingUser.freeSessions + claimedSessionsCount) : 0);
+      const freeSessions = Math.max(0, totalGranted - claimedSessionsCount);
+
+      if (coachingUser.freeSessions !== freeSessions) {
+        coachingUser.freeSessions = freeSessions;
+        await coachingUser.save();
+      }
+
+      if (freeSessions > 0) {
+        return res.json({
+          hasFreeSessions: true,
+          freeSessions: freeSessions,
+          isCoursePurchaser: coachingUser.courseSessionsGranted || false
+        });
+      }
     }
 
     return res.json({

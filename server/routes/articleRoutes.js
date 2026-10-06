@@ -25,6 +25,7 @@ const toPayload = (article) => ({
   status: article.status || 'Published',
   image: article.image || article.featuredImage || '',
   featuredImage: article.featuredImage || article.image || '',
+  order: typeof article.order === 'number' ? article.order : 0,
   dropCap: article.dropCap || 'W',
   dropCapText: article.dropCapText || '',
   paragraphsAfterDropCap: article.paragraphsAfterDropCap || [],
@@ -63,6 +64,25 @@ const ensureArticlesSeeded = async () => {
 // Run seed check
 ensureArticlesSeeded();
 
+// PUT /api/articles/reorder - Reorder articles
+router.put('/reorder', async (req, res) => {
+  try {
+    const { articleIds } = req.body;
+    if (Array.isArray(articleIds) && articleIds.length > 0) {
+      const updatePromises = articleIds.map((id, index) => {
+        const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slug: id };
+        return Article.findOneAndUpdate(query, { order: index + 1 });
+      });
+      await Promise.all(updatePromises);
+    }
+    const articles = await Article.find({}).sort({ order: 1, createdAt: 1 });
+    res.json({ success: true, message: 'Articles reordered successfully', articles });
+  } catch (error) {
+    console.error('Error reordering articles:', error);
+    res.status(500).json({ message: 'Server error reordering articles' });
+  }
+});
+
 // GET all articles or filter by query
 router.get('/', async (req, res) => {
   try {
@@ -72,7 +92,7 @@ router.get('/', async (req, res) => {
     if (req.query.headingId) query.headingId = req.query.headingId;
     if (req.query.status) query.status = req.query.status;
 
-    let articles = await Article.find(query).sort({ updatedAt: -1, createdAt: -1 });
+    let articles = await Article.find(query).sort({ order: 1, createdAt: 1 });
 
     // Filter out any explicitly deleted articles
     if (deletedSlugs.length > 0) {
@@ -160,7 +180,7 @@ router.get('/published', async (req, res) => {
       query.headingId = req.query.headingId;
     }
 
-    let articles = await Article.find(query).sort({ updatedAt: -1, createdAt: -1 });
+    let articles = await Article.find(query).sort({ order: 1, createdAt: 1 });
 
     if (deletedSlugs.length > 0) {
       articles = articles.filter(a => 
@@ -181,7 +201,7 @@ router.get('/published', async (req, res) => {
 router.get('/admin', protect, admin, async (req, res) => {
   try {
     const deletedSlugs = await getDeletedSlugs();
-    let articles = await Article.find().sort({ updatedAt: -1, createdAt: -1 });
+    let articles = await Article.find().sort({ order: 1, createdAt: 1 });
     if (deletedSlugs.length > 0) {
       articles = articles.filter(a => !deletedSlugs.includes(a.slug) && !deletedSlugs.includes(a.title));
     }

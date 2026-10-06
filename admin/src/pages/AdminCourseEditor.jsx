@@ -123,6 +123,13 @@ export default function AdminCourseEditor() {
   const lessonFileInputRef = useRef(null);
   const lessonPollingRef = useRef(null);
 
+  // Landing Page Overview Settings (e.g. Show/Hide "View All Masterclasses" Button)
+  const [landingSettings, setLandingSettings] = useState({
+    showViewAllBtn: true,
+    viewAllBtnText: 'View All Masterclasses',
+    viewAllBtnLink: '/course/all'
+  });
+
   useEffect(() => {
     return () => {
       if (trailerPollingRef.current) clearInterval(trailerPollingRef.current);
@@ -520,10 +527,8 @@ export default function AdminCourseEditor() {
         });
       });
 
-      // If still empty, add default 3 courses
+      // If still empty, ensure better-man is present
       if (!combinedMap.has('better-man')) combinedMap.set('better-man', { _id: 'better-man', slug: 'better-man', title: 'The Better Man', status: 'live' });
-      if (!combinedMap.has('difficult-people')) combinedMap.set('difficult-people', { _id: 'difficult-people', slug: 'difficult-people', title: 'Difficult People', status: 'soon' });
-      if (!combinedMap.has('decisions')) combinedMap.set('decisions', { _id: 'decisions', slug: 'decisions', title: 'Decisions', status: 'soon' });
 
       const loadedCoursesList = Array.from(combinedMap.values());
       setCoursesList(loadedCoursesList);
@@ -643,6 +648,23 @@ export default function AdminCourseEditor() {
         },
         days: loadedDays.length ? loadedDays : prev.days
       }));
+
+      // Fetch Landing Overview Settings
+      try {
+        const lRes = await fetch(`${API_URL}/api/courses/landing-settings`);
+        if (lRes.ok) {
+          const lData = await lRes.json();
+          if (lData?.moreCourses) {
+            setLandingSettings({
+              showViewAllBtn: lData.moreCourses.showViewAllBtn !== false,
+              viewAllBtnText: lData.moreCourses.viewAllBtnText || 'View All Masterclasses',
+              viewAllBtnLink: lData.moreCourses.viewAllBtnLink || '/course/all'
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load landing settings:', e);
+      }
     } catch (err) {
       console.error('Failed to load course details:', err);
     } finally {
@@ -739,11 +761,15 @@ export default function AdminCourseEditor() {
       return;
     }
 
+    const currentSlug = selectedCourseSlug;
+    const currentTitle = courseData.title || currentSlug;
+
     setModalConfig({
       isOpen: true,
-      title: `Delete course "${courseData.title}"?`,
-      message: `Are you sure you want to permanently delete "${courseData.title}" (${selectedCourseSlug})? All landing page content, syllabus, and settings for this course will be removed.`,
+      title: `Delete course "${currentTitle}"?`,
+      message: `Are you sure you want to permanently delete "${currentTitle}" (${currentSlug})? All landing page content, syllabus, lessons, and settings for this course will be permanently removed.`,
       confirmText: 'Delete Course',
+      cancelText: 'Cancel',
       isDanger: true,
       onConfirm: async () => {
         try {
@@ -751,24 +777,30 @@ export default function AdminCourseEditor() {
           const headers = { Authorization: `Bearer ${token}` };
 
           // 1. Delete from Settings collection
-          await fetch(`${API_URL}/api/courses/details-settings/${selectedCourseSlug}`, {
+          await fetch(`${API_URL}/api/courses/details-settings/${currentSlug}`, {
             method: 'DELETE',
             headers
-          });
+          }).catch(() => {});
 
-          // 2. Also delete from MongoDB Course collection if an _id exists
-          const currentCourseObj = coursesList.find(c => c.slug === selectedCourseSlug);
-          if (currentCourseObj?._id && currentCourseObj._id !== selectedCourseSlug) {
+          // 2. Also delete from MongoDB Course collection
+          const currentCourseObj = coursesList.find(c => c.slug === currentSlug);
+          if (currentCourseObj?._id && currentCourseObj._id !== currentSlug) {
             await fetch(`${API_URL}/api/admin/courses/${currentCourseObj._id}`, {
               method: 'DELETE',
               headers
             }).catch(() => {});
           }
 
-          showSuccess(`Course "${courseData.title}" deleted.`);
+          showSuccess(`Course "${currentTitle}" deleted.`);
           setModalConfig({ isOpen: false });
-          const remaining = coursesList.filter(c => c.slug !== selectedCourseSlug);
-          fetchCoursesAndData(remaining[0]?.slug || 'better-man');
+
+          // Immediate local state update
+          const remaining = coursesList.filter(c => c.slug !== currentSlug);
+          setCoursesList(remaining);
+
+          const nextSlug = remaining[0]?.slug || 'better-man';
+          setSelectedCourseSlug(nextSlug);
+          fetchCoursesAndData(nextSlug);
         } catch (err) {
           showError('Error deleting course.');
         }
@@ -788,9 +820,19 @@ export default function AdminCourseEditor() {
       const payload = {
         title: courseData.title,
         lede: courseData.lede,
+        d: courseData.lede,
         chips: courseData.tags,
         price: inr(courseData.price),
         was: courseData.orig ? inr(courseData.orig) : undefined,
+        rawPrice: Number(courseData.price) || 0,
+        rawWas: Number(courseData.orig) || 0,
+        enableGst: Boolean(courseData.gst),
+        gstRate: Number(courseData.rate) || 0,
+        isGstIncluded: courseData.mode === 'included',
+        gstMode: courseData.mode,
+        cta: courseData.cta,
+        hl: courseData.hl,
+        inside: courseData.inside,
         imageUrl: courseData.thumb,
         thumbnailUrl: courseData.thumb,
         trailer: courseData.trailer,
@@ -801,6 +843,9 @@ export default function AdminCourseEditor() {
         hidden: !courseData.live,
         isPublished: courseData.live,
         live: courseData.live,
+        theme: courseData.theme,
+        cardTheme: courseData.theme,
+        cls: courseData.theme === 'roy' ? 'v2' : courseData.theme === 'obs' ? 'v3' : '',
         days: courseData.days,
         heroSection: {
           title: courseData.title,
@@ -815,8 +860,8 @@ export default function AdminCourseEditor() {
           currentPrice: Number(courseData.price) || 0,
           originalPrice: Number(courseData.orig) || 0,
           ctaText: courseData.cta,
-          enableGst: courseData.gst,
-          gstRate: Number(courseData.rate) || 18,
+          enableGst: Boolean(courseData.gst),
+          gstRate: Number(courseData.rate) || 0,
           gstMode: courseData.mode,
           highlights: courseData.hl,
           insideChecklist: courseData.inside
@@ -842,6 +887,23 @@ export default function AdminCourseEditor() {
       });
 
       if (!res.ok) throw new Error('Failed to update course details');
+
+      // 2. Save landing overview settings (including View All Masterclasses button visibility)
+      try {
+        await fetch(`${API_URL}/api/courses/landing-settings`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            moreCourses: {
+              showViewAllBtn: landingSettings.showViewAllBtn,
+              viewAllBtnText: landingSettings.viewAllBtnText || 'View All Masterclasses',
+              viewAllBtnLink: landingSettings.viewAllBtnLink || '/course/all'
+            }
+          })
+        });
+      } catch (e) {
+        console.warn('Failed to save landing settings:', e);
+      }
 
       setDirty(false);
       showSuccess('All course changes saved successfully!');
@@ -1733,6 +1795,62 @@ export default function AdminCourseEditor() {
                       >
                         Remove trailer
                       </button>
+                    )}
+                  </div>
+
+                  {/* View All Masterclasses Button Toggle Card */}
+                  <div className="bwa-card">
+                    <div className="bwa-row">
+                      <div>
+                        <h3>"View All Masterclasses" Button</h3>
+                        <p className="sub" style={{ margin: 0 }}>
+                          Show or hide the bottom button (<strong>VIEW ALL MASTERCLASSES →</strong>) on the main course catalog page.
+                        </p>
+                      </div>
+                      <label className="bwa-row" style={{ gap: '10px', fontWeight: 600 }}>
+                        <span>{landingSettings.showViewAllBtn ? 'Shown' : 'Hidden'}</span>
+                        <span className="bwa-sw">
+                          <input
+                            type="checkbox"
+                            checked={landingSettings.showViewAllBtn}
+                            onChange={(e) => {
+                              setLandingSettings(prev => ({ ...prev, showViewAllBtn: e.target.checked }));
+                              setDirty(true);
+                            }}
+                            aria-label="Toggle View All Masterclasses button"
+                          />
+                          <i />
+                        </span>
+                      </label>
+                    </div>
+
+                    {landingSettings.showViewAllBtn && (
+                      <div style={{ marginTop: '16px' }} className="bwa-grid2">
+                        <div className="bwa-f">
+                          <label>Button text</label>
+                          <input
+                            type="text"
+                            value={landingSettings.viewAllBtnText}
+                            onChange={(e) => {
+                              setLandingSettings(prev => ({ ...prev, viewAllBtnText: e.target.value }));
+                              setDirty(true);
+                            }}
+                            placeholder="View All Masterclasses"
+                          />
+                        </div>
+                        <div className="bwa-f">
+                          <label>Button Link</label>
+                          <input
+                            type="text"
+                            value={landingSettings.viewAllBtnLink}
+                            onChange={(e) => {
+                              setLandingSettings(prev => ({ ...prev, viewAllBtnLink: e.target.value }));
+                              setDirty(true);
+                            }}
+                            placeholder="/course/all"
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>

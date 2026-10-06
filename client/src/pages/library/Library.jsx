@@ -141,9 +141,12 @@ export default function Library() {
     });
 
     const sortedDb = [...matchingDb].sort((a, b) => {
+      const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 9999;
+      const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 9999;
+      if (orderA !== orderB) return orderA - orderB;
       const timeA = new Date(a.createdAt || a.updatedAt || a.date || 0).getTime();
       const timeB = new Date(b.createdAt || b.updatedAt || b.date || 0).getTime();
-      return timeB - timeA;
+      return timeA - timeB;
     });
 
     const matchingCurated = CURATED_LIBRARY_ARTICLES.filter(c => {

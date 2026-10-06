@@ -389,9 +389,12 @@ export default function Articles() {
   });
 
   const sortedDb = [...matchingDb].sort((a, b) => {
+    const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 9999;
+    const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 9999;
+    if (orderA !== orderB) return orderA - orderB;
     const timeA = new Date(a.createdAt || a.updatedAt || a.date || 0).getTime();
     const timeB = new Date(b.createdAt || b.updatedAt || b.date || 0).getTime();
-    return timeB - timeA;
+    return timeA - timeB;
   });
 
   // 2. Filter curated articles for current category
@@ -709,13 +712,8 @@ export default function Articles() {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          margin-top: 28px;
           margin-bottom: 30px;
-        }
-
-        .themed-category-root .cat-header-top .idx {
-          font-family: 'Archivo Black', sans-serif;
-          font-size: 14px;
-          letter-spacing: 0.05em;
         }
 
         /* 2-Column Edge-to-Edge Layout */
@@ -1141,7 +1139,6 @@ export default function Articles() {
               <ArrowLeft size={14} weight="bold" />
               <span>BACK</span>
             </Link>
-            <span className="idx">{currentCat.name.toUpperCase()}</span>
           </div>
           <div></div>
         </div>

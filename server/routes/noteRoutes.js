@@ -1,6 +1,7 @@
 import express from 'express';
 import Note from '../models/Note.js';
-import { protect } from '../middleware/authMiddleware.js';
+import Appointment from '../models/Appointment.js';
+import { protect, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -14,13 +15,28 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// Create a new note
-router.post('/', protect, async (req, res) => {
+// Create a new note OR save coach notes for appointment
+router.post('/', optionalAuth, async (req, res) => {
   try {
-    const { title, content, attachedTo } = req.body;
+    const { title, content, attachedTo, appointmentId, coachNotes, notes: rawNotes } = req.body;
     
+    // If saving coach notes for an appointment
+    if (appointmentId) {
+      const notesToSave = coachNotes !== undefined ? coachNotes : (rawNotes !== undefined ? rawNotes : (content || ''));
+      const appt = await Appointment.findByIdAndUpdate(
+        appointmentId,
+        { coachNotes: notesToSave },
+        { new: true }
+      );
+      return res.json({ success: true, appointment: appt });
+    }
+
     if (!title) {
       return res.status(400).json({ message: 'Title is required' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized' });
     }
 
     const note = new Note({

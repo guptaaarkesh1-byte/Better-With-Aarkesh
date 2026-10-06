@@ -106,7 +106,7 @@ router.post('/fees', protect, admin, async (req, res) => {
 // @access  Public/Optional
 router.post('/create-order', optionalAuth, async (req, res) => {
   try {
-    const { email, phoneNumber, currency = 'INR', receipt = `rcpt_${Date.now()}` } = req.body;
+    const { email, phoneNumber, sessionDuration, duration, currency = 'INR', receipt = `rcpt_${Date.now()}` } = req.body;
     
     // 1. Fetch fees from settings
     let feeSettings = await Settings.findOne({ key: 'fees' });
@@ -139,8 +139,21 @@ router.post('/create-order', optionalAuth, async (req, res) => {
       isFirstSession = pastAppointments === 0;
     }
 
-    const targetDuration = isFirstSession ? 60 : 90;
-    const amount = targetDuration === 90 ? fee90min : fee60min;
+    let targetDuration;
+    if (sessionDuration) {
+      targetDuration = Number(sessionDuration);
+    } else if (duration) {
+      targetDuration = Number(duration);
+    } else {
+      targetDuration = isFirstSession ? 60 : 90;
+    }
+
+    let amount;
+    if (req.body.amount !== undefined && Number(req.body.amount) > 0) {
+      amount = Number(req.body.amount);
+    } else {
+      amount = targetDuration === 90 ? fee90min : fee60min;
+    }
     
     const instance = await getRazorpayInstance();
     
@@ -259,11 +272,16 @@ router.post('/course-order', async (req, res) => {
     let isGstIncluded = false;
 
     if (matchedCourse) {
-      isGstOn = matchedCourse.enableGst !== false && (matchedCourse.gstRate === undefined || Number(matchedCourse.gstRate) > 0 || matchedCourse.enableGst === true);
-      gstRate = isGstOn ? (matchedCourse.gstRate !== undefined ? Number(matchedCourse.gstRate) : 18) : 0;
-      isGstIncluded = Boolean(matchedCourse.isGstIncluded);
+      const enableGstVal = matchedCourse.enableGst !== undefined ? matchedCourse.enableGst : matchedCourse.pricingSection?.enableGst;
+      isGstOn = enableGstVal !== false;
+      const gstRateVal = matchedCourse.gstRate !== undefined ? matchedCourse.gstRate : matchedCourse.pricingSection?.gstRate;
+      gstRate = isGstOn ? (gstRateVal !== undefined && gstRateVal !== null ? Number(gstRateVal) : 18) : 0;
+      isGstIncluded = matchedCourse.isGstIncluded !== undefined 
+        ? Boolean(matchedCourse.isGstIncluded) 
+        : (matchedCourse.pricingSection?.gstMode ? matchedCourse.pricingSection.gstMode === 'included' : Boolean(matchedCourse.gstMode === 'included'));
     } else if (course) {
-      gstRate = course.gstRate !== undefined ? course.gstRate : 18;
+      isGstOn = course.enableGst !== false;
+      gstRate = isGstOn ? (course.gstRate !== undefined ? Number(course.gstRate) : 18) : 0;
       isGstIncluded = !!course.isGstIncluded;
     }
 

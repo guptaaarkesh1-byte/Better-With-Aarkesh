@@ -386,19 +386,13 @@ export default function CourseProfile() {
             to="/course"
             className="course-nav-link"
           >
-            <FlippingWordSwap word1="Home" word2="Home" toClassName="text-[#C878BE]" />
+            <FlippingWordSwap word1="HOME" word2="HOME" toClassName="text-[#C878BE]" />
           </Link>
           <Link
             to="/course/all"
             className="course-nav-link"
           >
-            <FlippingWordSwap word1="Courses" word2="Courses" toClassName="text-[#C878BE]" />
-          </Link>
-          <Link
-            to="/library"
-            className="course-nav-link"
-          >
-            <FlippingWordSwap word1="Library" word2="Library" toClassName="text-[#C878BE]" />
+            <FlippingWordSwap word1="COURSES" word2="COURSES" toClassName="text-[#C878BE]" />
           </Link>
           <Link
             to="/course#faq"
@@ -416,7 +410,7 @@ export default function CourseProfile() {
             title="Explore Library"
           >
             <Books size={16} weight="bold" />
-            <span>Library</span>
+            <span>LIBRARY</span>
           </Link>
 
           {localStorage.getItem('courseToken') ? (
@@ -427,7 +421,7 @@ export default function CourseProfile() {
                 title="My Enrolled Courses"
               >
                 <BookOpen size={16} weight="bold" />
-                <span>My Course</span>
+                <span>MY COURSE</span>
               </Link>
 
               <div className="relative" ref={profileMenuRef}>

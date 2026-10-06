@@ -175,39 +175,110 @@ export default function MyCourses() {
 
   const [selectedInvoiceItem, setSelectedInvoiceItem] = useState(null);
 
-  const getCourseProgress = (courseSlug = 'better-man') => {
-    try {
-      const saved = localStorage.getItem(`course_completed_lessons_${courseSlug}`) || localStorage.getItem('course_completed_lessons');
-      if (saved) {
-        const arr = JSON.parse(saved);
-        if (Array.isArray(arr) && arr.length > 0) {
-          return {
-            percent: Math.min(100, Math.round((arr.length / 14) * 100)),
-            count: arr.length
-          };
+  const [curriculums, setCurriculums] = useState({});
+
+  useEffect(() => {
+    const fetchAllCurriculums = async () => {
+      try {
+        const token = localStorage.getItem('courseToken');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        
+        const slugs = ['better-man'];
+        if (Array.isArray(user?.purchasedCourses)) {
+          user.purchasedCourses.forEach(s => { if (s && !slugs.includes(s)) slugs.push(s); });
         }
+        if (Array.isArray(user?.enrolledCourses)) {
+          user.enrolledCourses.forEach(c => { if (c?.slug && !slugs.includes(c.slug)) slugs.push(c.slug); });
+        }
+
+        const newMap = {};
+        await Promise.all(
+          slugs.map(async (s) => {
+            try {
+              const res = await fetch(`${API_URL}/api/courses/curriculum/${s}`, { headers });
+              if (res.ok) {
+                const data = await res.json();
+                if (data && data.modules) {
+                  newMap[s] = data.modules;
+                }
+              }
+            } catch {}
+          })
+        );
+        if (Object.keys(newMap).length > 0) {
+          setCurriculums(prev => ({ ...prev, ...newMap }));
+        }
+      } catch (e) {
+        console.error('Failed to fetch curriculums:', e);
+      }
+    };
+
+    fetchAllCurriculums();
+    window.addEventListener('focus', fetchAllCurriculums);
+    const interval = setInterval(fetchAllCurriculums, 4000);
+    return () => {
+      window.removeEventListener('focus', fetchAllCurriculums);
+      clearInterval(interval);
+    };
+  }, [user]);
+
+  const getCourseProgress = (courseSlug = 'better-man', fallbackTotal = 1) => {
+    try {
+      const modules = curriculums[courseSlug];
+      let completedIds = [];
+      try {
+        const saved = localStorage.getItem(`course_completed_lessons_${courseSlug}`) ||
+                      localStorage.getItem('bwa_completed_lessons_cache') ||
+                      localStorage.getItem('course_completed_lessons');
+        if (saved) {
+          completedIds = JSON.parse(saved);
+          if (!Array.isArray(completedIds)) completedIds = [];
+        }
+      } catch {}
+
+      if (Array.isArray(modules) && modules.length > 0) {
+        const allLessons = modules.flatMap(m => m.lessons || []);
+        const totalLessons = allLessons.length;
+        if (totalLessons === 0) {
+          return { percent: 0, count: 0, total: 0, modulesCount: modules.length };
+        }
+        const completedCount = allLessons.filter(l => {
+          const lId = (l._id || l.id)?.toString();
+          return Boolean(l.isCompleted || (lId && completedIds.map(String).includes(lId)));
+        }).length;
+
+        const percent = Math.min(100, Math.round((completedCount / totalLessons) * 100));
+        return {
+          percent,
+          count: completedCount,
+          total: totalLessons,
+          modulesCount: modules.length
+        };
       }
     } catch (e) {}
-    return { percent: 0, count: 0 };
+    return { percent: 0, count: 0, total: fallbackTotal || 1, modulesCount: 1 };
   };
 
   const enrolledCourseList = useMemo(() => {
     if (Array.isArray(user?.enrolledCourses) && user.enrolledCourses.length > 0) {
       return user.enrolledCourses.map((c) => {
         const slug = c.slug || 'better-man';
-        const progressInfo = getCourseProgress(slug);
         const dynamicCourse = coursesMap[slug] || {};
+        const progressInfo = getCourseProgress(slug, c.totalLessons || c.modulesCount || 1);
+        const totalLessons = progressInfo.total > 0 ? progressInfo.total : 1;
         const courseImg = c.imageUrl || c.thumbnailUrl || dynamicCourse.imageUrl || dynamicCourse.thumbnailUrl || '';
 
         return {
           id: slug,
           slug: slug,
           title: c.title || dynamicCourse.title || (slug === 'better-man' ? 'The Better Man™' : slug),
-          subtitle: `${c.modulesCount || dynamicCourse.syllabus?.length || 8} High-Impact Modules • Actionable Blueprints`,
+          subtitle: `${totalLessons} High-Impact Lesson${totalLessons > 1 ? 's' : ''} • Actionable Blueprints`,
           purchaseDate: formatPurchaseDate(c.purchaseDate || user?.latestPurchase?.createdAt || user?.createdAt),
           progress: progressInfo.percent,
           completedLessonsCount: progressInfo.count,
-          totalLessons: c.modulesCount || (Array.isArray(dynamicCourse.syllabus) && dynamicCourse.syllabus.length > 0 ? dynamicCourse.syllabus.length : 8),
+          totalLessons: totalLessons,
+          modulesCount: progressInfo.modulesCount || 1,
           image: courseImg,
           freeSessions: user?.freeSessions ?? 3,
           invoiceNumber: c.invoiceNumber || user?.latestPurchase?.invoiceNumber,
@@ -222,8 +293,9 @@ export default function MyCourses() {
         ? user.purchasedCourses
         : ['better-man'];
       return purchasedSlugs.map((slug) => {
-        const progressInfo = getCourseProgress(slug);
         const dynamicCourse = coursesMap[slug] || {};
+        const progressInfo = getCourseProgress(slug, 1);
+        const totalLessons = progressInfo.total > 0 ? progressInfo.total : 1;
         const courseImg = (dynamicCourse.imageUrl && !dynamicCourse.imageUrl.includes('unsplash.com'))
           ? dynamicCourse.imageUrl
           : ((dynamicCourse.thumbnailUrl && !dynamicCourse.thumbnailUrl.includes('unsplash.com')) ? dynamicCourse.thumbnailUrl : '');
@@ -236,7 +308,8 @@ export default function MyCourses() {
           purchaseDate: formatPurchaseDate(user?.latestPurchase?.createdAt || user?.createdAt),
           progress: progressInfo.percent,
           completedLessonsCount: progressInfo.count,
-          totalLessons: Array.isArray(dynamicCourse.syllabus) && dynamicCourse.syllabus.length > 0 ? dynamicCourse.syllabus.length : 8,
+          totalLessons: totalLessons,
+          modulesCount: progressInfo.modulesCount || 1,
           image: courseImg,
           freeSessions: user?.freeSessions ?? 3,
           invoiceNumber: user?.latestPurchase?.invoiceNumber,
@@ -247,7 +320,7 @@ export default function MyCourses() {
     }
 
     return [];
-  }, [user, isPurchased, coursesMap]);
+  }, [user, isPurchased, coursesMap, curriculums]);
 
   return (
     <div className="course-landing-scope min-h-screen bg-[#07040a] text-[#F5F2EB] flex flex-col relative overflow-x-hidden selection:bg-[#C878BE]/30 selection:text-white">
@@ -269,19 +342,13 @@ export default function MyCourses() {
             to="/course"
             className="course-nav-link"
           >
-            <FlippingWordSwap word1="Home" word2="Home" toClassName="text-[#C878BE]" />
+            <FlippingWordSwap word1="HOME" word2="HOME" toClassName="text-[#C878BE]" />
           </Link>
           <Link
             to="/course/all"
             className="course-nav-link"
           >
-            <FlippingWordSwap word1="Courses" word2="Courses" toClassName="text-[#C878BE]" />
-          </Link>
-          <Link
-            to="/library"
-            className="course-nav-link"
-          >
-            <FlippingWordSwap word1="Library" word2="Library" toClassName="text-[#C878BE]" />
+            <FlippingWordSwap word1="COURSES" word2="COURSES" toClassName="text-[#C878BE]" />
           </Link>
           <Link
             to="/course#faq"
@@ -299,7 +366,7 @@ export default function MyCourses() {
             title="Explore Library"
           >
             <Books size={16} weight="bold" />
-            <span>Library</span>
+            <span>LIBRARY</span>
           </Link>
 
           {localStorage.getItem('courseToken') ? (
@@ -310,7 +377,7 @@ export default function MyCourses() {
                 title="My Enrolled Courses"
               >
                 <BookOpen size={16} weight="bold" />
-                <span>My Course</span>
+                <span>MY COURSE</span>
               </Link>
 
               <div className="relative" ref={profileMenuRef}>
@@ -462,7 +529,9 @@ export default function MyCourses() {
                         </div>
 
                         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-white/70 z-10">
-                          <span className="font-mono uppercase tracking-widest text-[#E3B8DE]">{item.totalLessons} Modules</span>
+                          <span className="font-mono uppercase tracking-widest text-[#E3B8DE]">
+                            {item.modulesCount} {item.modulesCount === 1 ? 'MODULE' : 'MODULES'}
+                          </span>
                           <span className="bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] border border-white/10">Full HD</span>
                         </div>
                       </div>
@@ -496,7 +565,7 @@ export default function MyCourses() {
                           <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
                             <div 
                               className="h-full rounded-full bg-gradient-to-r from-[#A83B96] via-[#C878BE] to-[#E3B8DE] transition-all duration-700"
-                              style={{ width: `${Math.max(item.progress, 4)}%` }}
+                              style={{ width: `${item.progress}%` }}
                             />
                           </div>
                         </div>
