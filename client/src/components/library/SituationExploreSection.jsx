@@ -11,9 +11,14 @@ import {
 } from '@phosphor-icons/react';
 
 // Placeholders for content thumbnails
-import thumb1 from '../../assets/PerspectivePage/recognition/emotional_exhaustion.webp';
-import thumb2 from '../../assets/PerspectivePage/recognition/comparison.webp';
-import thumb3 from '../../assets/PerspectivePage/recognition/holding_it_in.webp';
+import thumb1Local from '../../assets/PerspectivePage/recognition/emotional_exhaustion.webp';
+import thumb2Local from '../../assets/PerspectivePage/recognition/comparison.webp';
+import thumb3Local from '../../assets/PerspectivePage/recognition/holding_it_in.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
+
+const thumb1 = CDN_IMAGES.RECOGNITION_EMOTIONAL || thumb1Local;
+const thumb2 = CDN_IMAGES.RECOGNITION_COMPARISON || thumb2Local;
+const thumb3 = CDN_IMAGES.RECOGNITION_HOLDING || thumb3Local;
 import { useNavigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);

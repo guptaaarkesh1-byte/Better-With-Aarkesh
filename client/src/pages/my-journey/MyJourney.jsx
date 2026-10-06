@@ -1,5 +1,8 @@
 import React from 'react';
-import bgImage from '../../assets/images/empty_library_bg.webp';
+import bgImageLocal from '../../assets/images/empty_library_bg.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
+
+const bgImage = CDN_IMAGES.EMPTY_LIBRARY_BG || bgImageLocal;
 
 import OverviewSection from './components/OverviewSection';
 import PreparationSection from './components/PreparationSection';

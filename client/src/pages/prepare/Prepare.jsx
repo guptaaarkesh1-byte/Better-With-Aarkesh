@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowLeft, X } from '@phosphor-icons/react';
-import bgImage from '../../assets/images/my-journey-bg.webp';
+import bgImageLocal from '../../assets/images/my-journey-bg.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
+
+const bgImage = CDN_IMAGES.MY_JOURNEY_BG || bgImageLocal;
 
 export default function Prepare() {
   const navigate = useNavigate();

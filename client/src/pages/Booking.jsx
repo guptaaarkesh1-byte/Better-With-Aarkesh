@@ -8,7 +8,10 @@ import Step3Confirm from '../components/booking/Step3Confirm';
 import BookingSuccess from '../components/booking/BookingSuccess';
 import BookingCancelled from '../components/booking/BookingCancelled';
 import LoginModal from '../components/layout/LoginModal';
-import bookingBg from '../assets/images/booking_bg_lamp.png';
+import bookingBgLocal from '../assets/images/booking_bg_lamp.png';
+import { CDN_IMAGES } from '../utils/cdnAssets';
+
+const bookingBg = CDN_IMAGES.BOOKING_LAMP_BG || bookingBgLocal;
 
 export default function Booking() {
   const navigate = useNavigate();

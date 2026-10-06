@@ -2,6 +2,9 @@ import { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import defaultHeroImg from '../../assets/hero-coach.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
+
+const HERO_CDN_IMG = CDN_IMAGES.HERO_COACH || defaultHeroImg;
 
 export default function HeroImage({ 
   bgImageUrl = '',
@@ -20,7 +23,7 @@ export default function HeroImage({
   // Resolve image URL:
   const resolveHeroImg = (url) => {
     if (!url || url.includes('image-1790768916697.png') || url.includes('hero-coach')) {
-      return defaultHeroImg;
+      return HERO_CDN_IMG;
     }
     const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
     if (url.includes('localhost:5000/uploads/')) {

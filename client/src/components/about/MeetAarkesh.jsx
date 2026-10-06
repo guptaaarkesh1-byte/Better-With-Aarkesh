@@ -15,9 +15,14 @@ import {
 import { Link } from 'react-router-dom';
 
 // Import default images
-import pilotImg from '../../assets/Page8/pilot.webp';
-import coachImg from '../../assets/Page8/Coach.webp';
-import humanImg from '../../assets/Page8/human.webp';
+import pilotImgLocal from '../../assets/Page8/pilot.webp';
+import coachImgLocal from '../../assets/Page8/Coach.webp';
+import humanImgLocal from '../../assets/Page8/human.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
+
+const pilotImg = CDN_IMAGES.ABOUT_PILOT || pilotImgLocal;
+const coachImg = CDN_IMAGES.ABOUT_COACH || coachImgLocal;
+const humanImg = CDN_IMAGES.ABOUT_HUMAN || humanImgLocal;
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 

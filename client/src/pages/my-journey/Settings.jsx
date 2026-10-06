@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { User, Bell, LockKey, CaretLeft } from '@phosphor-icons/react';
-import bgImage from '../../assets/images/my-journey-bg.webp';
+import bgImageLocal from '../../assets/images/my-journey-bg.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
+
+const bgImage = CDN_IMAGES.MY_JOURNEY_BG || bgImageLocal;
 
 import ProfileTab from './components/settings/ProfileTab';
 import NotificationsTab from './components/settings/NotificationsTab';

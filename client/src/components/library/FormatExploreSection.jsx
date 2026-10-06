@@ -27,9 +27,14 @@ import { LIBRARY_CATEGORIES } from './LibraryDirectorySection';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Placeholders for video thumbnails
-import videoThumb1 from '../../assets/PerspectivePage/recognition/emotional_exhaustion.webp';
-import videoThumb2 from '../../assets/PerspectivePage/recognition/comparison.webp';
-import videoThumb3 from '../../assets/PerspectivePage/recognition/holding_it_in.webp';
+import videoThumb1Local from '../../assets/PerspectivePage/recognition/emotional_exhaustion.webp';
+import videoThumb2Local from '../../assets/PerspectivePage/recognition/comparison.webp';
+import videoThumb3Local from '../../assets/PerspectivePage/recognition/holding_it_in.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
+
+const videoThumb1 = CDN_IMAGES.RECOGNITION_EMOTIONAL || videoThumb1Local;
+const videoThumb2 = CDN_IMAGES.RECOGNITION_COMPARISON || videoThumb2Local;
+const videoThumb3 = CDN_IMAGES.RECOGNITION_HOLDING || videoThumb3Local;
 
 // Import topics for the articles list
 import { topics } from '../../constants/articleTaxonomy';
