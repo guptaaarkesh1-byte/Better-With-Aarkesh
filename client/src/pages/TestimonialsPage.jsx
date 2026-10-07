@@ -101,23 +101,41 @@ export default function TestimonialsPage() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
               <div className="h-[1.5px] w-6 bg-[#c9542f]" />
-              <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
-                REAL STORIES. REAL CHANGE.
+              <span 
+                className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]"
+                style={{ fontSize: data?.eyebrowFontSize ? `${data.eyebrowFontSize}px` : undefined }}
+              >
+                {data?.eyebrowText || 'REAL STORIES. REAL CHANGE.'}
               </span>
             </div>
             
             <h1 
               className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08] mb-1"
-              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+              style={{ 
+                fontFamily: 'Fraunces, Georgia, serif',
+                fontSize: data?.headingFontSize ? `${data.headingFontSize}px` : undefined 
+              }}
             >
-              Testimonials & <span className="text-[#c9542f] not-italic font-medium">Stories</span>
+              {data?.headingLine1 ? (
+                <>
+                  {data.headingLine1}{' '}
+                  <span className="text-[#c9542f] not-italic font-medium">{data.headingAccent || ''}</span>
+                </>
+              ) : (
+                <>
+                  Testimonials &amp; <span className="text-[#c9542f] not-italic font-medium">Stories</span>
+                </>
+              )}
             </h1>
             
             <p 
               className="text-[#4a463e] font-serif text-xl lg:text-2xl font-normal max-w-xl mt-2 leading-relaxed"
-              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+              style={{ 
+                fontFamily: 'Fraunces, Georgia, serif',
+                fontSize: data?.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined 
+              }}
             >
-              Real reflections and transformative journeys from people who decided to do the work.
+              {data?.description || 'Real reflections and transformative journeys from people who decided to do the work.'}
             </p>
           </div>
         </div>
@@ -148,7 +166,10 @@ export default function TestimonialsPage() {
                   </div>
 
                   {/* Quote Body */}
-                  <p className="font-serif text-[#2b2723] font-light text-base sm:text-[1.02rem] leading-relaxed mb-6">
+                  <p 
+                    className="font-serif text-[#2b2723] font-light text-base sm:text-[1.02rem] leading-relaxed mb-6"
+                    style={{ fontSize: data?.cardQuoteFontSize ? `${data.cardQuoteFontSize}px` : undefined }}
+                  >
                     "{t.quote}"
                   </p>
                 </div>
@@ -165,8 +186,18 @@ export default function TestimonialsPage() {
                     </div>
                   )}
                   <div className="flex flex-col">
-                    <span className="font-sans text-[#111010] text-sm sm:text-[0.94rem] font-bold">{t.name}</span>
-                    <span className="font-sans text-[#7a756b] text-xs uppercase tracking-wider mt-0.5">{t.role}</span>
+                    <span 
+                      className="font-sans text-[#111010] text-sm sm:text-[0.94rem] font-bold"
+                      style={{ fontSize: data?.cardNameFontSize ? `${data.cardNameFontSize}px` : undefined }}
+                    >
+                      {t.name}
+                    </span>
+                    <span 
+                      className="font-sans text-[#7a756b] text-xs uppercase tracking-wider mt-0.5"
+                      style={{ fontSize: data?.cardRoleFontSize ? `${data.cardRoleFontSize}px` : undefined }}
+                    >
+                      {t.role}
+                    </span>
                   </div>
                 </div>
               </div>

@@ -158,14 +158,20 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
             {/* Header */}
             <div className="flex items-center gap-3.5 mb-2.5 sm:mb-3 coaching-fade">
               <div className="h-[1.5px] w-7 bg-[#c9542f] origin-left" />
-              <span className="font-sans text-[0.78rem] sm:text-[0.84rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+              <span 
+                className="font-sans text-[0.78rem] sm:text-[0.84rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]"
+                style={{ fontSize: data.eyebrowFontSize ? `${data.eyebrowFontSize}px` : undefined }}
+              >
                 {data.eyebrowText || 'THE COACHING PROCESS'}
               </span>
             </div>
 
             <h2 
               className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-medium tracking-tight leading-[1.08] mb-3 sm:mb-4 flex flex-col items-start coaching-fade"
-              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+              style={{ 
+                fontFamily: 'Fraunces, Georgia, serif',
+                fontSize: data.headingFontSize ? `${data.headingFontSize}px` : undefined
+              }}
             >
               <span className="text-[#111010] pb-0.5">{data.headingLine1 || 'A proven process'}</span>
               <span className="text-[#c9542f] not-italic font-medium pb-0.5">{data.headingAccent || 'built around you.'}</span>
@@ -173,9 +179,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
             <p 
               className="font-serif font-normal tracking-wide leading-snug mb-4 sm:mb-5 coaching-fade max-w-lg"
-              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+              style={{ 
+                fontFamily: 'Fraunces, Georgia, serif',
+                fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined
+              }}
             >
-              <span className="italic text-base sm:text-lg lg:text-xl text-[#111010]">
+              <span className="italic text-[#111010] block" style={{ fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined }}>
                 {data.subtitle?.includes('to where you want to be') ? (
                   <>
                     {data.subtitle.split('to where you want to be')[0].trim()}
@@ -196,8 +205,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
                     </>
                   )
                 )}
-              </span><br />
-              <span className="font-serif text-sm sm:text-base lg:text-lg font-normal not-italic text-[#7a756b] mt-1 inline-block">{data.subnote || 'Simple. Effective.'}</span>
+              </span>
+              <span className="font-serif font-normal not-italic text-[#7a756b] mt-1.5 inline-block" style={{ fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined }}>
+                {data.subnote || 'Simple. Effective.'}
+              </span>
             </p>
 
             {/* Grid Stepper: Compact & Responsive 3 rows x 2 columns with 5th item spanning 2 cols wide */}

@@ -27,14 +27,20 @@ export default function ProblemContent({ problemData = {} }) {
       
       <div className="flex items-center gap-4 mb-3 sm:mb-4">
         <div className="prob-line h-[1.5px] w-8 bg-[#c9542f] origin-left" />
-        <span className="prob-eyebrow font-sans text-[0.82rem] sm:text-[0.90rem] font-bold uppercase tracking-[0.25em] text-[#c9542f]">
+        <span 
+          className="prob-eyebrow font-sans text-[0.82rem] sm:text-[0.90rem] font-bold uppercase tracking-[0.25em] text-[#c9542f]"
+          style={{ fontSize: problemData.eyebrowFontSize ? `${problemData.eyebrowFontSize}px` : undefined }}
+        >
           {eyebrow}
         </span>
       </div>
 
       <h2 
         className="prob-heading font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[3.6rem] xl:text-[4.2rem] font-medium tracking-tight leading-[1.08] mb-4 sm:mb-6 text-[#111010]"
-        style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+        style={{ 
+          fontFamily: 'Fraunces, Georgia, serif',
+          fontSize: problemData.headingFontSize ? `${problemData.headingFontSize}px` : undefined
+        }}
       >
         {heading1}{' '}
         <span className="text-[#c9542f] font-medium not-italic" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
@@ -46,7 +52,10 @@ export default function ProblemContent({ problemData = {} }) {
 
       <p 
         className="prob-paragraph font-serif text-xl lg:text-2xl text-[#4a463e] font-normal tracking-wide leading-relaxed"
-        style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+        style={{ 
+          fontFamily: 'Fraunces, Georgia, serif',
+          fontSize: problemData.descriptionFontSize ? `${problemData.descriptionFontSize}px` : undefined
+        }}
       >
         <span className="italic text-[#111010] block mb-3" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
           {quoteItalic}

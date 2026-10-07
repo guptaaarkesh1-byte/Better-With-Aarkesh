@@ -13,30 +13,32 @@ gsap.registerPlugin(ScrollTrigger);
 // =========================================================================
 const WORDS = [
   // --- Left Side Words (Heading ke aas-paas) ---
-  { text: 'Self doubt',       top: '1%',   left: '34%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-70' },
-  { text: 'What if?',         top: '10%',  left: '30%', size: 'text-xs sm:text-sm',              opacity: 'opacity-55' },
+  { text: 'Self doubt',       top: '1%',   left: '34%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-80' },
+  { text: 'What if?',         top: '10%',  left: '30%', size: 'text-xs sm:text-sm',              opacity: 'opacity-65' },
   { text: 'Breakup',          top: '35%',  left: '36%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-95' },
-  { text: 'Not enough',       top: '55%',  left: '35%', size: 'text-sm sm:text-base md:text-lg',  opacity: 'opacity-65' },
-  { text: 'Financial stress', top: '78%',  left: '80%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-70' },
-  { text: 'People pleasing',  top: '90%',  left: '29%', size: 'text-sm sm:text-base md:text-lg',  opacity: 'opacity-70' },
+  { text: 'Not enough',       top: '55%',  left: '35%', size: 'text-sm sm:text-base md:text-lg',  opacity: 'opacity-75' },
+  { text: 'Financial stress', top: '78%',  left: '80%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-80' },
+  { text: 'People pleasing',  top: '90%',  left: '29%', size: 'text-sm sm:text-base md:text-lg',  opacity: 'opacity-80' },
 
   // --- Center Area Words (Head / Silhouette ke upar) ---
-  { text: 'Overthinking',     top: '11%',  left: '40%', size: 'text-lg sm:text-xl md:text-2xl', opacity: 'opacity-85' },
+  { text: 'Overthinking',     top: '11%',  left: '40%', size: 'text-lg sm:text-xl md:text-2xl', opacity: 'opacity-95' },
   { text: 'Guilt',            top: '25%',  left: '55%', size: 'text-lg sm:text-xl md:text-2xl', opacity: 'opacity-90' },
-  { text: 'Regret',           top: '10%',  left: '60%', size: 'text-sm sm:text-base md:text-lg',  opacity: 'opacity-55' },
+  { text: 'Regret',           top: '10%',  left: '60%', size: 'text-sm sm:text-base md:text-lg',  opacity: 'opacity-70' },
 
   // --- Right Side Words ---
-  { text: 'Family',           top: '22%',  left: '75%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-70' },
-  { text: 'Uncertainty',      top: '22%',  left: '88%', size: 'text-xs sm:text-sm',              opacity: 'opacity-45' },
-  { text: 'Career pressure',  top: '35%',  left: '65%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-85' },
-  { text: 'Failing',          top: '35%',  left: '92%', size: 'text-xs sm:text-sm',              opacity: 'opacity-40' },
+  { text: 'Family',           top: '22%',  left: '75%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-80' },
+  { text: 'Uncertainty',      top: '22%',  left: '88%', size: 'text-xs sm:text-sm',              opacity: 'opacity-60' },
+  { text: 'Career pressure',  top: '35%',  left: '65%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-90' },
+  { text: 'Failing',          top: '35%',  left: '92%', size: 'text-xs sm:text-sm',              opacity: 'opacity-55' },
   { text: 'Loneliness',       top: '45%',  left: '80%', size: 'text-xl sm:text-2xl md:text-3xl', opacity: 'opacity-95' },
-  { text: 'Past mistakes',    top: '55%',  left: '65%', size: 'text-sm sm:text-base md:text-lg',  opacity: 'opacity-80' },
-  { text: 'Judgement',        top: '55%',  left: '90%', size: 'text-xs sm:text-sm',              opacity: 'opacity-50' },
-  { text: 'Comparison',       top: '70%',  left: '75%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-75' },
+  { text: 'Past mistakes',    top: '55%',  left: '65%', size: 'text-sm sm:text-base md:text-lg',  opacity: 'opacity-85' },
+  { text: 'Judgement',        top: '55%',  left: '90%', size: 'text-xs sm:text-sm',              opacity: 'opacity-65' },
+  { text: 'Comparison',       top: '70%',  left: '75%', size: 'text-base sm:text-lg md:text-xl',  opacity: 'opacity-80' },
 ];
 
-export default function WordCloud({ customImg = '' }) {
+const UNIFIED_WORD_COLOR = '#1f4e38'; // Deep Forest Pine / Change Green (Theme Category 03 - distinct, organic & non-black)
+
+export default function WordCloud({ customImg = '', wordColor = UNIFIED_WORD_COLOR }) {
   const container = useRef(null);
   const imgSrc = resolveImageUrl(customImg, silhouetteImg);
 
@@ -102,7 +104,8 @@ export default function WordCloud({ customImg = '' }) {
               }}
             >
               <span 
-                className={`floating-word inline-block font-serif text-[#c9542f] ${word.size} opacity-25 whitespace-nowrap z-0 blur-[2px] scale-90 select-none`}
+                className={`floating-word inline-block font-serif ${word.size} opacity-25 whitespace-nowrap z-0 blur-[2px] scale-90 select-none`}
+                style={{ color: wordColor }}
               >
                 {word.text}
               </span>
@@ -122,7 +125,8 @@ export default function WordCloud({ customImg = '' }) {
             }}
           >
             <span 
-              className={`floating-word inline-block font-serif text-[#c9542f] font-medium ${word.size} ${word.opacity} whitespace-nowrap z-10 select-none drop-shadow-[0_1px_4px_rgba(201,84,47,0.15)]`}
+              className={`floating-word inline-block font-serif font-medium ${word.size} ${word.opacity} whitespace-nowrap z-10 select-none drop-shadow-[0_1px_4px_rgba(31,78,56,0.18)]`}
+              style={{ color: wordColor }}
             >
               {word.text}
             </span>

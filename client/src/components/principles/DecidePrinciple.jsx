@@ -41,9 +41,9 @@ export default function DecidePrinciple() {
   }
 
   const paragraphs = [
-    `<span class='italic font-serif text-xl lg:text-2xl leading-relaxed text-[#111010] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${formattedHighlight}</span>`,
-    `<span class='font-serif text-base lg:text-lg font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif; font-style: normal;'>${formattedDescription}</span>`,
-    `<span class='italic font-serif text-xl lg:text-2xl leading-relaxed text-[#c9542f] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${data?.closingLine || '....Then we help you walk it.'}</span>`
+    `<span class='italic font-serif leading-relaxed text-[#111010] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${formattedHighlight}</span>`,
+    `<span class='font-serif font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${formattedDescription}</span>`,
+    `<span class='italic font-serif leading-relaxed text-[#c9542f] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${data?.closingLine || '....Then we help you walk it.'}</span>`
   ];
   const buttonText = data?.buttonText || '';
   const bgImg = resolveImageUrl(data?.bgImg, defaultBgImg);
@@ -68,6 +68,9 @@ export default function DecidePrinciple() {
       paragraphs={paragraphs}
       buttonText={buttonText}
       maxContentWidth="max-w-[365px]"
+      eyebrowFontSize={data?.eyebrowFontSize}
+      headingFontSize={data?.headingFontSize}
+      descriptionFontSize={data?.descriptionFontSize}
       activeStep={3}
       bannerTitle="DYNAMIC<br/>EXPERIENCE"
       bannerIcon={Sparkle}

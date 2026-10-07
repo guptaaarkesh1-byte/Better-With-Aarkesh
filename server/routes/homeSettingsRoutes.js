@@ -259,6 +259,49 @@ router.get('/:section', async (req, res) => {
   }
 });
 
+// @desc    Update All Home Sections (Atomic unified batch update)
+// @route   PUT /api/home-settings
+// @access  Admin
+router.put('/', async (req, res) => {
+  try {
+    const allSectionsData = req.body;
+    let doc = await Settings.findOne({ key: 'home_all_sections_settings' });
+    let merged = doc && doc.value ? JSON.parse(JSON.stringify(doc.value)) : { ...DEFAULT_SECTIONS };
+
+    for (const [secKey, secVal] of Object.entries(allSectionsData)) {
+      if (secVal && typeof secVal === 'object') {
+        if (secKey === 'principles') {
+          merged.principles = {
+            ...(DEFAULT_SECTIONS.principles || {}),
+            ...(merged.principles || {}),
+            ...secVal,
+            think: { ...(DEFAULT_SECTIONS.principles?.think || {}), ...(merged.principles?.think || {}), ...(secVal.think || {}) },
+            feel: { ...(DEFAULT_SECTIONS.principles?.feel || {}), ...(merged.principles?.feel || {}), ...(secVal.feel || {}) },
+            decide: { ...(DEFAULT_SECTIONS.principles?.decide || {}), ...(merged.principles?.decide || {}), ...(secVal.decide || {}) },
+          };
+        } else {
+          merged[secKey] = {
+            ...(DEFAULT_SECTIONS[secKey] || {}),
+            ...(merged[secKey] || {}),
+            ...secVal
+          };
+        }
+      }
+    }
+
+    const updated = await Settings.findOneAndUpdate(
+      { key: 'home_all_sections_settings' },
+      { $set: { value: merged } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    res.json({ message: 'All home sections updated successfully', data: updated.value });
+  } catch (err) {
+    console.error('Error updating all home settings:', err);
+    res.status(500).json({ message: 'Failed to update all home settings' });
+  }
+});
+
 // @desc    Update Specific Section Settings
 // @route   PUT /api/home-settings/:section
 // @access  Admin
@@ -268,21 +311,33 @@ router.put('/:section', async (req, res) => {
     const sectionData = req.body;
 
     let doc = await Settings.findOne({ key: 'home_all_sections_settings' });
-    let allSections = doc && doc.value ? JSON.parse(JSON.stringify(doc.value)) : { ...DEFAULT_SECTIONS };
+    const currentSection = (doc && doc.value && doc.value[section]) || DEFAULT_SECTIONS[section] || {};
 
-    allSections[section] = {
-      ...(DEFAULT_SECTIONS[section] || {}),
-      ...(allSections[section] || {}),
-      ...sectionData
-    };
+    let mergedSection;
+    if (section === 'principles' && sectionData) {
+      mergedSection = {
+        ...(DEFAULT_SECTIONS.principles || {}),
+        ...currentSection,
+        ...sectionData,
+        think: { ...(DEFAULT_SECTIONS.principles?.think || {}), ...(currentSection.think || {}), ...(sectionData.think || {}) },
+        feel: { ...(DEFAULT_SECTIONS.principles?.feel || {}), ...(currentSection.feel || {}), ...(sectionData.feel || {}) },
+        decide: { ...(DEFAULT_SECTIONS.principles?.decide || {}), ...(currentSection.decide || {}), ...(sectionData.decide || {}) },
+      };
+    } else {
+      mergedSection = {
+        ...(DEFAULT_SECTIONS[section] || {}),
+        ...currentSection,
+        ...sectionData
+      };
+    }
 
     const updated = await Settings.findOneAndUpdate(
       { key: 'home_all_sections_settings' },
-      { $set: { value: allSections } },
+      { $set: { [`value.${section}`]: mergedSection } },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
-    res.json({ message: `${section} updated successfully`, data: updated.value[section] });
+    res.json({ message: `${section} updated successfully`, data: updated.value?.[section] || mergedSection });
   } catch (err) {
     console.error(`Error updating section ${req.params.section}:`, err);
     res.status(500).json({ message: 'Failed to update section settings' });

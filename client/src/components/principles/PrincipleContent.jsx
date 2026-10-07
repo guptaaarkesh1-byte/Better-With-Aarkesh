@@ -14,7 +14,10 @@ export default function PrincipleContent({
   headlineGoldItalic, 
   paragraphs, 
   buttonText,
-  maxContentWidth = "max-w-[460px]"
+  maxContentWidth = "max-w-[460px]",
+  eyebrowFontSize,
+  headingFontSize,
+  descriptionFontSize
 }) {
   const container = useRef(null);
 
@@ -57,14 +60,20 @@ export default function PrincipleContent({
       
       <div className="flex items-center gap-4 mb-6">
         <div className="phil-line h-[1.5px] w-8 bg-[#c9542f] origin-left" />
-        <span className="phil-eyebrow font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+        <span 
+          className="phil-eyebrow font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]"
+          style={{ fontSize: eyebrowFontSize ? `${eyebrowFontSize}px` : undefined }}
+        >
           {eyebrow}
         </span>
       </div>
 
       <h2 
         className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 flex flex-col items-start w-fit"
-        style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+        style={{ 
+          fontFamily: 'Fraunces, Georgia, serif',
+          fontSize: headingFontSize ? `${headingFontSize}px` : undefined
+        }}
       >
         <span className={`phil-heading-word text-[#111010] whitespace-nowrap overflow-hidden pb-1 ${headlineWhite === headlineWhite?.toUpperCase() ? 'uppercase' : ''}`}>
           {headlineWhite}
@@ -79,7 +88,10 @@ export default function PrincipleContent({
           <p 
             key={i} 
             className="phil-paragraph font-serif text-[#4a463e] font-normal tracking-wide leading-relaxed"
-            style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+            style={{ 
+              fontFamily: 'Fraunces, Georgia, serif',
+              fontSize: descriptionFontSize ? `${descriptionFontSize}px` : undefined
+            }}
             dangerouslySetInnerHTML={{ __html: p }}
           />
         ))}

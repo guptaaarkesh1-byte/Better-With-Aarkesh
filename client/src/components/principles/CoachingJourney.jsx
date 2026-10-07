@@ -286,14 +286,20 @@ export default function CoachingJourney() {
             {/* Header */}
             <div className="flex items-center gap-4 mb-3 journey-fade">
               <div className="h-[1.5px] w-6 bg-[#c9542f] origin-left" />
-              <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+              <span 
+                className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]"
+                style={{ fontSize: data.eyebrowFontSize ? `${data.eyebrowFontSize}px` : undefined }}
+              >
                 {data.eyebrowText || 'THE COACHING JOURNEY'}
               </span>
             </div>
 
             <h2 
               className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 sm:mb-6 flex flex-col items-start journey-fade"
-              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+              style={{ 
+                fontFamily: 'Fraunces, Georgia, serif',
+                fontSize: data.headingFontSize ? `${data.headingFontSize}px` : undefined
+              }}
             >
               <span className="text-[#111010] pb-0.5">{data.headingLine1 || 'A clear process.'}</span>
               <span className="text-[#c9542f] not-italic font-medium pb-0.5">{data.headingAccent || 'Real transformation.'}</span>
@@ -301,7 +307,10 @@ export default function CoachingJourney() {
 
             <p 
               className="font-serif text-base lg:text-lg text-[#4a463e] font-normal tracking-wide leading-relaxed mb-5 xl:mb-7 journey-fade max-w-lg"
-              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+              style={{ 
+                fontFamily: 'Fraunces, Georgia, serif',
+                fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined
+              }}
             >
               {(data.description || "We don't do hacks. We follow a proven, human first process designed to create deep, lasting change.").replace(/human-first/g, 'human first')}
             </p>

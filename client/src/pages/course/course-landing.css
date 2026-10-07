@@ -1989,22 +1989,25 @@
 .course-landing-scope .acc {
   max-width: 900px;
   margin: 0 auto;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   text-align: left;
 }
 
 .course-landing-scope details.a {
-  border: 1px solid #26262A;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
-  background: #08080A;
-  transition: border-color 0.2s, background-color 0.2s;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
 .course-landing-scope details.a[open] {
-  border-color: #5A2C55;
-  background: #0F0810;
+  border-color: rgba(200, 120, 190, 0.4);
+  background: rgba(200, 120, 190, 0.08);
+  box-shadow: 0 4px 24px rgba(200, 120, 190, 0.12);
 }
 
 .course-landing-scope details.a summary {
@@ -2012,54 +2015,60 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 22px;
-  padding: 24px 28px;
-  font-size: 20px;
-  color: #CFCAC4;
-  user-select: none;
-}
-
-.course-landing-scope details.a[open] summary {
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 28px;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(19px, 2vw, 22px);
+  line-height: 1.35;
   color: #fff;
+  user-select: none;
+  transition: color 0.2s ease;
 }
 
 .course-landing-scope details.a summary::-webkit-details-marker {
   display: none;
 }
 
-.course-landing-scope details.a .n {
-  font-family: var(--head);
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--orange);
-  min-width: 34px;
-}
-
-.course-landing-scope details.a .t {
-  flex: 1;
-}
-
 .course-landing-scope details.a summary::after {
-  content: "";
-  width: 10px;
-  height: 10px;
-  border-right: 2px solid #fff;
-  border-bottom: 2px solid #fff;
-  transform: rotate(45deg) translateY(-3px);
-  transition: transform 0.25s ease;
-  margin-right: 6px;
+  display: none;
 }
 
-.course-landing-scope details.a[open] summary::after {
-  transform: rotate(225deg);
+.course-landing-scope details.a .faq-caret-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  transition: all 0.3s ease;
 }
 
+.course-landing-scope details.a[open] .faq-caret-circle {
+  background: var(--plum-light, #C878BE);
+  color: #1a0a18;
+  border-color: var(--plum-light, #C878BE);
+  transform: rotate(180deg);
+}
+
+.course-landing-scope details.a .faq-answer-wrap {
+  padding: 8px 28px 26px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.course-landing-scope details.a .faq-answer-wrap p,
 .course-landing-scope details.a p {
   margin: 0;
-  padding: 0 28px 26px 84px;
-  color: var(--muted);
-  font-size: 17px;
-  max-width: 60ch;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-family: 'Inter', sans-serif;
+  font-size: 15.5px;
+  line-height: 1.65;
+  max-width: 100%;
 }
 
 /* Included Banner */

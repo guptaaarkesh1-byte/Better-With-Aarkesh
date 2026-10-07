@@ -10,6 +10,11 @@ const DEFAULT_FOOTER_SETTINGS = {
   brandDescription: 'Authentic 1-on-1 mentorship, transformational coaching & self-mastery courses designed to quiet inner noise, dissolve reactive patterns, and elevate your presence.',
   brandEmail: 'coaching@aarkeshgupta.com',
   copyrightText: '© 2026 Better With Aarkesh. All rights reserved.',
+  columnTitleFontSize: 14,
+  bioFontSize: 16,
+  linksFontSize: 16,
+  brandTitleFontSize: 36,
+  copyrightFontSize: 14,
 };
 
 // Helper to seed initial unified columns if collection is empty
@@ -89,6 +94,11 @@ router.get('/settings', async (req, res) => {
       brandDescription: doc.value.brandDescription || DEFAULT_FOOTER_SETTINGS.brandDescription,
       brandEmail: doc.value.brandEmail || DEFAULT_FOOTER_SETTINGS.brandEmail,
       copyrightText: doc.value.copyrightText || DEFAULT_FOOTER_SETTINGS.copyrightText,
+      columnTitleFontSize: doc.value.columnTitleFontSize ?? DEFAULT_FOOTER_SETTINGS.columnTitleFontSize,
+      bioFontSize: doc.value.bioFontSize ?? DEFAULT_FOOTER_SETTINGS.bioFontSize,
+      linksFontSize: doc.value.linksFontSize ?? DEFAULT_FOOTER_SETTINGS.linksFontSize,
+      brandTitleFontSize: doc.value.brandTitleFontSize ?? DEFAULT_FOOTER_SETTINGS.brandTitleFontSize,
+      copyrightFontSize: doc.value.copyrightFontSize ?? DEFAULT_FOOTER_SETTINGS.copyrightFontSize,
     });
   } catch (error) {
     console.error('Error fetching footer settings:', error);
@@ -101,12 +111,29 @@ router.get('/settings', async (req, res) => {
 // @access  Private/Admin
 router.put('/settings', protect, admin, async (req, res) => {
   try {
-    const { brandDescription, brandEmail, copyrightText } = req.body;
+    const { 
+      brandDescription, 
+      brandEmail, 
+      copyrightText,
+      columnTitleFontSize,
+      bioFontSize,
+      linksFontSize,
+      brandTitleFontSize,
+      copyrightFontSize
+    } = req.body;
+
+    const doc = await Settings.findOne({ key: 'footer_settings' });
+    const existing = (doc && doc.value) || DEFAULT_FOOTER_SETTINGS;
     
     const value = {
-      brandDescription: brandDescription !== undefined ? brandDescription : DEFAULT_FOOTER_SETTINGS.brandDescription,
-      brandEmail: brandEmail !== undefined ? brandEmail : DEFAULT_FOOTER_SETTINGS.brandEmail,
-      copyrightText: copyrightText !== undefined ? copyrightText : DEFAULT_FOOTER_SETTINGS.copyrightText,
+      brandDescription: brandDescription !== undefined ? brandDescription : existing.brandDescription,
+      brandEmail: brandEmail !== undefined ? brandEmail : existing.brandEmail,
+      copyrightText: copyrightText !== undefined ? copyrightText : existing.copyrightText,
+      columnTitleFontSize: columnTitleFontSize !== undefined ? Number(columnTitleFontSize) : (existing.columnTitleFontSize || 14),
+      bioFontSize: bioFontSize !== undefined ? Number(bioFontSize) : (existing.bioFontSize || 16),
+      linksFontSize: linksFontSize !== undefined ? Number(linksFontSize) : (existing.linksFontSize || 16),
+      brandTitleFontSize: brandTitleFontSize !== undefined ? Number(brandTitleFontSize) : (existing.brandTitleFontSize || 36),
+      copyrightFontSize: copyrightFontSize !== undefined ? Number(copyrightFontSize) : (existing.copyrightFontSize || 14),
     };
 
     const updated = await Settings.findOneAndUpdate(

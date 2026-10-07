@@ -12,6 +12,7 @@
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/postcss": "^4.3.3",
+    "@tinymce/tinymce-react": "^6.3.0",
     "@tiptap/extension-color": "^3.30.2",
     "@tiptap/extension-highlight": "^3.31.3",
     "@tiptap/extension-image": "^3.30.5",
@@ -28,7 +29,8 @@
     "react-router-dom": "^7.18.2",
     "recharts": "^3.10.1",
     "socket.io-client": "^4.8.4",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "tinymce": "^8.9.3"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

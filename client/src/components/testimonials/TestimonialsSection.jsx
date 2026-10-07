@@ -148,14 +148,20 @@ export default function TestimonialsSection() {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
                   <div className="h-[1.5px] w-6 bg-[#c9542f]" />
-                  <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+                  <span 
+                    className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]"
+                    style={{ fontSize: data?.eyebrowFontSize ? `${data.eyebrowFontSize}px` : undefined }}
+                  >
                     {eyebrow}
                   </span>
                 </div>
                 
                 <h2 
                   className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08] mb-1"
-                  style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                  style={{ 
+                    fontFamily: 'Fraunces, Georgia, serif',
+                    fontSize: data?.headingFontSize ? `${data.headingFontSize}px` : undefined 
+                  }}
                 >
                   {heading1}<br/>
                   <span className="text-[#c9542f] not-italic font-medium">{headingAccent}</span>
@@ -163,7 +169,10 @@ export default function TestimonialsSection() {
                 
                 <p 
                   className="text-[#4a463e] text-xl lg:text-2xl font-serif font-normal tracking-wide leading-relaxed max-w-xl mt-2"
-                  style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                  style={{ 
+                    fontFamily: 'Fraunces, Georgia, serif',
+                    fontSize: data?.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined 
+                  }}
                 >
                   {description}
                 </p>
@@ -183,7 +192,10 @@ export default function TestimonialsSection() {
                     >
                       <Quotes className="text-[#c9542f] text-2xl mb-2.5 opacity-90" weight="fill" />
                       
-                      <p className="text-[#2b2723] font-light text-xs sm:text-sm md:text-[0.92rem] leading-relaxed mb-4 flex-grow">
+                      <p 
+                        className="text-[#2b2723] font-light text-xs sm:text-sm md:text-[0.92rem] leading-relaxed mb-4 flex-grow"
+                        style={{ fontSize: data?.cardQuoteFontSize ? `${data.cardQuoteFontSize}px` : undefined }}
+                      >
                         "{t.quote}"
                       </p>
                       
@@ -198,8 +210,18 @@ export default function TestimonialsSection() {
                           </div>
                         )}
                         <div className="flex flex-col">
-                          <span className="font-sans text-[#111010] text-sm sm:text-[0.92rem] font-bold">{t.name}</span>
-                          <span className="font-sans text-[#7a756b] text-xs sm:text-[0.72rem] uppercase tracking-wider">{t.role}</span>
+                          <span 
+                            className="font-sans text-[#111010] text-sm sm:text-[0.92rem] font-bold"
+                            style={{ fontSize: data?.cardNameFontSize ? `${data.cardNameFontSize}px` : undefined }}
+                          >
+                            {t.name}
+                          </span>
+                          <span 
+                            className="font-sans text-[#7a756b] text-xs sm:text-[0.72rem] uppercase tracking-wider"
+                            style={{ fontSize: data?.cardRoleFontSize ? `${data.cardRoleFontSize}px` : undefined }}
+                          >
+                            {t.role}
+                          </span>
                         </div>
                       </div>
                     </div>

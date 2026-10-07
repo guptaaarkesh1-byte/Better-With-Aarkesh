@@ -2764,10 +2764,14 @@ export default function Course() {
                   ).map((f, idx) => (
                     <details className="a" key={idx} open={idx === 0}>
                       <summary>
-                        <span className="n">Q{idx + 1}</span>
-                        <span className="t">{f.question || f.q}</span>
+                        <span className="t font-serif">{f.question || f.q}</span>
+                        <div className="faq-caret-circle">
+                          <CaretDown size={17} weight="bold" />
+                        </div>
                       </summary>
-                      <p>{f.answer || f.a}</p>
+                      <div className="faq-answer-wrap">
+                        <p>{f.answer || f.a}</p>
+                      </div>
                     </details>
                   ))}
                 </div>

@@ -25,7 +25,10 @@ export default function PrincipleSection({
   customTransitionFlow,
   contentClassName = '',
   imagePosition = 'object-[80%_center]', // Shifting it slightly left from pure 'object-right'
-  maxContentWidth
+  maxContentWidth,
+  eyebrowFontSize,
+  headingFontSize,
+  descriptionFontSize
 }) {
   const sectionRef = useRef(null);
   const isThinkPage = id === 'think-principle';
@@ -92,6 +95,9 @@ export default function PrincipleSection({
               paragraphs={paragraphs}
               buttonText={buttonText}
               maxContentWidth={maxContentWidth}
+              eyebrowFontSize={eyebrowFontSize}
+              headingFontSize={headingFontSize}
+              descriptionFontSize={descriptionFontSize}
             />
           </div>
 

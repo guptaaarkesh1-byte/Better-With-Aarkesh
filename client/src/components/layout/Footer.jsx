@@ -126,18 +126,27 @@ export default function Footer() {
               <div className="w-11 h-11 rounded-xl bg-[#fbf0eb] border border-[#e8c4e2] flex items-center justify-center text-[#c9542f] group-hover:scale-105 transition-transform shadow-xs">
                 <Sparkle size={22} weight="fill" />
               </div>
-              <span className="font-serif text-3xl sm:text-4xl text-[#111010] tracking-tight leading-none">
+              <span 
+                className="font-serif text-3xl sm:text-4xl text-[#111010] tracking-tight leading-none"
+                style={{ fontSize: brandSettings.brandTitleFontSize ? `${brandSettings.brandTitleFontSize}px` : undefined }}
+              >
                 BetterWith<em className="text-[#c9542f] not-italic font-normal ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>
               </span>
             </Link>
 
-            <p className="font-sans text-base sm:text-[1.05rem] text-[#4a463e] font-normal leading-relaxed max-w-lg">
+            <p 
+              className="font-sans text-base sm:text-[1.05rem] text-[#4a463e] font-normal leading-relaxed max-w-lg"
+              style={{ fontSize: brandSettings.bioFontSize ? `${brandSettings.bioFontSize}px` : undefined }}
+            >
               {brandSettings.brandDescription}
             </p>
 
             {/* Direct Contact Email */}
             {brandSettings.brandEmail && (
-              <div className="flex items-center gap-3 text-base sm:text-lg font-sans text-[#2b2723] pt-1">
+              <div 
+                className="flex items-center gap-3 text-base sm:text-lg font-sans text-[#2b2723] pt-1"
+                style={{ fontSize: brandSettings.bioFontSize ? `${brandSettings.bioFontSize}px` : undefined }}
+              >
                 <EnvelopeSimple size={22} className="text-[#c9542f] shrink-0" weight="bold" />
                 <a 
                   href={`mailto:${brandSettings.brandEmail}`}
@@ -214,11 +223,17 @@ export default function Footer() {
                 key={col.title} 
                 className="flex flex-col items-start gap-5 min-w-[160px] sm:min-w-[190px]"
               >
-                <h3 className="font-sans text-sm sm:text-[0.95rem] uppercase tracking-[0.22em] font-bold text-[#c9542f] truncate w-full">
+                <h3 
+                  className="font-sans text-sm sm:text-[0.95rem] uppercase tracking-[0.22em] font-bold text-[#c9542f] truncate w-full"
+                  style={{ fontSize: brandSettings.columnTitleFontSize ? `${brandSettings.columnTitleFontSize}px` : undefined }}
+                >
                   {col.title}
                 </h3>
                 
-                <ul className="flex flex-col gap-3.5 font-sans text-base sm:text-[1.05rem] text-[#2b2723] font-normal leading-relaxed w-full">
+                <ul 
+                  className="flex flex-col gap-3.5 font-sans text-base sm:text-[1.05rem] text-[#2b2723] font-normal leading-relaxed w-full"
+                  style={{ fontSize: brandSettings.linksFontSize ? `${brandSettings.linksFontSize}px` : undefined }}
+                >
                   {(col.links || []).map((link) => {
                     const isExternalHttp = link.url?.startsWith('http://') || link.url?.startsWith('https://');
                     const isMailto = link.url?.startsWith('mailto:');
@@ -272,7 +287,10 @@ export default function Footer() {
 
         {/* ─── BOTTOM BAR: Clean Copyright Only ─── */}
         <div className="pt-8 sm:pt-10 border-t border-black/10 flex items-center justify-center text-center font-sans">
-          <p className="text-sm sm:text-base text-[#6b665d]">
+          <p 
+            className="text-sm sm:text-base text-[#6b665d]"
+            style={{ fontSize: brandSettings.copyrightFontSize ? `${brandSettings.copyrightFontSize}px` : undefined }}
+          >
             {brandSettings.copyrightText || `© ${currentYear} Better With Aarkesh. All rights reserved.`}
           </p>
         </div>

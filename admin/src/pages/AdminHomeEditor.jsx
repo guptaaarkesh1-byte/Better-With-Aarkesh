@@ -46,7 +46,14 @@ import {
   DiscordLogo,
   TiktokLogo,
   Globe,
-  Pen
+  Pen,
+  Minus,
+  TextT,
+  ArrowCounterClockwise,
+  Lightning,
+  CheckSquare,
+  Square,
+  Faders
 } from '@phosphor-icons/react';
 
 // Exact Default Assets from Frontend Website
@@ -65,6 +72,7 @@ import defaultCtaImg from '../../../client/src/assets/Page10/next-chapter-cozy.w
 import { API_URL } from '../utils/apiUrl';
 
 const SIDEBAR_TABS = [
+  { id: 'masterTypography', label: 'Master Font Studio', icon: <Faders size={18} weight="bold" />, description: 'Universal font size control for all home sections', badge: 'MASTER' },
   { id: 'hero', label: 'Hero Section', icon: <Desktop size={18} />, description: 'Main banner, title & background' },
   { id: 'problem', label: 'Problem Statement', icon: <Compass size={18} />, description: 'Core struggle & transition' },
   { id: 'think', label: 'Principle 01: Think', icon: <Brain size={18} />, description: 'Cognitive clarity & noise reduction' },
@@ -253,6 +261,321 @@ function ImageEditorCard({
   );
 }
 
+// Reusable Live Typography Controller Card (Exclusive for Home Page Sections)
+function TypographyControllerCard({
+  title = 'Section Typography & Font Sizes (Home Exclusive)',
+  eyebrowFontSize = 14,
+  headingFontSize = 64,
+  descriptionFontSize = 20,
+  defaultEyebrowSize = 14,
+  defaultHeadingSize = 64,
+  defaultDescriptionSize = 20,
+  onEyebrowSizeChange,
+  onHeadingSizeChange,
+  onDescriptionSizeChange,
+  previewEyebrow = 'CLARITY. HONESTY. INTENTION.',
+  previewHeading = 'Clarity changes',
+  previewAccent = 'everything.',
+  previewDescription = 'A space to think clearly, feel honestly and decide intentionally.'
+}) {
+  const currentEyebrow = Number(eyebrowFontSize) || defaultEyebrowSize;
+  const currentHeading = Number(headingFontSize) || defaultHeadingSize;
+  const currentDescription = Number(descriptionFontSize) || defaultDescriptionSize;
+
+  const handleReset = () => {
+    if (onEyebrowSizeChange) onEyebrowSizeChange(defaultEyebrowSize);
+    if (onHeadingSizeChange) onHeadingSizeChange(defaultHeadingSize);
+    if (onDescriptionSizeChange) onDescriptionSizeChange(defaultDescriptionSize);
+  };
+
+  const isCustomized = (
+    currentEyebrow !== defaultEyebrowSize ||
+    currentHeading !== defaultHeadingSize ||
+    currentDescription !== defaultDescriptionSize
+  );
+
+  return (
+    <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-3 border-b border-white/5">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">
+          <TextT size={18} weight="bold" />
+          <span>{title}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {isCustomized && (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-[0.65rem] text-[#c79c6e] font-semibold transition-all cursor-pointer"
+              title="Reset all font sizes to default"
+            >
+              <ArrowCounterClockwise size={12} />
+              <span>Reset Sizes</span>
+            </button>
+          )}
+          <span className="px-2 py-0.5 rounded bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[0.62rem] font-mono font-bold text-[#c79c6e]">
+            Live Sizing Control
+          </span>
+        </div>
+      </div>
+
+      {/* Font Size Sliders & Steppers Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        
+        {/* 1. Tagline / Eyebrow Text Size */}
+        <div className="bg-[#050505] border border-white/5 rounded-xl p-4 flex flex-col justify-between gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[0.68rem] font-bold uppercase tracking-wider text-white/70">
+              1. Tagline / Eyebrow
+            </span>
+            <span className="text-xs font-mono font-bold text-[#c79c6e]">
+              {currentEyebrow}px
+            </span>
+          </div>
+
+          <p className="text-[0.68rem] text-white/40 leading-snug">
+            Controls top uppercase tracking tagline across all sections.
+          </p>
+
+          {/* Stepper & Slider */}
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => onEyebrowSizeChange && onEyebrowSizeChange(Math.max(10, currentEyebrow - 1))}
+              className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="Decrease 1px"
+            >
+              <Minus size={14} weight="bold" />
+            </button>
+
+            <input
+              type="range"
+              min={10}
+              max={28}
+              step={1}
+              value={currentEyebrow}
+              onChange={(e) => onEyebrowSizeChange && onEyebrowSizeChange(Number(e.target.value))}
+              className="flex-1 accent-[#c79c6e] cursor-pointer"
+            />
+
+            <button
+              type="button"
+              onClick={() => onEyebrowSizeChange && onEyebrowSizeChange(Math.min(28, currentEyebrow + 1))}
+              className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="Increase 1px"
+            >
+              <Plus size={14} weight="bold" />
+            </button>
+          </div>
+
+          {/* Quick Presets */}
+          <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
+            {[11, 12, 13, 14, 16, 18].map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => onEyebrowSizeChange && onEyebrowSizeChange(size)}
+                className={`text-[0.62rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                  currentEyebrow === size
+                    ? 'bg-[#c79c6e] text-black font-bold'
+                    : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                {size}px
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 2. Main Heading Text Size */}
+        <div className="bg-[#050505] border border-white/5 rounded-xl p-4 flex flex-col justify-between gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[0.68rem] font-bold uppercase tracking-wider text-white/70">
+              2. Main Heading
+            </span>
+            <span className="text-xs font-mono font-bold text-[#c79c6e]">
+              {currentHeading}px
+            </span>
+          </div>
+
+          <p className="text-[0.68rem] text-white/40 leading-snug">
+            Controls main bold Fraunces serif headline + accent text.
+          </p>
+
+          {/* Stepper & Slider */}
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => onHeadingSizeChange && onHeadingSizeChange(Math.max(24, currentHeading - 2))}
+              className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="Decrease 2px"
+            >
+              <Minus size={14} weight="bold" />
+            </button>
+
+            <input
+              type="range"
+              min={24}
+              max={96}
+              step={1}
+              value={currentHeading}
+              onChange={(e) => onHeadingSizeChange && onHeadingSizeChange(Number(e.target.value))}
+              className="flex-1 accent-[#c79c6e] cursor-pointer"
+            />
+
+            <button
+              type="button"
+              onClick={() => onHeadingSizeChange && onHeadingSizeChange(Math.min(96, currentHeading + 2))}
+              className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="Increase 2px"
+            >
+              <Plus size={14} weight="bold" />
+            </button>
+          </div>
+
+          {/* Quick Presets */}
+          <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
+            {[36, 44, 52, 60, 64, 72].map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => onHeadingSizeChange && onHeadingSizeChange(size)}
+                className={`text-[0.62rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                  currentHeading === size
+                    ? 'bg-[#c79c6e] text-black font-bold'
+                    : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                {size}px
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 3. Short Paragraph / Description Text Size */}
+        <div className="bg-[#050505] border border-white/5 rounded-xl p-4 flex flex-col justify-between gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[0.68rem] font-bold uppercase tracking-wider text-white/70">
+              3. Description / Para
+            </span>
+            <span className="text-xs font-mono font-bold text-[#c79c6e]">
+              {currentDescription}px
+            </span>
+          </div>
+
+          <p className="text-[0.68rem] text-white/40 leading-snug">
+            Controls subtext, quote paragraphs, and descriptive copy.
+          </p>
+
+          {/* Stepper & Slider */}
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => onDescriptionSizeChange && onDescriptionSizeChange(Math.max(12, currentDescription - 1))}
+              className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="Decrease 1px"
+            >
+              <Minus size={14} weight="bold" />
+            </button>
+
+            <input
+              type="range"
+              min={12}
+              max={36}
+              step={1}
+              value={currentDescription}
+              onChange={(e) => onDescriptionSizeChange && onDescriptionSizeChange(Number(e.target.value))}
+              className="flex-1 accent-[#c79c6e] cursor-pointer"
+            />
+
+            <button
+              type="button"
+              onClick={() => onDescriptionSizeChange && onDescriptionSizeChange(Math.min(36, currentDescription + 1))}
+              className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="Increase 1px"
+            >
+              <Plus size={14} weight="bold" />
+            </button>
+          </div>
+
+          {/* Quick Presets */}
+          <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
+            {[14, 16, 18, 20, 22, 24].map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => onDescriptionSizeChange && onDescriptionSizeChange(size)}
+                className={`text-[0.62rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                  currentDescription === size
+                    ? 'bg-[#c79c6e] text-black font-bold'
+                    : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                {size}px
+              </button>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Real-time Visual Preview Canvas */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[0.68rem] font-bold uppercase tracking-wider text-white/50 flex items-center gap-1.5">
+            <Eye size={13} className="text-[#c79c6e]" />
+            <span>Live Visual Preview (Exact Home Styling &amp; Colors)</span>
+          </span>
+          <span className="text-[0.62rem] text-white/40">
+            Rendered with authentic Fraunces Serif &amp; Inter Typography
+          </span>
+        </div>
+
+        <div className="bg-[#f5f1e8] border border-[#c9542f]/30 rounded-xl p-6 sm:p-8 text-[#111010] shadow-inner overflow-hidden flex flex-col gap-3">
+          {/* Eyebrow preview */}
+          <div className="flex items-center gap-3">
+            <div className="h-[1.5px] w-7 bg-[#c9542f] origin-left shrink-0" />
+            <span
+              className="font-sans font-bold uppercase tracking-[0.25em] text-[#c9542f] transition-all"
+              style={{ fontSize: `${currentEyebrow}px` }}
+            >
+              {previewEyebrow || 'CLARITY. HONESTY. INTENTION.'}
+            </span>
+          </div>
+
+          {/* Heading preview */}
+          <h3
+            className="font-serif font-medium tracking-tight text-[#111010] leading-[1.1] transition-all"
+            style={{
+              fontFamily: 'Fraunces, Georgia, serif',
+              fontSize: `${Math.min(currentHeading, 54)}px`,
+            }}
+          >
+            {previewHeading}{' '}
+            {previewAccent && (
+              <span className="text-[#c9542f] font-medium not-italic">
+                {previewAccent}
+              </span>
+            )}
+          </h3>
+
+          {/* Description preview */}
+          <p
+            className="font-serif font-normal text-[#4a463e] tracking-wide leading-relaxed max-w-xl transition-all"
+            style={{
+              fontFamily: 'Fraunces, Georgia, serif',
+              fontSize: `${currentDescription}px`,
+            }}
+          >
+            {previewDescription}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminHomeEditor() {
   const [activeTab, setActiveTab] = useState(() => {
     try {
@@ -302,10 +625,225 @@ export default function AdminHomeEditor() {
     brandDescription: 'Authentic 1-on-1 mentorship, transformational coaching & self-mastery courses designed to quiet inner noise, dissolve reactive patterns, and elevate your presence.',
     brandEmail: 'coaching@aarkeshgupta.com',
     copyrightText: '© 2026 Better With Aarkesh. All rights reserved.',
+    columnTitleFontSize: 14,
+    bioFontSize: 16,
+    linksFontSize: 16,
+    brandTitleFontSize: 36,
+    copyrightFontSize: 14,
   });
   const [footerColumns, setFooterColumns] = useState([]);
   const [footerSocials, setFooterSocials] = useState([]);
   const [isSavingFooter, setIsSavingFooter] = useState(false);
+
+  // Master Typography Studio State
+  const [masterEyebrowSize, setMasterEyebrowSize] = useState(14);
+  const [masterHeadingSize, setMasterHeadingSize] = useState(64);
+  const [masterDescriptionSize, setMasterDescriptionSize] = useState(18);
+  const [isSavingMaster, setIsSavingMaster] = useState(false);
+  const [selectedMasterSections, setSelectedMasterSections] = useState({
+    hero: true,
+    problem: true,
+    think: true,
+    feel: true,
+    decide: true,
+    coachingProcess: true,
+    coachingJourney: true,
+    about: true,
+    testimonials: true,
+    cta: true,
+    faq: true,
+    footer: true,
+  });
+
+  const handleToggleMasterSection = (key) => {
+    setSelectedMasterSections(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const handleSelectAllMasterSections = (val) => {
+    setSelectedMasterSections({
+      hero: val,
+      problem: val,
+      think: val,
+      feel: val,
+      decide: val,
+      coachingProcess: val,
+      coachingJourney: val,
+      about: val,
+      testimonials: val,
+      cta: val,
+      faq: val,
+      footer: val,
+    });
+  };
+
+  const handleApplyMasterTypography = async () => {
+    if (!allSections) return;
+    try {
+      setIsSavingMaster(true);
+      const token = localStorage.getItem('adminToken');
+      const updatedAllSections = JSON.parse(JSON.stringify(allSections));
+      const endpointsToSave = new Set();
+
+      if (selectedMasterSections.hero) {
+        updatedAllSections.hero = {
+          ...(updatedAllSections.hero || {}),
+          eyebrowFontSize: masterEyebrowSize,
+          headingFontSize: masterHeadingSize,
+          descriptionFontSize: masterDescriptionSize,
+        };
+        endpointsToSave.add('hero');
+      }
+
+      if (selectedMasterSections.problem) {
+        updatedAllSections.problem = {
+          ...(updatedAllSections.problem || {}),
+          eyebrowFontSize: masterEyebrowSize,
+          headingFontSize: masterHeadingSize,
+          descriptionFontSize: masterDescriptionSize,
+        };
+        endpointsToSave.add('problem');
+      }
+
+      if (selectedMasterSections.think || selectedMasterSections.feel || selectedMasterSections.decide) {
+        updatedAllSections.principles = {
+          ...(updatedAllSections.principles || {}),
+        };
+        if (selectedMasterSections.think) {
+          updatedAllSections.principles.think = {
+            ...(updatedAllSections.principles.think || {}),
+            eyebrowFontSize: masterEyebrowSize,
+            headingFontSize: masterHeadingSize,
+            descriptionFontSize: masterDescriptionSize,
+          };
+        }
+        if (selectedMasterSections.feel) {
+          updatedAllSections.principles.feel = {
+            ...(updatedAllSections.principles.feel || {}),
+            eyebrowFontSize: masterEyebrowSize,
+            headingFontSize: masterHeadingSize,
+            descriptionFontSize: masterDescriptionSize,
+          };
+        }
+        if (selectedMasterSections.decide) {
+          updatedAllSections.principles.decide = {
+            ...(updatedAllSections.principles.decide || {}),
+            eyebrowFontSize: masterEyebrowSize,
+            headingFontSize: masterHeadingSize,
+            descriptionFontSize: masterDescriptionSize,
+          };
+        }
+        endpointsToSave.add('principles');
+      }
+
+      if (selectedMasterSections.coachingProcess) {
+        updatedAllSections.coachingProcess = {
+          ...(updatedAllSections.coachingProcess || {}),
+          eyebrowFontSize: masterEyebrowSize,
+          headingFontSize: masterHeadingSize,
+          descriptionFontSize: masterDescriptionSize,
+        };
+        endpointsToSave.add('coachingProcess');
+      }
+
+      if (selectedMasterSections.coachingJourney) {
+        updatedAllSections.coachingJourney = {
+          ...(updatedAllSections.coachingJourney || {}),
+          eyebrowFontSize: masterEyebrowSize,
+          headingFontSize: masterHeadingSize,
+          descriptionFontSize: masterDescriptionSize,
+        };
+        endpointsToSave.add('coachingJourney');
+      }
+
+      if (selectedMasterSections.about) {
+        updatedAllSections.about = {
+          ...(updatedAllSections.about || {}),
+          eyebrowFontSize: masterEyebrowSize,
+          headingFontSize: masterHeadingSize,
+          descriptionFontSize: masterDescriptionSize,
+        };
+        endpointsToSave.add('about');
+      }
+
+      if (selectedMasterSections.testimonials) {
+        updatedAllSections.testimonials = {
+          ...(updatedAllSections.testimonials || {}),
+          eyebrowFontSize: masterEyebrowSize,
+          headingFontSize: masterHeadingSize,
+          descriptionFontSize: masterDescriptionSize,
+        };
+        endpointsToSave.add('testimonials');
+      }
+
+      if (selectedMasterSections.cta) {
+        updatedAllSections.cta = {
+          ...(updatedAllSections.cta || {}),
+          eyebrowFontSize: masterEyebrowSize,
+          headingFontSize: masterHeadingSize,
+          descriptionFontSize: masterDescriptionSize,
+        };
+        endpointsToSave.add('cta');
+      }
+
+      if (selectedMasterSections.faq) {
+        updatedAllSections.faq = {
+          ...(updatedAllSections.faq || {}),
+          eyebrowFontSize: masterEyebrowSize,
+          headingFontSize: masterHeadingSize,
+          descriptionFontSize: masterDescriptionSize,
+        };
+        endpointsToSave.add('faq');
+      }
+
+      if (selectedMasterSections.footer) {
+        const updatedFooter = {
+          ...footerBrandSettings,
+          columnTitleFontSize: masterEyebrowSize,
+          bioFontSize: masterDescriptionSize,
+          linksFontSize: Math.max(13, masterDescriptionSize - 2),
+          brandTitleFontSize: Math.min(masterHeadingSize, 42),
+          copyrightFontSize: Math.max(11, masterEyebrowSize - 1),
+        };
+        setFooterBrandSettings(updatedFooter);
+        endpointsToSave.add('footer');
+        try {
+          fetch(`${API_URL}/api/footer-columns/settings`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(updatedFooter),
+          });
+        } catch (e) {}
+      }
+
+      setAllSections(updatedAllSections);
+
+      const res = await fetch(`${API_URL}/api/home-settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(updatedAllSections),
+      });
+
+      if (res.ok) {
+        showSuccess(`⚡ Master Typography applied to ${endpointsToSave.size} section(s) & saved to MongoDB!`);
+      } else {
+        showError('Some sections could not be updated. Please check connection.');
+      }
+    } catch (err) {
+      console.error('Master typography apply error:', err);
+      showError('Failed to apply master typography.');
+    } finally {
+      setIsSavingMaster(false);
+    }
+  };
 
   // Fetch All Home Settings & Global Visuals on Load
   useEffect(() => {
@@ -568,6 +1106,12 @@ export default function AdminHomeEditor() {
 
   // Save Current Section to Database
   const handleSaveSection = async () => {
+    if (activeTab === 'masterTypography') {
+      return handleApplyMasterTypography();
+    }
+    if (activeTab === 'footer') {
+      return handleSaveFooterBrand();
+    }
     if (!allSections) return;
     const isPrinciple = ['think', 'feel', 'decide'].includes(activeTab);
     const sectionEndpoint = isPrinciple ? 'principles' : activeTab;
@@ -699,7 +1243,7 @@ export default function AdminHomeEditor() {
 
           <button
             onClick={fetchAllHomeSettings}
-            disabled={isSaving}
+            disabled={isSaving || isSavingMaster}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 text-xs font-medium transition-all cursor-pointer"
           >
             <ArrowClockwise size={15} />
@@ -708,18 +1252,18 @@ export default function AdminHomeEditor() {
 
           <button
             onClick={handleSaveSection}
-            disabled={isSaving}
+            disabled={isSaving || isSavingMaster}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-[#c79c6e] hover:bg-[#b0885e] text-black font-semibold text-xs uppercase tracking-wider shadow-lg shadow-[#c79c6e]/20 transition-all cursor-pointer disabled:opacity-50"
           >
-            {isSaving ? (
+            {(isSaving || isSavingMaster) ? (
               <>
                 <span className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                <span>Saving...</span>
+                <span>{activeTab === 'masterTypography' ? 'Saving All...' : 'Saving...'}</span>
               </>
             ) : (
               <>
-                <FloppyDisk size={16} weight="bold" />
-                <span>Save Section</span>
+                {activeTab === 'masterTypography' ? <Lightning size={16} weight="fill" /> : <FloppyDisk size={16} weight="bold" />}
+                <span>{activeTab === 'masterTypography' ? 'Apply & Save All' : 'Save Section'}</span>
               </>
             )}
           </button>
@@ -782,6 +1326,536 @@ export default function AdminHomeEditor() {
         {/* ─── RIGHT CONTENT AREA ─── */}
         <main className="flex-1 p-6 lg:p-10 overflow-y-auto">
           
+          {/* =========================================================
+              0. MASTER TYPOGRAPHY STUDIO (GLOBAL HOMEPAGE CONTROLLER)
+             ========================================================= */}
+          {activeTab === 'masterTypography' && (
+            <div className="flex flex-col gap-8 max-w-6xl">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-[#c79c6e] text-black">
+                      <Faders size={20} weight="bold" />
+                    </div>
+                    <h2 className="font-serif text-2xl text-white">Master Font Studio</h2>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[0.65rem] font-bold text-[#c79c6e] tracking-wider uppercase">
+                      Universal Sync Engine
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/50 mt-1">
+                    Control and synchronize Eyebrow/Tagline, Main Heading, and Paragraph font sizes across all Home page sections simultaneously in 1 click.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMasterEyebrowSize(14);
+                      setMasterHeadingSize(64);
+                      setMasterDescriptionSize(18);
+                      showToast('Reset master sizes to recommended standards (14px / 64px / 18px)', 'info');
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-xs font-medium transition-all cursor-pointer"
+                  >
+                    <ArrowCounterClockwise size={14} />
+                    <span>Reset Defaults</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Master Sliders Control Card */}
+              <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-6 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-white/5">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#c79c6e]">
+                    <TextT size={18} weight="bold" />
+                    <span>Universal Font Sizing Engine</span>
+                  </div>
+                  <span className="text-[0.68rem] text-white/40 font-medium">
+                    Adjust sizes here, choose target sections below, then click "Apply &amp; Save All" at the top.
+                  </span>
+                </div>
+
+                {/* 3 Master Columns */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  
+                  {/* 1. Master Eyebrow */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#c79c6e]" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                          1. Tagline / Eyebrow
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {masterEyebrowSize}px
+                      </span>
+                    </div>
+
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls uppercase tracking taglines across all principles, hero, coaching journey &amp; CTAs.
+                    </p>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setMasterEyebrowSize(prev => Math.max(10, prev - 1))}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+
+                      <input
+                        type="range"
+                        min={10}
+                        max={28}
+                        step={1}
+                        value={masterEyebrowSize}
+                        onChange={(e) => setMasterEyebrowSize(Number(e.target.value))}
+                        className="flex-1 accent-[#c79c6e] cursor-pointer"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setMasterEyebrowSize(prev => Math.min(28, prev + 1))}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[11, 12, 13, 14, 16, 18].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setMasterEyebrowSize(size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            masterEyebrowSize === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Master Main Heading */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#c79c6e]" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                          2. Main Headings
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {masterHeadingSize}px
+                      </span>
+                    </div>
+
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls main bold Fraunces serif headlines across every section on the home page.
+                    </p>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setMasterHeadingSize(prev => Math.max(24, prev - 2))}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Decrease 2px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+
+                      <input
+                        type="range"
+                        min={24}
+                        max={96}
+                        step={1}
+                        value={masterHeadingSize}
+                        onChange={(e) => setMasterHeadingSize(Number(e.target.value))}
+                        className="flex-1 accent-[#c79c6e] cursor-pointer"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setMasterHeadingSize(prev => Math.min(96, prev + 2))}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Increase 2px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[36, 44, 52, 60, 64, 72].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setMasterHeadingSize(size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            masterHeadingSize === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3. Master Description / Paragraph */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#c79c6e]" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                          3. Paragraph / Subtext
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {masterDescriptionSize}px
+                      </span>
+                    </div>
+
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls subtext, quote paragraphs, principle summaries, and descriptive copy.
+                    </p>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setMasterDescriptionSize(prev => Math.max(12, prev - 1))}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+
+                      <input
+                        type="range"
+                        min={12}
+                        max={36}
+                        step={1}
+                        value={masterDescriptionSize}
+                        onChange={(e) => setMasterDescriptionSize(Number(e.target.value))}
+                        className="flex-1 accent-[#c79c6e] cursor-pointer"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setMasterDescriptionSize(prev => Math.min(36, prev + 1))}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[14, 16, 18, 20, 22, 24].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setMasterDescriptionSize(size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            masterDescriptionSize === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Target Sections Selector Grid */}
+              <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/5">
+                  <div className="flex items-center gap-2">
+                    <CheckSquare size={18} className="text-[#c79c6e]" weight="bold" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-white">
+                      Target Home Sections ({Object.values(selectedMasterSections).filter(Boolean).length} of 12 Selected)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAllMasterSections(true)}
+                      className="text-[0.68rem] font-semibold px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAllMasterSections(false)}
+                      className="text-[0.68rem] font-semibold px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                </div>
+
+                {/* Grid of Sections */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {[
+                    { key: 'hero', label: 'Hero Banner', sub: 'Eyebrow, Main headline & subtext', curr: allSections.hero },
+                    { key: 'problem', label: 'Problem Statement', sub: 'The real struggle & transition', curr: allSections.problem },
+                    { key: 'think', label: 'Principle 01: Think', sub: 'Think clearly & cognitive clarity', curr: allSections.principles?.think },
+                    { key: 'feel', label: 'Principle 02: Feel', sub: 'Feel honestly & emotional depth', curr: allSections.principles?.feel },
+                    { key: 'decide', label: 'Principle 03: Decide', sub: 'Decide intentionally & conviction', curr: allSections.principles?.decide },
+                    { key: 'coachingProcess', label: 'Coaching Process', sub: '5-step methodology & titles', curr: allSections.coachingProcess },
+                    { key: 'coachingJourney', label: 'Coaching Journey', sub: 'Mountain path, nodes & pillars', curr: allSections.coachingJourney },
+                    { key: 'about', label: 'Meet Aarkesh', sub: 'Coach story & 3 role descriptions', curr: allSections.about },
+                    { key: 'testimonials', label: 'Testimonials', sub: 'Client review headlines & quotes', curr: allSections.testimonials },
+                    { key: 'cta', label: 'Final Call to Action', sub: 'Next chapter booking banner', curr: allSections.cta },
+                    { key: 'faq', label: 'FAQ Section', sub: 'Frequently asked questions & answers', curr: allSections.faq },
+                    { key: 'footer', label: 'Website Footer', sub: 'Column titles, brand bio & links', curr: { eyebrowFontSize: footerBrandSettings.columnTitleFontSize || 14, headingFontSize: footerBrandSettings.brandTitleFontSize || 36, descriptionFontSize: footerBrandSettings.bioFontSize || 16 } },
+                  ].map((sec) => {
+                    const isChecked = !!selectedMasterSections[sec.key];
+                    return (
+                      <div
+                        key={sec.key}
+                        onClick={() => handleToggleMasterSection(sec.key)}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                          isChecked
+                            ? 'bg-[#c79c6e]/10 border-[#c79c6e]/40 shadow-sm'
+                            : 'bg-[#050505] border-white/5 hover:border-white/10 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <div className="mt-0.5 text-[#c79c6e]">
+                          {isChecked ? (
+                            <CheckSquare size={18} weight="fill" />
+                          ) : (
+                            <Square size={18} className="text-white/30" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className={`text-xs font-semibold uppercase tracking-wider truncate ${
+                              isChecked ? 'text-white' : 'text-white/60'
+                            }`}>
+                              {sec.label}
+                            </span>
+                          </div>
+                          <p className="text-[0.68rem] text-white/40 truncate mt-0.5">
+                            {sec.sub}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5 text-[0.62rem] font-mono text-white/50">
+                            <span>Eyebrow: <strong className="text-white/80">{sec.curr?.eyebrowFontSize || 14}px</strong></span>
+                            <span>•</span>
+                            <span>Head: <strong className="text-white/80">{sec.curr?.headingFontSize || 64}px</strong></span>
+                            <span>•</span>
+                            <span>Para: <strong className="text-white/80">{sec.curr?.descriptionFontSize || 18}px</strong></span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Multi-Section Live Visual Comparison Grid */}
+              <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-white/5">
+                  <div className="flex items-center gap-2">
+                    <Eye size={18} className="text-[#c79c6e]" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-white">
+                      Live Multi-Section Canvas Comparison
+                    </span>
+                  </div>
+                  <span className="text-[0.68rem] text-white/40 font-medium">
+                    Previewing in real-time with master sizes: <strong className="text-[#c79c6e] font-mono">{masterEyebrowSize}px</strong> / <strong className="text-[#c79c6e] font-mono">{masterHeadingSize}px</strong> / <strong className="text-[#c79c6e] font-mono">{masterDescriptionSize}px</strong>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  
+                  {/* Card 1: Hero Banner Preview */}
+                  <div className="bg-[#f5f1e8] border border-[#c9542f]/30 rounded-xl p-6 text-[#111010] flex flex-col gap-3 shadow-inner">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#c9542f]/20">
+                      <span className="text-[0.62rem] font-mono font-bold uppercase tracking-wider text-[#c9542f]">
+                        Preview 1 • Hero Banner
+                      </span>
+                      <span className="text-[0.6rem] text-stone-500 font-mono">
+                        {masterEyebrowSize}px / {masterHeadingSize}px / {masterDescriptionSize}px
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-[1.5px] w-6 bg-[#c9542f] origin-left shrink-0" />
+                      <span
+                        className="font-sans font-bold uppercase tracking-[0.25em] text-[#c9542f]"
+                        style={{ fontSize: `${masterEyebrowSize}px` }}
+                      >
+                        CLARITY. HONESTY. INTENTION.
+                      </span>
+                    </div>
+
+                    <h3
+                      className="font-serif font-medium tracking-tight text-[#111010] leading-[1.1]"
+                      style={{
+                        fontFamily: 'Fraunces, Georgia, serif',
+                        fontSize: `${Math.min(masterHeadingSize, 52)}px`,
+                      }}
+                    >
+                      Clarity changes <span className="text-[#c9542f] font-medium not-italic">everything.</span>
+                    </h3>
+
+                    <p
+                      className="font-serif font-normal text-[#4a463e] tracking-wide leading-relaxed max-w-lg"
+                      style={{
+                        fontFamily: 'Fraunces, Georgia, serif',
+                        fontSize: `${masterDescriptionSize}px`,
+                      }}
+                    >
+                      A space to think clearly, feel honestly and decide intentionally.
+                    </p>
+                  </div>
+
+                  {/* Card 2: Principle Preview */}
+                  <div className="bg-[#f5f1e8] border border-[#c9542f]/30 rounded-xl p-6 text-[#111010] flex flex-col gap-3 shadow-inner">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#c9542f]/20">
+                      <span className="text-[0.62rem] font-mono font-bold uppercase tracking-wider text-[#c9542f]">
+                        Preview 2 • Principle 01: Think
+                      </span>
+                      <span className="text-[0.6rem] text-stone-500 font-mono">
+                        {masterEyebrowSize}px / {masterHeadingSize}px / {masterDescriptionSize}px
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-[1.5px] w-6 bg-[#c9542f] origin-left shrink-0" />
+                      <span
+                        className="font-sans font-bold uppercase tracking-[0.25em] text-[#c9542f]"
+                        style={{ fontSize: `${masterEyebrowSize}px` }}
+                      >
+                        PRINCIPLE 01 • THINK CLEARLY
+                      </span>
+                    </div>
+
+                    <h3
+                      className="font-serif font-medium tracking-tight text-[#111010] leading-[1.1]"
+                      style={{
+                        fontFamily: 'Fraunces, Georgia, serif',
+                        fontSize: `${Math.min(masterHeadingSize, 52)}px`,
+                      }}
+                    >
+                      Quiet the noise. <span className="text-[#c9542f] font-medium not-italic">Find truth.</span>
+                    </h3>
+
+                    <p
+                      className="font-serif font-normal text-[#4a463e] tracking-wide leading-relaxed max-w-lg"
+                      style={{
+                        fontFamily: 'Fraunces, Georgia, serif',
+                        fontSize: `${masterDescriptionSize}px`,
+                      }}
+                    >
+                      The quality of your life is determined by the quality of your thinking. When mental chatter dissolves, deep insights emerge naturally.
+                    </p>
+                  </div>
+
+                  {/* Card 3: Coaching Methodology */}
+                  <div className="bg-[#f5f1e8] border border-[#c9542f]/30 rounded-xl p-6 text-[#111010] flex flex-col gap-3 shadow-inner">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#c9542f]/20">
+                      <span className="text-[0.62rem] font-mono font-bold uppercase tracking-wider text-[#c9542f]">
+                        Preview 3 • Coaching Methodology
+                      </span>
+                      <span className="text-[0.6rem] text-stone-500 font-mono">
+                        {masterEyebrowSize}px / {masterHeadingSize}px / {masterDescriptionSize}px
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-[1.5px] w-6 bg-[#c9542f] origin-left shrink-0" />
+                      <span
+                        className="font-sans font-bold uppercase tracking-[0.25em] text-[#c9542f]"
+                        style={{ fontSize: `${masterEyebrowSize}px` }}
+                      >
+                        PROVEN 5-STEP METHODOLOGY
+                      </span>
+                    </div>
+
+                    <h3
+                      className="font-serif font-medium tracking-tight text-[#111010] leading-[1.1]"
+                      style={{
+                        fontFamily: 'Fraunces, Georgia, serif',
+                        fontSize: `${Math.min(masterHeadingSize, 52)}px`,
+                      }}
+                    >
+                      How transformation <span className="text-[#c9542f] font-medium not-italic">unfolds.</span>
+                    </h3>
+
+                    <p
+                      className="font-serif font-normal text-[#4a463e] tracking-wide leading-relaxed max-w-lg"
+                      style={{
+                        fontFamily: 'Fraunces, Georgia, serif',
+                        fontSize: `${masterDescriptionSize}px`,
+                      }}
+                    >
+                      A grounded, systematic approach combining deep conversation, emotional honesty, and concrete action.
+                    </p>
+                  </div>
+
+                  {/* Card 4: Final CTA Preview */}
+                  <div className="bg-[#f5f1e8] border border-[#c9542f]/30 rounded-xl p-6 text-[#111010] flex flex-col gap-3 shadow-inner">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#c9542f]/20">
+                      <span className="text-[0.62rem] font-mono font-bold uppercase tracking-wider text-[#c9542f]">
+                        Preview 4 • Final CTA
+                      </span>
+                      <span className="text-[0.6rem] text-stone-500 font-mono">
+                        {masterEyebrowSize}px / {masterHeadingSize}px / {masterDescriptionSize}px
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-[1.5px] w-6 bg-[#c9542f] origin-left shrink-0" />
+                      <span
+                        className="font-sans font-bold uppercase tracking-[0.25em] text-[#c9542f]"
+                        style={{ fontSize: `${masterEyebrowSize}px` }}
+                      >
+                        A CONVERSATION CAN CHANGE EVERYTHING
+                      </span>
+                    </div>
+
+                    <h3
+                      className="font-serif font-medium tracking-tight text-[#111010] leading-[1.1]"
+                      style={{
+                        fontFamily: 'Fraunces, Georgia, serif',
+                        fontSize: `${Math.min(masterHeadingSize, 52)}px`,
+                      }}
+                    >
+                      Your next chapter <span className="text-[#c9542f] font-medium not-italic">starts here.</span>
+                    </h3>
+
+                    <p
+                      className="font-serif font-normal text-[#4a463e] tracking-wide leading-relaxed max-w-lg"
+                      style={{
+                        fontFamily: 'Fraunces, Georgia, serif',
+                        fontSize: `${masterDescriptionSize}px`,
+                      }}
+                    >
+                      This is your space to be heard, understood, and guided forward. Let's create real change—together.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* =========================================================
               1. HERO SECTION
              ========================================================= */}
@@ -910,6 +1984,24 @@ export default function AdminHomeEditor() {
                   />
                 </div>
               </div>
+
+              {/* Home Section Typography & Font Size Control */}
+              <TypographyControllerCard
+                title="Hero Section Typography & Font Sizes (Home Exclusive)"
+                eyebrowFontSize={currentHero.eyebrowFontSize}
+                headingFontSize={currentHero.headingFontSize}
+                descriptionFontSize={currentHero.descriptionFontSize}
+                defaultEyebrowSize={14}
+                defaultHeadingSize={64}
+                defaultDescriptionSize={22}
+                onEyebrowSizeChange={(val) => handleSectionChange('eyebrowFontSize', val)}
+                onHeadingSizeChange={(val) => handleSectionChange('headingFontSize', val)}
+                onDescriptionSizeChange={(val) => handleSectionChange('descriptionFontSize', val)}
+                previewEyebrow={currentHero.eyebrowText || 'CLARITY. HONESTY. INTENTION.'}
+                previewHeading={currentHero.headingLine1 || 'Clarity changes'}
+                previewAccent={currentHero.headingAccent || 'everything.'}
+                previewDescription={currentHero.description || 'A space to think clearly, feel honestly and decide intentionally.'}
+              />
             </div>
           )}
 
@@ -1046,6 +2138,24 @@ export default function AdminHomeEditor() {
                   </div>
                 </div>
               </div>
+
+              {/* Home Section Typography & Font Size Control */}
+              <TypographyControllerCard
+                title="Problem Statement Typography & Font Sizes (Home Exclusive)"
+                eyebrowFontSize={currentProblem.eyebrowFontSize}
+                headingFontSize={currentProblem.headingFontSize}
+                descriptionFontSize={currentProblem.descriptionFontSize}
+                defaultEyebrowSize={14}
+                defaultHeadingSize={56}
+                defaultDescriptionSize={22}
+                onEyebrowSizeChange={(val) => handleSectionChange('eyebrowFontSize', val)}
+                onHeadingSizeChange={(val) => handleSectionChange('headingFontSize', val)}
+                onDescriptionSizeChange={(val) => handleSectionChange('descriptionFontSize', val)}
+                previewEyebrow={currentProblem.eyebrowText || "MAYBE YOU'VE SPENT YEARS"}
+                previewHeading={currentProblem.headingLine1 || "Trying to fix what isn't the"}
+                previewAccent={currentProblem.headingAccent || "real problem."}
+                previewDescription={`${currentProblem.quoteItalic || "Things you carry, cloud your perspective."} ${currentProblem.quoteSubtext || "....Until you learn to see clearly"}`}
+              />
             </div>
           )}
 
@@ -1160,6 +2270,24 @@ export default function AdminHomeEditor() {
                     />
                   </div>
                 </div>
+
+                {/* Home Section Typography & Font Size Control */}
+                <TypographyControllerCard
+                  title="Principle 01 (Think) Typography & Font Sizes (Home Exclusive)"
+                  eyebrowFontSize={p.eyebrowFontSize}
+                  headingFontSize={p.headingFontSize}
+                  descriptionFontSize={p.descriptionFontSize}
+                  defaultEyebrowSize={14}
+                  defaultHeadingSize={64}
+                  defaultDescriptionSize={18}
+                  onEyebrowSizeChange={(val) => handlePrincipleChange('think', 'eyebrowFontSize', val)}
+                  onHeadingSizeChange={(val) => handlePrincipleChange('think', 'headingFontSize', val)}
+                  onDescriptionSizeChange={(val) => handlePrincipleChange('think', 'descriptionFontSize', val)}
+                  previewEyebrow={p.eyebrow || 'PRINCIPLE 01: THINK'}
+                  previewHeading={p.title || 'THINK'}
+                  previewAccent={p.subtitle || 'CLEARLY.'}
+                  previewDescription={`${p.highlight || 'Clarity is the bridge between intention and action.'} ${p.description || 'Your mind creates stories. Some empower you, most hold you back...'}`}
+                />
               </div>
             );
           })()}
@@ -1264,6 +2392,24 @@ export default function AdminHomeEditor() {
                     />
                   </div>
                 </div>
+
+                {/* Home Section Typography & Font Size Control */}
+                <TypographyControllerCard
+                  title="Principle 02 (Feel) Typography & Font Sizes (Home Exclusive)"
+                  eyebrowFontSize={p.eyebrowFontSize}
+                  headingFontSize={p.headingFontSize}
+                  descriptionFontSize={p.descriptionFontSize}
+                  defaultEyebrowSize={14}
+                  defaultHeadingSize={64}
+                  defaultDescriptionSize={18}
+                  onEyebrowSizeChange={(val) => handlePrincipleChange('feel', 'eyebrowFontSize', val)}
+                  onHeadingSizeChange={(val) => handlePrincipleChange('feel', 'headingFontSize', val)}
+                  onDescriptionSizeChange={(val) => handlePrincipleChange('feel', 'descriptionFontSize', val)}
+                  previewEyebrow={p.eyebrow || 'PRINCIPLE 02: FEEL'}
+                  previewHeading={p.title || 'FEEL'}
+                  previewAccent={p.subtitle || 'HONESTLY.'}
+                  previewDescription={`${p.highlight || 'What you resist persists. What you feel fully dissolves.'} ${p.description || 'Emotions are signals, not dictators. Learn to sit with discomfort...'}`}
+                />
               </div>
             );
           })()}
@@ -1379,6 +2525,24 @@ export default function AdminHomeEditor() {
                     />
                   </div>
                 </div>
+
+                {/* Home Section Typography & Font Size Control */}
+                <TypographyControllerCard
+                  title="Principle 03 (Decide) Typography & Font Sizes (Home Exclusive)"
+                  eyebrowFontSize={p.eyebrowFontSize}
+                  headingFontSize={p.headingFontSize}
+                  descriptionFontSize={p.descriptionFontSize}
+                  defaultEyebrowSize={14}
+                  defaultHeadingSize={64}
+                  defaultDescriptionSize={18}
+                  onEyebrowSizeChange={(val) => handlePrincipleChange('decide', 'eyebrowFontSize', val)}
+                  onHeadingSizeChange={(val) => handlePrincipleChange('decide', 'headingFontSize', val)}
+                  onDescriptionSizeChange={(val) => handlePrincipleChange('decide', 'descriptionFontSize', val)}
+                  previewEyebrow={p.eyebrow || 'PRINCIPLE 03: DECIDE'}
+                  previewHeading={p.title || 'DECIDE'}
+                  previewAccent={p.subtitle || 'INTENTIONALLY.'}
+                  previewDescription={`${p.highlight || 'True confidence is born from aligned decision making.'} ${p.description || 'Indecision is also a decision. Stop second guessing...'}`}
+                />
               </div>
             );
           })()}
@@ -1584,6 +2748,24 @@ export default function AdminHomeEditor() {
                     </div>
                   </div>
                 </div>
+
+                {/* Home Section Typography & Font Size Control */}
+                <TypographyControllerCard
+                  title="Coaching Process Typography & Font Sizes (Home Exclusive)"
+                  eyebrowFontSize={currentCoachingProcess.eyebrowFontSize}
+                  headingFontSize={currentCoachingProcess.headingFontSize}
+                  descriptionFontSize={currentCoachingProcess.descriptionFontSize}
+                  defaultEyebrowSize={14}
+                  defaultHeadingSize={56}
+                  defaultDescriptionSize={18}
+                  onEyebrowSizeChange={(val) => handleSectionChange('eyebrowFontSize', val)}
+                  onHeadingSizeChange={(val) => handleSectionChange('headingFontSize', val)}
+                  onDescriptionSizeChange={(val) => handleSectionChange('descriptionFontSize', val)}
+                  previewEyebrow={currentCoachingProcess.eyebrowText || 'THE COACHING PROCESS'}
+                  previewHeading={currentCoachingProcess.headingLine1 || 'A proven process'}
+                  previewAccent={currentCoachingProcess.headingAccent || 'built around you.'}
+                  previewDescription={`${currentCoachingProcess.subtitle || 'A clear path from where you are, to where you want to be.'} ${currentCoachingProcess.subnote || 'Simple. Effective.'}`}
+                />
               </div>
             );
           })()}
@@ -1855,6 +3037,24 @@ export default function AdminHomeEditor() {
                     </div>
                   </div>
                 </div>
+
+                {/* Home Section Typography & Font Size Control */}
+                <TypographyControllerCard
+                  title="Coaching Journey Typography & Font Sizes (Home Exclusive)"
+                  eyebrowFontSize={currentCoachingJourney.eyebrowFontSize}
+                  headingFontSize={currentCoachingJourney.headingFontSize}
+                  descriptionFontSize={currentCoachingJourney.descriptionFontSize}
+                  defaultEyebrowSize={14}
+                  defaultHeadingSize={56}
+                  defaultDescriptionSize={18}
+                  onEyebrowSizeChange={(val) => handleSectionChange('eyebrowFontSize', val)}
+                  onHeadingSizeChange={(val) => handleSectionChange('headingFontSize', val)}
+                  onDescriptionSizeChange={(val) => handleSectionChange('descriptionFontSize', val)}
+                  previewEyebrow={currentCoachingJourney.eyebrowText || 'THE COACHING JOURNEY'}
+                  previewHeading={currentCoachingJourney.headingLine1 || 'A clear process.'}
+                  previewAccent={currentCoachingJourney.headingAccent || 'Real transformation.'}
+                  previewDescription={currentCoachingJourney.description || "We don't do hacks. We follow a proven, human first process designed to create deep, lasting change."}
+                />
               </div>
             );
           })()}
@@ -2002,6 +3202,24 @@ export default function AdminHomeEditor() {
                   </div>
                 </div>
               </div>
+
+              {/* Home Section Typography & Font Size Control */}
+              <TypographyControllerCard
+                title="Meet Aarkesh Typography & Font Sizes (Home Exclusive)"
+                eyebrowFontSize={currentAbout.eyebrowFontSize}
+                headingFontSize={currentAbout.headingFontSize}
+                descriptionFontSize={currentAbout.descriptionFontSize}
+                defaultEyebrowSize={14}
+                defaultHeadingSize={40}
+                defaultDescriptionSize={16}
+                onEyebrowSizeChange={(val) => handleSectionChange('eyebrowFontSize', val)}
+                onHeadingSizeChange={(val) => handleSectionChange('headingFontSize', val)}
+                onDescriptionSizeChange={(val) => handleSectionChange('descriptionFontSize', val)}
+                previewEyebrow={currentAbout.eyebrowText || 'MEET AARKESH'}
+                previewHeading={currentAbout.headingLine || 'Three roles. One purpose.'}
+                previewAccent="Behind the vision."
+                previewDescription={currentAbout.subheading || 'A unique blend of cockpit discipline, psychological insight, and grounded human empathy.'}
+              />
             </div>
           )}
 
@@ -2245,6 +3463,452 @@ export default function AdminHomeEditor() {
                   />
                 </div>
               </div>
+
+              {/* Testimonials Typography & Font Size Control (Controls Home & Standalone Testimonials Page) */}
+              <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
+                <div className="flex items-center justify-between pb-3 border-b border-white/5 flex-wrap gap-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">
+                    <TextT size={18} weight="bold" />
+                    <span>Testimonials Typography Controls (Home &amp; Testimonial Page)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleSectionChange('eyebrowFontSize', 14);
+                        handleSectionChange('headingFontSize', 56);
+                        handleSectionChange('descriptionFontSize', 18);
+                        handleSectionChange('cardQuoteFontSize', 16);
+                        handleSectionChange('cardNameFontSize', 15);
+                        handleSectionChange('cardRoleFontSize', 12);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-[0.65rem] text-[#c79c6e] font-semibold transition-all cursor-pointer"
+                      title="Reset all font sizes to default"
+                    >
+                      <ArrowCounterClockwise size={12} />
+                      <span>Reset Sizes</span>
+                    </button>
+                    <span className="px-2 py-0.5 rounded bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[0.62rem] font-mono font-bold text-[#c79c6e]">
+                      Live Synchronized Control
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {/* 1. Eyebrow */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">1. Tagline / Eyebrow</span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {currentTestimonials.eyebrowFontSize || 14}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls top uppercase tagline ("REAL STORIES. REAL CHANGE.").
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('eyebrowFontSize', Math.max(10, (currentTestimonials.eyebrowFontSize || 14) - 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={10}
+                        max={24}
+                        step={1}
+                        value={currentTestimonials.eyebrowFontSize || 14}
+                        onChange={(e) => handleSectionChange('eyebrowFontSize', Number(e.target.value))}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('eyebrowFontSize', Math.min(24, (currentTestimonials.eyebrowFontSize || 14) + 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[11, 12, 13, 14, 16, 18].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => handleSectionChange('eyebrowFontSize', size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (currentTestimonials.eyebrowFontSize || 14) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Main Heading */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">2. Main Heading</span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {currentTestimonials.headingFontSize || 56}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls main serif title size ("Their words." / "Testimonials &amp; Stories").
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('headingFontSize', Math.max(24, (currentTestimonials.headingFontSize || 56) - 2))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 2px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={24}
+                        max={90}
+                        step={2}
+                        value={currentTestimonials.headingFontSize || 56}
+                        onChange={(e) => handleSectionChange('headingFontSize', Number(e.target.value))}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('headingFontSize', Math.min(90, (currentTestimonials.headingFontSize || 56) + 2))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 2px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[36, 44, 52, 56, 64, 72].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => handleSectionChange('headingFontSize', size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (currentTestimonials.headingFontSize || 56) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3. Description Subtitle */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">3. Subtitle / Description</span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {currentTestimonials.descriptionFontSize || 18}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls sub-headline description paragraph font size.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('descriptionFontSize', Math.max(12, (currentTestimonials.descriptionFontSize || 18) - 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={12}
+                        max={32}
+                        step={1}
+                        value={currentTestimonials.descriptionFontSize || 18}
+                        onChange={(e) => handleSectionChange('descriptionFontSize', Number(e.target.value))}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('descriptionFontSize', Math.min(32, (currentTestimonials.descriptionFontSize || 18) + 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[14, 16, 18, 20, 22, 24].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => handleSectionChange('descriptionFontSize', size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (currentTestimonials.descriptionFontSize || 18) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 4. Card Quote Body */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">4. Card Quote Text</span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {currentTestimonials.cardQuoteFontSize || 16}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls testimonial client quote text inside cards.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('cardQuoteFontSize', Math.max(11, (currentTestimonials.cardQuoteFontSize || 16) - 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={11}
+                        max={26}
+                        step={1}
+                        value={currentTestimonials.cardQuoteFontSize || 16}
+                        onChange={(e) => handleSectionChange('cardQuoteFontSize', Number(e.target.value))}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('cardQuoteFontSize', Math.min(26, (currentTestimonials.cardQuoteFontSize || 16) + 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[13, 14, 15, 16, 17, 18].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => handleSectionChange('cardQuoteFontSize', size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (currentTestimonials.cardQuoteFontSize || 16) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 5. Author Name */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">5. Author Name</span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {currentTestimonials.cardNameFontSize || 15}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls client name &amp; age font size ("Rohit, 32").
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('cardNameFontSize', Math.max(11, (currentTestimonials.cardNameFontSize || 15) - 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={11}
+                        max={24}
+                        step={1}
+                        value={currentTestimonials.cardNameFontSize || 15}
+                        onChange={(e) => handleSectionChange('cardNameFontSize', Number(e.target.value))}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('cardNameFontSize', Math.min(24, (currentTestimonials.cardNameFontSize || 15) + 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[13, 14, 15, 16, 17, 18].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => handleSectionChange('cardNameFontSize', size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (currentTestimonials.cardNameFontSize || 15) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 6. Author Role */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">6. Author Role</span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {currentTestimonials.cardRoleFontSize || 12}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls client profession / role subtitle ("ENTREPRENEUR").
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('cardRoleFontSize', Math.max(9, (currentTestimonials.cardRoleFontSize || 12) - 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={9}
+                        max={18}
+                        step={1}
+                        value={currentTestimonials.cardRoleFontSize || 12}
+                        onChange={(e) => handleSectionChange('cardRoleFontSize', Number(e.target.value))}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('cardRoleFontSize', Math.min(18, (currentTestimonials.cardRoleFontSize || 12) + 1))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[10, 11, 12, 13, 14, 15].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => handleSectionChange('cardRoleFontSize', size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (currentTestimonials.cardRoleFontSize || 12) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Real-Time Canvas Preview of Testimonials */}
+                <div className="bg-[#ede7d8] border border-black/10 rounded-xl p-6 text-[#111010] flex flex-col gap-6 shadow-inner select-none">
+                  <div className="flex items-center justify-between pb-3 border-b border-black/10">
+                    <span className="text-[0.65rem] font-mono font-bold uppercase tracking-wider text-[#c9542f]">
+                      Live Visual Canvas Preview (Home &amp; /testimonials Page)
+                    </span>
+                    <span className="text-[0.62rem] text-stone-500 font-mono">
+                      Eyebrow: {currentTestimonials.eyebrowFontSize || 14}px • Title: {currentTestimonials.headingFontSize || 56}px • Sub: {currentTestimonials.descriptionFontSize || 18}px • Quote: {currentTestimonials.cardQuoteFontSize || 16}px
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-5">
+                    {/* Header Preview */}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-[1.5px] w-5 bg-[#c9542f]" />
+                        <span 
+                          className="font-sans uppercase tracking-[0.22em] font-bold text-[#c9542f]"
+                          style={{ fontSize: `${currentTestimonials.eyebrowFontSize || 14}px` }}
+                        >
+                          {currentTestimonials.eyebrowText || 'REAL STORIES. REAL CHANGE.'}
+                        </span>
+                      </div>
+                      <h3 
+                        className="font-serif text-[#111010] font-medium tracking-tight leading-[1.1]"
+                        style={{ 
+                          fontFamily: 'Fraunces, Georgia, serif',
+                          fontSize: `${currentTestimonials.headingFontSize || 56}px` 
+                        }}
+                      >
+                        {currentTestimonials.headingLine1 || 'Their words.'}{' '}
+                        <span className="text-[#c9542f] not-italic font-medium">{currentTestimonials.headingAccent || 'Their transformation.'}</span>
+                      </h3>
+                      <p 
+                        className="text-[#4a463e] font-serif leading-relaxed max-w-xl"
+                        style={{ 
+                          fontFamily: 'Fraunces, Georgia, serif',
+                          fontSize: `${currentTestimonials.descriptionFontSize || 18}px` 
+                        }}
+                      >
+                        {currentTestimonials.description || 'Real reflections and transformative journeys from people who decided to do the work.'}
+                      </p>
+                    </div>
+
+                    {/* Testimonial Sample Card Preview */}
+                    <div className="max-w-md bg-white/60 border border-black/10 rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
+                      <Quotes className="text-[#c9542f] text-2xl opacity-90" weight="fill" />
+                      <p 
+                        className="font-serif text-[#2b2723] font-light leading-relaxed"
+                        style={{ fontSize: `${currentTestimonials.cardQuoteFontSize || 16}px` }}
+                      >
+                        "{(currentTestimonials.items?.[0]?.quote) || 'Aarkesh helped me see the patterns I was too close to notice. For the first time, I feel in control of my choices.'}"
+                      </p>
+                      <div className="flex items-center gap-3 pt-3 border-t border-black/8 mt-2">
+                        <div className="w-9 h-9 rounded-full bg-[#c9542f] text-white flex items-center justify-center font-serif text-sm font-medium">
+                          {(currentTestimonials.items?.[0]?.name?.charAt(0)) || 'R'}
+                        </div>
+                        <div className="flex flex-col">
+                          <span 
+                            className="font-sans text-[#111010] font-bold"
+                            style={{ fontSize: `${currentTestimonials.cardNameFontSize || 15}px` }}
+                          >
+                            {(currentTestimonials.items?.[0]?.name) || 'Rohit, 32'}
+                          </span>
+                          <span 
+                            className="font-sans text-[#7a756b] uppercase tracking-wider"
+                            style={{ fontSize: `${currentTestimonials.cardRoleFontSize || 12}px` }}
+                          >
+                            {(currentTestimonials.items?.[0]?.role) || 'Entrepreneur'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
             </div>
           )}
 
@@ -2367,6 +4031,24 @@ export default function AdminHomeEditor() {
                   />
                 </div>
               </div>
+
+              {/* Home Section Typography & Font Size Control */}
+              <TypographyControllerCard
+                title="Final CTA Typography & Font Sizes (Home Exclusive)"
+                eyebrowFontSize={currentCta.eyebrowFontSize}
+                headingFontSize={currentCta.headingFontSize}
+                descriptionFontSize={currentCta.descriptionFontSize}
+                defaultEyebrowSize={14}
+                defaultHeadingSize={64}
+                defaultDescriptionSize={22}
+                onEyebrowSizeChange={(val) => handleSectionChange('eyebrowFontSize', val)}
+                onHeadingSizeChange={(val) => handleSectionChange('headingFontSize', val)}
+                onDescriptionSizeChange={(val) => handleSectionChange('descriptionFontSize', val)}
+                previewEyebrow={currentCta.eyebrowText || 'A CONVERSATION CAN CHANGE EVERYTHING'}
+                previewHeading={currentCta.headingLine1 || 'Your next chapter'}
+                previewAccent={currentCta.headingAccent || 'starts here.'}
+                previewDescription={currentCta.description || "This is your space to be heard, understood, and guided forward. Let's create real change together."}
+              />
             </div>
           )}
 
@@ -2485,6 +4167,24 @@ export default function AdminHomeEditor() {
                   />
                 </div>
               </div>
+
+              {/* Home Section Typography & Font Size Control */}
+              <TypographyControllerCard
+                title="FAQ Section Typography & Font Sizes (Home Exclusive)"
+                eyebrowFontSize={currentFaq.eyebrowFontSize}
+                headingFontSize={currentFaq.headingFontSize}
+                descriptionFontSize={currentFaq.descriptionFontSize}
+                defaultEyebrowSize={14}
+                defaultHeadingSize={56}
+                defaultDescriptionSize={18}
+                onEyebrowSizeChange={(val) => handleSectionChange('eyebrowFontSize', val)}
+                onHeadingSizeChange={(val) => handleSectionChange('headingFontSize', val)}
+                onDescriptionSizeChange={(val) => handleSectionChange('descriptionFontSize', val)}
+                previewEyebrow={currentFaq.badgeText || 'FREQUENTLY ASKED QUESTIONS'}
+                previewHeading={currentFaq.headingLine1 || 'Clarity before you begin.'}
+                previewAccent={currentFaq.headingAccent || 'Everything you need to know.'}
+                previewDescription={currentFaq.description || 'Have questions about starting your coaching journey? Here are straightforward answers.'}
+              />
             </div>
           )}
 
@@ -2641,6 +4341,428 @@ export default function AdminHomeEditor() {
                   </div>
                 </div>
               </div>
+
+              {/* ─── FOOTER TYPOGRAPHY & FONT SIZE CONTROL CARD ─── */}
+              <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-6 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/5">
+                  <div className="flex items-center gap-2">
+                    <TextT size={18} weight="bold" className="text-[#c79c6e]" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-white">
+                      Footer Typography &amp; Font Sizes (Universal)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFooterBrandSettings(prev => ({
+                          ...prev,
+                          columnTitleFontSize: 14,
+                          bioFontSize: 16,
+                          linksFontSize: 16,
+                          brandTitleFontSize: 36,
+                          copyrightFontSize: 14,
+                        }));
+                        showToast('Reset footer font sizes to recommended defaults (14px / 16px / 16px / 36px / 14px)', 'info');
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-xs font-medium transition-all cursor-pointer"
+                    >
+                      <ArrowCounterClockwise size={13} />
+                      <span>Reset Defaults</span>
+                    </button>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[0.65rem] font-bold text-[#c79c6e] tracking-wider uppercase">
+                      Live Control
+                    </span>
+                  </div>
+                </div>
+
+                {/* 5 Controls Responsive Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  
+                  {/* 1. Column Headings */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                        1. Column Titles
+                      </span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {footerBrandSettings.columnTitleFontSize || 14}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls COMPANY, LEGAL, QUICK LINKS header font sizes.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, columnTitleFontSize: Math.max(10, (prev.columnTitleFontSize || 14) - 1) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={10}
+                        max={24}
+                        step={1}
+                        value={footerBrandSettings.columnTitleFontSize || 14}
+                        onChange={(e) => setFooterBrandSettings({ ...footerBrandSettings, columnTitleFontSize: Number(e.target.value) })}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, columnTitleFontSize: Math.min(24, (prev.columnTitleFontSize || 14) + 1) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[11, 12, 13, 14, 16, 18].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setFooterBrandSettings({ ...footerBrandSettings, columnTitleFontSize: size })}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (footerBrandSettings.columnTitleFontSize || 14) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Brand Bio */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                        2. Brand Bio / Email
+                      </span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {footerBrandSettings.bioFontSize || 16}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls brand tagline description &amp; email copy text size.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, bioFontSize: Math.max(12, (prev.bioFontSize || 16) - 1) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={12}
+                        max={26}
+                        step={1}
+                        value={footerBrandSettings.bioFontSize || 16}
+                        onChange={(e) => setFooterBrandSettings({ ...footerBrandSettings, bioFontSize: Number(e.target.value) })}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, bioFontSize: Math.min(26, (prev.bioFontSize || 16) + 1) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[14, 15, 16, 17, 18, 20].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setFooterBrandSettings({ ...footerBrandSettings, bioFontSize: size })}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (footerBrandSettings.bioFontSize || 16) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3. Column Links */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                        3. Footer Links
+                      </span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {footerBrandSettings.linksFontSize || 16}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls all navigational &amp; policy link item font sizes.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, linksFontSize: Math.max(12, (prev.linksFontSize || 16) - 1) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={12}
+                        max={26}
+                        step={1}
+                        value={footerBrandSettings.linksFontSize || 16}
+                        onChange={(e) => setFooterBrandSettings({ ...footerBrandSettings, linksFontSize: Number(e.target.value) })}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, linksFontSize: Math.min(26, (prev.linksFontSize || 16) + 1) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[13, 14, 15, 16, 18, 20].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setFooterBrandSettings({ ...footerBrandSettings, linksFontSize: size })}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (footerBrandSettings.linksFontSize || 16) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 4. Brand Logo / Title */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                        4. Brand Logo Title
+                      </span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {footerBrandSettings.brandTitleFontSize || 36}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls main "BetterWith Aarkesh" logo title size.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, brandTitleFontSize: Math.max(20, (prev.brandTitleFontSize || 36) - 2) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 2px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={20}
+                        max={56}
+                        step={1}
+                        value={footerBrandSettings.brandTitleFontSize || 36}
+                        onChange={(e) => setFooterBrandSettings({ ...footerBrandSettings, brandTitleFontSize: Number(e.target.value) })}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, brandTitleFontSize: Math.min(56, (prev.brandTitleFontSize || 36) + 2) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 2px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[28, 32, 36, 40, 44, 48].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setFooterBrandSettings({ ...footerBrandSettings, brandTitleFontSize: size })}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (footerBrandSettings.brandTitleFontSize || 36) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 5. Copyright Notice */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                        5. Copyright Text
+                      </span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {footerBrandSettings.copyrightFontSize || 14}px
+                      </span>
+                    </div>
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls bottom copyright text font size.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, copyrightFontSize: Math.max(10, (prev.copyrightFontSize || 14) - 1) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+                      <input
+                        type="range"
+                        min={10}
+                        max={22}
+                        step={1}
+                        value={footerBrandSettings.copyrightFontSize || 14}
+                        onChange={(e) => setFooterBrandSettings({ ...footerBrandSettings, copyrightFontSize: Number(e.target.value) })}
+                        className="flex-1 min-w-0 accent-[#c79c6e] cursor-pointer h-2 bg-white/10 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFooterBrandSettings(prev => ({ ...prev, copyrightFontSize: Math.min(22, (prev.copyrightFontSize || 14) + 1) }))}
+                        className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#c79c6e] hover:text-black border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[11, 12, 13, 14, 15, 16].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setFooterBrandSettings({ ...footerBrandSettings, copyrightFontSize: size })}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            (footerBrandSettings.copyrightFontSize || 14) === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Live Real-Time Canvas Preview of Footer with Applied Sizes */}
+                <div className="bg-[#ede7d8] border border-black/10 rounded-xl p-6 text-[#111010] flex flex-col gap-6 shadow-inner select-none">
+                  <div className="flex items-center justify-between pb-3 border-b border-black/10">
+                    <span className="text-[0.65rem] font-mono font-bold uppercase tracking-wider text-[#c9542f]">
+                      Live Visual Canvas Preview (Footer)
+                    </span>
+                    <span className="text-[0.62rem] text-stone-500 font-mono">
+                      Title: {footerBrandSettings.brandTitleFontSize || 36}px • Bio: {footerBrandSettings.bioFontSize || 16}px • Columns: {footerBrandSettings.columnTitleFontSize || 14}px • Links: {footerBrandSettings.linksFontSize || 16}px • Copy: {footerBrandSettings.copyrightFontSize || 14}px
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    {/* Left Col: Brand & Bio */}
+                    <div className="md:col-span-6 flex flex-col items-start gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[#fbf0eb] border border-[#e8c4e2] flex items-center justify-center text-[#c9542f]">
+                          <Sparkle size={16} weight="fill" />
+                        </div>
+                        <span 
+                          className="font-serif text-[#111010] tracking-tight leading-none"
+                          style={{ fontSize: `${footerBrandSettings.brandTitleFontSize || 36}px` }}
+                        >
+                          BetterWith<em className="text-[#c9542f] not-italic font-normal ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>
+                        </span>
+                      </div>
+
+                      <p 
+                        className="font-sans text-[#4a463e] font-normal leading-relaxed max-w-md"
+                        style={{ fontSize: `${footerBrandSettings.bioFontSize || 16}px` }}
+                      >
+                        {footerBrandSettings.brandDescription || 'Authentic 1-on-1 mentorship, transformational coaching & self-mastery courses.'}
+                      </p>
+
+                      <div 
+                        className="flex items-center gap-2 text-[#2b2723] font-medium"
+                        style={{ fontSize: `${footerBrandSettings.bioFontSize || 16}px` }}
+                      >
+                        <span className="text-[#c9542f]">✉</span>
+                        <span>{footerBrandSettings.brandEmail || 'coaching@aarkeshgupta.com'}</span>
+                      </div>
+                    </div>
+
+                    {/* Right Columns: Categories & Links */}
+                    <div className="md:col-span-6 grid grid-cols-2 gap-6">
+                      <div className="flex flex-col gap-2">
+                        <h4 
+                          className="font-sans uppercase tracking-[0.22em] font-bold text-[#c9542f]"
+                          style={{ fontSize: `${footerBrandSettings.columnTitleFontSize || 14}px` }}
+                        >
+                          COMPANY
+                        </h4>
+                        <ul 
+                          className="flex flex-col gap-1 text-[#2b2723]"
+                          style={{ fontSize: `${footerBrandSettings.linksFontSize || 16}px` }}
+                        >
+                          <li>About Us</li>
+                          <li>Contact Us</li>
+                        </ul>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <h4 
+                          className="font-sans uppercase tracking-[0.22em] font-bold text-[#c9542f]"
+                          style={{ fontSize: `${footerBrandSettings.columnTitleFontSize || 14}px` }}
+                        >
+                          QUICK LINKS
+                        </h4>
+                        <ul 
+                          className="flex flex-col gap-1 text-[#2b2723]"
+                          style={{ fontSize: `${footerBrandSettings.linksFontSize || 16}px` }}
+                        >
+                          <li>Home</li>
+                          <li>Coaching</li>
+                          <li>Library</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Copyright Bar */}
+                  <div className="pt-4 border-t border-black/10 text-center">
+                    <p 
+                      className="text-[#6b665d] font-sans"
+                      style={{ fontSize: `${footerBrandSettings.copyrightFontSize || 14}px` }}
+                    >
+                      {footerBrandSettings.copyrightText || '© 2026 Better With Aarkesh. All rights reserved.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           )}
 

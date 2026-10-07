@@ -93,14 +93,20 @@ export default function FinalCtaSection() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-4">
                 <div className="h-[1.5px] w-8 bg-[#c9542f]" />
-                <span className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+                <span 
+                  className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]"
+                  style={{ fontSize: data?.eyebrowFontSize ? `${data.eyebrowFontSize}px` : undefined }}
+                >
                   {eyebrow}
                 </span>
               </div>
               
               <h2 
                 className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08]"
-                style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                style={{ 
+                  fontFamily: 'Fraunces, Georgia, serif',
+                  fontSize: data?.headingFontSize ? `${data.headingFontSize}px` : undefined 
+                }}
               >
                 {heading1}<br/>
                 <span className="text-[#c9542f] not-italic font-medium">{headingAccent}</span>
@@ -108,7 +114,10 @@ export default function FinalCtaSection() {
               
               <p 
                 className="font-serif text-xl lg:text-2xl text-[#4a463e] font-normal tracking-wide leading-relaxed max-w-xl mt-2"
-                style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                style={{ 
+                  fontFamily: 'Fraunces, Georgia, serif',
+                  fontSize: data?.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined 
+                }}
               >
                 {description}
               </p>
@@ -138,13 +147,13 @@ export default function FinalCtaSection() {
 
           {/* Middle: Inspiring Quote (Above the bottom bar with clear luminous backdrop) */}
           <div className="w-full flex flex-col items-center text-center my-3 relative py-3 px-4">
-            <h2 className="font-serif text-2xl md:text-3xl lg:text-[2.2rem] text-[#111010] font-semibold tracking-tight flex items-center gap-2">
-              <span className="text-[#c9542f] text-3xl md:text-4xl font-serif">“</span>
+            <h2 className="font-serif text-2xl md:text-3xl lg:text-[2.2rem] text-[#111010] italic font-normal tracking-tight flex items-center gap-2">
+              <span className="text-[#c9542f] text-3xl md:text-4xl font-serif not-italic">“</span>
               {quote1}
             </h2>
-            <h2 className="font-serif text-2xl md:text-3xl lg:text-[2.2rem] text-[#c9542f] italic font-medium tracking-tight flex items-center gap-2 mt-1">
+            <h2 className="font-serif text-2xl md:text-3xl lg:text-[2.2rem] text-[#c9542f] not-italic font-bold tracking-tight flex items-center gap-2 mt-1">
               {quote2}
-              <span className="text-[#c9542f] text-3xl md:text-4xl font-serif">”</span>
+              <span className="text-[#c9542f] text-3xl md:text-4xl font-serif not-italic">”</span>
             </h2>
             
             <div className="flex items-center justify-center gap-2 mt-3 opacity-80">

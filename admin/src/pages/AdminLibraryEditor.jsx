@@ -1090,8 +1090,8 @@ export default function AdminLibraryEditor() {
 
           return (
             <div className="max-w-5xl mx-auto px-6 sm:px-10 pt-8 flex flex-col gap-8 animate-in fade-in duration-200">
-              {/* Top Sticky Header */}
-              <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-black/10 sticky top-0 bg-[#faf7f0]/95 backdrop-blur-md z-30 pt-2">
+              {/* Top Studio Header (Natural scrolling) */}
+              <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-black/10">
                 <div className="flex items-center gap-4">
                   <button
                     type="button"

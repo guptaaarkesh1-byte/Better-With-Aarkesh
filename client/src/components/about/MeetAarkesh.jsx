@@ -151,7 +151,10 @@ export default function MeetAarkesh() {
           <div className="h-[2px] w-8 sm:w-10 bg-[#c9542f]" />
           <span 
             className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.6rem] font-medium tracking-tight text-[#c9542f]"
-            style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+            style={{ 
+              fontFamily: 'Fraunces, Georgia, serif',
+              fontSize: aboutData?.eyebrowFontSize ? `${aboutData.eyebrowFontSize}px` : undefined 
+            }}
           >
             {eyebrowText}
           </span>
@@ -163,11 +166,17 @@ export default function MeetAarkesh() {
       <div className="flex md:hidden flex-col items-center justify-center text-center z-20 px-6 pb-5">
         <h2 
           className="font-serif text-2xl sm:text-3xl font-medium tracking-tight mb-1 text-[#111010]"
-          style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+          style={{ 
+            fontFamily: 'Fraunces, Georgia, serif',
+            fontSize: aboutData?.headingFontSize ? `${aboutData.headingFontSize}px` : undefined 
+          }}
         >
           {headingLine}
         </h2>
-        <p className="text-[#555047] text-xs sm:text-sm font-light tracking-wide">
+        <p 
+          className="text-[#555047] text-xs sm:text-sm font-light tracking-wide"
+          style={{ fontSize: aboutData?.descriptionFontSize ? `${aboutData.descriptionFontSize}px` : undefined }}
+        >
           {subheading}
         </p>
       </div>
@@ -211,7 +220,10 @@ export default function MeetAarkesh() {
                   >
                     <h2 
                       className="font-serif text-xl sm:text-2xl md:text-[1.65rem] lg:text-[1.95rem] font-medium tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]"
-                      style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                      style={{ 
+                        fontFamily: 'Fraunces, Georgia, serif',
+                        fontSize: aboutData?.headingFontSize ? `${aboutData.headingFontSize}px` : undefined 
+                      }}
                     >
                       {headingLine}
                     </h2>
@@ -223,7 +235,10 @@ export default function MeetAarkesh() {
                     }`}
                     style={{ transform: isMiddleHovered ? 'translateY(-1rem)' : 'translateY(-50%)' }}
                   >
-                    <p className="text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.75)] text-xs md:text-[0.88rem] font-normal tracking-wide max-w-[90%] mx-auto">
+                    <p 
+                      className="text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.75)] text-xs md:text-[0.88rem] font-normal tracking-wide max-w-[90%] mx-auto"
+                      style={{ fontSize: aboutData?.descriptionFontSize ? `${aboutData.descriptionFontSize}px` : undefined }}
+                    >
                       {subheading}
                     </p>
                   </div>

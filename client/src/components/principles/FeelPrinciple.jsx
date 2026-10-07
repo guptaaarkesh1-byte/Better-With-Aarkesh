@@ -35,8 +35,8 @@ export default function FeelPrinciple() {
   const descText = formattedDescription.startsWith('....') ? formattedDescription : '....' + formattedDescription;
 
   const paragraphs = [
-    `<span class='italic font-serif text-xl lg:text-2xl leading-relaxed text-[#111010] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${formattedHighlight}</span>`,
-    `<span class='font-serif text-base lg:text-lg font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif; font-style: normal;'>${descText}</span>`
+    `<span class='italic font-serif leading-relaxed text-[#111010] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${formattedHighlight}</span>`,
+    `<span class='font-serif font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${descText}</span>`
   ];
   const buttonText = data?.buttonText || '';
   const bgImg = resolveImageUrl(data?.bgImg, defaultBgImg);
@@ -54,6 +54,9 @@ export default function FeelPrinciple() {
       paragraphs={paragraphs}
       buttonText={buttonText}
       maxContentWidth="max-w-[365px]"
+      eyebrowFontSize={data?.eyebrowFontSize}
+      headingFontSize={data?.headingFontSize}
+      descriptionFontSize={data?.descriptionFontSize}
       activeStep={2}
       bannerTitle="DYNAMIC<br/>EXPERIENCE"
       bannerIcon={Sparkle}
