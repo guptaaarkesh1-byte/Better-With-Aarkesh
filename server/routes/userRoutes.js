@@ -652,6 +652,13 @@ router.post('/delete-account-verify', protect, async (req, res) => {
 
     deleteAccountOTPs.delete(userIdStr);
 
+    res.json({ message: 'Your account has been deleted successfully.' });
+  } catch (error) {
+    console.error('Delete Account Verify Error:', error);
+    res.status(500).json({ message: 'Server error deleting account' });
+  }
+});
+
 // @route   GET /api/users/profile
 // @desc    Get user profile details
 // @access  Private
