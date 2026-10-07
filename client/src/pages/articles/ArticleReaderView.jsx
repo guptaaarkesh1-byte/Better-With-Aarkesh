@@ -556,56 +556,58 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
 
       {/* Top Themed Header Bar */}
       <header 
-        className="sticky top-0 z-50 backdrop-blur-md px-6 sm:px-12 py-5 flex items-center justify-between transition-colors duration-300"
+        className="sticky top-0 z-50 backdrop-blur-md transition-colors duration-300 w-full"
         style={{ 
           backgroundColor: `${theme.bg}ee`, 
           borderBottom: `1px solid ${theme.borderLine}` 
         }}
       >
-        <button
-          type="button"
-          onClick={handleGoBack}
-          className="inline-flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] font-bold transition-opacity hover:opacity-60 cursor-pointer group"
-          style={{ color: theme.ink }}
-        >
-          <ArrowLeft size={16} weight="bold" className="group-hover:-translate-x-1 transition-transform" />
-          <span>{isFromMyJourney ? 'BACK TO MY JOURNEY' : `BACK TO ${theme.name.toUpperCase()}`}</span>
-        </button>
-
-        <div className="text-2xl sm:text-[28px] font-semibold tracking-tight hidden md:block" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
-          <Link to="/" style={{ color: theme.ink }}>
-            BetterWith<em style={{ color: theme.aarkeshColor, fontStyle: 'normal', fontFamily: 'Fraunces, Georgia, serif', fontWeight: 600, marginLeft: '2px' }}>Aarkesh</em>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {progress > 0 && (
-            <span 
-              className="text-xs uppercase tracking-[0.15em] font-bold px-3 py-1.5 rounded-full border hidden sm:inline-block"
-              style={{ 
-                borderColor: theme.borderLine, 
-                backgroundColor: theme.cardBg, 
-                color: theme.ink 
-              }}
-            >
-              {progress}% READ
-            </span>
-          )}
-          {/* Bookmark / Save Button */}
+        <div className="max-w-[1240px] mx-auto px-6 sm:px-10 lg:px-14 py-5 flex items-center justify-between">
           <button
             type="button"
-            onClick={handleToggleSave}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 cursor-pointer text-xs uppercase tracking-widest font-semibold shadow-sm"
-            style={{
-              borderColor: theme.borderLine,
-              backgroundColor: isSaved ? theme.ink : theme.cardBg,
-              color: isSaved ? theme.bg : theme.ink
-            }}
-            title={isSaved ? 'Saved in My Journey' : 'Save to My Journey'}
+            onClick={handleGoBack}
+            className="inline-flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] font-bold transition-opacity hover:opacity-60 cursor-pointer group"
+            style={{ color: theme.ink }}
           >
-            <BookmarkSimple size={16} weight={isSaved ? "fill" : "regular"} />
-            <span>{isSaved ? 'SAVED' : 'SAVE ARTICLE'}</span>
+            <ArrowLeft size={16} weight="bold" className="group-hover:-translate-x-1 transition-transform" />
+            <span>{isFromMyJourney ? 'BACK TO MY JOURNEY' : `BACK TO ${theme.name.toUpperCase()}`}</span>
           </button>
+
+          <div className="text-2xl sm:text-[28px] font-semibold tracking-tight hidden md:block" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+            <Link to="/" style={{ color: theme.ink }}>
+              BetterWith<em style={{ color: theme.aarkeshColor, fontStyle: 'normal', fontFamily: 'Fraunces, Georgia, serif', fontWeight: 600, marginLeft: '2px' }}>Aarkesh</em>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {progress > 0 && (
+              <span 
+                className="text-xs uppercase tracking-[0.15em] font-bold px-3 py-1.5 rounded-full border hidden sm:inline-block"
+                style={{ 
+                  borderColor: theme.borderLine, 
+                  backgroundColor: theme.cardBg, 
+                  color: theme.ink 
+                }}
+              >
+                {progress}% READ
+              </span>
+            )}
+            {/* Bookmark / Save Button */}
+            <button
+              type="button"
+              onClick={handleToggleSave}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 cursor-pointer text-xs uppercase tracking-widest font-semibold shadow-sm"
+              style={{
+                borderColor: theme.borderLine,
+                backgroundColor: isSaved ? theme.ink : theme.cardBg,
+                color: isSaved ? theme.bg : theme.ink
+              }}
+              title={isSaved ? 'Saved in My Journey' : 'Save to My Journey'}
+            >
+              <BookmarkSimple size={16} weight={isSaved ? "fill" : "regular"} />
+              <span>{isSaved ? 'SAVED' : 'SAVE ARTICLE'}</span>
+            </button>
+          </div>
         </div>
       </header>
 
