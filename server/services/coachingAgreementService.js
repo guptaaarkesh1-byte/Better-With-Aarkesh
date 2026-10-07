@@ -334,79 +334,90 @@ export async function sendCoachingBookingConfirmationEmail({
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Coaching Session Confirmed</title>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #050505; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e5e5e5;">
-        <table width="100%" bgcolor="#050505" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #050505; padding: 30px 15px;">
+      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
+        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #FAF8F5; padding: 30px 15px;">
           <tr>
             <td align="center">
-              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; width: 100%; background-color: #0c0c0c; border: 1px solid #262626; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; width: 100%; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
                 
                 <!-- Brand Header -->
                 <tr>
-                  <td style="padding: 36px 36px 24px; background: linear-gradient(180deg, #16130e 0%, #0c0c0c 100%); border-bottom: 1px solid #1f1f1f;">
-                    <div style="font-size: 22px; font-weight: bold; color: #ffffff; letter-spacing: -0.5px; font-family: Georgia, serif;">
-                      Better With Aarkesh
-                    </div>
-                    <div style="font-size: 11px; color: #c79c6e; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 600;">
-                      1-on-1 Executive Coaching Confirmed
-                    </div>
+                  <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td>
+                          <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; letter-spacing: -0.5px; font-family: Georgia, serif;">
+                            BetterWith<span style="color: #C25E38;">Aarkesh</span>
+                          </div>
+                          <div style="font-size: 11px; color: #C25E38; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 600;">
+                            1-on-1 Executive Coaching Confirmed
+                          </div>
+                        </td>
+                        <td align="right">
+                          <span style="display: inline-block; padding: 5px 12px; background-color: rgba(194, 94, 56, 0.1); border: 1px solid rgba(194, 94, 56, 0.3); color: #C25E38; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">
+                            CONFIRMED
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
 
                 <!-- Content Banner -->
                 <tr>
                   <td style="padding: 28px 36px;">
-                    <h2 style="margin: 0 0 10px; font-size: 20px; color: #ffffff; font-weight: 600;">
+                    <h2 style="margin: 0 0 10px; font-size: 20px; color: #1A1A1A; font-weight: 600;">
                       Session Confirmed, ${clientName}!
                     </h2>
-                    <p style="margin: 0 0 20px; font-size: 14px; color: #a3a3a3; line-height: 1.6;">
+                    <p style="margin: 0 0 20px; font-size: 14px; color: #555555; line-height: 1.6;">
                       Your private 1-on-1 coaching session with Aarkesh Gupta has been reserved on the schedule.
                     </p>
 
                     <!-- Session Details Box -->
-                    <div style="background-color: #12100d; border: 1px solid #26211a; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                    <div style="background-color: #FAF7F2; border: 1px solid #EBE4DA; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                       <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px;">
                         <tr>
-                          <td style="padding: 6px 0; color: #888888;" width="140">Date:</td>
-                          <td style="padding: 6px 0; color: #ffffff; font-weight: 600;">${cleanDate}</td>
+                          <td style="padding: 6px 0; color: #777777;" width="140">Date:</td>
+                          <td style="padding: 6px 0; color: #1A1A1A; font-weight: 600;">${cleanDate}</td>
                         </tr>
                         <tr>
-                          <td style="padding: 6px 0; color: #888888;">Time Slot:</td>
-                          <td style="padding: 6px 0; color: #ffffff; font-weight: 600;">${cleanTime} (IST)</td>
+                          <td style="padding: 6px 0; color: #777777;">Time Slot:</td>
+                          <td style="padding: 6px 0; color: #1A1A1A; font-weight: 600;">${cleanTime} (IST)</td>
                         </tr>
                         <tr>
-                          <td style="padding: 6px 0; color: #888888;">Session Duration:</td>
-                          <td style="padding: 6px 0; color: #c79c6e; font-weight: 600;">${duration} Minutes (${isFirstSession ? 'First Session' : 'Returning Client'})</td>
+                          <td style="padding: 6px 0; color: #777777;">Session Duration:</td>
+                          <td style="padding: 6px 0; color: #C25E38; font-weight: 600;">${duration} Minutes (${isFirstSession ? 'First Session' : 'Returning Client'})</td>
                         </tr>
                         <tr>
-                          <td style="padding: 6px 0; color: #888888;">Format:</td>
-                          <td style="padding: 6px 0; color: #ffffff;">Private 1-on-1 Video Consultation</td>
+                          <td style="padding: 6px 0; color: #777777;">Format:</td>
+                          <td style="padding: 6px 0; color: #1A1A1A;">Private 1-on-1 Video Consultation</td>
                         </tr>
                         ${freeSessionsRemaining !== null ? `
                         <tr>
-                          <td style="padding: 6px 0; color: #888888;">Remaining Credits:</td>
-                          <td style="padding: 6px 0; color: #34d399; font-weight: 600;">${freeSessionsRemaining} Complimentary Sessions</td>
+                          <td style="padding: 6px 0; color: #777777;">Remaining Credits:</td>
+                          <td style="padding: 6px 0; color: #059669; font-weight: 600;">${freeSessionsRemaining} Complimentary Sessions</td>
                         </tr>
                         ` : ''}
                         ${meetLink ? `
                         <tr>
-                          <td style="padding: 6px 0; color: #888888;">Meeting Link:</td>
-                          <td style="padding: 6px 0;"><a href="${meetLink}" style="color: #c79c6e; text-decoration: underline;">Join Google Meet Call</a></td>
+                          <td style="padding: 6px 0; color: #777777;">Meeting Link:</td>
+                          <td style="padding: 6px 0;"><a href="${meetLink}" style="color: #C25E38; font-weight: 600; text-decoration: underline;">Join Google Meet Call</a></td>
                         </tr>
                         ` : ''}
                       </table>
                     </div>
 
                     <!-- PDF Attachment Callout -->
-                    <div style="background-color: #171511; border: 1px dashed #c79c6e; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
-                      <div style="font-size: 13px; font-weight: 600; color: #c79c6e; margin-bottom: 4px;">
+                    <div style="background-color: #FDF9F5; border: 1px dashed #C25E38; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
+                      <div style="font-size: 13px; font-weight: 600; color: #C25E38; margin-bottom: 4px;">
                         📄 Attached: Coaching Agreement
                       </div>
-                      <div style="font-size: 12px; color: #a3a3a3; line-height: 1.5;">
+                      <div style="font-size: 12px; color: #666666; line-height: 1.5;">
                         Your <strong>Coaching Agreement (${safeFilename})</strong> is attached to this email for your reference and records.
                       </div>
                     </div>
 
-                    <p style="font-size: 13px; color: #888888; line-height: 1.6; margin: 0;">
+                    <p style="font-size: 13px; color: #777777; line-height: 1.6; margin: 0;">
                       Please be in a quiet space with stable internet 5 minutes before your scheduled start time. If you need to reschedule, please ensure at least 48 hours notice as per the Coaching Agreement.
                     </p>
                   </td>
@@ -414,9 +425,9 @@ export async function sendCoachingBookingConfirmationEmail({
 
                 <!-- Footer -->
                 <tr>
-                  <td style="padding: 20px 36px; background-color: #080808; border-top: 1px solid #1a1a1a; text-align: center; font-size: 11px; color: #555555; line-height: 1.5;">
+                  <td style="padding: 20px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11px; color: #777777; line-height: 1.5;">
                     <div>Better With Aarkesh · Executive Leadership &amp; Gravitas Coaching</div>
-                    <div>Questions? Reach out to <a href="mailto:coaching@betterwithaarkesh.com" style="color: #c79c6e; text-decoration: none;">coaching@betterwithaarkesh.com</a></div>
+                    <div>Questions? Reach out to <a href="mailto:coaching@aarkeshgupta.com" style="color: #C25E38; text-decoration: none;">coaching@aarkeshgupta.com</a></div>
                   </td>
                 </tr>
 
@@ -429,22 +440,113 @@ export async function sendCoachingBookingConfirmationEmail({
     `;
 
     const coachEmailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #222; line-height: 1.6;">
-        <h2 style="color: #111010; border-bottom: 2px solid #c79c6e; padding-bottom: 8px;">New 1-on-1 Coaching Session Booked</h2>
-        <p>A new coaching session has been reserved and confirmed:</p>
-        <div style="background: #f8f6f0; border: 1px solid #e0d9cb; padding: 18px; border-radius: 8px; margin: 16px 0;">
-          <p style="margin: 4px 0;"><strong>Client Name:</strong> ${clientName}</p>
-          <p style="margin: 4px 0;"><strong>Client Email:</strong> ${clientEmail}</p>
-          <p style="margin: 4px 0;"><strong>Phone:</strong> ${appointment.phoneNumber || appointment.phone || 'N/A'}</p>
-          <p style="margin: 4px 0;"><strong>Date & Time:</strong> ${cleanDate} at ${cleanTime} (IST)</p>
-          <p style="margin: 4px 0;"><strong>Duration:</strong> ${duration} mins (${isFirstSession ? 'First Session' : 'Returning Client'})</p>
-          <p style="margin: 4px 0;"><strong>Type:</strong> ${isFreeSession ? 'Course Bonus (Complimentary)' : 'Standard Paid Session'}</p>
-          ${meetLink ? `<p style="margin: 4px 0;"><strong>Meet Link:</strong> <a href="${meetLink}">${meetLink}</a></p>` : ''}
-        </div>
-        <p style="font-size: 13px; color: #555;">
-          The <strong>Coaching Agreement PDF</strong> is attached to this notification.
-        </p>
-      </div>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Coaching Booking Alert</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
+        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #FAF8F5; padding: 30px 15px;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; width: 100%; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
+                
+                <!-- Brand Header -->
+                <tr>
+                  <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td>
+                          <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; letter-spacing: -0.5px; font-family: Georgia, serif;">
+                            BetterWith<span style="color: #C25E38;">Aarkesh</span>
+                          </div>
+                          <div style="font-size: 11px; color: #C25E38; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 700;">
+                            🚨 ADMIN ALERT · NEW COACHING BOOKING
+                          </div>
+                        </td>
+                        <td align="right">
+                          <span style="display: inline-block; padding: 5px 12px; background-color: rgba(194, 94, 56, 0.1); border: 1px solid rgba(194, 94, 56, 0.3); color: #C25E38; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">
+                            ${duration} MINS
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Content Banner -->
+                <tr>
+                  <td style="padding: 28px 36px;">
+                    <h2 style="margin: 0 0 10px; font-size: 20px; color: #1A1A1A; font-weight: 600;">
+                      ${clientName} just booked a 1-on-1 session!
+                    </h2>
+                    <p style="margin: 0 0 20px; font-size: 14px; color: #555555; line-height: 1.6;">
+                      A new executive coaching session has been reserved and confirmed on your calendar.
+                    </p>
+
+                    <!-- Client & Session Details Box -->
+                    <div style="background-color: #FAF7F2; border: 1px solid #EBE4DA; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px;">
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;" width="140">Client Name:</td>
+                          <td style="padding: 6px 0; color: #1A1A1A; font-weight: 600;">${clientName}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Client Email:</td>
+                          <td style="padding: 6px 0; color: #C25E38; font-weight: 600;"><a href="mailto:${clientEmail}" style="color: #C25E38; text-decoration: none;">${clientEmail}</a></td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Phone Number:</td>
+                          <td style="padding: 6px 0; color: #1A1A1A; font-family: monospace;">${appointment.phoneNumber || appointment.phone || 'Not provided'}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Date &amp; Time:</td>
+                          <td style="padding: 6px 0; color: #1A1A1A; font-weight: 600;">${cleanDate} at ${cleanTime} (IST)</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Duration / Type:</td>
+                          <td style="padding: 6px 0; color: #C25E38; font-weight: 600;">${duration} mins (${isFirstSession ? 'First Session' : 'Returning Client'})</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Booking Type:</td>
+                          <td style="padding: 6px 0; color: ${isFreeSession ? '#059669' : '#1A1A1A'}; font-weight: 600;">${isFreeSession ? 'Course Bonus (Complimentary)' : 'Standard Paid Session'}</td>
+                        </tr>
+                        ${meetLink ? `
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Meet Link:</td>
+                          <td style="padding: 6px 0;"><a href="${meetLink}" style="color: #C25E38; font-weight: 600; text-decoration: underline;">${meetLink}</a></td>
+                        </tr>
+                        ` : ''}
+                      </table>
+                    </div>
+
+                    <!-- PDF Attached Callout -->
+                    <div style="background-color: #FDF9F5; border: 1px dashed #C25E38; border-radius: 12px; padding: 18px 20px;">
+                      <div style="font-size: 13px; font-weight: 600; color: #C25E38; margin-bottom: 4px;">
+                        📄 Attached: Coaching Agreement PDF
+                      </div>
+                      <div style="font-size: 12px; color: #666666; line-height: 1.5;">
+                        The dynamically generated Coaching Agreement for <strong>${clientName}</strong> is attached to this email.
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 20px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11px; color: #777777; line-height: 1.5;">
+                    <div>Better With Aarkesh · Admin Coaching Dashboard Notification</div>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
 
     const attachments = [
@@ -457,7 +559,7 @@ export async function sendCoachingBookingConfirmationEmail({
     const emailPromises = [
       // Send to Client with PDF attachment
       resend.emails.send({
-        from: process.env.EMAIL_FROM || 'Better With Aarkesh <support@yashrajtech.online>',
+        from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
         to: clientEmail,
         subject: `Coaching Session Confirmed + Coaching Agreement — ${cleanDate}`,
         html: clientEmailHtml,
@@ -465,8 +567,8 @@ export async function sendCoachingBookingConfirmationEmail({
       }),
       // Send to Coach / Admin with PDF attachment
       resend.emails.send({
-        from: process.env.EMAIL_FROM || 'Better With Aarkesh <support@yashrajtech.online>',
-        to: process.env.ADMIN_EMAIL || 'support@yashrajtech.online',
+        from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
+        to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
         subject: `New Coaching Booking: ${clientName} (${cleanDate} at ${cleanTime})`,
         html: coachEmailHtml,
         attachments,

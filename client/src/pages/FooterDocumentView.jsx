@@ -220,6 +220,8 @@ const POLICY_STYLES = `
   /* Ghost / broken images from clipboard paste — hidden */
   .policy-rich-content img[src=""],
   .policy-rich-content img:not([src]),
+  .policy-rich-content img[src^="file:"],
+  .policy-rich-content img[src*="msohtmlclip"],
   .policy-rich-content img[src*="webkit-fake-url"],
   .policy-rich-content img[src^="about:blank"] {
     display: none !important;

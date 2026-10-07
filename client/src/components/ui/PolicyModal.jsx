@@ -35,7 +35,7 @@ const DEFAULT_TERMS_HTML = `
   <p>These terms are governed by the laws of India. Any disputes shall be resolved through binding arbitration in accordance with Indian law.</p>
 
   <p style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(200,120,190,0.2); color: rgba(255,255,255,0.5); font-size: 0.75rem;">
-    For queries, contact <a href="mailto:support@aarkeshgupta.com" style="color:#E3B8DE;">support@aarkeshgupta.com</a>
+    For queries, contact <a href="mailto:coaching@aarkeshgupta.com" style="color:#E3B8DE;">coaching@aarkeshgupta.com</a>
   </p>
 </div>
 `;

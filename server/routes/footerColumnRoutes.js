@@ -8,7 +8,7 @@ const router = express.Router();
 
 const DEFAULT_FOOTER_SETTINGS = {
   brandDescription: 'Authentic 1-on-1 mentorship, transformational coaching & self-mastery courses designed to quiet inner noise, dissolve reactive patterns, and elevate your presence.',
-  brandEmail: 'coaching@betterwithaarkesh.com',
+  brandEmail: 'coaching@aarkeshgupta.com',
   copyrightText: '© 2026 Better With Aarkesh. All rights reserved.',
 };
 
@@ -56,7 +56,7 @@ const seedDefaultUnifiedColumns = async () => {
       order: 3,
       links: [
         { label: 'About Us', url: '/#meet-aarkesh', type: 'internal', order: 0 },
-        { label: 'Contact Us', url: 'mailto:coaching@betterwithaarkesh.com', type: 'external', order: 1 },
+        { label: 'Contact Us', url: '/contact-us', type: 'internal', order: 1 },
         { label: 'FAQ', url: '/#faq', type: 'internal', order: 2 },
       ],
     },

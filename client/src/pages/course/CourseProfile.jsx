@@ -435,27 +435,43 @@ export default function CourseProfile() {
                 </button>
 
               {profileDropdownOpen && (
-                <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left animate-fadeIn">
+                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left animate-fadeIn">
+                  {/* User Email & Name Header */}
+                  <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
+                    <div className="text-xs font-bold text-white truncate">
+                      {user?.fullName || 'Student Account'}
+                    </div>
+                    <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={user?.email}>
+                      {user?.email || 'Logged In'}
+                    </div>
+                  </div>
+
                   <Link
                     to="/library"
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <Books size={18} className="text-[#C878BE]" /> Library
+                    <Books size={18} className="text-[#C878BE] shrink-0" />
+                    <span>Library</span>
                   </Link>
                   <Link
                     to="/my-course"
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <BookOpen size={18} className="text-[#C878BE]" /> My Course
+                    <BookOpen size={18} className="text-[#C878BE] shrink-0" />
+                    <span>My Course</span>
                   </Link>
                   <Link
                     to="/course/profile"
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <User size={18} className="text-[#C878BE]" /> Profile
+                    <User size={18} className="text-[#C878BE] shrink-0" />
+                    <span>Profile</span>
                   </Link>
                   <button
                     type="button"
@@ -463,9 +479,11 @@ export default function CourseProfile() {
                       setProfileDropdownOpen(false);
                       handleLogout();
                     }}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer"
+                    className="w-full px-5 py-3 text-left text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer bg-transparent border-none outline-none"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <SignOut size={18} /> Log Out
+                    <SignOut size={18} className="text-red-400 shrink-0" />
+                    <span>Log Out</span>
                   </button>
                 </div>
               )}
@@ -1003,7 +1021,7 @@ export default function CourseProfile() {
                             <div>
                               <Link
                                 to={item.slug === 'better-man' ? '/course?learn=true' : `/course/${item.slug}?learn=true`}
-                                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#A83B96] via-[#C878BE] to-[#7A2A70] text-white text-xs uppercase tracking-[0.18em] font-bold flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(200,120,190,0.35)] hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(200,120,190,0.5)] transition-all"
+                                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#A83B96] via-[#C878BE] to-[#7A2A70] text-white text-xs uppercase tracking-[0.18em] font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-none"
                               >
                                 <BookOpen size={16} weight="bold" /> Resume Learning <ArrowRight size={15} weight="bold" />
                               </Link>

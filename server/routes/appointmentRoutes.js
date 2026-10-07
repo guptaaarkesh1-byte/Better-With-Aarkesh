@@ -903,7 +903,7 @@ router.post('/:id/reschedule-paid', optionalAuth, async (req, res) => {
         const emailPromises = [
           resend.emails.send({
             from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-            to: process.env.ADMIN_EMAIL || 'support@yashrajtech.online',
+            to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
             subject: `Paid Reschedule Confirmed for ${appointment.name}`,
             html: coachEmailTemplate,
           })
@@ -1130,7 +1130,7 @@ router.post('/:id/reschedule-credit', optionalAuth, async (req, res) => {
         const emailPromises = [
           resend.emails.send({
             from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-            to: process.env.ADMIN_EMAIL || 'support@yashrajtech.online',
+            to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
             subject: `Session Rescheduled (Free Credit) for ${appointment.name}`,
             html: coachEmailTemplate,
           })
@@ -1292,7 +1292,7 @@ router.post('/admin/:id/approve-reschedule', protect, admin, async (req, res) =>
         const emailPromises = [
           resend.emails.send({
             from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-            to: process.env.ADMIN_EMAIL || 'support@yashrajtech.online',
+            to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
             subject: `Reschedule confirmed for ${appointment.name}`,
             html: coachEmailTemplate,
           })
@@ -1522,7 +1522,7 @@ router.put('/:id/cancel', optionalAuth, async (req, res) => {
         const cancelEmailPromises = [
           resend.emails.send({
             from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-            to: process.env.ADMIN_EMAIL || 'support@yashrajtech.online',
+            to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
             subject: `Session Cancelled: ${appointment.name}`,
             html: coachEmailHtml,
           })

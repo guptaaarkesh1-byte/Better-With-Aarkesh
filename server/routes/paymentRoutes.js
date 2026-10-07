@@ -438,6 +438,7 @@ router.post('/course-verify', async (req, res) => {
             sendCoursePurchaseInvoiceEmail({
               studentEmail: email.toLowerCase(),
               studentName: courseUser.fullName || 'Valued Student',
+              studentPhone: courseUser.phoneNumber || '',
               txnId: razorpay_payment_id,
               orderId: razorpay_order_id,
               amount: finalAmount,

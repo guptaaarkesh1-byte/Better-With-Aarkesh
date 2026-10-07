@@ -5,8 +5,23 @@ import Comment from '../models/Comment.js';
 import CommentLike from '../models/CommentLike.js';
 import CourseUser from '../models/CourseUser.js';
 import User from '../models/User.js';
+import Settings from '../models/Settings.js';
 
 const router = express.Router();
+
+// Helper to get comment settings (defaults to enabled: true)
+const getCommentSettings = async () => {
+  try {
+    const setting = await Settings.findOne({ key: 'course_comments_settings' });
+    if (!setting || !setting.value) {
+      return { enabled: true };
+    }
+    return typeof setting.value === 'object' ? setting.value : { enabled: !!setting.value };
+  } catch (err) {
+    console.error('Error in getCommentSettings:', err);
+    return { enabled: true };
+  }
+};
 
 // Helper to emit real-time updates via Socket.io
 const emitSocket = (req, event, payload, lessonId) => {
@@ -188,6 +203,45 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+// @route   GET /api/comments/settings
+// @desc    Get comment section global settings (enabled / disabled)
+// @access  Public
+router.get('/settings', async (req, res) => {
+  try {
+    const settings = await getCommentSettings();
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching comment settings:', error);
+    res.status(500).json({ enabled: true });
+  }
+});
+
+// @route   PUT /api/comments/settings
+// @desc    Update comment section global settings (enable / disable)
+// @access  Admin only
+router.put('/settings', authenticateUser, requireAdmin, async (req, res) => {
+  try {
+    const { enabled } = req.body;
+    const isEnabled = enabled !== false; // boolean
+
+    const updated = await Settings.findOneAndUpdate(
+      { key: 'course_comments_settings' },
+      { value: { enabled: isEnabled, updatedAt: new Date() } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const payload = updated?.value || { enabled: isEnabled };
+
+    // Emit live event to all connected sockets
+    emitSocket(req, 'comments:settings_updated', payload);
+
+    res.json(payload);
+  } catch (error) {
+    console.error('Error updating comment settings:', error);
+    res.status(500).json({ message: 'Failed to update comment settings.' });
+  }
+});
+
 // @route   GET /api/comments/lesson/:lessonId
 // @desc    Get paginated comments with nested replies for a specific lesson
 // @access  Public (Optional auth for like states & admin view)
@@ -298,6 +352,7 @@ router.get('/lesson/:lessonId', optionalAuthenticateUser, async (req, res) => {
     });
 
     const totalPages = Math.ceil(totalTopLevel / limit) || 1;
+    const settings = await getCommentSettings();
 
     res.json({
       comments: formattedComments,
@@ -307,6 +362,7 @@ router.get('/lesson/:lessonId', optionalAuthenticateUser, async (req, res) => {
       totalPages,
       hasMore: page < totalPages,
       isAdmin,
+      commentsEnabled: settings.enabled !== false,
     });
   } catch (error) {
     console.error('Error fetching comments:', error);
@@ -321,6 +377,13 @@ router.post('/lesson/:lessonId', authenticateUser, async (req, res) => {
   try {
     const { lessonId } = req.params;
     const { content, type, lessonTitle, courseSlug, courseTitle } = req.body;
+
+    if (!req.user.isAdmin) {
+      const settings = await getCommentSettings();
+      if (settings.enabled === false) {
+        return res.status(403).json({ message: 'Discussions and comments are currently turned off for this course.' });
+      }
+    }
 
     if (!lessonId || !lessonId.trim()) {
       return res.status(400).json({ message: 'Lesson ID is required' });
@@ -382,6 +445,13 @@ router.post('/:commentId/reply', authenticateUser, async (req, res) => {
   try {
     const { commentId } = req.params;
     const { content } = req.body;
+
+    if (!req.user.isAdmin) {
+      const settings = await getCommentSettings();
+      if (settings.enabled === false) {
+        return res.status(403).json({ message: 'Discussions and comments are currently turned off for this course.' });
+      }
+    }
 
     if (!mongoose.Types.ObjectId.isValid(commentId)) {
       return res.status(400).json({ message: 'Invalid comment ID' });

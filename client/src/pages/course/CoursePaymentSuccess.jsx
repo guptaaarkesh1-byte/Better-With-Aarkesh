@@ -203,7 +203,7 @@ export default function CoursePaymentSuccess({
                 Executive Leadership, Communication &amp; Gravitas Coaching
               </p>
               <p className="font-sans text-[11px] text-white/40 print:text-gray-500 mt-0.5">
-                support@aarkeshgupta.com · https://aarkeshgupta.com
+                coaching@aarkeshgupta.com · https://aarkeshgupta.com
               </p>
             </div>
 

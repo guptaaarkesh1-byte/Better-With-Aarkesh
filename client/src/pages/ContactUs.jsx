@@ -22,17 +22,17 @@ const getCardIcon = (type, size = 28) => {
     case 'call':
     case 'online':
     case 'offline':
-      return <PhoneCall size={size} className="text-[#c79c6e]" weight="regular" />;
+      return <PhoneCall size={size} className="text-[#c9542f]" weight="regular" />;
     case 'chat':
     case 'discord':
     case 'community':
     case 'message':
-      return <ChatCircleDots size={size} className="text-[#c79c6e]" weight="regular" />;
+      return <ChatCircleDots size={size} className="text-[#c9542f]" weight="regular" />;
     case 'location':
-      return <MapPin size={size} className="text-[#c79c6e]" weight="regular" />;
+      return <MapPin size={size} className="text-[#c9542f]" weight="regular" />;
     case 'email':
     default:
-      return <EnvelopeSimple size={size} className="text-[#c79c6e]" weight="regular" />;
+      return <EnvelopeSimple size={size} className="text-[#c9542f]" weight="regular" />;
   }
 };
 
@@ -70,7 +70,7 @@ export default function ContactUs() {
           {
             id: 'item-1',
             label: '',
-            value: 'coaching@betterwithaarkesh.com'
+            value: 'coaching@aarkeshgupta.com'
           }
         ]
       },
@@ -83,7 +83,7 @@ export default function ContactUs() {
           {
             id: 'item-2',
             label: '',
-            value: '1234567890'
+            value: '+91 1234567890'
           }
         ]
       }
@@ -129,7 +129,7 @@ export default function ContactUs() {
             {
               id: 'item-1',
               label: '',
-              value: 'coaching@betterwithaarkesh.com'
+              value: 'coaching@aarkeshgupta.com'
             }
           ]
         },
@@ -142,24 +142,24 @@ export default function ContactUs() {
             {
               id: 'item-2',
               label: '',
-              value: '1234567890'
+              value: '+91 1234567890'
             }
           ]
         }
       ];
 
   return (
-    <div className="w-full min-h-screen bg-[#070707] text-white pt-24 sm:pt-32 pb-24 relative overflow-hidden font-sans">
+    <div className="w-full min-h-screen bg-[#f5f1e8] text-[#111010] pt-28 sm:pt-32 pb-24 relative overflow-hidden font-sans">
       
-      {/* Background Warm Gradient Glows */}
-      <div className="absolute top-0 left-1/4 -translate-x-1/2 w-[700px] h-[400px] bg-[#c79c6e]/10 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute top-1/3 right-10 w-[500px] h-[350px] bg-[#c79c6e]/5 rounded-full blur-[140px] pointer-events-none" />
+      {/* Background Ambient Glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#c9542f]/[0.04] rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute bottom-40 right-10 w-[500px] h-[500px] bg-[#ede7d8] rounded-full blur-[180px] pointer-events-none" />
 
-      {/* Subtle Background Geometric Grid Accent (Top Right) */}
+      {/* Subtle Background Geometric Accent */}
       <div 
-        className="absolute top-16 right-6 sm:right-16 w-64 h-64 opacity-20 pointer-events-none rotate-45"
+        className="absolute top-16 right-6 sm:right-16 w-64 h-64 opacity-25 pointer-events-none rotate-45"
         style={{
-          backgroundImage: 'radial-gradient(circle, rgba(199, 156, 110, 0.4) 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(circle, rgba(201, 84, 47, 0.25) 1px, transparent 1px)',
           backgroundSize: '16px 16px'
         }}
       />
@@ -171,31 +171,34 @@ export default function ContactUs() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-[#c79c6e]/15 border border-white/10 hover:border-[#c79c6e]/30 text-white/70 hover:text-[#c79c6e] text-xs font-sans transition-all duration-200 cursor-pointer"
+            className="group inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white border border-black/10 hover:border-[#c9542f]/40 text-[#111010] hover:text-[#c9542f] text-xs font-medium uppercase tracking-[0.15em] transition-all duration-200 shadow-xs cursor-pointer"
             aria-label="Go Back"
           >
-            <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform text-[#c9542f]" />
             <span>{settings.backButtonText || 'Back'}</span>
           </button>
         </div>
 
         {/* Header Section */}
         <div className="flex flex-col items-center text-center max-w-2xl mx-auto space-y-3.5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] text-xs font-sans uppercase tracking-[0.2em]">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c9542f]/10 border border-[#c9542f]/25 text-[#c9542f] text-xs font-sans uppercase tracking-[0.2em] font-medium">
             <Sparkle size={13} weight="fill" />
             <span>{settings.headerBadge || 'Get In Touch'}</span>
           </div>
 
-          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white tracking-tight leading-tight">
+          <h1 
+            className="text-3xl sm:text-4xl md:text-5xl text-[#111010] tracking-tight leading-tight font-medium"
+            style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+          >
             {settings.headerTitle || 'How can we support you?'}
           </h1>
 
-          <p className="font-sans text-sm sm:text-base text-white/60 font-light leading-relaxed max-w-xl">
+          <p className="font-sans text-sm sm:text-base text-[#555047] font-normal leading-relaxed max-w-xl">
             {settings.headerSubtitle || 'Reach out to our dedicated desks for 1-on-1 coaching, sessions, and learning assistance.'}
           </p>
         </div>
 
-        {/* ─── DYNAMIC CONTACT CARDS (Wraps smoothly to bottom row if > 4) ─── */}
+        {/* ─── DYNAMIC CONTACT CARDS ─── */}
         <div className={`grid gap-5 sm:gap-6 ${
           cardsList.length === 1 
             ? 'grid-cols-1 max-w-md mx-auto w-full' 
@@ -216,21 +219,21 @@ export default function ContactUs() {
             return (
               <div
                 key={card.id || idx}
-                className="bg-[#121111]/90 border border-[#2a2624] hover:border-[#c79c6e]/50 rounded-[20px] p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-[#c79c6e]/10 group relative"
+                className="bg-white/95 border border-[#e8e2d5] hover:border-[#c9542f]/50 rounded-[22px] p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 shadow-sm hover:shadow-xl hover:shadow-[#c9542f]/5 group relative"
               >
                 <div>
                   {/* Icon */}
-                  <div className="mb-4">
-                    {getCardIcon(iconType, 30)}
+                  <div className="mb-4 w-12 h-12 rounded-xl bg-[#c9542f]/10 border border-[#c9542f]/20 flex items-center justify-center">
+                    {getCardIcon(iconType, 26)}
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-sans text-base sm:text-[1.05rem] font-medium text-white/90 mb-2 tracking-tight">
+                  <h3 className="font-sans text-base sm:text-[1.05rem] font-semibold text-[#111010] mb-2 tracking-tight">
                     {card.title}
                   </h3>
 
                   {/* Items List (Multiple Emails / Phone Numbers / Action links) */}
-                  <div className="space-y-2.5 mt-1">
+                  <div className="space-y-2.5 mt-2">
                     {items.map((item, itemIdx) => {
                       const copyKey = `${card.id || idx}-${itemIdx}`;
                       const isCopied = copiedIndex === copyKey;
@@ -241,14 +244,14 @@ export default function ContactUs() {
                         <div key={item.id || itemIdx} className="flex items-center justify-between gap-2">
                           <div className="flex flex-col min-w-0">
                             {item.label && (
-                              <span className="text-[0.65rem] text-white/40 uppercase tracking-wider font-medium">
+                              <span className="text-[0.68rem] text-[#736c61] uppercase tracking-wider font-semibold">
                                 {item.label}
                               </span>
                             )}
                             {isInternal ? (
                               <Link
                                 to={itemLink}
-                                className="font-sans text-sm sm:text-[0.92rem] font-semibold text-[#c79c6e] hover:text-[#e0b88d] transition-colors truncate block group-hover:underline"
+                                className="font-sans text-sm sm:text-[0.92rem] font-semibold text-[#c9542f] hover:text-[#a83e1b] transition-colors truncate block group-hover:underline"
                                 title={item.value}
                               >
                                 {item.value}
@@ -256,7 +259,7 @@ export default function ContactUs() {
                             ) : (
                               <a
                                 href={itemLink}
-                                className="font-sans text-sm sm:text-[0.92rem] font-semibold text-[#c79c6e] hover:text-[#e0b88d] transition-colors truncate block hover:underline"
+                                className="font-sans text-sm sm:text-[0.92rem] font-semibold text-[#c9542f] hover:text-[#a83e1b] transition-colors truncate block hover:underline"
                                 title={item.value}
                               >
                                 {item.value}
@@ -269,10 +272,10 @@ export default function ContactUs() {
                             <button
                               type="button"
                               onClick={() => handleCopy(item.value, copyKey)}
-                              className="p-1 rounded-md bg-white/5 hover:bg-[#c79c6e]/20 text-white/40 hover:text-[#c79c6e] transition-colors shrink-0"
+                              className="p-1.5 rounded-lg bg-[#f5f1e8] hover:bg-[#c9542f]/15 text-[#736c61] hover:text-[#c9542f] transition-colors shrink-0 cursor-pointer"
                               title={`Copy ${item.value}`}
                             >
-                              {isCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                              {isCopied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
                             </button>
                           )}
                         </div>
@@ -283,7 +286,7 @@ export default function ContactUs() {
 
                 {/* Subtitle / Availability */}
                 {card.subtitle && (
-                  <div className="mt-5 pt-3.5 border-t border-white/[0.07] text-xs font-sans text-white/50 font-normal">
+                  <div className="mt-5 pt-3.5 border-t border-[#e8e2d5] text-xs font-sans text-[#736c61] font-normal">
                     {card.subtitle}
                   </div>
                 )}
@@ -294,17 +297,20 @@ export default function ContactUs() {
 
         {/* ─── ADDRESS & LOCATION SECTION (Clean Minimalist Design) ─── */}
         <div className="w-full max-w-4xl mx-auto mt-2">
-          <div className="bg-[#121111]/80 border border-[#2a2624] rounded-[22px] p-6 sm:p-8 backdrop-blur-md shadow-xl">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-white/[0.08] pb-6 mb-6">
+          <div className="bg-white border border-[#e8e2d5] rounded-[24px] p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-[#e8e2d5] pb-6 mb-6">
               <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-[#c79c6e]/10 border border-[#c79c6e]/25 flex items-center justify-center text-[#c79c6e] shrink-0">
-                  <MapPin size={22} weight="fill" />
+                <div className="w-12 h-12 rounded-xl bg-[#c9542f]/10 border border-[#c9542f]/20 flex items-center justify-center text-[#c9542f] shrink-0">
+                  <MapPin size={24} weight="fill" />
                 </div>
                 <div>
-                  <h2 className="font-serif text-xl sm:text-2xl text-white">
+                  <h2 
+                    className="text-xl sm:text-2xl text-[#111010] font-medium"
+                    style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                  >
                     {settings.addressTitle || 'Registered Office & Address'}
                   </h2>
-                  <p className="font-sans text-xs text-white/50 mt-0.5">
+                  <p className="font-sans text-xs text-[#736c61] mt-0.5">
                     {settings.addressSubtitle || 'Official business details and communication location'}
                   </p>
                 </div>
@@ -312,7 +318,7 @@ export default function ContactUs() {
 
               <Link
                 to={settings.addressCtaUrl || '/book'}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c79c6e] hover:bg-[#b0885e] text-black font-semibold text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#c79c6e]/10 shrink-0"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#c9542f] hover:bg-[#b04523] text-white font-medium text-xs uppercase tracking-wider transition-all shadow-md shadow-[#c9542f]/20 shrink-0"
               >
                 <span>{settings.addressCtaText || 'Book 1:1 Coaching'}</span>
                 <ArrowRight size={14} weight="bold" />
@@ -322,20 +328,20 @@ export default function ContactUs() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-sans text-xs">
               {/* Location */}
               <div className="space-y-1.5">
-                <span className="text-white/40 uppercase tracking-wider text-[0.7rem] block font-medium">
+                <span className="text-[#736c61] uppercase tracking-wider text-[0.72rem] block font-semibold">
                   {settings.operatingLocationLabel || 'Operating Location'}
                 </span>
-                <p className="text-white/90 text-sm font-light leading-relaxed whitespace-pre-line">
+                <p className="text-[#111010] text-sm font-normal leading-relaxed whitespace-pre-line">
                   {settings.operatingLocation || 'Mumbai, Maharashtra, India'}
                 </p>
               </div>
 
               {/* Hours */}
               <div className="space-y-1.5">
-                <span className="text-white/40 uppercase tracking-wider text-[0.7rem] block font-medium">
+                <span className="text-[#736c61] uppercase tracking-wider text-[0.72rem] block font-semibold">
                   {settings.operatingHoursLabel || 'Working Hours'}
                 </span>
-                <p className="text-white/90 text-sm font-light leading-relaxed whitespace-pre-line">
+                <p className="text-[#111010] text-sm font-normal leading-relaxed whitespace-pre-line">
                   {settings.operatingHours || 'Monday – Saturday, 11:00 AM – 8:00 PM IST'}
                 </p>
               </div>

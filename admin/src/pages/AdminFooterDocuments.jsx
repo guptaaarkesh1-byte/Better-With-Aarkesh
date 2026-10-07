@@ -206,8 +206,8 @@ export default function AdminFooterDocuments() {
           {
             id: 'item-1',
             label: '',
-            value: 'coaching@betterwithaarkesh.com',
-            linkUrl: 'mailto:coaching@betterwithaarkesh.com'
+            value: 'coaching@aarkeshgupta.com',
+            linkUrl: 'mailto:coaching@aarkeshgupta.com'
           }
         ]
       },
@@ -247,7 +247,7 @@ export default function AdminFooterDocuments() {
         {
           id: `item-${Date.now()}-1`,
           label: '',
-          value: 'coaching@betterwithaarkesh.com'
+          value: 'coaching@aarkeshgupta.com'
         }
       ]
     };
@@ -278,7 +278,7 @@ export default function AdminFooterDocuments() {
       const targetCard = updatedCards[cardIdx] || {};
       const currentItems = Array.isArray(targetCard.items) ? targetCard.items : [];
       const iconType = targetCard.icon || 'email';
-      const defaultVal = iconType === 'phone' ? '+91 98765 43210' : 'coaching@betterwithaarkesh.com';
+      const defaultVal = iconType === 'phone' ? '+91 98765 43210' : 'coaching@aarkeshgupta.com';
       
       const newItem = {
         id: `item-${Date.now()}-${currentItems.length + 1}`,
@@ -465,7 +465,7 @@ export default function AdminFooterDocuments() {
                   {
                     id: 'item-1',
                     label: '',
-                    value: data.card1Highlight || 'coaching@betterwithaarkesh.com'
+                    value: data.card1Highlight || 'coaching@aarkeshgupta.com'
                   }
                 ]
               },
@@ -1544,7 +1544,7 @@ export default function AdminFooterDocuments() {
                                               type="text"
                                               value={item.value || ''}
                                               onChange={(e) => handleUpdateCardItem(cardIdx, itemIdx, 'value', e.target.value)}
-                                              placeholder={iconType === 'phone' ? '+91 98765 43210' : 'coaching@betterwithaarkesh.com'}
+                                              placeholder={iconType === 'phone' ? '+91 98765 43210' : 'coaching@aarkeshgupta.com'}
                                               className="w-full bg-[#191919] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-[#c79c6e] font-mono focus:border-[#c79c6e]"
                                             />
                                           </div>
@@ -1896,7 +1896,7 @@ export default function AdminFooterDocuments() {
                     type="email"
                     value={brandSettings.brandEmail}
                     onChange={(e) => setBrandSettings({ ...brandSettings, brandEmail: e.target.value })}
-                    placeholder="coaching@betterwithaarkesh.com"
+                    placeholder="coaching@aarkeshgupta.com"
                     className="w-full bg-[#141414] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#c79c6e]"
                   />
                 </div>

@@ -71,6 +71,7 @@ export default function LessonComments({
   const [isPosting, setIsPosting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isAdminView, setIsAdminView] = useState(false);
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
 
   // Comment Box State
   const [newCommentText, setNewCommentText] = useState('');
@@ -209,6 +210,7 @@ export default function LessonComments({
           setTotalComments(data.totalComments || 0);
           setHasMore(data.hasMore || false);
           setIsAdminView(!!data.isAdmin);
+          setCommentsEnabled(data.commentsEnabled !== false);
           setPage(1);
         }
       } catch (err) {
@@ -238,6 +240,12 @@ export default function LessonComments({
     const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
 
     socket.emit('join_lesson', lessonId);
+
+    socket.on('comments:settings_updated', (data) => {
+      if (data && typeof data.enabled === 'boolean') {
+        setCommentsEnabled(data.enabled);
+      }
+    });
 
     socket.on('comment:new', (newComment) => {
       if (newComment && newComment.lessonId === lessonId) {
@@ -657,11 +665,26 @@ export default function LessonComments({
     }
   };
 
+  // When comments are disabled globally by admin and viewing as a student -> completely hide everything
+  if (!isLoading && !commentsEnabled && !isAdminView) {
+    return null;
+  }
+
   return (
     <section 
       className="mt-8 pt-8 border-t border-white/10"
       aria-label="Lesson Comments Section"
     >
+      {/* ── Admin Preview Notice if Comments are Disabled ── */}
+      {!commentsEnabled && isAdminView && (
+        <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs md:text-sm flex items-center gap-3">
+          <WarningCircle size={18} className="shrink-0" />
+          <span>
+            <strong>Admin Notice:</strong> Comments &amp; discussions are currently <strong>TURNED OFF</strong> for students. You are viewing in Instructor Preview mode.
+          </span>
+        </div>
+      )}
+
       {/* ── Section Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>

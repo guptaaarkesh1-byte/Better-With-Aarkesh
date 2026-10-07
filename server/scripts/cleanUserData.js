@@ -5,7 +5,6 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 import User from '../models/User.js';
@@ -13,51 +12,47 @@ import CourseUser from '../models/CourseUser.js';
 import CoursePurchase from '../models/CoursePurchase.js';
 import CourseProgress from '../models/CourseProgress.js';
 import Appointment from '../models/Appointment.js';
-import PastClient from '../models/PastClient.js';
-import Note from '../models/Note.js';
 
 async function cleanUserData() {
   try {
-    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/better-with-aarkesh';
-    console.log('Connecting to MongoDB:', mongoUri);
+    const mongoUri = process.env.MONGO_URI;
+    if (!mongoUri) {
+      console.error('MONGO_URI is missing from .env');
+      process.exit(1);
+    }
+
     await mongoose.connect(mongoUri);
+    console.log('MongoDB connected successfully.');
 
-    console.log('--- Cleaning User & Client Data ---');
+    // 1. Delete all Course Users
+    const cuRes = await CourseUser.deleteMany({});
+    console.log(`✓ Deleted ${cuRes.deletedCount} Course Users.`);
 
-    // 1. Delete non-admin coaching users
-    const userRes = await User.deleteMany({ isAdmin: { $ne: true } });
-    console.log(`Deleted coaching users (non-admin): ${userRes.deletedCount}`);
+    // 2. Delete all Course Purchases
+    const cpRes = await CoursePurchase.deleteMany({});
+    console.log(`✓ Deleted ${cpRes.deletedCount} Course Purchases.`);
 
-    // 2. Delete all course users
-    const courseUserRes = await CourseUser.deleteMany({});
-    console.log(`Deleted course users: ${courseUserRes.deletedCount}`);
+    // 3. Delete all Course Progress
+    const progRes = await CourseProgress.deleteMany({});
+    console.log(`✓ Deleted ${progRes.deletedCount} Course Progress records.`);
 
-    // 3. Delete course purchases
-    const purchaseRes = await CoursePurchase.deleteMany({});
-    console.log(`Deleted course purchases: ${purchaseRes.deletedCount}`);
+    // 4. Delete all Coaching Appointments
+    const appRes = await Appointment.deleteMany({});
+    console.log(`✓ Deleted ${appRes.deletedCount} Coaching Appointments.`);
 
-    // 4. Delete course progress records
-    const progressRes = await CourseProgress.deleteMany({});
-    console.log(`Deleted course progress records: ${progressRes.deletedCount}`);
+    // 5. Delete non-admin Coaching Users (Keep Admin safe)
+    const userRes = await User.deleteMany({
+      isAdmin: { $ne: true },
+      email: { $nin: ['admin@aarkeshgupta.com', 'admin@betterwithaarkesh.com'] }
+    });
+    console.log(`✓ Deleted ${userRes.deletedCount} Non-admin Coaching Users (Admin preserved).`);
 
-    // 5. Delete all appointments
-    const apptRes = await Appointment.deleteMany({});
-    console.log(`Deleted appointments: ${apptRes.deletedCount}`);
-
-    // 6. Delete past client logs
-    const pastRes = await PastClient.deleteMany({});
-    console.log(`Deleted past client logs: ${pastRes.deletedCount}`);
-
-    // 7. Delete notes
-    const notesRes = await Note.deleteMany({});
-    console.log(`Deleted notes: ${notesRes.deletedCount}`);
-
-    console.log('✅ All user, appointment, and purchase data successfully cleared for fresh testing!');
-  } catch (err) {
-    console.error('Error cleaning user data:', err);
-  } finally {
+    console.log('\n🎉 ALL test user data cleared successfully for fresh testing!');
     await mongoose.disconnect();
     process.exit(0);
+  } catch (error) {
+    console.error('Error clearing test data:', error);
+    process.exit(1);
   }
 }
 

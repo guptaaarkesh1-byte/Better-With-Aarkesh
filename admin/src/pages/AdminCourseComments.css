@@ -117,6 +117,165 @@
   background: #FFFFFF;
 }
 
+/* ── Master Discussion Toggle Box ── */
+.easy-master-toggle-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.easy-master-toggle-box label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  letter-spacing: 0.04em;
+}
+
+.easy-master-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 6px;
+  border-radius: 99px;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  user-select: none;
+}
+
+.easy-master-switch-btn.is-on {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+  color: #065F46;
+}
+
+.easy-master-switch-btn.is-on:hover {
+  background: #D1FAE5;
+  border-color: #6EE7B7;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+.easy-master-switch-btn.is-off {
+  background: #FEF2F2;
+  border-color: #FECACA;
+  color: #991B1B;
+}
+
+.easy-master-switch-btn.is-off:hover {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+.easy-switch-knob {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-block;
+}
+
+.easy-master-switch-btn.is-on .easy-switch-knob {
+  background: #10B981;
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.4);
+}
+
+.easy-master-switch-btn.is-off .easy-switch-knob {
+  background: #EF4444;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+}
+
+.easy-switch-label {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ── Global Alert Banner ── */
+.easy-global-alert-banner {
+  max-width: 1440px;
+  margin: 16px auto 0;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+  border: 1px solid #FCD34D;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.1);
+  animation: slideDownAlert 0.3s ease-out;
+}
+
+@keyframes slideDownAlert {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.banner-content-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.banner-emoji {
+  font-size: 24px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.banner-text strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #92400E;
+  margin-bottom: 2px;
+}
+
+.banner-text p {
+  margin: 0;
+  font-size: 12.5px;
+  color: #B45309;
+  line-height: 1.4;
+}
+
+.banner-turn-on-btn {
+  background: #D97706;
+  color: #FFFFFF;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+}
+
+.banner-turn-on-btn:hover {
+  background: #B45309;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+  transform: translateY(-1px);
+}
+
+.banner-turn-on-btn:active {
+  transform: translateY(0);
+}
+
 /* ── 2. Toolbar & Status Pills ── */
 .easy-toolbar {
   max-width: 1440px;

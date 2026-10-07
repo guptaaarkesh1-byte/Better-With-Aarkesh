@@ -7,12 +7,15 @@ export const sanitizeDocumentHtml = (html) => {
   
   let cleaned = html;
 
-  // 1. Remove ghost images with empty, missing, or webkit fake URLs
-  cleaned = cleaned.replace(/<img[^>]*src=["'](?:webkit-fake-url:[^"']*|blob:[^"']*|data:image\/[^"']*placeholder[^"']*|about:blank|)["'][^>]*>/gi, '');
+  // 1. Remove ghost images with file://, msohtmlclip, empty, missing, or fake URLs
+  cleaned = cleaned.replace(/<img[^>]*src=["'](?:file:\/\/[^"']*|msohtmlclip[^"']*|webkit-fake-url:[^"']*|blob:[^"']*|data:image\/[^"']*placeholder[^"']*|about:blank|)["'][^>]*>/gi, '');
+  cleaned = cleaned.replace(/<img[^>]*src=["'][^"']*msohtmlclip[^"']*["'][^>]*>/gi, '');
+  cleaned = cleaned.replace(/<img[^>]*src=["'][^"']*file:\/\/[^"']*["'][^>]*>/gi, '');
   cleaned = cleaned.replace(/<img(?![^>]*\bsrc=)[^>]*>/gi, '');
   cleaned = cleaned.replace(/<img[^>]*src=["']\s*["'][^>]*>/gi, '');
 
-  // 2. Remove invisible 1x1 spacer GIFs / PNGs copied from Office suites
+  // 2. Remove invisible 1x1 or 2px spacer PNGs copied from Word/Office suites
+  cleaned = cleaned.replace(/<img[^>]*height=["'](?:0|1|2)["'][^>]*>/gi, '');
   cleaned = cleaned.replace(/<img[^>]*width=["'](?:0|1)["'][^>]*>/gi, '');
   cleaned = cleaned.replace(/<img[^>]*style=["'][^"']*(?:width:\s*0|height:\s*0|display:\s*none)[^"']*["'][^>]*>/gi, '');
 

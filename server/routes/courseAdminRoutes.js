@@ -571,11 +571,17 @@ router.post('/mux/upload-url', protect, admin, async (req, res) => {
     const { lessonId } = req.body;
     const mux = await getMuxClient();
 
-    // Create Direct Upload with public playback policy and basic video quality
+    // Create Direct Upload with public playback policy, basic video quality, and Auto AI Generated Subtitles
     const upload = await mux.video.uploads.create({
       new_asset_settings: {
         playback_policy: ['public'],
         video_quality: 'basic',
+        generated_subtitles: [
+          {
+            language_code: 'en',
+            name: 'English (Auto-generated)',
+          },
+        ],
       },
       cors_origin: '*',
     });
@@ -596,6 +602,35 @@ router.post('/mux/upload-url', protect, admin, async (req, res) => {
     console.error('Error creating Mux upload URL:', error);
     res.status(500).json({
       message: error.message || 'Failed to initialize Mux direct upload. Check Mux API credentials.',
+    });
+  }
+});
+
+// @desc    Generate Auto-Subtitles for an existing Mux Asset
+// @route   POST /api/admin/courses/mux/generate-subtitles/:assetId
+router.post('/mux/generate-subtitles/:assetId', protect, admin, async (req, res) => {
+  try {
+    const { assetId } = req.params;
+    const mux = await getMuxClient();
+
+    const result = await mux.video.assets.generateSubtitles(assetId, {
+      generated_subtitles: [
+        {
+          language_code: 'en',
+          name: 'English (Auto-generated)',
+        },
+      ],
+    });
+
+    res.json({
+      success: true,
+      message: 'Automatic AI subtitles generation started successfully.',
+      result,
+    });
+  } catch (error) {
+    console.error('Error generating subtitles on Mux:', error);
+    res.status(500).json({
+      message: error.message || 'Failed to generate automatic subtitles for this video asset.',
     });
   }
 });

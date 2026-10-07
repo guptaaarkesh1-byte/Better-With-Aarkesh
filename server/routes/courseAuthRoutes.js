@@ -54,27 +54,85 @@ router.post('/register-init', async (req, res) => {
       const resend = new Resend(process.env.RESEND_API_KEY);
       
       const emailHtmlTemplate = `
-        <table width="100%" bgcolor="#090909" cellpadding="0" cellspacing="0" style="background-color: #090909; margin: 0; padding: 40px 0; width: 100%;">
-          <tr>
-            <td align="center">
-              <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #090909; color: #B8B1A7; text-align: left;">
-                <div style="border: 1px solid #333333; border-radius: 10px; background-color: #111111; padding: 30px;">
-                  <h2 style="color: #F5F2EB; text-align: center; margin-bottom: 20px;">Welcome to the Course!</h2>
-                  <p style="font-size: 16px; line-height: 1.5;">Hi ${fullName},</p>
-                  <p style="font-size: 16px; line-height: 1.5;">Thank you for registering for the course. Please use the following One-Time Password (OTP) to verify your email address:</p>
-                  <div style="text-align: center; margin: 40px 0;">
-                    <span style="display: inline-block; font-size: 28px; font-weight: bold; color: #111111; background-color: #B98A56; padding: 12px 24px; border-radius: 6px; letter-spacing: 6px;">${otp}</span>
-                  </div>
-                  <p style="font-size: 14px; text-align: center; color: #888888;">This OTP is valid for 10 minutes. Please do not share this code with anyone.</p>
-                </div>
-              </div>
-            </td>
-          </tr>
-        </table>
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Verify Your Course Registration</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #060207; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1ebf0;">
+          <table width="100%" bgcolor="#060207" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #060207; padding: 30px 15px;">
+            <tr>
+              <td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; width: 100%; background-color: #0e0410; border: 1px solid #3d143a; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.85), 0 0 30px rgba(200, 120, 190, 0.1);">
+                  
+                  <!-- Brand Header -->
+                  <tr>
+                    <td style="padding: 32px 36px 22px; background: linear-gradient(180deg, #1d0722 0%, #0e0410 100%); border-bottom: 1px solid #2d0e2e;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td>
+                            <div style="font-size: 22px; font-weight: bold; color: #ffffff; letter-spacing: -0.5px; font-family: Georgia, serif;">
+                              Better With Aarkesh
+                            </div>
+                            <div style="font-size: 11px; color: #E3B8DE; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 600;">
+                              Masterclass Student Portal
+                            </div>
+                          </td>
+                          <td align="right">
+                            <span style="display: inline-block; padding: 5px 12px; background-color: rgba(200, 120, 190, 0.15); border: 1px solid rgba(200, 120, 190, 0.4); color: #E3B8DE; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">
+                              ACCOUNT VERIFICATION
+                            </span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 32px 36px 28px;">
+                      <h2 style="margin: 0 0 10px; font-size: 20px; color: #ffffff; font-weight: 600;">
+                        Welcome to the Masterclass, ${fullName}! 🎉
+                      </h2>
+                      <p style="margin: 0 0 16px; font-size: 14px; color: #cbbcc9; line-height: 1.6;">
+                        Thank you for registering on the Better With Aarkesh student portal. Please use the One-Time Password (OTP) below to verify your email address and activate your learning account:
+                      </p>
+
+                      <!-- OTP Display Box -->
+                      <div style="text-align: center; margin: 30px 0 28px;">
+                        <div style="display: inline-block; background: linear-gradient(135deg, rgba(200, 120, 190, 0.18) 0%, rgba(134, 41, 118, 0.28) 100%); border: 1px solid #C878BE; padding: 14px 34px; border-radius: 12px; box-shadow: 0 8px 24px rgba(200, 120, 190, 0.25);">
+                          <span style="font-size: 32px; font-weight: 800; color: #ffffff; letter-spacing: 8px; font-family: monospace; text-shadow: 0 0 12px rgba(200, 120, 190, 0.6);">${otp}</span>
+                        </div>
+                      </div>
+
+                      <div style="background-color: #140517; border: 1px solid #280b2a; border-radius: 10px; padding: 14px 18px; text-align: center;">
+                        <p style="margin: 0; font-size: 12px; color: #9d8c9b; line-height: 1.5;">
+                          ⏳ This OTP is valid for <strong style="color: #E3B8DE;">10 minutes</strong>. For your security, please do not share this code with anyone.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 20px 36px; background-color: #09020b; border-top: 1px solid #230b25; text-align: center; font-size: 11px; color: #6e5d6c; line-height: 1.5;">
+                      <div>Better With Aarkesh · Executive Leadership &amp; Gravitas Coaching</div>
+                      <div>For assistance, contact <a href="mailto:coaching@aarkeshgupta.com" style="color: #E3B8DE; text-decoration: none;">coaching@aarkeshgupta.com</a></div>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `;
 
       const { data, error } = await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'Course Onboarding <onboarding@resend.dev>',
+        from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
         to: email,
         subject: 'Verify your course registration - Better With Aarkesh',
         html: emailHtmlTemplate,
@@ -236,27 +294,85 @@ router.post('/forgot-password-init', async (req, res) => {
       const resend = new Resend(process.env.RESEND_API_KEY);
 
       const emailHtmlTemplate = `
-        <table width="100%" bgcolor="#090909" cellpadding="0" cellspacing="0" style="background-color: #090909; margin: 0; padding: 40px 0; width: 100%;">
-          <tr>
-            <td align="center">
-              <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #090909; color: #B8B1A7; text-align: left;">
-                <div style="border: 1px solid #333333; border-radius: 10px; background-color: #111111; padding: 30px;">
-                  <h2 style="color: #F5F2EB; text-align: center; margin-bottom: 20px;">Course Password Reset</h2>
-                  <p style="font-size: 16px; line-height: 1.5;">Hi there,</p>
-                  <p style="font-size: 16px; line-height: 1.5;">We received a request to reset your course password. Please use the following One-Time Password (OTP) to proceed:</p>
-                  <div style="text-align: center; margin: 40px 0;">
-                    <span style="display: inline-block; font-size: 28px; font-weight: bold; color: #111111; background-color: #B98A56; padding: 12px 24px; border-radius: 6px; letter-spacing: 6px;">${otp}</span>
-                  </div>
-                  <p style="font-size: 14px; text-align: center; color: #888888;">This OTP is valid for 10 minutes.</p>
-                </div>
-              </div>
-            </td>
-          </tr>
-        </table>
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Course Password Reset</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #060207; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1ebf0;">
+          <table width="100%" bgcolor="#060207" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #060207; padding: 30px 15px;">
+            <tr>
+              <td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; width: 100%; background-color: #0e0410; border: 1px solid #3d143a; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.85), 0 0 30px rgba(200, 120, 190, 0.1);">
+                  
+                  <!-- Brand Header -->
+                  <tr>
+                    <td style="padding: 32px 36px 22px; background: linear-gradient(180deg, #1d0722 0%, #0e0410 100%); border-bottom: 1px solid #2d0e2e;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td>
+                            <div style="font-size: 22px; font-weight: bold; color: #ffffff; letter-spacing: -0.5px; font-family: Georgia, serif;">
+                              Better With Aarkesh
+                            </div>
+                            <div style="font-size: 11px; color: #E3B8DE; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 600;">
+                              Masterclass Student Security
+                            </div>
+                          </td>
+                          <td align="right">
+                            <span style="display: inline-block; padding: 5px 12px; background-color: rgba(200, 120, 190, 0.15); border: 1px solid rgba(200, 120, 190, 0.4); color: #E3B8DE; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">
+                              PASSWORD RESET
+                            </span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 32px 36px 28px;">
+                      <h2 style="margin: 0 0 10px; font-size: 20px; color: #ffffff; font-weight: 600;">
+                        Reset Your Course Password
+                      </h2>
+                      <p style="margin: 0 0 16px; font-size: 14px; color: #cbbcc9; line-height: 1.6;">
+                        We received a request to reset your password for the Better With Aarkesh course portal. Please use the One-Time Password (OTP) below to proceed:
+                      </p>
+
+                      <!-- OTP Display Box -->
+                      <div style="text-align: center; margin: 30px 0 28px;">
+                        <div style="display: inline-block; background: linear-gradient(135deg, rgba(200, 120, 190, 0.18) 0%, rgba(134, 41, 118, 0.28) 100%); border: 1px solid #C878BE; padding: 14px 34px; border-radius: 12px; box-shadow: 0 8px 24px rgba(200, 120, 190, 0.25);">
+                          <span style="font-size: 32px; font-weight: 800; color: #ffffff; letter-spacing: 8px; font-family: monospace; text-shadow: 0 0 12px rgba(200, 120, 190, 0.6);">${otp}</span>
+                        </div>
+                      </div>
+
+                      <div style="background-color: #140517; border: 1px solid #280b2a; border-radius: 10px; padding: 14px 18px; text-align: center;">
+                        <p style="margin: 0; font-size: 12px; color: #9d8c9b; line-height: 1.5;">
+                          ⏳ This OTP is valid for <strong style="color: #E3B8DE;">10 minutes</strong>. If you did not request this password reset, you can safely ignore this email.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 20px 36px; background-color: #09020b; border-top: 1px solid #230b25; text-align: center; font-size: 11px; color: #6e5d6c; line-height: 1.5;">
+                      <div>Better With Aarkesh · Executive Leadership &amp; Gravitas Coaching</div>
+                      <div>For assistance, contact <a href="mailto:coaching@aarkeshgupta.com" style="color: #E3B8DE; text-decoration: none;">coaching@aarkeshgupta.com</a></div>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `;
 
       const { data, error } = await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'Course Support <onboarding@resend.dev>',
+        from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
         to: email,
         subject: 'Course Password Reset OTP - Better With Aarkesh',
         html: emailHtmlTemplate,

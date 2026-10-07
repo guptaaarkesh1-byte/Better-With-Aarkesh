@@ -42,6 +42,12 @@ router.post('/mux-upload-url', protect, admin, async (req, res) => {
       new_asset_settings: {
         playback_policy: ['public'],
         video_quality: 'basic',
+        generated_subtitles: [
+          {
+            language_code: 'en',
+            name: 'English (Auto-generated)',
+          },
+        ],
       },
       cors_origin: '*',
     });

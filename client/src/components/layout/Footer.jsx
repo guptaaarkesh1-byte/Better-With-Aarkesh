@@ -68,7 +68,7 @@ export default function Footer() {
   const [socialLinks, setSocialLinks] = useState([]);
   const [brandSettings, setBrandSettings] = useState({
     brandDescription: 'Authentic 1-on-1 mentorship, transformational coaching & self-mastery courses designed to quiet inner noise, dissolve reactive patterns, and elevate your presence.',
-    brandEmail: 'coaching@betterwithaarkesh.com',
+    brandEmail: 'coaching@aarkeshgupta.com',
     copyrightText: `© ${currentYear} Better With Aarkesh. All rights reserved.`,
   });
 

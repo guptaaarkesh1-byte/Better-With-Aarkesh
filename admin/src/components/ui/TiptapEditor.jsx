@@ -22,6 +22,8 @@ import {
   TextAlignJustify,
   HighlighterCircle,
   TextAa,
+  Palette,
+  Check,
   ArrowCounterClockwise,
   ArrowClockwise,
   Eraser,
@@ -496,11 +498,15 @@ function MenuBar({ editor, highlightColor = '#c79c6e', highlightLabel = 'Highlig
       }
 
       const data = await response.json();
+      const finalUrl = data.imageUrl?.startsWith('http') 
+        ? data.imageUrl 
+        : `${API_URL}${data.imageUrl}`;
+
       editor
         .chain()
         .focus()
         .setImage({ 
-          src: `${API_URL}${data.imageUrl}`,
+          src: finalUrl,
           width: '100%',
           alignment: 'center',
           'data-width': '100%',
@@ -553,6 +559,33 @@ function MenuBar({ editor, highlightColor = '#c79c6e', highlightLabel = 'Highlig
     }
   };
 
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [customColor, setCustomColor] = useState('#c9542f');
+  const colorPickerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target)) {
+        setShowColorPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const PRESET_COLORS = [
+    { label: 'Terracotta (Brand)', value: '#c9542f' },
+    { label: 'Warm Gold', value: '#c79c6e' },
+    { label: 'Charcoal Black', value: '#111010' },
+    { label: 'Slate Gray', value: '#555047' },
+    { label: 'Royal Blue', value: '#2563eb' },
+    { label: 'Emerald Green', value: '#059669' },
+    { label: 'Crimson Red', value: '#dc2626' },
+    { label: 'Deep Purple', value: '#7c3aed' },
+    { label: 'Warm Amber', value: '#ea580c' },
+    { label: 'Teal / Cyan', value: '#0891b2' },
+  ];
+
   const clearFormatting = () => {
     editor.chain().focus().unsetAllMarks().unsetColor().clearNodes().setParagraph().run();
   };
@@ -572,6 +605,14 @@ function MenuBar({ editor, highlightColor = '#c79c6e', highlightLabel = 'Highlig
       editor.chain().focus().unsetColor().run();
     } else {
       editor.chain().focus().setColor(highlightColor).run();
+    }
+  };
+
+  const applyColor = (color) => {
+    if (!color) {
+      editor.chain().focus().unsetColor().run();
+    } else {
+      editor.chain().focus().setColor(color).run();
     }
   };
 
@@ -600,7 +641,7 @@ function MenuBar({ editor, highlightColor = '#c79c6e', highlightLabel = 'Highlig
   };
 
   return (
-    <div className="flex flex-col border-b border-stone-200 bg-[#faf7f0] select-none text-xs">
+    <div className="sticky top-0 z-30 flex flex-col border-b border-stone-200 bg-[#faf7f0]/95 backdrop-blur-md rounded-t-xl select-none text-xs shadow-xs">
       
       {/* ── Main Toolbar ── */}
       <div className="flex flex-wrap items-center gap-1.5 p-2.5">
@@ -681,7 +722,7 @@ function MenuBar({ editor, highlightColor = '#c79c6e', highlightLabel = 'Highlig
           onClick={handleColorToggle}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-sm text-xs font-medium"
           style={
-            isColorActive
+            isCurrentColorActive
               ? {
                   backgroundColor: `${highlightColor}20`,
                   borderColor: highlightColor,
@@ -703,6 +744,88 @@ function MenuBar({ editor, highlightColor = '#c79c6e', highlightLabel = 'Highlig
           />
           <span className="tracking-wide">{highlightLabel}</span>
         </button>
+
+        {/* ── Multiple Text Color Dropdown & Picker ── */}
+        <div className="relative" ref={colorPickerRef}>
+          <button
+            type="button"
+            onClick={() => setShowColorPicker(!showColorPicker)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-sm text-xs font-medium ${
+              showColorPicker || (isColorActive && !isCurrentColorActive)
+                ? 'bg-[#c9542f]/10 border-[#c9542f] text-[#c9542f] font-semibold'
+                : 'bg-white border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50'
+            }`}
+            title="Choose Text Color (Multiple Presets & Custom Color)"
+          >
+            <Palette size={14} className="text-[#c9542f]" weight="duotone" />
+            <span>Color</span>
+            <span
+              className="w-3 h-3 rounded-full shadow-xs border border-black/20 inline-block shrink-0"
+              style={{ backgroundColor: activeColor || '#111010' }}
+            />
+          </button>
+
+          {showColorPicker && (
+            <div className="absolute top-full left-0 mt-1.5 p-3 bg-white border border-stone-200 rounded-xl shadow-xl z-50 w-60 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-stone-600 uppercase tracking-wider">
+                <span>Text Colors</span>
+                {isColorActive && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      applyColor(null);
+                      setShowColorPicker(false);
+                    }}
+                    className="text-[10px] text-rose-600 hover:underline cursor-pointer lowercase font-normal"
+                  >
+                    reset default
+                  </button>
+                )}
+              </div>
+
+              {/* Preset Swatches Grid */}
+              <div className="grid grid-cols-5 gap-1.5">
+                {PRESET_COLORS.map((c) => {
+                  const isSelected = activeColor && activeColor.toLowerCase() === c.value.toLowerCase();
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => {
+                        applyColor(c.value);
+                        setShowColorPicker(false);
+                      }}
+                      className="w-8 h-8 rounded-lg transition-transform hover:scale-110 flex items-center justify-center relative cursor-pointer shadow-xs border border-black/10"
+                      style={{ backgroundColor: c.value }}
+                      title={c.label}
+                    >
+                      {isSelected && <Check size={13} className="text-white drop-shadow-sm" weight="bold" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Color Input with Native Color Wheel */}
+              <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-2">
+                <label className="text-[11px] font-medium text-stone-700 flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="color"
+                    value={activeColor || customColor}
+                    onChange={(e) => {
+                      setCustomColor(e.target.value);
+                      applyColor(e.target.value);
+                    }}
+                    className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent"
+                  />
+                  <span>Custom Color</span>
+                </label>
+                <span className="font-mono text-[10px] text-stone-500 bg-stone-50 px-2 py-0.5 rounded border border-stone-200">
+                  {activeColor || customColor}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="w-[1px] h-5 bg-stone-200 mx-0.5" />
 
@@ -1004,7 +1127,7 @@ export default function TiptapEditor({
 
   return (
     <div
-      className="tiptap-editor-container border border-stone-200 rounded-xl overflow-hidden transition-all bg-white shadow-sm relative focus-within:border-[#c9542f] focus-within:ring-1 focus-within:ring-[#c9542f]/30"
+      className="tiptap-editor-container border border-stone-200 rounded-xl transition-all bg-white shadow-sm relative focus-within:border-[#c9542f] focus-within:ring-1 focus-within:ring-[#c9542f]/30"
     >
       <style>{`
         .tiptap-editor-container .ProseMirror {

@@ -20,8 +20,8 @@ export const DEFAULT_CONTACT_SETTINGS = {
         {
           id: 'item-1',
           label: '',
-          value: 'coaching@betterwithaarkesh.com',
-          linkUrl: 'mailto:coaching@betterwithaarkesh.com'
+          value: 'coaching@aarkeshgupta.com',
+          linkUrl: 'mailto:coaching@aarkeshgupta.com'
         }
       ]
     },

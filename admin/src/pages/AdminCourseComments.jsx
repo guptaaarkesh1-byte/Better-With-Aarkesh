@@ -82,6 +82,8 @@ export default function AdminCourseComments() {
   const [courses, setCourses] = useState([]);
   const [comments, setComments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
   // Filters
   const [selectedCourse, setSelectedCourse] = useState('all');
@@ -99,6 +101,57 @@ export default function AdminCourseComments() {
 
   // Delete Confirm Modal
   const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+
+  // 0. Fetch Global Comment Settings
+  const fetchCommentSettings = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/comments/settings`);
+      if (res.ok) {
+        const data = await res.json();
+        setCommentsEnabled(data.enabled !== false);
+      }
+    } catch (err) {
+      console.error('Failed to load comment settings:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCommentSettings();
+  }, [fetchCommentSettings]);
+
+  // Master Toggle Handler (Turn Comment Section ON / OFF)
+  const handleToggleCommentsEnabled = async () => {
+    const nextState = !commentsEnabled;
+    setIsTogglingStatus(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/comments/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ enabled: nextState }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setCommentsEnabled(data.enabled !== false);
+        if (data.enabled !== false) {
+          showSuccess('Course Comments are now ENABLED for all students.');
+        } else {
+          showInfo('Course Comments are now TURNED OFF. Students cannot view or post comments.');
+        }
+      } else {
+        showError('Failed to update comment section status.');
+      }
+    } catch (err) {
+      console.error('Error toggling comment status:', err);
+      showError('Network error while toggling comment status.');
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  };
 
   // 1. Fetch Course Tree
   useEffect(() => {
@@ -250,6 +303,12 @@ export default function AdminCourseComments() {
         );
       } else {
         setComments((prev) => prev.filter((c) => c._id !== commentId));
+      }
+    });
+
+    socket.on('comments:settings_updated', (data) => {
+      if (data && typeof data.enabled === 'boolean') {
+        setCommentsEnabled(data.enabled);
       }
     });
 
@@ -514,7 +573,7 @@ export default function AdminCourseComments() {
           </p>
         </div>
 
-        {/* Quick Dropdown Selectors for Courses & Lessons */}
+        {/* Quick Dropdown Selectors for Courses & Lessons & Master Switch */}
         <div className="easy-header-filters">
           <div className="easy-filter-box">
             <label>Course</label>
@@ -546,8 +605,48 @@ export default function AdminCourseComments() {
               </select>
             </div>
           )}
+
+          {/* Master Comment Section Toggle */}
+          <div className="easy-master-toggle-box">
+            <label>Discussions</label>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={commentsEnabled}
+              disabled={isTogglingStatus}
+              onClick={handleToggleCommentsEnabled}
+              className={`easy-master-switch-btn ${commentsEnabled ? 'is-on' : 'is-off'}`}
+              title={commentsEnabled ? 'Comments are ON. Click to Turn OFF across all courses.' : 'Comments are OFF. Click to Turn ON for students.'}
+            >
+              <span className="easy-switch-knob"></span>
+              <span className="easy-switch-label">
+                {commentsEnabled ? 'ON' : 'OFF'}
+              </span>
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* ── Global Alert Banner when Comments are Disabled ── */}
+      {!commentsEnabled && (
+        <div className="easy-global-alert-banner">
+          <div className="banner-content-wrap">
+            <span className="banner-emoji">⚠️</span>
+            <div className="banner-text">
+              <strong>Course Discussions &amp; Comments are currently TURNED OFF</strong>
+              <p>Students cannot see or post comments across courses. Existing comments remain safely saved. Toggle back ON anytime to restore student access.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleCommentsEnabled}
+            disabled={isTogglingStatus}
+            className="banner-turn-on-btn"
+          >
+            Turn ON Now
+          </button>
+        </div>
+      )}
 
       {/* ── 2. Filter Bar & Search ── */}
       <div className="easy-toolbar">

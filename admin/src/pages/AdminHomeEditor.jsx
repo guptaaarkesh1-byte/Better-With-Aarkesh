@@ -300,7 +300,7 @@ export default function AdminHomeEditor() {
 
   const [footerBrandSettings, setFooterBrandSettings] = useState({
     brandDescription: 'Authentic 1-on-1 mentorship, transformational coaching & self-mastery courses designed to quiet inner noise, dissolve reactive patterns, and elevate your presence.',
-    brandEmail: 'coaching@betterwithaarkesh.com',
+    brandEmail: 'coaching@aarkeshgupta.com',
     copyrightText: '© 2026 Better With Aarkesh. All rights reserved.',
   });
   const [footerColumns, setFooterColumns] = useState([]);
@@ -2535,7 +2535,7 @@ export default function AdminHomeEditor() {
                           type="email"
                           value={footerBrandSettings.brandEmail}
                           onChange={(e) => setFooterBrandSettings({ ...footerBrandSettings, brandEmail: e.target.value })}
-                          placeholder="coaching@betterwithaarkesh.com"
+                          placeholder="coaching@aarkeshgupta.com"
                           className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#c79c6e]"
                         />
                       </div>

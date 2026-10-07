@@ -30,7 +30,7 @@ const updateContact = async () => {
             {
               id: 'item-1',
               label: '',
-              value: 'coaching@betterwithaarkesh.com'
+              value: 'coaching@aarkeshgupta.com'
             }
           ]
         },

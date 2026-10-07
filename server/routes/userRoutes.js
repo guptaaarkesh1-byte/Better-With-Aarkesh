@@ -9,6 +9,7 @@ import Video from '../models/Video.js';
 import Appointment from '../models/Appointment.js';
 import Note from '../models/Note.js';
 import PastClient from '../models/PastClient.js';
+import CourseUser from '../models/CourseUser.js';
 
 const router = express.Router();
 
@@ -484,28 +485,85 @@ router.post('/delete-account-init', protect, async (req, res) => {
       if (process.env.RESEND_API_KEY && cleanEmail) {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const emailHtmlTemplate = `
-          <table width="100%" bgcolor="#090909" cellpadding="0" cellspacing="0" style="background-color: #090909; margin: 0; padding: 40px 0; width: 100%;">
-            <tr>
-              <td align="center">
-                <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #090909; color: #B8B1A7; text-align: left;">
-                  <div style="border: 1px solid #333333; border-radius: 10px; background-color: #111111; padding: 30px;">
-                    <h2 style="color: #ef4444; text-align: center; margin-bottom: 20px;">Account Deletion Request</h2>
-                    <p style="font-size: 16px; line-height: 1.5;">Hi ${user.fullName || 'there'},</p>
-                    <p style="font-size: 16px; line-height: 1.5;">We received a request to permanently delete your Better With Aarkesh account. To confirm this action, please enter the following verification code:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                      <span style="display: inline-block; font-size: 32px; font-weight: bold; color: #ffffff; background-color: #7f1d1d; padding: 12px 28px; border-radius: 6px; letter-spacing: 6px;">${otp}</span>
-                    </div>
-                    <p style="font-size: 14px; text-align: center; color: #ef4444;">Warning: This action will deactivate your account and sessions access.</p>
-                    <p style="font-size: 13px; text-align: center; color: #888888; margin-top: 20px;">This code is valid for 10 minutes. If you did not request this, please change your password immediately.</p>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </table>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Account Deletion Request</title>
+          </head>
+          <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
+            <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #FAF8F5; padding: 30px 15px;">
+              <tr>
+                <td align="center">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; width: 100%; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
+                    
+                    <!-- Brand Header -->
+                    <tr>
+                      <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td>
+                              <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; letter-spacing: -0.5px; font-family: Georgia, serif;">
+                                BetterWith<span style="color: #C25E38;">Aarkesh</span>
+                              </div>
+                              <div style="font-size: 11px; color: #dc2626; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 600;">
+                                Security Verification
+                              </div>
+                            </td>
+                            <td align="right">
+                              <span style="display: inline-block; padding: 5px 12px; background-color: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.3); color: #dc2626; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">
+                                ACCOUNT DELETION
+                              </span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+
+                    <!-- Main Content -->
+                    <tr>
+                      <td style="padding: 32px 36px 28px;">
+                        <h2 style="margin: 0 0 10px; font-size: 20px; color: #1A1A1A; font-weight: 600;">
+                          Account Deletion Request
+                        </h2>
+                        <p style="margin: 0 0 16px; font-size: 14px; color: #555555; line-height: 1.6;">
+                          Hi ${user.fullName || 'there'}, we received a request to permanently delete your Better With Aarkesh account. To confirm this action, please enter the following verification code:
+                        </p>
+
+                        <!-- OTP Display Box -->
+                        <div style="text-align: center; margin: 30px 0 28px;">
+                          <div style="display: inline-block; background-color: #FEF2F2; border: 1.5px solid #dc2626; padding: 14px 34px; border-radius: 12px; box-shadow: 0 6px 18px rgba(220, 38, 38, 0.12);">
+                            <span style="font-size: 32px; font-weight: 800; color: #dc2626; letter-spacing: 8px; font-family: monospace;">${otp}</span>
+                          </div>
+                        </div>
+
+                        <div style="background-color: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 10px; padding: 14px 18px; text-align: center;">
+                          <p style="margin: 0; font-size: 12px; color: #991B1B; line-height: 1.5;">
+                            ⚠️ <strong>Warning:</strong> This action will deactivate your account and sessions access. This OTP is valid for 10 minutes.
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                      <td style="padding: 20px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11px; color: #777777; line-height: 1.5;">
+                        <div>Better With Aarkesh · Executive Leadership &amp; Gravitas Coaching</div>
+                        <div>For assistance, contact <a href="mailto:coaching@aarkeshgupta.com" style="color: #C25E38; text-decoration: none;">coaching@aarkeshgupta.com</a></div>
+                      </td>
+                    </tr>
+
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
         `;
 
         const { data, error } = await resend.emails.send({
-          from: process.env.EMAIL_FROM || 'Better With Aarkesh <support@yashrajtech.online>',
+          from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
           to: cleanEmail,
           subject: 'Security Verification: OTP to Delete Your Account',
           html: emailHtmlTemplate,
@@ -594,10 +652,115 @@ router.post('/delete-account-verify', protect, async (req, res) => {
 
     deleteAccountOTPs.delete(userIdStr);
 
-    res.json({ message: 'Your account has been deleted successfully.' });
+// @route   GET /api/users/profile
+// @desc    Get user profile details
+// @access  Private
+router.get('/profile', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Also check CourseUser if phone is missing in User model
+    let phoneNumber = user.phoneNumber || '';
+    let countryCode = user.countryCode || '+91';
+
+    if (!phoneNumber && user.email) {
+      const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      const courseUser = await CourseUser.findOne({ email: emailRegex });
+      if (courseUser && courseUser.phoneNumber) {
+        phoneNumber = courseUser.phoneNumber;
+      }
+    }
+
+    res.json({
+      _id: user._id,
+      fullName: user.fullName || '',
+      email: user.email || '',
+      countryCode: countryCode,
+      phoneNumber: phoneNumber,
+      dob: user.dob || '',
+      gender: user.gender || 'Prefer not to say',
+      freeSessions: user.freeSessions || 0,
+      courseSessionsGranted: user.courseSessionsGranted || false,
+    });
   } catch (error) {
-    console.error('Delete Account Verify Error:', error);
-    res.status(500).json({ message: 'Server error deleting account' });
+    console.error('Fetch Profile Error:', error);
+    res.status(500).json({ message: 'Server error fetching profile' });
+  }
+});
+
+// @route   PUT /api/users/profile
+// @desc    Update user profile details (name, phone, dob, gender)
+// @access  Private
+router.put('/profile', protect, async (req, res) => {
+  try {
+    const { fullName, countryCode, phoneNumber, dob, gender } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (fullName && typeof fullName === 'string' && fullName.trim()) {
+      user.fullName = fullName.trim();
+    }
+
+    if (countryCode !== undefined) {
+      user.countryCode = String(countryCode || '+91').trim();
+    }
+
+    if (phoneNumber !== undefined) {
+      // Clean phone number (strip redundant country code if prefixed)
+      let cleanedPhone = String(phoneNumber || '').trim();
+      if (cleanedPhone.startsWith('+91')) {
+        cleanedPhone = cleanedPhone.replace(/^\+91\s*/, '').trim();
+      }
+      user.phoneNumber = cleanedPhone;
+    }
+
+    if (dob !== undefined) {
+      user.dob = String(dob || '').trim();
+    }
+
+    if (gender !== undefined) {
+      user.gender = String(gender || 'Prefer not to say').trim();
+    }
+
+    await user.save();
+
+    // Also sync to CourseUser if exists
+    if (user.email) {
+      const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      await CourseUser.updateMany(
+        { email: emailRegex },
+        { 
+          $set: { 
+            fullName: user.fullName,
+            phoneNumber: user.phoneNumber 
+          } 
+        }
+      );
+    }
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        countryCode: user.countryCode,
+        phoneNumber: user.phoneNumber,
+        dob: user.dob,
+        gender: user.gender,
+        freeSessions: user.freeSessions || 0,
+        courseSessionsGranted: user.courseSessionsGranted || false,
+      }
+    });
+  } catch (error) {
+    console.error('Update Profile Error:', error);
+    res.status(500).json({ message: 'Server error updating profile' });
   }
 });
 

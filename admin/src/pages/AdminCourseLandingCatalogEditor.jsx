@@ -447,6 +447,43 @@ export default function AdminCourseLandingCatalogEditor() {
               <p className="bwa-lead">Frequently asked questions shown at the bottom of the /course landing page.</p>
 
               <div className="bwa-card">
+                <h3>Section Header</h3>
+                <div className="bwa-f">
+                  <label>Tag / Eyebrow Badge</label>
+                  <input
+                    type="text"
+                    value={settings.faq?.tag || ''}
+                    onChange={(e) => updateField('faq.tag', e.target.value)}
+                    placeholder="FAQS"
+                  />
+                  <small style={{ color: '#888', marginTop: '4px', display: 'block' }}>
+                    Shown in the corner-bordered badge above the heading.
+                  </small>
+                </div>
+                <div className="bwa-f">
+                  <label>Heading</label>
+                  <input
+                    type="text"
+                    value={settings.faq?.heading || ''}
+                    onChange={(e) => updateField('faq.heading', e.target.value)}
+                    placeholder="Frequently Asked Questions From Our Students"
+                  />
+                  <small style={{ color: '#888', marginTop: '4px', display: 'block' }}>
+                    Tip: Wrap words in asterisks like *word* to highlight them with a selection frame.
+                  </small>
+                </div>
+                <div className="bwa-f">
+                  <label>Subheading / Description</label>
+                  <textarea
+                    rows={2}
+                    value={settings.faq?.subheading || ''}
+                    onChange={(e) => updateField('faq.subheading', e.target.value)}
+                    placeholder="Clear answers about the masterclass, private mentorship, and enrollment."
+                  />
+                </div>
+              </div>
+
+              <div className="bwa-card">
                 <div className="bwa-row" style={{ marginBottom: '14px' }}>
                   <h3>Questions &amp; Answers</h3>
                   <button

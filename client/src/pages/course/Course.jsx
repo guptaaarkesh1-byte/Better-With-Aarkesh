@@ -408,10 +408,46 @@ export default function Course() {
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }, 120);
   }, [navigate]);
-  const [curriculumModules, setCurriculumModules] = useState(MODULES);
-  const [activeModuleObj, setActiveModuleObj] = useState(MODULES[0]);
-  const [activeLesson, setActiveLesson] = useState(MODULES[0]?.lessons?.[0] || null);
-  const [activeModule, setActiveModule] = useState(MODULES[0].id);
+  const [curriculumModules, setCurriculumModules] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('bwa_curriculum_cache_' + (slug || 'better-man'));
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+  const [activeModuleObj, setActiveModuleObj] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('bwa_curriculum_cache_' + (slug || 'better-man'));
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+      }
+    } catch {}
+    return null;
+  });
+  const [activeLesson, setActiveLesson] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('bwa_curriculum_cache_' + (slug || 'better-man'));
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const lastId = localStorage.getItem('lastActiveCourseLessonId');
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          if (lastId) {
+            for (const mod of parsed) {
+              const found = (mod.lessons || []).find(l => (l._id || l.id)?.toString() === lastId.toString());
+              if (found) return found;
+            }
+          }
+          if (parsed[0]?.lessons?.length > 0) return parsed[0].lessons[0];
+        }
+      }
+    } catch {}
+    return null;
+  });
+  const [activeModule, setActiveModule] = useState(null);
   const [courseDocuments, setCourseDocuments] = useState([]);
   const [socialLinks, setSocialLinks] = useState([]);
   const [activePolicySlug, setActivePolicySlug] = useState(null);
@@ -756,12 +792,19 @@ export default function Course() {
 
             setCurriculumModules(mergedModules);
             setOpenPlayerModules(data.modules.map((_, i) => i));
+            try {
+              sessionStorage.setItem('bwa_curriculum_cache_' + targetSlug, JSON.stringify(mergedModules));
+            } catch {}
+
+            const allValidLessonIds = new Set(mergedModules.flatMap(m => (m.lessons || []).map(l => (l._id || l.id)?.toString())));
+            const currentActiveId = (activeLesson?._id || activeLesson?.id)?.toString();
+            const isCurrentActiveValid = currentActiveId && allValidLessonIds.has(currentActiveId);
 
             const savedLessonId = localStorage.getItem('lastActiveCourseLessonId');
             let matchedLesson = null;
             let matchedModule = null;
 
-            if (savedLessonId) {
+            if (savedLessonId && allValidLessonIds.has(savedLessonId.toString())) {
               for (const mod of mergedModules) {
                 const found = (mod.lessons || []).find(
                   (l) => (l._id || l.id)?.toString() === savedLessonId.toString()
@@ -777,10 +820,13 @@ export default function Course() {
             if (matchedLesson && matchedModule) {
               setActiveModuleObj(matchedModule);
               setActiveLesson(matchedLesson);
-            } else if (!activeLesson) {
+            } else if (!isCurrentActiveValid) {
+              // Automatically activate the first real lesson with video!
               setActiveModuleObj(mergedModules[0]);
-              if (mergedModules[0].lessons && mergedModules[0].lessons.length > 0) {
-                setActiveLesson(mergedModules[0].lessons[0]);
+              if (mergedModules[0]?.lessons?.length > 0) {
+                const firstRealLesson = mergedModules[0].lessons[0];
+                setActiveLesson(firstRealLesson);
+                localStorage.setItem('lastActiveCourseLessonId', (firstRealLesson._id || firstRealLesson.id)?.toString());
               }
             }
           }
@@ -1727,7 +1773,7 @@ export default function Course() {
       } else if (loginMode === 'register') {
         if (!isOtpStep) {
           endpoint = `${API_URL}/api/course-auth/register-init`;
-          body = { fullName, email, password };
+          body = { fullName, email, password, phoneNumber };
         } else {
           endpoint = `${API_URL}/api/course-auth/register-verify`;
           body = { email, otp: otpValues.join('') };
@@ -1911,27 +1957,43 @@ export default function Course() {
                 <User size={18} weight="bold" />
               </button>
               {showProfileMenu && (
-                <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                  {/* User Email & Name Header */}
+                  <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
+                    <div className="text-xs font-bold text-white truncate">
+                      {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').fullName || 'Student Account'; } catch { return 'Student Account'; } })()}
+                    </div>
+                    <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || ''; } catch { return ''; } })()}>
+                      {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || 'Logged In'; } catch { return 'Logged In'; } })()}
+                    </div>
+                  </div>
+
                   <Link
                     to="/my-course"
                     onClick={() => setShowProfileMenu(false)}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <BookOpen size={18} className="text-[#C878BE]" /> My Course
+                    <BookOpen size={18} className="text-[#C878BE] shrink-0" />
+                    <span>My Course</span>
                   </Link>
                   <Link
                     to="/course/profile"
                     onClick={() => setShowProfileMenu(false)}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <User size={18} className="text-[#C878BE]" /> Profile
+                    <User size={18} className="text-[#C878BE] shrink-0" />
+                    <span>Profile</span>
                   </Link>
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer"
+                    className="w-full px-5 py-3 text-left text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer bg-transparent border-none outline-none"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <SignOut size={18} /> Log Out
+                    <SignOut size={18} className="text-red-400 shrink-0" />
+                    <span>Log Out</span>
                   </button>
                 </div>
               )}
@@ -2332,34 +2394,52 @@ export default function Course() {
                   <User size={17} weight="bold" />
                 </button>
               {showProfileMenu && (
-                <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                  {/* User Email & Name Header */}
+                  <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
+                    <div className="text-xs font-bold text-white truncate">
+                      {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').fullName || 'Student Account'; } catch { return 'Student Account'; } })()}
+                    </div>
+                    <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || ''; } catch { return ''; } })()}>
+                      {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || 'Logged In'; } catch { return 'Logged In'; } })()}
+                    </div>
+                  </div>
+
                   <Link
                     to="/library"
                     onClick={() => setShowProfileMenu(false)}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <Books size={18} className="text-[#C878BE]" /> Library
+                    <Books size={18} className="text-[#C878BE] shrink-0" />
+                    <span>Library</span>
                   </Link>
                   <Link
                     to="/my-course"
                     onClick={() => setShowProfileMenu(false)}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <BookOpen size={18} className="text-[#C878BE]" /> My Course
+                    <BookOpen size={18} className="text-[#C878BE] shrink-0" />
+                    <span>My Course</span>
                   </Link>
                   <Link
                     to="/course/profile"
                     onClick={() => setShowProfileMenu(false)}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <User size={18} className="text-[#C878BE]" /> Profile
+                    <User size={18} className="text-[#C878BE] shrink-0" />
+                    <span>Profile</span>
                   </Link>
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer"
+                    className="w-full px-5 py-3 text-left text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer bg-transparent border-none outline-none"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                   >
-                    <SignOut size={18} /> Log Out
+                    <SignOut size={18} className="text-red-400 shrink-0" />
+                    <span>Log Out</span>
                   </button>
                 </div>
               )}
@@ -2663,11 +2743,7 @@ export default function Course() {
             <section className="faq center" id="faq">
               <div className="wrap">
                 <span className="label">
-                  {renderCourseHeadline(
-                    landingSettings?.faq?.tag
-                      ? (landingSettings.faq.tag.includes('*') ? landingSettings.faq.tag : `*${landingSettings.faq.tag}*`)
-                      : '*FAQS*'
-                  )}
+                  {landingSettings?.faq?.tag?.replace(/\*/g, '') || 'FAQS'}
                 </span>
                 <h2>
                   {renderCourseHeadline(landingSettings?.faq?.heading || 'Frequently Asked Questions From Our Students')}
@@ -3723,27 +3799,43 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
               <User size={17} weight="bold" />
             </button>
             {showProfileMenu && (
-              <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+              <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+                {/* User Email & Name Header */}
+                <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
+                  <div className="text-xs font-bold text-white truncate">
+                    {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').fullName || 'Student Account'; } catch { return 'Student Account'; } })()}
+                  </div>
+                  <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || ''; } catch { return ''; } })()}>
+                    {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || 'Logged In'; } catch { return 'Logged In'; } })()}
+                  </div>
+                </div>
+
                 <Link
                   to="/library"
                   onClick={() => setShowProfileMenu(false)}
-                  className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                 >
-                  <Books size={18} className="text-[#C878BE]" /> Library
+                  <Books size={18} className="text-[#C878BE] shrink-0" />
+                  <span>Library</span>
                 </Link>
                 <Link
                   to="/my-course"
                   onClick={() => setShowProfileMenu(false)}
-                  className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                 >
-                  <BookOpen size={18} className="text-[#C878BE]" /> My Course
+                  <BookOpen size={18} className="text-[#C878BE] shrink-0" />
+                  <span>My Course</span>
                 </Link>
                 <Link
                   to="/course/profile"
                   onClick={() => setShowProfileMenu(false)}
-                  className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                 >
-                  <User size={18} className="text-[#C878BE]" /> Profile
+                  <User size={18} className="text-[#C878BE] shrink-0" />
+                  <span>Profile</span>
                 </Link>
                 <button
                   type="button"
@@ -3751,16 +3843,20 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
                     setShowProfileMenu(false);
                     setShowDashboard(false);
                   }}
-                  className="w-full px-5 py-3 text-left font-sans text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 cursor-pointer"
+                  className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 cursor-pointer bg-transparent border-none outline-none"
+                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                 >
-                  <BookOpen size={18} className="text-[#C878BE]" /> Course Landing
+                  <BookOpen size={18} className="text-[#C878BE] shrink-0" />
+                  <span>Course Landing</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full px-5 py-3 text-left font-sans text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer"
+                  className="w-full px-5 py-3 text-left text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer bg-transparent border-none outline-none"
+                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                 >
-                  <SignOut size={18} /> Log Out
+                  <SignOut size={18} className="text-red-400 shrink-0" />
+                  <span>Log Out</span>
                 </button>
               </div>
             )}
@@ -3957,6 +4053,21 @@ function AuthModal({
                     autoComplete="email"
                   />
                 </div>
+
+                {/* Phone Number for Register */}
+                {!isForgotPassword && loginMode === 'register' && (
+                  <div className="fld">
+                    <label htmlFor="reg-phone">Phone Number</label>
+                    <input
+                      id="reg-phone"
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="+91 98765 43210"
+                      autoComplete="tel"
+                    />
+                  </div>
+                )}
 
                 {/* Password Field */}
                 {!isForgotPassword && (

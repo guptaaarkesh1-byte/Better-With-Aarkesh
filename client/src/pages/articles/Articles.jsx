@@ -188,12 +188,31 @@ const FALLBACK_COVERS = {
   ]
 };
 
+// Helper to immediately get cached published articles for instant zero-flicker render
+const getInitialPublishedArticles = () => {
+  if (typeof window !== 'undefined' && window.__BWA_CACHED_PUBLISHED_ARTICLES__?.length > 0) {
+    return window.__BWA_CACHED_PUBLISHED_ARTICLES__;
+  }
+  try {
+    const cached = sessionStorage.getItem('bwa_published_articles_cache');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        if (typeof window !== 'undefined') window.__BWA_CACHED_PUBLISHED_ARTICLES__ = parsed;
+        return parsed;
+      }
+    }
+  } catch (_) {}
+  return [];
+};
+
 export default function Articles() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { openBookingModal } = useBooking();
 
-  const [publishedArticles, setPublishedArticles] = useState([]);
+  const [publishedArticles, setPublishedArticles] = useState(getInitialPublishedArticles);
+  const [isArticlesLoading, setIsArticlesLoading] = useState(() => getInitialPublishedArticles().length === 0);
   const [savedArticleIds, setSavedArticleIds] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -292,18 +311,28 @@ export default function Articles() {
 
   // Fetch published articles from backend API
   useEffect(() => {
+    let isMounted = true;
     const fetchArticles = async () => {
       try {
         const res = await fetch(`${API_URL}/api/articles/published`);
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const data = await res.json();
-          setPublishedArticles(data);
+          if (Array.isArray(data)) {
+            setPublishedArticles(data);
+            if (typeof window !== 'undefined') window.__BWA_CACHED_PUBLISHED_ARTICLES__ = data;
+            try {
+              sessionStorage.setItem('bwa_published_articles_cache', JSON.stringify(data));
+            } catch (_) {}
+          }
         }
       } catch (err) {
         console.error('Failed to fetch published articles', err);
+      } finally {
+        if (isMounted) setIsArticlesLoading(false);
       }
     };
     fetchArticles();
+    return () => { isMounted = false; };
   }, []);
 
   const handleToggleSave = async (articleId, e) => {
@@ -397,14 +426,16 @@ export default function Articles() {
     return timeA - timeB;
   });
 
-  // 2. Filter curated articles for current category
+  // 2. Filter curated articles for current category (fallback only if DB is empty after load)
   const matchingCurated = CURATED_LIBRARY_ARTICLES.filter(c => {
     const cCat = (c.category || '').toLowerCase().replace(/\s+/g, '-');
     return cCat === targetCatId || cCat === targetCatName || cCat.includes(targetCatId);
   });
 
   // 3. Merge: If DB articles are loaded from server, use DB articles exclusively
-  const mergedArticlesList = publishedArticles.length > 0 ? sortedDb : matchingCurated;
+  const mergedArticlesList = publishedArticles.length > 0 
+    ? sortedDb 
+    : (isArticlesLoading ? [] : (sortedDb.length > 0 ? sortedDb : matchingCurated));
 
   // 4. Build unified list of articles
   const allCategoryArticles = mergedArticlesList.map((article, idx) => {
@@ -1179,13 +1210,25 @@ export default function Articles() {
         {/* Section Count Header */}
         <div className="cards-section-head">
           <span className="cards-count-label">
-            {displayedArticles.length} ARTICLES
+            {isArticlesLoading && displayedArticles.length === 0 ? 'LOADING ARTICLES...' : `${displayedArticles.length} ARTICLES`}
           </span>
         </div>
 
         {/* ---------- ARTICLES CARD GRID ---------- */}
         <div className="articles-cards-grid">
-          {displayedArticles.map((article, index) => {
+          {isArticlesLoading && displayedArticles.length === 0 ? (
+            Array.from({ length: 12 }).map((_, idx) => (
+              <div key={`skel-${idx}`} className="article-card animate-pulse opacity-60 pointer-events-none">
+                <div className="card-image-wrap bg-white/5" style={{ aspectRatio: '16/10' }} />
+                <div className="card-body-content p-6 space-y-3">
+                  <div className="h-3 w-20 bg-white/10 rounded" />
+                  <div className="h-5 w-4/5 bg-white/10 rounded" />
+                  <div className="h-3 w-full bg-white/5 rounded" />
+                </div>
+              </div>
+            ))
+          ) : (
+            displayedArticles.map((article, index) => {
             const isSaved = savedArticleIds.includes(article.id) || savedArticleIds.includes(article._id);
 
             return (
@@ -1241,7 +1284,7 @@ export default function Articles() {
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
       </main>
     </div>
