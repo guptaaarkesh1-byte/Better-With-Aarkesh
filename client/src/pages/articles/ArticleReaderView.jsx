@@ -626,7 +626,7 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
               className="text-[0.72rem] uppercase tracking-[0.28em] font-bold mb-4 block"
               style={{ color: theme.accent }}
             >
-              ({theme.num}) {article.category || theme.name.toUpperCase()}
+              {article.category || theme.name.toUpperCase()}
             </span>
 
             <h1 
