@@ -57,6 +57,7 @@ export default function FeelPrinciple() {
       eyebrowFontSize={data?.eyebrowFontSize}
       headingFontSize={data?.headingFontSize}
       descriptionFontSize={data?.descriptionFontSize}
+      buttonFontSize={data?.buttonFontSize}
       activeStep={2}
       bannerTitle="DYNAMIC<br/>EXPERIENCE"
       bannerIcon={Sparkle}

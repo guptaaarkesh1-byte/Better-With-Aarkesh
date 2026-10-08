@@ -10,6 +10,7 @@ import Settings from '../models/Settings.js';
 import { DEFAULT_COURSE_DETAILS_MAP } from './courseDetailSettingsRoutes.js';
 import Appointment from '../models/Appointment.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
 
 const router = express.Router();
 
@@ -27,27 +28,48 @@ const pendingPasswordResets = new Map();
 // @route   POST /api/course-auth/register-init
 router.post('/register-init', async (req, res) => {
   try {
-    const { fullName, email, password, phoneNumber } = req.body;
+    const { fullName, email, password, phoneNumber, countryCode = '+91' } = req.body;
 
-    const userExists = await CourseUser.findOne({ email });
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+
+    const userExists = await CourseUser.findOne({ email: emailRegex });
     if (userExists) {
       return res.status(400).json({ message: 'Email ID already exists for the course. Please log in.' });
     }
 
+    // Check if phone number already exists in CourseUser or User
+    const cleanPhoneDigits = (phoneNumber || '').replace(/\D/g, '');
+    if (cleanPhoneDigits.length >= 10) {
+      const last10 = cleanPhoneDigits.slice(-10);
+      const phoneRegex = new RegExp(`${last10}$`);
+      const phoneExistsInCourse = await CourseUser.findOne({ phoneNumber: phoneRegex });
+      const phoneExistsInUser = await User.findOne({ phoneNumber: phoneRegex, isDeleted: { $ne: true } });
+
+      if (phoneExistsInCourse || phoneExistsInUser) {
+        return res.status(400).json({ message: 'This phone number is already registered. Please sign in or use another number.' });
+      }
+    }
+
     const otp = generateOTP();
+    const formattedPhone = cleanPhoneDigits.length >= 10 ? `${countryCode} ${cleanPhoneDigits.slice(-10)}` : (phoneNumber || '');
     
-    pendingRegistrations.set(email, {
+    pendingRegistrations.set(cleanEmail, {
       fullName,
-      email,
+      email: cleanEmail,
       password,
-      phoneNumber,
+      countryCode,
+      phoneNumber: formattedPhone,
       otp,
       expires: Date.now() + 10 * 60 * 1000
     });
 
     console.log(`\n========================================`);
-    console.log(`🔑 [COURSE OTP] ${email} -> OTP: ${otp}`);
+    console.log(`🔑 [COURSE OTP] ${cleanEmail} -> OTP: ${otp}`);
     console.log(`========================================\n`);
 
     try {
@@ -206,6 +228,35 @@ router.post('/register-verify', async (req, res) => {
     });
 
     if (user) {
+      // Auto-create / sync coaching User
+      let coachingToken = null;
+      let coachingUserId = null;
+      try {
+        const cleanEmail = email.toLowerCase().trim();
+        const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        let coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+        if (!coachingUser) {
+          coachingUser = await User.create({
+            fullName,
+            email: cleanEmail,
+            password: hashedPassword,
+            phoneNumber: phoneNumber || '',
+            freeSessions: 0,
+            courseSessionsGranted: false,
+          });
+          console.log(`✅ Auto-created coaching User on course registration: ${cleanEmail}`);
+        } else {
+          coachingUser.password = hashedPassword;
+          if (fullName) coachingUser.fullName = fullName;
+          if (phoneNumber) coachingUser.phoneNumber = phoneNumber;
+          await coachingUser.save();
+        }
+        coachingToken = generateToken(coachingUser._id);
+        coachingUserId = coachingUser._id;
+      } catch (uErr) {
+        console.warn('Coaching User sync on course registration warning:', uErr.message);
+      }
+
       res.status(201).json({
         _id: user._id,
         fullName: user.fullName,
@@ -214,6 +265,9 @@ router.post('/register-verify', async (req, res) => {
         isPurchased: user.isPurchased,
         purchasedCourses: user.purchasedCourses || [],
         token: generateToken(user._id),
+        // Unified cross-app tokens
+        coachingToken,
+        coachingUserId,
       });
       pendingRegistrations.delete(email);
     } else {
@@ -229,30 +283,60 @@ router.post('/register-verify', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    const user = await CourseUser.findOne({ email });
+    // Try course user first
+    let user = await CourseUser.findOne({ email: emailRegex });
 
+    // If not found in CourseUser, check if they exist only in coaching (User) — and try syncing
     if (!user) {
-      return res.status(401).json({ message: 'User account does not exist. Please register first.' });
+      const coachingOnly = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+      if (coachingOnly) {
+        const coachingMatch = await bcrypt.compare(password, coachingOnly.password);
+        if (coachingMatch) {
+          // Auto-create CourseUser with same credentials so next login works on both
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(password, salt);
+          user = await CourseUser.create({
+            fullName: coachingOnly.fullName,
+            email: cleanEmail,
+            password: hashedPassword,
+            phoneNumber: coachingOnly.phoneNumber || '',
+            isPurchased: false,
+            purchasedCourses: [],
+          });
+          console.log(`✅ Auto-created CourseUser for coaching user: ${cleanEmail}`);
+        }
+      }
+      if (!user) {
+        return res.status(401).json({ message: 'User account does not exist. Please register first.' });
+      }
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
-      const emailRegex = new RegExp(`^${user.email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-      const coachingUser = await User.findOne({ email: emailRegex });
-      const relevantAppointments = await Appointment.find({
-        email: emailRegex,
-        status: { $ne: 'CANCELLED' }
-      });
-      let claimedAppointments = 0;
-      for (const app of relevantAppointments) {
-        if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') claimedAppointments += 1;
-        if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) claimedAppointments += 1;
+      const coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+      
+      // If coaching account exists, sync password if needed
+      if (coachingUser) {
+        const coachingPasswordMatch = await bcrypt.compare(password, coachingUser.password);
+        if (!coachingPasswordMatch) {
+          // Sync course password TO coaching account
+          const salt = await bcrypt.genSalt(10);
+          coachingUser.password = await bcrypt.hash(password, salt);
+          await coachingUser.save();
+          console.log(`🔄 Synced course password to coaching account for: ${cleanEmail}`);
+        }
       }
-      const freeSessions = coachingUser && coachingUser.freeSessions !== undefined
-        ? Math.max(0, coachingUser.freeSessions)
-        : (user.isPurchased ? Math.max(0, 3 - claimedAppointments) : 0);
+
+      const sessionInfo = await calculateAndSyncFreeSessions(cleanEmail);
+      const freeSessions = sessionInfo.remaining;
+
+      const courseToken = generateToken(user._id);
+      // Also generate coaching token if coaching account exists
+      const coachingToken = coachingUser ? generateToken(coachingUser._id) : null;
 
       res.json({
         _id: user._id,
@@ -262,9 +346,52 @@ router.post('/login', async (req, res) => {
         isPurchased: user.isPurchased,
         purchasedCourses: user.purchasedCourses || (user.isPurchased ? ['better-man'] : []),
         freeSessions,
-        token: generateToken(user._id),
+        token: courseToken,
+        // Unified cross-app tokens
+        coachingToken,
+        coachingUserId: coachingUser?._id || null,
       });
     } else {
+      // Password didn't match CourseUser — try coaching password (user may have changed it there)
+      const coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+      if (coachingUser) {
+        const coachingMatch = await bcrypt.compare(password, coachingUser.password);
+        if (coachingMatch) {
+          // Sync coaching password to course account
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(password, salt);
+          await user.save();
+          console.log(`🔄 Synced coaching password to course account for: ${cleanEmail}`);
+
+          const courseToken = generateToken(user._id);
+          const coachingToken = generateToken(coachingUser._id);
+          
+          const relevantAppointments = await Appointment.find({
+            email: emailRegex,
+            status: { $ne: 'CANCELLED' }
+          });
+          let claimedAppointments = 0;
+          for (const app of relevantAppointments) {
+            if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') claimedAppointments += 1;
+          }
+          const freeSessions = coachingUser && coachingUser.freeSessions !== undefined
+            ? Math.max(0, coachingUser.freeSessions)
+            : (user.isPurchased ? 5 : 0);
+
+          return res.json({
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            isPurchased: user.isPurchased,
+            purchasedCourses: user.purchasedCourses || [],
+            freeSessions,
+            token: courseToken,
+            coachingToken,
+            coachingUserId: coachingUser._id,
+          });
+        }
+      }
       res.status(401).json({ message: 'Wrong password' });
     }
   } catch (error) {
@@ -277,15 +404,20 @@ router.post('/login', async (req, res) => {
 router.post('/forgot-password-init', async (req, res) => {
   try {
     const { email } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    const user = await CourseUser.findOne({ email });
+    let user = await CourseUser.findOne({ email: emailRegex });
     if (!user) {
-      return res.status(404).json({ message: 'Course user account does not exist' });
+      const coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+      if (!coachingUser) {
+        return res.status(404).json({ message: 'Course user account does not exist' });
+      }
     }
 
     const otp = generateOTP();
     
-    pendingPasswordResets.set(email, {
+    pendingPasswordResets.set(cleanEmail, {
       otp,
       expires: Date.now() + 10 * 60 * 1000
     });
@@ -373,7 +505,7 @@ router.post('/forgot-password-init', async (req, res) => {
 
       const { data, error } = await resend.emails.send({
         from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
-        to: email,
+        to: cleanEmail,
         subject: 'Course Password Reset OTP - Better With Aarkesh',
         html: emailHtmlTemplate,
       });
@@ -398,14 +530,16 @@ router.post('/forgot-password-init', async (req, res) => {
 router.post('/forgot-password-reset', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    const pendingData = pendingPasswordResets.get(email);
+    const pendingData = pendingPasswordResets.get(cleanEmail);
     if (!pendingData) {
       return res.status(400).json({ message: 'Session expired or invalid. Please try again.' });
     }
 
     if (pendingData.expires < Date.now()) {
-      pendingPasswordResets.delete(email);
+      pendingPasswordResets.delete(cleanEmail);
       return res.status(400).json({ message: 'OTP expired. Please try again.' });
     }
 
@@ -416,8 +550,13 @@ router.post('/forgot-password-reset', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    await CourseUser.findOneAndUpdate({ email }, { password: hashedPassword });
-    pendingPasswordResets.delete(email);
+    await CourseUser.findOneAndUpdate({ email: emailRegex }, { password: hashedPassword });
+    
+    // Also sync to coaching User account
+    await User.findOneAndUpdate({ email: emailRegex, isDeleted: { $ne: true } }, { password: hashedPassword });
+    console.log(`🔄 Synced course password reset to coaching account for: ${cleanEmail}`);
+
+    pendingPasswordResets.delete(cleanEmail);
 
     res.status(200).json({ message: 'Password reset successfully' });
   } catch (error) {
@@ -460,6 +599,7 @@ router.get('/me', protectCourse, async (req, res) => {
       const escapedEmail = email.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
       const coachingUser = await User.findOne({ email: emailRegex });
+      const primaryCourse = await Course.findOne().sort({ createdAt: -1 });
       // Fetch official purchase records for this student
       const purchases = await CoursePurchase.find({
         $or: [
@@ -485,37 +625,12 @@ router.get('/me', protectCourse, async (req, res) => {
       courseUserObj.purchasedCourses = Array.from(purchasedSlugs);
       courseUserObj.isPurchased = courseUserObj.purchasedCourses.length > 0;
 
-      const totalCoursesCount = courseUserObj.purchasedCourses.length;
-      const totalSessionsGranted = totalCoursesCount * 3;
-
-      const relevantAppointments = await Appointment.find({
-        email: emailRegex,
-        status: { $ne: 'CANCELLED' }
-      });
-      let claimedAppointments = 0;
-      for (const app of relevantAppointments) {
-        if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') claimedAppointments += 1;
-        if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) claimedAppointments += 1;
-      }
-
-      const calculatedRemaining = Math.max(0, totalSessionsGranted - claimedAppointments);
-
-      if (coachingUser) {
-        coachingUser.freeSessions = calculatedRemaining;
-        coachingUser.courseSessionsGranted = true;
-        await coachingUser.save();
-        courseUserObj.freeSessions = calculatedRemaining;
-        courseUserObj.courseSessionsGranted = true;
-      } else if (courseUserObj.isPurchased) {
-        courseUserObj.freeSessions = calculatedRemaining;
-        courseUserObj.courseSessionsGranted = true;
-      } else {
-        courseUserObj.freeSessions = 0;
-        courseUserObj.courseSessionsGranted = false;
-      }
+      // Calculate dynamic free sessions balance & sync
+      const sessionInfo = await calculateAndSyncFreeSessions(email);
+      courseUserObj.freeSessions = sessionInfo.remaining;
+      courseUserObj.courseSessionsGranted = sessionInfo.isCoursePurchaser;
 
       // Primary course doc
-      const primaryCourse = await Course.findOne().sort({ createdAt: 1 });
       if (primaryCourse) {
         courseUserObj.coursePricing = {
           price: primaryCourse.price,
@@ -582,19 +697,47 @@ router.put('/profile', protectCourse, async (req, res) => {
 
     if (req.body.fullName) user.fullName = req.body.fullName.trim();
     if (req.body.phoneNumber) user.phoneNumber = req.body.phoneNumber.trim();
+    
+    let passwordChanged = false;
+    let newHashedPassword = null;
+    
     if (req.body.currentPassword && req.body.newPassword) {
       const isMatch = await bcrypt.compare(req.body.currentPassword, user.password);
       if (!isMatch) {
-        return res.status(400).json({ message: 'Current password does not match' });
+        // Also try coaching password (in case coaching password was changed and course wasn't synced yet)
+        const emailRegex = new RegExp(`^${user.email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        const coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+        const coachingMatch = coachingUser ? await bcrypt.compare(req.body.currentPassword, coachingUser.password) : false;
+        if (!coachingMatch) {
+          return res.status(400).json({ message: 'Current password does not match' });
+        }
       }
       if (req.body.newPassword.length < 4) {
         return res.status(400).json({ message: 'New password must be at least 4 characters long' });
       }
       const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(req.body.newPassword, salt);
+      newHashedPassword = await bcrypt.hash(req.body.newPassword, salt);
+      user.password = newHashedPassword;
+      passwordChanged = true;
     }
 
     const updatedUser = await user.save();
+
+    // Sync profile changes to coaching account
+    if (passwordChanged || req.body.fullName || req.body.phoneNumber) {
+      const emailRegex = new RegExp(`^${user.email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      const coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+      if (coachingUser) {
+        if (req.body.fullName) coachingUser.fullName = req.body.fullName.trim();
+        if (req.body.phoneNumber) coachingUser.phoneNumber = req.body.phoneNumber.trim();
+        if (passwordChanged && newHashedPassword) {
+          coachingUser.password = newHashedPassword;
+          console.log(`🔄 Synced password change from course to coaching for: ${user.email}`);
+        }
+        await coachingUser.save();
+      }
+    }
+
     res.json({
       _id: updatedUser._id,
       fullName: updatedUser.fullName,
@@ -651,11 +794,13 @@ router.post('/sync-coaching-account', protectCourse, async (req, res) => {
 // @access  Private (Admin)
 router.get('/admin/students', protect, admin, async (req, res) => {
   try {
-    const [students, allPurchases, primaryCourse] = await Promise.all([
+    const [students, allPurchases, primaryCourse, multiSettingsDoc] = await Promise.all([
       CourseUser.find().select('-password').sort({ createdAt: -1 }),
       CoursePurchase.find().sort({ purchaseDate: -1, createdAt: -1 }),
-      Course.findOne().sort({ createdAt: 1 })
+      Course.findOne().sort({ createdAt: 1 }),
+      Settings.findOne({ key: 'course_multi_details_settings' })
     ]);
+    const multiSettings = multiSettingsDoc?.value || {};
     
     // Enrich each student with coaching account info, appointments, and all purchase attempts
     const studentEmailsSet = new Set();
@@ -688,6 +833,34 @@ router.get('/admin/students', protect, admin, async (req, res) => {
       }
       const totalAppointments = appointments.length;
 
+      const mainCourseTitle = latestPaid?.courseTitle || (student.isPurchased ? 'The Better Man™' : (latestFailed?.courseTitle || '—'));
+      const mainCourseSlug = latestPaid?.courseSlug || (student.isPurchased ? 'better-man' : '');
+      const mainPurchaseDate = latestPaid?.purchaseDate || latestPaid?.createdAt || (student.isPurchased ? student.createdAt : null);
+
+      const matchedCourseConfig = multiSettings[mainCourseSlug] || multiSettings['better-man'];
+      const defaultCourseFree = (matchedCourseConfig?.freeSessionsCount !== undefined && Number(matchedCourseConfig.freeSessionsCount) > 0)
+        ? Number(matchedCourseConfig.freeSessionsCount) 
+        : (matchedCourseConfig?.pricingSection?.freeSessionsCount !== undefined && Number(matchedCourseConfig.pricingSection.freeSessionsCount) > 0
+            ? Number(matchedCourseConfig.pricingSection.freeSessionsCount)
+            : (primaryCourse?.freeSessionsCount !== undefined && Number(primaryCourse.freeSessionsCount) > 0 ? Number(primaryCourse.freeSessionsCount) : 3));
+
+      let totalGranted = 0;
+      if (student.isPurchased || paidPurchases.length > 0) {
+        if (latestPaid?.freeSessionsGranted !== undefined && Number(latestPaid.freeSessionsGranted) > 0) {
+          totalGranted = Number(latestPaid.freeSessionsGranted);
+        } else if (coachingUser && coachingUser.freeSessions !== undefined && Number(coachingUser.freeSessions) > 0) {
+          totalGranted = Number(coachingUser.freeSessions) + freeSessionsClaimed;
+        } else if (defaultCourseFree > 0) {
+          totalGranted = defaultCourseFree;
+        } else {
+          totalGranted = 3;
+        }
+      }
+
+      const freeSessionsRemaining = coachingUser?.freeSessions !== undefined
+        ? Number(coachingUser.freeSessions)
+        : (student.isPurchased ? Math.max(0, totalGranted - freeSessionsClaimed) : 0);
+
       return {
         _id: student._id,
         fullName: student.fullName,
@@ -697,11 +870,18 @@ router.get('/admin/students', protect, admin, async (req, res) => {
         createdAt: student.createdAt,
         updatedAt: student.updatedAt,
         coachingRegistered: !!coachingUser,
-        freeSessionsRemaining: coachingUser ? (coachingUser.freeSessions ?? (student.isPurchased ? 3 - freeSessionsClaimed : 0)) : (student.isPurchased ? 3 : 0),
+        courseTitle: mainCourseTitle,
+        courseSlug: mainCourseSlug,
+        purchaseDate: mainPurchaseDate,
+        purchasedCourses: student.purchasedCourses || (student.isPurchased ? ['better-man'] : []),
+        freeSessionsTotal: totalGranted,
+        freeSessionsRemaining,
         freeSessionsClaimed,
         totalAppointments,
         purchases: studentPurchases.map(p => ({
           _id: p._id,
+          courseSlug: p.courseSlug || 'better-man',
+          courseTitle: p.courseTitle || 'The Better Man™',
           amount: p.amount,
           currency: p.currency || 'INR',
           paymentStatus: p.paymentStatus,
@@ -762,11 +942,17 @@ router.get('/admin/students', protect, admin, async (req, res) => {
         createdAt: purchases[0].createdAt || purchases[0].purchaseDate || new Date(),
         updatedAt: purchases[0].updatedAt || new Date(),
         coachingRegistered: false,
+        courseTitle: latestPaid?.courseTitle || latestFailed?.courseTitle || 'The Better Man™',
+        courseSlug: latestPaid?.courseSlug || latestFailed?.courseSlug || 'better-man',
+        purchaseDate: latestPaid?.purchaseDate || latestPaid?.createdAt || purchases[0].createdAt,
+        purchasedCourses: paidPurchases.length > 0 ? ['better-man'] : [],
         freeSessionsRemaining: paidPurchases.length > 0 ? 3 : 0,
         freeSessionsClaimed: 0,
         totalAppointments: 0,
         purchases: purchases.map(p => ({
           _id: p._id,
+          courseSlug: p.courseSlug || 'better-man',
+          courseTitle: p.courseTitle || 'The Better Man™',
           amount: p.amount,
           currency: p.currency || 'INR',
           paymentStatus: p.paymentStatus,

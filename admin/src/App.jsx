@@ -12,7 +12,6 @@ import {
   Gear,
   GraduationCap
 } from '@phosphor-icons/react';
-import AdminCourseStudents from './pages/AdminCourseStudents';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';

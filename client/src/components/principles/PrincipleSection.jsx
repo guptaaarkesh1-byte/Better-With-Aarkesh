@@ -28,7 +28,8 @@ export default function PrincipleSection({
   maxContentWidth,
   eyebrowFontSize,
   headingFontSize,
-  descriptionFontSize
+  descriptionFontSize,
+  buttonFontSize
 }) {
   const sectionRef = useRef(null);
   const isThinkPage = id === 'think-principle';
@@ -98,6 +99,7 @@ export default function PrincipleSection({
               eyebrowFontSize={eyebrowFontSize}
               headingFontSize={headingFontSize}
               descriptionFontSize={descriptionFontSize}
+              buttonFontSize={buttonFontSize}
             />
           </div>
 

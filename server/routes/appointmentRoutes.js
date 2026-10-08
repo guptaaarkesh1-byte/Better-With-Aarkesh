@@ -8,6 +8,7 @@ import PastClient from '../models/PastClient.js';
 import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 import { Resend } from 'resend';
 import { sendCoachingBookingConfirmationEmail, generateCoachingAgreementPdf } from '../services/coachingAgreementService.js';
+import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
 
 const router = express.Router();
 
@@ -126,70 +127,8 @@ router.post('/check-session-type', optionalAuth, async (req, res) => {
     let freeSessions = 0;
     const lookupEmail = (rawEmail || (req.user && req.user.email) || '').toLowerCase().trim();
     if (lookupEmail) {
-      const escapedEmail = lookupEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
-
-      const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
-      const coachingUser = await User.findOne({ email: emailRegex });
-
-      if (courseUser) {
-        const distinctPurchasedCourses = new Set();
-        if (Array.isArray(courseUser.purchasedCourses)) {
-          courseUser.purchasedCourses.forEach(s => s && distinctPurchasedCourses.add(s));
-        }
-        const purchases = await CoursePurchase.find({
-          $or: [{ courseUserId: courseUser._id }, { studentEmail: emailRegex }],
-          paymentStatus: 'Paid'
-        });
-        purchases.forEach(p => { if (p.courseSlug) distinctPurchasedCourses.add(p.courseSlug); });
-        if (distinctPurchasedCourses.size === 0) distinctPurchasedCourses.add('better-man');
-
-        const totalCoursesCount = distinctPurchasedCourses.size || 1;
-        const totalGrantedSessions = totalCoursesCount * 3;
-
-        const relevantAppointments = await Appointment.find({
-          email: emailRegex,
-          status: { $ne: 'CANCELLED' }
-        });
-
-        let claimedAppointmentsCount = 0;
-        for (const app of relevantAppointments) {
-          if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
-            claimedAppointmentsCount += 1;
-          }
-          if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
-            claimedAppointmentsCount += 1;
-          }
-        }
-
-        freeSessions = Math.max(0, totalGrantedSessions - claimedAppointmentsCount);
-        if (coachingUser && coachingUser.freeSessions !== freeSessions) {
-          coachingUser.freeSessions = freeSessions;
-          await coachingUser.save();
-        }
-      } else if (coachingUser) {
-        const relevantAppointments = await Appointment.find({
-          email: emailRegex,
-          status: { $ne: 'CANCELLED' }
-        });
-
-        let claimedAppointmentsCount = 0;
-        for (const app of relevantAppointments) {
-          if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
-            claimedAppointmentsCount += 1;
-          }
-          if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
-            claimedAppointmentsCount += 1;
-          }
-        }
-
-        const totalGranted = coachingUser.courseSessionsGranted ? 3 : (typeof coachingUser.freeSessions === 'number' ? (coachingUser.freeSessions + claimedAppointmentsCount) : 0);
-        freeSessions = Math.max(0, totalGranted - claimedAppointmentsCount);
-        if (coachingUser.freeSessions !== freeSessions) {
-          coachingUser.freeSessions = freeSessions;
-          await coachingUser.save();
-        }
-      }
+      const sessionInfo = await calculateAndSyncFreeSessions(lookupEmail);
+      freeSessions = sessionInfo.remaining;
     }
 
     const duration = isFirstSession ? 60 : 90;
@@ -221,15 +160,15 @@ router.post('/', optionalAuth, async (req, res) => {
       const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
 
-      // Only students who purchased the course can use free sessions
+      const sessionInfo = await calculateAndSyncFreeSessions(normalizedEmail);
+      if (!sessionInfo.isCoursePurchaser || sessionInfo.remaining <= 0) {
+        return res.status(403).json({ message: 'Free sessions are only available to enrolled students with remaining complimentary sessions.' });
+      }
+
       const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
       let coachingUser = await User.findOne({ email: emailRegex });
 
-      if (!courseUser && (!coachingUser || !coachingUser.courseSessionsGranted || !coachingUser.freeSessions || coachingUser.freeSessions <= 0)) {
-        return res.status(403).json({ message: 'Free sessions are only available to course purchasers.' });
-      }
-
-      // Auto-create/sync coaching user if not present
+      // Auto-create coaching user if not present
       if (!coachingUser && courseUser) {
         coachingUser = new User({
           fullName: courseUser.fullName || name,
@@ -237,18 +176,10 @@ router.post('/', optionalAuth, async (req, res) => {
           password: courseUser.password,
           countryCode: countryCode || '+91',
           phoneNumber: phoneNumber || courseUser.phoneNumber || '',
-          freeSessions: 3,
+          freeSessions: sessionInfo.remaining,
           courseSessionsGranted: true
         });
         await coachingUser.save();
-      } else if (coachingUser && courseUser && !coachingUser.courseSessionsGranted) {
-        coachingUser.freeSessions = 3;
-        coachingUser.courseSessionsGranted = true;
-        await coachingUser.save();
-      }
-
-      if (!coachingUser || !coachingUser.freeSessions || coachingUser.freeSessions <= 0) {
-        return res.status(403).json({ message: 'No free sessions remaining on your account.' });
       }
 
       const pastAppointments = await Appointment.countDocuments({ email: emailRegex });
@@ -743,6 +674,8 @@ router.post('/:id/reschedule', optionalAuth, async (req, res) => {
     }
 
     appointment.rescheduleRequest = {
+      originalDate: appointment.date,
+      originalTime: appointment.time,
       date,
       time,
       reason,
@@ -779,77 +712,15 @@ router.post('/:id/reschedule-paid', optionalAuth, async (req, res) => {
       return res.status(400).json({ message: 'New date and time are required.' });
     }
 
-    // --- Cal.com Integration: Cancel old & create new slot ---
-    if (process.env.CAL_API_KEY) {
-      try {
-        if (appointment.calBookingUid) {
-          await fetch(`https://api.cal.com/v2/bookings/${appointment.calBookingUid}/cancel`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
-              'Content-Type': 'application/json',
-              'cal-api-version': '2024-08-13'
-            },
-            body: JSON.stringify({ reason: "Rescheduled by user with late window payment" })
-          });
-        }
-
-        const startDate = new Date(`${date} ${time} GMT+0530`);
-        const startISO = startDate.toISOString();
-        
-        const eventTypeId = appointment.isFirstSession 
-          ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
-          : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
-
-        const payload = {
-          eventTypeId: parseInt(eventTypeId),
-          start: startISO,
-          attendee: {
-            name: appointment.name,
-            email: appointment.email,
-            timeZone: "Asia/Calcutta",
-            language: "en"
-          }
-        };
-
-        const calRes = await fetch('https://api.cal.com/v2/bookings', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
-            'Content-Type': 'application/json',
-            'cal-api-version': '2024-08-13'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (calRes.ok) {
-          const calData = await calRes.json();
-          if (calData?.data?.uid) appointment.calBookingUid = calData.data.uid;
-          else if (calData?.booking?.uid) appointment.calBookingUid = calData.booking.uid;
-          
-          const possibleMeetLink = calData?.data?.meetingUrl || calData?.data?.location || calData?.data?.videoCallUrl || calData?.booking?.meetingUrl || calData?.booking?.location || calData?.data?.metadata?.videoCallUrl;
-          if (possibleMeetLink && typeof possibleMeetLink === 'string' && possibleMeetLink.startsWith('http')) {
-            appointment.meetLink = possibleMeetLink;
-          }
-        }
-      } catch (calError) {
-        console.error("Failed to sync paid reschedule with Cal.com:", calError);
-      }
-    }
-
-    // Update appointment details to new date & time
-    appointment.date = date;
-    appointment.time = time;
-    appointment.status = 'UPCOMING';
-    appointment.paymentStatus = 'Paid';
-    if (paymentId) appointment.paymentId = paymentId;
-    if (signature) appointment.signature = signature;
-
+    // Do NOT auto-approve. Require Admin permission.
+    // Keep current appointment slot intact, store payment and set rescheduleRequest as PENDING.
     appointment.rescheduleRequest = {
+      originalDate: appointment.date,
+      originalTime: appointment.time,
       date,
       time,
       reason,
-      status: 'APPROVED',
+      status: 'PENDING',
       requestedAt: new Date(),
       isWithin48Hours: true,
       hoursRemainingAtRequest: 0,
@@ -862,65 +733,55 @@ router.post('/:id/reschedule-paid', optionalAuth, async (req, res) => {
 
     await appointment.save();
 
-    // Send confirmation emails
+    // Send notification emails about PENDING paid reschedule request
     if (process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const emailHtmlTemplate = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-            <h2 style="color: #c9542f;">Your Session Has Been Rescheduled & Confirmed</h2>
+            <h2 style="color: #c9542f;">Payment Received • Reschedule Request Submitted</h2>
             <p>Hi ${appointment.name},</p>
-            <p>Your payment for the late reschedule window was received and your coaching session has been confirmed for the new time below.</p>
+            <p>Your payment of ₹${amount || 5000} for the late reschedule fee was received successfully. Your reschedule request has been submitted and is currently <strong>pending coach approval</strong>.</p>
             <div style="background: #fbf0eb; border: 1px solid #e8c4e2; padding: 20px; border-radius: 12px; margin: 20px 0;">
-              <strong>New Date:</strong> ${appointment.date}<br>
-              <strong>New Time:</strong> ${appointment.time}<br>
-              <strong>Duration:</strong> ${appointment.duration || 60} Minutes<br>
+              <strong>Current Scheduled Slot:</strong> ${appointment.date} at ${appointment.time}<br>
+              <strong>Requested New Slot:</strong> ${date} at ${time}<br>
               ${paymentId ? `<strong>Payment ID:</strong> ${paymentId}<br>` : ''}
-              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Click here to join</a><br>` : ''}
+              <strong>Status:</strong> Pending Coach Confirmation<br>
             </div>
-            <p>We look forward to seeing you then!</p>
+            <p>You will receive a confirmation email once your new time is confirmed by Coach Aarkesh.</p>
           </div>
         `;
 
         const coachEmailTemplate = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-            <h2 style="color: #111010;">Paid Session Rescheduled</h2>
-            <p><strong>${appointment.name}</strong> has rescheduled their session within the 48h window and paid the session fee.</p>
+            <h2 style="color: #111010;">Paid Reschedule Request Pending Approval</h2>
+            <p><strong>${appointment.name}</strong> (${appointment.email}) has requested a late reschedule and paid the ₹${amount || 5000} fee.</p>
             <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <strong>Client:</strong> ${appointment.name} (${appointment.email})<br>
-              <strong>New Date:</strong> ${appointment.date}<br>
-              <strong>New Time:</strong> ${appointment.time}<br>
-              <strong>Paid Amount:</strong> ₹${amount || 5000}<br>
+              <strong>Current Slot:</strong> ${appointment.date} at ${appointment.time}<br>
+              <strong>Requested Slot:</strong> ${date} at ${time}<br>
+              <strong>Fee Paid:</strong> ₹${amount || 5000}<br>
               ${paymentId ? `<strong>Payment ID:</strong> ${paymentId}<br>` : ''}
-              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Click here to join</a><br>` : ''}
+              <strong>Reason:</strong> ${reason || 'None provided'}<br>
             </div>
+            <p>Please review and approve or keep the old time in your Admin Dashboard.</p>
           </div>
         `;
 
-        const clientUser = await User.findOne({ email: appointment.email });
-        const allowChangesEmail = clientUser?.notificationPreferences?.emailChanges ?? true;
-
-        const emailPromises = [
+        await Promise.all([
           resend.emails.send({
             from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
             to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
-            subject: `Paid Reschedule Confirmed for ${appointment.name}`,
+            subject: `Paid Reschedule Request Pending Approval - ${appointment.name}`,
             html: coachEmailTemplate,
+          }),
+          resend.emails.send({
+            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+            to: appointment.email,
+            subject: 'Late reschedule payment received (Pending coach confirmation)',
+            html: emailHtmlTemplate,
           })
-        ];
-
-        if (allowChangesEmail) {
-          emailPromises.push(
-            resend.emails.send({
-              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-              to: appointment.email,
-              subject: 'Your session has been rescheduled & confirmed',
-              html: emailHtmlTemplate,
-            })
-          );
-        }
-
-        await Promise.all(emailPromises);
+        ]);
       } catch (emailErr) {
         console.error("Failed to send reschedule email", emailErr);
       }
@@ -979,105 +840,28 @@ router.post('/:id/reschedule-credit', optionalAuth, async (req, res) => {
       }
     }
 
-    let totalGranted = 0;
-    if (courseUser) {
-      const distinctPurchasedCourses = new Set();
-      if (Array.isArray(courseUser.purchasedCourses)) {
-        courseUser.purchasedCourses.forEach(s => s && distinctPurchasedCourses.add(s));
-      }
-      const purchases = await CoursePurchase.find({
-        $or: [{ courseUserId: courseUser._id }, { studentEmail: emailRegex }],
-        paymentStatus: 'Paid'
-      });
-      purchases.forEach(p => { if (p.courseSlug) distinctPurchasedCourses.add(p.courseSlug); });
-      if (distinctPurchasedCourses.size === 0) distinctPurchasedCourses.add('better-man');
-      totalGranted = (distinctPurchasedCourses.size || 1) * 3;
-    } else if (coachingUser) {
-      totalGranted = coachingUser.courseSessionsGranted ? 3 : (typeof coachingUser.freeSessions === 'number' ? (coachingUser.freeSessions + claimedAppointmentsCount) : 0);
-    }
-
-    const availableCredits = Math.max(0, totalGranted - claimedAppointmentsCount);
-
-    if (availableCredits <= 0) {
+    const sessionInfo = await calculateAndSyncFreeSessions(appointment.email);
+    if (!sessionInfo.isCoursePurchaser || sessionInfo.remaining <= 0) {
       return res.status(400).json({ message: 'You have no free session credits remaining.' });
     }
+    const availableCredits = sessionInfo.remaining;
 
-    // Deduct 1 free session credit
+    // Deduct / hold 1 free session credit
     const newRemainingCredits = Math.max(0, availableCredits - 1);
     if (coachingUser) {
       coachingUser.freeSessions = newRemainingCredits;
       await coachingUser.save();
     }
 
-    // --- Cal.com Integration: Cancel old & create new slot ---
-    if (process.env.CAL_API_KEY) {
-      try {
-        if (appointment.calBookingUid) {
-          await fetch(`https://api.cal.com/v2/bookings/${appointment.calBookingUid}/cancel`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
-              'Content-Type': 'application/json',
-              'cal-api-version': '2024-08-13'
-            },
-            body: JSON.stringify({ reason: "Rescheduled by user using complimentary session credit" })
-          });
-        }
-
-        const startDate = new Date(`${date} ${time} GMT+0530`);
-        const startISO = startDate.toISOString();
-        
-        const eventTypeId = appointment.isFirstSession 
-          ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
-          : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
-
-        const payload = {
-          eventTypeId: parseInt(eventTypeId),
-          start: startISO,
-          attendee: {
-            name: appointment.name,
-            email: appointment.email,
-            timeZone: "Asia/Calcutta",
-            language: "en"
-          }
-        };
-
-        const calRes = await fetch('https://api.cal.com/v2/bookings', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
-            'Content-Type': 'application/json',
-            'cal-api-version': '2024-08-13'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (calRes.ok) {
-          const calData = await calRes.json();
-          if (calData?.data?.uid) appointment.calBookingUid = calData.data.uid;
-          else if (calData?.booking?.uid) appointment.calBookingUid = calData.booking.uid;
-          
-          const possibleMeetLink = calData?.data?.meetingUrl || calData?.data?.location || calData?.data?.videoCallUrl || calData?.booking?.meetingUrl || calData?.booking?.location || calData?.data?.metadata?.videoCallUrl;
-          if (possibleMeetLink && typeof possibleMeetLink === 'string' && possibleMeetLink.startsWith('http')) {
-            appointment.meetLink = possibleMeetLink;
-          }
-        }
-      } catch (calError) {
-        console.error("Failed to sync credit reschedule with Cal.com:", calError);
-      }
-    }
-
-    // Update appointment details to new date & time
-    appointment.date = date;
-    appointment.time = time;
-    appointment.status = 'UPCOMING';
-    appointment.paymentStatus = 'Paid';
-
+    // Do NOT auto-approve. Require Admin permission.
+    // Keep current appointment date & time intact, mark rescheduleRequest as PENDING.
     appointment.rescheduleRequest = {
+      originalDate: appointment.date,
+      originalTime: appointment.time,
       date,
       time,
       reason,
-      status: 'APPROVED',
+      status: 'PENDING',
       requestedAt: new Date(),
       isWithin48Hours: true,
       hoursRemainingAtRequest: 0,
@@ -1091,63 +875,53 @@ router.post('/:id/reschedule-credit', optionalAuth, async (req, res) => {
 
     await appointment.save();
 
-    // Send confirmation emails
+    // Send notification emails about PENDING reschedule request
     if (process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const emailHtmlTemplate = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-            <h2 style="color: #c9542f;">Your Session Has Been Rescheduled & Confirmed</h2>
+            <h2 style="color: #c9542f;">Reschedule Request Submitted</h2>
             <p>Hi ${appointment.name},</p>
-            <p>Your 1-on-1 coaching session has been successfully rescheduled using <strong>1 Complimentary Session Credit</strong>.</p>
+            <p>Your request to reschedule your 1-on-1 coaching session using 1 Complimentary Session Credit has been received and is currently <strong>pending coach approval</strong>.</p>
             <div style="background: #fbf0eb; border: 1px solid #e8c4e2; padding: 20px; border-radius: 12px; margin: 20px 0;">
-              <strong>New Date:</strong> ${appointment.date}<br>
-              <strong>New Time:</strong> ${appointment.time}<br>
-              <strong>Duration:</strong> ${appointment.duration || 60} Minutes<br>
-              <strong>Remaining Credits:</strong> ${coachingUser.freeSessions} Complimentary Sessions<br>
-              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Click here to join</a><br>` : ''}
+              <strong>Current Scheduled Slot:</strong> ${appointment.date} at ${appointment.time}<br>
+              <strong>Requested New Slot:</strong> ${date} at ${time}<br>
+              <strong>Remaining Session Credits:</strong> ${coachingUser ? coachingUser.freeSessions : 0}<br>
+              <strong>Status:</strong> Pending Coach Confirmation<br>
             </div>
-            <p>We look forward to connecting with you!</p>
+            <p>You will receive a confirmation email once your new time is confirmed.</p>
           </div>
         `;
 
         const coachEmailTemplate = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-            <h2 style="color: #111010;">Session Rescheduled (Free Credit Used)</h2>
-            <p><strong>${appointment.name}</strong> has rescheduled their session within the 48h window using 1 Complimentary Session Credit.</p>
+            <h2 style="color: #111010;">New Reschedule Request Pending Approval</h2>
+            <p><strong>${appointment.name}</strong> (${appointment.email}) has requested to reschedule their 1-on-1 coaching session using a complimentary session credit.</p>
             <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <strong>Client:</strong> ${appointment.name} (${appointment.email})<br>
-              <strong>New Date:</strong> ${appointment.date}<br>
-              <strong>New Time:</strong> ${appointment.time}<br>
-              <strong>Remaining Credits:</strong> ${coachingUser.freeSessions}<br>
-              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Click here to join</a><br>` : ''}
+              <strong>Current Time:</strong> ${appointment.date} at ${appointment.time}<br>
+              <strong>Requested Time:</strong> ${date} at ${time}<br>
+              <strong>Client Reason:</strong> ${reason || 'None provided'}<br>
+              <strong>Credit Used:</strong> 1 Complimentary Session Credit (Held on account)<br>
             </div>
+            <p>Please review and approve or keep the old time in your Admin Dashboard.</p>
           </div>
         `;
 
-        const allowChangesEmail = coachingUser?.notificationPreferences?.emailChanges ?? true;
-
-        const emailPromises = [
+        await Promise.all([
           resend.emails.send({
             from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
             to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
-            subject: `Session Rescheduled (Free Credit) for ${appointment.name}`,
+            subject: `Reschedule Request Pending Approval - ${appointment.name}`,
             html: coachEmailTemplate,
+          }),
+          resend.emails.send({
+            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+            to: appointment.email,
+            subject: 'Reschedule request submitted (Pending coach confirmation)',
+            html: emailHtmlTemplate,
           })
-        ];
-
-        if (allowChangesEmail) {
-          emailPromises.push(
-            resend.emails.send({
-              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-              to: appointment.email,
-              subject: 'Your session has been rescheduled & confirmed',
-              html: emailHtmlTemplate,
-            })
-          );
-        }
-
-        await Promise.all(emailPromises);
+        ]);
       } catch (emailErr) {
         console.error("Failed to send reschedule email", emailErr);
       }
@@ -1177,170 +951,266 @@ router.get('/admin/reschedule-requests', protect, admin, async (req, res) => {
 });
 
 // POST /api/appointments/admin/:id/approve-reschedule - Approve reschedule request
-router.post('/admin/:id/approve-reschedule', protect, admin, async (req, res) => {
-  try {
-    const appointment = await Appointment.findById(req.params.id);
-    
-    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
-    if (!appointment.rescheduleRequest || appointment.rescheduleRequest.status !== 'PENDING') {
-      return res.status(400).json({ message: 'No pending reschedule request found' });
-    }
+// Helper: Execute approve reschedule
+const executeApproveReschedule = async (appointmentId) => {
+  const appointment = await Appointment.findById(appointmentId);
+  if (!appointment) throw new Error('Appointment not found');
+  if (!appointment.rescheduleRequest || appointment.rescheduleRequest.status !== 'PENDING') {
+    throw new Error('No pending reschedule request found');
+  }
 
-    const { date, time } = appointment.rescheduleRequest;
+  const { date, time } = appointment.rescheduleRequest;
 
-    // --- Cal.com Integration ---
-    if (process.env.CAL_API_KEY) {
-      try {
-        // 1. Cancel existing if we have UID
-        if (appointment.calBookingUid) {
-          await fetch(`https://api.cal.com/v2/bookings/${appointment.calBookingUid}/cancel`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
-              'Content-Type': 'application/json',
-              'cal-api-version': '2024-08-13'
-            },
-            body: JSON.stringify({ reason: "Rescheduled by user request" })
-          });
-        }
-
-        // 2. Create new booking
-        const startDate = new Date(`${date} ${time} GMT+0530`);
-        const startISO = startDate.toISOString();
-        
-        const eventTypeId = appointment.isFirstSession 
-          ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
-          : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
-
-        const payload = {
-          eventTypeId: parseInt(eventTypeId),
-          start: startISO,
-          attendee: {
-            name: appointment.name,
-            email: appointment.email,
-            timeZone: "Asia/Calcutta",
-            language: "en"
-          }
-        };
-
-        const calRes = await fetch('https://api.cal.com/v2/bookings', {
+  // --- Cal.com Integration ---
+  if (process.env.CAL_API_KEY) {
+    try {
+      if (appointment.calBookingUid) {
+        await fetch(`https://api.cal.com/v2/bookings/${appointment.calBookingUid}/cancel`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
             'Content-Type': 'application/json',
             'cal-api-version': '2024-08-13'
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ reason: "Rescheduled by user request approved by admin" })
         });
-
-        if (calRes.ok) {
-           const calData = await calRes.json();
-           if (calData?.data?.uid) appointment.calBookingUid = calData.data.uid;
-           else if (calData?.booking?.uid) appointment.calBookingUid = calData.booking.uid;
-           
-           const possibleMeetLink = calData?.data?.meetingUrl || calData?.data?.location || calData?.data?.videoCallUrl || calData?.booking?.meetingUrl || calData?.booking?.location || calData?.data?.metadata?.videoCallUrl;
-           if (possibleMeetLink && typeof possibleMeetLink === 'string' && possibleMeetLink.startsWith('http')) {
-              appointment.meetLink = possibleMeetLink;
-           }
-        }
-      } catch (calError) {
-        console.error("Failed to sync reschedule with Cal.com:", calError);
       }
+
+      const startDate = new Date(`${date} ${time} GMT+0530`);
+      const startISO = startDate.toISOString();
+      
+      const eventTypeId = appointment.isFirstSession 
+        ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
+        : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
+
+      const payload = {
+        eventTypeId: parseInt(eventTypeId),
+        start: startISO,
+        attendee: {
+          name: appointment.name,
+          email: appointment.email,
+          timeZone: "Asia/Calcutta",
+          language: "en"
+        }
+      };
+
+      const calRes = await fetch('https://api.cal.com/v2/bookings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
+          'Content-Type': 'application/json',
+          'cal-api-version': '2024-08-13'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (calRes.ok) {
+        const calData = await calRes.json();
+        if (calData?.data?.uid) appointment.calBookingUid = calData.data.uid;
+        else if (calData?.booking?.uid) appointment.calBookingUid = calData.booking.uid;
+        
+        const possibleMeetLink = calData?.data?.meetingUrl || calData?.data?.location || calData?.data?.videoCallUrl || calData?.booking?.meetingUrl || calData?.booking?.location || calData?.data?.metadata?.videoCallUrl;
+        if (possibleMeetLink && typeof possibleMeetLink === 'string' && possibleMeetLink.startsWith('http')) {
+          appointment.meetLink = possibleMeetLink;
+        }
+      }
+    } catch (calError) {
+      console.error("Failed to sync reschedule with Cal.com:", calError);
     }
-    // ---------------------------
+  }
 
-    // Update appointment
-    appointment.date = date;
-    appointment.time = time;
-    appointment.rescheduleRequest.status = 'APPROVED';
-    
-    await appointment.save();
+  // Officially update appointment schedule
+  if (!appointment.rescheduleRequest.originalDate) {
+    appointment.rescheduleRequest.originalDate = appointment.date;
+  }
+  if (!appointment.rescheduleRequest.originalTime) {
+    appointment.rescheduleRequest.originalTime = appointment.time;
+  }
+  appointment.date = date;
+  appointment.time = time;
+  appointment.status = 'UPCOMING';
+  appointment.rescheduleRequest.status = 'APPROVED';
+  await appointment.save();
 
-    // Send Email
-    if (process.env.RESEND_API_KEY) {
-      try {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        const emailHtmlTemplate = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-            <h2>Your Session Has Been Rescheduled</h2>
-            <p>Hi ${appointment.name},</p>
-            <p>Your request to reschedule your coaching session has been approved.</p>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-              <strong>New Date:</strong> ${appointment.date}<br>
-              <strong>New Time:</strong> ${appointment.time}<br>
-              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c79c6e;">Click here to join</a><br>` : ''}
-            </div>
-            <p>We look forward to seeing you then!</p>
+  // Send confirmation emails
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const emailHtmlTemplate = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #c9542f;">Your Session Reschedule Has Been Approved</h2>
+          <p>Hi ${appointment.name},</p>
+          <p>Your request to reschedule your coaching session has been approved by Coach Aarkesh.</p>
+          <div style="background: #fbf0eb; border: 1px solid #e8c4e2; padding: 20px; border-radius: 12px; margin: 20px 0;">
+            <strong>New Date:</strong> ${appointment.date}<br>
+            <strong>New Time:</strong> ${appointment.time}<br>
+            <strong>Duration:</strong> ${appointment.duration || 60} Minutes<br>
+            ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Click here to join Google Meet</a><br>` : ''}
           </div>
-        `;
+          <p>We look forward to connecting with you!</p>
+        </div>
+      `;
 
-        const coachEmailTemplate = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-            <h2>Session Rescheduled</h2>
-            <p>You have successfully approved the reschedule request for <strong>${appointment.name}</strong>.</p>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-              <strong>New Date:</strong> ${appointment.date}<br>
-              <strong>New Time:</strong> ${appointment.time}<br>
-              ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c79c6e;">Click here to join</a><br>` : ''}
-            </div>
+      const coachEmailTemplate = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2>Session Rescheduled Confirmed</h2>
+          <p>You have approved the reschedule request for <strong>${appointment.name}</strong>.</p>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <strong>New Date:</strong> ${appointment.date}<br>
+            <strong>New Time:</strong> ${appointment.time}<br>
+            ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c79c6e;">Join Link</a><br>` : ''}
           </div>
-        `;
+        </div>
+      `;
 
-        const clientUser = await User.findOne({ email: appointment.email });
-        const allowChangesEmail = clientUser?.notificationPreferences?.emailChanges ?? true;
+      const clientUser = await User.findOne({ email: appointment.email });
+      const allowChangesEmail = clientUser?.notificationPreferences?.emailChanges ?? true;
 
-        const emailPromises = [
+      const emailPromises = [
+        resend.emails.send({
+          from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+          to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
+          subject: `Reschedule confirmed for ${appointment.name}`,
+          html: coachEmailTemplate,
+        })
+      ];
+
+      if (allowChangesEmail) {
+        emailPromises.push(
           resend.emails.send({
             from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-            to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
-            subject: `Reschedule confirmed for ${appointment.name}`,
-            html: coachEmailTemplate,
+            to: appointment.email,
+            subject: 'Your session reschedule has been approved',
+            html: emailHtmlTemplate,
           })
-        ];
-
-        if (allowChangesEmail) {
-          emailPromises.push(
-            resend.emails.send({
-              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-              to: appointment.email,
-              subject: 'Your session has been rescheduled',
-              html: emailHtmlTemplate,
-            })
-          );
-        }
-
-        await Promise.all(emailPromises);
-      } catch (emailErr) {
-        console.error("Failed to send reschedule email", emailErr);
+        );
       }
-    }
 
-    res.json(appointment);
+      await Promise.all(emailPromises);
+    } catch (emailErr) {
+      console.error("Failed to send reschedule confirmation email", emailErr);
+    }
+  }
+
+  return appointment;
+};
+
+// Helper: Execute reject/decline reschedule
+const executeRejectReschedule = async (appointmentId) => {
+  const appointment = await Appointment.findById(appointmentId);
+  if (!appointment) throw new Error('Appointment not found');
+  if (!appointment.rescheduleRequest || appointment.rescheduleRequest.status !== 'PENDING') {
+    throw new Error('No pending reschedule request found');
+  }
+
+  // If a free session credit was held for this request, refund it
+  if (appointment.rescheduleRequest.usedFreeSessionCredit === true) {
+    try {
+      const coachingUser = await User.findOne({ email: appointment.email });
+      if (coachingUser) {
+        coachingUser.freeSessions = (coachingUser.freeSessions || 0) + 1;
+        await coachingUser.save();
+      }
+    } catch (refundCreditErr) {
+      console.error('Failed to refund free session credit on decline:', refundCreditErr);
+    }
+  }
+
+  // If a paid reschedule fee was paid and coach rejects, initiate Razorpay refund if possible
+  if (appointment.rescheduleRequest.rescheduleFeePaid === true && appointment.rescheduleRequest.reschedulePaymentId) {
+    try {
+      if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+        const Razorpay = (await import('razorpay')).default;
+        const razorpay = new Razorpay({
+          key_id: process.env.RAZORPAY_KEY_ID,
+          key_secret: process.env.RAZORPAY_KEY_SECRET,
+        });
+        await razorpay.payments.refund(appointment.rescheduleRequest.reschedulePaymentId, {
+          amount: Math.round((appointment.rescheduleRequest.rescheduleAmount || 5000) * 100),
+          notes: { reason: "Reschedule request declined by coach" }
+        });
+        console.log("Successfully refunded reschedule fee via Razorpay");
+      }
+    } catch (rzpErr) {
+      console.error("Razorpay refund error on reschedule decline:", rzpErr?.message || rzpErr);
+    }
+  }
+
+  appointment.rescheduleRequest.status = 'REJECTED';
+  await appointment.save();
+
+  // Send email informing user that original time is kept
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2>Session Reschedule Update</h2>
+          <p>Hi ${appointment.name},</p>
+          <p>Your requested reschedule time could not be accommodated. Your existing session remains scheduled as originally confirmed:</p>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <strong>Scheduled Date:</strong> ${appointment.date}<br>
+            <strong>Scheduled Time:</strong> ${appointment.time}<br>
+            ${appointment.meetLink ? `<strong>Meeting Link:</strong> <a href="${appointment.meetLink}" style="color: #c9542f;">Join Meeting</a><br>` : ''}
+          </div>
+          ${appointment.rescheduleRequest?.usedFreeSessionCredit ? '<p>Your complimentary session credit has been refunded back to your account balance.</p>' : ''}
+          ${appointment.rescheduleRequest?.rescheduleFeePaid ? '<p>Your paid late reschedule fee of ₹' + (appointment.rescheduleRequest?.rescheduleAmount || 5000) + ' has been initiated for refund back to your payment method (5-7 business days).</p>' : ''}
+        </div>
+      `;
+      await resend.emails.send({
+        from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+        to: appointment.email,
+        subject: 'Update on your session reschedule request',
+        html: emailHtml,
+      });
+    } catch (e) {
+      console.error('Failed to send decline email:', e);
+    }
+  }
+
+  return appointment;
+};
+
+// POST /api/appointments/admin/:id/approve-reschedule - Approve reschedule request
+router.post('/admin/:id/approve-reschedule', protect, admin, async (req, res) => {
+  try {
+    const updated = await executeApproveReschedule(req.params.id);
+    res.json(updated);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error approving reschedule' });
+    console.error('Error approving reschedule:', error);
+    res.status(500).json({ message: error.message || 'Server error approving reschedule' });
   }
 });
 
 // POST /api/appointments/admin/:id/reject-reschedule - Reject reschedule request
 router.post('/admin/:id/reject-reschedule', protect, admin, async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
-    
-    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
-    if (!appointment.rescheduleRequest || appointment.rescheduleRequest.status !== 'PENDING') {
-      return res.status(400).json({ message: 'No pending reschedule request found' });
-    }
-
-    appointment.rescheduleRequest.status = 'REJECTED';
-    await appointment.save();
-
-    res.json(appointment);
+    const updated = await executeRejectReschedule(req.params.id);
+    res.json(updated);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error rejecting reschedule' });
+    console.error('Error rejecting reschedule:', error);
+    res.status(500).json({ message: error.message || 'Server error rejecting reschedule' });
   }
 });
+
+// PUT /api/appointments/:id/reschedule-admin & PUT /api/appointments/admin/:id/reschedule-admin
+const handleAdminReschedule = async (req, res) => {
+  try {
+    const action = (req.body.action || '').toLowerCase();
+    if (action === 'approve') {
+      const updated = await executeApproveReschedule(req.params.id);
+      return res.json(updated);
+    } else {
+      const updated = await executeRejectReschedule(req.params.id);
+      return res.json(updated);
+    }
+  } catch (error) {
+    console.error('Error handling admin reschedule:', error);
+    res.status(500).json({ message: error.message || 'Server error processing reschedule action' });
+  }
+};
+router.put('/:id/reschedule-admin', protect, admin, handleAdminReschedule);
+router.put('/admin/:id/reschedule-admin', protect, admin, handleAdminReschedule);
 
 // POST /api/appointments/admin/:id/issue-refund - Emergency / Manual Refund for an Appointment (Admin only)
 router.post('/admin/:id/issue-refund', protect, admin, async (req, res) => {

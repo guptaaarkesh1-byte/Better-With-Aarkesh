@@ -39,8 +39,15 @@ export default function CoursePaymentSuccess({
   const courseTitle = purchaseData?.courseTitle || 'The Better Man™';
   const invoiceHeading = purchaseData?.invoiceItemTitle || (purchaseData?.courseTitle ? `${purchaseData.courseTitle} — Masterclass Lifetime Access` : 'The Better Man™ — Masterclass Lifetime Access');
   const invoiceSubtitle = purchaseData?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community';
-  const bonusHeading = purchaseData?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh';
-  const bonusSubtitle = purchaseData?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus';
+  const freeSessionsCount = purchaseData?.freeSessionsGranted !== undefined ? Number(purchaseData.freeSessionsGranted) : 5;
+  const rawBonusHeading = purchaseData?.bonusItemTitle;
+  const bonusHeading = freeSessionsCount > 0 
+    ? (rawBonusHeading ? rawBonusHeading.replace(/\b\d+\b/g, String(freeSessionsCount)) : `${freeSessionsCount} Private 1-on-1 Executive Coaching Sessions with Aarkesh`) 
+    : 'Direct Instructor Q&A & Lifetime Updates';
+  const rawBonusSubtitle = purchaseData?.bonusItemSubtitle;
+  const bonusSubtitle = freeSessionsCount > 0 
+    ? (rawBonusSubtitle ? rawBonusSubtitle.replace(/₹[\d,]+/g, `₹${(freeSessionsCount * 5000).toLocaleString('en-IN')}`) : `Valued at ₹${(freeSessionsCount * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus`) 
+    : 'Included with your enrollment';
   
   const finalAmount = purchaseData?.finalAmount || purchaseData?.amount || 11800;
   const basePrice = purchaseData?.basePrice || 10000;
@@ -123,7 +130,7 @@ export default function CoursePaymentSuccess({
                 Welcome to <span className="text-[#E3B8DE] italic">{courseTitle}</span>
               </h1>
               <p className="font-sans text-xs sm:text-sm text-white/60 max-w-md mx-auto">
-                Congratulations <strong className="text-white">{studentName}</strong>! Your masterclass access is unlocked and your 3 private coaching calls are credited.
+                Congratulations <strong className="text-white">{studentName}</strong>! Your masterclass access is unlocked {freeSessionsCount > 0 ? `and your ${freeSessionsCount} private coaching calls are credited.` : 'and ready.'}
               </p>
             </>
           )}
@@ -343,7 +350,7 @@ export default function CoursePaymentSuccess({
                         </span>
                       )}
                     </td>
-                    <td className="py-2.5 text-center text-emerald-400 print:text-emerald-700 font-mono">3</td>
+                    <td className="py-2.5 text-center text-emerald-400 print:text-emerald-700 font-mono">{freeSessionsCount}</td>
                     <td className="py-2.5 text-right font-mono font-bold text-emerald-400 print:text-emerald-700">
                       FREE (₹0)
                     </td>
@@ -441,7 +448,7 @@ export default function CoursePaymentSuccess({
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
                 <div className="flex items-center gap-2 text-emerald-400 font-semibold">
                   <CalendarCheck size={16} weight="fill" />
-                  <span>3 Free Private 1-on-1 Calls</span>
+                  <span>{freeSessionsCount > 0 ? `${freeSessionsCount} Free Private 1-on-1 Calls` : 'Direct Instructor Access'}</span>
                 </div>
                 <p className="text-white/50 leading-relaxed">
                   Schedule personal breakthrough sessions directly with Aarkesh whenever you're ready.

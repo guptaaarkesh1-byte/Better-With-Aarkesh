@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { clearAllAuth } from '../../utils/authSync';
 import {
   User,
   Envelope,
@@ -51,7 +52,14 @@ export default function CourseProfile() {
   // ONLY 2 main tabs as requested: 'BASIC_INFO' | 'MY_PROGRAMS'
   const initialTab = searchParams.get('tab') === 'MY_PROGRAMS' || searchParams.get('tab') === 'courses' ? 'MY_PROGRAMS' : 'BASIC_INFO';
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('courseUser');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [copiedTxn, setCopiedTxn] = useState(false);
   const [showSecuritySection, setShowSecuritySection] = useState(false);
@@ -157,9 +165,7 @@ export default function CourseProfile() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('courseToken');
-    localStorage.removeItem('isCoursePurchased');
-    localStorage.removeItem('courseUser');
+    clearAllAuth();
     navigate('/course');
   };
 
@@ -634,7 +640,7 @@ export default function CourseProfile() {
                   </div>
                   <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 text-center">
                     <span className="text-2xl font-bold text-[#E3B8DE] block" style={{ fontFamily: 'var(--head)' }}>
-                      {isPurchased ? (user?.freeSessions ?? ((user?.enrolledCourses?.length || user?.purchasedCourses?.length || 1) * 3)) : '0'}
+                      {isPurchased ? (user?.freeSessions !== undefined ? Number(user.freeSessions) : (user?.freeSessionsRemaining !== undefined ? Number(user.freeSessionsRemaining) : (localStorage.getItem('freeSessions') !== null ? Number(localStorage.getItem('freeSessions')) : 5))) : '0'}
                     </span>
                     <span className="text-[10px] uppercase tracking-widest text-white/50 block mt-1">
                       1-on-1 Sessions

@@ -1203,6 +1203,115 @@ export default function AdminUsers() {
                       </div>
                     )}
 
+                    {/* Session & Google Meet Schedule Details Box */}
+                    <div className="bwa-box" style={{ borderLeft: '3px solid var(--accent, #c9542f)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                        <div>
+                          <h3 style={{ fontFamily: 'var(--bwa-serif)', fontSize: '19px', fontWeight: '400', margin: '0 0 2px', color: 'var(--bwa-ink)' }}>
+                            Session schedule &amp; meeting link
+                          </h3>
+                          <p className="bwa-mut" style={{ fontSize: '13px', margin: '0 0 12px' }}>
+                            Confirmed booking date, time &amp; Google Meet video link.
+                          </p>
+                        </div>
+                        <span className="bwa-chip" style={{ background: '#e5f2e8', color: '#2f4a34', fontWeight: 600, fontSize: '11px' }}>
+                          {selectedAppt.isFreeSession || selectedAppt.orderId === 'COURSE_FREE_SESSION' ? 'Complimentary 1-on-1' : 'Paid Session'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px', marginBottom: '14px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--bwa-muted)', fontWeight: '600', marginBottom: '3px' }}>
+                            Date &amp; Day
+                          </label>
+                          <b style={{ fontSize: '14px', color: 'var(--bwa-ink)' }}>
+                            {parseDateObj(selectedAppt.s).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
+                          </b>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--bwa-muted)', fontWeight: '600', marginBottom: '3px' }}>
+                            Time
+                          </label>
+                          <b style={{ fontSize: '14px', color: 'var(--bwa-ink)' }}>
+                            {selectedAppt.time || '10:00 AM'}
+                          </b>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--bwa-muted)', fontWeight: '600', marginBottom: '3px' }}>
+                            Duration
+                          </label>
+                          <b style={{ fontSize: '14px', color: 'var(--bwa-ink)' }}>
+                            {selectedAppt.duration || 60} Minutes
+                          </b>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--bwa-muted)', fontWeight: '600', marginBottom: '3px' }}>
+                            Status
+                          </label>
+                          <b style={{ fontSize: '14px', color: 'var(--bwa-ink)' }}>
+                            {(selectedAppt.status || 'Confirmed').toUpperCase()}
+                          </b>
+                        </div>
+                      </div>
+
+                      {/* Google Meet Video Link */}
+                      <div style={{ padding: '10px 12px', background: 'rgba(201, 84, 47, 0.06)', borderRadius: '10px', border: '1px solid rgba(201, 84, 47, 0.2)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--accent, #c9542f)' }}>
+                            📹 Google Meet Video Link
+                          </span>
+                          {selectedAppt.meetLink && (
+                            <button
+                              type="button"
+                              className="bwa-btn bwa-btn-sm"
+                              style={{ padding: '2px 8px', fontSize: '0.65rem' }}
+                              onClick={() => navigator.clipboard.writeText(selectedAppt.meetLink)}
+                            >
+                              Copy Link
+                            </button>
+                          )}
+                        </div>
+
+                        {selectedAppt.meetLink ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                            <a 
+                              href={selectedAppt.meetLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ color: 'var(--accent, #c9542f)', fontWeight: 600, fontSize: '0.82rem', textDecoration: 'underline', wordBreak: 'break-all' }}
+                            >
+                              {selectedAppt.meetLink}
+                            </a>
+                            <a
+                              href={selectedAppt.meetLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bwa-btn bwa-btn-sm"
+                              style={{ padding: '4px 12px', fontSize: '0.72rem', background: 'var(--accent, #c9542f)', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontWeight: 600 }}
+                            >
+                              Join Meeting ↗
+                            </a>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.78rem', color: '#7a756b' }}>
+                            Google Meet link will be generated automatically or sent with the calendar invite.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Client Intake Note */}
+                      {(selectedAppt.reason || selectedAppt.notes) && (
+                        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                          <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, color: '#7a756b', display: 'block', marginBottom: '4px' }}>
+                            Client Goal / What Brings Them Here:
+                          </span>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#111010', lineHeight: 1.4 }}>
+                            {selectedAppt.reason || selectedAppt.notes || 'No specific intake note.'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Client information Card */}
                     <div className="bwa-box">
                       <h3 style={{ fontFamily: 'var(--bwa-serif)', fontSize: '19px', fontWeight: '400', margin: '0 0 2px', color: 'var(--bwa-ink)' }}>

@@ -22,12 +22,39 @@ import {
   ArrowLeft,
   CaretUp,
   CaretDown,
-  DotsSixVertical
+  DotsSixVertical,
+  Faders,
+  TextT,
+  Sliders,
+  Info
 } from '@phosphor-icons/react';
 import { CURATED_LIBRARY_ARTICLES } from '../../../client/src/constants/libraryArticlesData';
 import TiptapEditor from '../components/ui/TiptapEditor';
 
 import { API_URL } from '../utils/apiUrl';
+
+// Left Sidebar Navigation Tabs for Library Page Editor
+export const LIBRARY_SIDEBAR_TABS = [
+  {
+    id: 'universalTypography',
+    label: 'Universal Font Size',
+    icon: <Faders size={18} weight="bold" />,
+    description: 'Typography scale, presets & sphere sizing',
+    badge: 'STUDIO',
+  },
+  {
+    id: 'hero',
+    label: 'Hero',
+    icon: <Sparkle size={18} weight="bold" />,
+    description: 'Main headline, search bar & quote',
+  },
+  {
+    id: 'articles',
+    label: 'Upload Articles',
+    icon: <BookOpen size={18} weight="bold" />,
+    description: '6 category sections & article publishing',
+  },
+];
 
 // Fixed 6 Core Categories
 export const FIXED_LIBRARY_CATEGORIES = [
@@ -36,7 +63,7 @@ export const FIXED_LIBRARY_CATEGORIES = [
     key: 'RELATIONSHIPS',
     num: '01',
     title: 'Relationships',
-    numLabel: '01 Relationships (01 / 06)',
+    numLabel: 'Relationships',
     subtitle: 'On connection, boundaries, projection, and the quiet courage of honest intimacy.',
     accent: '#d97fc8', // Original Relationships purple
     bg: '#3d1b37',
@@ -46,7 +73,7 @@ export const FIXED_LIBRARY_CATEGORIES = [
     key: 'SELF',
     num: '02',
     title: 'Self',
-    numLabel: '02 Self (02 / 06)',
+    numLabel: 'Self',
     subtitle: 'On identity, inner alignment, self-trust, and returning home to who you are.',
     accent: '#111010',
     bg: '#ffffff',
@@ -56,7 +83,7 @@ export const FIXED_LIBRARY_CATEGORIES = [
     key: 'CHANGE',
     num: '03',
     title: 'Change',
-    numLabel: '03 Change (03 / 06)',
+    numLabel: 'Change',
     subtitle: 'On life transitions, letting go, outgrowing old spaces, and starting before you feel ready.',
     accent: '#1e6830', // Deep green for admin
     bg: '#2f4a34',
@@ -66,7 +93,7 @@ export const FIXED_LIBRARY_CATEGORIES = [
     key: 'DECISIONS',
     num: '04',
     title: 'Decisions',
-    numLabel: '04 Decisions (04 / 06)',
+    numLabel: 'Decisions',
     subtitle: 'On cutting through analysis paralysis, weighing trade-offs, and choosing wholeheartedly.',
     accent: '#b84419', // Deep orange for admin
     bg: '#c85628',
@@ -76,7 +103,7 @@ export const FIXED_LIBRARY_CATEGORIES = [
     key: 'DIFFICULT PEOPLE',
     num: '05',
     title: 'Difficult People',
-    numLabel: '05 Difficult People (05 / 06)',
+    numLabel: 'Difficult People',
     subtitle: 'On boundaries without guilt, distinguishing empathy from excusing, and preserving inner peace.',
     accent: '#8a3c10', // Deep terracotta for admin
     bg: '#f0d9c9',
@@ -86,7 +113,7 @@ export const FIXED_LIBRARY_CATEGORIES = [
     key: 'COMMUNICATION',
     num: '06',
     title: 'Communication',
-    numLabel: '06 Communication (06 / 06)',
+    numLabel: 'Communication',
     subtitle: 'On honest conversation, speaking hard truths with gentle hands, and naming repeating patterns.',
     accent: '#334155', // Deep slate for admin
     bg: '#141314',
@@ -156,6 +183,9 @@ const DEFAULT_EDITORIAL_BLOCKS = [
 export default function AdminLibraryEditor() {
   const { addToast } = useToast();
 
+  // Active Sidebar Section Tab: 'universalTypography' | 'hero' | 'articles'
+  const [activeTab, setActiveTab] = useState('universalTypography');
+
   // Mode: 'catalog' (list & hero) OR 'studio' (full article block editor)
   const [isEditingArticle, setIsEditingArticle] = useState(false);
 
@@ -201,19 +231,155 @@ export default function AdminLibraryEditor() {
   // Delete Confirmation Modal State
   const [deleteConfirmArticle, setDeleteConfirmArticle] = useState(null);
 
-  // Fetch Hero Settings
+  // Universal Typography Studio State
+  const [typographySettings, setTypographySettings] = useState({
+    heroHeadingSize: 54,
+    heroShiftY: -35,
+    searchFontSize: 13,
+    searchMaxWidth: 260,
+    searchShiftY: -10,
+    marqueeFontSize: 16,
+    marqueeHeight: 52,
+    categoryWordSize: 110,
+    viewAllFontSize: 12,
+    articleTitleSize: 17,
+    articleMetaSize: 10,
+    articleCountSize: 11,
+    sphereSize: 320,
+  });
+  const [savingTypography, setSavingTypography] = useState(false);
+
+  // Fetch Hero & Typography Settings
   const fetchHeroSettings = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/library-settings/hero`);
+      const res = await fetch(`${API_URL}/api/library-settings`);
       if (res.ok) {
         const data = await res.json();
-        setHeroSettings({
-          headingText: data.headingText || 'What are you trying to *understand?*',
-          searchPlaceholder: data.searchPlaceholder || "Describe what you're navigating...",
-        });
+        if (data.hero) {
+          setHeroSettings({
+            headingText: data.hero.headingText || 'What are you trying to *understand?*',
+            searchPlaceholder: data.hero.searchPlaceholder || "Describe what you're navigating...",
+          });
+        }
+        if (data.typography) {
+          setTypographySettings({
+            heroHeadingSize: data.typography.heroHeadingSize ?? 54,
+            heroShiftY: data.typography.heroShiftY ?? -35,
+            searchFontSize: data.typography.searchFontSize ?? 13,
+            searchMaxWidth: data.typography.searchMaxWidth ?? 260,
+            searchShiftY: data.typography.searchShiftY ?? -10,
+            marqueeFontSize: data.typography.marqueeFontSize ?? 16,
+            marqueeHeight: data.typography.marqueeHeight ?? 52,
+            categoryWordSize: data.typography.categoryWordSize ?? 110,
+            viewAllFontSize: data.typography.viewAllFontSize ?? 12,
+            articleTitleSize: data.typography.articleTitleSize ?? 17,
+            articleMetaSize: data.typography.articleMetaSize ?? 10,
+            articleCountSize: data.typography.articleCountSize ?? 11,
+            sphereSize: data.typography.sphereSize ?? 320,
+          });
+        }
       }
     } catch (err) {
-      console.error('Failed to fetch hero settings', err);
+      console.error('Failed to fetch library settings', err);
+    }
+  };
+
+  // One-Click Typography Presets
+  const applyTypographyPreset = (preset) => {
+    if (preset === 'compact') {
+      setTypographySettings({
+        heroHeadingSize: 42,
+        heroShiftY: -20,
+        searchFontSize: 12,
+        searchMaxWidth: 240,
+        searchShiftY: -5,
+        marqueeFontSize: 14,
+        marqueeHeight: 44,
+        categoryWordSize: 85,
+        viewAllFontSize: 11,
+        articleTitleSize: 15,
+        articleMetaSize: 9,
+        articleCountSize: 10,
+        sphereSize: 260,
+      });
+      addToast('Applied Compact Preset', 'info');
+    } else if (preset === 'balanced') {
+      setTypographySettings({
+        heroHeadingSize: 54,
+        heroShiftY: -35,
+        searchFontSize: 13,
+        searchMaxWidth: 260,
+        searchShiftY: -10,
+        marqueeFontSize: 16,
+        marqueeHeight: 52,
+        categoryWordSize: 110,
+        viewAllFontSize: 12,
+        articleTitleSize: 17,
+        articleMetaSize: 10,
+        articleCountSize: 11,
+        sphereSize: 320,
+      });
+      addToast('Applied Balanced Preset (Default)', 'info');
+    } else if (preset === 'editorial') {
+      setTypographySettings({
+        heroHeadingSize: 64,
+        heroShiftY: -40,
+        searchFontSize: 14,
+        searchMaxWidth: 300,
+        searchShiftY: -15,
+        marqueeFontSize: 18,
+        marqueeHeight: 58,
+        categoryWordSize: 128,
+        viewAllFontSize: 13,
+        articleTitleSize: 19,
+        articleMetaSize: 10.5,
+        articleCountSize: 12,
+        sphereSize: 350,
+      });
+      addToast('Applied Bold Editorial Preset', 'info');
+    } else if (preset === 'ultra') {
+      setTypographySettings({
+        heroHeadingSize: 72,
+        heroShiftY: -50,
+        searchFontSize: 15,
+        searchMaxWidth: 340,
+        searchShiftY: -20,
+        marqueeFontSize: 20,
+        marqueeHeight: 64,
+        categoryWordSize: 145,
+        viewAllFontSize: 14,
+        articleTitleSize: 21,
+        articleMetaSize: 11,
+        articleCountSize: 13,
+        sphereSize: 380,
+      });
+      addToast('Applied Ultra Impact Preset', 'info');
+    }
+  };
+
+  // Save Typography Settings
+  const handleSaveTypography = async () => {
+    setSavingTypography(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/library-settings/typography`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(typographySettings),
+      });
+      if (res.ok) {
+        addToast('⚡ Library Typography settings saved successfully!', 'success');
+      } else {
+        addToast('Failed to save typography settings', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to save typography settings', err);
+      addToast('Error saving typography settings', 'error');
+    } finally {
+      setSavingTypography(false);
     }
   };
 
@@ -735,9 +901,71 @@ export default function AdminLibraryEditor() {
             </div>
           </div>
 
-          <div className="max-w-7xl mx-auto px-6 sm:px-10 mt-8 flex flex-col gap-10">
-            {/* HERO HEADING & SEARCH BAR TEXT EDITOR */}
-            <div className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
+          {/* Main Layout: Left Sidebar + Right Editor Body */}
+          <div className="flex-1 flex flex-col md:flex-row w-full max-w-[1600px] mx-auto items-start">
+            
+            {/* ─── LEFT SIDEBAR TABS (STICKY) ─── */}
+            <aside className="w-full md:w-72 lg:w-80 bg-[#faf7f0] border-r border-stone-200 p-4 lg:p-6 shrink-0 flex flex-col gap-2 md:sticky md:top-[73px] md:h-[calc(100vh-100px)] md:overflow-y-auto custom-scrollbar">
+              <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-stone-500 px-3 py-1">
+                PAGE SECTIONS
+              </span>
+
+              <div className="flex flex-col gap-1.5 mt-1">
+                {LIBRARY_SIDEBAR_TABS.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-start gap-3.5 p-3.5 rounded-xl text-left transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#c9542f]/10 border-2 border-[#c9542f] text-stone-900 shadow-sm'
+                          : 'border border-transparent hover:bg-stone-200/50 text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      <div className={`mt-0.5 p-2 rounded-lg ${
+                        isActive ? 'bg-[#c9542f] text-white' : 'bg-stone-200 text-stone-700'
+                      }`}>
+                        {tab.icon}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className={`text-xs font-semibold uppercase tracking-wider truncate ${
+                            isActive ? 'text-[#c9542f]' : 'text-stone-900'
+                          }`}>
+                            {tab.label}
+                          </span>
+                          {tab.badge && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#c9542f]/15 text-[#c9542f]">
+                              {tab.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[0.72rem] text-stone-500 truncate mt-0.5">
+                          {tab.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-auto pt-6 border-t border-stone-200">
+                <div className="p-3.5 rounded-xl bg-[#f5f1e8] border border-stone-200 flex items-center gap-3 text-xs text-stone-600">
+                  <Info size={18} className="text-[#c9542f] shrink-0" />
+                  <span>All changes sync live to the Library frontend and database.</span>
+                </div>
+              </div>
+            </aside>
+
+            {/* ─── RIGHT CONTENT AREA ─── */}
+            <main className="flex-1 p-6 lg:p-10 w-full min-w-0">
+
+              {/* TAB 2: HERO SECTION (HEADER TEXTS & SEARCH BAR) */}
+              {activeTab === 'hero' && (
+                <div className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-stone-200">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-[#c9542f]/15 border border-[#c9542f]/30 flex items-center justify-center text-[#c9542f]">
@@ -820,9 +1048,396 @@ export default function AdminLibraryEditor() {
                 </div>
               </div>
             </div>
+          )}
 
-            {/* FIXED 6 CATEGORY SECTION TABS (NO ADD CATEGORY) */}
-            <div className="flex flex-col gap-6">
+          {/* TAB 1: UNIVERSAL FONT SIZE (TYPOGRAPHY & LAYOUT STUDIO) */}
+          {activeTab === 'universalTypography' && (
+            <div className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-stone-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#c9542f]/15 border border-[#c9542f]/30 flex items-center justify-center text-[#c9542f]">
+                    <Faders size={18} weight="bold" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-semibold text-stone-900 tracking-wide">
+                        Universal Typography & Layout Studio
+                      </h2>
+                      <span className="px-2 py-0.5 rounded-full bg-[#c9542f]/10 text-[10px] font-bold text-[#c9542f] uppercase tracking-wider">
+                        Live Sync
+                      </span>
+                    </div>
+                    <p className="text-xs text-stone-500">
+                      Adjust hero headline size, search bar proportions, ticker strip size, category card titles, and article fonts across the entire library.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleSaveTypography}
+                    disabled={savingTypography}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#c9542f] hover:bg-[#a64117] text-white font-semibold text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-[#c9542f]/20 disabled:opacity-50 cursor-pointer"
+                  >
+                    <FloppyDisk size={15} weight="bold" />
+                    {savingTypography ? 'Saving...' : 'Save Typography'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Presets Bar */}
+              <div className="py-4 border-b border-stone-100 flex flex-wrap items-center justify-between gap-3 bg-[#faf8f5] -mx-6 sm:-mx-8 px-6 sm:px-8">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-stone-600">
+                  <Sparkle size={14} className="text-[#c9542f]" weight="fill" />
+                  <span>One-Click Presets:</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => applyTypographyPreset('compact')}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-stone-400 text-stone-700 text-xs font-medium transition-colors cursor-pointer"
+                  >
+                    Compact & Subtle
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyTypographyPreset('balanced')}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-[#c9542f]/40 text-[#c9542f] text-xs font-semibold hover:bg-[#c9542f]/10 transition-colors cursor-pointer"
+                  >
+                    Balanced (Default)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyTypographyPreset('editorial')}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-stone-400 text-stone-700 text-xs font-medium transition-colors cursor-pointer"
+                  >
+                    Bold Editorial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyTypographyPreset('ultra')}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-stone-400 text-stone-700 text-xs font-medium transition-colors cursor-pointer"
+                  >
+                    Ultra Impact
+                  </button>
+                </div>
+              </div>
+
+              {/* Interactive Sliders Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
+                
+                {/* 1. Hero Section Group */}
+                <div className="p-4 rounded-xl bg-[#faf7f0] border border-stone-200 flex flex-col gap-4">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#c9542f] flex items-center gap-1.5">
+                    <TextT size={14} weight="bold" /> Hero Headline & Positioning
+                  </span>
+
+                  {/* Hero Heading Size */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Hero Headline Size</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.heroHeadingSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="32"
+                      max="80"
+                      value={typographySettings.heroHeadingSize}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, heroHeadingSize: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Hero Vertical Position (Shift Y) */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Hero Vertical Shift</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.heroShiftY}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-70"
+                      max="30"
+                      value={typographySettings.heroShiftY}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, heroShiftY: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Search Bar Group */}
+                <div className="p-4 rounded-xl bg-[#faf7f0] border border-stone-200 flex flex-col gap-4">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#c9542f] flex items-center gap-1.5">
+                    <MagnifyingGlass size={14} weight="bold" /> Search Bar Typography & Width
+                  </span>
+
+                  {/* Search Font Size */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Search Text Font Size</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.searchFontSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="11"
+                      max="20"
+                      value={typographySettings.searchFontSize}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, searchFontSize: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Search Bar Width */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Search Bar Max Width</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.searchMaxWidth}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="200"
+                      max="480"
+                      step="10"
+                      value={typographySettings.searchMaxWidth}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, searchMaxWidth: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Search Vertical Shift Y */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Search Vertical Shift</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.searchShiftY}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-40"
+                      max="30"
+                      value={typographySettings.searchShiftY}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, searchShiftY: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Marquee Ticker Group */}
+                <div className="p-4 rounded-xl bg-[#faf7f0] border border-stone-200 flex flex-col gap-4">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#c9542f] flex items-center gap-1.5">
+                    <Sparkle size={14} weight="bold" /> Marquee Ticker Strip
+                  </span>
+
+                  {/* Marquee Font Size */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Ticker Text Size</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.marqueeFontSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="12"
+                      max="26"
+                      value={typographySettings.marqueeFontSize}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, marqueeFontSize: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Marquee Height */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Ticker Strip Height</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.marqueeHeight}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="36"
+                      max="74"
+                      value={typographySettings.marqueeHeight}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, marqueeHeight: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Giant Category Card Typography */}
+                <div className="p-4 rounded-xl bg-[#faf7f0] border border-stone-200 flex flex-col gap-4">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#c9542f] flex items-center gap-1.5">
+                    <BookOpen size={14} weight="bold" /> Category Card Titles
+                  </span>
+
+                  {/* Category Word Size */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Giant Category Word Size</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.categoryWordSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="60"
+                      max="160"
+                      value={typographySettings.categoryWordSize}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, categoryWordSize: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* View All Button Size */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>"VIEW ALL →" Font Size</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.viewAllFontSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="10"
+                      max="18"
+                      value={typographySettings.viewAllFontSize}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, viewAllFontSize: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* 5. Article Rows Typography */}
+                <div className="p-4 rounded-xl bg-[#faf7f0] border border-stone-200 flex flex-col gap-4">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#c9542f] flex items-center gap-1.5">
+                    <Article size={14} weight="bold" /> Article Rows Inside Cards
+                  </span>
+
+                  {/* Article Title Size */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Article Title Font Size</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.articleTitleSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="13"
+                      max="24"
+                      value={typographySettings.articleTitleSize}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, articleTitleSize: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Article Meta Size */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Metadata (Read time, Tag)</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.articleMetaSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="8"
+                      max="14"
+                      step="0.5"
+                      value={typographySettings.articleMetaSize}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, articleMetaSize: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Article Count Size */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Article Count Label</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.articleCountSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="9"
+                      max="16"
+                      value={typographySettings.articleCountSize}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, articleCountSize: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* 6. 3D Artwork Sphere Sizing */}
+                <div className="p-4 rounded-xl bg-[#faf7f0] border border-stone-200 flex flex-col gap-4">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#c9542f] flex items-center gap-1.5">
+                    <Sparkle size={14} weight="bold" /> 3D Artwork Sphere Size
+                  </span>
+
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-medium text-stone-700">
+                      <span>Plasma Sphere Diameter</span>
+                      <span className="font-mono font-bold text-stone-900">{typographySettings.sphereSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="200"
+                      max="420"
+                      step="10"
+                      value={typographySettings.sphereSize}
+                      onChange={(e) => setTypographySettings({ ...typographySettings, sphereSize: Number(e.target.value) })}
+                      className="w-full accent-[#c9542f] cursor-pointer"
+                    />
+                  </div>
+
+                  <p className="text-[11px] text-stone-500 mt-2">
+                    Controls the visual dimension of the 3D plasma sphere rendered in each category section.
+                  </p>
+                </div>
+              </div>
+
+              {/* Real-Time Live Preview Bar */}
+              <div
+                className="mt-6 p-5 bg-[#111010] text-[#f5f1e8] rounded-xl flex flex-col gap-3 overflow-hidden border border-black preserve-dark"
+                data-preserve-dark="true"
+              >
+                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#c9542f]">
+                  <span className="text-[#c9542f] font-bold">Live Typography Scale Preview</span>
+                  <span className="text-white/40 font-mono text-[10px]">Real-Time Rendering</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 items-center">
+                  <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+                    <span className="text-[10px] text-white/50 block uppercase font-mono mb-1">Hero Title:</span>
+                    <p
+                      className="font-serif leading-tight text-white font-normal"
+                      style={{ fontSize: `${Math.min(typographySettings.heroHeadingSize, 36)}px` }}
+                    >
+                      What are you trying to <em className="text-[#c9542f] italic">understand?</em>
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+                    <span className="text-[10px] text-white/50 block uppercase font-mono mb-1">Category Title:</span>
+                    <p
+                      className="font-black uppercase tracking-tight text-white leading-none font-sans"
+                      style={{ fontSize: `${Math.min(typographySettings.categoryWordSize, 38)}px` }}
+                    >
+                      RELATIONSHIPS
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+                    <span className="text-[10px] text-white/50 block uppercase font-mono mb-1">Article Title & Meta:</span>
+                    <p
+                      className="font-serif text-white/90 leading-tight"
+                      style={{ fontSize: `${typographySettings.articleTitleSize}px` }}
+                    >
+                      On Saying What Matters
+                    </p>
+                      <span
+                        className="text-white/50 uppercase font-mono mt-1 block"
+                        style={{ fontSize: `${typographySettings.articleMetaSize}px` }}
+                      >
+                        6 MIN READ • ARTICLE
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: UPLOAD ARTICLES (CATEGORY SECTIONS & ARTICLE STUDIO) */}
+            {activeTab === 'articles' && (
+              <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-1.5">
                 <h2 className="font-serif text-2xl text-stone-900 font-normal">
                   Category Sections & Article Studio
@@ -1078,9 +1693,11 @@ export default function AdminLibraryEditor() {
                 )}
               </div>
             </div>
-          </div>
-        </>
-      ) : (
+          )}
+        </main>
+      </div>
+    </>
+  ) : (
         /* =========================================================================
             VIEW 2: FULL-PAGE ARTICLE STUDIO (STEP 1 & STEP 2 BLOCK BUILDER)
            ========================================================================= */

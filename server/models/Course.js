@@ -38,6 +38,15 @@ const courseSchema = new mongoose.Schema({
     default: 'Valued at ₹15,000 — 100% Complimentary student bonus',
     trim: true,
   },
+  includeFreeSessions: {
+    type: Boolean,
+    default: true,
+  },
+  freeSessionsCount: {
+    type: Number,
+    default: 3,
+    min: 0,
+  },
   description: {
     type: String,
     default: '',

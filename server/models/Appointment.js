@@ -105,6 +105,8 @@ const appointmentSchema = new mongoose.Schema({
     default: null,
   },
   rescheduleRequest: {
+    originalDate: String,
+    originalTime: String,
     date: String,
     time: String,
     reason: String,

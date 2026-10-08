@@ -212,7 +212,7 @@ export default function AdminOverview() {
             <p className="sub" style={{ margin: 0 }}>Immediate coaching schedule for today.</p>
           </div>
           <Link to="/appointments" className="bwa-btn sm">
-            View all appointments →
+            View Clients & Sessions →
           </Link>
         </div>
 
@@ -246,7 +246,7 @@ export default function AdminOverview() {
                     </td>
                     <td>
                       <Link to="/appointments" className="bwa-btn sm">
-                        Open in Appointments
+                        Open in Clients & Sessions
                       </Link>
                     </td>
                   </tr>

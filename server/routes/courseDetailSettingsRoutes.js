@@ -36,6 +36,8 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
       'Lifetime access with all future updates'
     ],
     facts: [['8', 'Modules'], ['3 Free', '1-on-1 Sessions']],
+    includeFreeSessions: true,
+    freeSessionsCount: 3,
     price: '₹15,000',
     was: '₹25,000',
     enableGst: true,

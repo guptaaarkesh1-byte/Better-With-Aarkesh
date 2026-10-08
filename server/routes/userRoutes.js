@@ -408,8 +408,16 @@ router.post('/change-password', protect, async (req, res) => {
 
     // Hash new password
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    user.password = hashedPassword;
     await user.save();
+
+    // Also sync to CourseUser if exists
+    if (user.email) {
+      const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      await CourseUser.updateMany({ email: emailRegex }, { password: hashedPassword });
+      console.log(`🔄 Synced user change-password to CourseUser for: ${user.email}`);
+    }
 
     res.json({ message: 'Password updated successfully' });
   } catch (error) {

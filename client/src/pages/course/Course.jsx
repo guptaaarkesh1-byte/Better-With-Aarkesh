@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
 import PolicyModal from '../../components/ui/PolicyModal';
+import { clearAllAuth, syncLoginData, isAnyUserLoggedIn } from '../../utils/authSync';
+import { COUNTRY_CODES } from '../../utils/countryCodes';
 import { 
   Play, 
   CheckCircle, 
@@ -314,15 +316,32 @@ export default function Course() {
   useEffect(() => {
     syncProfile();
     const handleFocus = () => syncProfile();
-    const handleStorage = (e) => {
-      if (e.key === 'freeSessions' || e.key === 'courseUser') {
+    const handleAuthEvent = () => {
+      const hasAuth = isAnyUserLoggedIn();
+      const isPurchasedStored = localStorage.getItem('isCoursePurchased') === 'true';
+      setIsLoggedIn(hasAuth);
+      setIsPurchased(isPurchasedStored);
+      if (!hasAuth) {
+        setShowDashboard(false);
+        setShowCheckout(false);
+        setShowProfileMenu(false);
+      } else {
         syncProfile();
       }
     };
+    const handleStorage = (e) => {
+      if (e.key === 'freeSessions' || e.key === 'courseUser' || e.key === 'token' || e.key === 'courseToken') {
+        handleAuthEvent();
+      }
+    };
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('auth-change', handleAuthEvent);
+    window.addEventListener('course-auth-change', handleAuthEvent);
     window.addEventListener('storage', handleStorage);
     return () => {
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('auth-change', handleAuthEvent);
+      window.removeEventListener('course-auth-change', handleAuthEvent);
       window.removeEventListener('storage', handleStorage);
     };
   }, [syncProfile]);
@@ -334,11 +353,13 @@ export default function Course() {
   // Auth Form State
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
   // OTP & Forgot Password State
@@ -408,6 +429,16 @@ export default function Course() {
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }, 120);
   }, [navigate]);
+  const getUserCourseKey = (suffix) => {
+    try {
+      const u = JSON.parse(localStorage.getItem('courseUser') || localStorage.getItem('userInfo') || '{}');
+      const id = u.email ? u.email.toLowerCase().trim().replace(/[^a-z0-9]/g, '_') : (u._id || 'guest');
+      return `bwa_u_${id}_${suffix}`;
+    } catch {
+      return `bwa_u_guest_${suffix}`;
+    }
+  };
+
   const [curriculumModules, setCurriculumModules] = useState(() => {
     try {
       const cached = sessionStorage.getItem('bwa_curriculum_cache_' + (slug || 'better-man'));
@@ -433,7 +464,7 @@ export default function Course() {
       const cached = sessionStorage.getItem('bwa_curriculum_cache_' + (slug || 'better-man'));
       if (cached) {
         const parsed = JSON.parse(cached);
-        const lastId = localStorage.getItem('lastActiveCourseLessonId');
+        const lastId = localStorage.getItem(getUserCourseKey('lastActiveCourseLessonId'));
         if (Array.isArray(parsed) && parsed.length > 0) {
           if (lastId) {
             for (const mod of parsed) {
@@ -480,7 +511,7 @@ export default function Course() {
       setResumePrompt(null);
       return;
     }
-    const saved = Number(localStorage.getItem(`bwa_lesson_progress_${lesId}`)) || 0;
+    const saved = Number(localStorage.getItem(getUserCourseKey(`lesson_progress_${lesId}`))) || 0;
     if (saved > 6) {
       const mins = Math.floor(saved / 60);
       const secs = Math.floor(saved % 60);
@@ -510,7 +541,7 @@ export default function Course() {
     }
     const lesId = activeLesson?._id || activeLesson?.id;
     if (lesId) {
-      localStorage.removeItem(`bwa_lesson_progress_${lesId}`);
+      localStorage.removeItem(getUserCourseKey(`lesson_progress_${lesId}`));
     }
     setResumePrompt(null);
   };
@@ -672,62 +703,105 @@ export default function Course() {
     }
   });
 
-  const [landingSettings, setLandingSettings] = useState({
-    hero: {
-      tag: 'Learn. Practise. Lead.',
-      headingPrefix: 'THE',
-      headingSelected: 'BETTER',
-      headingSuffix: 'MAN',
-      subheading: 'Masterclasses in calm authority, magnetic communication and self-command, taught by Aarkesh.',
-      proof1Bold: '3 private',
-      proof1Text: '1-on-1 sessions with Aarkesh',
-      proof2Bold: 'Lifetime',
-      proof2Text: 'access, no recurring charges',
-      primaryBtnText: 'Register Now',
-      showPrimaryBtn: true,
-      secondaryBtnText: 'Check Course',
-      secondaryBtnLink: '/course/better-man',
-      showSecondaryBtn: true,
-      navBtnText: 'Check Course',
-      navBtnLink: '/course/better-man',
-      showNavBtn: true,
-      bgImageUrl: '',
-      overlayOpacity: 40
-    },
-    moreCourses: {
-      eyebrowText: 'MORE MASTERCLASSES',
-      heading: 'More Masterclasses',
-      subheading: 'Each one is a standalone course with its own private sessions.',
-      viewAllBtnText: 'View All Masterclasses',
-      showViewAllBtn: true
-    },
-    allCoursesPage: {
-      tag: 'ALL PROGRAMS',
-      heading: 'All Masterclasses & Programs',
-      subheading: 'Each masterclass is an intensive, transformative curriculum paired with private 1-on-1 mentorship sessions with Aarkesh.',
-      backBtnText: '← Back to overview'
-    },
-    faq: {
-      tag: 'FAQS',
-      heading: 'Frequently Asked Questions From Our Students',
-      subheading: 'Clear answers about the masterclass, private mentorship, and enrollment.',
-      items: [
-        { question: 'How long do I have access to the course materials?', answer: 'You get lifetime access to all masterclass modules, downloadable resources, and all future updates with no recurring charges.' },
-        { question: 'How do the 3 private 1-on-1 sessions work?', answer: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
-        { question: 'Is this course suitable for professionals and introverts?', answer: 'Yes. The curriculum is specifically designed for professionals, entrepreneurs, and introverts who want to develop natural, calm authority without acting loud or fake.' },
-        { question: 'Is there a certificate provided upon completion?', answer: 'Yes. Upon completing all modules and your private sessions, you will receive an official Certificate of Completion signed by Aarkesh.' }
-      ]
-    },
-    cta: {
-      label: 'ENROLL TODAY',
-      heading: 'Ready To Become The Man People Trust?',
-      description: 'Master the psychology of calm authority, magnetic communication and effortless self-command with lifetime curriculum access and 3 private 1-on-1 coaching sessions.',
-      badge1: '3 Private Coaching Calls',
-      badge2: 'Lifetime Video Access',
-      primaryBtnText: 'Register Now',
-      exploreBtnText: 'Explore Courses',
-      bgImageUrl: ''
-    }
+  const [landingSettings, setLandingSettings] = useState(() => {
+    const defaultSettings = {
+      hero: {
+        tag: 'Learn. Practise. Lead.',
+        tagSize: 14,
+        heading: 'THE *BETTER* MAN',
+        headingPrefix: 'THE',
+        headingSelected: 'BETTER',
+        headingSuffix: 'MAN',
+        headingSize: 56,
+        subheading: 'Masterclasses in calm authority, magnetic communication and self-command, taught by Aarkesh.',
+        subheadingSize: 18,
+        proof1Bold: '3 private',
+        proof1Text: '1-on-1 sessions with Aarkesh',
+        proof2Bold: 'Lifetime',
+        proof2Text: 'access, no recurring charges',
+        proofSize: 13,
+        primaryBtnText: 'Register Now',
+        showPrimaryBtn: true,
+        secondaryBtnText: 'Check Course',
+        secondaryBtnLink: '/course/better-man',
+        showSecondaryBtn: true,
+        navBtnText: 'Check Course',
+        navBtnLink: '/course/better-man',
+        showNavBtn: true,
+        buttonSize: 14,
+        bgImageUrl: '',
+        overlayOpacity: 40
+      },
+      moreCourses: {
+        eyebrowText: 'MORE MASTERCLASSES',
+        eyebrowSize: 14,
+        heading: 'More Masterclasses',
+        headingSize: 44,
+        subheading: 'Each one is a standalone course with its own private sessions.',
+        subheadingSize: 16,
+        viewAllBtnText: 'View All Masterclasses',
+        showViewAllBtn: true,
+        buttonSize: 14,
+      },
+      allCoursesPage: {
+        tag: 'ALL PROGRAMS',
+        tagSize: 14,
+        heading: 'All Masterclasses & Programs',
+        headingSize: 48,
+        subheading: 'Each masterclass is an intensive, transformative curriculum paired with private 1-on-1 mentorship sessions with Aarkesh.',
+        subheadingSize: 16,
+        backBtnText: '← Back to overview',
+        buttonSize: 14,
+      },
+      faq: {
+        tag: 'FAQS',
+        tagSize: 14,
+        heading: 'Frequently Asked Questions From Our Students',
+        headingSize: 40,
+        subheading: 'Clear answers about the masterclass, private mentorship, and enrollment.',
+        subheadingSize: 16,
+        questionSize: 17,
+        answerSize: 15,
+        items: [
+          { question: 'How long do I have access to the course materials?', answer: 'You get lifetime access to all masterclass modules, downloadable resources, and all future updates with no recurring charges.' },
+          { question: 'How do the 3 private 1-on-1 sessions work?', answer: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
+          { question: 'Is this course suitable for professionals and introverts?', answer: 'Yes. The curriculum is specifically designed for professionals, entrepreneurs, and introverts who want to develop natural, calm authority without acting loud or fake.' },
+          { question: 'Is there a certificate provided upon completion?', answer: 'Yes. Upon completing all modules and your private sessions, you will receive an official Certificate of Completion signed by Aarkesh.' }
+        ]
+      },
+      cta: {
+        label: 'ENROLL TODAY',
+        labelSize: 14,
+        heading: 'Ready To Become The Man People Trust?',
+        headingSize: 48,
+        description: 'Master the psychology of calm authority, magnetic communication and effortless self-command with lifetime curriculum access and 3 private 1-on-1 coaching sessions.',
+        descriptionSize: 17,
+        badge1: '3 Private Coaching Calls',
+        badge2: 'Lifetime Video Access',
+        badgeSize: 13,
+        primaryBtnText: 'Register Now',
+        exploreBtnText: 'Explore Courses',
+        buttonSize: 15,
+        bgImageUrl: ''
+      }
+    };
+
+    try {
+      const cached = localStorage.getItem('bwa_course_landing_settings_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return {
+          ...defaultSettings,
+          ...parsed,
+          hero: { ...defaultSettings.hero, ...(parsed?.hero || {}) },
+          moreCourses: { ...defaultSettings.moreCourses, ...(parsed?.moreCourses || {}) },
+          allCoursesPage: { ...defaultSettings.allCoursesPage, ...(parsed?.allCoursesPage || {}) },
+          faq: { ...defaultSettings.faq, ...(parsed?.faq || {}) },
+          cta: { ...defaultSettings.cta, ...(parsed?.cta || {}) },
+        };
+      }
+    } catch {}
+    return defaultSettings;
   });
 
   const allLessons = curriculumModules.flatMap((m) => (m.lessons || []).map((l) => ({ ...l, module: m })));
@@ -948,15 +1022,21 @@ export default function Course() {
         if (res.ok) {
           const data = await res.json();
           if (data && typeof data === 'object') {
-            setLandingSettings((prev) => ({
-              ...prev,
-              ...data,
-              hero: { ...(prev?.hero || {}), ...(data?.hero || {}) },
-              moreCourses: { ...(prev?.moreCourses || {}), ...(data?.moreCourses || {}) },
-              allCoursesPage: { ...(prev?.allCoursesPage || {}), ...(data?.allCoursesPage || {}) },
-              faq: { ...(prev?.faq || {}), ...(data?.faq || {}) },
-              cta: { ...(prev?.cta || {}), ...(data?.cta || {}) },
-            }));
+            setLandingSettings((prev) => {
+              const updated = {
+                ...prev,
+                ...data,
+                hero: { ...(prev?.hero || {}), ...(data?.hero || {}) },
+                moreCourses: { ...(prev?.moreCourses || {}), ...(data?.moreCourses || {}) },
+                allCoursesPage: { ...(prev?.allCoursesPage || {}), ...(data?.allCoursesPage || {}) },
+                faq: { ...(prev?.faq || {}), ...(data?.faq || {}) },
+                cta: { ...(prev?.cta || {}), ...(data?.cta || {}) },
+              };
+              try {
+                localStorage.setItem('bwa_course_landing_settings_cache', JSON.stringify(updated));
+              } catch {}
+              return updated;
+            });
           }
         }
       } catch (err) {
@@ -1063,15 +1143,15 @@ export default function Course() {
         ],
         hl: [
           ["Build Real Presence", "(Not Just Theory)"],
-          ["3 Private Sessions", "with Aarkesh"]
+          ["5 Private Sessions", "with Aarkesh"]
         ],
         inside: [
           "8 HD video modules & frameworks",
           "Downloadable workbooks and mental models",
-          "3 private 1-on-1 coaching sessions with Aarkesh",
+          "5 private 1-on-1 coaching sessions with Aarkesh",
           "Lifetime access with all future updates"
         ],
-        facts: [["8", "Modules"], ["3 Free", "1-on-1 Sessions"]],
+        facts: [["8", "Modules"], ["5 Free", "1-on-1 Sessions"]],
         price: `₹${basePrice.toLocaleString('en-IN')}`,
         was: `₹${comparePrice.toLocaleString('en-IN')}`,
         cta: "Check Course",
@@ -1108,9 +1188,47 @@ export default function Course() {
       .map(item => {
         const dynamicCourse = courseDetailsMap[item.slug];
         if (!dynamicCourse) return item;
+
+        const includeFree = dynamicCourse.includeFreeSessions !== undefined 
+          ? Boolean(dynamicCourse.includeFreeSessions) 
+          : (dynamicCourse.pricingSection?.includeFreeSessions !== undefined ? Boolean(dynamicCourse.pricingSection.includeFreeSessions) : true);
+
+        const freeCount = dynamicCourse.freeSessionsCount !== undefined 
+          ? Number(dynamicCourse.freeSessionsCount) 
+          : (dynamicCourse.pricingSection?.freeSessionsCount !== undefined ? Number(dynamicCourse.pricingSection.freeSessionsCount) : 5);
+
+        const effectiveFreeCount = includeFree ? freeCount : 0;
+
+        const rawInside = dynamicCourse.inside || item.inside || [];
+        const dynamicInside = rawInside.map(str => {
+          if (typeof str === 'string' && str.toLowerCase().includes('private 1-on-1')) {
+            return effectiveFreeCount > 0 
+              ? `${effectiveFreeCount} private 1-on-1 coaching sessions with Aarkesh`
+              : 'Direct instructor Q&A with lifetime updates';
+          }
+          return str;
+        });
+
+        const rawHl = dynamicCourse.hl || item.hl || [];
+        const dynamicHl = rawHl.map(pair => {
+          if (Array.isArray(pair) && pair[0] && typeof pair[0] === 'string' && pair[0].toLowerCase().includes('private session')) {
+            return effectiveFreeCount > 0 
+              ? [`${effectiveFreeCount} Private Session${effectiveFreeCount > 1 ? 's' : ''}`, pair[1] || 'with Aarkesh']
+              : ['Direct Q&A Access', 'with Aarkesh'];
+          }
+          return pair;
+        });
+
+        const dynamicFacts = dynamicCourse.facts || [
+          ["8", "Modules"],
+          effectiveFreeCount > 0 ? [`${effectiveFreeCount} Free`, "1-on-1 Sessions"] : ["Direct", "Q&A Access"]
+        ];
+
         return {
           ...item,
           ...dynamicCourse,
+          includeFreeSessions: includeFree,
+          freeSessionsCount: effectiveFreeCount,
           theme: dynamicCourse.theme || dynamicCourse.cardTheme || dynamicCourse.heroSection?.cardTheme || item.theme,
           enableGst: dynamicCourse.enableGst !== undefined ? dynamicCourse.enableGst : dynamicCourse.pricingSection?.enableGst ?? item.enableGst,
           gstRate: dynamicCourse.gstRate !== undefined ? dynamicCourse.gstRate : dynamicCourse.pricingSection?.gstRate ?? item.gstRate,
@@ -1121,8 +1239,9 @@ export default function Course() {
           was: dynamicCourse.was || (dynamicCourse.pricingSection?.originalPrice ? `₹${Number(dynamicCourse.pricingSection.originalPrice).toLocaleString('en-IN')}` : item.was),
           writeup: { ...(item.writeup || {}), ...(dynamicCourse.writeup || {}) },
           syllabus: dynamicCourse.syllabus || item.syllabus,
-          inside: dynamicCourse.inside || item.inside,
-          hl: dynamicCourse.hl || item.hl,
+          inside: dynamicInside,
+          hl: dynamicHl,
+          facts: dynamicFacts,
           chips: dynamicCourse.chips || item.chips,
           sidebarChips: dynamicCourse.sidebarChips || item.sidebarChips
         };
@@ -1156,9 +1275,46 @@ export default function Course() {
     const foundInList = coursesList.find((c) => c.slug === slug);
     if (courseDetailsMap && courseDetailsMap[slug]) {
       const dynamicCourse = courseDetailsMap[slug];
+      const includeFree = dynamicCourse.includeFreeSessions !== undefined 
+        ? Boolean(dynamicCourse.includeFreeSessions) 
+        : (dynamicCourse.pricingSection?.includeFreeSessions !== undefined ? Boolean(dynamicCourse.pricingSection.includeFreeSessions) : true);
+
+      const freeCount = dynamicCourse.freeSessionsCount !== undefined 
+        ? Number(dynamicCourse.freeSessionsCount) 
+        : (dynamicCourse.pricingSection?.freeSessionsCount !== undefined ? Number(dynamicCourse.pricingSection.freeSessionsCount) : (foundInList?.freeSessionsCount ?? 5));
+
+      const effectiveFreeCount = includeFree ? freeCount : 0;
+
+      const rawInside = dynamicCourse.inside || foundInList?.inside || [];
+      const dynamicInside = rawInside.map(str => {
+        if (typeof str === 'string' && str.toLowerCase().includes('private 1-on-1')) {
+          return effectiveFreeCount > 0 
+            ? `${effectiveFreeCount} private 1-on-1 coaching sessions with Aarkesh`
+            : 'Direct instructor Q&A with lifetime updates';
+        }
+        return str;
+      });
+
+      const rawHl = dynamicCourse.hl || foundInList?.hl || [];
+      const dynamicHl = rawHl.map(pair => {
+        if (Array.isArray(pair) && pair[0] && typeof pair[0] === 'string' && pair[0].toLowerCase().includes('private session')) {
+          return effectiveFreeCount > 0 
+            ? [`${effectiveFreeCount} Private Session${effectiveFreeCount > 1 ? 's' : ''}`, pair[1] || 'with Aarkesh']
+            : ['Direct Q&A Access', 'with Aarkesh'];
+        }
+        return pair;
+      });
+
+      const dynamicFacts = dynamicCourse.facts || foundInList?.facts || [
+        ["8", "Modules"],
+        effectiveFreeCount > 0 ? [`${effectiveFreeCount} Free`, "1-on-1 Sessions"] : ["Direct", "Q&A Access"]
+      ];
+
       return {
         ...(foundInList || {}),
         ...dynamicCourse,
+        includeFreeSessions: includeFree,
+        freeSessionsCount: effectiveFreeCount,
         theme: dynamicCourse.theme || dynamicCourse.cardTheme || dynamicCourse.heroSection?.cardTheme || foundInList?.theme || 'roy',
         cardTheme: dynamicCourse.cardTheme || dynamicCourse.theme || dynamicCourse.heroSection?.cardTheme || foundInList?.cardTheme,
         enableGst: dynamicCourse.enableGst !== undefined ? dynamicCourse.enableGst : dynamicCourse.pricingSection?.enableGst ?? foundInList?.enableGst,
@@ -1168,8 +1324,9 @@ export default function Course() {
           : (dynamicCourse.pricingSection?.gstMode ? dynamicCourse.pricingSection.gstMode === 'included' : foundInList?.isGstIncluded),
         writeup: { ...(foundInList?.writeup || {}), ...(dynamicCourse.writeup || {}) },
         syllabus: dynamicCourse.syllabus || foundInList?.syllabus,
-        inside: dynamicCourse.inside || foundInList?.inside,
-        hl: dynamicCourse.hl || foundInList?.hl,
+        inside: dynamicInside,
+        hl: dynamicHl,
+        facts: dynamicFacts,
         chips: dynamicCourse.chips || foundInList?.chips,
         sidebarChips: dynamicCourse.sidebarChips || foundInList?.sidebarChips
       };
@@ -1248,6 +1405,20 @@ export default function Course() {
     if (activeCourse?.slug === 'decisions') return 6999;
     return comparePrice;
   }, [activeCourse, comparePrice]);
+
+  const activeCourseDynamicFreeCount = useMemo(() => {
+    const includeFree = activeCourse?.includeFreeSessions !== undefined 
+      ? Boolean(activeCourse.includeFreeSessions) 
+      : (activeCourse?.pricingSection?.includeFreeSessions !== undefined ? Boolean(activeCourse.pricingSection.includeFreeSessions) : true);
+
+    if (!includeFree) return 0;
+
+    const freeVal = activeCourse?.freeSessionsCount !== undefined 
+      ? Number(activeCourse.freeSessionsCount) 
+      : (activeCourse?.pricingSection?.freeSessionsCount !== undefined ? Number(activeCourse.pricingSection.freeSessionsCount) : 5);
+
+    return isNaN(freeVal) ? 0 : Math.max(0, freeVal);
+  }, [activeCourse]);
 
   const currentGstRate = useMemo(() => {
     const isGstOn = activeCourse?.enableGst !== undefined 
@@ -1527,7 +1698,16 @@ export default function Course() {
               // Show success toast
               showToast('🎉 Payment Successful! Official Tax Invoice generated.');
 
-              const invoiceData = verifyData.purchase || {
+              const dynamicFreeCount = activeCourse?.freeSessionsCount !== undefined 
+                ? Number(activeCourse.freeSessionsCount) 
+                : (activeCourse?.pricingSection?.freeSessionsCount !== undefined ? Number(activeCourse.pricingSection.freeSessionsCount) : 5);
+
+              const invoiceData = verifyData.purchase ? {
+                ...verifyData.purchase,
+                freeSessionsGranted: verifyData.purchase.freeSessionsGranted !== undefined ? Number(verifyData.purchase.freeSessionsGranted) : dynamicFreeCount,
+                bonusItemTitle: dynamicFreeCount > 0 ? `${dynamicFreeCount} Private 1-on-1 Executive Coaching Sessions with Aarkesh` : 'Direct Instructor Q&A & Lifetime Updates',
+                bonusItemSubtitle: dynamicFreeCount > 0 ? `Valued at ₹${(dynamicFreeCount * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus` : 'Included with your enrollment'
+              } : {
                 status: 'Success',
                 transactionId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id,
@@ -1543,10 +1723,16 @@ export default function Course() {
                 courseTitle: activeCourse?.title || 'The Better Man™',
                 invoiceItemTitle: `${activeCourse?.title || 'The Better Man™'} — Masterclass Lifetime Access`,
                 invoiceItemSubtitle: 'HD video frameworks, modular curriculum, worksheets & community',
-                bonusItemTitle: '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
-                bonusItemSubtitle: 'Valued at ₹15,000 — 100% Complimentary student bonus',
-                freeSessionsGranted: 3
+                bonusItemTitle: dynamicFreeCount > 0 ? `${dynamicFreeCount} Private 1-on-1 Executive Coaching Sessions with Aarkesh` : 'Direct Instructor Q&A & Lifetime Updates',
+                bonusItemSubtitle: dynamicFreeCount > 0 ? `Valued at ₹${(dynamicFreeCount * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus` : 'Included with your enrollment',
+                freeSessionsGranted: dynamicFreeCount
               };
+
+              if (verifyData.freeSessions !== undefined) {
+                const count = Math.max(0, Number(verifyData.freeSessions));
+                setFreeSessionsRemaining(count);
+                localStorage.setItem('freeSessions', String(count));
+              }
 
               // Open invoice / success page directly
               setShowDashboard(false);
@@ -1631,7 +1817,8 @@ export default function Course() {
     if (token) {
       setIsLoggedIn(true);
       setIsPurchased(purchased);
-      if (purchased) {
+      const isLearnParam = searchParams.get('learn') === 'true';
+      if (purchased && isLearnParam) {
         setShowDashboard(true);
       }
       const userStr = localStorage.getItem('courseUser');
@@ -1699,10 +1886,7 @@ export default function Course() {
   }, [showDashboard]);
 
   const handleLogout = () => {
-    localStorage.removeItem('courseToken');
-    localStorage.removeItem('isCoursePurchased');
-    localStorage.removeItem('courseUser');
-    sessionStorage.removeItem('course_checkout_active');
+    clearAllAuth();
     setIsLoggedIn(false);
     setIsPurchased(false);
     setShowDashboard(false);
@@ -1736,25 +1920,88 @@ export default function Course() {
     setIsForgotOtpStep(false);
     setOtpValues(['', '', '', '']);
     setError('');
+    setFieldErrors({});
     setPassword('');
     setConfirmPassword('');
     setFullName('');
     setEmail('');
+    setCountryCode('+91');
     setPhoneNumber('');
   };
 
   // Auth Submit
   const handleAuthSubmit = async (e) => {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     setError('');
 
+    const cleanPhone = (phoneNumber || '').replace(/\D/g, '');
+    const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val || '').trim());
+    const errs = {};
+
     if (loginMode === 'register' && !isForgotPassword) {
-      if (password.length < 4) { setError('Password must be at least 4 characters long'); return; }
-      if (password !== confirmPassword) { setError('Passwords do not match'); return; }
-    } else if (isForgotPassword && isForgotOtpStep) {
-      if (password.length < 4) { setError('Password must be at least 4 characters long'); return; }
-      if (password !== confirmPassword) { setError('Passwords do not match'); return; }
+      if (!isOtpStep) {
+        if (!fullName.trim()) errs.fullName = true;
+        if (!email.trim() || !isValidEmail(email)) errs.email = true;
+        if (!cleanPhone || cleanPhone.length !== 10) errs.phoneNumber = true;
+        if (!password || password.length < 4) errs.password = true;
+        if (!confirmPassword || password !== confirmPassword) errs.confirmPassword = true;
+
+        if (Object.keys(errs).length > 0) {
+          setFieldErrors(errs);
+          if (Object.keys(errs).length >= 2) {
+            setError('Please fill in all required fields correctly');
+          } else if (errs.fullName) {
+            setError('Please enter your full name');
+          } else if (errs.email) {
+            setError(!email.trim() ? 'Please enter your email address' : 'Please enter a valid email address');
+          } else if (errs.phoneNumber) {
+            setError(!cleanPhone ? 'Please enter your mobile number' : 'Mobile number must be exactly 10 digits');
+          } else if (errs.password) {
+            setError(!password ? 'Please enter a password' : 'Password must be at least 4 characters long');
+          } else if (errs.confirmPassword) {
+            setError(!confirmPassword ? 'Please confirm your password' : 'Passwords do not match');
+          }
+          return;
+        }
+      } else {
+        if (otpValues.join('').length !== 4) {
+          errs.otp = true;
+          setFieldErrors(errs);
+          setError('Please enter the 4-digit OTP');
+          return;
+        }
+      }
+    } else if (loginMode === 'login' && !isForgotPassword) {
+      if (!email.trim() || !isValidEmail(email)) errs.email = true;
+      if (!password) errs.password = true;
+      if (Object.keys(errs).length > 0) {
+        setFieldErrors(errs);
+        setError('Please enter your email and password');
+        return;
+      }
+    } else if (isForgotPassword) {
+      if (!isForgotOtpStep) {
+        if (!email.trim() || !isValidEmail(email)) {
+          errs.email = true;
+          setFieldErrors(errs);
+          setError(!email.trim() ? 'Please enter your email address' : 'Please enter a valid email address');
+          return;
+        }
+      } else {
+        if (otpValues.join('').length !== 4) errs.otp = true;
+        if (!password || password.length < 4) errs.password = true;
+        if (!confirmPassword || password !== confirmPassword) errs.confirmPassword = true;
+        if (Object.keys(errs).length > 0) {
+          setFieldErrors(errs);
+          if (errs.otp) setError('Please enter the 4-digit OTP');
+          else if (errs.password) setError(!password ? 'Please enter a new password' : 'Password must be at least 4 characters long');
+          else if (errs.confirmPassword) setError(!confirmPassword ? 'Please confirm your new password' : 'Passwords do not match');
+          return;
+        }
+      }
     }
+
+    setFieldErrors({});
 
     setIsLoading(true);
     try {
@@ -1773,7 +2020,7 @@ export default function Course() {
       } else if (loginMode === 'register') {
         if (!isOtpStep) {
           endpoint = `${API_URL}/api/course-auth/register-init`;
-          body = { fullName, email, password, phoneNumber };
+          body = { fullName, email, password, countryCode, phoneNumber: cleanPhone };
         } else {
           endpoint = `${API_URL}/api/course-auth/register-verify`;
           body = { email, otp: otpValues.join('') };
@@ -1806,22 +2053,18 @@ export default function Course() {
           setIsOtpStep(true);
           setError('');
         } else {
-          localStorage.setItem('courseToken', data.token);
-          localStorage.setItem('courseUser', JSON.stringify(data));
+          syncLoginData(data);
           if (data.freeSessions !== undefined) {
             const count = Math.max(0, Number(data.freeSessions));
             setFreeSessionsRemaining(count);
-            localStorage.setItem('freeSessions', String(count));
           }
           const userSlugs = Array.isArray(data.purchasedCourses) && data.purchasedCourses.length > 0
             ? data.purchasedCourses
             : (data.isPurchased ? ['better-man'] : []);
           setPurchasedCourses(userSlugs);
           if (data.isPurchased && !isComingSoon) {
-            localStorage.setItem('isCoursePurchased', 'true');
             setIsPurchased(true);
           } else {
-            localStorage.removeItem('isCoursePurchased');
             setIsPurchased(false);
           }
           setShowDashboard(false);
@@ -2470,6 +2713,7 @@ export default function Course() {
               <button
                 type="button"
                 className="back-link"
+                style={{ fontSize: landingSettings?.allCoursesPage?.buttonSize ? `${landingSettings.allCoursesPage.buttonSize}px` : undefined }}
                 onClick={() => {
                   navigate('/course');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2479,9 +2723,9 @@ export default function Course() {
               </button>
 
               <div className="all-courses-hero">
-                <span className="tag">{renderCourseHeadline(landingSettings?.allCoursesPage?.tag || 'ALL PROGRAMS')}</span>
-                <h1>{renderCourseHeadline(landingSettings?.allCoursesPage?.heading || 'All Masterclasses & Programs')}</h1>
-                <p className="sub">
+                <span className="tag" style={{ fontSize: landingSettings?.allCoursesPage?.tagSize ? `${landingSettings.allCoursesPage.tagSize}px` : undefined }}>{renderCourseHeadline(landingSettings?.allCoursesPage?.tag || 'ALL PROGRAMS')}</span>
+                <h1 style={{ fontSize: landingSettings?.allCoursesPage?.headingSize ? `${landingSettings.allCoursesPage.headingSize}px` : undefined }}>{renderCourseHeadline(landingSettings?.allCoursesPage?.heading || 'All Masterclasses & Programs')}</h1>
+                <p className="sub" style={{ fontSize: landingSettings?.allCoursesPage?.subheadingSize ? `${landingSettings.allCoursesPage.subheadingSize}px` : undefined }}>
                   {landingSettings?.allCoursesPage?.subheading || 'Each masterclass is an intensive, transformative curriculum paired with private 1-on-1 mentorship sessions with Aarkesh.'}
                 </p>
               </div>
@@ -2558,8 +2802,15 @@ export default function Course() {
               } : {}}
             >
               <div className="wrap">
-                <p className="tag">{landingSettings?.hero?.tag || 'Learn. Practise. Lead.'}</p>
-                <h1>
+                <p 
+                  className="tag"
+                  style={{ fontSize: landingSettings?.hero?.tagSize ? `${landingSettings.hero.tagSize}px` : undefined }}
+                >
+                  {landingSettings?.hero?.tag || 'Learn. Practise. Lead.'}
+                </p>
+                <h1
+                  style={{ fontSize: landingSettings?.hero?.headingSize ? `${landingSettings.hero.headingSize}px` : undefined }}
+                >
                   {renderCourseHeadline(
                     landingSettings?.hero?.heading ||
                     (landingSettings?.hero?.headingPrefix
@@ -2567,24 +2818,57 @@ export default function Course() {
                       : 'THE *BETTER* MAN')
                   )}
                 </h1>
-                <p className="sub">
+                <p 
+                  className="sub"
+                  style={{ fontSize: landingSettings?.hero?.subheadingSize ? `${landingSettings.hero.subheadingSize}px` : undefined }}
+                >
                   {landingSettings?.hero?.subheading || 'Masterclasses in calm authority, magnetic communication and self-command, taught by Aarkesh.'}
                 </p>
-                <div className="proof">
+                <div 
+                  className="proof"
+                  style={{ fontSize: landingSettings?.hero?.proofSize ? `${landingSettings.hero.proofSize}px` : undefined }}
+                >
                   <span><b>{landingSettings?.hero?.proof1Bold || '3 private'}</b> {landingSettings?.hero?.proof1Text || '1-on-1 sessions with Aarkesh'}</span>
                   <span><b>{landingSettings?.hero?.proof2Bold || 'Lifetime'}</b> {landingSettings?.hero?.proof2Text || 'access, no recurring charges'}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
-                  {isPurchased ? (
+                  {hasAnyCoursePurchased ? (
                     <button 
                       type="button" 
                       className="btn" 
                       onClick={() => navigate('/my-course')}
-                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                      style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        gap: '8px',
+                        fontSize: landingSettings?.hero?.buttonSize ? `${landingSettings.hero.buttonSize}px` : undefined 
+                      }}
                     >
                       <BookOpen size={20} weight="fill" />
                       <span>My Course</span>
                       <span aria-hidden="true">→</span>
+                    </button>
+                  ) : isLoggedIn ? (
+                    <button 
+                      type="button" 
+                      className="btn" 
+                      onClick={() => {
+                        const link = landingSettings?.hero?.secondaryBtnLink || '/course/better-man';
+                        if (link.startsWith('#')) {
+                          const el = document.querySelector(link);
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        } else if (link.startsWith('http://') || link.startsWith('https://')) {
+                          window.location.href = link;
+                        } else {
+                          const targetPath = link.startsWith('/') ? link : `/course/${link}`;
+                          navigate(targetPath);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      style={{ fontSize: landingSettings?.hero?.buttonSize ? `${landingSettings.hero.buttonSize}px` : undefined }}
+                    >
+                      {landingSettings?.hero?.secondaryBtnText || 'Check Course'} <span aria-hidden="true">→</span>
                     </button>
                   ) : (
                     <>
@@ -2593,6 +2877,7 @@ export default function Course() {
                           type="button" 
                           className="btn" 
                           onClick={handleEnroll}
+                          style={{ fontSize: landingSettings?.hero?.buttonSize ? `${landingSettings.hero.buttonSize}px` : undefined }}
                         >
                           {landingSettings?.hero?.primaryBtnText || 'Register Now'} <span aria-hidden="true">→</span>
                         </button>
@@ -2602,21 +2887,23 @@ export default function Course() {
                           type="button" 
                           className="btn line" 
                           onClick={() => {
-                            const link = landingSettings?.hero?.secondaryBtnLink;
-                            if (link && link.startsWith('#')) {
+                            const link = landingSettings?.hero?.secondaryBtnLink || '/course/better-man';
+                            if (link.startsWith('#')) {
                               const el = document.querySelector(link);
                               if (el) el.scrollIntoView({ behavior: 'smooth' });
-                            } else if (link && !link.includes('better-man')) {
-                              navigate(link);
+                            } else if (link.startsWith('http://') || link.startsWith('https://')) {
+                              window.location.href = link;
                             } else {
-                              const betterMan = coursesList.find(c => c.slug === 'better-man') || coursesList[0];
-                              handleSelectCourse(betterMan);
+                              const targetPath = link.startsWith('/') ? link : `/course/${link}`;
+                              navigate(targetPath);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
                             }
                           }}
                           style={{
                             background: 'rgba(255, 255, 255, 0.06)',
                             border: '1px solid rgba(200, 120, 190, 0.4)',
-                            color: '#FFFFFF'
+                            color: '#FFFFFF',
+                            fontSize: landingSettings?.hero?.buttonSize ? `${landingSettings.hero.buttonSize}px` : undefined
                           }}
                         >
                           {landingSettings?.hero?.secondaryBtnText || 'Check Course'} <span aria-hidden="true">→</span>
@@ -2632,12 +2919,26 @@ export default function Course() {
             <section className="stack-sec" id="courses">
               <div className="stack">
                 {landingSettings?.moreCourses?.eyebrowText && (
-                  <p className="tag" style={{ textAlign: 'center', marginBottom: '8px' }}>
+                  <p 
+                    className="tag" 
+                    style={{ 
+                      textAlign: 'center', 
+                      marginBottom: '8px',
+                      fontSize: landingSettings?.moreCourses?.eyebrowSize ? `${landingSettings.moreCourses.eyebrowSize}px` : undefined 
+                    }}
+                  >
                     {renderCourseHeadline(landingSettings.moreCourses.eyebrowText)}
                   </p>
                 )}
-                <h2>{renderCourseHeadline(landingSettings?.moreCourses?.heading || 'More Masterclasses')}</h2>
-                <p className="lead">
+                <h2
+                  style={{ fontSize: landingSettings?.moreCourses?.headingSize ? `${landingSettings.moreCourses.headingSize}px` : undefined }}
+                >
+                  {renderCourseHeadline(landingSettings?.moreCourses?.heading || 'More Masterclasses')}
+                </h2>
+                <p 
+                  className="lead"
+                  style={{ fontSize: landingSettings?.moreCourses?.subheadingSize ? `${landingSettings.moreCourses.subheadingSize}px` : undefined }}
+                >
                   {landingSettings?.moreCourses?.subheading || 'Each one is a standalone course with its own private sessions.'}
                 </p>
                 <div className={`all-courses-grid ${coursesList.slice(0, 3).length === 1 ? 'single-course-centered' : ''}`}>
@@ -2721,6 +3022,7 @@ export default function Course() {
                         color: '#ffffff',
                         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                         cursor: 'pointer',
+                        fontSize: landingSettings?.moreCourses?.buttonSize ? `${landingSettings.moreCourses.buttonSize}px` : undefined,
                         transition: 'transform 0.25s ease, box-shadow 0.25s ease'
                       }}
                       onMouseEnter={(e) => {
@@ -2742,13 +3044,21 @@ export default function Course() {
             {/* ── FAQ Section ── */}
             <section className="faq center" id="faq">
               <div className="wrap">
-                <span className="label">
+                <span 
+                  className="label"
+                  style={{ fontSize: landingSettings?.faq?.tagSize ? `${landingSettings.faq.tagSize}px` : undefined }}
+                >
                   {landingSettings?.faq?.tag?.replace(/\*/g, '') || 'FAQS'}
                 </span>
-                <h2>
+                <h2
+                  style={{ fontSize: landingSettings?.faq?.headingSize ? `${landingSettings.faq.headingSize}px` : undefined }}
+                >
                   {renderCourseHeadline(landingSettings?.faq?.heading || 'Frequently Asked Questions From Our Students')}
                 </h2>
-                <p className="lead">
+                <p 
+                  className="lead"
+                  style={{ fontSize: landingSettings?.faq?.subheadingSize ? `${landingSettings.faq.subheadingSize}px` : undefined }}
+                >
                   {landingSettings?.faq?.subheading || 'Clear answers about the masterclass, private mentorship, and enrollment.'}
                 </p>
 
@@ -2757,20 +3067,29 @@ export default function Course() {
                     ? landingSettings.faq.items
                     : (courseFaqs && courseFaqs.length > 0 ? courseFaqs : [
                         { question: 'How long do I have access to the course materials?', answer: 'You get lifetime access to all masterclass modules, downloadable resources, and all future updates with no recurring charges.' },
-                        { question: 'How do the 3 private 1-on-1 sessions work?', answer: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
+                        { question: `How do the ${activeCourseDynamicFreeCount > 0 ? `${activeCourseDynamicFreeCount} ` : ''}private 1-on-1 sessions work?`, answer: 'Immediately after enrollment, you gain access to Aarkesh\'s private booking calendar. You can schedule each 1-on-1 session at dates and times that suit your schedule.' },
                         { question: 'Is this course suitable for professionals and introverts?', answer: 'Yes. The curriculum is specifically designed for professionals, entrepreneurs, and introverts who want to develop natural, calm authority without acting loud or fake.' },
                         { question: 'Is there a certificate provided upon completion?', answer: 'Yes. Upon completing all modules and your private sessions, you will receive an official Certificate of Completion signed by Aarkesh.' }
                       ])
                   ).map((f, idx) => (
                     <details className="a" key={idx} open={idx === 0}>
                       <summary>
-                        <span className="t font-serif">{f.question || f.q}</span>
+                        <span 
+                          className="t font-serif"
+                          style={{ fontSize: landingSettings?.faq?.questionSize ? `${landingSettings.faq.questionSize}px` : undefined }}
+                        >
+                          {f.question || f.q}
+                        </span>
                         <div className="faq-caret-circle">
                           <CaretDown size={17} weight="bold" />
                         </div>
                       </summary>
                       <div className="faq-answer-wrap">
-                        <p>{f.answer || f.a}</p>
+                        <p
+                          style={{ fontSize: landingSettings?.faq?.answerSize ? `${landingSettings.faq.answerSize}px` : undefined }}
+                        >
+                          {f.answer || f.a}
+                        </p>
                       </div>
                     </details>
                   ))}
@@ -2782,17 +3101,40 @@ export default function Course() {
             <section className="cta center">
               <div className="wrap">
                 <div className="cta-box">
-                  <span className="label" style={{ marginBottom: '16px' }}>{renderCourseHeadline(landingSettings?.cta?.label || 'ENROLL TODAY')}</span>
-                  <h2>{renderCourseHeadline(landingSettings?.cta?.heading || 'Ready To Become The Man People Trust?')}</h2>
-                  <p className="lead">
-                    {landingSettings?.cta?.description || 'Master the psychology of calm authority, magnetic communication and effortless self-command with lifetime curriculum access and 3 private 1-on-1 coaching sessions.'}
+                  <span 
+                    className="label" 
+                    style={{ 
+                      marginBottom: '16px',
+                      fontSize: landingSettings?.cta?.labelSize ? `${landingSettings.cta.labelSize}px` : undefined 
+                    }}
+                  >
+                    {renderCourseHeadline(landingSettings?.cta?.label || 'ENROLL TODAY')}
+                  </span>
+                  <h2
+                    style={{ fontSize: landingSettings?.cta?.headingSize ? `${landingSettings.cta.headingSize}px` : undefined }}
+                  >
+                    {renderCourseHeadline(landingSettings?.cta?.heading || 'Ready To Become The Man People Trust?')}
+                  </h2>
+                  <p 
+                    className="lead"
+                    style={{ fontSize: landingSettings?.cta?.descriptionSize ? `${landingSettings.cta.descriptionSize}px` : undefined }}
+                  >
+                    {landingSettings?.cta?.description || 'Master the psychology of calm authority, magnetic communication and effortless self-command with lifetime curriculum access and private 1-on-1 coaching sessions.'}
                   </p>
                   <div className="cta-badges">
                     {landingSettings?.cta?.badge1 && (
-                      <span><Users size={16} weight="fill" /> {landingSettings.cta.badge1}</span>
+                      <span
+                        style={{ fontSize: landingSettings?.cta?.badgeSize ? `${landingSettings.cta.badgeSize}px` : undefined }}
+                      >
+                        <Users size={16} weight="fill" /> {landingSettings.cta.badge1}
+                      </span>
                     )}
                     {landingSettings?.cta?.badge2 && (
-                      <span><Clock size={16} weight="fill" /> {landingSettings.cta.badge2}</span>
+                      <span
+                        style={{ fontSize: landingSettings?.cta?.badgeSize ? `${landingSettings.cta.badgeSize}px` : undefined }}
+                      >
+                        <Clock size={16} weight="fill" /> {landingSettings.cta.badge2}
+                      </span>
                     )}
                   </div>
                   <div>
@@ -2801,7 +3143,13 @@ export default function Course() {
                         type="button" 
                         className="btn" 
                         onClick={() => navigate('/my-course')}
-                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                        style={{ 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          gap: '8px',
+                          fontSize: landingSettings?.cta?.buttonSize ? `${landingSettings.cta.buttonSize}px` : undefined 
+                        }}
                       >
                         <BookOpen size={20} weight="fill" />
                         <span>My Course</span>
@@ -2815,11 +3163,17 @@ export default function Course() {
                           navigate('/course/all');
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
+                        style={{ fontSize: landingSettings?.cta?.buttonSize ? `${landingSettings.cta.buttonSize}px` : undefined }}
                       >
                         {landingSettings?.cta?.exploreBtnText || 'Explore Courses'} <span aria-hidden="true">→</span>
                       </button>
                     ) : (
-                      <button type="button" className="btn" onClick={handleEnroll}>
+                      <button 
+                        type="button" 
+                        className="btn" 
+                        onClick={handleEnroll}
+                        style={{ fontSize: landingSettings?.cta?.buttonSize ? `${landingSettings.cta.buttonSize}px` : undefined }}
+                      >
                         {landingSettings?.cta?.primaryBtnText || 'Register Now'} <span aria-hidden="true">→</span>
                       </button>
                     )}
@@ -3577,6 +3931,8 @@ export default function Course() {
         setFullName={setFullName}
         email={email}
         setEmail={setEmail}
+        countryCode={countryCode}
+        setCountryCode={setCountryCode}
         phoneNumber={phoneNumber}
         setPhoneNumber={setPhoneNumber}
         password={password}
@@ -3591,6 +3947,8 @@ export default function Course() {
         handleOtpKeyDown={handleOtpKeyDown}
         error={error}
         setError={setError}
+        fieldErrors={fieldErrors}
+        setFieldErrors={setFieldErrors}
         isLoading={isLoading}
         handleToggleMode={handleToggleMode}
         coursesList={coursesList}
@@ -3895,6 +4253,8 @@ function AuthModal({
   setFullName,
   email,
   setEmail,
+  countryCode = '+91',
+  setCountryCode,
   phoneNumber,
   setPhoneNumber,
   password,
@@ -3909,6 +4269,8 @@ function AuthModal({
   handleOtpKeyDown,
   error,
   setError,
+  fieldErrors = {},
+  setFieldErrors,
   isLoading,
   handleToggleMode,
   coursesList = [],
@@ -3942,7 +4304,7 @@ function AuthModal({
         inside: [
           '8 HD video modules',
           'Downloadable workbooks and frameworks',
-          '3 private 1-on-1 coaching sessions',
+          activeCourseDynamicFreeCount > 0 ? `${activeCourseDynamicFreeCount} private 1-on-1 coaching sessions` : 'Direct instructor Q&A & lifetime updates',
           'Lifetime access with all future updates'
         ],
         price: `₹${basePrice.toLocaleString('en-IN')}`,
@@ -4036,8 +4398,12 @@ function AuthModal({
                       id="reg-fullname"
                       type="text"
                       required
+                      className={fieldErrors.fullName ? 'has-error' : ''}
                       value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
+                      onChange={(e) => {
+                        setFullName(e.target.value);
+                        if (fieldErrors.fullName) setFieldErrors(prev => ({ ...prev, fullName: false }));
+                      }}
                       placeholder="Your full name"
                       autoComplete="name"
                     />
@@ -4051,25 +4417,65 @@ function AuthModal({
                     id="auth-email"
                     type="email"
                     required
+                    className={fieldErrors.email ? 'has-error' : ''}
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: false }));
+                    }}
                     placeholder="you@example.com"
                     autoComplete="email"
                   />
                 </div>
 
-                {/* Phone Number for Register */}
+                {/* Phone Number with Country Code Dropdown for Register */}
                 {!isForgotPassword && loginMode === 'register' && (
                   <div className="fld">
                     <label htmlFor="reg-phone">Phone Number</label>
-                    <input
-                      id="reg-phone"
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="+91 98765 43210"
-                      autoComplete="tel"
-                    />
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <select
+                        id="reg-country-code"
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        style={{
+                          width: '120px',
+                          flexShrink: 0,
+                          height: '46px',
+                          background: '#100B13',
+                          border: '1px solid #3A3040',
+                          borderRadius: '10px',
+                          color: '#fff',
+                          padding: '0 8px',
+                          fontSize: '13px',
+                          fontFamily: 'inherit',
+                          outline: 'none',
+                          cursor: 'pointer'
+                        }}
+                        aria-label="Country Code"
+                      >
+                        {COUNTRY_CODES.map((c, idx) => (
+                          <option key={`${c.code}-${idx}`} value={c.code} style={{ background: '#100B13', color: '#fff' }}>
+                            {c.label || `${c.code} (${c.name})`}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        id="reg-phone"
+                        type="tel"
+                        required
+                        maxLength={10}
+                        className={fieldErrors.phoneNumber ? 'has-error' : ''}
+                        value={phoneNumber}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setPhoneNumber(digitsOnly);
+                          if (fieldErrors.phoneNumber) setFieldErrors(prev => ({ ...prev, phoneNumber: false }));
+                        }}
+                        placeholder="98765 43210 (10 digits)"
+                        autoComplete="tel-national"
+                        style={{ flex: 1 }}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -4082,8 +4488,12 @@ function AuthModal({
                         id="auth-password"
                         type={showPassword ? 'text' : 'password'}
                         required
+                        className={fieldErrors.password ? 'has-error' : ''}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: false }));
+                        }}
                         placeholder="Enter password"
                         autoComplete={loginMode === 'login' ? 'current-password' : 'new-password'}
                       />
@@ -4107,8 +4517,12 @@ function AuthModal({
                         id="auth-cpassword"
                         type={showPassword ? 'text' : 'password'}
                         required
+                        className={fieldErrors.confirmPassword ? 'has-error' : ''}
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          if (fieldErrors.confirmPassword) setFieldErrors(prev => ({ ...prev, confirmPassword: false }));
+                        }}
                         placeholder="Re-enter password"
                         autoComplete="new-password"
                       />
@@ -4329,7 +4743,7 @@ function AuthModal({
                     {(currentCourse.inside || [
                       '8 HD video modules',
                       'Downloadable workbooks and frameworks',
-                      '3 private 1-on-1 coaching sessions',
+                      activeCourseDynamicFreeCount > 0 ? `${activeCourseDynamicFreeCount} private 1-on-1 coaching sessions` : 'Direct instructor Q&A & lifetime updates',
                       'Lifetime access with all future updates'
                     ]).map((feat, idx) => (
                       <li key={idx}>{feat}</li>

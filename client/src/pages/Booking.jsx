@@ -174,17 +174,36 @@ export default function Booking() {
     if (paramName) setAuthDefaultName(paramName);
     if (paramPhone) setAuthDefaultPhone(paramPhone);
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || localStorage.getItem('courseToken');
     const loggedIn = !!token;
     setIsLoggedIn(loggedIn);
 
-    if (loggedIn && (paramEmail || paramName || paramPhone)) {
+    let localUser = null;
+    try {
+      localUser = JSON.parse(localStorage.getItem('user') || localStorage.getItem('courseUser') || 'null');
+    } catch {}
+
+    const resolvedEmail = paramEmail || localUser?.email || '';
+    const resolvedName = paramName || localUser?.fullName || localUser?.name || '';
+    const resolvedPhone = paramPhone || localUser?.phoneNumber || localUser?.phone || '';
+
+    if (resolvedEmail || resolvedName || resolvedPhone) {
       setBookingData(prev => ({
         ...prev,
-        name: prev.name || paramName || '',
-        email: prev.email || paramEmail || '',
-        phoneNumber: prev.phoneNumber || paramPhone || ''
+        name: prev.name || resolvedName,
+        email: prev.email || resolvedEmail,
+        phoneNumber: prev.phoneNumber || resolvedPhone
       }));
+    }
+
+    if (localUser && (localUser.freeSessions !== undefined || localStorage.getItem('freeSessions') !== null)) {
+      const fs = localUser.freeSessions !== undefined ? Number(localUser.freeSessions) : Number(localStorage.getItem('freeSessions') || 0);
+      setFreeSessionInfo({
+        hasFreeSessions: fs > 0,
+        freeSessions: fs,
+        isCoursePurchaser: true,
+        courseUserName: resolvedName
+      });
     }
 
     if (openAuth === 'true' && !token) {

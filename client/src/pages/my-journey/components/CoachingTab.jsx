@@ -286,14 +286,14 @@ export default function CoachingTab() {
                   <Sparkle size={12} weight="fill" /> Course Perk
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e5f2e8] border border-[#a8d5b1] text-[#2f4a34] text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-wider">
-                  <CheckCircle size={12} weight="fill" /> {userProfile?.freeSessions ?? 0} of 3 Credits Remaining
+                  <CheckCircle size={12} weight="fill" /> {userProfile?.freeSessions ?? 0} Free Session Credit{(userProfile?.freeSessions ?? 0) === 1 ? '' : 's'} Remaining
                 </span>
               </div>
               <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-[#111010] font-normal">
                 Complimentary 1-on-1 Coaching Sessions
               </h3>
               <p className="text-[#555047] text-xs sm:text-sm font-light max-w-xl leading-relaxed">
-                As an enrolled Mastery Course student, your membership includes 3 private coaching sessions with Aarkesh at ₹0.
+                As an enrolled Mastery Course student, your membership includes complimentary private coaching sessions with Aarkesh at ₹0.
               </p>
             </div>
 
@@ -306,7 +306,7 @@ export default function CoachingTab() {
               </Link>
             ) : (
               <span className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-black/10 text-[#7a756b] text-xs font-medium shadow-2xs">
-                <CheckCircle size={15} weight="fill" className="text-[#c9542f]" /> All 3 Sessions Utilized
+                <CheckCircle size={15} weight="fill" className="text-[#c9542f]" /> All Complimentary Sessions Utilized
               </span>
             )}
           </div>

@@ -176,7 +176,10 @@ export default function ProblemSection() {
 
         {/* Word Cloud stretches across full width to act as background */}
         <div className="absolute inset-0 z-10 w-full h-full pointer-events-none">
-          <WordCloud customImg={problemData?.bgImg || problemData?.silhouetteImg || ''} />
+          <WordCloud 
+            customImg={problemData?.bgImg || problemData?.silhouetteImg || ''} 
+            wordFontSize={problemData?.wordFontSize}
+          />
         </div>
 
       </div>

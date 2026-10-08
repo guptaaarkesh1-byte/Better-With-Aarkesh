@@ -9,6 +9,7 @@ import Appointment from '../models/Appointment.js';
 import Note from '../models/Note.js';
 import PastClient from '../models/PastClient.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
 
 const router = express.Router();
 
@@ -46,17 +47,26 @@ router.post('/register-init', async (req, res) => {
       // Check if this is a course purchaser — redirect to login instead of blocking
       const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
       if (courseUser) {
-        if (!userExists.courseSessionsGranted) {
-          userExists.freeSessions = 3;
-          userExists.courseSessionsGranted = true;
-          await userExists.save();
-        }
+        const sessionInfo = await calculateAndSyncFreeSessions(cleanEmail);
         return res.status(409).json({
-          message: 'A booking account already exists for this email. Please sign in to access your 3 free sessions.',
+          message: `A booking account already exists for this email. Please sign in to access your ${sessionInfo.remaining || 5} free sessions.`,
           redirectToLogin: true
         });
       }
       return res.status(400).json({ message: 'Email ID already exists. Use a different one.' });
+    }
+
+    // Check if phone number already exists
+    const cleanPhoneDigits = (phoneNumber || '').replace(/\D/g, '');
+    if (cleanPhoneDigits.length >= 10) {
+      const last10 = cleanPhoneDigits.slice(-10);
+      const phoneRegex = new RegExp(`${last10}$`);
+      const phoneExistsInUser = await User.findOne({ phoneNumber: phoneRegex, isDeleted: { $ne: true } });
+      const phoneExistsInCourse = await CourseUser.findOne({ phoneNumber: phoneRegex });
+
+      if (phoneExistsInUser || phoneExistsInCourse) {
+        return res.status(400).json({ message: 'This phone number is already registered. Please sign in or use another number.' });
+      }
     }
 
     // Generate 6-digit OTP
@@ -256,7 +266,7 @@ router.post('/register-verify', async (req, res) => {
         ]
       });
 
-      // 4. Re-activate and reset user data with fresh registration
+      const dynamicFree = hasCoursePerks ? await getDynamicCourseFreeSessions('better-man') : 0;
       userExists.fullName = fullName;
       userExists.password = hashedPassword;
       userExists.countryCode = countryCode;
@@ -267,13 +277,14 @@ router.post('/register-verify', async (req, res) => {
       userExists.savedVideos = [];
       userExists.completedArticles = [];
       userExists.completedVideos = [];
-      userExists.freeSessions = hasCoursePerks ? 3 : 0;
+      userExists.freeSessions = dynamicFree;
       userExists.courseSessionsGranted = hasCoursePerks;
       userExists.isDeleted = false;
       userExists.deletedAt = null;
       await userExists.save();
       user = userExists;
     } else {
+      const dynamicFree = hasCoursePerks ? await getDynamicCourseFreeSessions('better-man') : 0;
       // Create user
       user = await User.create({
         fullName,
@@ -281,12 +292,39 @@ router.post('/register-verify', async (req, res) => {
         password: hashedPassword,
         countryCode,
         phoneNumber,
-        freeSessions: hasCoursePerks ? 3 : 0,
+        freeSessions: dynamicFree,
         courseSessionsGranted: hasCoursePerks,
       });
     }
 
     if (user) {
+      // Auto-create/sync to CourseUser
+      let courseToken = null;
+      let courseUserId = null;
+      try {
+        let linkedCourseUser = await CourseUser.findOne({ email: emailRegex });
+        if (!linkedCourseUser) {
+          linkedCourseUser = await CourseUser.create({
+            fullName: user.fullName,
+            email: cleanEmail,
+            password: hashedPassword,
+            phoneNumber: user.phoneNumber || '',
+            isPurchased: false,
+            purchasedCourses: [],
+          });
+          console.log(`✅ Auto-created CourseUser on coaching registration: ${cleanEmail}`);
+        } else {
+          linkedCourseUser.password = hashedPassword;
+          if (user.fullName) linkedCourseUser.fullName = user.fullName;
+          if (user.phoneNumber) linkedCourseUser.phoneNumber = user.phoneNumber;
+          await linkedCourseUser.save();
+        }
+        courseToken = generateToken(linkedCourseUser._id);
+        courseUserId = linkedCourseUser._id;
+      } catch (cErr) {
+        console.warn('CourseUser sync on coaching registration warning:', cErr.message);
+      }
+
       res.status(201).json({
         _id: user._id,
         fullName: user.fullName,
@@ -298,6 +336,9 @@ router.post('/register-verify', async (req, res) => {
         freeSessions: user.freeSessions || 0,
         courseSessionsGranted: user.courseSessionsGranted || false,
         token: generateToken(user._id),
+        // Cross-app tokens
+        courseToken,
+        courseUserId,
       });
       // Clear pending data
       pendingRegistrations.delete(cleanEmail);
@@ -320,10 +361,30 @@ router.post('/login', async (req, res) => {
     const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     // Check for user
-    const user = await User.findOne({ email: emailRegex });
+    let user = await User.findOne({ email: emailRegex });
 
     if (!user) {
-      return res.status(401).json({ message: 'User account does not exist, please register first' });
+      // Check if they only have a course account — auto-create coaching account
+      const courseOnlyUser = await CourseUser.findOne({ email: emailRegex });
+      if (courseOnlyUser) {
+        const courseMatch = await bcrypt.compare(password, courseOnlyUser.password);
+        if (courseMatch) {
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(password, salt);
+          user = await User.create({
+            fullName: courseOnlyUser.fullName,
+            email: cleanEmail,
+            password: hashedPassword,
+            phoneNumber: courseOnlyUser.phoneNumber || '',
+            freeSessions: 0,
+            courseSessionsGranted: false,
+          });
+          console.log(`✅ Auto-created coaching User for course user: ${cleanEmail}`);
+        }
+      }
+      if (!user) {
+        return res.status(401).json({ message: 'User account does not exist, please register first' });
+      }
     }
 
     if (user.isDeleted) {
@@ -331,18 +392,68 @@ router.post('/login', async (req, res) => {
     }
 
     // Match password
-    const isMatch = await bcrypt.compare(password, user.password);
+    let isMatch = await bcrypt.compare(password, user.password);
+
+    // If coaching password doesn't match, try course password (bidirectional sync)
+    if (!isMatch) {
+      const courseUser = await CourseUser.findOne({ email: emailRegex });
+      if (courseUser) {
+        const courseMatch = await bcrypt.compare(password, courseUser.password);
+        if (courseMatch) {
+          // Sync course password to coaching
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(password, salt);
+          await user.save();
+          isMatch = true;
+          console.log(`🔄 Synced course password to coaching account for: ${cleanEmail}`);
+        }
+      }
+    }
 
     if (isMatch) {
-      // If user purchased course but coaching account didn't have sessions granted yet, sync them
-      if (!user.courseSessionsGranted) {
-        const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
-        const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid' });
-        if (courseUser || coursePurchase) {
-          user.freeSessions = 3;
-          user.courseSessionsGranted = true;
-          await user.save();
+      // If user purchased course, calculate and sync accurate dynamic free sessions
+      const sessionInfo = await calculateAndSyncFreeSessions(cleanEmail);
+      if (sessionInfo.isCoursePurchaser) {
+        user.freeSessions = sessionInfo.remaining;
+        user.courseSessionsGranted = true;
+        await user.save();
+      }
+
+      // Also sync coaching password to CourseUser if they exist and passwords differ
+      const linkedCourseUser = await CourseUser.findOne({ email: emailRegex });
+      if (linkedCourseUser) {
+        const coursePasswordMatch = await bcrypt.compare(password, linkedCourseUser.password);
+        if (!coursePasswordMatch) {
+          const salt = await bcrypt.genSalt(10);
+          linkedCourseUser.password = await bcrypt.hash(password, salt);
+          await linkedCourseUser.save();
+          console.log(`🔄 Synced coaching password to course account for: ${cleanEmail}`);
         }
+      }
+
+      // Auto-create CourseUser if not exists (for future course login)
+      let courseToken = null;
+      let courseUserId = null;
+      if (!linkedCourseUser) {
+        try {
+          const salt = await bcrypt.genSalt(10);
+          const newCourseUser = await CourseUser.create({
+            fullName: user.fullName,
+            email: cleanEmail,
+            password: await bcrypt.hash(password, salt),
+            phoneNumber: user.phoneNumber || '',
+            isPurchased: false,
+            purchasedCourses: [],
+          });
+          courseToken = generateToken(newCourseUser._id);
+          courseUserId = newCourseUser._id;
+          console.log(`✅ Auto-created CourseUser when coaching user logged in: ${cleanEmail}`);
+        } catch (createErr) {
+          // Non-fatal: course account may already exist with slight timing issues
+        }
+      } else {
+        courseToken = generateToken(linkedCourseUser._id);
+        courseUserId = linkedCourseUser._id;
       }
 
       res.json({
@@ -356,6 +467,9 @@ router.post('/login', async (req, res) => {
         freeSessions: user.freeSessions || 0,
         courseSessionsGranted: user.courseSessionsGranted || false,
         token: generateToken(user._id),
+        // Cross-app token for course website
+        courseToken,
+        courseUserId,
       });
     } else {
       res.status(401).json({ message: 'Wrong password' });
@@ -376,16 +490,12 @@ router.get('/me', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Auto-sync if purchased course
-    if (!user.courseSessionsGranted && user.email) {
-      const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-      const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
-      const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid' });
-      if (courseUser || coursePurchase) {
-        user.freeSessions = 3;
-        user.courseSessionsGranted = true;
-        await user.save();
-      }
+    // Auto-sync dynamic free sessions if enrolled
+    const sessionInfo = await calculateAndSyncFreeSessions(user.email);
+    if (sessionInfo.isCoursePurchaser) {
+      user.freeSessions = sessionInfo.remaining;
+      user.courseSessionsGranted = true;
+      await user.save();
     }
 
     res.json(user);
@@ -405,96 +515,13 @@ router.post('/check-free-sessions', async (req, res) => {
       return res.json({ hasFreeSessions: false, freeSessions: 0, isCoursePurchaser: false });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const emailRegex = new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-
-    const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
-    const coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
-
-    if (courseUser) {
-      const distinctPurchasedCourses = new Set();
-      if (Array.isArray(courseUser.purchasedCourses)) {
-        courseUser.purchasedCourses.forEach(s => s && distinctPurchasedCourses.add(s));
-      }
-      const purchases = await CoursePurchase.find({
-        $or: [{ courseUserId: courseUser._id }, { studentEmail: emailRegex }],
-        paymentStatus: 'Paid'
-      });
-      purchases.forEach(p => { if (p.courseSlug) distinctPurchasedCourses.add(p.courseSlug); });
-      if (distinctPurchasedCourses.size === 0) distinctPurchasedCourses.add('better-man');
-
-      const totalCoursesCount = distinctPurchasedCourses.size || 1;
-      const totalGrantedSessions = totalCoursesCount * 3;
-
-      const relevantAppointments = await Appointment.find({
-        email: emailRegex,
-        status: { $ne: 'CANCELLED' }
-      });
-
-      let claimedSessionsCount = 0;
-      for (const app of relevantAppointments) {
-        if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
-          claimedSessionsCount += 1;
-        }
-        if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
-          claimedSessionsCount += 1;
-        }
-      }
-
-      const freeSessions = Math.max(0, totalGrantedSessions - claimedSessionsCount);
-
-      if (coachingUser) {
-        coachingUser.freeSessions = freeSessions;
-        coachingUser.courseSessionsGranted = true;
-        await coachingUser.save();
-      }
-
-      return res.json({
-        hasFreeSessions: freeSessions > 0,
-        freeSessions,
-        totalGranted: totalGrantedSessions,
-        isCoursePurchaser: true,
-        courseUserName: courseUser.fullName
-      });
-    }
-
-    if (coachingUser) {
-      const relevantAppointments = await Appointment.find({
-        email: emailRegex,
-        status: { $ne: 'CANCELLED' }
-      });
-
-      let claimedSessionsCount = 0;
-      for (const app of relevantAppointments) {
-        if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
-          claimedSessionsCount += 1;
-        }
-        if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
-          claimedSessionsCount += 1;
-        }
-      }
-
-      const totalGranted = coachingUser.courseSessionsGranted ? 3 : (typeof coachingUser.freeSessions === 'number' ? (coachingUser.freeSessions + claimedSessionsCount) : 0);
-      const freeSessions = Math.max(0, totalGranted - claimedSessionsCount);
-
-      if (coachingUser.freeSessions !== freeSessions) {
-        coachingUser.freeSessions = freeSessions;
-        await coachingUser.save();
-      }
-
-      if (freeSessions > 0) {
-        return res.json({
-          hasFreeSessions: true,
-          freeSessions: freeSessions,
-          isCoursePurchaser: coachingUser.courseSessionsGranted || false
-        });
-      }
-    }
-
+    const sessionInfo = await calculateAndSyncFreeSessions(email);
     return res.json({
-      hasFreeSessions: false,
-      freeSessions: 0,
-      isCoursePurchaser: false
+      hasFreeSessions: sessionInfo.remaining > 0,
+      freeSessions: sessionInfo.remaining,
+      totalGranted: sessionInfo.totalGranted,
+      claimedSessions: sessionInfo.claimed,
+      isCoursePurchaser: sessionInfo.isCoursePurchaser
     });
   } catch (error) {
     console.error('Check Free Sessions Error:', error.message);
@@ -510,9 +537,12 @@ router.post('/forgot-password-init', async (req, res) => {
     const cleanEmail = (email || '').trim().toLowerCase();
     const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    const user = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+    let user = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
     if (!user) {
-      return res.status(404).json({ message: 'User account does not exist' });
+      const courseUser = await CourseUser.findOne({ email: emailRegex });
+      if (!courseUser) {
+        return res.status(404).json({ message: 'User account does not exist' });
+      }
     }
 
     const otp = generateOTP();
@@ -653,6 +683,15 @@ router.post('/forgot-password-reset', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     await User.findOneAndUpdate({ email: emailRegex, isDeleted: { $ne: true } }, { password: hashedPassword });
+    
+    // Also sync to CourseUser if exists
+    const courseUserRecord = await CourseUser.findOne({ email: emailRegex });
+    if (courseUserRecord) {
+      courseUserRecord.password = hashedPassword;
+      await courseUserRecord.save();
+      console.log(`🔄 Synced coaching password reset to course account for: ${cleanEmail}`);
+    }
+    
     pendingPasswordResets.delete(cleanEmail);
 
     res.status(200).json({ message: 'Password reset successfully' });

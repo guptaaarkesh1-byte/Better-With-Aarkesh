@@ -17,7 +17,8 @@ export default function PrincipleContent({
   maxContentWidth = "max-w-[460px]",
   eyebrowFontSize,
   headingFontSize,
-  descriptionFontSize
+  descriptionFontSize,
+  buttonFontSize
 }) {
   const container = useRef(null);
 
@@ -55,6 +56,9 @@ export default function PrincipleContent({
     );
   }, { scope: container, dependencies: [headlineWhite, headlineGold, paragraphs, eyebrow, id] });
 
+  const circlePx = buttonFontSize ? Math.round(buttonFontSize * 3.4) : null;
+  const iconPx = buttonFontSize ? Math.max(13, Math.round(buttonFontSize * 1.4)) : 20;
+
   return (
     <div ref={container} className={`${maxContentWidth} text-left relative z-20`}>
       
@@ -69,16 +73,16 @@ export default function PrincipleContent({
       </div>
 
       <h2 
-        className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 flex flex-col items-start w-fit"
+        className="font-serif text-[1.75rem] xs:text-[1.95rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.5rem] font-medium tracking-tight leading-[1.12] mb-5 flex flex-col items-start w-fit max-w-full"
         style={{ 
           fontFamily: 'Fraunces, Georgia, serif',
-          fontSize: headingFontSize ? `${headingFontSize}px` : undefined
+          ...(headingFontSize ? { fontSize: `clamp(1.65rem, 6.5vw, ${headingFontSize}px)` } : {})
         }}
       >
-        <span className={`phil-heading-word text-[#111010] whitespace-nowrap overflow-hidden pb-1 ${headlineWhite === headlineWhite?.toUpperCase() ? 'uppercase' : ''}`}>
+        <span className={`phil-heading-word text-[#111010] pb-1.5 ${headlineWhite === headlineWhite?.toUpperCase() ? 'uppercase' : ''}`}>
           {headlineWhite}
         </span>
-        <span className={`phil-heading-word text-[#c9542f] whitespace-nowrap overflow-hidden pb-1 not-italic font-medium ${headlineGold === headlineGold?.toUpperCase() ? 'uppercase' : ''}`}>
+        <span className={`phil-heading-word text-[#c9542f] pb-1.5 not-italic font-medium ${headlineGold === headlineGold?.toUpperCase() ? 'uppercase' : ''}`}>
           {headlineGold}
         </span>
       </h2>
@@ -98,10 +102,16 @@ export default function PrincipleContent({
       </div>
 
       <div className="phil-button flex items-center gap-4 sm:gap-5 cursor-pointer group w-fit pt-2">
-        <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-full border border-black/20 bg-white/60 flex items-center justify-center transition-all duration-300 group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] group-hover:scale-105 shadow-xs">
-          <ArrowDown size={20} weight="bold" className="text-[#111010] transition-transform group-hover:text-[#c9542f] group-hover:translate-y-1" />
+        <div 
+          className="w-12 h-12 sm:w-13 sm:h-13 rounded-full border border-black/20 bg-white/60 flex items-center justify-center transition-all duration-300 group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] group-hover:scale-105 shadow-xs shrink-0"
+          style={circlePx ? { width: `${circlePx}px`, height: `${circlePx}px` } : undefined}
+        >
+          <ArrowDown size={iconPx} weight="bold" className="text-[#111010] transition-transform group-hover:text-[#c9542f] group-hover:translate-y-1" />
         </div>
-        <span className="font-sans text-xs sm:text-sm md:text-[0.82rem] uppercase tracking-[0.25em] text-[#111010] font-bold transition-colors group-hover:text-[#c9542f]">
+        <span 
+          className="font-sans text-xs sm:text-sm md:text-[0.82rem] uppercase tracking-[0.25em] text-[#111010] font-bold transition-colors group-hover:text-[#c9542f]"
+          style={{ fontSize: buttonFontSize ? `${buttonFontSize}px` : undefined }}
+        >
           {buttonText || 'SCROLL FOR NEXT PRINCIPLE'}
         </span>
       </div>

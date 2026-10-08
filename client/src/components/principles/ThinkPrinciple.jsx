@@ -55,6 +55,7 @@ export default function ThinkPrinciple() {
       eyebrowFontSize={data?.eyebrowFontSize}
       headingFontSize={data?.headingFontSize}
       descriptionFontSize={data?.descriptionFontSize}
+      buttonFontSize={data?.buttonFontSize}
       activeStep={1}
       bannerTitle="DYNAMIC<br/>ELEMENT"
       bannerIcon={Sparkle}

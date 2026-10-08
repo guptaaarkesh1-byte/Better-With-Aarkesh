@@ -51,57 +51,61 @@ export default function TinyMCEEditor({
           promotion: false,
           statusbar: true,
           elementpath: true,
-          resize: true,
+          entity_encoding: 'raw',
+          forced_root_block: 'p',
+          remove_trailing_brs: false,
+          paste_data_images: true,
           content_style: `
             @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@400;500;600;700&display=swap');
             body {
               font-family: 'Fraunces', Georgia, serif;
-              font-size: 17px;
-              line-height: 1.65;
+              font-size: 1.12rem;
+              line-height: 1.15;
               color: #1c1917;
-              padding: 24px 28px;
+              padding: 24px 32px;
               background-color: #ffffff;
             }
             p {
               margin-top: 0;
-              margin-bottom: 0.65rem;
-              line-height: 1.65;
+              margin-bottom: 0;
+              line-height: 1.15;
             }
             p:empty, p > br:only-child {
-              min-height: 1.2rem;
+              min-height: 1.15em;
+              margin-bottom: 0;
               display: block;
             }
             h1 {
               font-family: 'Fraunces', Georgia, serif;
-              font-size: 2rem;
+              font-size: 2.1rem;
               font-weight: 700;
               color: #111010;
               margin-top: 1.6rem;
               margin-bottom: 0.75rem;
-              line-height: 1.25;
+              line-height: 1.2;
             }
             h2 {
               font-family: 'Fraunces', Georgia, serif;
-              font-size: 1.6rem;
+              font-size: 1.65rem;
               font-weight: 600;
               color: #111010;
               margin-top: 1.4rem;
-              margin-bottom: 0.5rem;
-              line-height: 1.3;
+              margin-bottom: 0.6rem;
+              line-height: 1.25;
             }
             h3 {
               font-family: 'Fraunces', Georgia, serif;
-              font-size: 1.3rem;
+              font-size: 1.35rem;
               font-weight: 600;
               color: #111010;
               margin-top: 1.2rem;
               margin-bottom: 0.5rem;
-              line-height: 1.35;
+              line-height: 1.3;
             }
             blockquote {
               border-left: 3px solid ${highlightColor || '#c9542f'};
-              padding: 0.75rem 1.25rem;
-              margin: 1.25rem 0;
+              padding: 0.6rem 1.1rem;
+              margin: 1.2rem 0;
               font-style: italic;
               color: #44403c;
               background: #faf8f5;
@@ -110,7 +114,7 @@ export default function TinyMCEEditor({
             table {
               border-collapse: collapse;
               width: 100%;
-              margin: 1.25rem 0;
+              margin: 1.2rem 0;
             }
             table td, table th {
               border: 1px solid #e7e5e4;

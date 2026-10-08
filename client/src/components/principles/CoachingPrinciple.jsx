@@ -167,10 +167,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
             </div>
 
             <h2 
-              className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-medium tracking-tight leading-[1.08] mb-3 sm:mb-4 flex flex-col items-start coaching-fade"
+              className="font-serif text-[1.25rem] xs:text-[1.4rem] sm:text-2xl md:text-4xl lg:text-[3.5rem] xl:text-[4rem] font-medium tracking-tight leading-[1.12] mb-3 sm:mb-4 flex flex-col items-start coaching-fade"
               style={{ 
                 fontFamily: 'Fraunces, Georgia, serif',
-                fontSize: data.headingFontSize ? `${data.headingFontSize}px` : undefined
+                ...(data.headingFontSize ? { fontSize: `clamp(1.2rem, 4.5vw, ${data.headingFontSize}px)` } : {})
               }}
             >
               <span className="text-[#111010] pb-0.5">{data.headingLine1 || 'A proven process'}</span>
@@ -223,61 +223,32 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
                     onClick={() => setActiveStep(isActive ? null : i)}
                     className={`coaching-step w-full ${
                       isWide ? 'col-span-1 md:col-span-2' : 'col-span-1'
-                    } relative z-50 flex group rounded-xl sm:rounded-2xl p-2.5 sm:p-3 transition-all duration-300 cursor-pointer ${
+                    } relative z-50 flex flex-row gap-2.5 sm:gap-3 items-center group rounded-xl sm:rounded-2xl p-2.5 sm:p-3 transition-all duration-300 cursor-pointer ${
                       isActive 
                         ? 'bg-[#fbf0eb] border border-[#c9542f]/50 shadow-[0_4px_16px_rgba(201, 84, 47,0.12)]' 
                         : 'bg-white/90 border border-black/8 hover:bg-white hover:border-[#c9542f]/35 shadow-[0_2px_10px_rgba(0,0,0,0.03)]'
-                    } ${isWide ? 'flex-col items-center justify-center' : 'flex-row gap-2.5 sm:gap-3 items-center'}`}
+                    }`}
                   >
-                    {isWide ? (
-                      /* Point 5 Centered Layout */
-                      <div className="w-full flex flex-col items-center justify-center text-center">
-                        <div className="flex items-center justify-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                            isActive 
-                              ? 'border border-[#c9542f] bg-[#c9542f] text-white shadow-xs' 
-                              : 'border border-black/10 bg-[#f5f1e8] text-[#111010] group-hover:border-[#c9542f]/40 group-hover:text-[#c9542f]'
-                          }`}>
-                            <Icon className="text-base transition-transform duration-300 group-hover:scale-110" weight="regular" />
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-sans text-[0.64rem] tracking-widest font-bold text-[#c9542f]">{step.num || `0${i+1}`}</span>
-                            <span className="font-sans text-[0.68rem] uppercase tracking-[0.16em] font-bold text-[#111010]">{step.title}</span>
-                          </div>
-                        </div>
-                        <div className={`grid transition-[grid-template-rows] duration-300 ease-out w-full ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] group-hover:grid-rows-[1fr]'}`}>
-                          <div className="overflow-hidden">
-                            <p className={`text-[#4a463e] text-xs font-light leading-relaxed transition-opacity duration-300 delay-75 pt-1.5 text-center max-w-lg mx-auto ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                              {step.text}
-                            </p>
-                          </div>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                      isActive 
+                        ? 'border border-[#c9542f] bg-[#c9542f] text-white shadow-xs' 
+                        : 'border border-black/10 bg-[#f5f1e8] text-[#111010] group-hover:border-[#c9542f]/40 group-hover:text-[#c9542f]'
+                    }`}>
+                      <Icon className="text-base transition-transform duration-300 group-hover:scale-110" weight="regular" />
+                    </div>
+                    <div className="flex flex-col flex-1 justify-center">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-sans text-[0.64rem] tracking-widest font-bold text-[#c9542f]">{step.num || `0${i+1}`}</span>
+                        <span className="font-sans text-[0.68rem] uppercase tracking-[0.16em] font-bold text-[#111010]">{step.title}</span>
+                      </div>
+                      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] group-hover:grid-rows-[1fr]'}`}>
+                        <div className="overflow-hidden">
+                          <p className={`text-[#4a463e] text-xs font-light leading-relaxed transition-opacity duration-300 delay-75 pt-1 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                            {step.text}
+                          </p>
                         </div>
                       </div>
-                    ) : (
-                      /* Points 1 - 4 Standard Layout */
-                      <>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                          isActive 
-                            ? 'border border-[#c9542f] bg-[#c9542f] text-white shadow-xs' 
-                            : 'border border-black/10 bg-[#f5f1e8] text-[#111010] group-hover:border-[#c9542f]/40 group-hover:text-[#c9542f]'
-                        }`}>
-                          <Icon className="text-base transition-transform duration-300 group-hover:scale-110" weight="regular" />
-                        </div>
-                        <div className="flex flex-col flex-1 justify-center">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-sans text-[0.64rem] tracking-widest font-bold text-[#c9542f]">{step.num || `0${i+1}`}</span>
-                            <span className="font-sans text-[0.68rem] uppercase tracking-[0.16em] font-bold text-[#111010]">{step.title}</span>
-                          </div>
-                          <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] group-hover:grid-rows-[1fr]'}`}>
-                            <div className="overflow-hidden">
-                              <p className={`text-[#4a463e] text-xs font-light leading-relaxed transition-opacity duration-300 delay-75 pt-1 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                {step.text}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
+                    </div>
                   </div>
                 );
               })}

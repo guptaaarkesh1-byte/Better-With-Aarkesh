@@ -3023,6 +3023,13 @@
   box-shadow: 0 0 0 3px rgba(200, 120, 190, 0.25);
 }
 
+.auth-modal-scope .fld input.has-error,
+.auth-modal-scope .fld select.has-error,
+.auth-modal-scope input.has-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3) !important;
+}
+
 .auth-modal-scope .pw {
   position: relative;
 }

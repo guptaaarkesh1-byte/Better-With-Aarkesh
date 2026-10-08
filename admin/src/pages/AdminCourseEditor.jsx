@@ -4,7 +4,6 @@ import Icon from '../components/common/AdminIcons';
 import AdminConfirmModal from '../components/common/AdminConfirmModal';
 import AdminDrawer from '../components/common/AdminDrawer';
 import AdminStickyBar from '../components/common/AdminStickyBar';
-import AdminCourseStudents from './AdminCourseStudents';
 import AdminCourseLandingCatalogEditor from './AdminCourseLandingCatalogEditor';
 import AdminCourseComments from './AdminCourseComments';
 
@@ -53,6 +52,8 @@ export default function AdminCourseEditor() {
     price: 4999,
     orig: 9999,
     cta: 'Check Course',
+    includeFreeSessions: true,
+    freeSessionsCount: 3,
     gst: true,
     rate: 18,
     mode: 'included',
@@ -618,6 +619,8 @@ export default function AdminCourseEditor() {
         price: parsePriceNum(d.pricingSection?.currentPrice ?? d.price, 4999),
         orig: parsePriceNum(d.pricingSection?.originalPrice ?? d.was, 9999),
         cta: d.pricingSection?.ctaText || d.cta || 'Check Course',
+        includeFreeSessions: d.includeFreeSessions !== undefined ? d.includeFreeSessions : (d.pricingSection?.includeFreeSessions !== undefined ? d.pricingSection.includeFreeSessions : true),
+        freeSessionsCount: d.freeSessionsCount !== undefined ? Number(d.freeSessionsCount) : (d.pricingSection?.freeSessionsCount !== undefined ? Number(d.pricingSection.freeSessionsCount) : 3),
         gst: d.pricingSection?.enableGst ?? d.enableGst ?? true,
         rate: d.pricingSection?.gstRate ?? d.gstRate ?? 18,
         mode: d.pricingSection?.gstMode || (d.isGstIncluded ? 'included' : 'exclusive'),
@@ -830,6 +833,8 @@ export default function AdminCourseEditor() {
         gstRate: Number(courseData.rate) || 0,
         isGstIncluded: courseData.mode === 'included',
         gstMode: courseData.mode,
+        includeFreeSessions: Boolean(courseData.includeFreeSessions),
+        freeSessionsCount: Math.max(0, Number(courseData.freeSessionsCount) || 0),
         cta: courseData.cta,
         hl: courseData.hl,
         inside: courseData.inside,
@@ -863,6 +868,8 @@ export default function AdminCourseEditor() {
           enableGst: Boolean(courseData.gst),
           gstRate: Number(courseData.rate) || 0,
           gstMode: courseData.mode,
+          includeFreeSessions: Boolean(courseData.includeFreeSessions),
+          freeSessionsCount: Math.max(0, Number(courseData.freeSessionsCount) || 0),
           highlights: courseData.hl,
           insideChecklist: courseData.inside
         },
@@ -1226,13 +1233,6 @@ export default function AdminCourseEditor() {
         </button>
         <button
           type="button"
-          className={subTab === 'students' ? 'on' : ''}
-          onClick={() => setSubTab('students')}
-        >
-          Students &amp; purchases
-        </button>
-        <button
-          type="button"
           className={subTab === 'comments' ? 'on' : ''}
           onClick={() => setSubTab('comments')}
         >
@@ -1242,10 +1242,6 @@ export default function AdminCourseEditor() {
 
       {subTab === 'catalog' ? (
         <AdminCourseLandingCatalogEditor />
-      ) : subTab === 'students' ? (
-        <div className="p-6 md:p-8 max-w-[1500px] mx-auto">
-          <AdminCourseStudents />
-        </div>
       ) : subTab === 'comments' ? (
         <div className="p-6 md:p-8 max-w-[1500px] mx-auto">
           <AdminCourseComments />
@@ -1545,15 +1541,33 @@ export default function AdminCourseEditor() {
                         <div className="hint">Big number on the course card, e.g. 01</div>
                       </div>
                     </div>
-                    <div className="bwa-f">
-                      <label>Short description</label>
+                    <div className="bwa-f" style={{ marginTop: '14px' }}>
+                      <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span>Short description (Course pitch)</span>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 400 }}>
+                          {(courseData.lede || '').length} characters
+                        </span>
+                      </label>
                       <textarea
-                        rows={3}
+                        rows={4}
+                        style={{
+                          width: '100%',
+                          minHeight: '110px',
+                          padding: '12px 14px',
+                          fontSize: '14.5px',
+                          lineHeight: '1.6',
+                          borderRadius: '10px',
+                          border: '1px solid #DDD0BC',
+                          resize: 'vertical',
+                          boxSizing: 'border-box'
+                        }}
                         value={courseData.lede}
                         onChange={(e) => updateField('lede', e.target.value)}
-                        placeholder="One or two sentences under the title on the landing page."
+                        placeholder="Enter a clear, compelling 1–2 sentence description of the course. This appears under the title on both the course landing page and catalog card."
                       />
-                      <div className="hint">One or two sentences under the title on the landing page.</div>
+                      <div className="hint" style={{ marginTop: '6px', fontSize: '12.5px', color: 'var(--muted)' }}>
+                        This 1–2 sentence pitch is shown directly under the main title on the landing page and on the course catalog card.
+                      </div>
                     </div>
                   </div>
 
@@ -2011,6 +2025,98 @@ export default function AdminCourseEditor() {
                         <span>{inr(calculated.total)}</span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Complimentary Coaching Sessions Perk Card */}
+                  <div className="bwa-card">
+                    <div className="bwa-row">
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                          <h3 style={{ margin: 0 }}>Complimentary 1-on-1 Coaching Sessions</h3>
+                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', background: courseData.includeFreeSessions ? '#ecfdf5' : '#fef2f2', color: courseData.includeFreeSessions ? '#065f46' : '#991b1b', border: `1px solid ${courseData.includeFreeSessions ? '#a7f3d0' : '#fecaca'}` }}>
+                            {courseData.includeFreeSessions ? `${courseData.freeSessionsCount || 0} Sessions Active` : 'Disabled'}
+                          </span>
+                        </div>
+                        <p className="sub" style={{ margin: 0 }}>
+                          Control whether students receive free private 1-on-1 coaching sessions with Aarkesh upon purchasing this course.
+                        </p>
+                      </div>
+                      <label className="bwa-row" style={{ gap: '10px', fontWeight: 600 }}>
+                        <span>{courseData.includeFreeSessions ? 'Enabled' : 'Disabled'}</span>
+                        <span className="bwa-sw">
+                          <input
+                            type="checkbox"
+                            checked={courseData.includeFreeSessions}
+                            onChange={(e) => updateField('includeFreeSessions', e.target.checked)}
+                            aria-label="Toggle free coaching sessions"
+                          />
+                          <i />
+                        </span>
+                      </label>
+                    </div>
+
+                    {courseData.includeFreeSessions ? (
+                      <div style={{ marginTop: '18px' }} className="bwa-grid2">
+                        <div>
+                          <div className="bwa-f">
+                            <label>Number of free 1-on-1 sessions to grant</label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={50}
+                              value={courseData.freeSessionsCount}
+                              onChange={(e) => updateField('freeSessionsCount', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                            />
+                          </div>
+                          <div className="bwa-presets">
+                            {[0, 1, 2, 3, 5, 10].map(cnt => (
+                              <button
+                                key={cnt}
+                                type="button"
+                                className={`bwa-pill ${Number(courseData.freeSessionsCount) === cnt ? 'on' : ''}`}
+                                onClick={() => updateField('freeSessionsCount', cnt)}
+                              >
+                                {cnt === 0 ? '0 (None)' : `${cnt} ${cnt === 1 ? 'Session' : 'Sessions'}`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="bwa-f">
+                            <label>Student perk status &amp; booking behavior</label>
+                          </div>
+                          <div style={{ padding: '14px 16px', background: 'var(--cream-bg, #fbf7ee)', border: '1px solid var(--line, #ece3d3)', borderRadius: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: (courseData.freeSessionsCount || 0) > 0 ? '#10b981' : '#f59e0b' }} />
+                              <strong style={{ fontSize: '13px', color: 'var(--ink, #1f1d1a)' }}>
+                                {(courseData.freeSessionsCount || 0) > 0 
+                                  ? `${courseData.freeSessionsCount} Complimentary Session${courseData.freeSessionsCount > 1 ? 's' : ''} (Worth ₹${((courseData.freeSessionsCount || 0) * 5000).toLocaleString('en-IN')})` 
+                                  : '0 Free Sessions (No credits granted)'}
+                              </strong>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--muted, #7c7468)', lineHeight: 1.45 }}>
+                              {(courseData.freeSessionsCount || 0) > 0 ? (
+                                <>
+                                  When a student purchases this course, their account will immediately receive <strong>{courseData.freeSessionsCount} free 1-on-1 session credit{courseData.freeSessionsCount > 1 ? 's' : ''}</strong>. They can book these directly from the course player or &ldquo;Book a Session&rdquo; tab at ₹0.
+                                </>
+                              ) : (
+                                <>
+                                  Students who enroll in this course will not receive any complimentary 1-on-1 coaching session credits.
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '16px', padding: '12px 16px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '10px', color: '#991b1b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Icon name="info" size={18} />
+                        <span>
+                          <strong>Complimentary coaching sessions are turned OFF for this course.</strong> Enrolled students will get instant access to the video modules and learning resources only, with 0 free coaching session credits.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

@@ -71,6 +71,7 @@ export default function DecidePrinciple() {
       eyebrowFontSize={data?.eyebrowFontSize}
       headingFontSize={data?.headingFontSize}
       descriptionFontSize={data?.descriptionFontSize}
+      buttonFontSize={data?.buttonFontSize}
       activeStep={3}
       bannerTitle="DYNAMIC<br/>EXPERIENCE"
       bannerIcon={Sparkle}

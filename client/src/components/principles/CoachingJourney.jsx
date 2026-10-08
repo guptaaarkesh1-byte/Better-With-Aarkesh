@@ -295,10 +295,10 @@ export default function CoachingJourney() {
             </div>
 
             <h2 
-              className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 sm:mb-6 flex flex-col items-start journey-fade"
+              className="font-serif text-[1.75rem] xs:text-[1.95rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 sm:mb-6 flex flex-col items-start journey-fade max-w-full"
               style={{ 
                 fontFamily: 'Fraunces, Georgia, serif',
-                fontSize: data.headingFontSize ? `${data.headingFontSize}px` : undefined
+                ...(data.headingFontSize ? { fontSize: `clamp(1.65rem, 6.5vw, ${data.headingFontSize}px)` } : {})
               }}
             >
               <span className="text-[#111010] pb-0.5">{data.headingLine1 || 'A clear process.'}</span>
@@ -315,64 +315,35 @@ export default function CoachingJourney() {
               {(data.description || "We don't do hacks. We follow a proven, human first process designed to create deep, lasting change.").replace(/human-first/g, 'human first')}
             </p>
 
-            {/* Vertical Steps (2 columns, content-fit width) */}
+            {/* 4 Steps in 2 Columns Grid */}
             <div 
-              className="flex flex-wrap gap-x-4 sm:gap-x-6 gap-y-3 mt-3 xl:mt-4 journey-fade items-start"
+              className="grid grid-cols-2 gap-2 sm:gap-3.5 mt-3 xl:mt-4 journey-fade items-start w-full max-w-md lg:max-w-lg"
               style={{
                 transform: `translate(${LEFT_4_STEPS_PILLS_CONTROLS.moveX || '0px'}, ${LEFT_4_STEPS_PILLS_CONTROLS.moveY || '0px'})`
               }}
             >
-              {/* Left Column: Clarify & Connect */}
-              <div className="flex flex-col gap-y-3 items-start">
-                {leftSteps.slice(0, 2).map((step, i) => {
-                  const Icon = step.icon;
-                  return (
-                    <div key={i} className="w-fit flex gap-3 items-center group cursor-pointer px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl transition-colors duration-200 bg-white/90 hover:bg-white border border-black/8 hover:border-[#c9542f]/30 shadow-xs">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#c9542f]/30 bg-[#fbf0eb] flex items-center justify-center shrink-0 transition-colors duration-200 group-hover:border-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white shadow-xs">
-                        <Icon className="text-[#c9542f] group-hover:text-white text-base sm:text-lg transition-transform duration-200 group-hover:scale-110" weight="regular" />
-                      </div>
-                      <div className="flex flex-col justify-center pr-2">
-                        <span className="font-sans text-[0.72rem] sm:text-[0.78rem] uppercase tracking-[0.18em] font-bold text-[#111010] group-hover:text-[#c9542f] transition-colors block whitespace-nowrap">
-                          {step.title}
-                        </span>
-                        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out">
-                          <div className="overflow-hidden">
-                            <p className="text-[#4a463e] text-xs font-light leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75 whitespace-pre-line pt-1">
-                              {step.text}
-                            </p>
-                          </div>
+              {leftSteps.map((step, i) => {
+                const Icon = step.icon;
+                return (
+                  <div key={i} className="w-full flex gap-2 sm:gap-3 items-center group cursor-pointer px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl transition-colors duration-200 bg-white/90 hover:bg-white border border-black/8 hover:border-[#c9542f]/30 shadow-xs">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-[#c9542f]/30 bg-[#fbf0eb] flex items-center justify-center shrink-0 transition-colors duration-200 group-hover:border-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white shadow-xs">
+                      <Icon className="text-[#c9542f] group-hover:text-white text-sm sm:text-lg transition-transform duration-200 group-hover:scale-110" weight="regular" />
+                    </div>
+                    <div className="flex flex-col justify-center min-w-0 pr-1 sm:pr-2">
+                      <span className="font-sans text-[0.68rem] sm:text-[0.78rem] uppercase tracking-[0.14em] sm:tracking-[0.18em] font-bold text-[#111010] group-hover:text-[#c9542f] transition-colors block truncate">
+                        {step.title}
+                      </span>
+                      <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out">
+                        <div className="overflow-hidden">
+                          <p className="text-[#4a463e] text-[0.7rem] sm:text-xs font-light leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75 whitespace-pre-line pt-1">
+                            {step.text}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Right Column: Create & Commit */}
-              <div className="flex flex-col gap-y-3 items-start">
-                {leftSteps.slice(2, 4).map((step, i) => {
-                  const Icon = step.icon;
-                  return (
-                    <div key={i} className="w-fit flex gap-3 items-center group cursor-pointer px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl transition-colors duration-200 bg-white/90 hover:bg-white border border-black/8 hover:border-[#c9542f]/30 shadow-xs">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#c9542f]/30 bg-[#fbf0eb] flex items-center justify-center shrink-0 transition-colors duration-200 group-hover:border-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white shadow-xs">
-                        <Icon className="text-[#c9542f] group-hover:text-white text-base sm:text-lg transition-transform duration-200 group-hover:scale-110" weight="regular" />
-                      </div>
-                      <div className="flex flex-col justify-center pr-2">
-                        <span className="font-sans text-[0.72rem] sm:text-[0.78rem] uppercase tracking-[0.18em] font-bold text-[#111010] group-hover:text-[#c9542f] transition-colors block whitespace-nowrap">
-                          {step.title}
-                        </span>
-                        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out">
-                          <div className="overflow-hidden">
-                            <p className="text-[#4a463e] text-xs font-light leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75 whitespace-pre-line pt-1">
-                              {step.text}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Mobile Image (Visible below points on mobile) */}

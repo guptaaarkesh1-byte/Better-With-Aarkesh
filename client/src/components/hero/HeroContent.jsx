@@ -58,10 +58,10 @@ export default function HeroContent({ heroData = {} }) {
       </div>
 
       <h1 
-        className="hero-heading font-serif text-4xl md:text-6xl lg:text-[4.5rem] leading-[1.08] text-[#111010] font-medium tracking-tight mb-6"
+        className="hero-heading font-serif text-[2.1rem] xs:text-[2.4rem] sm:text-4xl md:text-6xl lg:text-[4.5rem] leading-[1.08] text-[#111010] font-medium tracking-tight mb-6 max-w-full"
         style={{ 
           fontFamily: 'Fraunces, Georgia, serif',
-          fontSize: heroData.headingFontSize ? `${heroData.headingFontSize}px` : undefined 
+          ...(heroData.headingFontSize ? { fontSize: `clamp(2rem, 7vw, ${heroData.headingFontSize}px)` } : {})
         }}
       >
         {heading1}{' '}

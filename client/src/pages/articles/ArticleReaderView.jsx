@@ -118,9 +118,22 @@ export const THEMES_MAP = {
   }
 };
 
+function decodeHtmlEntities(str) {
+  if (!str || typeof str !== 'string') return str;
+  return str
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ');
+}
+
 // Helper function to render italic highlight, bold, and larger text formatting with dynamic accent color
 export function renderFormattedTitle(text, accentColor = '#f3a8e2') {
   if (!text || typeof text !== 'string') return text;
+
+  const decodedText = decodeHtmlEntities(text);
 
   const parseTokens = (str, keyPrefix = 'rt') => {
     if (!str) return [];
@@ -191,7 +204,7 @@ export function renderFormattedTitle(text, accentColor = '#f3a8e2') {
     return elements.length > 0 ? elements : normalizedStr;
   };
 
-  return parseTokens(text);
+  return parseTokens(decodedText);
 }
 
 export function renderEditorialDropCap(text, themeAccent, themeInk) {
@@ -490,11 +503,39 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
         .themed-reader-view .editorial-body .prose h1,
         .themed-reader-view .editorial-body .prose h2,
         .themed-reader-view .editorial-body .prose h3,
-        .themed-reader-view .editorial-body .prose h4 {
+        .themed-reader-view .editorial-body .prose h4,
+        .themed-reader-view .editorial-body .editorial-rich-text h1,
+        .themed-reader-view .editorial-body .editorial-rich-text h2,
+        .themed-reader-view .editorial-body .editorial-rich-text h3,
+        .themed-reader-view .editorial-body .editorial-rich-text h4 {
           font-family: 'Fraunces', Georgia, serif;
           color: ${theme.ink};
           overflow-wrap: anywhere;
           word-break: break-word;
+        }
+
+        .themed-reader-view .editorial-body .editorial-rich-text h1 {
+          font-size: 2.1rem;
+          font-weight: 600;
+          margin-top: 2rem;
+          margin-bottom: 0.75rem;
+          line-height: 1.25;
+        }
+
+        .themed-reader-view .editorial-body .editorial-rich-text h2 {
+          font-size: 1.65rem;
+          font-weight: 600;
+          margin-top: 1.75rem;
+          margin-bottom: 0.6rem;
+          line-height: 1.25;
+        }
+
+        .themed-reader-view .editorial-body .editorial-rich-text h3 {
+          font-size: 1.45rem;
+          font-weight: 600;
+          margin-top: 1.5rem;
+          margin-bottom: 0.5rem;
+          line-height: 1.3;
         }
 
         .themed-reader-view strong,
@@ -531,7 +572,7 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
           font-family: 'Fraunces', Georgia, serif;
           color: ${theme.ink};
           font-size: 1.15rem;
-          line-height: 1.65;
+          line-height: 1.15;
           overflow-wrap: anywhere;
           word-break: break-word;
         }
@@ -557,7 +598,18 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
         .themed-reader-view .editorial-body p,
         .themed-reader-view .editorial-body .prose p,
         .themed-reader-view .editorial-body .editorial-rich-text p {
-          margin-bottom: 0.55rem !important;
+          margin-top: 0;
+          margin-bottom: 0;
+          line-height: 1.15;
+        }
+
+        .themed-reader-view .editorial-body p:empty,
+        .themed-reader-view .editorial-body .editorial-rich-text p:empty,
+        .themed-reader-view .editorial-body p > br:only-child,
+        .themed-reader-view .editorial-body .editorial-rich-text p > br:only-child {
+          min-height: 1.15em;
+          margin-bottom: 0;
+          display: block;
         }
 
         /* Default Drop Cap on first paragraph (Spans full 2-line height so line 2 wraps to the right) */
@@ -834,7 +886,7 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
                       return (
                         <div 
                           key={block.id || bIdx}
-                          className="mb-8 space-y-4 editorial-rich-text max-w-none clear-both after:content-[''] after:table after:clear-both break-words overflow-hidden"
+                          className="mb-8 editorial-rich-text max-w-none clear-both after:content-[''] after:table after:clear-both break-words overflow-hidden"
                           style={{ color: theme.ink, overflowWrap: 'anywhere' }}
                           dangerouslySetInnerHTML={{ __html: text }}
                         />
@@ -873,9 +925,16 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
                 })}
               </div>
             );
-          })() : (
+          })() : article.bodyHtml ? (
+            /* 2. Body HTML Container (Exclusive rendering when bodyHtml is provided) */
+            <div
+              className="editorial-rich-text max-w-none mb-8"
+              style={{ color: theme.ink }}
+              dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
+            />
+          ) : (article.dropCap || article.sections?.length || article.paragraphsAfterDropCap?.length) ? (
             <>
-              {/* 2. Structured Sections / Drop Cap Legacy Format */}
+              {/* 3. Structured Sections / Drop Cap Legacy Format */}
               {article.dropCap ? (() => {
                 const dcLetter = article.dropCap;
                 const dcText = article.dropCapText || '';
@@ -987,19 +1046,8 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
                 </div>
               ))}
             </>
-          )}
-
-          {/* Fallback for standard HTML or database articles */}
-          {!article.blocks?.length && !article.sections?.length && article.bodyHtml && (
-            <div
-              className="editorial-rich-text max-w-none mb-8 leading-[1.85]"
-              style={{ color: theme.ink }}
-              dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
-            />
-          )}
-
-          {/* Graceful Editorial Fallback for Curated Directory Articles */}
-          {!article.blocks?.length && !article.sections?.length && !article.dropCap && !article.bodyHtml && (
+          ) : (
+            /* 4. Graceful Editorial Fallback for Curated Directory Articles */
             <div className="flex flex-col gap-6">
               <p className="text-xl sm:text-2xl leading-relaxed font-normal mb-4" style={{ color: theme.ink }}>
                 <span style={{

@@ -53,6 +53,7 @@ import {
   Lightning,
   CheckSquare,
   Square,
+  ArrowDown,
   Faders
 } from '@phosphor-icons/react';
 
@@ -267,12 +268,21 @@ function TypographyControllerCard({
   eyebrowFontSize = 14,
   headingFontSize = 64,
   descriptionFontSize = 20,
+  wordFontSize = 18,
+  buttonFontSize = 14,
   defaultEyebrowSize = 14,
   defaultHeadingSize = 64,
   defaultDescriptionSize = 20,
+  defaultWordSize = 18,
+  defaultButtonSize = 14,
   onEyebrowSizeChange,
   onHeadingSizeChange,
   onDescriptionSizeChange,
+  onWordSizeChange,
+  onButtonSizeChange,
+  showWordSizeControl = false,
+  showButtonSizeControl = false,
+  buttonPreviewText = 'SCROLL FOR NEXT PRINCIPLE',
   previewEyebrow = 'CLARITY. HONESTY. INTENTION.',
   previewHeading = 'Clarity changes',
   previewAccent = 'everything.',
@@ -281,17 +291,23 @@ function TypographyControllerCard({
   const currentEyebrow = Number(eyebrowFontSize) || defaultEyebrowSize;
   const currentHeading = Number(headingFontSize) || defaultHeadingSize;
   const currentDescription = Number(descriptionFontSize) || defaultDescriptionSize;
+  const currentWord = Number(wordFontSize) || defaultWordSize;
+  const currentButton = Number(buttonFontSize) || defaultButtonSize;
 
   const handleReset = () => {
     if (onEyebrowSizeChange) onEyebrowSizeChange(defaultEyebrowSize);
     if (onHeadingSizeChange) onHeadingSizeChange(defaultHeadingSize);
     if (onDescriptionSizeChange) onDescriptionSizeChange(defaultDescriptionSize);
+    if (showWordSizeControl && onWordSizeChange) onWordSizeChange(defaultWordSize);
+    if (showButtonSizeControl && onButtonSizeChange) onButtonSizeChange(defaultButtonSize);
   };
 
   const isCustomized = (
     currentEyebrow !== defaultEyebrowSize ||
     currentHeading !== defaultHeadingSize ||
-    currentDescription !== defaultDescriptionSize
+    currentDescription !== defaultDescriptionSize ||
+    (showWordSizeControl && currentWord !== defaultWordSize) ||
+    (showButtonSizeControl && currentButton !== defaultButtonSize)
   );
 
   return (
@@ -321,7 +337,7 @@ function TypographyControllerCard({
       </div>
 
       {/* Font Size Sliders & Steppers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className={`grid grid-cols-1 ${(showWordSizeControl || showButtonSizeControl) ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3'} gap-5`}>
         
         {/* 1. Tagline / Eyebrow Text Size */}
         <div className="bg-[#050505] border border-white/5 rounded-xl p-4 flex flex-col justify-between gap-3">
@@ -518,6 +534,140 @@ function TypographyControllerCard({
           </div>
         </div>
 
+        {/* 4. Floating Words Text Size (Optional - Problem Statement exclusive) */}
+        {showWordSizeControl && (
+          <div className="bg-[#050505] border border-white/5 rounded-xl p-4 flex flex-col justify-between gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[0.68rem] font-bold uppercase tracking-wider text-white/70">
+                4. Floating Words
+              </span>
+              <span className="text-xs font-mono font-bold text-[#c79c6e]">
+                {currentWord}px
+              </span>
+            </div>
+
+            <p className="text-[0.68rem] text-white/40 leading-snug">
+              Controls uniform font size of all floating thought words.
+            </p>
+
+            {/* Stepper & Slider */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => onWordSizeChange && onWordSizeChange(Math.max(10, currentWord - 1))}
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                title="Decrease 1px"
+              >
+                <Minus size={14} weight="bold" />
+              </button>
+
+              <input
+                type="range"
+                min={10}
+                max={36}
+                step={1}
+                value={currentWord}
+                onChange={(e) => onWordSizeChange && onWordSizeChange(Number(e.target.value))}
+                className="flex-1 accent-[#c79c6e] cursor-pointer"
+              />
+
+              <button
+                type="button"
+                onClick={() => onWordSizeChange && onWordSizeChange(Math.min(36, currentWord + 1))}
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                title="Increase 1px"
+              >
+                <Plus size={14} weight="bold" />
+              </button>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
+              {[12, 14, 16, 18, 20, 24].map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => onWordSizeChange && onWordSizeChange(size)}
+                  className={`text-[0.62rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                    currentWord === size
+                      ? 'bg-[#c79c6e] text-black font-bold'
+                      : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {size}px
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 4. Scroll Button & Arrow Text Size (Optional - Principle sections exclusive) */}
+        {showButtonSizeControl && (
+          <div className="bg-[#050505] border border-white/5 rounded-xl p-4 flex flex-col justify-between gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[0.68rem] font-bold uppercase tracking-wider text-white/70">
+                4. Scroll Button &amp; Arrow
+              </span>
+              <span className="text-xs font-mono font-bold text-[#c79c6e]">
+                {currentButton}px
+              </span>
+            </div>
+
+            <p className="text-[0.68rem] text-white/40 leading-snug">
+              Controls button text size and scales the circular arrow button proportionally.
+            </p>
+
+            {/* Stepper & Slider */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => onButtonSizeChange && onButtonSizeChange(Math.max(10, currentButton - 1))}
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                title="Decrease 1px"
+              >
+                <Minus size={14} weight="bold" />
+              </button>
+
+              <input
+                type="range"
+                min={10}
+                max={26}
+                step={1}
+                value={currentButton}
+                onChange={(e) => onButtonSizeChange && onButtonSizeChange(Number(e.target.value))}
+                className="flex-1 accent-[#c79c6e] cursor-pointer"
+              />
+
+              <button
+                type="button"
+                onClick={() => onButtonSizeChange && onButtonSizeChange(Math.min(26, currentButton + 1))}
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                title="Increase 1px"
+              >
+                <Plus size={14} weight="bold" />
+              </button>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
+              {[11, 12, 13, 14, 16, 18].map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => onButtonSizeChange && onButtonSizeChange(size)}
+                  className={`text-[0.62rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                    currentButton === size
+                      ? 'bg-[#c79c6e] text-black font-bold'
+                      : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {size}px
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* Real-time Visual Preview Canvas */}
@@ -570,6 +720,55 @@ function TypographyControllerCard({
           >
             {previewDescription}
           </p>
+
+          {/* Floating Words Live Preview Badge Strip */}
+          {showWordSizeControl && (
+            <div className="pt-3.5 mt-1 border-t border-[#c9542f]/20 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="text-[0.62rem] font-sans uppercase tracking-widest text-[#c9542f] font-bold">
+                Floating Words Live Preview:
+              </span>
+              {[
+                { text: 'Overthinking', color: '#c9542f' },
+                { text: 'Loneliness', color: '#c9542f' },
+                { text: 'Family', color: '#047857' },
+                { text: 'Breakup', color: '#be185d' },
+                { text: 'What if?', color: '#5b67ca' },
+                { text: 'Self doubt', color: '#2b2823' },
+              ].map((item, idx) => (
+                <span
+                  key={idx}
+                  className="font-serif font-medium transition-all select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
+                  style={{
+                    color: item.color,
+                    fontSize: `${currentWord}px`
+                  }}
+                >
+                  {item.text}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Scroll Button & Arrow Live Preview Strip */}
+          {showButtonSizeControl && (
+            <div className="pt-3.5 mt-1 border-t border-[#c9542f]/20 flex items-center gap-3.5">
+              <div 
+                className="rounded-full border border-black/20 bg-white/70 flex items-center justify-center shrink-0 shadow-xs"
+                style={{
+                  width: `${Math.round(currentButton * 3.4)}px`,
+                  height: `${Math.round(currentButton * 3.4)}px`,
+                }}
+              >
+                <ArrowDown size={Math.max(13, Math.round(currentButton * 1.4))} weight="bold" className="text-[#111010]" />
+              </div>
+              <span 
+                className="font-sans uppercase tracking-[0.25em] text-[#111010] font-bold"
+                style={{ fontSize: `${currentButton}px` }}
+              >
+                {buttonPreviewText || 'SCROLL FOR NEXT PRINCIPLE'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -639,6 +838,7 @@ export default function AdminHomeEditor() {
   const [masterEyebrowSize, setMasterEyebrowSize] = useState(14);
   const [masterHeadingSize, setMasterHeadingSize] = useState(64);
   const [masterDescriptionSize, setMasterDescriptionSize] = useState(18);
+  const [masterButtonSize, setMasterButtonSize] = useState(14);
   const [isSavingMaster, setIsSavingMaster] = useState(false);
   const [selectedMasterSections, setSelectedMasterSections] = useState({
     hero: true,
@@ -717,6 +917,7 @@ export default function AdminHomeEditor() {
             eyebrowFontSize: masterEyebrowSize,
             headingFontSize: masterHeadingSize,
             descriptionFontSize: masterDescriptionSize,
+            buttonFontSize: masterButtonSize,
           };
         }
         if (selectedMasterSections.feel) {
@@ -725,6 +926,7 @@ export default function AdminHomeEditor() {
             eyebrowFontSize: masterEyebrowSize,
             headingFontSize: masterHeadingSize,
             descriptionFontSize: masterDescriptionSize,
+            buttonFontSize: masterButtonSize,
           };
         }
         if (selectedMasterSections.decide) {
@@ -733,6 +935,7 @@ export default function AdminHomeEditor() {
             eyebrowFontSize: masterEyebrowSize,
             headingFontSize: masterHeadingSize,
             descriptionFontSize: masterDescriptionSize,
+            buttonFontSize: masterButtonSize,
           };
         }
         endpointsToSave.add('principles');
@@ -1355,7 +1558,8 @@ export default function AdminHomeEditor() {
                       setMasterEyebrowSize(14);
                       setMasterHeadingSize(64);
                       setMasterDescriptionSize(18);
-                      showToast('Reset master sizes to recommended standards (14px / 64px / 18px)', 'info');
+                      setMasterButtonSize(14);
+                      showToast('Reset master sizes to recommended standards (14px / 64px / 18px / 14px)', 'info');
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-xs font-medium transition-all cursor-pointer"
                   >
@@ -1377,8 +1581,8 @@ export default function AdminHomeEditor() {
                   </span>
                 </div>
 
-                {/* 3 Master Columns */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* 4 Master Columns */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
                   
                   {/* 1. Master Eyebrow */}
                   <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
@@ -1578,6 +1782,72 @@ export default function AdminHomeEditor() {
                     </div>
                   </div>
 
+                  {/* 4. Master Scroll Button & Arrow */}
+                  <div className="bg-[#050505] border border-white/10 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#c79c6e]" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                          4. Scroll Button &amp; Arrow
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {masterButtonSize}px
+                      </span>
+                    </div>
+
+                    <p className="text-[0.7rem] text-white/40 leading-relaxed">
+                      Controls "SCROLL FOR NEXT PRINCIPLE" text size and scales the circular down-arrow button proportionally.
+                    </p>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setMasterButtonSize(prev => Math.max(10, prev - 1))}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Decrease 1px"
+                      >
+                        <Minus size={14} weight="bold" />
+                      </button>
+
+                      <input
+                        type="range"
+                        min={10}
+                        max={26}
+                        step={1}
+                        value={masterButtonSize}
+                        onChange={(e) => setMasterButtonSize(Number(e.target.value))}
+                        className="flex-1 accent-[#c79c6e] cursor-pointer"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setMasterButtonSize(prev => Math.min(26, prev + 1))}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Increase 1px"
+                      >
+                        <Plus size={14} weight="bold" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
+                      {[11, 12, 13, 14, 16, 18].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setMasterButtonSize(size)}
+                          className={`text-[0.65rem] font-mono px-2 py-0.5 rounded transition-all cursor-pointer ${
+                            masterButtonSize === size
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {size}px
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
@@ -1678,7 +1948,7 @@ export default function AdminHomeEditor() {
                     </span>
                   </div>
                   <span className="text-[0.68rem] text-white/40 font-medium">
-                    Previewing in real-time with master sizes: <strong className="text-[#c79c6e] font-mono">{masterEyebrowSize}px</strong> / <strong className="text-[#c79c6e] font-mono">{masterHeadingSize}px</strong> / <strong className="text-[#c79c6e] font-mono">{masterDescriptionSize}px</strong>
+                    Previewing in real-time with master sizes: <strong className="text-[#c79c6e] font-mono">{masterEyebrowSize}px</strong> / <strong className="text-[#c79c6e] font-mono">{masterHeadingSize}px</strong> / <strong className="text-[#c79c6e] font-mono">{masterDescriptionSize}px</strong> / <strong className="text-[#c79c6e] font-mono">{masterButtonSize}px</strong>
                   </span>
                 </div>
 
@@ -1733,7 +2003,7 @@ export default function AdminHomeEditor() {
                         Preview 2 • Principle 01: Think
                       </span>
                       <span className="text-[0.6rem] text-stone-500 font-mono">
-                        {masterEyebrowSize}px / {masterHeadingSize}px / {masterDescriptionSize}px
+                        {masterEyebrowSize}px / {masterHeadingSize}px / {masterDescriptionSize}px / {masterButtonSize}px
                       </span>
                     </div>
 
@@ -1766,6 +2036,25 @@ export default function AdminHomeEditor() {
                     >
                       The quality of your life is determined by the quality of your thinking. When mental chatter dissolves, deep insights emerge naturally.
                     </p>
+
+                    {/* Live Principle Scroll Button Preview */}
+                    <div className="flex items-center gap-3.5 pt-3 mt-1 border-t border-[#c9542f]/20">
+                      <div 
+                        className="rounded-full border border-black/20 bg-white/70 flex items-center justify-center shrink-0 shadow-xs"
+                        style={{
+                          width: `${Math.round(masterButtonSize * 3.4)}px`,
+                          height: `${Math.round(masterButtonSize * 3.4)}px`,
+                        }}
+                      >
+                        <ArrowDown size={Math.max(13, Math.round(masterButtonSize * 1.4))} weight="bold" className="text-[#111010]" />
+                      </div>
+                      <span 
+                        className="font-sans uppercase tracking-[0.25em] text-[#111010] font-bold"
+                        style={{ fontSize: `${masterButtonSize}px` }}
+                      >
+                        SCROLL FOR NEXT PRINCIPLE
+                      </span>
+                    </div>
                   </div>
 
                   {/* Card 3: Coaching Methodology */}
@@ -2145,12 +2434,16 @@ export default function AdminHomeEditor() {
                 eyebrowFontSize={currentProblem.eyebrowFontSize}
                 headingFontSize={currentProblem.headingFontSize}
                 descriptionFontSize={currentProblem.descriptionFontSize}
+                wordFontSize={currentProblem.wordFontSize}
                 defaultEyebrowSize={14}
                 defaultHeadingSize={56}
                 defaultDescriptionSize={22}
+                defaultWordSize={18}
                 onEyebrowSizeChange={(val) => handleSectionChange('eyebrowFontSize', val)}
                 onHeadingSizeChange={(val) => handleSectionChange('headingFontSize', val)}
                 onDescriptionSizeChange={(val) => handleSectionChange('descriptionFontSize', val)}
+                onWordSizeChange={(val) => handleSectionChange('wordFontSize', val)}
+                showWordSizeControl={true}
                 previewEyebrow={currentProblem.eyebrowText || "MAYBE YOU'VE SPENT YEARS"}
                 previewHeading={currentProblem.headingLine1 || "Trying to fix what isn't the"}
                 previewAccent={currentProblem.headingAccent || "real problem."}
@@ -2277,12 +2570,17 @@ export default function AdminHomeEditor() {
                   eyebrowFontSize={p.eyebrowFontSize}
                   headingFontSize={p.headingFontSize}
                   descriptionFontSize={p.descriptionFontSize}
+                  buttonFontSize={p.buttonFontSize}
                   defaultEyebrowSize={14}
                   defaultHeadingSize={64}
                   defaultDescriptionSize={18}
+                  defaultButtonSize={14}
                   onEyebrowSizeChange={(val) => handlePrincipleChange('think', 'eyebrowFontSize', val)}
                   onHeadingSizeChange={(val) => handlePrincipleChange('think', 'headingFontSize', val)}
                   onDescriptionSizeChange={(val) => handlePrincipleChange('think', 'descriptionFontSize', val)}
+                  onButtonSizeChange={(val) => handlePrincipleChange('think', 'buttonFontSize', val)}
+                  showButtonSizeControl={true}
+                  buttonPreviewText={p.buttonText || 'SCROLL FOR NEXT PRINCIPLE'}
                   previewEyebrow={p.eyebrow || 'PRINCIPLE 01: THINK'}
                   previewHeading={p.title || 'THINK'}
                   previewAccent={p.subtitle || 'CLEARLY.'}
@@ -2399,12 +2697,17 @@ export default function AdminHomeEditor() {
                   eyebrowFontSize={p.eyebrowFontSize}
                   headingFontSize={p.headingFontSize}
                   descriptionFontSize={p.descriptionFontSize}
+                  buttonFontSize={p.buttonFontSize}
                   defaultEyebrowSize={14}
                   defaultHeadingSize={64}
                   defaultDescriptionSize={18}
+                  defaultButtonSize={14}
                   onEyebrowSizeChange={(val) => handlePrincipleChange('feel', 'eyebrowFontSize', val)}
                   onHeadingSizeChange={(val) => handlePrincipleChange('feel', 'headingFontSize', val)}
                   onDescriptionSizeChange={(val) => handlePrincipleChange('feel', 'descriptionFontSize', val)}
+                  onButtonSizeChange={(val) => handlePrincipleChange('feel', 'buttonFontSize', val)}
+                  showButtonSizeControl={true}
+                  buttonPreviewText={p.buttonText || 'SCROLL FOR NEXT PRINCIPLE'}
                   previewEyebrow={p.eyebrow || 'PRINCIPLE 02: FEEL'}
                   previewHeading={p.title || 'FEEL'}
                   previewAccent={p.subtitle || 'HONESTLY.'}
@@ -2532,12 +2835,17 @@ export default function AdminHomeEditor() {
                   eyebrowFontSize={p.eyebrowFontSize}
                   headingFontSize={p.headingFontSize}
                   descriptionFontSize={p.descriptionFontSize}
+                  buttonFontSize={p.buttonFontSize}
                   defaultEyebrowSize={14}
                   defaultHeadingSize={64}
                   defaultDescriptionSize={18}
+                  defaultButtonSize={14}
                   onEyebrowSizeChange={(val) => handlePrincipleChange('decide', 'eyebrowFontSize', val)}
                   onHeadingSizeChange={(val) => handlePrincipleChange('decide', 'headingFontSize', val)}
                   onDescriptionSizeChange={(val) => handlePrincipleChange('decide', 'descriptionFontSize', val)}
+                  onButtonSizeChange={(val) => handlePrincipleChange('decide', 'buttonFontSize', val)}
+                  showButtonSizeControl={true}
+                  buttonPreviewText={p.buttonText || 'SCROLL FOR NEXT PRINCIPLE'}
                   previewEyebrow={p.eyebrow || 'PRINCIPLE 03: DECIDE'}
                   previewHeading={p.title || 'DECIDE'}
                   previewAccent={p.subtitle || 'INTENTIONALLY.'}

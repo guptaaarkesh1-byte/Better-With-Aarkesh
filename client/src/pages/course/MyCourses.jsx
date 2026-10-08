@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { clearAllAuth } from '../../utils/authSync';
 import {
   User,
   SignOut,
@@ -113,9 +114,7 @@ export default function MyCourses() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('courseToken');
-    localStorage.removeItem('isCoursePurchased');
-    localStorage.removeItem('courseUser');
+    clearAllAuth();
     navigate('/course');
   };
 

@@ -375,15 +375,6 @@ router.post('/course-verify', async (req, res) => {
                 phoneNumber: courseUser.phoneNumber || '',
               });
             }
-            if (!coachingUser.courseSessionsGranted) {
-              coachingUser.freeSessions = 3;
-              coachingUser.courseSessionsGranted = true;
-            }
-            await coachingUser.save();
-            freeSessions = coachingUser.freeSessions;
-            coachingToken = jwt.sign({ id: coachingUser._id }, process.env.JWT_SECRET || 'fallback_secret_key', {
-              expiresIn: '30d',
-            });
 
             // Find course details from dynamic multi-settings or fallback
             let matchedCourse = null;
@@ -395,7 +386,44 @@ router.post('/course-verify', async (req, res) => {
               }
             } catch (e) {}
 
-            const primaryCourse = await Course.findOne().sort({ createdAt: 1 });
+            const isObjectId = mongoose.Types.ObjectId.isValid(targetSlug);
+            const primaryCourse = await Course.findOne(
+              isObjectId ? { $or: [{ slug: targetSlug }, { _id: targetSlug }] } : { slug: targetSlug }
+            ).sort({ createdAt: 1 }) || await Course.findOne().sort({ createdAt: 1 });
+
+            // Calculate free sessions to grant (if enabled, else 0)
+            let freeSessionsToGrant = 5;
+            if (matchedCourse?.includeFreeSessions === false || matchedCourse?.enableFreeSessions === false || primaryCourse?.includeFreeSessions === false) {
+              freeSessionsToGrant = 0;
+            } else if (matchedCourse?.freeSessionsCount !== undefined) {
+              freeSessionsToGrant = Math.max(0, Number(matchedCourse.freeSessionsCount));
+            } else if (matchedCourse?.pricingSection?.freeSessionsCount !== undefined) {
+              freeSessionsToGrant = Math.max(0, Number(matchedCourse.pricingSection.freeSessionsCount));
+            } else if (primaryCourse?.freeSessionsCount !== undefined) {
+              freeSessionsToGrant = Math.max(0, Number(primaryCourse.freeSessionsCount));
+            } else if (primaryCourse?.pricingSection?.freeSessionsCount !== undefined) {
+              freeSessionsToGrant = Math.max(0, Number(primaryCourse.pricingSection.freeSessionsCount));
+            }
+
+            if (!coachingUser.courseSessionsGranted) {
+              coachingUser.freeSessions = freeSessionsToGrant;
+              coachingUser.courseSessionsGranted = true;
+            } else {
+              // Add any new free sessions granted by this specific purchase
+              coachingUser.freeSessions = (coachingUser.freeSessions || 0) + freeSessionsToGrant;
+            }
+            await coachingUser.save();
+            freeSessions = coachingUser.freeSessions;
+
+            // Also persist on courseUser record
+            courseUser.freeSessions = freeSessions;
+            courseUser.courseSessionsGranted = true;
+            await courseUser.save();
+
+            coachingToken = jwt.sign({ id: coachingUser._id }, process.env.JWT_SECRET || 'fallback_secret_key', {
+              expiresIn: '30d',
+            });
+
             let courseTitle = matchedCourse?.title || (targetSlug ? (targetSlug.charAt(0).toUpperCase() + targetSlug.slice(1)) : 'The Better Man™');
             let basePrice = 15000;
             if (matchedCourse?.price !== undefined) {
@@ -417,7 +445,7 @@ router.post('/course-verify', async (req, res) => {
               {
                 userId: coachingUser._id,
                 courseUserId: courseUser._id,
-                courseId: primaryCourse?._id,
+                courseId: primaryCourse?._id || undefined,
                 courseSlug: targetSlug,
                 courseTitle,
                 studentName: courseUser.fullName,
@@ -426,6 +454,7 @@ router.post('/course-verify', async (req, res) => {
                 currency: 'INR',
                 paymentStatus: 'Paid',
                 enrollmentStatus: 'Active',
+                freeSessionsGranted: freeSessionsToGrant,
                 transactionId: razorpay_payment_id,
                 razorpayOrderId: razorpay_order_id,
                 razorpayPaymentId: razorpay_payment_id,
@@ -449,8 +478,8 @@ router.post('/course-verify', async (req, res) => {
               courseTitle,
               invoiceItemTitle: matchedCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
               invoiceItemSubtitle: matchedCourse?.invoiceItemSubtitle || primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
-              bonusItemTitle: primaryCourse?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
-              bonusItemSubtitle: primaryCourse?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus',
+              bonusItemTitle: freeSessionsToGrant > 0 ? `${freeSessionsToGrant} Private 1-on-1 Executive Coaching Sessions with Aarkesh` : 'Direct Instructor Q&A & Lifetime Updates',
+              bonusItemSubtitle: freeSessionsToGrant > 0 ? `Valued at ₹${(freeSessionsToGrant * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus` : 'Included with your enrollment',
               purchaseDate: new Date(),
             }).catch(err => console.error('Background purchase invoice email error:', err));
 
@@ -476,9 +505,9 @@ router.post('/course-verify', async (req, res) => {
                 studentEmail: email,
                 invoiceItemTitle: matchedCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
                 invoiceItemSubtitle: matchedCourse?.invoiceItemSubtitle || primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
-                bonusItemTitle: primaryCourse?.bonusItemTitle || '3 Private 1-on-1 Executive Coaching Sessions with Aarkesh',
-                bonusItemSubtitle: primaryCourse?.bonusItemSubtitle || 'Valued at ₹15,000 — 100% Complimentary student bonus',
-                freeSessionsGranted: 3
+                bonusItemTitle: freeSessionsToGrant > 0 ? `${freeSessionsToGrant} Private 1-on-1 Executive Coaching Sessions with Aarkesh` : 'Direct Instructor Q&A & Lifetime Updates',
+                bonusItemSubtitle: freeSessionsToGrant > 0 ? `Valued at ₹${(freeSessionsToGrant * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus` : 'Included with your enrollment',
+                freeSessionsGranted: freeSessionsToGrant
               }
             });
           }

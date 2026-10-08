@@ -521,13 +521,13 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
             {/* Success Heading */}
             <h2 className="font-serif text-2xl sm:text-4xl text-[#111010] font-normal mb-2">
               {successData.isPaid 
-                ? 'Payment & Reschedule Confirmed!' 
-                : successData.isCredit 
-                  ? 'Rescheduled with Free Credit!' 
-                  : 'Reschedule Confirmed!'}
+                ? 'Payment Received • Request Submitted!' 
+                : 'Reschedule Request Submitted!'}
             </h2>
             <p className="text-[#555047] text-xs sm:text-sm font-sans max-w-md mb-6 sm:mb-8 leading-relaxed">
-              Your 1-on-1 coaching session has been successfully rescheduled. Your calendar invites and session links have been updated.
+              {successData.isPaid 
+                ? `Your payment of ₹${(successData.amount || 5000).toLocaleString('en-IN')} for the late reschedule fee was received. Your requested session slot has been sent to Coach Aarkesh for confirmation.`
+                : 'Your request for a new session time has been sent to Coach Aarkesh for approval. Once reviewed, your session will be confirmed.'}
             </p>
 
             {/* Detailed Summary Card */}
@@ -537,7 +537,7 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
               <div className="bg-[#fbf0eb] border border-[#e8c4e2] rounded-xl p-4 flex flex-col gap-2">
                 <span className="font-sans text-[0.65rem] uppercase tracking-wider text-[#c9542f] font-bold flex items-center gap-1.5">
                   <CalendarBlank size={14} weight="bold" />
-                  New Confirmed Session Slot
+                  Requested New Slot (Pending Coach Approval)
                 </span>
                 <div className="font-serif text-lg sm:text-xl text-[#111010] font-medium">
                   {successData.date}
@@ -556,7 +556,7 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                     <Sparkle size={18} className="text-emerald-600" weight="fill" />
                     <div>
                       <span className="font-sans text-xs font-bold text-emerald-950 uppercase tracking-wider block">
-                        Complimentary Credit Used
+                        Complimentary Credit Held (Pending Approval)
                       </span>
                       <span className="text-[0.7rem] text-emerald-800">
                         {successData.freeSessionsRemaining} credit(s) remaining on your account

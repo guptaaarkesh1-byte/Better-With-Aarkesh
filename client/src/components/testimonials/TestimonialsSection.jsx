@@ -157,10 +157,10 @@ export default function TestimonialsSection() {
                 </div>
                 
                 <h2 
-                  className="font-serif text-4xl md:text-6xl lg:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08] mb-1"
+                  className="font-serif text-[1.75rem] xs:text-[1.95rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08] mb-1 max-w-full"
                   style={{ 
                     fontFamily: 'Fraunces, Georgia, serif',
-                    fontSize: data?.headingFontSize ? `${data.headingFontSize}px` : undefined 
+                    ...(data?.headingFontSize ? { fontSize: `clamp(1.65rem, 6.5vw, ${data.headingFontSize}px)` } : {})
                   }}
                 >
                   {heading1}<br/>

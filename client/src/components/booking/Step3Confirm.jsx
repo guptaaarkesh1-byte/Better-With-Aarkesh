@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   CalendarBlank, Clock, User, VideoCamera, 
-  EnvelopeSimple, Lock, ArrowLeft, LockKey, CheckSquare, Square, ClockCounterClockwise 
+  EnvelopeSimple, Lock, ArrowLeft, LockKey, CheckSquare, Square, ClockCounterClockwise,
+  Receipt
 } from '@phosphor-icons/react';
 import PolicyModal from '../ui/PolicyModal';
 
@@ -102,7 +103,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
             </div>
 
             <div className="flex items-start gap-3 sm:gap-4 pt-2 border-t border-black/10">
-              <div className="w-5 sm:w-6 flex justify-center text-[#c9542f] text-xl sm:text-2xl shrink-0 font-serif font-bold">₹</div>
+              <Receipt className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div className="flex flex-col gap-1">
                 <span className="font-sans text-[0.65rem] uppercase tracking-widest text-[#7a756b] font-bold">{settings.totalAmountLabel || 'Total Amount'}</span>
                 {isFreeSession ? (
@@ -235,6 +236,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
         slug={activeModal}
         title={activeModal === 'terms-and-conditions' ? 'Terms & Conditions' : 'Rescheduling Policy'}
         showActions={activeModal === 'terms-and-conditions'}
+        theme="light"
         onAgree={() => { setAgreed(true); setActiveModal(null); }}
         onDecline={() => { setAgreed(false); setActiveModal(null); }}
       />

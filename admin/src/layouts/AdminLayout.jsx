@@ -34,7 +34,7 @@ export default function AdminLayout({ children, onLogout }) {
 
   const topTabs = [
     { id: 'overview', label: 'Overview', icon: <SquaresFour size={18} />, path: '/' },
-    { id: 'coaching', label: 'Appointments', icon: <Users size={18} />, path: '/appointments' },
+    { id: 'coaching', label: 'Clients & Sessions', icon: <Users size={18} />, path: '/appointments' },
     { id: 'home', label: 'Home', icon: <House size={18} />, path: '/home-editor' },
     { id: 'library', label: 'Library', icon: <Books size={18} />, path: '/library' },
     { id: 'booking', label: 'Book a Session', icon: <CalendarBlank size={18} />, path: '/booking-editor' },

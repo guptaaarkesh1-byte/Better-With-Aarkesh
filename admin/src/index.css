@@ -587,6 +587,12 @@ textarea:not(.preserve-dark):not(.preserve-dark *):not([data-preserve-dark="true
   color: #c79c6e !important;
 }
 
+.preserve-dark [class*="text-[#c9542f]"],
+[data-preserve-dark="true"] [class*="text-[#c9542f]"],
+.live-preview-dark [class*="text-[#c9542f]"] {
+  color: #c9542f !important;
+}
+
 /* Allow uppercase & tracking inside preserve-dark without turning black */
 .preserve-dark [class*="uppercase"],
 .preserve-dark [class*="tracking-widest"],

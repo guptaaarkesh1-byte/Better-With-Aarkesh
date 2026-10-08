@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { BookmarkSimple, List, X, User, LockKey, SignOut, ArrowRight, Play } from '@phosphor-icons/react';
 import Container from '../ui/Container';
 import LoginModal from './LoginModal';
+import { clearAllAuth, isAnyUserLoggedIn, getEffectiveUser } from '../../utils/authSync';
 
 const NAV_LINKS = [
   { label: 'HOME', href: '/' },
@@ -20,9 +21,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem('token') ? true : false;
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState(isAnyUserLoggedIn);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const navRef = useRef(null);
@@ -35,13 +34,15 @@ export default function Navbar() {
   // Re-check auth status when route changes or auth event fires
   useEffect(() => {
     const handleAuthChange = () => {
-      setIsLoggedIn(!!localStorage.getItem('token'));
+      setIsLoggedIn(isAnyUserLoggedIn());
     };
     handleAuthChange();
     window.addEventListener('auth-change', handleAuthChange);
+    window.addEventListener('course-auth-change', handleAuthChange);
     window.addEventListener('storage', handleAuthChange);
     return () => {
       window.removeEventListener('auth-change', handleAuthChange);
+      window.removeEventListener('course-auth-change', handleAuthChange);
       window.removeEventListener('storage', handleAuthChange);
     };
   }, [location.pathname]);
@@ -211,7 +212,7 @@ export default function Navbar() {
                     <div className="absolute top-full right-0 pt-2 w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0 flex flex-col pointer-events-none group-hover:pointer-events-auto z-[200]">
                       <div className="rounded-xl border border-black/10 bg-[#ffffff] p-2 shadow-2xl flex flex-col">
                         <span className="font-sans text-[0.65rem] uppercase tracking-[0.18em] font-semibold text-black/50 mb-2 mt-2 px-3 truncate">
-                          {JSON.parse(localStorage.getItem('userInfo') || '{}')?.fullName || 'MY ACCOUNT'}
+                          {getEffectiveUser()?.fullName || 'MY ACCOUNT'}
                         </span>
 
                         <button 
@@ -232,10 +233,8 @@ export default function Navbar() {
                         
                         <button 
                           onClick={() => {
-                            localStorage.removeItem('token');
-                            localStorage.removeItem('userInfo');
+                            clearAllAuth();
                             setIsLoggedIn(false);
-                            window.dispatchEvent(new Event('auth-change'));
                             navigate('/');
                           }}
                           className="flex items-center gap-3 font-sans text-[0.7rem] uppercase tracking-[0.15em] font-bold text-[#c9542f] hover:bg-[#c9542f]/10 transition-colors w-full text-left px-3 py-2 rounded-lg mt-1"

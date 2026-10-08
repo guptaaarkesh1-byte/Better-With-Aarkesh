@@ -46,6 +46,21 @@ export const DEFAULT_LIBRARY_SECTIONS = {
     watchCardSubtitle: '10 VIDEOS',
     watchCardDesc: 'Perspectives spoken\nand explored.',
     showWatchCard: true
+  },
+  typography: {
+    heroHeadingSize: 54,
+    heroShiftY: -35,
+    searchFontSize: 13,
+    searchMaxWidth: 260,
+    searchShiftY: -10,
+    marqueeFontSize: 16,
+    marqueeHeight: 52,
+    categoryWordSize: 110,
+    viewAllFontSize: 12,
+    articleTitleSize: 17,
+    articleMetaSize: 10,
+    articleCountSize: 11,
+    sphereSize: 320
   }
 };
 
@@ -61,7 +76,8 @@ router.get('/', async (req, res) => {
     const result = {
       hero: { ...DEFAULT_LIBRARY_SECTIONS.hero, ...(doc.value?.hero || {}) },
       directory: { ...DEFAULT_LIBRARY_SECTIONS.directory, ...(doc.value?.directory || {}) },
-      formatExplore: { ...DEFAULT_LIBRARY_SECTIONS.formatExplore, ...(doc.value?.formatExplore || {}) }
+      formatExplore: { ...DEFAULT_LIBRARY_SECTIONS.formatExplore, ...(doc.value?.formatExplore || {}) },
+      typography: { ...DEFAULT_LIBRARY_SECTIONS.typography, ...(doc.value?.typography || {}) }
     };
     res.json(result);
   } catch (err) {

@@ -297,6 +297,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
         slug="rescheduling-policy"
         title="Rescheduling Policy"
         showActions={false}
+        theme="light"
       />
 
       <LoginModal 

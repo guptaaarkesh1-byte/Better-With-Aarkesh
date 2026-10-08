@@ -4,22 +4,33 @@ import Settings from '../models/Settings.js';
 const router = express.Router();
 
 export const DEFAULT_COURSE_LANDING_SECTIONS = {
+  masterTypography: {
+    masterEyebrowSize: 14,
+    masterHeadingSize: 54,
+    masterDescriptionSize: 17,
+    masterButtonSize: 14,
+  },
   hero: {
     tag: 'Learn. Practise. Lead.',
+    tagSize: 14,
     heading: 'THE *BETTER* MAN',
+    headingSize: 56,
     headingPrefix: 'THE',
     headingSelected: 'BETTER',
     headingSuffix: 'MAN',
     subheading: 'Masterclasses in calm authority, magnetic communication and self-command, taught by Aarkesh.',
+    subheadingSize: 18,
     proof1Bold: '3 private',
     proof1Text: '1-on-1 sessions with Aarkesh',
     proof2Bold: 'Lifetime',
     proof2Text: 'access, no recurring charges',
+    proofSize: 14,
     primaryBtnText: 'Register Now',
     showPrimaryBtn: true,
     secondaryBtnText: 'Check Course',
     secondaryBtnLink: '/course/better-man',
     showSecondaryBtn: true,
+    buttonSize: 14,
     navBtnText: 'Check Course',
     navBtnLink: '/course/better-man',
     showNavBtn: true,
@@ -28,22 +39,35 @@ export const DEFAULT_COURSE_LANDING_SECTIONS = {
   },
   moreCourses: {
     eyebrowText: 'MORE MASTERCLASSES',
+    eyebrowSize: 14,
     heading: 'More Masterclasses',
+    headingSize: 44,
     subheading: 'Each one is a standalone course with its own private sessions.',
+    subheadingSize: 16,
     viewAllBtnText: 'View All Masterclasses',
     viewAllBtnLink: '/course/all',
-    showViewAllBtn: true
+    showViewAllBtn: true,
+    buttonSize: 14
   },
   allCoursesPage: {
     tag: 'ALL PROGRAMS',
+    tagSize: 14,
     heading: 'All Masterclasses & Programs',
+    headingSize: 48,
     subheading: 'Each masterclass is an intensive, transformative curriculum paired with private 1-on-1 mentorship sessions with Aarkesh.',
-    backBtnText: '← Back to overview'
+    subheadingSize: 16,
+    backBtnText: '← Back to overview',
+    buttonSize: 14
   },
   faq: {
     tag: 'FAQS',
+    tagSize: 14,
     heading: 'Frequently Asked Questions From Our Students',
+    headingSize: 40,
     subheading: 'Clear answers about the masterclass, private mentorship, and enrollment.',
+    subheadingSize: 16,
+    questionSize: 17,
+    answerSize: 15,
     items: [
       { question: 'How long do I have access to the course materials?', answer: 'You get lifetime access to all masterclass modules, downloadable resources, and all future updates with no recurring charges.' },
       { question: 'How do the 3 free coaching sessions work?', answer: 'Once enrolled, you can book your private 1-on-1 sessions directly with Aarkesh through your course profile dashboard.' },
@@ -53,12 +77,17 @@ export const DEFAULT_COURSE_LANDING_SECTIONS = {
   },
   cta: {
     label: 'ENROLL TODAY',
+    labelSize: 14,
     heading: 'Ready To Become The Man People Trust?',
+    headingSize: 48,
     description: 'Master the psychology of calm authority, magnetic communication and effortless self-command with lifetime curriculum access and 3 private 1-on-1 coaching sessions.',
+    descriptionSize: 17,
     badge1: '3 Private Coaching Calls',
     badge2: 'Lifetime Video Access',
+    badgeSize: 13,
     primaryBtnText: 'Register Now',
     exploreBtnText: 'Explore Courses',
+    buttonSize: 15,
     bgImageUrl: ''
   }
 };
@@ -73,8 +102,8 @@ const mergeWithDefaults = (storedValue) => {
         if (res[k] === undefined || res[k] === null || (typeof res[k] === 'string' && res[k].trim() === '')) {
           res[k] = defSec[k];
         }
-      } else if (typeof defSec[k] === 'boolean') {
-        if (res[k] === undefined || res[k] === null) {
+      } else if (typeof defSec[k] === 'boolean' || typeof defSec[k] === 'number') {
+        if (res[k] === undefined || res[k] === null || isNaN(res[k])) {
           res[k] = defSec[k];
         }
       }
@@ -90,6 +119,7 @@ const mergeWithDefaults = (storedValue) => {
   };
 
   return {
+    masterTypography: mergeSection(d.masterTypography, storedValue?.masterTypography),
     hero: mergeSection(d.hero, storedValue?.hero),
     moreCourses: mergeSection(d.moreCourses, storedValue?.moreCourses),
     allCoursesPage: mergeSection(d.allCoursesPage, storedValue?.allCoursesPage),

@@ -7,6 +7,7 @@ import { renderFormattedTitle } from '../articles/ArticleReaderView';
 import LoginModal from '../../components/layout/LoginModal';
 import PlasmaRingSphere from '../../components/library/PlasmaRingSphere';
 import { API_URL } from '../../utils/apiUrl';
+import { clearAllAuth, isAnyUserLoggedIn } from '../../utils/authSync';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -15,19 +16,21 @@ export default function Library() {
   const [searchQuery, setSearchQuery] = useState('');
   const [publishedArticles, setPublishedArticles] = useState([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token'));
+  const [isLoggedIn, setIsLoggedIn] = useState(isAnyUserLoggedIn);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const searchWrapRef = useRef(null);
 
   useEffect(() => {
     const handleAuthChange = () => {
-      setIsLoggedIn(!!localStorage.getItem('token'));
+      setIsLoggedIn(isAnyUserLoggedIn());
     };
     handleAuthChange();
     window.addEventListener('auth-change', handleAuthChange);
+    window.addEventListener('course-auth-change', handleAuthChange);
     window.addEventListener('storage', handleAuthChange);
     return () => {
       window.removeEventListener('auth-change', handleAuthChange);
+      window.removeEventListener('course-auth-change', handleAuthChange);
       window.removeEventListener('storage', handleAuthChange);
     };
   }, []);
@@ -45,20 +48,55 @@ export default function Library() {
     searchPlaceholder: "Describe what you're navigating...",
   });
 
-  // Fetch Hero Heading & Search Placeholder & Published Articles from API
+  const [typography, setTypography] = useState({
+    heroHeadingSize: 54,
+    heroShiftY: -35,
+    searchFontSize: 13,
+    searchMaxWidth: 260,
+    searchShiftY: -10,
+    marqueeFontSize: 16,
+    marqueeHeight: 52,
+    categoryWordSize: 110,
+    viewAllFontSize: 12,
+    articleTitleSize: 17,
+    articleMetaSize: 10,
+    articleCountSize: 11,
+    sphereSize: 320,
+  });
+
+  // Fetch Hero Heading & Typography & Published Articles from API
   useEffect(() => {
-    const fetchHeroSettings = async () => {
+    const fetchLibrarySettings = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/library-settings/hero`);
+        const res = await fetch(`${API_URL}/api/library-settings`);
         if (res.ok) {
           const data = await res.json();
-          setHeroSettings({
-            headingText: data.headingText || 'What are you trying to *understand?*',
-            searchPlaceholder: data.searchPlaceholder || "Describe what you're navigating...",
-          });
+          if (data.hero) {
+            setHeroSettings({
+              headingText: data.hero.headingText || 'What are you trying to *understand?*',
+              searchPlaceholder: data.hero.searchPlaceholder || "Describe what you're navigating...",
+            });
+          }
+          if (data.typography) {
+            setTypography({
+              heroHeadingSize: data.typography.heroHeadingSize ?? 54,
+              heroShiftY: data.typography.heroShiftY ?? -35,
+              searchFontSize: data.typography.searchFontSize ?? 13,
+              searchMaxWidth: data.typography.searchMaxWidth ?? 260,
+              searchShiftY: data.typography.searchShiftY ?? -10,
+              marqueeFontSize: data.typography.marqueeFontSize ?? 16,
+              marqueeHeight: data.typography.marqueeHeight ?? 52,
+              categoryWordSize: data.typography.categoryWordSize ?? 110,
+              viewAllFontSize: data.typography.viewAllFontSize ?? 12,
+              articleTitleSize: data.typography.articleTitleSize ?? 17,
+              articleMetaSize: data.typography.articleMetaSize ?? 10,
+              articleCountSize: data.typography.articleCountSize ?? 11,
+              sphereSize: data.typography.sphereSize ?? 320,
+            });
+          }
         }
       } catch (err) {
-        console.error('Failed to fetch hero settings', err);
+        console.error('Failed to fetch library settings', err);
       }
     };
 
@@ -74,7 +112,7 @@ export default function Library() {
       }
     };
 
-    fetchHeroSettings();
+    fetchLibrarySettings();
     fetchArticles();
   }, []);
 
@@ -307,7 +345,24 @@ export default function Library() {
   };
 
   return (
-    <div className="library-root">
+    <div
+      className="library-root"
+      style={{
+        '--hero-heading-size': typography?.heroHeadingSize ? `${typography.heroHeadingSize}px` : undefined,
+        '--heading-shift-y': typography?.heroShiftY !== undefined ? `${typography.heroShiftY}px` : undefined,
+        '--search-font-size': typography?.searchFontSize ? `${typography.searchFontSize}px` : undefined,
+        '--search-max-width': typography?.searchMaxWidth ? `${typography.searchMaxWidth}px` : undefined,
+        '--search-shift-y': typography?.searchShiftY !== undefined ? `${typography.searchShiftY}px` : undefined,
+        '--marquee-font-size': typography?.marqueeFontSize ? `${typography.marqueeFontSize}px` : undefined,
+        '--marquee-height': typography?.marqueeHeight ? `${typography.marqueeHeight}px` : undefined,
+        '--category-word-size': typography?.categoryWordSize ? `${typography.categoryWordSize}px` : undefined,
+        '--viewall-font-size': typography?.viewAllFontSize ? `${typography.viewAllFontSize}px` : undefined,
+        '--article-title-size': typography?.articleTitleSize ? `${typography.articleTitleSize}px` : undefined,
+        '--article-meta-size': typography?.articleMetaSize ? `${typography.articleMetaSize}px` : undefined,
+        '--article-count-size': typography?.articleCountSize ? `${typography.articleCountSize}px` : undefined,
+        '--sphere-size': typography?.sphereSize ? `${typography.sphereSize}px` : undefined,
+      }}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -621,7 +676,7 @@ export default function Library() {
           background: #111010;
           overflow: hidden;
           width: 100%;
-          height: 52px;
+          height: var(--marquee-height, 52px);
           display: flex;
           align-items: center;
           border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -653,7 +708,7 @@ export default function Library() {
           outline: none;
           font-family: 'Archivo Black', sans-serif;
           text-transform: uppercase;
-          font-size: 16px;
+          font-size: var(--marquee-font-size, 16px);
           letter-spacing: 0.14em;
           white-space: nowrap;
           cursor: default;
@@ -800,7 +855,7 @@ export default function Library() {
 
         .library-root .hero-cloud-stage h1 {
           font-family: 'Fraunces', Georgia, serif;
-          font-size: clamp(38px, 4.8vw, 64px);
+          font-size: var(--hero-heading-size, clamp(38px, 4.8vw, 64px));
           font-weight: 400;
           font-style: normal;
           color: #111010;
@@ -1270,7 +1325,7 @@ export default function Library() {
         }
 
         .library-root .cat-top .viewall {
-          font-size: 12px;
+          font-size: var(--viewall-font-size, 12px);
           font-weight: 700;
           text-transform: uppercase;
           border-bottom: 1px solid currentColor;
@@ -1293,7 +1348,7 @@ export default function Library() {
         }
 
         .library-root .cat-word {
-          font-size: clamp(48px, 7.8vw, 126px);
+          font-size: var(--category-word-size, clamp(48px, 7.8vw, 126px));
           margin: 0;
           line-height: 0.92;
           flex: 1;
@@ -1310,8 +1365,8 @@ export default function Library() {
 
         /* 3D Plasma Sphere - Positioned at Full Edges */
         .library-root .circle-reveal {
-          width: clamp(260px, 26vw, 360px);
-          height: clamp(260px, 26vw, 360px);
+          width: var(--sphere-size, clamp(260px, 26vw, 360px));
+          height: var(--sphere-size, clamp(260px, 26vw, 360px));
           border-radius: 50%;
           overflow: visible;
           position: relative;
@@ -1348,7 +1403,7 @@ export default function Library() {
 
         .library-root .art-count {
           font-family: 'Inter', sans-serif;
-          font-size: 11px;
+          font-size: var(--article-count-size, 11px);
           font-weight: 700;
           letter-spacing: 0.1em;
           text-transform: uppercase;
@@ -1381,14 +1436,14 @@ export default function Library() {
           font-family: 'Fraunces', serif;
           font-style: normal;
           font-weight: 500;
-          font-size: 17px;
+          font-size: var(--article-title-size, 17px);
           margin: 0;
           line-height: 1.35;
         }
 
         .library-root .art-row .meta {
           font-family: 'Inter', sans-serif;
-          font-size: 9.5px;
+          font-size: var(--article-meta-size, 9.5px);
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -1743,10 +1798,8 @@ export default function Library() {
                     type="button"
                     className="logout-btn"
                     onClick={() => {
-                      localStorage.removeItem('token');
-                      localStorage.removeItem('userInfo');
+                      clearAllAuth();
                       setIsLoggedIn(false);
-                      window.dispatchEvent(new Event('auth-change'));
                       navigate('/library');
                     }}
                   >

@@ -48,19 +48,38 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
     setError('');
 
     if (!isLogin && !isForgotPassword) {
-      if (phoneNumber.length !== 10) {
-        setError('Phone number must be exactly 10 digits');
-        return;
-      }
-      if (password.length < 4) {
-        setError('Password must be at least 4 characters long');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError('Passwords do not match');
-        return;
+      if (!isOtpStep) {
+        if (!fullName.trim()) {
+          setError('Please enter your full name');
+          return;
+        }
+        if (!email.trim()) {
+          setError('Please enter your email address');
+          return;
+        }
+        if (phoneNumber.length !== 10) {
+          setError('Phone number must be exactly 10 digits');
+          return;
+        }
+        if (password.length < 4) {
+          setError('Password must be at least 4 characters long');
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          return;
+        }
+      } else {
+        if (otpValues.join('').length !== 4) {
+          setError('Please enter the 4-digit OTP');
+          return;
+        }
       }
     } else if (isForgotPassword && isForgotOtpStep) {
+      if (otpValues.join('').length !== 4) {
+        setError('Please enter the 4-digit OTP');
+        return;
+      }
       if (password.length < 4) {
         setError('Password must be at least 4 characters long');
         return;
@@ -117,11 +136,39 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             setConfirmPassword('');
             setError('');
           }
-        } else if (!isLogin && !isOtpStep) {
-          // Move to OTP step
-          setIsOtpStep(true);
-          setError('');
+        } else if (!isLogin) {
+          if (!isOtpStep) {
+            // Register init succeeded -> move to OTP verification step
+            setIsOtpStep(true);
+            setError('');
+            setOtpValues(['', '', '', '']);
+          } else {
+            // Register verify succeeded with OTP -> complete login & onboarding
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('userInfo', JSON.stringify({ 
+              fullName: data.fullName, 
+              email: data.email,
+              phoneNumber: data.phoneNumber,
+              countryCode: data.countryCode,
+              dob: data.dob,
+              gender: data.gender,
+              freeSessions: data.freeSessions,
+              courseSessionsGranted: data.courseSessionsGranted
+            }));
+            if (data.courseToken) {
+              localStorage.setItem('courseToken', data.courseToken);
+              localStorage.setItem('courseUser', JSON.stringify({
+                _id: data.courseUserId || data._id,
+                fullName: data.fullName,
+                email: data.email,
+                phoneNumber: data.phoneNumber || '',
+              }));
+            }
+            window.dispatchEvent(new Event('auth-change'));
+            onSuccess({ ...data, isRegister: true });
+          }
         } else {
+          // Normal Login succeeded
           localStorage.setItem('token', data.token);
           localStorage.setItem('userInfo', JSON.stringify({ 
             fullName: data.fullName, 
@@ -133,8 +180,17 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             freeSessions: data.freeSessions,
             courseSessionsGranted: data.courseSessionsGranted
           }));
+          if (data.courseToken) {
+            localStorage.setItem('courseToken', data.courseToken);
+            localStorage.setItem('courseUser', JSON.stringify({
+              _id: data.courseUserId || data._id,
+              fullName: data.fullName,
+              email: data.email,
+              phoneNumber: data.phoneNumber || '',
+            }));
+          }
           window.dispatchEvent(new Event('auth-change'));
-          onSuccess({ ...data, isRegister: isOtpStep });
+          onSuccess({ ...data, isRegister: false });
         }
       } else {
         // Handle special case: course student already has a booking account → switch to login
@@ -455,6 +511,50 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             </button>
           </div>
         </form>
+
+        {isOtpStep && !isForgotOtpStep && (
+          <div className="mt-4 flex items-center justify-between text-center pt-2">
+            <button 
+              type="button"
+              onClick={() => {
+                setIsOtpStep(false);
+                setError('');
+              }}
+              className="font-sans text-[0.68rem] uppercase tracking-[0.18em] font-semibold text-[#555047] hover:text-[#c9542f] transition-colors cursor-pointer"
+            >
+              ← Edit details
+            </button>
+            <button 
+              type="button"
+              onClick={async () => {
+                try {
+                  setIsLoading(true);
+                  setError('');
+                  const API_URL = import.meta.env.VITE_API_URL || '';
+                  const res = await fetch(`${API_URL}/api/auth/register-init`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullName, email, password, countryCode, phoneNumber }),
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    setOtpValues(['', '', '', '']);
+                    setError('New OTP sent to your email.');
+                  } else {
+                    setError(data.message || 'Failed to resend OTP');
+                  }
+                } catch (err) {
+                  setError('Network error, please try again');
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              className="font-sans text-[0.68rem] uppercase tracking-[0.18em] font-bold text-[#c9542f] hover:text-[#111010] transition-colors cursor-pointer"
+            >
+              Resend OTP
+            </button>
+          </div>
+        )}
 
         {isLogin && !isForgotPassword && (
           <div className="mt-4 text-center">

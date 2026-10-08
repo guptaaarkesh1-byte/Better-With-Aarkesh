@@ -55,6 +55,10 @@ const coursePurchaseSchema = new mongoose.Schema({
     default: 'Active',
     index: true,
   },
+  freeSessionsGranted: {
+    type: Number,
+    default: 0,
+  },
   transactionId: {
     type: String,
     required: true,
