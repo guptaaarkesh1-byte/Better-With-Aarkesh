@@ -64,8 +64,8 @@ export default function HeroContent({ heroData = {} }) {
           ...(heroData.headingFontSize ? { fontSize: `clamp(2rem, 7vw, ${heroData.headingFontSize}px)` } : {})
         }}
       >
-        {heading1}{' '}
-        <span className="text-[#c9542f] font-medium not-italic" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+        {heading1}
+        <span className="block text-[#c9542f] font-medium not-italic mt-1 sm:mt-2" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
           {headingAccent}
         </span>
       </h1>

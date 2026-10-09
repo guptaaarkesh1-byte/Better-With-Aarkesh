@@ -4,6 +4,7 @@ import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Navbar from '../components/layout/Navbar';
+import FloatingCTA from '../components/ui/FloatingCTA';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -94,6 +95,7 @@ export default function MainLayout({ children }) {
       <main className="flex-grow flex flex-col">
         {children}
       </main>
+      <FloatingCTA />
     </div>
   );
 }

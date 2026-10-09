@@ -56,14 +56,32 @@ export default function PrincipleContent({
     );
   }, { scope: container, dependencies: [headlineWhite, headlineGold, paragraphs, eyebrow, id] });
 
+  const nextTargetMap = {
+    'think-principle': 'feel-principle',
+    'feel-principle': 'decide-principle',
+    'decide-principle': 'coaching'
+  };
+
+  const handleNextClick = () => {
+    const targetId = nextTargetMap[id] || 'coaching';
+    const el = document.getElementById(targetId);
+    if (el) {
+      if (window.lenis) {
+        window.lenis.scrollTo(el, { offset: 0, duration: 1.0 });
+      } else {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   const circlePx = buttonFontSize ? Math.round(buttonFontSize * 3.4) : null;
-  const iconPx = buttonFontSize ? Math.max(13, Math.round(buttonFontSize * 1.4)) : 20;
+  const iconPx = buttonFontSize ? Math.max(13, Math.round(buttonFontSize * 1.4)) : 18;
 
   return (
     <div ref={container} className={`${maxContentWidth} text-left relative z-20`}>
       
-      <div className="flex items-center gap-4 mb-6">
-        <div className="phil-line h-[1.5px] w-8 bg-[#c9542f] origin-left" />
+      <div className="flex items-center gap-3.5 mb-4 sm:mb-6">
+        <div className="phil-line h-[1.5px] w-7 bg-[#c9542f] origin-left" />
         <span 
           className="phil-eyebrow font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]"
           style={{ fontSize: eyebrowFontSize ? `${eyebrowFontSize}px` : undefined }}
@@ -73,25 +91,25 @@ export default function PrincipleContent({
       </div>
 
       <h2 
-        className="font-serif text-[1.75rem] xs:text-[1.95rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.5rem] font-medium tracking-tight leading-[1.12] mb-5 flex flex-col items-start w-fit max-w-full"
+        className="font-serif text-[clamp(34px,10.6vw,56px)] md:text-5xl lg:text-6xl xl:text-[4.5rem] font-medium tracking-tight leading-[1.0] sm:leading-[1.08] mb-4 sm:mb-5 flex flex-col items-start w-fit max-w-full"
         style={{ 
           fontFamily: 'Fraunces, Georgia, serif',
-          ...(headingFontSize ? { fontSize: `clamp(1.65rem, 6.5vw, ${headingFontSize}px)` } : {})
+          ...(headingFontSize ? { fontSize: `clamp(32px, 9.6vw, ${headingFontSize}px)` } : {})
         }}
       >
-        <span className={`phil-heading-word text-[#111010] pb-1.5 ${headlineWhite === headlineWhite?.toUpperCase() ? 'uppercase' : ''}`}>
+        <span className={`phil-heading-word text-[#111010] pb-1 ${headlineWhite === headlineWhite?.toUpperCase() ? 'uppercase' : ''}`}>
           {headlineWhite}
         </span>
-        <span className={`phil-heading-word text-[#c9542f] pb-1.5 not-italic font-medium ${headlineGold === headlineGold?.toUpperCase() ? 'uppercase' : ''}`}>
+        <span className={`phil-heading-word text-[#c9542f] pb-1 not-italic font-medium ${headlineGold === headlineGold?.toUpperCase() ? 'uppercase' : ''}`}>
           {headlineGold}
         </span>
       </h2>
 
-      <div className="space-y-5 mb-6 max-w-full">
+      <div className="space-y-3.5 sm:space-y-5 mb-6 max-w-full">
         {paragraphs.map((p, i) => (
           <p 
             key={i} 
-            className="phil-paragraph font-serif text-[#4a463e] font-normal tracking-wide leading-relaxed"
+            className="phil-paragraph font-serif text-[#4a463e] text-[15.5px] lg:text-xl font-normal tracking-wide leading-[1.65]"
             style={{ 
               fontFamily: 'Fraunces, Georgia, serif',
               fontSize: descriptionFontSize ? `${descriptionFontSize}px` : undefined
@@ -101,18 +119,21 @@ export default function PrincipleContent({
         ))}
       </div>
 
-      <div className="phil-button flex items-center gap-4 sm:gap-5 cursor-pointer group w-fit pt-2">
+      <div 
+        onClick={handleNextClick}
+        className="phil-button flex items-center gap-3.5 sm:gap-5 cursor-pointer group w-fit pt-2 select-none"
+      >
         <div 
-          className="w-12 h-12 sm:w-13 sm:h-13 rounded-full border border-black/20 bg-white/60 flex items-center justify-center transition-all duration-300 group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] group-hover:scale-105 shadow-xs shrink-0"
+          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border border-black/20 bg-white/80 flex items-center justify-center transition-all duration-300 group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] group-hover:scale-105 shadow-xs shrink-0"
           style={circlePx ? { width: `${circlePx}px`, height: `${circlePx}px` } : undefined}
         >
           <ArrowDown size={iconPx} weight="bold" className="text-[#111010] transition-transform group-hover:text-[#c9542f] group-hover:translate-y-1" />
         </div>
         <span 
-          className="font-sans text-xs sm:text-sm md:text-[0.82rem] uppercase tracking-[0.25em] text-[#111010] font-bold transition-colors group-hover:text-[#c9542f]"
+          className="font-sans text-[11px] sm:text-xs md:text-[0.82rem] uppercase tracking-[0.22em] text-[#111010] font-semibold transition-colors group-hover:text-[#c9542f]"
           style={{ fontSize: buttonFontSize ? `${buttonFontSize}px` : undefined }}
         >
-          {buttonText || 'SCROLL FOR NEXT PRINCIPLE'}
+          {buttonText || 'NEXT PRINCIPLE'}
         </span>
       </div>
 

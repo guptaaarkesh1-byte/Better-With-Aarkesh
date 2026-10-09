@@ -10,7 +10,8 @@ export default function TransitionIntro({ problemData = {} }) {
 
   const transEyebrow = problemData.transEyebrow || "CLARITY ISN'T LUCK.";
   const transHeading = problemData.transHeading || "It's a skill. And it";
-  const transAccent = problemData.transAccent || "changes everything.";
+  const rawAccent = problemData.transAccent || "Changes Everything.";
+  const transAccent = (rawAccent === "changes everything." || rawAccent === "Changes everything.") ? "Changes Everything." : rawAccent;
   const transBg = problemData.transBgImg || bottomImg;
 
   useGSAP(() => {
@@ -44,7 +45,7 @@ export default function TransitionIntro({ problemData = {} }) {
   }, { scope: container, dependencies: [transEyebrow, transHeading, transAccent] });
 
   return (
-    <div ref={container} className="relative flex flex-col items-center justify-center text-center px-4 py-8 lg:py-12 overflow-hidden bg-[#f5f1e8]">
+    <div ref={container} className="relative flex flex-col items-center justify-center text-center px-5 py-14 lg:py-16 overflow-hidden bg-[#f5f1e8]">
       
       {/* Clean light background with subtle warm radial highlight */}
       <div className="absolute inset-0 z-0 pointer-events-none bg-[#f5f1e8]">
@@ -52,29 +53,22 @@ export default function TransitionIntro({ problemData = {} }) {
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center">
-        <span className="trans-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] mb-3 inline-block">
+        <span className="trans-eyebrow font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] mb-3.5 inline-block">
           {transEyebrow}
         </span>
 
-        <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-normal tracking-tight text-[#111010] mb-4">
-          <AnimatedText text={`${transHeading} `} tag="span" className="inline-block" delay={0.2} />
-          <span className="relative inline-block overflow-hidden">
-            <AnimatedText 
-              text={transAccent} 
-              tag="span" 
-              className="inline-block text-[#c9542f] not-italic font-normal" 
-              delay={0.4} 
-            />
-            {/* Subtle underline for emphasis */}
-            <span className="absolute bottom-1 left-0 w-full h-[1.5px] bg-[#c9542f]/40" />
+        <h2 className="font-serif text-[clamp(28px,8.2vw,36px)] md:text-4xl lg:text-5xl font-normal tracking-tight text-[#111010] mb-5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+          <span>{transHeading} </span>
+          <span className="relative inline uppercase text-[#c9542f] not-italic font-medium">
+            {transAccent}
           </span>
         </h2>
 
-        <div className="trans-scroll flex items-center gap-3 opacity-0 mt-3">
-          <div className="w-5 h-8 rounded-full border border-black/20 flex justify-center p-1 bg-white/60">
-            <div ref={mouseRef} className="w-1.5 h-2.5 bg-[#111010] rounded-full" />
+        <div className="trans-scroll flex items-center gap-3 mt-4">
+          <div className="w-5 h-8 rounded-full border border-black/20 flex justify-center p-1 bg-white/80 shadow-xs">
+            <div ref={mouseRef} className="w-1 h-2 bg-[#111010] rounded-full animate-wheel" />
           </div>
-          <span className="font-sans text-xs tracking-widest text-[#555047] font-medium uppercase">Scroll to continue</span>
+          <span className="font-sans text-[11px] tracking-[0.22em] text-[#555047] font-semibold uppercase">Scroll to continue</span>
         </div>
       </div>
 

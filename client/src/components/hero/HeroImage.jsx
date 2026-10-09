@@ -8,7 +8,8 @@ const HERO_CDN_IMG = CDN_IMAGES.HERO_COACH || defaultHeroImg;
 
 export default function HeroImage({ 
   bgImageUrl = '',
-  overlayOpacity = 0
+  overlayOpacity = 0,
+  imagePositionY = 0
 }) {
   const container = useRef(null);
   const imageRef = useRef(null);
@@ -42,8 +43,13 @@ export default function HeroImage({
       ref={container} 
       className="w-full h-full relative overflow-hidden bg-[#f5f1e8]"
     >
-      {/* Character Image wrapper pinned below navbar to close gap */}
-      <div className="absolute inset-x-0 bottom-0 top-[75px] sm:top-[80px] md:top-[85px] lg:top-[85px] flex items-end justify-end">
+      {/* Character Image wrapper with position offset support */}
+      <div 
+        className="absolute inset-x-0 top-[75px] sm:top-[80px] md:top-[85px] lg:top-[85px] -bottom-20 flex items-end justify-end transition-transform duration-300"
+        style={{
+          transform: imagePositionY ? `translateY(${Number(imagePositionY)}px)` : undefined
+        }}
+      >
         <img
           ref={imageRef}
           src={imgSrc}
@@ -59,14 +65,6 @@ export default function HeroImage({
           className="w-full h-full object-cover object-[70%_top] sm:object-[82%_top] md:object-[84%_top] lg:object-[82%_top]"
         />
       </div>
-
-      {/* Left to right gentle cream gradient to blend seamlessly into #f5f1e8 behind text */}
-      <div 
-        className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/75 md:via-[#f5f1e8]/45 to-transparent w-full" 
-      />
-      
-      {/* Subtle bottom transition */}
-      <div className="absolute inset-x-0 bottom-0 h-24 pointer-events-none bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/80 to-transparent z-10" />
     </div>
   );
 }

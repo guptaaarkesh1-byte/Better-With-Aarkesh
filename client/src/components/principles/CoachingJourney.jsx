@@ -133,7 +133,7 @@ const DEFAULT_JOURNEY_DATA = {
     'Accountability that keeps you moving forward.'
   ],
   transitionAccent: 'Guided. Structured. Flexible.',
-  transitionSubtext: 'A process that adapts to you—so you can create a life that lasts.'
+  transitionSubtext: 'A process that adapts to you so you can create a life that lasts.'
 };
 
 const resolveJourneyImg = (url) => {
@@ -346,66 +346,119 @@ export default function CoachingJourney() {
               })}
             </div>
 
-            {/* Mobile Image (Visible below points on mobile) */}
-            <div className="block lg:hidden w-[calc(100%+2rem)] -ml-4 mt-12 relative flex justify-center pointer-events-auto">
-              <img 
-                src={resolveJourneyImg(data.bgImg)} 
-                alt="The Coaching Journey"
-                onError={(e) => {
-                  if (e.currentTarget.src !== defaultBgImg) {
-                    e.currentTarget.src = defaultBgImg;
-                  }
-                }}
-                className="w-full min-h-[85vh] object-cover opacity-60 object-[75%_top]"
+            {/* Mobile View (Matches user's mobile prototype) */}
+            <div className="block lg:hidden w-full mt-6">
+              {/* Mountain Climb Figure */}
+              <div 
+                className="relative w-full aspect-[560/772] mt-4 overflow-hidden rounded-2xl"
                 style={{
-                  maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
-                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)'
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, #000 9%, #000 93%, transparent 100%)',
+                  maskImage: 'linear-gradient(to bottom, transparent 0%, #000 9%, #000 93%, transparent 100%)'
                 }}
-              />
-              
-              {/* Floating Nodes for Mobile */}
-              {floatingNodes.map((node, i) => {
-                const Icon = node.icon;
-                return (
-                  <div 
-                    key={`mob-${i}`} 
-                    className="absolute flex items-center z-20 group cursor-pointer scale-[0.82] sm:scale-100 origin-center"
-                    style={{ 
-                      top: node.mobTop, 
-                      left: node.mobLeft,
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                  >
-                    <div className="w-10 h-10 rounded-full border border-[#c9542f]/40 bg-white/70 shadow-md flex items-center justify-center shrink-0 z-10">
-                      <Icon className="text-[#c9542f] text-lg" weight="regular" />
-                    </div>
-                    <div 
-                      className={`absolute top-1/2 -translate-y-1/2 w-max select-none bg-white/40 border border-white/70 rounded-xl px-3 py-2 shadow-xs ${
-                        node.flip 
-                          ? 'right-[calc(100%+0.5rem)] text-right' 
-                          : 'left-[calc(100%+0.5rem)] text-left'
-                      }`}
-                    >
-                      <div className={`flex items-center gap-1.5 mb-0.5 ${node.flip ? 'justify-end' : 'justify-start'}`}>
-                        {node.flip ? (
-                          <>
-                            <span className="font-sans text-[0.75rem] uppercase tracking-[0.18em] font-extrabold text-[#111010]">{node.title}</span>
-                            <span className="font-sans text-[0.75rem] tracking-widest font-extrabold text-[#c9542f]">{node.num}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="font-sans text-[0.75rem] tracking-widest font-extrabold text-[#c9542f]">{node.num}</span>
-                            <span className="font-sans text-[0.75rem] uppercase tracking-[0.18em] font-extrabold text-[#111010]">{node.title}</span>
-                          </>
-                        )}
-                      </div>
-                      <p className={`text-[#2b2723] text-[0.72rem] font-medium leading-tight whitespace-pre-line ${node.flip ? 'text-right' : 'text-left'}`}>
-                        {node.text}
-                      </p>
-                    </div>
+              >
+                <img 
+                  src={resolveJourneyImg(data.bgImg)} 
+                  alt="The Coaching Journey"
+                  onError={(e) => {
+                    if (e.currentTarget.src !== defaultBgImg) {
+                      e.currentTarget.src = defaultBgImg;
+                    }
+                  }}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+
+                {/* 4 Stops along the path on mobile */}
+                {/* 01 Clarifying */}
+                <div className="absolute inset-x-0 top-[83.8%] h-0 pointer-events-auto">
+                  <div className="absolute left-[28%] top-0 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,251,244,0.94)] border border-white/95 text-[#c9542f] shadow-[0_0_0_6px_rgba(255,255,255,0.26),0_8px_20px_-6px_rgba(255,150,60,0.6)]">
+                    <Compass size={20} weight="regular" />
                   </div>
-                );
-              })}
+                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 p-2.5 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
+                    <h3 className="font-sans font-bold text-[11px] leading-tight tracking-[0.2em] uppercase text-[#1c1916]">
+                      <i className="not-italic text-[#B3441F] mr-1.5">01</i>CLARIFYING
+                    </h3>
+                    <p className="font-sans font-medium text-[12.5px] leading-snug text-[#3b352e] mt-1">
+                      Root cause clarity. Real understanding.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 02 Connect */}
+                <div className="absolute inset-x-0 top-[62.4%] h-0 pointer-events-auto">
+                  <div className="absolute left-[28%] top-0 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,251,244,0.94)] border border-white/95 text-[#c9542f] shadow-[0_0_0_6px_rgba(255,255,255,0.26),0_8px_20px_-6px_rgba(255,150,60,0.6)]">
+                    <Heart size={20} weight="regular" />
+                  </div>
+                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 p-2.5 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
+                    <h3 className="font-sans font-bold text-[11px] leading-tight tracking-[0.2em] uppercase text-[#1c1916]">
+                      <i className="not-italic text-[#B3441F] mr-1.5">02</i>CONNECT
+                    </h3>
+                    <p className="font-sans font-medium text-[12.5px] leading-snug text-[#3b352e] mt-1">
+                      Emotional honesty. Values alignment.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 03 Create */}
+                <div className="absolute inset-x-0 top-[41.1%] h-0 pointer-events-auto">
+                  <div className="absolute left-[28%] top-0 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,251,244,0.94)] border border-white/95 text-[#c9542f] shadow-[0_0_0_6px_rgba(255,255,255,0.26),0_8px_20px_-6px_rgba(255,150,60,0.6)]">
+                    <GitFork size={20} weight="regular" />
+                  </div>
+                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 p-2.5 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
+                    <h3 className="font-sans font-bold text-[11px] leading-tight tracking-[0.2em] uppercase text-[#1c1916]">
+                      <i className="not-italic text-[#B3441F] mr-1.5">03</i>CREATE
+                    </h3>
+                    <p className="font-sans font-medium text-[12.5px] leading-snug text-[#3b352e] mt-1">
+                      Aligned decisions. Intentional life.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 04 Commit */}
+                <div className="absolute inset-x-0 top-[19.6%] h-0 pointer-events-auto">
+                  <div className="absolute left-[28%] top-0 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,251,244,0.94)] border border-white/95 text-[#c9542f] shadow-[0_0_0_6px_rgba(255,255,255,0.26),0_8px_20px_-6px_rgba(255,150,60,0.6)]">
+                    <Mountains size={20} weight="regular" />
+                  </div>
+                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 p-2.5 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
+                    <h3 className="font-sans font-bold text-[11px] leading-tight tracking-[0.2em] uppercase text-[#1c1916]">
+                      <i className="not-italic text-[#B3441F] mr-1.5">04</i>COMMIT
+                    </h3>
+                    <p className="font-sans font-medium text-[12.5px] leading-snug text-[#3b352e] mt-1">
+                      Sustained action. Lasting change.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* HOW IT WORKS Container for Mobile */}
+              <div className="mt-6 bg-[#EDE5D6] rounded-[22px] p-5">
+                <p className="flex items-center gap-3 font-sans font-semibold text-[11.5px] leading-snug tracking-[0.24em] uppercase text-[#B3441F] mb-4 before:content-[''] before:w-7 before:h-[1.5px] before:bg-[#c9542f] before:flex-shrink-0">
+                  HOW IT WORKS
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2 font-sans text-sm leading-snug text-[#2d2923]">
+                    <CalendarBlank size={22} className="text-[#B3441F]" weight="regular" />
+                    <span>Personalized coaching sessions tailored to you.</span>
+                  </div>
+                  <div className="flex flex-col gap-2 font-sans text-sm leading-snug text-[#2d2923]">
+                    <ChatTeardropText size={22} className="text-[#B3441F]" weight="regular" />
+                    <span>Powerful conversations that create real shifts.</span>
+                  </div>
+                  <div className="flex flex-col gap-2 font-sans text-sm leading-snug text-[#2d2923]">
+                    <ListDashes size={22} className="text-[#B3441F]" weight="regular" />
+                    <span>Practical tools and frameworks you can use.</span>
+                  </div>
+                  <div className="flex flex-col gap-2 font-sans text-sm leading-snug text-[#2d2923]">
+                    <TrendUp size={22} className="text-[#B3441F]" weight="regular" />
+                    <span>Accountability that keeps you moving forward.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Guided Footer */}
+              <p className="flex items-center gap-2.5 mt-5 font-serif italic font-medium text-[19px] leading-snug text-[#B3441F]">
+                <Sparkle size={22} weight="fill" className="shrink-0" />
+                <span>Guided. Structured. Flexible.</span>
+              </p>
             </div>
           </div>
 
@@ -529,7 +582,7 @@ export default function CoachingJourney() {
               <div>
                 <p className="font-serif text-[#c9542f] text-sm lg:text-[1.05rem] mb-0.5 not-italic font-medium">{data.transitionAccent || 'Guided. Structured. Flexible.'}</p>
                 <p className="text-[#4a463e] text-xs md:text-sm font-light leading-snug">
-                  {data.transitionSubtext || 'A process that adapts to you—so you can create a life that lasts.'}
+                  {(data.transitionSubtext || 'A process that adapts to you so you can create a life that lasts.').replace(/—|--/g, ' ')}
                 </p>
               </div>
             </div>

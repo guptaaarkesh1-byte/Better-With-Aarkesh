@@ -29,7 +29,7 @@ const DEFAULT_SECTIONS = {
     wordFontSize: 18,
     transEyebrow: "CLARITY ISN'T LUCK.",
     transHeading: "It's a skill. And it",
-    transAccent: 'changes everything.',
+    transAccent: 'Changes Everything.',
     transBgImg: '',
   },
   principles: {
@@ -110,7 +110,7 @@ const DEFAULT_SECTIONS = {
       'Accountability that keeps you moving forward.'
     ],
     transitionAccent: 'Guided. Structured. Flexible.',
-    transitionSubtext: 'A process that adapts to you—so you can create a life that lasts.'
+    transitionSubtext: 'A process that adapts to you so you can create a life that lasts.'
   },
   about: {
     eyebrowText: 'MEET AARKESH',
@@ -139,7 +139,7 @@ const DEFAULT_SECTIONS = {
     },
     missionEyebrow: 'BEYOND THE ROLES',
     missionHeading: 'The journey that shaped the mission.',
-    missionDescription: "From the skies to the soul—here's the story behind why I do what I do.",
+    missionDescription: "From the skies to the soul, here's the story behind why I do what I do.",
     storyBtnText: 'READ MY STORY',
     storyBtnLink: '/about-us'
   },
@@ -217,7 +217,7 @@ const DEFAULT_SECTIONS = {
     eyebrowText: 'A CONVERSATION CAN CHANGE EVERYTHING',
     headingLine1: 'Your next chapter',
     headingAccent: 'starts here.',
-    description: "This is your space to be heard, understood, and guided forward. Let's create real change together.",
+    description: "This is your space to be heard, understood,\nand guided forward.\nLet's create real change together.",
     ctaText: 'BOOK YOUR SESSION',
     ctaLink: '/book',
     confidentialText: '100% Confidential & Safe Space',

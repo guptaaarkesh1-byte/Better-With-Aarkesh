@@ -2256,7 +2256,7 @@ export default function AdminHomeEditor() {
                   </div>
                 </div>
 
-                {/* Right Visuals - Reusable ImageEditorCard */}
+                {/* Right Visuals - Reusable ImageEditorCard & Position Controller */}
                 <div className="lg:col-span-5 flex flex-col gap-6">
                   <ImageEditorCard
                     title="Hero Banner Image"
@@ -2271,6 +2271,77 @@ export default function AdminHomeEditor() {
                     tip="Keep coach portrait focused towards the right half so left-side typography remains crisp."
                     overlayOpacity={currentGlobalOverlayOpacity}
                   />
+
+                  {/* Image Vertical Position (Up / Down) Controller */}
+                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">
+                        <SlidersHorizontal size={16} />
+                        <span>Image Position (Up / Down)</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#c79c6e]/15 text-[#c79c6e] border border-[#c79c6e]/30">
+                        {currentHero.imagePositionY || 0}px
+                      </span>
+                    </div>
+
+                    <p className="text-[0.72rem] text-white/40 leading-relaxed">
+                      Move the portrait photo up or down on the home banner (with zero white space gaps).
+                    </p>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('imagePositionY', (currentHero.imagePositionY || 0) - 5)}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Move Up 5px"
+                      >
+                        <CaretUp size={16} weight="bold" />
+                      </button>
+
+                      <input
+                        type="range"
+                        min={-120}
+                        max={120}
+                        step={2}
+                        value={currentHero.imagePositionY || 0}
+                        onChange={(e) => handleSectionChange('imagePositionY', Number(e.target.value))}
+                        className="flex-1 accent-[#c79c6e] cursor-pointer"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => handleSectionChange('imagePositionY', (currentHero.imagePositionY || 0) + 5)}
+                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Move Down 5px"
+                      >
+                        <CaretDown size={16} weight="bold" />
+                      </button>
+                    </div>
+
+                    {/* Quick Preset Buttons */}
+                    <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-white/5">
+                      {[
+                        { label: 'Higher (-60px)', val: -60 },
+                        { label: 'Up (-30px)', val: -30 },
+                        { label: 'Default (0px)', val: 0 },
+                        { label: 'Down (+30px)', val: 30 },
+                        { label: 'Lower (+60px)', val: 60 },
+                      ].map((preset) => (
+                        <button
+                          key={preset.val}
+                          type="button"
+                          onClick={() => handleSectionChange('imagePositionY', preset.val)}
+                          className={`text-[0.68rem] font-medium px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                            (currentHero.imagePositionY || 0) === preset.val
+                              ? 'bg-[#c79c6e] text-black font-bold shadow'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/5'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 

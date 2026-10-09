@@ -318,11 +318,11 @@ export default function Navbar() {
       {/* Mobile Drawer */}
       <div 
         className={cn(
-          "fixed inset-0 z-[95] bg-[#f5f1e8]/98 backdrop-blur-2xl flex flex-col items-center justify-center md:hidden w-full h-[100dvh] px-6 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] origin-top",
-          mobileMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-6 pointer-events-none"
+          "fixed inset-x-0 top-[52px] sm:top-[60px] z-[95] bg-[#f5f1e8] border-b border-black/10 flex flex-col md:hidden w-full max-h-[calc(100svh-60px)] overflow-y-auto px-5 py-4 shadow-[0_30px_40px_-30px_rgba(0,0,0,0.35)] transition-all duration-300 ease-out origin-top",
+          mobileMenuOpen ? "opacity-100 translate-y-0 visible pointer-events-auto" : "opacity-0 -translate-y-3 invisible pointer-events-none"
         )}
       >
-        <nav className="flex flex-col items-center gap-5 w-full mt-12 overflow-y-auto pb-10">
+        <nav className="flex flex-col w-full" aria-label="Primary">
           {NAV_LINKS.map((link) => {
             let active = false;
             if (location.pathname === '/') {
@@ -344,53 +344,70 @@ export default function Navbar() {
                 key={link.label}
                 to={link.href}
                 className={cn(
-                  "text-2xl font-serif transition-colors duration-300 relative py-1 px-4 flex items-center justify-center",
+                  "py-3.5 border-b border-black/10 font-serif text-[26px] leading-[1.1] tracking-tight flex items-center justify-between transition-colors",
                   active 
-                    ? "text-[#c9542f] font-semibold underline underline-offset-8" 
-                    : "text-[#111010]/80 hover:text-[#111010]"
+                    ? "text-[#c9542f] font-medium" 
+                    : "text-[#111010] hover:text-[#c9542f]"
                 )}
+                style={{ fontFamily: 'Fraunces, Georgia, serif' }}
                 onClick={() => {
                   handleNavClick(link.href);
                   setMobileMenuOpen(false);
                 }}
               >
-                <span>{link.label}</span>
+                <span>{link.label === 'HOME' ? 'Home' : link.label === 'COACHING' ? 'Coaching' : link.label === 'ABOUT' ? 'About' : link.label === 'TESTIMONIALS' ? 'Testimonials' : link.label === 'LIBRARY' ? 'Library' : 'FAQ'}</span>
+                {active && <span className="w-2 h-2 rounded-full bg-[#c9542f] shrink-0" />}
               </Link>
             );
           })}
-          
-          <div className="w-16 h-[1px] bg-black/10 my-2" />
-
-          <div className="flex flex-col items-center gap-3.5 w-full max-w-xs">
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                navigate('/course');
-              }}
-              className="w-full text-center py-3 text-xs font-bold uppercase tracking-[0.18em] border border-black/20 rounded-sm text-[#111010] flex items-center justify-center gap-2"
-            >
-              <Play size={14} weight="fill" /> COURSE
-            </button>
-
-            <Link
-              to="/my-journey"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-3 text-xs font-bold uppercase tracking-[0.18em] border border-black/20 rounded-sm text-[#111010] flex items-center justify-center gap-2"
-            >
-              <BookmarkSimple size={14} weight="regular" /> MY JOURNEY
-            </Link>
-
-            <button 
-              className="w-full text-center bg-[#111010] text-[#f5f1e8] py-3.5 rounded-sm text-xs font-bold uppercase tracking-[0.18em] shadow-md"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                navigate('/book');
-              }}
-            >
-              BOOK A SESSION
-            </button>
-          </div>
         </nav>
+
+        {/* Action Buttons Row */}
+        <div className="grid grid-cols-2 gap-2.5 mt-5">
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              navigate('/course');
+            }}
+            className="h-11 rounded-lg border border-black text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans font-semibold text-[11.5px] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer bg-transparent"
+          >
+            <Play size={14} weight="fill" /> COURSE
+          </button>
+
+          {!isLoggedIn ? (
+            <button 
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setShowLoginModal(true);
+              }}
+              className="h-11 rounded-lg border border-black text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans font-semibold text-[11.5px] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer bg-transparent"
+            >
+              <User size={15} weight="regular" /> LOGIN
+            </button>
+          ) : (
+            <button 
+              onClick={() => {
+                setMobileMenuOpen(false);
+                navigate('/my-journey');
+              }}
+              className="h-11 rounded-lg border border-black text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans font-semibold text-[11.5px] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer bg-transparent"
+            >
+              <BookmarkSimple size={15} weight="regular" /> MY JOURNEY
+            </button>
+          )}
+
+          {/* Full Width CTA */}
+          <button 
+            className="col-span-2 h-13 rounded-full bg-[#111010] text-[#f5f1e8] font-sans font-semibold text-[12.5px] tracking-[0.16em] uppercase flex items-center justify-center gap-3 shadow-[0_12px_26px_-12px_rgba(0,0,0,0.55)] mt-1 transition-transform active:scale-[0.99] cursor-pointer"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              navigate('/book');
+            }}
+          >
+            <span>Book a session</span>
+            <ArrowRight size={16} weight="bold" />
+          </button>
+        </div>
       </div>
 
       {showLoginModal && (

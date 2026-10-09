@@ -110,11 +110,111 @@ export default function TestimonialsSection() {
   const bgImg = resolveImageUrl(data?.bgImg, defaultBgImg);
   const testimonials = (data?.items && data.items.length > 0) ? data.items : DEFAULT_TESTIMONIALS;
 
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+
+  const handleMobileScroll = (e) => {
+    const el = e.currentTarget;
+    if (el && el.children && el.children[0]) {
+      const step = el.children[0].offsetWidth + 12;
+      const idx = Math.min(testimonials.length - 1, Math.max(0, Math.round(el.scrollLeft / step)));
+      setActiveCardIndex(idx);
+    }
+  };
+
   return (
     <section id="testimonials" className="relative w-full min-h-screen bg-[#f5f1e8] overflow-hidden flex flex-col snap-section">
       
-      {/* Background Image & Soft Cream Overlays */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+      {/* ─── MOBILE VIEW (Matches user's mobile prototype) ─── */}
+      <div className="block lg:hidden w-full relative border-t border-black/10 py-14 min-h-[750px] flex flex-col isolate">
+        {/* Background Image with Gradient Overlay */}
+        <img 
+          src={bgImg} 
+          alt="Glowing Doorway" 
+          onError={(e) => {
+            if (e.currentTarget.src !== defaultBgImg) {
+              e.currentTarget.src = defaultBgImg;
+            }
+          }}
+          className="absolute inset-0 w-full h-full object-cover object-[60%_100%] -z-20"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#f5f1e8] from-0% via-[#f5f1e8]/90 via-25% to-transparent to-55% pointer-events-none" />
+
+        {/* Header */}
+        <div className="px-5 mb-auto">
+          <p className="flex items-center gap-3 font-sans font-semibold text-[11.5px] leading-snug tracking-[0.24em] uppercase text-[#B3441F] before:content-[''] before:w-7 before:h-[1.5px] before:bg-[#c9542f] before:flex-shrink-0">
+            {eyebrow}
+          </p>
+          <h2 className="font-serif font-medium tracking-tight leading-[1.06] text-[clamp(34px,10vw,42px)] text-[#141414] mt-4" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+            {heading1}<br />
+            <span className="text-[#c9542f] not-italic font-medium">{headingAccent}</span>
+          </h2>
+          <p className="font-serif font-normal text-[15.5px] leading-[1.6] text-[#55504a] mt-3.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+            {description}
+          </p>
+        </div>
+
+        {/* Swipeable Testimonials Carousel */}
+        <div className="mt-8">
+          <div 
+            onScroll={handleMobileScroll}
+            className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-5 pb-2 no-scrollbar scroll-smooth"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {testimonials.slice(0, 6).map((t, index) => {
+              const initial = t.name ? t.name.charAt(0).toUpperCase() : 'C';
+              const colors = ['bg-[#3d1b37]', 'bg-[#c9542f]', 'bg-[#2f4a34]', 'bg-[#a64117]', 'bg-[#111010]', 'bg-[#3d1b37]'];
+              const color = t.color || colors[index % colors.length];
+
+              return (
+                <article 
+                  key={index}
+                  className="flex-shrink-0 w-[84%] snap-start bg-white/80 backdrop-blur-md border border-white/80 rounded-[20px] p-5 flex flex-col justify-between min-h-[196px] shadow-sm"
+                >
+                  <span className="font-serif font-bold text-[46px] leading-[0.7] text-[#c9542f] block h-[22px] select-none" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>“</span>
+                  <p className="font-sans font-normal text-[14.5px] leading-[1.55] text-[#2a2622] mt-2.5 flex-grow">
+                    {t.quote}
+                  </p>
+                  <footer className="mt-4 pt-3.5 border-t border-black/10 flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full ${color} text-white flex items-center justify-center font-serif font-semibold text-base shrink-0 shadow-xs`}>
+                      <span>{initial}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <b className="block font-sans font-semibold text-sm leading-tight text-[#141414]">{t.name}</b>
+                      <small className="block mt-1 font-sans font-medium text-[10.5px] leading-tight tracking-[0.1em] uppercase text-[#6b645b]">{t.role}</small>
+                    </div>
+                  </footer>
+                </article>
+              );
+            })}
+          </div>
+
+          {/* Dots Indicator */}
+          <div className="flex justify-center items-center gap-2 mt-4">
+            {testimonials.slice(0, 6).map((_, i) => (
+              <i 
+                key={i} 
+                className={`block h-2 rounded-full transition-all duration-300 ${
+                  activeCardIndex === i ? 'w-6 bg-[#c9542f]' : 'w-2 bg-black/25'
+                }`} 
+              />
+            ))}
+          </div>
+
+          {/* View More Button for Mobile */}
+          <div className="px-5 mt-6 flex justify-center">
+            <Link
+              to="/testimonials"
+              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[#111010] text-[#f5f1e8] text-xs uppercase tracking-[0.18em] font-semibold shadow-md"
+            >
+              <span>View More Testimonials</span>
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── DESKTOP VIEW (100% untouched desktop layout) ─── */}
+      <div className="hidden lg:block absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <img 
           src={bgImg} 
           alt="Glowing Doorway" 
@@ -129,7 +229,7 @@ export default function TestimonialsSection() {
             transform: `scale(${DESKTOP_IMAGE_CONTROLS.zoom}) translate(${DESKTOP_IMAGE_CONTROLS.translateX}, ${DESKTOP_IMAGE_CONTROLS.translateY}) translateZ(0)`
           }}
         />
-        {/* Soft cream gradient only on the left for text and cards, leaving the glowing doorway and mountain 100% crystal clear */}
+        {/* Soft cream gradient only on the left for text and cards */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8]/80 via-[#f5f1e8]/50 via-35% md:via-[#f5f1e8]/30 md:via-50% to-transparent w-full lg:w-[50%]" />
         
         {/* Minimal edge blends */}
@@ -137,7 +237,7 @@ export default function TestimonialsSection() {
         <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#f5f1e8]/40 to-transparent" />
       </div>
 
-      <div className="relative z-10 flex-grow flex flex-col pt-24 pb-8 w-full">
+      <div className="hidden lg:flex relative z-10 flex-grow flex-col pt-24 pb-8 w-full">
         <Container className="flex-grow flex flex-col justify-between">
           
           <div className="flex w-full">

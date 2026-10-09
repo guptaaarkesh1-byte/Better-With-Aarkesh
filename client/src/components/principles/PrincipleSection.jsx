@@ -55,10 +55,47 @@ export default function PrincipleSection({
   }, { scope: sectionRef });
 
   return (
-    <section ref={sectionRef} id={id} className="principle-panel relative w-full h-screen flex flex-col overflow-hidden bg-[#f5f1e8] snap-section">
+    <section ref={sectionRef} id={id} className="principle-panel relative w-full h-auto lg:h-screen flex flex-col overflow-hidden bg-[#f5f1e8] snap-section">
       
-      {/* Main Content Area */}
-      <div className={`relative flex-grow flex items-center justify-center pb-48 ${contentClassName}`}>
+      {/* ─── MOBILE VIEW (Matches user's mobile prototype) ─── */}
+      <div className="block lg:hidden w-full relative border-t border-black/10">
+        {/* Media Container with Image & Bottom Fade */}
+        <div className="relative h-[360px] w-full overflow-hidden">
+          <img 
+            src={bgImg} 
+            alt="Principle"
+            onError={(e) => {
+              if (fallbackImg && e.currentTarget.src !== fallbackImg) {
+                e.currentTarget.src = fallbackImg;
+              }
+            }}
+            className={`w-full h-full object-cover ${imagePosition || 'object-center'}`}
+          />
+          {/* Bottom gradient fade into cream background */}
+          <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/80 to-transparent pointer-events-none" />
+        </div>
+
+        {/* Content Body Overlapping the Fade */}
+        <div className="relative -mt-[72px] px-5 pb-12 z-10">
+          <PrincipleContent 
+            id={id}
+            eyebrow={eyebrow}
+            headlineWhite={headlineWhite}
+            headlineGold={headlineGold}
+            headlineGoldItalic={headlineGoldItalic}
+            paragraphs={paragraphs}
+            buttonText={buttonText}
+            maxContentWidth="w-full"
+            eyebrowFontSize={eyebrowFontSize}
+            headingFontSize={headingFontSize}
+            descriptionFontSize={descriptionFontSize}
+            buttonFontSize={buttonFontSize}
+          />
+        </div>
+      </div>
+
+      {/* ─── DESKTOP VIEW (100% untouched desktop layout) ─── */}
+      <div className={`hidden lg:flex relative flex-grow items-center justify-center pb-48 ${contentClassName}`}>
         
         {/* Background Image */}
         <div className="absolute inset-0 z-0 pointer-events-none">

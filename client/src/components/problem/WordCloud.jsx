@@ -9,38 +9,37 @@ gsap.registerPlugin(ScrollTrigger);
 
 // =========================================================================
 // 🎛️ WORD CLOUD POSITION & STYLE CONTROLS
-// Responsive desktop & mobile coordinate positioning
+// Responsive desktop & mobile coordinate positioning with varied font sizes
 // =========================================================================
 const WORDS = [
   // --- Upper Cloud & Crown ---
-  { text: 'Self doubt',       top: '2%',   left: '34%', mTop: '4%',   mLeft: '46%', opacity: 'opacity-85', color: '#2b2823' },
-  { text: 'What if?',         top: '10%',  left: '30%', mTop: '8%',   mLeft: '12%', opacity: 'opacity-75', color: '#5b67ca' },
-  { text: 'Regret',           top: '10%',  left: '60%', mTop: '7%',   mLeft: '70%', opacity: 'opacity-75', color: '#374151' },
-  { text: 'Overthinking',     top: '11%',  left: '40%', mTop: '13%',  mLeft: '34%', opacity: 'opacity-95', color: '#c9542f' },
-  { text: 'Guilt',            top: '25%',  left: '55%', mTop: '18%',  mLeft: '22%', opacity: 'opacity-90', color: '#854d0e' },
-  { text: 'Family',           top: '22%',  left: '75%', mTop: '19%',  mLeft: '68%', opacity: 'opacity-85', color: '#047857' },
-  { text: 'Uncertainty',      top: '22%',  left: '88%', mTop: '26%',  mLeft: '72%', opacity: 'opacity-70', color: '#4f46e5' },
+  { text: 'Self doubt',       top: '2%',   left: '34%', mTop: '4%',   mLeft: '46%', opacity: 'opacity-85', color: '#2b2823', size: 15 },
+  { text: 'What if?',         top: '10%',  left: '30%', mTop: '8%',   mLeft: '12%', opacity: 'opacity-75', color: '#5b67ca', size: 19 },
+  { text: 'Regret',           top: '10%',  left: '60%', mTop: '7%',   mLeft: '70%', opacity: 'opacity-75', color: '#374151', size: 16 },
+  { text: 'Overthinking',     top: '11%',  left: '40%', mTop: '13%',  mLeft: '34%', opacity: 'opacity-95', color: '#c9542f', size: 24, weight: 'font-semibold' },
+  { text: 'Guilt',            top: '25%',  left: '55%', mTop: '18%',  mLeft: '22%', opacity: 'opacity-90', color: '#854d0e', size: 13 },
+  { text: 'Family',           top: '22%',  left: '75%', mTop: '19%',  mLeft: '68%', opacity: 'opacity-85', color: '#047857', size: 16 },
+  { text: 'Uncertainty',      top: '22%',  left: '88%', mTop: '26%',  mLeft: '72%', opacity: 'opacity-70', color: '#4f46e5', size: 18 },
 
   // --- Mid Body & Chest (Left & Right Flanks) ---
-  { text: 'Breakup',          top: '35%',  left: '36%', mTop: '32%',  mLeft: '8%',  opacity: 'opacity-95', color: '#be185d' },
-  { text: 'Career pressure',  top: '35%',  left: '65%', mTop: '36%',  mLeft: '65%', opacity: 'opacity-90', color: '#d97706' },
-  { text: 'Failing',          top: '35%',  left: '92%', mTop: '43%',  mLeft: '74%', opacity: 'opacity-65', color: '#be123c' },
-  { text: 'Loneliness',       top: '45%',  left: '80%', mTop: '46%',  mLeft: '14%', opacity: 'opacity-95', color: '#c9542f' },
-  { text: 'Past mistakes',    top: '55%',  left: '65%', mTop: '54%',  mLeft: '64%', opacity: 'opacity-85', color: '#15803d' },
-  { text: 'Not enough',       top: '55%',  left: '35%', mTop: '58%',  mLeft: '6%',  opacity: 'opacity-80', color: '#92400e' },
+  { text: 'Breakup',          top: '35%',  left: '36%', mTop: '32%',  mLeft: '8%',  opacity: 'opacity-95', color: '#be185d', size: 17.5 },
+  { text: 'Career pressure',  top: '35%',  left: '65%', mTop: '36%',  mLeft: '65%', opacity: 'opacity-90', color: '#d97706', size: 21 },
+  { text: 'Failing',          top: '35%',  left: '92%', mTop: '43%',  mLeft: '74%', opacity: 'opacity-65', color: '#be123c', size: 14 },
+  { text: 'Loneliness',       top: '45%',  left: '80%', mTop: '46%',  mLeft: '14%', opacity: 'opacity-95', color: '#854d0e', size: 18.5 },
+  { text: 'Past mistakes',    top: '55%',  left: '65%', mTop: '54%',  mLeft: '64%', opacity: 'opacity-85', color: '#15803d', size: 17 },
+  { text: 'Not enough',       top: '55%',  left: '35%', mTop: '58%',  mLeft: '6%',  opacity: 'opacity-80', color: '#92400e', size: 14.5 },
 
   // --- Lower Torso & Legs ---
-  { text: 'Judgement',        top: '55%',  left: '90%', mTop: '64%',  mLeft: '74%', opacity: 'opacity-70', color: '#a16207' },
-  { text: 'Comparison',       top: '70%',  left: '75%', mTop: '72%',  mLeft: '18%', opacity: 'opacity-80', color: '#4f46e5' },
-  { text: 'Financial stress', top: '78%',  left: '80%', mTop: '80%',  mLeft: '66%', opacity: 'opacity-85', color: '#15803d' },
-  { text: 'People pleasing',  top: '90%',  left: '29%', mTop: '88%',  mLeft: '28%', opacity: 'opacity-85', color: '#c026d3' },
+  { text: 'Judgement',        top: '55%',  left: '90%', mTop: '64%',  mLeft: '74%', opacity: 'opacity-70', color: '#a16207', size: 14 },
+  { text: 'Comparison',       top: '70%',  left: '75%', mTop: '72%',  mLeft: '18%', opacity: 'opacity-80', color: '#4f46e5', size: 17 },
+  { text: 'Financial stress', top: '78%',  left: '80%', mTop: '80%',  mLeft: '66%', opacity: 'opacity-85', color: '#15803d', size: 20 },
+  { text: 'People pleasing',  top: '90%',  left: '29%', mTop: '88%',  mLeft: '28%', opacity: 'opacity-85', color: '#c026d3', size: 16.5 },
 ];
 
 export default function WordCloud({ customImg = '', wordColor = '', wordFontSize = 18 }) {
   const container = useRef(null);
   const imgSrc = resolveImageUrl(customImg, silhouetteImg);
-
-  const activeFontSize = wordFontSize ? `${wordFontSize}px` : '18px';
+  const scaleRatio = (Number(wordFontSize) || 18) / 18;
 
   useGSAP(() => {
     const words = gsap.utils.toArray('.floating-word');
@@ -104,6 +103,7 @@ export default function WordCloud({ customImg = '', wordColor = '', wordFontSize
         {/* Background Depth Words (Subtle depth of field behind the main aura) */}
         {WORDS.filter((_, i) => i % 2 === 0).map((word, i) => {
           const origIdx = i * 2;
+          const fontSizePx = (word.size || 18) * scaleRatio;
           return (
             <div 
               key={`bg-${i}`}
@@ -113,10 +113,10 @@ export default function WordCloud({ customImg = '', wordColor = '', wordFontSize
               }}
             >
               <span 
-                className="floating-word inline-block font-serif font-medium opacity-25 whitespace-nowrap z-0 blur-[2px] scale-90 select-none text-[13px] sm:text-[15px] lg:text-[18px]"
+                className={`floating-word inline-block font-serif ${word.weight || 'font-medium'} opacity-25 whitespace-nowrap z-0 blur-[2px] scale-90 select-none`}
                 style={{ 
                   color: wordColor || word.color,
-                  fontSize: wordFontSize ? activeFontSize : undefined
+                  fontSize: `${fontSizePx}px`
                 }}
               >
                 {word.text}
@@ -126,25 +126,28 @@ export default function WordCloud({ customImg = '', wordColor = '', wordFontSize
         })}
 
         {/* Foreground Floating Words */}
-        {WORDS.map((word, i) => (
-          <div 
-            key={`fg-${i}`}
-            className={`word-track absolute word-pos-${i}`}
-            style={{ 
-              willChange: 'transform, opacity'
-            }}
-          >
-            <span 
-              className={`floating-word inline-block font-serif font-medium ${word.opacity} whitespace-nowrap z-10 select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.08)] text-[13px] sm:text-[15px] lg:text-[18px]`}
+        {WORDS.map((word, i) => {
+          const fontSizePx = (word.size || 18) * scaleRatio;
+          return (
+            <div 
+              key={`fg-${i}`}
+              className={`word-track absolute word-pos-${i}`}
               style={{ 
-                color: wordColor || word.color,
-                fontSize: wordFontSize ? activeFontSize : undefined
+                willChange: 'transform, opacity'
               }}
             >
-              {word.text}
-            </span>
-          </div>
-        ))}
+              <span 
+                className={`floating-word inline-block font-serif ${word.weight || 'font-medium'} ${word.opacity} whitespace-nowrap z-10 select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.08)]`}
+                style={{ 
+                  color: wordColor || word.color,
+                  fontSize: `${fontSizePx}px`
+                }}
+              >
+                {word.text}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
     </div>

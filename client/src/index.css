@@ -122,6 +122,35 @@ body {
   font-family: var(--sans);
 }
 
+/* Keyframe animations for mobile design elements */
+@keyframes drift {
+  from { transform: translateY(-3px); }
+  to { transform: translateY(4px); }
+}
+
+@keyframes wheel {
+  0% { transform: translateY(0); opacity: 1; }
+  70% { transform: translateY(9px); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+.animate-drift {
+  animation: drift 7s ease-in-out infinite alternate;
+}
+
+.animate-wheel {
+  animation: wheel 1.8s ease-in-out infinite;
+}
+
+/* Utility to hide scrollbars while allowing smooth swipe */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
 /* =========================================================
    LIGHT THEME GLOBAL COMPONENT & UTILITY OVERRIDES
    ========================================================= */

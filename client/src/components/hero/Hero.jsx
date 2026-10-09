@@ -55,23 +55,40 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="relative min-h-[100svh] lg:h-screen pt-24 md:pt-32 pb-20 md:pb-12 flex flex-col justify-center overflow-hidden bg-background snap-section">
-      <div className="absolute inset-0 z-0">
+    <section id="home" className="relative min-h-[100svh] lg:h-screen pt-20 md:pt-32 pb-6 md:pb-12 flex flex-col justify-between lg:justify-center overflow-hidden bg-[#f5f1e8] snap-section">
+      {/* Desktop Background Image (Kept exactly as desktop) */}
+      <div className="absolute inset-0 z-0 hidden lg:block">
         <HeroImage 
           bgImageUrl={heroData.bgImageUrl} 
           overlayOpacity={heroData.overlayOpacity} 
+          imagePositionY={heroData.imagePositionY || 0}
         />
       </div>
-      <Container className="flex flex-col flex-grow h-full relative z-10">
-        
-        <div className="flex flex-col h-full justify-center relative">
+
+      <Container className="flex flex-col flex-grow h-full relative z-10 px-5 sm:px-8">
+        <div className="flex flex-col h-full justify-between lg:justify-center relative">
           <HeroContent heroData={heroData} />
+
+          {/* Mobile Character Figure directly beneath content */}
+          <div className="block lg:hidden w-full max-w-[420px] mx-auto mt-auto pt-2 relative">
+            <img 
+              src={heroData.bgImageUrl || 'https://api.aarkeshgupta.com/uploads/image-1790768916697.png'}
+              alt="Aarkesh with open hands, welcoming"
+              className="w-full h-auto object-contain max-h-[46vh] mix-blend-multiply drop-shadow-sm mx-auto"
+            />
+          </div>
         </div>
 
         {/* Scroll Indicator at bottom middle */}
         {heroData.showScrollIndicator !== false && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
-            <ScrollIndicator className="hero-scroll-indicator" />
+          <div className="relative lg:absolute bottom-2 lg:bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-center pointer-events-auto">
+            <a 
+              href="#problem" 
+              className="flex flex-col items-center gap-2 font-sans font-semibold text-[9.5px] tracking-[0.3em] uppercase text-[#7a756b] hover:text-[#c9542f] transition-colors"
+            >
+              <span>Scroll</span>
+              <i className="block w-[1.5px] h-[26px] bg-gradient-to-b from-[#c9542f] to-transparent" />
+            </a>
           </div>
         )}
       </Container>

@@ -75,7 +75,8 @@ export default function MeetAarkesh() {
   const rawSubheading = aboutData?.subheading || 'Different lenses. Same mission your growth.';
   const subheading = rawSubheading.replace(/—\s*|--\s*/g, ' ');
   const missionHeading = aboutData?.missionHeading || 'The journey that shaped the mission.';
-  const missionDescription = aboutData?.missionDescription || "From the skies to the soul—here's the story behind why I do what I do.";
+  const rawMissionDescription = aboutData?.missionDescription || "From the skies to the soul, here's the story behind why I do what I do.";
+  const missionDescription = rawMissionDescription.replace(/—\s*|--\s*/g, ', ').replace(/,\s*,/g, ',');
   const storyBtnText = aboutData?.storyBtnText || 'READ MY STORY';
   const storyBtnLink = aboutData?.storyBtnLink || '/about-us';
 
@@ -142,11 +143,111 @@ export default function MeetAarkesh() {
     );
   }, { scope: container, dependencies: [aboutData] });
 
+  const [openCardIndex, setOpenCardIndex] = useState(null);
+
+  const toggleMobileCard = (index) => {
+    setOpenCardIndex(openCardIndex === index ? null : index);
+  };
+
   return (
     <section ref={container} id="meet-aarkesh" className="relative w-full h-auto lg:h-screen min-h-screen flex flex-col bg-[#f5f1e8] overflow-hidden snap-section">
       
+      {/* ─── MOBILE VIEW (Matches user's mobile prototype) ─── */}
+      <div className="block md:hidden w-full px-5 py-14 border-t border-black/10">
+        {/* Header */}
+        <div className="flex flex-col items-center justify-center text-center">
+          <h2 className="flex items-center justify-center gap-3 font-serif font-medium text-[clamp(26px,7.4vw,30px)] uppercase tracking-tight text-[#B3441F] before:content-[''] before:w-7 before:h-[1.5px] before:bg-[#c9542f] before:flex-shrink-0 after:content-[''] after:w-7 after:h-[1.5px] after:bg-[#c9542f] after:flex-shrink-0">
+            {eyebrowText || 'MEET AARKESH'}
+          </h2>
+          <div className="mt-4 text-center">
+            <p className="font-serif font-medium text-[21px] leading-[1.25] tracking-tight text-[#141414]">
+              {headingLine || 'Three roles. One purpose.'}
+            </p>
+            <small className="block mt-2 font-sans font-normal text-sm leading-[1.5] text-[#55504a]">
+              {subheading || 'Different lenses. Same mission: your growth.'}
+            </small>
+          </div>
+        </div>
+
+        {/* 3 Role Cards Stacked */}
+        <div className="flex flex-col gap-4.5 mt-7">
+          {roles.map((role, i) => {
+            const Icon = role.icon;
+            const isOpen = openCardIndex === i;
+            return (
+              <article 
+                key={i}
+                onClick={() => toggleMobileCard(i)}
+                className={`role relative rounded-[22px] overflow-hidden aspect-[636/678] bg-[#e9dccb] isolate shadow-[0_18px_40px_-26px_rgba(90,50,20,0.55)] cursor-pointer transition-all duration-300 ${
+                  isOpen ? 'is-open' : ''
+                }`}
+              >
+                {/* Background Photo */}
+                <img 
+                  src={role.bgImg || role.fallbackImg} 
+                  alt={role.title} 
+                  onError={(e) => {
+                    if (role.fallbackImg && e.currentTarget.src !== role.fallbackImg) {
+                      e.currentTarget.src = role.fallbackImg;
+                    }
+                  }}
+                  className="absolute inset-0 w-full h-full object-cover -z-20"
+                />
+
+                {/* Wash Gradient (Fades in on tap/hover) */}
+                <div className={`absolute inset-0 -z-10 transition-opacity duration-350 bg-gradient-to-t from-[rgba(247,242,235,0.97)] from-0% via-[rgba(247,242,235,0.94)] via-38% via-[rgba(247,242,235,0.72)] via-52% to-transparent to-68% ${
+                  isOpen ? 'opacity-100' : 'opacity-0'
+                }`} />
+
+                {/* Top-Right Tap Button */}
+                <div className={`absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 font-sans font-semibold text-[10px] tracking-[0.16em] uppercase text-[#4a4339] shadow-xs pointer-events-none transition-opacity duration-250 ${
+                  isOpen ? 'opacity-0' : 'opacity-100'
+                }`}>
+                  <span className="text-xs font-bold">+</span>
+                  <span>TAP</span>
+                </div>
+
+                {/* Bottom Content Area */}
+                <div className={`absolute inset-0 flex flex-col justify-end items-center text-center px-4 transition-all duration-350 ${
+                  isOpen ? 'pb-[6%]' : 'pb-[15%]'
+                }`}>
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl mb-2 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.45)] transition-colors duration-300 ${
+                    isOpen ? 'bg-[#c9542f] text-white' : 'bg-white/95 text-[#c9542f]'
+                  }`}>
+                    <Icon size={20} weight="regular" />
+                  </div>
+
+                  <h3 
+                    className="m-0 font-serif font-bold text-[25px] leading-[1.1] tracking-[0.3em] uppercase pl-[0.3em] text-[#141414] [text-shadow:0_0_9px_rgba(255,255,255,0.95),0_0_3px_rgba(255,255,255,0.95),0_1px_2px_rgba(255,255,255,0.8)]"
+                    style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                  >
+                    {role.title}
+                  </h3>
+
+                  {/* Expandable Drawer Content */}
+                  <div className={`grid transition-[grid-template-rows,opacity] duration-350 ${
+                    isOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'
+                  }`}>
+                    <div className="overflow-hidden">
+                      <p className="font-sans font-normal text-[14.5px] leading-[1.5] text-[#1c1916] mt-2.5">
+                        {role.sub1}<br />
+                        {role.sub2}
+                      </p>
+                      <em className="block font-serif italic font-medium text-[17px] leading-[1.35] text-[#B3441F] mt-2" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+                        {role.highlight}
+                      </em>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── DESKTOP VIEW (100% untouched desktop layout) ─── */}
       {/* Top Header: Only MEET AARKESH in top white/cream space */}
-      <div className="flex flex-col items-center justify-center text-center z-20 px-6 pt-5 sm:pt-7 pb-3 sm:pb-4 meet-header shrink-0">
+      <div className="hidden md:flex flex-col items-center justify-center text-center z-20 px-6 pt-5 sm:pt-7 pb-3 sm:pb-4 meet-header shrink-0">
         <div className="flex items-center gap-3.5">
           <div className="h-[2px] w-8 sm:w-10 bg-[#c9542f]" />
           <span 
@@ -162,34 +263,15 @@ export default function MeetAarkesh() {
         </div>
       </div>
 
-      {/* Mobile Subheading (Visible on mobile screens) */}
-      <div className="flex md:hidden flex-col items-center justify-center text-center z-20 px-6 pb-5">
-        <h2 
-          className="font-serif text-2xl sm:text-3xl font-medium tracking-tight mb-1 text-[#111010]"
-          style={{ 
-            fontFamily: 'Fraunces, Georgia, serif',
-            fontSize: aboutData?.headingFontSize ? `${aboutData.headingFontSize}px` : undefined 
-          }}
-        >
-          {headingLine}
-        </h2>
-        <p 
-          className="text-[#555047] text-xs sm:text-sm font-light tracking-wide"
-          style={{ fontSize: aboutData?.descriptionFontSize ? `${aboutData.descriptionFontSize}px` : undefined }}
-        >
-          {subheading}
-        </p>
-      </div>
-
-      {/* Grid Panes */}
-      <div className="w-full flex-grow flex flex-col md:flex-row border-y border-black/10 min-h-0 relative">
+      {/* Desktop Grid Panes */}
+      <div className="hidden md:flex w-full flex-grow flex-row border-y border-black/10 min-h-0 relative">
         
         {roles.map((role, i) => {
           const Icon = role.icon;
           return (
             <div 
               key={i} 
-              className="role-pane relative h-[45vh] md:h-auto md:flex-1 min-h-0 flex flex-col items-center justify-end pb-12 md:pb-16 p-6 group overflow-hidden border-b md:border-b-0 md:border-r border-black/10 last:border-none cursor-pointer bg-[#f5f1e8]"
+              className="role-pane relative h-auto flex-1 min-h-0 flex flex-col items-center justify-end pb-12 md:pb-16 p-6 group overflow-hidden border-r border-black/10 last:border-none cursor-pointer bg-[#f5f1e8]"
               onMouseEnter={() => { if (i === 1) setIsMiddleHovered(true); }}
               onMouseLeave={() => { if (i === 1) setIsMiddleHovered(false); }}
             >
@@ -207,22 +289,24 @@ export default function MeetAarkesh() {
                 />
               </div>
 
-              {/* Clean bottom gradient only on hover for legible text - No glow, no full-card fog */}
+              {/* Clean bottom gradient only on hover for legible text */}
               <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/70 to-transparent opacity-0 group-hover:opacity-100 z-0 pointer-events-none transition-opacity duration-300 ease-out" />
 
               {/* Three roles. One purpose. Heading inside the middle column image */}
               {i === 1 && (
                 <>
                   <div 
-                    className={`hidden md:flex absolute top-5 sm:top-6 lg:top-8 inset-x-0 flex-col items-center justify-center text-center z-20 px-4 sm:px-6 transition-all duration-300 ease-out pointer-events-none ${
+                    className={`flex absolute top-5 sm:top-6 lg:top-8 inset-x-0 flex-col items-center justify-center text-center z-20 px-4 sm:px-6 transition-all duration-300 ease-out pointer-events-none ${
                       isMiddleHovered ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'
                     }`}
                   >
                     <h2 
-                      className="font-serif text-xl sm:text-2xl md:text-[1.65rem] lg:text-[1.95rem] font-medium tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]"
+                      className="font-serif text-xl sm:text-2xl md:text-[1.65rem] lg:text-[1.95rem] font-medium tracking-tight text-white select-none"
                       style={{ 
                         fontFamily: 'Fraunces, Georgia, serif',
-                        fontSize: aboutData?.headingFontSize ? `${aboutData.headingFontSize}px` : undefined 
+                        fontSize: aboutData?.headingFontSize ? `${aboutData.headingFontSize}px` : undefined,
+                        WebkitTextStroke: '0.55px #ff6b35',
+                        textShadow: '0 0 6px rgba(255, 107, 53, 0.95), 0 0 14px rgba(255, 122, 61, 0.75), 0 0 22px rgba(255, 87, 34, 0.5), 0 2px 4px rgba(0, 0, 0, 0.75)'
                       }}
                     >
                       {headingLine}
@@ -230,14 +314,18 @@ export default function MeetAarkesh() {
                   </div>
 
                   <div 
-                    className={`hidden md:flex absolute top-[52%] inset-x-0 flex-col items-center justify-center text-center z-20 px-4 transition-all duration-300 ease-out pointer-events-none ${
+                    className={`flex absolute top-[52%] inset-x-0 flex-col items-center justify-center text-center z-20 px-4 transition-all duration-300 ease-out pointer-events-none ${
                       isMiddleHovered ? 'opacity-0 -translate-y-4' : 'opacity-100 -translate-y-1/2'
                     }`}
                     style={{ transform: isMiddleHovered ? 'translateY(-1rem)' : 'translateY(-50%)' }}
                   >
                     <p 
-                      className="text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.75)] text-xs md:text-[0.88rem] font-normal tracking-wide max-w-[90%] mx-auto"
-                      style={{ fontSize: aboutData?.descriptionFontSize ? `${aboutData.descriptionFontSize}px` : undefined }}
+                      className="text-white text-xs md:text-[0.88rem] font-medium tracking-wide max-w-[90%] mx-auto select-none"
+                      style={{ 
+                        fontSize: aboutData?.descriptionFontSize ? `${aboutData.descriptionFontSize}px` : undefined,
+                        WebkitTextStroke: '0.38px #ff6b35',
+                        textShadow: '0 0 5px rgba(255, 107, 53, 0.9), 0 0 10px rgba(255, 122, 61, 0.65), 0 1px 3px rgba(0, 0, 0, 0.75)'
+                      }}
                     >
                       {subheading}
                     </p>

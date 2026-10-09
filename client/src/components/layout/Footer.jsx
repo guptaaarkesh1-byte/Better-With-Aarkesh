@@ -217,70 +217,75 @@ export default function Footer() {
           </div>
 
           {/* ─── COLUMNS CONTAINER ─── */}
-          <div className="flex-1 flex flex-wrap sm:flex-nowrap gap-10 sm:gap-14 md:gap-20 lg:justify-end items-start w-full">
-            {columns.map((col) => (
-              <div 
-                key={col.title} 
-                className="flex flex-col items-start gap-5 min-w-[160px] sm:min-w-[190px]"
-              >
-                <h3 
-                  className="font-sans text-sm sm:text-[0.95rem] uppercase tracking-[0.22em] font-bold text-[#c9542f] truncate w-full"
-                  style={{ fontSize: brandSettings.columnTitleFontSize ? `${brandSettings.columnTitleFontSize}px` : undefined }}
+          <div className="flex-1 grid grid-cols-2 sm:flex sm:flex-wrap md:flex-nowrap gap-8 sm:gap-14 md:gap-20 lg:justify-end items-start w-full">
+            {columns.map((col, idx) => {
+              const isLegal = col.title?.toUpperCase().includes('LEGAL') || idx === 2;
+              return (
+                <div 
+                  key={col.title} 
+                  className={`flex flex-col items-start gap-4 sm:gap-5 ${isLegal ? 'col-span-2 sm:col-span-1 min-w-full sm:min-w-[190px]' : 'col-span-1 min-w-[140px] sm:min-w-[180px]'}`}
                 >
-                  {col.title}
-                </h3>
-                
-                <ul 
-                  className="flex flex-col gap-3.5 font-sans text-base sm:text-[1.05rem] text-[#2b2723] font-normal leading-relaxed w-full"
-                  style={{ fontSize: brandSettings.linksFontSize ? `${brandSettings.linksFontSize}px` : undefined }}
-                >
-                  {(col.links || []).map((link) => {
-                    const isExternalHttp = link.url?.startsWith('http://') || link.url?.startsWith('https://');
-                    const isMailto = link.url?.startsWith('mailto:');
-                    const isHash = link.url?.startsWith('#');
+                  <h3 
+                    className="font-sans text-xs sm:text-sm md:text-[0.95rem] uppercase tracking-[0.22em] font-bold text-[#c9542f] truncate w-full"
+                    style={{ fontSize: brandSettings.columnTitleFontSize ? `${brandSettings.columnTitleFontSize}px` : undefined }}
+                  >
+                    {col.title}
+                  </h3>
+                  
+                  <ul 
+                    className={`font-sans text-sm sm:text-base md:text-[1.05rem] text-[#2b2723] font-normal leading-relaxed w-full ${
+                      isLegal ? 'grid grid-cols-2 sm:flex sm:flex-col gap-3 sm:gap-3.5' : 'flex flex-col gap-3 sm:gap-3.5'
+                    }`}
+                    style={{ fontSize: brandSettings.linksFontSize ? `${brandSettings.linksFontSize}px` : undefined }}
+                  >
+                    {(col.links || []).map((link) => {
+                      const isExternalHttp = link.url?.startsWith('http://') || link.url?.startsWith('https://');
+                      const isMailto = link.url?.startsWith('mailto:');
+                      const isHash = link.url?.startsWith('#');
 
-                    if (isExternalHttp) {
+                      if (isExternalHttp) {
+                        return (
+                          <li key={link.label || link.url} className="truncate">
+                            <a 
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-[#c9542f] hover:underline underline-offset-4 transition-colors block truncate"
+                            >
+                              {link.label}
+                            </a>
+                          </li>
+                        );
+                      }
+
+                      if (isMailto || isHash) {
+                        return (
+                          <li key={link.label || link.url} className="truncate">
+                            <a 
+                              href={link.url}
+                              className="hover:text-[#c9542f] hover:underline underline-offset-4 transition-colors block truncate"
+                            >
+                              {link.label}
+                            </a>
+                          </li>
+                        );
+                      }
+
                       return (
                         <li key={link.label || link.url} className="truncate">
-                          <a 
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <Link 
+                            to={link.url} 
                             className="hover:text-[#c9542f] hover:underline underline-offset-4 transition-colors block truncate"
                           >
                             {link.label}
-                          </a>
+                          </Link>
                         </li>
                       );
-                    }
-
-                    if (isMailto || isHash) {
-                      return (
-                        <li key={link.label || link.url} className="truncate">
-                          <a 
-                            href={link.url}
-                            className="hover:text-[#c9542f] hover:underline underline-offset-4 transition-colors block truncate"
-                          >
-                            {link.label}
-                          </a>
-                        </li>
-                      );
-                    }
-
-                    return (
-                      <li key={link.label || link.url} className="truncate">
-                        <Link 
-                          to={link.url} 
-                          className="hover:text-[#c9542f] hover:underline underline-offset-4 transition-colors block truncate"
-                        >
-                          {link.label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
 
         </div>

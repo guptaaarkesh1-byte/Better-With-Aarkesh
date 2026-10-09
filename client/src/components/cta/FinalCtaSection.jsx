@@ -47,7 +47,7 @@ export default function FinalCtaSection() {
   const eyebrow = data?.eyebrowText || 'A CONVERSATION CAN CHANGE EVERYTHING';
   const heading1 = data?.headingLine1 || 'Your next chapter';
   const headingAccent = data?.headingAccent || 'starts here.';
-  const rawDescription = data?.description || "This is your space to be heard, understood, and guided forward. Let's create real change together.";
+  const rawDescription = data?.description || "This is your space to be heard, understood,\nand guided forward.\nLet's create real change together.";
   const description = rawDescription.replace(/—/g, ' ').replace(/--/g, ' ');
   const ctaText = data?.ctaText || 'BOOK YOUR SESSION';
   const ctaLink = data?.ctaLink || '/book';
@@ -56,11 +56,110 @@ export default function FinalCtaSection() {
   const quote1 = data?.quoteLine1 || "You don't have to have it all figured out.";
   const quote2 = data?.quoteLine2 || "You just have to be willing to begin.";
 
+  const renderDescription = (text) => {
+    if (!text) return null;
+    if (text.includes('and guided forward')) {
+      return (
+        <>
+          <span className="block">This is your space to be heard, understood,</span>
+          <span className="block">and guided forward.</span>
+          <span className="block mt-1">Let's create real change together.</span>
+        </>
+      );
+    }
+    return text.split('\n').map((line, idx) => (
+      <span key={idx} className="block">{line}</span>
+    ));
+  };
+
   return (
     <section id="book-session" className="relative w-full min-h-screen h-auto bg-[#f5f1e8] overflow-hidden flex flex-col snap-section">
       
-      {/* Background Image & Soft Cream Overlays */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+      {/* ─── MOBILE VIEW (Matches user's mobile prototype) ─── */}
+      <div className="block lg:hidden w-full border-t border-black/10 pb-10">
+        {/* Armchair Figure */}
+        <div 
+          className="h-[230px] w-full overflow-hidden"
+          style={{
+            WebkitMaskImage: 'linear-gradient(#000 55%, transparent)',
+            maskImage: 'linear-gradient(#000 55%, transparent)'
+          }}
+        >
+          <img 
+            src={bgImg} 
+            alt="Next Chapter"
+            onError={(e) => {
+              if (e.currentTarget.src !== defaultBgImg) {
+                e.currentTarget.src = defaultBgImg;
+              }
+            }}
+            className="w-full h-full object-cover object-[30%_50%]"
+          />
+        </div>
+
+        {/* Body Overlapping */}
+        <div className="-mt-[70px] px-5 relative z-10">
+          <p className="flex items-center gap-3 font-sans font-semibold text-[11.5px] leading-snug tracking-[0.24em] uppercase text-[#B3441F] before:content-[''] before:w-7 before:h-[1.5px] before:bg-[#c9542f] before:flex-shrink-0">
+            {eyebrow || 'A conversation can change everything'}
+          </p>
+          <h2 className="font-serif font-medium tracking-tight leading-[1.06] text-[clamp(34px,10vw,46px)] text-[#141414] mt-4" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+            {heading1}<br />
+            <span className="text-[#c9542f] not-italic font-medium">{headingAccent}</span>
+          </h2>
+          <p className="font-serif font-normal text-[15.5px] leading-[1.7] text-[#55504a] my-4 max-w-lg" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+            {renderDescription(description)}
+          </p>
+          <Link
+            to={ctaLink}
+            className="inline-flex items-center justify-center gap-3 h-[54px] px-7 rounded-full bg-[#141414] text-[#F6F1EA] font-sans font-semibold text-[12.5px] tracking-[0.16em] uppercase shadow-[0_12px_26px_-12px_rgba(0,0,0,0.55)] cursor-pointer"
+          >
+            <span>Book your session</span>
+            <ArrowRight size={16} weight="bold" />
+          </Link>
+          <p className="flex items-center gap-2 mt-3.5 font-sans font-normal text-[13px] text-[#55504a]">
+            <LockKey size={15} className="text-[#B3441F]" weight="bold" />
+            <span>{confidentialText}</span>
+          </p>
+        </div>
+
+        {/* Quote Block */}
+        <blockquote className="mt-11 mx-5 text-center">
+          <p className="font-serif italic font-normal text-[22px] leading-[1.25] tracking-tight text-[#141414]" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+            {quote1}{' '}
+            <b className="block font-serif not-italic font-semibold text-[#c9542f]">{quote2}</b>
+          </p>
+          <small className="block mt-3.5 font-sans font-semibold text-[10px] leading-[1.6] tracking-[0.2em] uppercase text-[#55504a]">
+            THIS IS YOUR JOURNEY. I'M HERE <em className="not-italic text-[#B3441F]">WALKING</em> WITH YOU.
+          </small>
+        </blockquote>
+
+        {/* Feats: 2x2 Grid */}
+        <div className="mx-5 mt-8 grid grid-cols-2 bg-white rounded-[22px] shadow-[0_14px_40px_-26px_rgba(80,50,20,0.5)] overflow-hidden border border-black/8">
+          <div className="p-4 flex flex-col gap-2 border-r border-b border-black/8">
+            <CalendarBlank size={26} className="text-[#B3441F]" weight="regular" />
+            <h3 className="font-sans font-semibold text-[11.5px] leading-snug tracking-[0.1em] uppercase text-[#141414]">Flexible scheduling</h3>
+            <p className="font-sans font-normal text-[13px] leading-[1.5] text-[#55504a]">Sessions around your time, your way.</p>
+          </div>
+          <div className="p-4 flex flex-col gap-2 border-b border-black/8">
+            <LockKey size={26} className="text-[#B3441F]" weight="regular" />
+            <h3 className="font-sans font-semibold text-[11.5px] leading-snug tracking-[0.1em] uppercase text-[#141414]">Confidential space</h3>
+            <p className="font-sans font-normal text-[13px] leading-[1.5] text-[#55504a]">A safe, judgment-free space to share openly.</p>
+          </div>
+          <div className="p-4 flex flex-col gap-2 border-r border-black/8">
+            <User size={26} className="text-[#B3441F]" weight="regular" />
+            <h3 className="font-sans font-semibold text-[11.5px] leading-snug tracking-[0.1em] uppercase text-[#141414]">Personalized approach</h3>
+            <p className="font-sans font-normal text-[13px] leading-[1.5] text-[#55504a]">Guidance tailored to you, not a one-size-fits-all plan.</p>
+          </div>
+          <div className="p-4 flex flex-col gap-2">
+            <Target size={26} className="text-[#B3441F]" weight="regular" />
+            <h3 className="font-sans font-semibold text-[11.5px] leading-snug tracking-[0.1em] uppercase text-[#141414]">Focused sessions</h3>
+            <p className="font-sans font-normal text-[13px] leading-[1.5] text-[#55504a]">60 or 90-minute sessions that create real momentum.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── DESKTOP VIEW (100% untouched desktop layout) ─── */}
+      <div className="hidden lg:block absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <img 
           src={bgImg} 
           alt="Your next chapter starts here" 
@@ -83,7 +182,7 @@ export default function FinalCtaSection() {
         <div className="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-[#f5f1e8]/40 to-transparent pointer-events-none" />
       </div>
 
-      <div className="relative z-20 flex-grow flex flex-col pt-20 sm:pt-24 pb-12 w-full">
+      <div className="hidden lg:flex relative z-20 flex-grow flex-col pt-20 sm:pt-24 pb-12 w-full">
         <Container className="flex-grow flex flex-col justify-between gap-8">
           
           {/* Top Left Content */}
@@ -119,7 +218,7 @@ export default function FinalCtaSection() {
                   fontSize: data?.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined 
                 }}
               >
-                {description}
+                {renderDescription(description)}
               </p>
             </div>
 
@@ -145,7 +244,7 @@ export default function FinalCtaSection() {
 
           </div>
 
-          {/* Middle: Inspiring Quote (Above the bottom bar with clear luminous backdrop) */}
+          {/* Middle: Inspiring Quote */}
           <div className="w-full flex flex-col items-center text-center my-3 relative py-3 px-4">
             <h2 className="font-serif text-2xl md:text-3xl lg:text-[2.2rem] text-[#111010] italic font-normal tracking-tight flex items-center gap-2">
               <span className="text-[#c9542f] text-3xl md:text-4xl font-serif not-italic">“</span>
