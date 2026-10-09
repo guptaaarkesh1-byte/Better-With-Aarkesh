@@ -935,7 +935,7 @@ export default function MyJourney() {
                       onClick={() => navigate('/book')}
                       className="mj-btn"
                     >
-                      Book free session
+                      Book a free session
                     </button>
                   </>
                 ) : (
