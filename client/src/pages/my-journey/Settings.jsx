@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { User, Bell, LockKey, CaretLeft } from '@phosphor-icons/react';
-import bgImageLocal from '../../assets/images/my-journey-bg.webp';
-import { CDN_IMAGES } from '../../utils/cdnAssets';
-
-const bgImage = CDN_IMAGES.MY_JOURNEY_BG || bgImageLocal;
-
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { 
+  User, Bell, LockKey, CaretLeft, CalendarBlank,
+  SignOut, Lock, CheckCircle, ArrowLeft, Play,
+  CaretDown, CaretUp
+} from '@phosphor-icons/react';
+import './my-journey.css';
 import ProfileTab from './components/settings/ProfileTab';
 import NotificationsTab from './components/settings/NotificationsTab';
 import SecurityPrivacyTab from './components/settings/SecurityPrivacyTab';
@@ -17,6 +17,19 @@ export default function Settings() {
   const tabFromUrl = searchParams.get('tab');
   
   const [activeTab, setActiveTab] = useState(tabFromUrl || 'PROFILE');
+  const [user, setUser] = useState(null);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('userInfo');
+      if (saved) {
+        setUser(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== activeTab) {
@@ -30,74 +43,193 @@ export default function Settings() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#f5f1e8] text-[#111010] select-none relative font-sans overflow-x-hidden pt-28 sm:pt-36 pb-16 sm:pb-24">
-      
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col md:flex-row gap-8 md:gap-12 lg:gap-24">
-        
-        {/* Sidebar */}
-        <div className="w-full md:w-64 shrink-0 flex flex-col">
-          <div className="mb-6 md:mb-12">
-            <button 
-              onClick={() => navigate('/my-journey')}
-              className="flex items-center gap-2 text-[#7a756b] hover:text-[#c9542f] font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold transition-colors mb-4 sm:mb-8 cursor-pointer"
-            >
-              <CaretLeft size={14} weight="bold" /> BACK
-            </button>
-            <div className="flex items-center gap-2 text-[#7a756b] font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.2em] font-bold mb-3 sm:mb-4">
-              <span className="text-[#c9542f]">MY JOURNEY</span>
-              <span>/</span>
-              <span className="text-[#111010]">SETTINGS</span>
+    <div className="mj-container">
+      <div className="mj-shell">
+
+        {/* ─── DARK TOP BAR ─── */}
+        <header className="mj-top">
+          <div className="mj-top-inner">
+            <div className="mj-bar">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <Link 
+                  to="/" 
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-[#f5f1e8] text-xs font-semibold tracking-wide border border-white/15 transition-all cursor-pointer shadow-xs"
+                  title="Back to Home"
+                >
+                  <ArrowLeft size={14} weight="bold" />
+                  <span>Home</span>
+                </Link>
+
+                <Link to="/" className="mj-logo">
+                  BetterWith<span>Aarkesh</span>
+                </Link>
+              </div>
+
+              <div className="mj-actions">
+                <button 
+                  onClick={() => navigate('/course')}
+                  className="mj-btn mj-btn-primary"
+                >
+                  <Play size={14} weight="fill" />
+                  <span>Course</span>
+                </button>
+
+                {/* User Avatar (Round Shape) & Dropdown */}
+                <div className="relative">
+                  <div 
+                    onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
+                    className="w-[38px] h-[38px] rounded-full bg-[#c8512d] text-white flex items-center justify-center font-bold text-sm cursor-pointer shadow-md hover:opacity-90 active:scale-95 transition-all select-none overflow-hidden relative" 
+                    title={user?.fullName || 'Your Profile'}
+                  >
+                    {user?.photoUrl ? (
+                      <img 
+                        src={user.photoUrl} 
+                        alt="" 
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                        className="w-full h-full object-cover rounded-full absolute inset-0" 
+                      />
+                    ) : null}
+                    <span>{(user?.fullName || 'Y').charAt(0).toUpperCase()}</span>
+                  </div>
+
+                  {avatarMenuOpen && (
+                    <div className="absolute right-0 top-full mt-3 w-[290px] bg-[#faf8f6] border border-[#e4dfd9] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] overflow-hidden z-[200] text-[#1c1714] animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="p-6 pb-4 text-left">
+                        <div className="flex items-center gap-3.5 mb-4">
+                          <div className="w-[46px] h-[46px] rounded-full bg-[#c8512d] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-sm overflow-hidden relative border border-[#e4dfd9]">
+                            {user?.photoUrl ? (
+                              <img 
+                                src={user.photoUrl} 
+                                alt="" 
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                                className="w-full h-full object-cover rounded-full absolute inset-0" 
+                              />
+                            ) : null}
+                            <span>{(user?.fullName || 'Y').charAt(0).toUpperCase()}</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[#c8512d] text-[10.5px] font-bold tracking-[0.18em] uppercase mb-0.5">
+                              WELCOME BACK
+                            </p>
+                            <h3 
+                              className="text-[22px] font-semibold text-[#1c1714] leading-tight capitalize truncate"
+                              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                            >
+                              {user?.fullName ? user.fullName.split(' ')[0] : 'User'}
+                            </h3>
+                          </div>
+                        </div>
+
+                        {/* Continue Journey Button */}
+                        <button
+                          onClick={() => {
+                            setAvatarMenuOpen(false);
+                            navigate('/my-journey');
+                          }}
+                          className="w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer mb-3"
+                        >
+                          <span>CONTINUE YOUR JOURNEY</span>
+                          <span className="text-base leading-none">→</span>
+                        </button>
+
+                        {/* Profile Option */}
+                        <button 
+                          onClick={() => {
+                            setAvatarMenuOpen(false);
+                            setActiveTab('PROFILE');
+                          }}
+                          className="flex items-center gap-3.5 py-2 text-[#1c1714] hover:text-[#c8512d] text-[14px] font-medium transition-colors w-full text-left cursor-pointer"
+                        >
+                          <User size={18} className="text-[#1c1714]" />
+                          <span>Profile</span>
+                        </button>
+                      </div>
+
+                      {/* Bottom Logout Row */}
+                      <div className="border-t border-[#e4dfd9] px-6 py-3 bg-[#faf8f6]">
+                        <button 
+                          onClick={() => {
+                            setAvatarMenuOpen(false);
+                            localStorage.clear();
+                            window.dispatchEvent(new Event('auth-change'));
+                            navigate('/');
+                          }}
+                          className="flex items-center gap-2.5 text-[#9a918a] hover:text-[#c8512d] text-[13.5px] font-medium transition-colors w-full text-left cursor-pointer"
+                        >
+                          <SignOut size={18} />
+                          <span>Log out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-[#111010] tracking-tight leading-[1.15] mb-2 font-medium">
-              Profile & Settings
-            </h1>
-            <p className="font-sans text-[#555047] text-xs sm:text-sm tracking-wide font-light">
-              {activeTab === 'PROFILE' && "Manage your details, preferences and account."}
-              {activeTab === 'NOTIFICATIONS' && "Manage how and when you would like to hear from us."}
-              {activeTab === 'SECURITY' && "Contribute to your account and understand what remains private."}
-            </p>
-          </div>
 
-          <div className="flex flex-row md:flex-col overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden gap-2 pb-2 md:pb-0">
-            <button 
-              onClick={() => handleTabChange('PROFILE')}
-              className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shrink-0 md:shrink cursor-pointer ${
-                activeTab === 'PROFILE' 
-                  ? 'border border-[#c9542f] text-[#c9542f] bg-[#fbf0eb] shadow-xs' 
-                  : 'border border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5'
-              }`}
-            >
-              <User size={16} weight={activeTab === 'PROFILE' ? 'bold' : 'regular'} /> PROFILE
-            </button>
-            <button 
-              onClick={() => handleTabChange('NOTIFICATIONS')}
-              className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shrink-0 md:shrink cursor-pointer ${
-                activeTab === 'NOTIFICATIONS' 
-                  ? 'border border-[#c9542f] text-[#c9542f] bg-[#fbf0eb] shadow-xs' 
-                  : 'border border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5'
-              }`}
-            >
-              <Bell size={16} weight={activeTab === 'NOTIFICATIONS' ? 'bold' : 'regular'} /> NOTIFICATIONS
-            </button>
-            <button 
-              onClick={() => handleTabChange('SECURITY')}
-              className={`flex items-center justify-center md:justify-start gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-sans text-[0.6rem] sm:text-[0.65rem] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold transition-all shrink-0 md:shrink cursor-pointer ${
-                activeTab === 'SECURITY' 
-                  ? 'border border-[#c9542f] text-[#c9542f] bg-[#fbf0eb] shadow-xs' 
-                  : 'border border-transparent text-[#555047] hover:text-[#111010] hover:bg-black/5'
-              }`}
-            >
-              <LockKey size={16} weight={activeTab === 'SECURITY' ? 'bold' : 'regular'} /> SECURITY & PRIVACY
-            </button>
+            {/* Title & Back Button Strip */}
+            <div className="mj-strip justify-between">
+              <div className="mj-hello">
+                <h1>Profile & Settings</h1>
+                <p>Manage your details, preferences and account security.</p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => navigate('/my-journey')}
+                  className="mj-btn mj-btn-line !bg-transparent !text-white !border-[#4a413b] hover:!bg-[#2b2420]"
+                >
+                  <CaretLeft size={16} weight="bold" />
+                  <span>Back to My Journey</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* ─── SECTION TABS BAR ─── */}
+        <div className="mj-tabbar">
+          <div className="mj-tabbar-inner">
+            <nav className="mj-tabs" role="tablist">
+              <button 
+                className={`mj-tab ${activeTab === 'PROFILE' ? 'active' : ''}`}
+                onClick={() => handleTabChange('PROFILE')}
+              >
+                <User size={17} weight={activeTab === 'PROFILE' ? 'bold' : 'regular'} />
+                <span>Profile</span>
+              </button>
+
+              <button 
+                className={`mj-tab ${activeTab === 'NOTIFICATIONS' ? 'active' : ''}`}
+                onClick={() => handleTabChange('NOTIFICATIONS')}
+              >
+                <Bell size={17} weight={activeTab === 'NOTIFICATIONS' ? 'bold' : 'regular'} />
+                <span>Notifications</span>
+              </button>
+
+              <button 
+                className={`mj-tab ${activeTab === 'SECURITY' ? 'active' : ''}`}
+                onClick={() => handleTabChange('SECURITY')}
+              >
+                <LockKey size={17} weight={activeTab === 'SECURITY' ? 'bold' : 'regular'} />
+                <span>Security & Privacy</span>
+              </button>
+            </nav>
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 w-full flex flex-col md:pt-[104px]">
-          {activeTab === 'PROFILE' && <ProfileTab />}
-          {activeTab === 'NOTIFICATIONS' && <NotificationsTab />}
-          {activeTab === 'SECURITY' && <SecurityPrivacyTab />}
+        {/* ─── MAIN BODY ─── */}
+        <div className="mj-body-wrap">
+          <div className="mj-body fullwidth">
+            <main className="w-full flex justify-center">
+              <div className="w-full max-w-[700px]">
+                {activeTab === 'PROFILE' && <ProfileTab />}
+                {activeTab === 'NOTIFICATIONS' && <NotificationsTab />}
+                {activeTab === 'SECURITY' && <SecurityPrivacyTab />}
+              </div>
+            </main>
+          </div>
         </div>
+
       </div>
     </div>
   );

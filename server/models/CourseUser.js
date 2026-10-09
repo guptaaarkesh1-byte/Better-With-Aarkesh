@@ -29,10 +29,18 @@ const courseUserSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  courseSessionsGranted: {
-    type: Boolean,
-    default: false,
-  }
+  authProvider: {
+    type: String,
+    default: 'local', // 'local' | 'google'
+  },
+  googleId: {
+    type: String,
+    default: '',
+  },
+  photoUrl: {
+    type: String,
+    default: '',
+  },
 }, { timestamps: true });
 
 const CourseUser = mongoose.model('CourseUser', courseUserSchema);

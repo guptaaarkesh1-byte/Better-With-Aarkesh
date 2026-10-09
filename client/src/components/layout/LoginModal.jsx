@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Eye, EyeSlash } from '@phosphor-icons/react';
 import Button from '../ui/Button';
+import GoogleLoginButton from '../ui/GoogleLoginButton';
 import { COUNTRY_CODES } from '../../utils/countryCodes';
 
 export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = 'login', defaultCountryCode = '+91', defaultPhoneNumber = '', defaultEmail = '', defaultFullName = '', courseNotice = false }) {
@@ -557,7 +558,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
         )}
 
         {isLogin && !isForgotPassword && (
-          <div className="mt-4 text-center">
+          <div className="mt-3.5 text-center">
             <button 
               type="button"
               onClick={() => {
@@ -569,6 +570,28 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
               Forgot Password?
             </button>
           </div>
+        )}
+
+        {(!isOtpStep && !isForgotOtpStep) && (
+          <>
+            <div className="flex items-center my-4 gap-3">
+              <div className="flex-1 h-[1px] bg-black/10" />
+              <span className="text-[0.62rem] uppercase tracking-widest text-[#7a756b] font-semibold">
+                or
+              </span>
+              <div className="flex-1 h-[1px] bg-black/10" />
+            </div>
+
+            <GoogleLoginButton 
+              theme="light"
+              text={isLogin ? "Continue with Google" : "Sign up with Google"}
+              onSuccess={(data) => {
+                onSuccess?.(data);
+                onClose();
+              }}
+              onError={(msg) => setError(msg)}
+            />
+          </>
         )}
 
         {(!isOtpStep && !isForgotOtpStep) && (

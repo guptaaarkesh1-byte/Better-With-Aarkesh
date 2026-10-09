@@ -395,15 +395,36 @@ router.post('/change-password', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Verify current password
+    // If user signed up via Google and has no manual password yet
+    if (user.authProvider === 'google') {
+      if (!newPassword || newPassword.length < 4) {
+        return res.status(400).json({ message: 'Password must be at least 4 characters long' });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+      user.password = hashedPassword;
+      user.authProvider = 'local';
+      await user.save();
+
+      if (user.email) {
+        const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        await CourseUser.updateMany({ email: emailRegex }, { password: hashedPassword, authProvider: 'local' });
+        console.log(`🔄 Synced created password to CourseUser for: ${user.email}`);
+      }
+
+      return res.json({ message: 'Password created successfully', authProvider: 'local' });
+    }
+
+    // Verify current password for standard local users
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Incorrect current password' });
     }
 
     // Validate new password
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+    if (!newPassword || newPassword.length < 4) {
+      return res.status(400).json({ message: 'Password must be at least 4 characters long' });
     }
 
     // Hash new password
@@ -422,6 +443,40 @@ router.post('/change-password', protect, async (req, res) => {
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
     console.error('Error changing password:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/users/set-password
+// @desc    Create/Set password for Google-authenticated users
+// @access  Private
+router.post('/set-password', protect, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!newPassword || newPassword.length < 4) {
+      return res.status(400).json({ message: 'Password must be at least 4 characters long' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    user.password = hashedPassword;
+    user.authProvider = 'local';
+    await user.save();
+
+    if (user.email) {
+      const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      await CourseUser.updateMany({ email: emailRegex }, { password: hashedPassword, authProvider: 'local' });
+      console.log(`🔄 Synced created password to CourseUser for: ${user.email}`);
+    }
+
+    res.json({ message: 'Password created successfully', authProvider: 'local' });
+  } catch (error) {
+    console.error('Error creating password:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -699,6 +754,9 @@ router.get('/profile', protect, async (req, res) => {
       gender: user.gender || 'Prefer not to say',
       freeSessions: user.freeSessions || 0,
       courseSessionsGranted: user.courseSessionsGranted || false,
+      photoUrl: user.photoUrl || '',
+      authProvider: user.authProvider || 'local',
+      googleId: user.googleId || '',
     });
   } catch (error) {
     console.error('Fetch Profile Error:', error);
@@ -707,11 +765,11 @@ router.get('/profile', protect, async (req, res) => {
 });
 
 // @route   PUT /api/users/profile
-// @desc    Update user profile details (name, phone, dob, gender)
+// @desc    Update user profile details (name, phone, dob, gender, photoUrl)
 // @access  Private
 router.put('/profile', protect, async (req, res) => {
   try {
-    const { fullName, countryCode, phoneNumber, dob, gender } = req.body;
+    const { fullName, countryCode, phoneNumber, dob, gender, photoUrl } = req.body;
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -743,6 +801,10 @@ router.put('/profile', protect, async (req, res) => {
       user.gender = String(gender || 'Prefer not to say').trim();
     }
 
+    if (photoUrl !== undefined) {
+      user.photoUrl = String(photoUrl || '').trim();
+    }
+
     await user.save();
 
     // Also sync to CourseUser if exists
@@ -753,7 +815,8 @@ router.put('/profile', protect, async (req, res) => {
         { 
           $set: { 
             fullName: user.fullName,
-            phoneNumber: user.phoneNumber 
+            phoneNumber: user.phoneNumber,
+            photoUrl: user.photoUrl
           } 
         }
       );
@@ -769,6 +832,7 @@ router.put('/profile', protect, async (req, res) => {
         phoneNumber: user.phoneNumber,
         dob: user.dob,
         gender: user.gender,
+        photoUrl: user.photoUrl || '',
         freeSessions: user.freeSessions || 0,
         courseSessionsGranted: user.courseSessionsGranted || false,
       }

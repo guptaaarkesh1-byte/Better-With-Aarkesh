@@ -95,13 +95,13 @@ export default function ClosingNavigation() {
                   
                   <div className="flex flex-col gap-3 mb-5 sm:mb-6">
                     <button 
-                      onClick={(e) => { e.stopPropagation(); navigate('/my-journey/settings?tab=PROFILE'); }}
+                      onClick={(e) => { e.stopPropagation(); navigate('/my-journey?tab=profile'); }}
                       className="flex items-center gap-3 sm:gap-4 font-sans text-xs sm:text-sm uppercase tracking-[0.18em] text-[#555047] hover:text-[#111010] transition-colors w-full text-left font-medium"
                     >
                       <User size={17} /> PROFILE & SETTINGS
                     </button>
                     <button 
-                      onClick={(e) => { e.stopPropagation(); navigate('/my-journey/settings?tab=SECURITY'); }}
+                      onClick={(e) => { e.stopPropagation(); navigate('/my-journey?tab=profile'); }}
                       className="flex items-center gap-3 sm:gap-4 font-sans text-xs sm:text-sm uppercase tracking-[0.18em] text-[#555047] hover:text-[#111010] transition-colors w-full text-left font-medium"
                     >
                       <LockKey size={17} /> PRIVACY CONTROLS
@@ -109,7 +109,7 @@ export default function ClosingNavigation() {
                   </div>
 
                   <button 
-                    onClick={(e) => { e.stopPropagation(); navigate('/my-journey/settings'); }}
+                    onClick={(e) => { e.stopPropagation(); navigate('/my-journey?tab=profile'); }}
                     className="mt-auto font-sans text-xs sm:text-sm uppercase tracking-[0.18em] font-semibold text-[#c9542f] flex items-center gap-2 pt-3 sm:pt-4 border-t border-black/10 w-full"
                   >
                     OPEN ACCOUNT <ArrowRight size={16} className="group-hover:translate-x-1.5 transition-transform" />

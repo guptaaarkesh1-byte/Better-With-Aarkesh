@@ -60,6 +60,7 @@ export default function CourseProfile() {
       return null;
     }
   });
+  const isGoogleUser = user?.authProvider === 'google';
   const [loading, setLoading] = useState(true);
   const [copiedTxn, setCopiedTxn] = useState(false);
   const [showSecuritySection, setShowSecuritySection] = useState(false);
@@ -223,12 +224,12 @@ export default function CourseProfile() {
     setPasswordErrorMsg('');
     setPasswordSuccessMsg('');
 
-    if (!currentPassword) {
+    if (!isGoogleUser && !currentPassword) {
       setPasswordErrorMsg('Please enter your current password');
       return;
     }
     if (newPassword.length < 4) {
-      setPasswordErrorMsg('New password must be at least 4 characters');
+      setPasswordErrorMsg('Password must be at least 4 characters');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -247,20 +248,25 @@ export default function CourseProfile() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          currentPassword,
+          ...(isGoogleUser ? {} : { currentPassword }),
           newPassword
         })
       });
 
       const data = await res.json();
       if (res.ok) {
-        setPasswordSuccessMsg('Password changed successfully.');
+        setPasswordSuccessMsg(isGoogleUser ? 'Password created successfully.' : 'Password changed successfully.');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
+        if (isGoogleUser) {
+          const updated = { ...user, authProvider: 'local' };
+          setUser(updated);
+          localStorage.setItem('courseUser', JSON.stringify(updated));
+        }
         setTimeout(() => setPasswordSuccessMsg(''), 4000);
       } else {
-        setPasswordErrorMsg(data.message || 'Failed to update password.');
+        setPasswordErrorMsg(data.message || (isGoogleUser ? 'Failed to create password.' : 'Failed to update password.'));
       }
     } catch (err) {
       console.error(err);
@@ -827,7 +833,11 @@ export default function CourseProfile() {
                         </div>
                         <div>
                           <h3 className="text-sm font-bold text-white">Security &amp; Password</h3>
-                          <p className="text-xs text-white/50">Manage your course account password</p>
+                          <p className="text-xs text-white/50">
+                            {isGoogleUser 
+                              ? 'Set a password to log in with email and password'
+                              : 'Manage your course account password'}
+                          </p>
                         </div>
                       </div>
 
@@ -836,7 +846,7 @@ export default function CourseProfile() {
                         onClick={() => setShowSecuritySection(!showSecuritySection)}
                         className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-white/80 hover:text-white transition-colors cursor-pointer"
                       >
-                        {showSecuritySection ? 'Hide' : 'Change Password'}
+                        {showSecuritySection ? 'Hide' : (isGoogleUser ? 'Create Password' : 'Change Password')}
                       </button>
                     </div>
 
@@ -854,33 +864,35 @@ export default function CourseProfile() {
                         )}
 
                         <form onSubmit={handleUpdatePassword} className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div>
-                              <label className="block text-xs uppercase tracking-widest text-white/60 mb-2 font-medium">
-                                Current Password
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type={showCurrentPassword ? 'text' : 'password'}
-                                  value={currentPassword}
-                                  onChange={(e) => setCurrentPassword(e.target.value)}
-                                  className="w-full px-4 pr-10 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-sm focus:border-[#C878BE] focus:outline-none"
-                                  placeholder="••••••••"
-                                  required
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                                >
-                                  {showCurrentPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
-                                </button>
+                          <div className={`grid grid-cols-1 ${isGoogleUser ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-4`}>
+                            {!isGoogleUser && (
+                              <div>
+                                <label className="block text-xs uppercase tracking-widest text-white/60 mb-2 font-medium">
+                                  Current Password
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={showCurrentPassword ? 'text' : 'password'}
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    className="w-full px-4 pr-10 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-sm focus:border-[#C878BE] focus:outline-none"
+                                    placeholder="••••••••"
+                                    required={!isGoogleUser}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                                  >
+                                    {showCurrentPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
+                                  </button>
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             <div>
                               <label className="block text-xs uppercase tracking-widest text-white/60 mb-2 font-medium">
-                                New Password
+                                {isGoogleUser ? 'Password' : 'New Password'}
                               </label>
                               <div className="relative">
                                 <input
@@ -922,7 +934,7 @@ export default function CourseProfile() {
                               disabled={isUpdatingPassword}
                               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#A83B96] to-[#7A2A70] text-white font-semibold text-xs tracking-wider uppercase hover:shadow-[0_0_15px_rgba(200,120,190,0.3)] transition-all disabled:opacity-50 cursor-pointer"
                             >
-                              {isUpdatingPassword ? 'Updating...' : 'Update Password'}
+                              {isUpdatingPassword ? (isGoogleUser ? 'Creating...' : 'Updating...') : (isGoogleUser ? 'Create Password' : 'Update Password')}
                             </button>
                           </div>
                         </form>

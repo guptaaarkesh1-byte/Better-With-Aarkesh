@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, X, Check, SpinnerGap, Warning, ArrowsClockwise, ShieldCheck, Trash } from '@phosphor-icons/react';
+import { ArrowRight, X, Check, SpinnerGap, Warning, ArrowsClockwise, ShieldCheck, Trash, Eye, EyeSlash } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -22,6 +22,9 @@ export default function SecurityPrivacyTab() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStatus, setPasswordStatus] = useState({ type: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,15 +38,39 @@ export default function SecurityPrivacyTab() {
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('userInfo');
-    if (saved) {
+    const checkUser = async () => {
+      const saved = localStorage.getItem('userInfo');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setUserEmail(parsed.email || '');
+          if (parsed.authProvider === 'google') {
+            setIsGoogleUser(true);
+          }
+        } catch (e) {}
+      }
+
       try {
-        const parsed = JSON.parse(saved);
-        setUserEmail(parsed.email || '');
-      } catch (e) {}
-    }
+        const token = localStorage.getItem('token');
+        if (token) {
+          const res = await fetch(`${API_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const isG = data.authProvider === 'google';
+            setIsGoogleUser(isG);
+            const savedInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            localStorage.setItem('userInfo', JSON.stringify({ ...savedInfo, authProvider: data.authProvider || 'local' }));
+          }
+        }
+      } catch (err) {}
+    };
+
+    checkUser();
   }, []);
 
   // Lock background body scroll when modal is open
@@ -207,8 +234,8 @@ export default function SecurityPrivacyTab() {
       setPasswordStatus({ type: 'error', message: 'New passwords do not match' });
       return;
     }
-    if (newPassword.length < 6) {
-      setPasswordStatus({ type: 'error', message: 'Password must be at least 6 characters' });
+    if (newPassword.length < 4) {
+      setPasswordStatus({ type: 'error', message: 'Password must be at least 4 characters' });
       return;
     }
 
@@ -216,19 +243,29 @@ export default function SecurityPrivacyTab() {
       setIsSubmitting(true);
       setPasswordStatus({ type: '', message: '' });
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/users/change-password`, {
+      const endpoint = isGoogleUser ? `${API_URL}/api/users/set-password` : `${API_URL}/api/users/change-password`;
+      const body = isGoogleUser ? { newPassword } : { currentPassword, newPassword };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ currentPassword, newPassword })
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setPasswordStatus({ type: 'success', message: 'Password updated successfully' });
+        const msg = isGoogleUser ? 'Password created successfully! You can now also log in with email and password.' : 'Password updated successfully';
+        setPasswordStatus({ type: 'success', message: msg });
+        setIsGoogleUser(false);
+        try {
+          const savedInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+          localStorage.setItem('userInfo', JSON.stringify({ ...savedInfo, authProvider: 'local' }));
+        } catch (e) {}
+
         setTimeout(() => {
           setIsEditingPassword(false);
           setCurrentPassword('');
@@ -247,8 +284,8 @@ export default function SecurityPrivacyTab() {
   };
 
   return (
-    <div className="w-full max-w-2xl border border-black/10 rounded-2xl p-6 sm:p-8 md:p-10 bg-white shadow-xs flex flex-col animate-in fade-in duration-500">
-      <h2 className="font-serif text-2xl sm:text-3xl text-[#111010] mb-2 font-medium">Security & Privacy</h2>
+    <div className="w-full border border-[#e4dfd9] rounded-[22px] p-6 sm:p-8 md:p-10 bg-white shadow-xs flex flex-col animate-in fade-in duration-300">
+      <h2 className="font-serif text-2xl sm:text-3xl text-[#1c1714] mb-2 font-medium">Security & Privacy</h2>
       <p className="font-sans text-[#555047] text-sm mb-8 sm:mb-10 font-light">
         Contribute to your account and understand what remains private.
       </p>
@@ -260,20 +297,33 @@ export default function SecurityPrivacyTab() {
           {!isEditingPassword ? (
             <>
               <div className="flex flex-col gap-1.5">
-                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f]">PASSWORD</span>
-                <span className="font-mono text-[#111010] tracking-widest mt-1">•••••••••••••••</span>
+                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f]">
+                  {isGoogleUser ? 'CREATE PASSWORD' : 'PASSWORD'}
+                </span>
+                <span className="font-sans text-xs text-[#555047] font-normal mt-0.5">
+                  {isGoogleUser ? 'Signed in via Google • Set a password to also log in with email' : <span className="font-mono text-[#111010] tracking-widest">•••••••••••••••</span>}
+                </span>
               </div>
               <button 
                 onClick={() => setIsEditingPassword(true)}
                 className="mt-4 md:mt-0 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] flex items-center gap-2 cursor-pointer hover:text-[#a64117]"
               >
-                CHANGE PASSWORD <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                {isGoogleUser ? 'CREATE PASSWORD' : 'CHANGE PASSWORD'} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </>
           ) : (
             <div className="w-full animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between mb-6">
-                <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f]">CHANGE PASSWORD</span>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block">
+                    {isGoogleUser ? 'CREATE PASSWORD' : 'CHANGE PASSWORD'}
+                  </span>
+                  {isGoogleUser && (
+                    <p className="text-[0.72rem] text-[#7a756b] font-sans mt-0.5">
+                      Create a password to enable direct email &amp; password sign-in alongside your Google login.
+                    </p>
+                  )}
+                </div>
                 <button 
                   onClick={() => {
                     setIsEditingPassword(false);
@@ -288,34 +338,75 @@ export default function SecurityPrivacyTab() {
                 </button>
               </div>
               <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
-                <input 
-                  type="password" 
-                  placeholder="Current Password" 
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
-                  required
-                />
-                <input 
-                  type="password" 
-                  placeholder="New Password (min 6 characters)" 
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
-                  required
-                />
-                <input 
-                  type="password" 
-                  placeholder="Confirm New Password" 
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
-                  required
-                />
+                {!isGoogleUser && (
+                  <div className="relative">
+                    <input 
+                      type={showCurrentPassword ? "text" : "password"} 
+                      placeholder="Current Password" 
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full bg-white border border-black/10 rounded-xl px-4 py-3 pr-11 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7a756b]/60 hover:text-[#111010] p-1 transition-colors cursor-pointer"
+                    >
+                      {showCurrentPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                )}
+                
+                <div className="relative">
+                  <input 
+                    type={showNewPassword ? "text" : "password"} 
+                    placeholder={isGoogleUser ? "Enter New Password (min 4 characters)" : "New Password (min 4 characters)"} 
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-white border border-black/10 rounded-xl px-4 py-3 pr-11 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7a756b]/60 hover:text-[#111010] p-1 transition-colors cursor-pointer"
+                  >
+                    {showNewPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    placeholder="Confirm New Password" 
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full bg-white border rounded-xl px-4 py-3 pr-11 text-sm text-[#111010] focus:outline-none font-sans placeholder-[#7a756b]/40 transition-colors ${
+                      confirmPassword && newPassword !== confirmPassword 
+                        ? 'border-red-500 focus:border-red-500 bg-red-50/20' 
+                        : 'border-black/10 focus:border-[#c9542f]'
+                    }`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7a756b]/60 hover:text-[#111010] p-1 transition-colors cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                {confirmPassword && newPassword !== confirmPassword && (
+                  <p className="text-xs text-red-600 font-sans flex items-center gap-1.5 -mt-1 pl-1 font-medium">
+                    <Warning size={14} weight="fill" /> Passwords do not match
+                  </p>
+                )}
                 
                 {passwordStatus.message && (
                   <div className={`text-xs p-3 rounded-xl font-sans flex items-center gap-2 ${passwordStatus.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
-                    {passwordStatus.type === 'success' && <Check size={14} />}
+                    {passwordStatus.type === 'success' ? <Check size={14} /> : <Warning size={14} weight="fill" />}
                     {passwordStatus.message}
                   </div>
                 )}
@@ -325,7 +416,7 @@ export default function SecurityPrivacyTab() {
                   disabled={isSubmitting}
                   className="mt-2 bg-[#c9542f] text-white font-bold text-[0.7rem] tracking-[0.2em] uppercase py-3.5 rounded-xl hover:bg-[#a64117] transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer shadow-md"
                 >
-                  {isSubmitting ? <SpinnerGap size={16} className="animate-spin" /> : 'SAVE PASSWORD'}
+                  {isSubmitting ? <SpinnerGap size={16} className="animate-spin" /> : (isGoogleUser ? 'CREATE PASSWORD' : 'SAVE PASSWORD')}
                 </button>
               </form>
             </div>

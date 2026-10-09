@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookmarkSimple, List, X, Sparkle, Play } from '@phosphor-icons/react';
+import { ArrowLeft, BookmarkSimple, List, X, Sparkle, Play, User, SignOut, CalendarBlank, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { useBooking } from '../../context/BookingContext';
 import ArticleReaderView, { renderFormattedTitle } from './ArticleReaderView';
 import { CURATED_LIBRARY_ARTICLES, getCuratedArticle } from '../../constants/libraryArticlesData';
 import PlasmaRingSphere from '../../components/library/PlasmaRingSphere';
 import { API_URL } from '../../utils/apiUrl';
 import LoginModal from '../../components/layout/LoginModal';
+import { clearAllAuth, isAnyUserLoggedIn, getEffectiveUser } from '../../utils/authSync';
 
 const CATEGORY_CONFIGS = {
   relationships: {
@@ -218,6 +219,45 @@ export default function Articles() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingSaveArticleId, setPendingSaveArticleId] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(isAnyUserLoggedIn);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setIsLoggedIn(isAnyUserLoggedIn());
+    };
+    handleAuthChange();
+    window.addEventListener('auth-change', handleAuthChange);
+    window.addEventListener('course-auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+      window.removeEventListener('course-auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
+
+  // Click outside to close user dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
+  const effectiveUser = getEffectiveUser();
+  const rawName = effectiveUser?.fullName || effectiveUser?.name || 'User';
+  const userFirstName = rawName.trim().split(' ')[0].toUpperCase();
+  const userDisplayName = rawName.trim().split(' ')[0];
+  const userInitial = (userFirstName[0] || 'U').toUpperCase();
 
   const rawCat = searchParams.get('category')?.toLowerCase().trim();
   const categoryKey = CATEGORY_CONFIGS[rawCat] ? rawCat : 'relationships';
@@ -1089,12 +1129,163 @@ export default function Articles() {
             <Link to="/#faq">FAQ</Link>
           </nav>
 
-          <div className="navcta">
-            <Link to="/course" className="course-pill-btn">
-              <Play size={12} weight="fill" /> Course
-            </Link>
-            <Link to="/my-journey" className="my-journey-btn">My Journey</Link>
-            <button onClick={handleBookClick} className="book-pill">Book a Session</button>
+          <div className="navcta flex items-center gap-2.5">
+            {/* Course Button */}
+            <button 
+              type="button"
+              onClick={() => navigate('/course')} 
+              style={{
+                backgroundColor: currentCat.btnBg || '#ffffff',
+                color: currentCat.btnInk || '#1c1714',
+              }}
+              className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
+            >
+              <Play size={13} weight="fill" style={{ color: currentCat.btnInk || '#1c1714' }} />
+              <span>Course</span>
+            </button>
+
+            {/* Book a Session Button */}
+            <button 
+              type="button" 
+              onClick={handleBookClick} 
+              style={{
+                backgroundColor: currentCat.btnBg || '#ffffff',
+                color: currentCat.btnInk || '#1c1714',
+              }}
+              className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
+            >
+              <CalendarBlank size={15} weight="bold" style={{ color: currentCat.btnInk || '#1c1714' }} />
+              <span>Book a session</span>
+            </button>
+
+            {/* Login / User Account */}
+            {!isLoggedIn ? (
+              <button 
+                type="button"
+                onClick={() => setShowLoginModal(true)} 
+                style={{
+                  backgroundColor: currentCat.cardBg || 'rgba(255, 255, 255, 0.08)',
+                  color: currentCat.ink || '#ffffff',
+                  borderColor: currentCat.borderLine || 'rgba(255, 255, 255, 0.2)',
+                }}
+                className="border rounded-full px-4 py-2 text-[12px] font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-xs hover:opacity-90 active:scale-95"
+              >
+                <User size={14} weight="bold" />
+                <span>LOGIN</span>
+              </button>
+            ) : (
+              <div className="relative" ref={userMenuRef}>
+                <button 
+                  type="button"
+                  onClick={() => setDropdownOpen(prev => !prev)} 
+                  style={{
+                    backgroundColor: currentCat.cardBg || 'rgba(255, 255, 255, 0.08)',
+                    color: currentCat.ink || '#ffffff',
+                    borderColor: currentCat.borderLine || 'rgba(255, 255, 255, 0.2)',
+                  }}
+                  className="border rounded-full pl-1.5 pr-3.5 py-1 flex items-center gap-2.5 font-bold text-[12px] uppercase tracking-wider shadow-xs hover:opacity-90 transition-all cursor-pointer select-none"
+                >
+                  <div 
+                    className="relative w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden"
+                    style={{ backgroundColor: currentCat.accent || '#c8512d' }}
+                  >
+                    {effectiveUser?.photoUrl ? (
+                      <img 
+                        src={effectiveUser.photoUrl} 
+                        alt="" 
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                        className="w-full h-full object-cover rounded-full absolute inset-0" 
+                      />
+                    ) : null}
+                    <span>{userInitial}</span>
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#22c55e] border-2 border-white rounded-full z-10" />
+                  </div>
+                  <span>{userFirstName}</span>
+                  {dropdownOpen ? (
+                    <CaretUp size={13} weight="bold" style={{ color: currentCat.ink || '#ffffff' }} />
+                  ) : (
+                    <CaretDown size={13} weight="bold" style={{ color: currentCat.ink || '#ffffff' }} />
+                  )}
+                </button>
+
+                {/* Luxury Account Dropdown Card */}
+                {dropdownOpen && (
+                  <div className="absolute top-full right-0 mt-3 w-[320px] bg-[#faf8f6] border border-[#e4dfd9] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200 text-left text-[#1c1714]">
+                    <div className="p-6 pb-4">
+                      <div className="flex items-center gap-3.5 mb-4">
+                        <div className="w-[46px] h-[46px] rounded-full bg-[#c8512d] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-sm overflow-hidden relative border border-[#e4dfd9]">
+                          {effectiveUser?.photoUrl ? (
+                            <img 
+                              src={effectiveUser.photoUrl} 
+                              alt="" 
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                              className="w-full h-full object-cover rounded-full absolute inset-0" 
+                            />
+                          ) : null}
+                          <span>{userInitial}</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[#c8512d] text-[10.5px] font-bold tracking-[0.18em] uppercase mb-0.5">
+                            WELCOME BACK
+                          </p>
+                          <h3 
+                            className="text-[22px] font-semibold text-[#1c1714] leading-tight capitalize truncate"
+                            style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                          >
+                            {userDisplayName}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Black CTA Pill */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          navigate('/my-journey');
+                        }}
+                        className="w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer mt-2"
+                      >
+                        <span>CONTINUE YOUR JOURNEY</span>
+                        <span className="text-base leading-none">→</span>
+                      </button>
+
+                      {/* Nav Items - Only Profile */}
+                      <div className="flex flex-col gap-1 mt-3 pt-1">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            navigate('/my-journey?tab=profile');
+                          }}
+                          className="flex items-center gap-3 py-2.5 text-[#1c1714] hover:text-[#c8512d] text-[14px] font-medium transition-colors w-full text-left cursor-pointer"
+                        >
+                          <User size={18} className="text-[#1c1714]" />
+                          <span>Profile</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Bottom Logout Row */}
+                    <div className="border-t border-[#e4dfd9] px-6 py-3 bg-[#faf8f6]">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          clearAllAuth();
+                          setIsLoggedIn(false);
+                          navigate('/articles');
+                        }}
+                        className="flex items-center gap-2.5 text-[#9a918a] hover:text-[#c8512d] text-[13.5px] font-medium transition-colors w-full text-left cursor-pointer"
+                      >
+                        <SignOut size={18} />
+                        <span>Log out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <button 
               className="mobile-toggle"

@@ -2914,13 +2914,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 36px 32px 50px;
+  padding: 36px 32px 60px;
   background: radial-gradient(ellipse 80% 50% at 30% 0%, rgba(122, 42, 112, 0.28), transparent 70%), #050505;
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-  height: 100vh;
+  height: 100%;
   max-height: 100vh;
+  min-height: 0;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 }
@@ -3147,12 +3148,18 @@
 
 .auth-modal-scope .auth-r {
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  max-height: 100vh;
+  min-height: 0;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 60px 48px 60px;
   background: radial-gradient(circle at 25% 20%, #5A1B54, #3D1A38 55%, #1E0C1C);
+  -webkit-overflow-scrolling: touch;
 }
 
 .auth-modal-scope .auth-r .orb {
@@ -3355,13 +3362,25 @@
 
 @media (max-width: 1000px) {
   .auth-modal-scope {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
   .auth-modal-scope .auth-l {
-    padding: 80px 20px 40px;
+    height: auto;
+    max-height: none;
+    overflow-y: visible;
+    padding: 70px 20px 40px;
+    flex-shrink: 0;
   }
   .auth-modal-scope .auth-r {
+    height: auto;
+    max-height: none;
+    overflow-y: visible;
     padding: 40px 22px 80px;
+    flex-shrink: 0;
   }
 }
 

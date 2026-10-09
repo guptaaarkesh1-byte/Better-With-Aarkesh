@@ -335,6 +335,24 @@ export default function Booking() {
     setBookingData((prev) => ({ ...prev, ...newData }));
   };
 
+  const handleAutoLoginOnBooking = (data) => {
+    if (!data) return;
+    const currentToken = localStorage.getItem('token');
+    if (!currentToken && data.token) {
+      localStorage.setItem('token', data.token);
+      if (data.courseToken) {
+        localStorage.setItem('courseToken', data.courseToken);
+      }
+      if (data.userInfo) {
+        localStorage.setItem('userInfo', JSON.stringify(data.userInfo));
+      }
+      if (data.courseUser) {
+        localStorage.setItem('courseUser', JSON.stringify(data.courseUser));
+      }
+      window.dispatchEvent(new Event('auth-change'));
+    }
+  };
+
   const submitBooking = async () => {
     setIsLoading(true);
     setError('');
@@ -371,6 +389,7 @@ export default function Booking() {
         }
 
         const freeData = await freeRes.json();
+        handleAutoLoginOnBooking(freeData);
         updateData({ 
           appointmentId: freeData._id,
           isFreeSession: true,
@@ -482,6 +501,8 @@ export default function Booking() {
             });
 
             if (finalRes.ok) {
+              const finalData = await finalRes.json();
+              handleAutoLoginOnBooking(finalData);
               updateData({ 
                 appointmentId, 
                 paidAmount: chargedAmountInRupees 

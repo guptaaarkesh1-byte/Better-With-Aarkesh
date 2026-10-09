@@ -66,6 +66,18 @@ const userSchema = new mongoose.Schema({
       default: true,
     },
   },
+  authProvider: {
+    type: String,
+    default: 'local', // 'local' | 'google'
+  },
+  googleId: {
+    type: String,
+    default: '',
+  },
+  photoUrl: {
+    type: String,
+    default: '',
+  },
   isDeleted: {
     type: Boolean,
     default: false,

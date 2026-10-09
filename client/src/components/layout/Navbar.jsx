@@ -3,7 +3,20 @@ import { createPortal } from 'react-dom';
 import { cn } from '../../utils/cn';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookmarkSimple, List, X, User, LockKey, SignOut, ArrowRight, Play } from '@phosphor-icons/react';
+import { 
+  BookmarkSimple, 
+  List, 
+  X, 
+  User, 
+  LockKey, 
+  SignOut, 
+  ArrowRight, 
+  Play, 
+  CalendarBlank, 
+  CaretUp, 
+  CaretDown, 
+  Notebook 
+} from '@phosphor-icons/react';
 import Container from '../ui/Container';
 import LoginModal from './LoginModal';
 import { clearAllAuth, isAnyUserLoggedIn, getEffectiveUser } from '../../utils/authSync';
@@ -20,16 +33,85 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(isAnyUserLoggedIn);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const navRef = useRef(null);
+  const userMenuRef = useRef(null);
   const isManualNavRef = useRef(false);
   const manualNavTimerRef = useRef(null);
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [newCoachNotesCount, setNewCoachNotesCount] = useState(0);
+  const [freeSessionsCount, setFreeSessionsCount] = useState(0);
+
+  // Click outside to close user dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
+  // Compute user display details
+  const effectiveUser = getEffectiveUser();
+  const rawName = effectiveUser?.fullName || effectiveUser?.name || 'User';
+  const userFirstName = rawName.trim().split(' ')[0].toUpperCase();
+  const userDisplayName = rawName.trim().split(' ')[0];
+  const userInitial = (userFirstName[0] || 'U').toUpperCase();
+
+  // Sync profile & coach notes dynamically
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setFreeSessionsCount(0);
+      setNewCoachNotesCount(0);
+      return;
+    }
+
+    const currentEffective = getEffectiveUser();
+    const initialCredits = Number(currentEffective?.freeSessions) || 0;
+    setFreeSessionsCount(initialCredits);
+
+    const token = localStorage.getItem('token');
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    if (!token) return;
+
+    // Fetch user profile for latest free sessions
+    fetch(`${API_URL}/api/users/profile`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.freeSessions !== undefined) {
+          setFreeSessionsCount(Math.max(0, Number(data.freeSessions)));
+        }
+      })
+      .catch(() => {});
+
+    // Fetch notes to check if coach sent any notes
+    fetch(`${API_URL}/api/notes`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        if (Array.isArray(data)) {
+          const coachNotes = data.filter(n => n.author === 'COACH' || n.isCoachNote || n.unread);
+          setNewCoachNotesCount(coachNotes.length);
+        }
+      })
+      .catch(() => {});
+  }, [isLoggedIn, location.pathname]);
 
   // Re-check auth status when route changes or auth event fires
   useEffect(() => {
@@ -113,7 +195,7 @@ export default function Navbar() {
   }, [location.pathname, location.hash]);
 
   // Hide on dedicated pages that manage their own themed navbars
-  if (location.pathname.startsWith('/course') || location.pathname.startsWith('/courses') || location.pathname.startsWith('/my-course') || location.pathname.startsWith('/my-courses') || location.pathname.startsWith('/classroom') || location.pathname === '/library' || location.pathname.startsWith('/articles')) return null;
+  if (location.pathname.startsWith('/course') || location.pathname.startsWith('/courses') || location.pathname.startsWith('/my-course') || location.pathname.startsWith('/my-courses') || location.pathname.startsWith('/classroom') || location.pathname === '/library' || location.pathname.startsWith('/articles') || location.pathname.startsWith('/my-journey')) return null;
 
   const handleNavClick = (href) => {
     let target = null;
@@ -176,83 +258,159 @@ export default function Navbar() {
             </div>
 
             {/* Right Action Controls */}
-            <div className="flex-shrink-0 flex items-center gap-3 sm:gap-4">
-              <div className="hidden md:flex items-center gap-3">
+            <div className="flex-shrink-0 flex items-center gap-3 sm:gap-3.5">
+              <div className="hidden md:flex items-center gap-2.5 lg:gap-3">
                 {/* Course Button */}
                 <button
                   onClick={() => navigate('/course')}
-                  className={cn(
-                    "px-4 py-1.5 rounded-sm border font-sans text-[0.7rem] uppercase tracking-[0.18em] transition-colors flex items-center gap-1.5 cursor-pointer",
-                    location.pathname.startsWith('/course')
-                      ? "border-[#c9542f] text-[#c9542f] bg-[#fbf0eb] font-bold"
-                      : "border-black/20 text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-medium"
-                  )}
+                  className="bg-[#c8512d] hover:bg-[#b3461f] text-white rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-medium flex items-center gap-1.5 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
                 >
-                  <Play size={13} weight="fill" /> COURSE
+                  <Play size={13} weight="fill" className="text-white" />
+                  <span>Course</span>
                 </button>
-
-                {/* My Journey / Login */}
-                {!isLoggedIn ? (
-                  <button 
-                    onClick={() => setShowLoginModal(true)}
-                    className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <User size={14} weight="regular" /> LOGIN
-                  </button>
-                ) : (
-                  <div className="relative group">
-                    <button
-                      onClick={() => navigate('/my-journey')}
-                      className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] group-hover:border-[#c9542f] group-hover:text-[#c9542f] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <BookmarkSimple size={14} weight="regular" /> MY JOURNEY
-                    </button>
-                    
-                    {/* Account Dropdown */}
-                    <div className="absolute top-full right-0 pt-2 w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0 flex flex-col pointer-events-none group-hover:pointer-events-auto z-[200]">
-                      <div className="rounded-xl border border-black/10 bg-[#ffffff] p-2 shadow-2xl flex flex-col">
-                        <span className="font-sans text-[0.65rem] uppercase tracking-[0.18em] font-semibold text-black/50 mb-2 mt-2 px-3 truncate">
-                          {getEffectiveUser()?.fullName || 'MY ACCOUNT'}
-                        </span>
-
-                        <button 
-                          onClick={() => navigate('/my-journey/settings')}
-                          className="flex items-center gap-3 font-sans text-[0.7rem] uppercase tracking-[0.15em] text-black/80 hover:text-black hover:bg-black/5 transition-colors w-full text-left px-3 py-2 rounded-lg"
-                        >
-                          <User size={14} /> PROFILE & SETTINGS
-                        </button>
-                        
-                        <button 
-                          onClick={() => navigate('/my-journey/settings?tab=SECURITY')}
-                          className="flex items-center gap-3 font-sans text-[0.7rem] uppercase tracking-[0.15em] text-black/80 hover:text-black hover:bg-black/5 transition-colors w-full text-left px-3 py-2 rounded-lg mb-1"
-                        >
-                          <LockKey size={14} /> PRIVACY
-                        </button>
-                        
-                        <div className="w-full h-[1px] bg-black/10 my-1"></div>
-                        
-                        <button 
-                          onClick={() => {
-                            clearAllAuth();
-                            setIsLoggedIn(false);
-                            navigate('/');
-                          }}
-                          className="flex items-center gap-3 font-sans text-[0.7rem] uppercase tracking-[0.15em] font-bold text-[#c9542f] hover:bg-[#c9542f]/10 transition-colors w-full text-left px-3 py-2 rounded-lg mt-1"
-                        >
-                          <SignOut size={14} weight="bold" /> LOG OUT
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Book a Session Button */}
                 <button 
                   onClick={() => navigate('/book')}
-                  className="px-4 py-1.5 rounded-sm border border-black/20 text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] hover:bg-[#fbf0eb] font-sans text-[0.7rem] uppercase tracking-[0.18em] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                  className="bg-[#c8512d] hover:bg-[#b3461f] text-white rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-medium flex items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
                 >
-                  BOOK A SESSION
+                  <CalendarBlank size={15} weight="bold" className="text-white" />
+                  <span>Book a session</span>
                 </button>
+
+                {/* User Account / Login */}
+                {!isLoggedIn ? (
+                  <button 
+                    onClick={() => setShowLoginModal(true)}
+                    className="bg-white border border-[#1c1714] hover:border-[#c8512d] hover:text-[#c8512d] text-[#1c1714] rounded-full px-4 py-2 text-[12px] font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <User size={14} weight="bold" />
+                    <span>LOGIN</span>
+                  </button>
+                ) : (
+                  <div className="relative" ref={userMenuRef}>
+                    {/* User Account Pill */}
+                    <button
+                      onClick={() => setDropdownOpen(prev => !prev)}
+                      className="bg-white border border-[#1c1714] rounded-full pl-1.5 pr-3.5 py-1 flex items-center gap-2.5 font-bold text-[12px] uppercase tracking-wider text-[#1c1714] shadow-xs hover:border-[#c8512d] transition-all cursor-pointer select-none"
+                    >
+                      <div className="relative w-7 h-7 rounded-full bg-[#c8512d] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
+                        {effectiveUser?.photoUrl ? (
+                          <img 
+                            src={effectiveUser.photoUrl} 
+                            alt="" 
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                            className="w-full h-full object-cover rounded-full absolute inset-0" 
+                          />
+                        ) : null}
+                        <span>{userInitial}</span>
+                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#22c55e] border-2 border-white rounded-full z-10" />
+                      </div>
+                      <span>{userFirstName}</span>
+                      {dropdownOpen ? (
+                        <CaretUp size={13} weight="bold" className="text-[#1c1714]" />
+                      ) : (
+                        <CaretDown size={13} weight="bold" className="text-[#1c1714]" />
+                      )}
+                    </button>
+                    
+                    {/* Luxury Account Dropdown Card */}
+                    {dropdownOpen && (
+                      <div className="absolute top-full right-0 mt-3 w-[320px] bg-[#faf8f6] border border-[#e4dfd9] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200">
+                        {/* Header Area */}
+                        <div className="p-6 pb-4">
+                          <div className="flex items-center gap-3.5 mb-4">
+                            <div className="w-[46px] h-[46px] rounded-full bg-[#c8512d] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-sm overflow-hidden relative border border-[#e4dfd9]">
+                              {effectiveUser?.photoUrl ? (
+                                <img 
+                                  src={effectiveUser.photoUrl} 
+                                  alt="" 
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                                  className="w-full h-full object-cover rounded-full absolute inset-0" 
+                                />
+                              ) : null}
+                              <span>{userInitial}</span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[#c8512d] text-[10.5px] font-bold tracking-[0.18em] uppercase mb-0.5">
+                                WELCOME BACK
+                              </p>
+                              <h3 
+                                className="text-[22px] font-semibold text-[#1c1714] leading-tight capitalize truncate"
+                                style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                              >
+                                {userDisplayName}
+                              </h3>
+                            </div>
+                          </div>
+
+                          {/* Sessions Left Dots - only shown if user has free sessions left */}
+                          {freeSessionsCount > 0 && (
+                            <div className="flex items-center gap-1.5 text-[12px] text-[#555047] font-medium mb-4">
+                              {Array.from({ length: 3 }).map((_, i) => (
+                                <span
+                                  key={i}
+                                  className={cn(
+                                    "w-2.5 h-2.5 rounded-full transition-all",
+                                    i < freeSessionsCount
+                                      ? "bg-[#c8512d]"
+                                      : "border border-[#c8512d] bg-transparent"
+                                  )}
+                                />
+                              ))}
+                              <span className="ml-1 text-[#716962]">{freeSessionsCount} of 3 free sessions left</span>
+                            </div>
+                          )}
+
+                          {/* Black CTA Pill */}
+                          <button
+                            onClick={() => {
+                              setDropdownOpen(false);
+                              navigate('/my-journey');
+                            }}
+                            className={cn(
+                              "w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer",
+                              freeSessionsCount > 0 ? "mt-0" : "mt-2"
+                            )}
+                          >
+                            <span>CONTINUE YOUR JOURNEY</span>
+                            <span className="text-base leading-none">→</span>
+                          </button>
+
+                          {/* Nav Items - Only Profile */}
+                          <div className="flex flex-col gap-1 mt-3 pt-1">
+                            <button 
+                              onClick={() => {
+                                setDropdownOpen(false);
+                                navigate('/my-journey?tab=profile');
+                              }}
+                              className="flex items-center gap-3 py-2.5 text-[#1c1714] hover:text-[#c8512d] text-[14px] font-medium transition-colors w-full text-left cursor-pointer"
+                            >
+                              <User size={18} className="text-[#1c1714]" />
+                              <span>Profile</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Bottom Logout Row */}
+                        <div className="border-t border-[#e4dfd9] px-6 py-3 bg-[#faf8f6]">
+                          <button 
+                            onClick={() => {
+                              setDropdownOpen(false);
+                              clearAllAuth();
+                              setIsLoggedIn(false);
+                              navigate('/');
+                            }}
+                            className="flex items-center gap-2.5 text-[#9a918a] hover:text-[#c8512d] text-[13.5px] font-medium transition-colors w-full text-left cursor-pointer"
+                          >
+                            <SignOut size={18} />
+                            <span>Log out</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Mobile Hamburger Toggle */}
@@ -363,15 +521,16 @@ export default function Navbar() {
         </nav>
 
         {/* Action Buttons Row */}
-        <div className="grid grid-cols-2 gap-2.5 mt-5">
+        <div className="grid grid-cols-2 gap-3 mt-5">
           <button
             onClick={() => {
               setMobileMenuOpen(false);
               navigate('/course');
             }}
-            className="h-11 rounded-lg border border-black text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans font-semibold text-[11.5px] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer bg-transparent"
+            className="h-11 rounded-full bg-[#c8512d] text-white font-medium text-[12.5px] flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer shadow-sm"
           >
-            <Play size={14} weight="fill" /> COURSE
+            <Play size={14} weight="fill" />
+            <span>Course</span>
           </button>
 
           {!isLoggedIn ? (
@@ -380,9 +539,10 @@ export default function Navbar() {
                 setMobileMenuOpen(false);
                 setShowLoginModal(true);
               }}
-              className="h-11 rounded-lg border border-black text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans font-semibold text-[11.5px] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer bg-transparent"
+              className="h-11 rounded-full border border-[#1c1714] bg-white text-[#1c1714] font-bold text-[12px] tracking-wider uppercase flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
             >
-              <User size={15} weight="regular" /> LOGIN
+              <User size={15} weight="bold" />
+              <span>LOGIN</span>
             </button>
           ) : (
             <button 
@@ -390,22 +550,25 @@ export default function Navbar() {
                 setMobileMenuOpen(false);
                 navigate('/my-journey');
               }}
-              className="h-11 rounded-lg border border-black text-[#111010] hover:border-[#c9542f] hover:text-[#c9542f] font-sans font-semibold text-[11.5px] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer bg-transparent"
+              className="h-11 rounded-full border border-[#1c1714] bg-white text-[#1c1714] font-bold text-[12px] tracking-wider uppercase flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
             >
-              <BookmarkSimple size={15} weight="regular" /> MY JOURNEY
+              <div className="w-5 h-5 rounded-full bg-[#c8512d] text-white flex items-center justify-center text-[10px] font-bold">
+                {userInitial}
+              </div>
+              <span>MY JOURNEY</span>
             </button>
           )}
 
-          {/* Full Width CTA */}
+          {/* Full Width Book A Session CTA */}
           <button 
-            className="col-span-2 h-13 rounded-full bg-[#111010] text-[#f5f1e8] font-sans font-semibold text-[12.5px] tracking-[0.16em] uppercase flex items-center justify-center gap-3 shadow-[0_12px_26px_-12px_rgba(0,0,0,0.55)] mt-1 transition-transform active:scale-[0.99] cursor-pointer"
+            className="col-span-2 h-12 rounded-full bg-[#c8512d] text-white font-medium text-[13px] flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(200,81,45,0.3)] mt-1 transition-transform active:scale-[0.99] cursor-pointer"
             onClick={() => {
               setMobileMenuOpen(false);
               navigate('/book');
             }}
           >
+            <CalendarBlank size={16} weight="bold" />
             <span>Book a session</span>
-            <ArrowRight size={16} weight="bold" />
           </button>
         </div>
       </div>
@@ -417,7 +580,7 @@ export default function Navbar() {
           onSuccess={(data) => {
             setIsLoggedIn(true);
             setShowLoginModal(false);
-            if (data?.isRegister) {
+            if (data?.isRegister || data?.isNewUser) {
               setToastMessage('Account created successfully');
             } else {
               setToastMessage('Logged in successfully');

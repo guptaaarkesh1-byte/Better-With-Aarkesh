@@ -44,6 +44,12 @@ router.post('/register-init', async (req, res) => {
     const userExists = await User.findOne({ email: emailRegex });
 
     if (userExists && !userExists.isDeleted) {
+      if (userExists.authProvider === 'google') {
+        return res.status(400).json({ 
+          message: "This email is registered with Google. Please use 'Continue with Google' to sign in.",
+          isGoogleAccount: true 
+        });
+      }
       // Check if this is a course purchaser — redirect to login instead of blocking
       const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
       if (courseUser) {
@@ -472,6 +478,13 @@ router.post('/login', async (req, res) => {
         courseUserId,
       });
     } else {
+      const courseCheck = await CourseUser.findOne({ email: emailRegex });
+      if (user?.authProvider === 'google' || courseCheck?.authProvider === 'google') {
+        return res.status(400).json({ 
+          message: "This email is registered with Google. Please click 'Continue with Google' to sign in.",
+          isGoogleAccount: true 
+        });
+      }
       res.status(401).json({ message: 'Wrong password' });
     }
   } catch (error) {
@@ -538,11 +551,21 @@ router.post('/forgot-password-init', async (req, res) => {
     const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     let user = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+    let courseUser = null;
     if (!user) {
-      const courseUser = await CourseUser.findOne({ email: emailRegex });
+      courseUser = await CourseUser.findOne({ email: emailRegex });
       if (!courseUser) {
         return res.status(404).json({ message: 'User account does not exist' });
       }
+    } else {
+      courseUser = await CourseUser.findOne({ email: emailRegex });
+    }
+
+    if (user?.authProvider === 'google' || courseUser?.authProvider === 'google') {
+      return res.status(400).json({
+        message: "This email is registered with Google. Please use 'Continue with Google' to sign in.",
+        isGoogleAccount: true
+      });
     }
 
     const otp = generateOTP();
@@ -762,18 +785,147 @@ router.post('/admin/change-password', protect, admin, async (req, res) => {
       return res.status(400).json({ message: 'Incorrect current password' });
     }
 
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    if (!newPassword || newPassword.length < 4) {
+      return res.status(400).json({ message: 'New password must be at least 4 characters' });
     }
 
     const salt = await bcrypt.genSalt(10);
     adminUser.password = await bcrypt.hash(newPassword, salt);
     await adminUser.save();
 
-    res.status(200).json({ message: 'Password changed successfully' });
+    res.json({ message: 'Password updated successfully' });
   } catch (error) {
-    console.error('Admin Password Change Error:', error.message);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Change admin password error:', error.message);
+    res.status(500).json({ message: 'Server error updating password' });
+  }
+});
+
+// @route   POST /api/auth/google
+// @desc    Authenticate with Firebase Google OAuth
+// @access  Public
+router.post('/google', async (req, res) => {
+  try {
+    const { email, fullName, photoUrl, phoneNumber, uid } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Google account email is required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+
+    let user = await User.findOne({ email: emailRegex });
+    const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
+    const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid' });
+    const hasCoursePerks = !!courseUser || !!coursePurchase;
+
+    let isNewUser = false;
+    if (!user) {
+      isNewUser = true;
+      const dynamicFree = hasCoursePerks ? await getDynamicCourseFreeSessions('better-man') : 0;
+      const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
+
+      user = await User.create({
+        fullName: fullName || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        password: randomPassword,
+        phoneNumber: phoneNumber || '',
+        countryCode: '+91',
+        freeSessions: dynamicFree,
+        courseSessionsGranted: hasCoursePerks,
+        isVerified: true,
+        authProvider: 'google',
+        googleId: uid || '',
+        photoUrl: photoUrl || ''
+      });
+      console.log(`✅ Created new Google-authenticated user: ${user.fullName} (${cleanEmail})`);
+    } else {
+      if (user.isDeleted) {
+        user.isDeleted = false;
+        user.deletedAt = null;
+      }
+      if (fullName) {
+        user.fullName = fullName;
+      }
+      if (photoUrl) {
+        user.photoUrl = photoUrl;
+      }
+      if (!user.authProvider || user.authProvider === 'local') {
+        user.authProvider = 'google';
+      }
+      if (uid && !user.googleId) {
+        user.googleId = uid;
+      }
+      if (hasCoursePerks && !user.courseSessionsGranted) {
+        const dynamicFree = await getDynamicCourseFreeSessions('better-man');
+        user.freeSessions = dynamicFree;
+        user.courseSessionsGranted = true;
+      }
+      await user.save();
+    }
+
+    // Sync CourseUser as well
+    let linkedCourseUser = await CourseUser.findOne({ email: emailRegex });
+    if (!linkedCourseUser) {
+      const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
+      linkedCourseUser = await CourseUser.create({
+        fullName: user.fullName,
+        email: cleanEmail,
+        password: randomPassword,
+        phoneNumber: user.phoneNumber || '',
+        authProvider: 'google',
+        googleId: uid || '',
+        photoUrl: photoUrl || user.photoUrl || ''
+      });
+    } else {
+      if (fullName) {
+        linkedCourseUser.fullName = fullName;
+      }
+      if (photoUrl) {
+        linkedCourseUser.photoUrl = photoUrl;
+      }
+      if (!linkedCourseUser.authProvider || linkedCourseUser.authProvider === 'local') {
+        linkedCourseUser.authProvider = 'google';
+      }
+      if (uid && !linkedCourseUser.googleId) {
+        linkedCourseUser.googleId = uid;
+      }
+      await linkedCourseUser.save();
+    }
+
+    // Recalculate session info if course purchaser
+    const sessionInfo = await calculateAndSyncFreeSessions(cleanEmail);
+    if (sessionInfo.isCoursePurchaser) {
+      user.freeSessions = sessionInfo.remaining;
+      user.courseSessionsGranted = true;
+      await user.save();
+    }
+
+    const token = generateToken(user._id);
+    const courseToken = generateToken(linkedCourseUser._id);
+
+    res.json({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      countryCode: user.countryCode,
+      photoUrl: user.photoUrl,
+      dob: user.dob,
+      gender: user.gender,
+      freeSessions: user.freeSessions,
+      courseSessionsGranted: user.courseSessionsGranted,
+      authProvider: user.authProvider || 'google',
+      token,
+      courseToken,
+      courseUserId: linkedCourseUser._id,
+      isCoursePurchased: !!linkedCourseUser?.isPurchased,
+      isNewUser,
+      isRegister: isNewUser,
+      message: isNewUser ? 'Account created successfully with Google' : 'Logged in successfully with Google'
+    });
+  } catch (error) {
+    console.error('Google Auth Error:', error);
+    res.status(500).json({ message: 'Server error during Google authentication' });
   }
 });
 

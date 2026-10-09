@@ -1,4 +1,6 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import Appointment from '../models/Appointment.js';
 import User from '../models/User.js';
 import CourseUser from '../models/CourseUser.js';
@@ -11,6 +13,86 @@ import { sendCoachingBookingConfirmationEmail, generateCoachingAgreementPdf } fr
 import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
 
 const router = express.Router();
+
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret_key', {
+    expiresIn: '30d',
+  });
+};
+
+const getOrCreateBookingUser = async ({ name, email, countryCode, phoneNumber }) => {
+  if (!email) return { user: null, courseUser: null, token: null, courseToken: null, isNewAccount: false };
+
+  const cleanEmail = email.trim().toLowerCase();
+  const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+  const cleanPhone = (phoneNumber || '').replace(/\D/g, '').slice(-10);
+
+  if (cleanPhone.length === 10) {
+    const existingPhoneUser = await User.findOne({
+      phoneNumber: new RegExp(`${cleanPhone}$`),
+      email: { $ne: cleanEmail },
+      isDeleted: { $ne: true }
+    });
+    if (existingPhoneUser) {
+      const err = new Error('This phone number is already registered with another account. Please use your registered email or enter a different phone number.');
+      err.status = 400;
+      throw err;
+    }
+  }
+
+  let user = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+  let courseUser = await CourseUser.findOne({ email: emailRegex });
+  let isNewAccount = false;
+
+  const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
+
+  if (!user) {
+    isNewAccount = true;
+    user = new User({
+      fullName: name || cleanEmail.split('@')[0],
+      email: cleanEmail,
+      phoneNumber: phoneNumber || '',
+      countryCode: countryCode || '+91',
+      password: randomPassword,
+      authProvider: 'google',
+      isVerified: true,
+      freeSessions: 0,
+      courseSessionsGranted: false
+    });
+    await user.save();
+    console.log(`✅ Auto-created coaching User account on session booking: ${user.fullName} (${cleanEmail})`);
+  } else {
+    if (phoneNumber && !user.phoneNumber) {
+      user.phoneNumber = phoneNumber;
+      if (countryCode) user.countryCode = countryCode;
+      await user.save();
+    }
+  }
+
+  if (!courseUser) {
+    courseUser = new CourseUser({
+      fullName: name || user.fullName || cleanEmail.split('@')[0],
+      email: cleanEmail,
+      phoneNumber: phoneNumber || user.phoneNumber || '',
+      password: randomPassword,
+      authProvider: 'google',
+      isPurchased: false
+    });
+    await courseUser.save();
+    console.log(`✅ Auto-created CourseUser account on session booking: ${courseUser.fullName} (${cleanEmail})`);
+  }
+
+  const token = generateToken(user._id);
+  const courseToken = generateToken(courseUser._id);
+
+  return {
+    user,
+    courseUser,
+    token,
+    courseToken,
+    isNewAccount
+  };
+};
 
 // --- Shared Cal.com sync helper (used by paid finalize + free course sessions) ---
 const syncAppointmentToCal = async (appointment) => {
@@ -29,7 +111,7 @@ const syncAppointmentToCal = async (appointment) => {
       attendee: {
         name: appointment.name,
         email: appointment.email,
-        timeZone: "Asia/Calcutta",
+        timeZone: "Asia/Kolkata",
         language: "en"
       }
     };
@@ -149,14 +231,67 @@ router.post('/check-session-type', optionalAuth, async (req, res) => {
   }
 });
 
+// @desc    Check if phone number is already registered to another account
+// @route   POST /api/appointments/check-phone-availability
+// @access  Public
+router.post('/check-phone-availability', async (req, res) => {
+  try {
+    const { phoneNumber, email } = req.body;
+    const cleanPhone = (phoneNumber || '').replace(/\D/g, '').slice(-10);
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    if (cleanPhone.length === 10) {
+      const userQuery = {
+        phoneNumber: new RegExp(`${cleanPhone}$`),
+        isDeleted: { $ne: true }
+      };
+      if (cleanEmail) {
+        userQuery.email = { $ne: cleanEmail };
+      }
+
+      const existingUser = await User.findOne(userQuery);
+      if (existingUser) {
+        return res.json({
+          available: false,
+          message: 'This phone number is already registered with another account.'
+        });
+      }
+    }
+
+    res.json({ available: true });
+  } catch (error) {
+    console.error('Error checking phone availability:', error);
+    res.status(500).json({ message: 'Error checking phone availability' });
+  }
+});
+
 // POST /api/appointments - Create a new appointment
 router.post('/', optionalAuth, async (req, res) => {
   try {
     const { date, time, name, email, countryCode, phoneNumber, source, reason, extra, questionnaireAnswers, paymentId, orderId, signature, useFreeSession } = req.body;
 
+    const normalizedEmail = (email || (req.user && req.user.email) || '').toLowerCase().trim();
+    if (!normalizedEmail || !normalizedEmail.endsWith('@gmail.com')) {
+      return res.status(400).json({ message: 'Only @gmail.com email addresses are accepted for session booking.' });
+    }
+
+    const phone = (phoneNumber || (req.user && req.user.phoneNumber) || '').trim();
+    if (phone) {
+      const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+      if (cleanPhone.length === 10) {
+        const phoneOwner = await User.findOne({
+          phoneNumber: new RegExp(`${cleanPhone}$`),
+          isDeleted: { $ne: true },
+          email: { $ne: normalizedEmail }
+        });
+        if (phoneOwner) {
+          return res.status(400).json({ message: 'This phone number is already registered with another account.' });
+        }
+      }
+    }
+
     // --- Free session booking (3 free sessions included with course purchase) ---
     if (useFreeSession) {
-      const normalizedEmail = (email || '').trim().toLowerCase();
       const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
 
@@ -225,16 +360,42 @@ router.post('/', optionalAuth, async (req, res) => {
         console.error("Failed to send free session confirmation email with PDF agreement:", emailErr);
       });
 
+      const authData = await getOrCreateBookingUser({
+        name,
+        email: normalizedEmail,
+        countryCode,
+        phoneNumber
+      });
+
       return res.status(201).json({
         ...createdFreeAppointment.toObject(),
-        freeSessionsRemaining: coachingUser.freeSessions
+        freeSessionsRemaining: coachingUser.freeSessions,
+        token: authData.token,
+        courseToken: authData.courseToken,
+        userInfo: authData.user ? {
+          _id: authData.user._id,
+          fullName: authData.user.fullName,
+          email: authData.user.email,
+          phoneNumber: authData.user.phoneNumber || '',
+          countryCode: authData.user.countryCode || '+91',
+          photoUrl: authData.user.photoUrl || '',
+          freeSessions: coachingUser.freeSessions,
+          courseSessionsGranted: true,
+          authProvider: authData.user.authProvider || 'google'
+        } : null,
+        courseUser: authData.courseUser ? {
+          _id: authData.courseUser._id,
+          fullName: authData.courseUser.fullName,
+          email: authData.courseUser.email,
+          phoneNumber: authData.courseUser.phoneNumber || '',
+          isPurchased: authData.courseUser.isPurchased,
+          authProvider: authData.courseUser.authProvider || 'google'
+        } : null,
+        isNewAccount: authData.isNewAccount
       });
     }
 
     // Check if user has past appointments (Registered or Unregistered, even across deleted accounts)
-    const normalizedEmail = (email || (req.user && req.user.email) || '').toLowerCase().trim();
-    const phone = (phoneNumber || (req.user && req.user.phoneNumber) || '').trim();
-
     let isFirstSession = true;
     if (normalizedEmail) {
       const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -274,8 +435,16 @@ router.post('/', optionalAuth, async (req, res) => {
     const dynamicAmount = duration === 90 ? fee90 : fee60;
     const finalAmount = req.body.amount !== undefined && req.body.amount !== null ? Number(req.body.amount) : dynamicAmount;
 
+    // Auto-create or find user account for the booking
+    const authData = await getOrCreateBookingUser({
+      name,
+      email: normalizedEmail,
+      countryCode,
+      phoneNumber: phone
+    });
+
     const appointment = new Appointment({
-      userId: req.user ? req.user._id : undefined,
+      userId: req.user ? req.user._id : (authData.user ? authData.user._id : undefined),
       date,
       time,
       name,
@@ -309,7 +478,31 @@ router.post('/', optionalAuth, async (req, res) => {
     // Cal.com sync is now handled in /finalize route
     // ---------------------------
 
-    res.status(201).json(createdAppointment);
+    res.status(201).json({
+      ...createdAppointment.toObject(),
+      token: authData.token,
+      courseToken: authData.courseToken,
+      userInfo: authData.user ? {
+        _id: authData.user._id,
+        fullName: authData.user.fullName,
+        email: authData.user.email,
+        phoneNumber: authData.user.phoneNumber || '',
+        countryCode: authData.user.countryCode || '+91',
+        photoUrl: authData.user.photoUrl || '',
+        freeSessions: authData.user.freeSessions,
+        courseSessionsGranted: authData.user.courseSessionsGranted,
+        authProvider: authData.user.authProvider || 'google'
+      } : null,
+      courseUser: authData.courseUser ? {
+        _id: authData.courseUser._id,
+        fullName: authData.courseUser.fullName,
+        email: authData.courseUser.email,
+        phoneNumber: authData.courseUser.phoneNumber || '',
+        isPurchased: authData.courseUser.isPurchased,
+        authProvider: authData.courseUser.authProvider || 'google'
+      } : null,
+      isNewAccount: authData.isNewAccount
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error saving appointment' });
@@ -346,7 +539,7 @@ router.put('/:id/finalize', optionalAuth, async (req, res) => {
           attendee: {
             name: appointment.name,
             email: appointment.email,
-            timeZone: "Asia/Calcutta",
+            timeZone: "Asia/Kolkata",
             language: "en"
           }
         };
@@ -394,7 +587,43 @@ router.put('/:id/finalize', optionalAuth, async (req, res) => {
       console.error('Failed to send paid booking confirmation email with PDF agreement:', emailErr);
     });
 
-    res.json(updatedAppointment);
+    const authData = await getOrCreateBookingUser({
+      name: appointment.name,
+      email: appointment.email,
+      countryCode: appointment.countryCode,
+      phoneNumber: appointment.phoneNumber
+    });
+
+    if (!appointment.userId && authData.user) {
+      appointment.userId = authData.user._id;
+      await appointment.save();
+    }
+
+    res.json({
+      ...updatedAppointment.toObject(),
+      token: authData.token,
+      courseToken: authData.courseToken,
+      userInfo: authData.user ? {
+        _id: authData.user._id,
+        fullName: authData.user.fullName,
+        email: authData.user.email,
+        phoneNumber: authData.user.phoneNumber || '',
+        countryCode: authData.user.countryCode || '+91',
+        photoUrl: authData.user.photoUrl || '',
+        freeSessions: authData.user.freeSessions,
+        courseSessionsGranted: authData.user.courseSessionsGranted,
+        authProvider: authData.user.authProvider || 'google'
+      } : null,
+      courseUser: authData.courseUser ? {
+        _id: authData.courseUser._id,
+        fullName: authData.courseUser.fullName,
+        email: authData.courseUser.email,
+        phoneNumber: authData.courseUser.phoneNumber || '',
+        isPurchased: authData.courseUser.isPurchased,
+        authProvider: authData.courseUser.authProvider || 'google'
+      } : null,
+      isNewAccount: authData.isNewAccount
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error finalizing appointment' });

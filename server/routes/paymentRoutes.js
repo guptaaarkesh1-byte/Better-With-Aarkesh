@@ -108,6 +108,26 @@ router.post('/create-order', optionalAuth, async (req, res) => {
   try {
     const { email, phoneNumber, sessionDuration, duration, currency = 'INR', receipt = `rcpt_${Date.now()}` } = req.body;
     
+    const normalizedEmail = (email || (req.user && req.user.email) || '').toLowerCase().trim();
+    if (!normalizedEmail || !normalizedEmail.endsWith('@gmail.com')) {
+      return res.status(400).json({ message: 'Only @gmail.com email addresses are accepted for session booking.' });
+    }
+
+    const phone = (phoneNumber || (req.user && req.user.phoneNumber) || '').trim();
+    if (phone) {
+      const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+      if (cleanPhone.length === 10) {
+        const phoneOwner = await User.findOne({
+          phoneNumber: new RegExp(`${cleanPhone}$`),
+          isDeleted: { $ne: true },
+          email: { $ne: normalizedEmail }
+        });
+        if (phoneOwner) {
+          return res.status(400).json({ message: 'This phone number is already registered with another account.' });
+        }
+      }
+    }
+
     // 1. Fetch fees from settings
     let feeSettings = await Settings.findOne({ key: 'fees' });
     let fee60min = 5000;
@@ -118,9 +138,6 @@ router.post('/create-order', optionalAuth, async (req, res) => {
     }
 
     // 2. Check if user is first session (Registered or Unregistered)
-    const normalizedEmail = (email || (req.user && req.user.email) || '').toLowerCase().trim();
-    const phone = (phoneNumber || (req.user && req.user.phoneNumber) || '').trim();
-
     let isFirstSession = true;
     if (normalizedEmail) {
       const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

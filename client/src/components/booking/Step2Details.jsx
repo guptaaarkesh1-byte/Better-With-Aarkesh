@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, ArrowLeft, ArrowRight, ArrowUpRight, Sparkle, CheckCircle } from '@phosphor-icons/react';
 import { COUNTRY_CODES } from '../../utils/countryCodes';
 import QuestionnaireModal from './QuestionnaireModal';
@@ -21,11 +21,54 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
   };
 
   const isValidEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!email) return false;
+    const clean = email.trim().toLowerCase();
+    return /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(clean);
   };
 
+  const emailTrimmed = (data.email || '').trim().toLowerCase();
+  const isInvalidGmail = emailTrimmed.length > 0 && !isValidEmail(data.email) && (emailTrimmed.includes('@') || emailTrimmed.length > 5);
+
+  const [phoneError, setPhoneError] = useState('');
+  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
+
+  useEffect(() => {
+    const checkPhone = async () => {
+      const cleanPhone = (data.phoneNumber || '').replace(/\D/g, '');
+      if (cleanPhone.length === 10) {
+        try {
+          setIsCheckingPhone(true);
+          const API_URL = import.meta.env.VITE_API_URL || '';
+          const res = await fetch(`${API_URL}/api/appointments/check-phone-availability`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phoneNumber: cleanPhone,
+              email: data.email
+            })
+          });
+          const resData = await res.json();
+          if (res.ok && !resData.available) {
+            setPhoneError(resData.message || 'This phone number is already registered with another account.');
+          } else {
+            setPhoneError('');
+          }
+        } catch (err) {
+          console.error('Phone check error:', err);
+        } finally {
+          setIsCheckingPhone(false);
+        }
+      } else {
+        setPhoneError('');
+      }
+    };
+
+    const timer = setTimeout(checkPhone, 400);
+    return () => clearTimeout(timer);
+  }, [data.phoneNumber, data.email]);
+
   const isFormValid = data.name.trim() !== '' && isValidEmail(data.email) && data.reason.trim() !== '' &&
-    (isAuthenticated || (data.phoneNumber && data.phoneNumber.length === 10));
+    (isAuthenticated || (data.phoneNumber && data.phoneNumber.length === 10 && !phoneError));
 
   const handleContinue = () => {
     if (isFormValid) {
@@ -130,16 +173,25 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
         {/* Email */}
         <div>
           <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
-            {settings.emailLabel || 'EMAIL'}
+            {settings.emailLabel || 'EMAIL (GMAIL ONLY)'}
           </label>
           <input
             type="email"
             name="email"
             value={data.email}
             onChange={handleInputChange}
-            placeholder={settings.emailPlaceholder || "your.email@example.com"}
-            className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors"
+            placeholder={settings.emailPlaceholder || "your.email@gmail.com"}
+            className={`w-full bg-white border rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none shadow-xs transition-colors ${
+              isInvalidGmail
+                ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500 bg-red-50/15'
+                : 'border-black/15 focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f]'
+            }`}
           />
+          {isInvalidGmail && (
+            <p className="text-xs text-red-600 font-sans mt-1.5 flex items-center gap-1 font-medium animate-in fade-in duration-200">
+              Only @gmail.com email addresses are accepted for session booking.
+            </p>
+          )}
         </div>
 
         {/* Phone Number (Guest Only) */}
@@ -148,7 +200,11 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
             <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
               {settings.phoneLabel || 'PHONE NUMBER'}
             </label>
-            <div className="flex items-center border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 transition-colors focus-within:border-[#c9542f] focus-within:ring-1 focus-within:ring-[#c9542f] bg-white shadow-xs">
+            <div className={`flex items-center border rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 transition-colors bg-white shadow-xs ${
+              phoneError
+                ? 'border-red-500 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 bg-red-50/15'
+                : 'border-black/15 focus-within:border-[#c9542f] focus-within:ring-1 focus-within:ring-[#c9542f]'
+            }`}>
               <select 
                 name="countryCode"
                 className="bg-transparent text-[#111010] font-sans text-sm focus:outline-none appearance-none pr-2 cursor-pointer outline-none font-medium"
@@ -172,6 +228,11 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
                 placeholder={settings.phonePlaceholder || "0000000000"}
               />
             </div>
+            {phoneError && (
+              <p className="text-xs text-red-600 font-sans mt-1.5 flex items-center gap-1 font-medium animate-in fade-in duration-200">
+                {phoneError}
+              </p>
+            )}
           </div>
         )}
 

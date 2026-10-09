@@ -39,6 +39,12 @@ router.post('/register-init', async (req, res) => {
 
     const userExists = await CourseUser.findOne({ email: emailRegex });
     if (userExists) {
+      if (userExists.authProvider === 'google') {
+        return res.status(400).json({ 
+          message: "This email is registered with Google. Please use 'Continue with Google' to sign in.",
+          isGoogleAccount: true 
+        });
+      }
       return res.status(400).json({ message: 'Email ID already exists for the course. Please log in.' });
     }
 
@@ -392,6 +398,13 @@ router.post('/login', async (req, res) => {
           });
         }
       }
+
+      if (user?.authProvider === 'google' || coachingUser?.authProvider === 'google') {
+        return res.status(400).json({ 
+          message: "This email is registered with Google. Please click 'Continue with Google' to sign in.",
+          isGoogleAccount: true 
+        });
+      }
       res.status(401).json({ message: 'Wrong password' });
     }
   } catch (error) {
@@ -408,11 +421,21 @@ router.post('/forgot-password-init', async (req, res) => {
     const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     let user = await CourseUser.findOne({ email: emailRegex });
+    let coachingUser = null;
     if (!user) {
-      const coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+      coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
       if (!coachingUser) {
         return res.status(404).json({ message: 'Course user account does not exist' });
       }
+    } else {
+      coachingUser = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+    }
+
+    if (user?.authProvider === 'google' || coachingUser?.authProvider === 'google') {
+      return res.status(400).json({
+        message: "This email is registered with Google. Please use 'Continue with Google' to sign in.",
+        isGoogleAccount: true
+      });
     }
 
     const otp = generateOTP();
@@ -700,8 +723,18 @@ router.put('/profile', protectCourse, async (req, res) => {
     
     let passwordChanged = false;
     let newHashedPassword = null;
+    const isGoogleUser = user.authProvider === 'google';
     
-    if (req.body.currentPassword && req.body.newPassword) {
+    if (isGoogleUser && req.body.newPassword) {
+      if (req.body.newPassword.length < 4) {
+        return res.status(400).json({ message: 'Password must be at least 4 characters long' });
+      }
+      const salt = await bcrypt.genSalt(10);
+      newHashedPassword = await bcrypt.hash(req.body.newPassword, salt);
+      user.password = newHashedPassword;
+      user.authProvider = 'local';
+      passwordChanged = true;
+    } else if (req.body.currentPassword && req.body.newPassword) {
       const isMatch = await bcrypt.compare(req.body.currentPassword, user.password);
       if (!isMatch) {
         // Also try coaching password (in case coaching password was changed and course wasn't synced yet)
@@ -732,6 +765,9 @@ router.put('/profile', protectCourse, async (req, res) => {
         if (req.body.phoneNumber) coachingUser.phoneNumber = req.body.phoneNumber.trim();
         if (passwordChanged && newHashedPassword) {
           coachingUser.password = newHashedPassword;
+          if (isGoogleUser) {
+            coachingUser.authProvider = 'local';
+          }
           console.log(`🔄 Synced password change from course to coaching for: ${user.email}`);
         }
         await coachingUser.save();
@@ -744,6 +780,7 @@ router.put('/profile', protectCourse, async (req, res) => {
       email: updatedUser.email,
       phoneNumber: updatedUser.phoneNumber,
       isPurchased: updatedUser.isPurchased,
+      authProvider: updatedUser.authProvider || 'local',
       createdAt: updatedUser.createdAt
     });
   } catch (error) {
@@ -1072,11 +1109,120 @@ router.put('/admin/students/:id/toggle-access', protect, admin, async (req, res)
       fullName: student.fullName,
       email: student.email,
       isPurchased: student.isPurchased,
-      message: `Course access ${student.isPurchased ? 'granted' : 'revoked'} successfully.`
+      message: 'Student status updated successfully'
     });
   } catch (error) {
-    console.error('Toggle course access error:', error);
-    res.status(500).json({ message: 'Server error toggling course access' });
+    console.error('Toggle Student Status Error:', error.message);
+    res.status(500).json({ message: 'Server error updating student status' });
+  }
+});
+
+// @route   POST /api/course-auth/google
+// @desc    Authenticate course student with Firebase Google OAuth
+// @access  Public
+router.post('/google', async (req, res) => {
+  try {
+    const { email, fullName, photoUrl, phoneNumber, uid } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Google account email is required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+
+    let courseUser = await CourseUser.findOne({ email: emailRegex });
+    const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid' });
+    const isPurchased = !!courseUser?.isPurchased || !!coursePurchase;
+
+    let isNewUser = false;
+    if (!courseUser) {
+      isNewUser = true;
+      const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
+      courseUser = await CourseUser.create({
+        fullName: fullName || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        password: randomPassword,
+        phoneNumber: phoneNumber || '',
+        isPurchased,
+        authProvider: 'google',
+        googleId: uid || '',
+        photoUrl: photoUrl || ''
+      });
+      console.log(`✅ Created new Google-authenticated course user: ${courseUser.fullName} (${cleanEmail})`);
+    } else {
+      if (fullName) {
+        courseUser.fullName = fullName;
+      }
+      if (photoUrl) {
+        courseUser.photoUrl = photoUrl;
+      }
+      if (coursePurchase && !courseUser.isPurchased) {
+        courseUser.isPurchased = true;
+      }
+      if (!courseUser.authProvider || courseUser.authProvider === 'local') {
+        courseUser.authProvider = 'google';
+      }
+      if (uid && !courseUser.googleId) {
+        courseUser.googleId = uid;
+      }
+      await courseUser.save();
+    }
+
+    // Sync coaching User as well
+    let coachingUser = await User.findOne({ email: emailRegex });
+    if (!coachingUser) {
+      const dynamicFree = isPurchased ? await getDynamicCourseFreeSessions('better-man') : 0;
+      const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
+      coachingUser = await User.create({
+        fullName: courseUser.fullName,
+        email: cleanEmail,
+        password: randomPassword,
+        phoneNumber: courseUser.phoneNumber || '',
+        countryCode: '+91',
+        freeSessions: dynamicFree,
+        courseSessionsGranted: isPurchased,
+        isVerified: true,
+        authProvider: 'google',
+        googleId: uid || '',
+        photoUrl: photoUrl || ''
+      });
+    } else {
+      if (fullName) {
+        coachingUser.fullName = fullName;
+      }
+      if (photoUrl) {
+        coachingUser.photoUrl = photoUrl;
+      }
+      if (!coachingUser.authProvider || coachingUser.authProvider === 'local') {
+        coachingUser.authProvider = 'google';
+      }
+      if (uid && !coachingUser.googleId) {
+        coachingUser.googleId = uid;
+      }
+      await coachingUser.save();
+    }
+
+    const token = generateToken(courseUser._id);
+    const coachingToken = generateToken(coachingUser._id);
+
+    res.json({
+      _id: courseUser._id,
+      fullName: courseUser.fullName,
+      email: courseUser.email,
+      phoneNumber: courseUser.phoneNumber,
+      photoUrl: courseUser.photoUrl,
+      isPurchased: courseUser.isPurchased,
+      authProvider: courseUser.authProvider || 'google',
+      token,
+      coachingToken,
+      coachingUserId: coachingUser._id,
+      isNewUser,
+      isRegister: isNewUser,
+      message: isNewUser ? 'Account created successfully with Google' : 'Logged in successfully with Google'
+    });
+  } catch (error) {
+    console.error('Course Google Auth Error:', error);
+    res.status(500).json({ message: 'Server error during Google authentication' });
   }
 });
 

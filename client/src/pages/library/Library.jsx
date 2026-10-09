@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
-import { List, X, ArrowDown, ArrowRight, Play, User, BookmarkSimple, SignOut, LockKey } from '@phosphor-icons/react';
+import { List, X, ArrowDown, ArrowRight, Play, User, BookmarkSimple, SignOut, LockKey, CalendarBlank, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { CURATED_LIBRARY_ARTICLES } from '../../constants/libraryArticlesData';
 import { renderFormattedTitle } from '../articles/ArticleReaderView';
 import LoginModal from '../../components/layout/LoginModal';
 import PlasmaRingSphere from '../../components/library/PlasmaRingSphere';
 import { API_URL } from '../../utils/apiUrl';
-import { clearAllAuth, isAnyUserLoggedIn } from '../../utils/authSync';
+import { clearAllAuth, isAnyUserLoggedIn, getEffectiveUser } from '../../utils/authSync';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -18,7 +18,30 @@ export default function Library() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(isAnyUserLoggedIn);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const searchWrapRef = useRef(null);
+  const userMenuRef = useRef(null);
+
+  // Click outside to close user dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
+  const effectiveUser = getEffectiveUser();
+  const rawName = effectiveUser?.fullName || effectiveUser?.name || 'User';
+  const userFirstName = rawName.trim().split(' ')[0].toUpperCase();
+  const userDisplayName = rawName.trim().split(' ')[0];
+  const userInitial = (userFirstName[0] || 'U').toUpperCase();
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -1749,71 +1772,142 @@ export default function Library() {
           <Link to="/#faq">FAQ</Link>
         </nav>
 
-        <div className="navcta">
+        <div className="navcta flex items-center gap-2.5">
           {/* Course Button */}
           <button 
             type="button"
             onClick={() => navigate('/course')} 
-            className="nav-btn-outline"
+            className="bg-[#c8512d] hover:bg-[#b3461f] text-white rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-medium flex items-center gap-1.5 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
           >
-            <Play size={12} weight="fill" /> COURSE
+            <Play size={13} weight="fill" className="text-white" />
+            <span>Course</span>
           </button>
 
-          {/* Login / My Journey */}
+          {/* Book a Session Button */}
+          <button 
+            type="button" 
+            onClick={handleBookClick} 
+            className="bg-[#c8512d] hover:bg-[#b3461f] text-white rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-medium flex items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
+          >
+            <CalendarBlank size={15} weight="bold" className="text-white" />
+            <span>Book a session</span>
+          </button>
+
+          {/* Login / User Account */}
           {!isLoggedIn ? (
             <button 
               type="button"
               onClick={() => setShowLoginModal(true)} 
-              className="nav-btn-outline"
+              className="bg-white border border-[#1c1714] hover:border-[#c8512d] hover:text-[#c8512d] text-[#1c1714] rounded-full px-4 py-2 text-[12px] font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
-              <User size={13} weight="regular" /> LOGIN
+              <User size={14} weight="bold" />
+              <span>LOGIN</span>
             </button>
           ) : (
-            <div className="account-wrapper">
+            <div className="relative" ref={userMenuRef}>
               <button 
                 type="button"
-                onClick={() => navigate('/my-journey')} 
-                className="nav-btn-outline"
+                onClick={() => setDropdownOpen(prev => !prev)} 
+                className="bg-white border border-[#1c1714] rounded-full pl-1.5 pr-3.5 py-1 flex items-center gap-2.5 font-bold text-[12px] uppercase tracking-wider text-[#1c1714] shadow-xs hover:border-[#c8512d] transition-all cursor-pointer select-none"
               >
-                <BookmarkSimple size={13} weight="regular" /> MY JOURNEY
-              </button>
-              <div className="account-dropdown">
-                <div className="account-card">
-                  <span className="user-title">
-                    {JSON.parse(localStorage.getItem('userInfo') || '{}')?.fullName || 'MY ACCOUNT'}
-                  </span>
-                  <button 
-                    type="button"
-                    onClick={() => navigate('/my-journey/settings')}
-                  >
-                    <User size={13} /> Profile & Settings
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => navigate('/my-journey/settings?tab=SECURITY')}
-                  >
-                    <LockKey size={13} /> Privacy
-                  </button>
-                  <button 
-                    type="button"
-                    className="logout-btn"
-                    onClick={() => {
-                      clearAllAuth();
-                      setIsLoggedIn(false);
-                      navigate('/library');
-                    }}
-                  >
-                    <SignOut size={13} weight="bold" /> Log Out
-                  </button>
+                <div className="relative w-7 h-7 rounded-full bg-[#c8512d] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
+                  {effectiveUser?.photoUrl ? (
+                    <img 
+                      src={effectiveUser.photoUrl} 
+                      alt="" 
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                      className="w-full h-full object-cover rounded-full absolute inset-0" 
+                    />
+                  ) : null}
+                  <span>{userInitial}</span>
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#22c55e] border-2 border-white rounded-full z-10" />
                 </div>
-              </div>
+                <span>{userFirstName}</span>
+                {dropdownOpen ? (
+                  <CaretUp size={13} weight="bold" className="text-[#1c1714]" />
+                ) : (
+                  <CaretDown size={13} weight="bold" className="text-[#1c1714]" />
+                )}
+              </button>
+
+              {/* Luxury Account Dropdown Card */}
+              {dropdownOpen && (
+                <div className="absolute top-full right-0 mt-3 w-[320px] bg-[#faf8f6] border border-[#e4dfd9] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200 text-left">
+                  <div className="p-6 pb-4">
+                    <div className="flex items-center gap-3.5 mb-4">
+                      <div className="w-[46px] h-[46px] rounded-full bg-[#c8512d] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-sm overflow-hidden relative border border-[#e4dfd9]">
+                        {effectiveUser?.photoUrl ? (
+                          <img 
+                            src={effectiveUser.photoUrl} 
+                            alt="" 
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                            className="w-full h-full object-cover rounded-full absolute inset-0" 
+                          />
+                        ) : null}
+                        <span>{userInitial}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[#c8512d] text-[10.5px] font-bold tracking-[0.18em] uppercase mb-0.5">
+                          WELCOME BACK
+                        </p>
+                        <h3 
+                          className="text-[22px] font-semibold text-[#1c1714] leading-tight capitalize truncate"
+                          style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                        >
+                          {userDisplayName}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Black CTA Pill */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        navigate('/my-journey');
+                      }}
+                      className="w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer mt-2"
+                    >
+                      <span>CONTINUE YOUR JOURNEY</span>
+                      <span className="text-base leading-none">→</span>
+                    </button>
+
+                    {/* Nav Items - Only Profile */}
+                    <div className="flex flex-col gap-1 mt-3 pt-1">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          navigate('/my-journey?tab=profile');
+                        }}
+                        className="flex items-center gap-3 py-2.5 text-[#1c1714] hover:text-[#c8512d] text-[14px] font-medium transition-colors w-full text-left cursor-pointer"
+                      >
+                        <User size={18} className="text-[#1c1714]" />
+                        <span>Profile</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bottom Logout Row */}
+                  <div className="border-t border-[#e4dfd9] px-6 py-3 bg-[#faf8f6]">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        clearAllAuth();
+                        setIsLoggedIn(false);
+                        navigate('/library');
+                      }}
+                      className="flex items-center gap-2.5 text-[#9a918a] hover:text-[#c8512d] text-[13.5px] font-medium transition-colors w-full text-left cursor-pointer"
+                    >
+                      <SignOut size={18} />
+                      <span>Log out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-
-          {/* Book a Session Button */}
-          <button type="button" onClick={handleBookClick} className="book">
-            BOOK A SESSION
-          </button>
           
           <button 
             type="button"

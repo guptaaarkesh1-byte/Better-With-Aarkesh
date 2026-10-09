@@ -62,6 +62,7 @@ import CoursePaymentSuccess from './CoursePaymentSuccess';
 import FlippingWordSwap from '../../components/ui/FlippingWordSwap';
 import { resolvePlayableVideoId } from '../../utils/videoSecurity';
 import { API_URL } from '../../utils/apiUrl';
+import GoogleLoginButton from '../../components/ui/GoogleLoginButton';
 import './course-landing.css';
 
 const resolveImageUrl = (url) => {
@@ -221,6 +222,7 @@ export default function Course() {
   const location = useLocation();
   const isAllCoursesPage = slug === 'all' || location.pathname === '/courses' || location.pathname === '/courses/all';
   const isDetailPage = Boolean(slug) && slug !== 'all';
+  const isFromMyJourney = location.state?.from === 'my-journey' || searchParams.get('from') === 'my-journey';
 
   const getCardThemeClass = (c, index) => {
     const t = (c?.theme || c?.cardTheme || c?.heroSection?.cardTheme || '').toLowerCase().trim();
@@ -2087,6 +2089,32 @@ export default function Course() {
     }
   };
 
+  const handleGoogleAuthSuccess = useCallback((data) => {
+    syncLoginData(data);
+    if (data.freeSessions !== undefined) {
+      const count = Math.max(0, Number(data.freeSessions));
+      setFreeSessionsRemaining(count);
+    }
+    const userSlugs = Array.isArray(data.purchasedCourses) && data.purchasedCourses.length > 0
+      ? data.purchasedCourses
+      : (data.isPurchased ? ['better-man'] : []);
+    setPurchasedCourses(userSlugs);
+    if (data.isPurchased && !isComingSoon) {
+      setIsPurchased(true);
+    } else {
+      setIsPurchased(false);
+    }
+    setShowDashboard(false);
+    setShowCheckout(false);
+    setShowPricingModal(false);
+    setShowCourseLogin(false);
+    setIsLoggedIn(true);
+
+    const isReg = data?.isNewUser || data?.isRegister;
+    const successMsg = isReg ? 'Registration successfully' : 'Login successfully';
+    showToast(successMsg, 'success');
+  }, [isComingSoon]);
+
 
 
   // ═══════════════════════════════════════════════════════════════
@@ -3192,12 +3220,16 @@ export default function Course() {
                 <button
                   type="button"
                   onClick={() => {
-                    navigate('/course');
+                    if (isFromMyJourney) {
+                      navigate('/my-journey?tab=course', { state: { activeTab: 'course' } });
+                    } else {
+                      navigate('/course');
+                    }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="back-link"
                 >
-                  ← Back to all courses
+                  {isFromMyJourney ? '← Back to My Journey' : '← Back to all courses'}
                 </button>
 
                 <div className="d-grid">
@@ -3954,6 +3986,7 @@ export default function Course() {
         coursesList={coursesList}
         basePrice={basePrice}
         comparePrice={comparePrice}
+        onGoogleSuccess={handleGoogleAuthSuccess}
       />
       <CheckoutOverlay
         showCheckout={showCheckout}
@@ -4275,7 +4308,8 @@ function AuthModal({
   handleToggleMode,
   coursesList = [],
   basePrice = 15000,
-  comparePrice = 25000
+  comparePrice = 25000,
+  onGoogleSuccess
 }) {
   const [activeCourseIdx, setActiveCourseIdx] = useState(0);
   const [isFading, setIsFading] = useState(false);
@@ -4574,6 +4608,33 @@ function AuthModal({
                     : 'Create Account'}{' '}
                   <span aria-hidden="true">→</span>
                 </button>
+
+                {/* Google Login Option */}
+                {!isForgotPassword && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', margin: '16px 0 12px', gap: '12px' }}>
+                      <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }} />
+                      <span style={{ fontSize: '11px', color: '#9d8a9e', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+                        or
+                      </span>
+                      <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }} />
+                    </div>
+
+                    <GoogleLoginButton
+                      theme="dark"
+                      apiEndpoint="/api/course-auth/google"
+                      text={loginMode === 'login' ? 'Continue with Google' : 'Sign up with Google'}
+                      onSuccess={(data) => {
+                        if (typeof onGoogleSuccess === 'function') {
+                          onGoogleSuccess(data);
+                        } else {
+                          setShowCourseLogin(false);
+                        }
+                      }}
+                      onError={(msg) => setError(msg)}
+                    />
+                  </>
+                )}
               </>
             ) : (
               /* OTP verification / Forgot Password Reset form */

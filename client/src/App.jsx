@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
 import Booking from './pages/Booking';
@@ -35,7 +35,7 @@ function App() {
             <Route path="/testimonials" element={<TestimonialsPage />} />
             <Route path="/stories" element={<Stories />} />
             <Route path="/my-journey" element={<MyJourney />} />
-            <Route path="/my-journey/settings" element={<Settings />} />
+            <Route path="/my-journey/settings" element={<Navigate to="/my-journey?tab=profile" replace />} />
             <Route path="/my-journey/notes" element={<Notes />} />
             <Route path="/prepare" element={<Prepare />} />
             <Route path="/articles" element={<Articles />} />
