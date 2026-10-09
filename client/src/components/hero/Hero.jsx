@@ -55,7 +55,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section id="home" className="relative min-h-[100svh] lg:h-screen pt-20 md:pt-32 pb-6 md:pb-12 flex flex-col justify-between lg:justify-center overflow-hidden bg-[#f5f1e8] snap-section">
+    <section id="home" className="relative w-full min-h-[100svh] lg:h-screen pt-0 lg:pt-32 pb-0 lg:pb-12 flex flex-col justify-between lg:justify-center overflow-hidden bg-[#f5f1e8] snap-section">
       {/* Desktop Background Image (Kept exactly as desktop) */}
       <div className="absolute inset-0 z-0 hidden lg:block">
         <HeroImage 
@@ -65,23 +65,34 @@ export default function Hero() {
         />
       </div>
 
-      <Container className="flex flex-col flex-grow h-full relative z-10 px-5 sm:px-8">
-        <div className="flex flex-col h-full justify-between lg:justify-center relative">
-          <HeroContent heroData={heroData} />
+      {/* ─── MOBILE VIEW (Image at top with bottom gradient fade, Hero text below) ─── */}
+      <div className="block lg:hidden w-full relative pt-16">
+        {/* Media Container with Image & Bottom Fade */}
+        <div className="relative h-[340px] sm:h-[400px] w-full overflow-hidden">
+          <img 
+            src={heroData.bgImageUrl || 'https://api.aarkeshgupta.com/uploads/image-1790768916697.png'}
+            alt="Aarkesh"
+            className="w-full h-full object-cover object-[center_18%] sm:object-[center_15%]"
+          />
+          {/* Bottom gradient fade into cream background */}
+          <div className="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/80 to-transparent pointer-events-none" />
+        </div>
 
-          {/* Mobile Character Figure directly beneath content */}
-          <div className="block lg:hidden w-full max-w-[420px] mx-auto mt-auto pt-2 relative">
-            <img 
-              src={heroData.bgImageUrl || 'https://api.aarkeshgupta.com/uploads/image-1790768916697.png'}
-              alt="Aarkesh with open hands, welcoming"
-              className="w-full h-auto object-contain max-h-[46vh] mix-blend-multiply drop-shadow-sm mx-auto"
-            />
-          </div>
+        {/* Content Body Overlapping the Fade */}
+        <div className="relative -mt-[54px] px-5 sm:px-8 pb-12 z-10">
+          <HeroContent heroData={heroData} />
+        </div>
+      </div>
+
+      {/* ─── DESKTOP CONTENT VIEW ─── */}
+      <Container className="hidden lg:flex flex-col flex-grow h-full relative z-10 px-5 sm:px-8">
+        <div className="flex flex-col h-full justify-center relative">
+          <HeroContent heroData={heroData} />
         </div>
 
         {/* Scroll Indicator at bottom middle */}
         {heroData.showScrollIndicator !== false && (
-          <div className="relative lg:absolute bottom-2 lg:bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-center pointer-events-auto">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-center pointer-events-auto">
             <a 
               href="#problem" 
               className="flex flex-col items-center gap-2 font-sans font-semibold text-[9.5px] tracking-[0.3em] uppercase text-[#7a756b] hover:text-[#c9542f] transition-colors"

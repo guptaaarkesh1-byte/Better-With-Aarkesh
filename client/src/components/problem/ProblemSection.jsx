@@ -146,17 +146,8 @@ export default function ProblemSection() {
           </h2>
         </div>
 
-        {/* Cloud Container with Silhouette & Floating Words */}
+        {/* Cloud Container with Floating Words */}
         <div className="relative h-[492px] mt-2.5 overflow-hidden">
-          {/* Silhouette Man */}
-          <div className="absolute inset-x-0 bottom-0 top-0 pointer-events-none flex items-end justify-center">
-            <img 
-              src={problemData?.bgImg || problemData?.silhouetteImg || '/src/assets/Page2/problem_silhouette.png'} 
-              alt="Silhouette"
-              className="w-[236px] max-w-none h-auto object-contain object-bottom pointer-events-none drop-shadow-sm"
-            />
-          </div>
-
           {/* 16 Floating Words in Cloud with Custom Color & Drift Animation & Varied Sizes */}
           <span className="absolute font-serif font-medium text-[14.5px] whitespace-nowrap animate-drift select-none" style={{ top: '14px', left: '7%', color: '#8a85d6', animationDelay: '0.2s', fontFamily: 'Fraunces, Georgia, serif' }}>What if?</span>
           <span className="absolute font-serif font-medium text-[12.5px] whitespace-nowrap animate-drift select-none" style={{ top: '46px', left: '36%', color: '#4f4a45', animationDelay: '1.1s', fontFamily: 'Fraunces, Georgia, serif' }}>Self doubt</span>
