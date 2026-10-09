@@ -20,6 +20,7 @@ const thumb1 = CDN_IMAGES.RECOGNITION_EMOTIONAL || thumb1Local;
 const thumb2 = CDN_IMAGES.RECOGNITION_COMPARISON || thumb2Local;
 const thumb3 = CDN_IMAGES.RECOGNITION_HOLDING || thumb3Local;
 import { useNavigate } from 'react-router-dom';
+import LoginModal from '../layout/LoginModal';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -92,13 +93,9 @@ export default function SituationExploreSection() {
     fetchSaved();
   }, []);
 
-  const handleToggleSave = async (articleId, e) => {
-    e?.stopPropagation();
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert("Please log in to save items to your library.");
-      return;
-    }
+  const executeSaveArticle = async (articleId, authToken) => {
+    const token = authToken || localStorage.getItem('token');
+    if (!token || !articleId) return;
 
     const isCurrentlySaved = savedArticleIds.includes(articleId);
     setSavedArticleIds(prev => 
@@ -126,6 +123,17 @@ export default function SituationExploreSection() {
         isCurrentlySaved ? [...prev, articleId] : prev.filter(id => id !== articleId)
       );
     }
+  };
+
+  const handleToggleSave = async (articleId, e) => {
+    e?.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setPendingArticleId(articleId);
+      setShowLoginModal(true);
+      return;
+    }
+    await executeSaveArticle(articleId, token);
   };
 
   const containerRef = useRef(null);
@@ -393,6 +401,22 @@ export default function SituationExploreSection() {
         </div>
 
       </div>
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => {
+          setShowLoginModal(false);
+          setPendingArticleId(null);
+        }}
+        onSuccess={(userData) => {
+          setShowLoginModal(false);
+          if (pendingArticleId) {
+            executeSaveArticle(pendingArticleId, userData?.token);
+            setPendingArticleId(null);
+          }
+        }}
+        defaultMode="login"
+      />
     </section>
   );
 }

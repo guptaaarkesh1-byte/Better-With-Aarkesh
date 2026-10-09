@@ -19,6 +19,9 @@ export default function AdminSettings() {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState('');
 
+  const [tinymceApiKey, setTinymceApiKey] = useState('');
+  const [isTinyMCELoading, setIsTinyMCELoading] = useState(false);
+
   const [showRazorpaySecret, setShowRazorpaySecret] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -41,6 +44,15 @@ export default function AdminSettings() {
         const data = await res.json();
         setRazorpayKeyId(data.keyId || '');
         setRazorpayKeySecret(data.keySecret || '');
+      }
+
+      // Fetch TinyMCE Settings
+      const resTiny = await fetch(`${apiUrl}/api/visual-settings/tinymce`);
+      if (resTiny.ok) {
+        const dataTiny = await resTiny.json();
+        if (dataTiny.apiKey && dataTiny.apiKey !== 'no-api-key') {
+          setTinymceApiKey(dataTiny.apiKey);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch settings', error);
@@ -124,6 +136,37 @@ export default function AdminSettings() {
   };
 
 
+  const handleTinyMCESave = async (e) => {
+    e.preventDefault();
+    setIsTinyMCELoading(true);
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const apiUrl = API_URL;
+      const res = await fetch(`${apiUrl}/api/visual-settings/tinymce`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ apiKey: tinymceApiKey })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('tinymce_api_key', data.apiKey || tinymceApiKey);
+        showSuccess('TinyMCE API key saved successfully!');
+      } else {
+        showError('Failed to save TinyMCE API key.');
+      }
+    } catch (error) {
+      console.error(error);
+      showError('Network error while saving TinyMCE settings.');
+    } finally {
+      setIsTinyMCELoading(false);
+    }
+  };
+
   return (
     <div className="p-8 md:p-12 w-full max-w-5xl mx-auto flex flex-col gap-8 animate-in fade-in duration-500 font-sans">
       
@@ -134,7 +177,8 @@ export default function AdminSettings() {
         icon={<Gear size={24} />}
         pills={[
           { id: 'password', label: 'Password' },
-          { id: 'razorpay', label: 'Razorpay' }
+          { id: 'razorpay', label: 'Razorpay' },
+          { id: 'tinymce', label: 'TinyMCE API Key' }
         ]}
         activePill={activePill}
         onPillClick={setActivePill}
@@ -304,6 +348,48 @@ export default function AdminSettings() {
           </div>
 
         </form>
+          </div>
+        )}
+
+        {activePill === 'tinymce' && (
+          <div className="bg-[#111] border border-white/5 rounded-2xl p-8 flex flex-col gap-6 relative shadow-2xl animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 text-[#c79c6e] border-b border-white/5 pb-4">
+              <Key size={24} />
+              <h2 className="font-serif text-2xl text-white">TinyMCE Rich Text Editor</h2>
+            </div>
+
+            <p className="text-white/60 text-sm leading-relaxed">
+              Configure your TinyMCE API Key for the editorial content editor. If you do not have an API key or leave it blank, the editor will automatically run using open mode without locking or disabling the editor.
+            </p>
+
+            <form onSubmit={handleTinyMCESave} className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="font-sans text-xs uppercase tracking-widest text-white/60 font-semibold">
+                  TinyMCE API Key
+                </label>
+                <input 
+                  type="text"
+                  value={tinymceApiKey}
+                  onChange={(e) => setTinymceApiKey(e.target.value)}
+                  placeholder="e.g. j3wb3qfjfsjor8dgmndqixpa3nc1oeiq1kg6uay66wypfg6c or leave empty"
+                  className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-[#c79c6e]/50 transition-colors font-mono text-sm"
+                />
+                <span className="text-[11px] text-white/40">
+                  Get your free API key from <a href="https://www.tiny.cloud" target="_blank" rel="noreferrer" className="text-[#c79c6e] underline">tiny.cloud</a> and add your domain (e.g. <code>aarkeshgupta.com</code>).
+                </span>
+              </div>
+
+              <div className="flex justify-end mt-4">
+                <button 
+                  type="submit"
+                  disabled={isTinyMCELoading}
+                  className="flex items-center gap-2 px-8 py-3 rounded bg-[#c79c6e] text-black hover:bg-[#b0885e] font-sans text-xs uppercase tracking-widest font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FloppyDisk size={18} />
+                  {isTinyMCELoading ? 'Saving...' : 'Save TinyMCE Settings'}
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </div>

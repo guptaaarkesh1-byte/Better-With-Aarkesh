@@ -6,6 +6,14 @@ import { CURATED_LIBRARY_ARTICLES } from '../data/curatedArticlesData.js';
 
 const router = express.Router();
 
+const stripArticleNumbering = (title) => {
+  if (!title || typeof title !== 'string') return title;
+  return title
+    .replace(/^\s*\d+(\.\d+)+[\.\s\-–—:]*\s*/, '')
+    .replace(/^\s*\d{1,2}\.\s+/, '')
+    .trim();
+};
+
 const toPayload = (article) => ({
   slug: article.slug || '',
   categoryId: article.categoryId || article.category?.toLowerCase() || 'relationships',
@@ -14,7 +22,7 @@ const toPayload = (article) => ({
   headingTitle: article.headingTitle || article.category || 'Relationships',
   category: article.category || 'RELATIONSHIPS',
   categoryNum: article.categoryNum || '01 / 06',
-  title: article.title,
+  title: stripArticleNumbering(article.title),
   subtitle: article.subtitle || article.excerpt || article.description || '',
   excerpt: article.excerpt || article.subtitle || article.description || '',
   highlightText: article.highlightText || '',

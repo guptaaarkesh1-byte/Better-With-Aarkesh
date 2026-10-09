@@ -2027,97 +2027,99 @@ export default function AdminCourseEditor() {
                     </div>
                   </div>
 
-                  {/* Complimentary Coaching Sessions Perk Card */}
-                  <div className="bwa-card">
-                    <div className="bwa-row">
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                          <h3 style={{ margin: 0 }}>Complimentary 1-on-1 Coaching Sessions</h3>
-                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', background: courseData.includeFreeSessions ? '#ecfdf5' : '#fef2f2', color: courseData.includeFreeSessions ? '#065f46' : '#991b1b', border: `1px solid ${courseData.includeFreeSessions ? '#a7f3d0' : '#fecaca'}` }}>
-                            {courseData.includeFreeSessions ? `${courseData.freeSessionsCount || 0} Sessions Active` : 'Disabled'}
-                          </span>
-                        </div>
-                        <p className="sub" style={{ margin: 0 }}>
-                          Control whether students receive free private 1-on-1 coaching sessions with Aarkesh upon purchasing this course.
-                        </p>
-                      </div>
-                      <label className="bwa-row" style={{ gap: '10px', fontWeight: 600 }}>
-                        <span>{courseData.includeFreeSessions ? 'Enabled' : 'Disabled'}</span>
-                        <span className="bwa-sw">
-                          <input
-                            type="checkbox"
-                            checked={courseData.includeFreeSessions}
-                            onChange={(e) => updateField('includeFreeSessions', e.target.checked)}
-                            aria-label="Toggle free coaching sessions"
-                          />
-                          <i />
-                        </span>
-                      </label>
-                    </div>
+                   {/* Complimentary Coaching Sessions Perk Card (Temporarily hidden - default 3 sessions active) */}
+                   {false && (
+                     <div className="bwa-card">
+                       <div className="bwa-row">
+                         <div>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                             <h3 style={{ margin: 0 }}>Complimentary 1-on-1 Coaching Sessions</h3>
+                             <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', background: courseData.includeFreeSessions ? '#ecfdf5' : '#fef2f2', color: courseData.includeFreeSessions ? '#065f46' : '#991b1b', border: `1px solid ${courseData.includeFreeSessions ? '#a7f3d0' : '#fecaca'}` }}>
+                               {courseData.includeFreeSessions ? `${courseData.freeSessionsCount || 0} Sessions Active` : 'Disabled'}
+                             </span>
+                           </div>
+                           <p className="sub" style={{ margin: 0 }}>
+                             Control whether students receive free private 1-on-1 coaching sessions with Aarkesh upon purchasing this course.
+                           </p>
+                         </div>
+                         <label className="bwa-row" style={{ gap: '10px', fontWeight: 600 }}>
+                           <span>{courseData.includeFreeSessions ? 'Enabled' : 'Disabled'}</span>
+                           <span className="bwa-sw">
+                             <input
+                               type="checkbox"
+                               checked={courseData.includeFreeSessions}
+                               onChange={(e) => updateField('includeFreeSessions', e.target.checked)}
+                               aria-label="Toggle free coaching sessions"
+                             />
+                             <i />
+                           </span>
+                         </label>
+                       </div>
 
-                    {courseData.includeFreeSessions ? (
-                      <div style={{ marginTop: '18px' }} className="bwa-grid2">
-                        <div>
-                          <div className="bwa-f">
-                            <label>Number of free 1-on-1 sessions to grant</label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={50}
-                              value={courseData.freeSessionsCount}
-                              onChange={(e) => updateField('freeSessionsCount', Math.max(0, parseInt(e.target.value, 10) || 0))}
-                            />
-                          </div>
-                          <div className="bwa-presets">
-                            {[0, 1, 2, 3, 5, 10].map(cnt => (
-                              <button
-                                key={cnt}
-                                type="button"
-                                className={`bwa-pill ${Number(courseData.freeSessionsCount) === cnt ? 'on' : ''}`}
-                                onClick={() => updateField('freeSessionsCount', cnt)}
-                              >
-                                {cnt === 0 ? '0 (None)' : `${cnt} ${cnt === 1 ? 'Session' : 'Sessions'}`}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                       {courseData.includeFreeSessions ? (
+                         <div style={{ marginTop: '18px' }} className="bwa-grid2">
+                           <div>
+                             <div className="bwa-f">
+                               <label>Number of free 1-on-1 sessions to grant</label>
+                               <input
+                                 type="number"
+                                 min={0}
+                                 max={50}
+                                 value={courseData.freeSessionsCount}
+                                 onChange={(e) => updateField('freeSessionsCount', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                               />
+                             </div>
+                             <div className="bwa-presets">
+                               {[0, 1, 2, 3, 5, 10].map(cnt => (
+                                 <button
+                                   key={cnt}
+                                   type="button"
+                                   className={`bwa-pill ${Number(courseData.freeSessionsCount) === cnt ? 'on' : ''}`}
+                                   onClick={() => updateField('freeSessionsCount', cnt)}
+                                 >
+                                   {cnt === 0 ? '0 (None)' : `${cnt} ${cnt === 1 ? 'Session' : 'Sessions'}`}
+                                 </button>
+                               ))}
+                             </div>
+                           </div>
 
-                        <div>
-                          <div className="bwa-f">
-                            <label>Student perk status &amp; booking behavior</label>
-                          </div>
-                          <div style={{ padding: '14px 16px', background: 'var(--cream-bg, #fbf7ee)', border: '1px solid var(--line, #ece3d3)', borderRadius: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: (courseData.freeSessionsCount || 0) > 0 ? '#10b981' : '#f59e0b' }} />
-                              <strong style={{ fontSize: '13px', color: 'var(--ink, #1f1d1a)' }}>
-                                {(courseData.freeSessionsCount || 0) > 0 
-                                  ? `${courseData.freeSessionsCount} Complimentary Session${courseData.freeSessionsCount > 1 ? 's' : ''} (Worth ₹${((courseData.freeSessionsCount || 0) * 5000).toLocaleString('en-IN')})` 
-                                  : '0 Free Sessions (No credits granted)'}
-                              </strong>
-                            </div>
-                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--muted, #7c7468)', lineHeight: 1.45 }}>
-                              {(courseData.freeSessionsCount || 0) > 0 ? (
-                                <>
-                                  When a student purchases this course, their account will immediately receive <strong>{courseData.freeSessionsCount} free 1-on-1 session credit{courseData.freeSessionsCount > 1 ? 's' : ''}</strong>. They can book these directly from the course player or &ldquo;Book a Session&rdquo; tab at ₹0.
-                                </>
-                              ) : (
-                                <>
-                                  Students who enroll in this course will not receive any complimentary 1-on-1 coaching session credits.
-                                </>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ marginTop: '16px', padding: '12px 16px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '10px', color: '#991b1b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Icon name="info" size={18} />
-                        <span>
-                          <strong>Complimentary coaching sessions are turned OFF for this course.</strong> Enrolled students will get instant access to the video modules and learning resources only, with 0 free coaching session credits.
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                           <div>
+                             <div className="bwa-f">
+                               <label>Student perk status &amp; booking behavior</label>
+                             </div>
+                             <div style={{ padding: '14px 16px', background: 'var(--cream-bg, #fbf7ee)', border: '1px solid var(--line, #ece3d3)', borderRadius: '12px' }}>
+                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                 <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: (courseData.freeSessionsCount || 0) > 0 ? '#10b981' : '#f59e0b' }} />
+                                 <strong style={{ fontSize: '13px', color: 'var(--ink, #1f1d1a)' }}>
+                                   {(courseData.freeSessionsCount || 0) > 0 
+                                     ? `${courseData.freeSessionsCount} Complimentary Session${courseData.freeSessionsCount > 1 ? 's' : ''} (Worth ₹${((courseData.freeSessionsCount || 0) * 5000).toLocaleString('en-IN')})` 
+                                     : '0 Free Sessions (No credits granted)'}
+                                 </strong>
+                               </div>
+                               <p style={{ margin: 0, fontSize: '12px', color: 'var(--muted, #7c7468)', lineHeight: 1.45 }}>
+                                 {(courseData.freeSessionsCount || 0) > 0 ? (
+                                   <>
+                                     When a student purchases this course, their account will immediately receive <strong>{courseData.freeSessionsCount} free 1-on-1 session credit{courseData.freeSessionsCount > 1 ? 's' : ''}</strong>. They can book these directly from the course player or &ldquo;Book a Session&rdquo; tab at ₹0.
+                                   </>
+                                 ) : (
+                                   <>
+                                     Students who enroll in this course will not receive any complimentary 1-on-1 coaching session credits.
+                                   </>
+                                 )}
+                               </p>
+                             </div>
+                           </div>
+                         </div>
+                       ) : (
+                         <div style={{ marginTop: '16px', padding: '12px 16px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '10px', color: '#991b1b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                           <Icon name="info" size={18} />
+                           <span>
+                             <strong>Complimentary coaching sessions are turned OFF for this course.</strong> Enrolled students will get instant access to the video modules and learning resources only, with 0 free coaching session credits.
+                           </span>
+                         </div>
+                       )}
+                     </div>
+                   )}
                 </div>
               )}
 

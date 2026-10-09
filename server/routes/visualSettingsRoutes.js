@@ -88,4 +88,43 @@ router.put('/', async (req, res) => {
   }
 });
 
+// @desc    Get TinyMCE Editor Settings (API Key)
+// @route   GET /api/visual-settings/tinymce
+// @access  Public / Admin
+router.get('/tinymce', async (req, res) => {
+  try {
+    const doc = await Settings.findOne({ key: 'tinymce_settings' });
+    const apiKey = doc?.value?.apiKey || process.env.TINYMCE_API_KEY || '';
+    res.json({ apiKey: apiKey || 'no-api-key' });
+  } catch (error) {
+    console.error('Error fetching TinyMCE settings:', error);
+    res.json({ apiKey: process.env.TINYMCE_API_KEY || 'no-api-key' });
+  }
+});
+
+// @desc    Save TinyMCE Editor Settings (API Key)
+// @route   POST /api/visual-settings/tinymce
+// @access  Admin
+router.post('/tinymce', async (req, res) => {
+  try {
+    const { apiKey } = req.body;
+    const cleanKey = (apiKey || '').trim();
+
+    const doc = await Settings.findOneAndUpdate(
+      { key: 'tinymce_settings' },
+      { value: { apiKey: cleanKey } },
+      { new: true, upsert: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'TinyMCE API key saved successfully',
+      apiKey: doc.value.apiKey
+    });
+  } catch (error) {
+    console.error('Error saving TinyMCE settings:', error);
+    res.status(500).json({ message: 'Server error saving TinyMCE settings' });
+  }
+});
+
 export default router;

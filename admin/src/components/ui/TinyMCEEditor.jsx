@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
+import { API_URL } from '../../utils/apiUrl';
 
 export default function TinyMCEEditor({
   content,
@@ -10,14 +11,36 @@ export default function TinyMCEEditor({
   highlightLabel = 'Highlight',
   placeholder = 'Start writing your editorial content here...',
   minHeight = 460,
+  apiKey: propApiKey
 }) {
   const editorRef = useRef(null);
   const currentVal = value !== undefined ? value : content !== undefined ? content : initialContent || '';
+  
+  const [apiKey, setApiKey] = useState(() => {
+    return propApiKey || import.meta.env.VITE_TINYMCE_API_KEY || localStorage.getItem('tinymce_api_key') || 'no-api-key';
+  });
+
+  useEffect(() => {
+    if (propApiKey) {
+      setApiKey(propApiKey);
+      return;
+    }
+    // Fetch dynamically from server settings
+    fetch(`${API_URL}/api/visual-settings/tinymce`)
+      .then(res => res.json())
+      .then(data => {
+        if (data?.apiKey && data.apiKey !== 'no-api-key') {
+          setApiKey(data.apiKey);
+          localStorage.setItem('tinymce_api_key', data.apiKey);
+        }
+      })
+      .catch(() => {});
+  }, [propApiKey]);
 
   return (
     <div className="tinymce-editor-wrapper w-full rounded-xl overflow-hidden border border-stone-200 bg-white shadow-sm transition-all focus-within:border-[#c9542f] focus-within:ring-1 focus-within:ring-[#c9542f]/30">
       <Editor
-        apiKey="j3wb3qfjfsjor8dgmndqixpa3nc1oeiq1kg6uay66wypfg6c"
+        apiKey={apiKey || 'no-api-key'}
         onInit={(evt, editor) => {
           editorRef.current = editor;
         }}

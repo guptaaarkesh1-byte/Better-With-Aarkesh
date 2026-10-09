@@ -6,6 +6,7 @@ import ArticleReaderView, { renderFormattedTitle } from './ArticleReaderView';
 import { CURATED_LIBRARY_ARTICLES, getCuratedArticle } from '../../constants/libraryArticlesData';
 import PlasmaRingSphere from '../../components/library/PlasmaRingSphere';
 import { API_URL } from '../../utils/apiUrl';
+import LoginModal from '../../components/layout/LoginModal';
 
 const CATEGORY_CONFIGS = {
   relationships: {
@@ -215,6 +216,8 @@ export default function Articles() {
   const [isArticlesLoading, setIsArticlesLoading] = useState(() => getInitialPublishedArticles().length === 0);
   const [savedArticleIds, setSavedArticleIds] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingSaveArticleId, setPendingSaveArticleId] = useState(null);
 
   const rawCat = searchParams.get('category')?.toLowerCase().trim();
   const categoryKey = CATEGORY_CONFIGS[rawCat] ? rawCat : 'relationships';
@@ -335,14 +338,9 @@ export default function Articles() {
     return () => { isMounted = false; };
   }, []);
 
-  const handleToggleSave = async (articleId, e) => {
-    e?.stopPropagation();
-    e?.preventDefault();
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert("Please log in to save articles to your library.");
-      return;
-    }
+  const executeSaveArticle = async (articleId, authToken) => {
+    const token = authToken || localStorage.getItem('token');
+    if (!token || !articleId) return;
 
     const isCurrentlySaved = savedArticleIds.includes(articleId);
     setSavedArticleIds(prev => 
@@ -359,8 +357,20 @@ export default function Articles() {
         body: JSON.stringify({ articleId }),
       });
     } catch (err) {
-      console.error(err);
+      console.error('Error saving article:', err);
     }
+  };
+
+  const handleToggleSave = async (articleId, e) => {
+    e?.stopPropagation();
+    e?.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setPendingSaveArticleId(articleId);
+      setShowLoginModal(true);
+      return;
+    }
+    await executeSaveArticle(articleId, token);
   };
 
   const handleBookClick = (e) => {
@@ -1287,6 +1297,22 @@ export default function Articles() {
           }))}
         </div>
       </main>
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => {
+          setShowLoginModal(false);
+          setPendingSaveArticleId(null);
+        }}
+        onSuccess={(userData) => {
+          setShowLoginModal(false);
+          if (pendingSaveArticleId) {
+            executeSaveArticle(pendingSaveArticleId, userData?.token);
+            setPendingSaveArticleId(null);
+          }
+        }}
+        defaultMode="login"
+      />
     </div>
   );
 }

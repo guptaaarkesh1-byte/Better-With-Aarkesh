@@ -9,6 +9,7 @@ import {
   ArrowDown
 } from '@phosphor-icons/react';
 import { renderFormattedTitle } from '../../pages/articles/ArticleReaderView';
+import LoginModal from '../layout/LoginModal';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,6 +18,8 @@ export default function FeaturedSection() {
   const [isHovered, setIsHovered] = useState(false);
   const [article, setArticle] = useState(null);
   const [savedArticleIds, setSavedArticleIds] = useState([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingArticleId, setPendingArticleId] = useState(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -62,13 +65,9 @@ export default function FeaturedSection() {
     return () => clearInterval(intervalTimer);
   }, []);
 
-  const handleToggleSave = async (articleId, e) => {
-    e?.stopPropagation();
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert("Please log in to save items to your library.");
-      return;
-    }
+  const executeSaveArticle = async (articleId, authToken) => {
+    const token = authToken || localStorage.getItem('token');
+    if (!token || !articleId) return;
 
     const isCurrentlySaved = savedArticleIds.includes(articleId);
     setSavedArticleIds(prev => 
@@ -96,6 +95,17 @@ export default function FeaturedSection() {
         isCurrentlySaved ? [...prev, articleId] : prev.filter(id => id !== articleId)
       );
     }
+  };
+
+  const handleToggleSave = async (articleId, e) => {
+    e?.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setPendingArticleId(articleId);
+      setShowLoginModal(true);
+      return;
+    }
+    await executeSaveArticle(articleId, token);
   };
 
   useGSAP(() => {
@@ -200,6 +210,22 @@ export default function FeaturedSection() {
       
         <ArrowDown size={14} className="text-[#c79c6e] animate-bounce" weight="light" />
       </div>
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => {
+          setShowLoginModal(false);
+          setPendingArticleId(null);
+        }}
+        onSuccess={(userData) => {
+          setShowLoginModal(false);
+          if (pendingArticleId) {
+            executeSaveArticle(pendingArticleId, userData?.token);
+            setPendingArticleId(null);
+          }
+        }}
+        defaultMode="login"
+      />
 
     </section>
   );

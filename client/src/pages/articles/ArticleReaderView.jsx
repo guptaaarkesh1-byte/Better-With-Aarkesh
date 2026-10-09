@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, BookmarkSimple, Check } from '@phosphor-icons/react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import LoginModal from '../../components/layout/LoginModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -129,11 +130,20 @@ function decodeHtmlEntities(str) {
     .replace(/&nbsp;/g, ' ');
 }
 
+export function stripArticleNumbering(text) {
+  if (!text || typeof text !== 'string') return text;
+  return text
+    .replace(/^\s*\d+(\.\d+)+[\.\s\-–—:]*\s*/, '')
+    .replace(/^\s*\d{1,2}\.\s+/, '')
+    .trim();
+}
+
 // Helper function to render italic highlight, bold, and larger text formatting with dynamic accent color
 export function renderFormattedTitle(text, accentColor = '#f3a8e2') {
   if (!text || typeof text !== 'string') return text;
 
-  const decodedText = decodeHtmlEntities(text);
+  let decodedText = decodeHtmlEntities(text);
+  decodedText = stripArticleNumbering(decodedText);
 
   const parseTokens = (str, keyPrefix = 'rt') => {
     if (!str) return [];
@@ -273,6 +283,7 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
   };
 
   const [isSaved, setIsSaved] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [progress, setProgress] = useState(0);
   const [resumeToast, setResumeToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -448,14 +459,10 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
     }
   };
 
-  const handleToggleSave = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+  const executeSaveArticle = async (authToken) => {
+    const token = authToken || localStorage.getItem('token');
     const articleId = article._id || article.id;
-    if (!articleId) return;
+    if (!token || !articleId) return;
 
     setIsSaved(prev => !prev);
 
@@ -471,6 +478,15 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
     } catch (err) {
       console.error('Error saving article:', err);
     }
+  };
+
+  const handleToggleSave = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setShowLoginModal(true);
+      return;
+    }
+    await executeSaveArticle(token);
   };
 
   return (
@@ -1145,6 +1161,16 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
           {toastMessage}
         </p>
       </div>
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={(userData) => {
+          setShowLoginModal(false);
+          executeSaveArticle(userData?.token);
+        }}
+        defaultMode="login"
+      />
 
     </article>
   );
