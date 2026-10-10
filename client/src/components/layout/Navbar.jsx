@@ -131,14 +131,15 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 30);
+      const currentScroll = window.scrollY || document.documentElement.scrollTop || 0;
+      setScrolled(currentScroll > 20);
       
       if (isManualNavRef.current) return;
-      if (window.scrollY < 200 && !location.hash) {
+      if (currentScroll < 200 && !location.hash) {
         setActiveSection('');
       }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [location.hash]);
@@ -238,9 +239,9 @@ export default function Navbar() {
         ref={navRef}
         className={cn(
           'fixed top-0 left-0 right-0 z-[100] transition-all duration-300',
-          scrolled || location.pathname === '/my-journey' || location.pathname.startsWith('/course')
-            ? 'py-2 bg-[#f5f1e8]/95 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] border-b border-black/8' 
-            : 'py-2.5 sm:py-3.5 bg-[#f5f1e8]/90 backdrop-blur-md border-b border-black/6'
+          scrolled
+            ? 'py-2 bg-[#f5f1e8] shadow-[0_4px_24px_rgba(0,0,0,0.06)] border-b border-black/10' 
+            : 'py-2.5 sm:py-3.5 bg-[#f5f1e8]/70 border-b border-black/6'
         )}
       >
         <Container className="flex flex-col gap-2">
@@ -263,19 +264,19 @@ export default function Navbar() {
                 {/* Course Button */}
                 <button
                   onClick={() => navigate('/course')}
-                  className="bg-[#c8512d] hover:bg-[#b3461f] text-white rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-medium flex items-center gap-1.5 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
+                  className="bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
                 >
                   <Play size={13} weight="fill" className="text-white" />
-                  <span>Course</span>
+                  <span>COURSE</span>
                 </button>
 
-                {/* Book a Session Button */}
+                {/* My Journey Button */}
                 <button 
-                  onClick={() => navigate('/book')}
-                  className="bg-[#c8512d] hover:bg-[#b3461f] text-white rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-medium flex items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
+                  onClick={() => navigate('/my-journey')}
+                  className="bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase flex items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
                 >
                   <CalendarBlank size={15} weight="bold" className="text-white" />
-                  <span>Book a session</span>
+                  <span>MY JOURNEY</span>
                 </button>
 
                 {/* User Account / Login */}
@@ -373,23 +374,9 @@ export default function Navbar() {
                               freeSessionsCount > 0 ? "mt-0" : "mt-2"
                             )}
                           >
-                            <span>CONTINUE YOUR JOURNEY</span>
+                            <span>MY JOURNEY & PROFILE</span>
                             <span className="text-base leading-none">→</span>
                           </button>
-
-                          {/* Nav Items - Only Profile */}
-                          <div className="flex flex-col gap-1 mt-3 pt-1">
-                            <button 
-                              onClick={() => {
-                                setDropdownOpen(false);
-                                navigate('/my-journey?tab=profile');
-                              }}
-                              className="flex items-center gap-3 py-2.5 text-[#1c1714] hover:text-[#c8512d] text-[14px] font-medium transition-colors w-full text-left cursor-pointer"
-                            >
-                              <User size={18} className="text-[#1c1714]" />
-                              <span>Profile</span>
-                            </button>
-                          </div>
                         </div>
 
                         {/* Bottom Logout Row */}
@@ -427,7 +414,7 @@ export default function Navbar() {
           </div>
 
           {/* Bottom Row: Navigation Tabs (New Row below, centered with exact spacing and size) */}
-          <div className="hidden md:flex items-center justify-center w-full pt-1.5 border-t border-black/8">
+          <div className="hidden md:flex items-center justify-center w-full pt-1.5 border-t border-black/10">
             <nav className="flex items-center justify-center space-x-12 lg:space-x-16 xl:space-x-20 relative">
               {NAV_LINKS.map((link) => {
                 let active = false;
@@ -451,10 +438,10 @@ export default function Navbar() {
                     to={link.href}
                     onClick={() => handleNavClick(link.href)}
                     className={cn(
-                      'font-sans text-[0.72rem] lg:text-[0.76rem] uppercase tracking-[0.22em] transition-colors duration-300 relative py-1 px-1.5 flex items-center justify-center',
+                      'font-sans text-[0.74rem] lg:text-[0.78rem] uppercase tracking-[0.22em] transition-all duration-300 relative py-1 px-1.5 flex items-center justify-center font-bold',
                       active
-                        ? 'text-[#111010] font-bold'
-                        : 'text-[#555047] hover:text-[#111010] font-semibold'
+                        ? 'text-[#111010]'
+                        : 'text-[#111010] hover:text-[#c8512d] opacity-85 hover:opacity-100'
                     )}
                   >
                     <span className="relative z-10">{link.label}</span>

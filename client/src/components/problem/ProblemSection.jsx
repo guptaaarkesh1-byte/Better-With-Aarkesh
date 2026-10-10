@@ -131,7 +131,7 @@ export default function ProblemSection() {
   }, { scope: sectionRef });
 
   return (
-    <section ref={sectionRef} id="problem" className="relative w-full bg-[#f5f1e8] h-auto lg:h-screen flex flex-col overflow-hidden snap-section">
+    <section ref={sectionRef} id="problem" className="relative w-full bg-[#f5f1e8]">
       
       {/* ─── MOBILE VIEW (Matches user's mobile design prototype exactly) ─── */}
       <div className="block lg:hidden w-full bg-gradient-to-b from-[#fcefe0] via-[#f8dec4] to-[#f6e7d8] pt-14 pb-10 overflow-hidden">
@@ -178,8 +178,8 @@ export default function ProblemSection() {
         </div>
       </div>
 
-      {/* ─── DESKTOP PINNED VIEW (100% untouched for desktop / laptop) ─── */}
-      <div ref={containerRef} className="hidden lg:flex relative w-full h-full flex-grow flex-col items-center justify-center">
+      {/* ─── DESKTOP PINNED VIEW ─── */}
+      <div ref={containerRef} className="hidden lg:flex relative w-full h-screen overflow-hidden items-center justify-center">
         
         {/* DESKTOP HEADING & PARA */}
         <Container className="grid relative z-30 w-full grid-cols-1 lg:grid-cols-12 gap-8 items-center h-full pointer-events-none absolute inset-0">
@@ -225,7 +225,7 @@ export default function ProblemSection() {
       </div>
 
       {/* Transition Intro (Statement section) */}
-      <div className="relative z-40 shrink-0 bg-[#f5f1e8]">
+      <div className="relative z-40 w-full bg-[#f5f1e8]">
         <TransitionIntro problemData={problemData || {}} />
       </div>
 

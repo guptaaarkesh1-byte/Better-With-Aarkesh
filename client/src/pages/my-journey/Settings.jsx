@@ -126,22 +126,10 @@ export default function Settings() {
                             setAvatarMenuOpen(false);
                             navigate('/my-journey');
                           }}
-                          className="w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer mb-3"
+                          className="w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer"
                         >
-                          <span>CONTINUE YOUR JOURNEY</span>
+                          <span>MY JOURNEY & PROFILE</span>
                           <span className="text-base leading-none">→</span>
-                        </button>
-
-                        {/* Profile Option */}
-                        <button 
-                          onClick={() => {
-                            setAvatarMenuOpen(false);
-                            setActiveTab('PROFILE');
-                          }}
-                          className="flex items-center gap-3.5 py-2 text-[#1c1714] hover:text-[#c8512d] text-[14px] font-medium transition-colors w-full text-left cursor-pointer"
-                        >
-                          <User size={18} className="text-[#1c1714]" />
-                          <span>Profile</span>
                         </button>
                       </div>
 

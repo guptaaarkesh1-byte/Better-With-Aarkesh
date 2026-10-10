@@ -45,7 +45,7 @@ export default function HeroImage({
     >
       {/* Character Image wrapper with position offset support */}
       <div 
-        className="absolute inset-x-0 top-[75px] sm:top-[80px] md:top-[85px] lg:top-[85px] -bottom-20 flex items-end justify-end transition-transform duration-300"
+        className="absolute inset-x-0 top-0 -bottom-20 flex items-end justify-end transition-transform duration-300"
         style={{
           transform: imagePositionY ? `translateY(${Number(imagePositionY)}px)` : undefined
         }}

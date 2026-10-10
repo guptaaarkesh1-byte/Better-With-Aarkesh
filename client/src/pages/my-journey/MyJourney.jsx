@@ -14,6 +14,7 @@ import { resolveImageUrl } from '../articles/ArticleReaderView';
 import ProfileTab from './components/settings/ProfileTab';
 import NotificationsTab from './components/settings/NotificationsTab';
 import SecurityPrivacyTab from './components/settings/SecurityPrivacyTab';
+import { getEffectiveUser } from '../../utils/authSync';
 
 export default function MyJourney() {
   const navigate = useNavigate();
@@ -109,10 +110,22 @@ export default function MyJourney() {
   const [libraryFilter, setLibraryFilter] = useState('bookmarked'); // 'bookmarked' | 'completed'
   const [courseFilter, setCourseFilter] = useState('all'); // 'all' | 'enrolled'
 
-  // User Profile & Free Session Credits
-  const [user, setUser] = useState(null);
-  const [freeSessionsCount, setFreeSessionsCount] = useState(0);
-  const [isCoursePurchaser, setIsCoursePurchaser] = useState(false);
+  // User Profile & Free Session Credits (Instant zero-delay initialization from cache)
+  const [user, setUser] = useState(() => getEffectiveUser());
+  const [freeSessionsCount, setFreeSessionsCount] = useState(() => {
+    const cachedUser = getEffectiveUser();
+    const stored = localStorage.getItem('freeSessions');
+    if (stored !== null && stored !== undefined && stored !== '') {
+      return Math.max(0, Number(stored));
+    }
+    return cachedUser?.freeSessions !== undefined ? Math.max(0, Number(cachedUser.freeSessions)) : 0;
+  });
+  const [isCoursePurchaser, setIsCoursePurchaser] = useState(() => {
+    const cachedUser = getEffectiveUser();
+    const isPurchased = localStorage.getItem('isCoursePurchased') === 'true';
+    const purchasedCourses = localStorage.getItem('purchasedCourses');
+    return isPurchased || !!purchasedCourses || !!cachedUser?.courseSessionsGranted || (Array.isArray(cachedUser?.purchasedCourses) && cachedUser.purchasedCourses.length > 0);
+  });
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [selectedCoursePreview, setSelectedCoursePreview] = useState(null);
 
@@ -214,9 +227,14 @@ export default function MyJourney() {
       if (res.ok) {
         const data = await res.json();
         setUser(data);
-        setFreeSessionsCount(data.freeSessions || 0);
+        const freeCount = data.freeSessions !== undefined ? Math.max(0, Number(data.freeSessions)) : 0;
+        setFreeSessionsCount(freeCount);
         setIsCoursePurchaser(!!data.courseSessionsGranted);
         localStorage.setItem('userInfo', JSON.stringify(data));
+        localStorage.setItem('freeSessions', String(freeCount));
+        if (data.courseSessionsGranted) {
+          localStorage.setItem('isCoursePurchased', 'true');
+        }
       }
     } catch (err) {
       console.error('Failed to fetch user profile:', err);
@@ -770,23 +788,10 @@ export default function MyJourney() {
                           setAvatarMenuOpen(false);
                           setActiveTab('coaching');
                         }}
-                        className="w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer mb-3"
+                        className="w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer"
                       >
-                        <span>CONTINUE YOUR JOURNEY</span>
+                        <span>MY JOURNEY & PROFILE</span>
                         <span className="text-base leading-none">→</span>
-                      </button>
-
-                      {/* Profile Option */}
-                      <button 
-                        onClick={() => {
-                          setAvatarMenuOpen(false);
-                          setActiveTab('profile');
-                          setSettingsSubTab('PROFILE');
-                        }}
-                        className="flex items-center gap-3.5 py-2 text-[#1c1714] hover:text-[#c8512d] text-[14px] font-medium transition-colors w-full text-left cursor-pointer"
-                      >
-                        <User size={18} className="text-[#1c1714]" />
-                        <span>Profile</span>
                       </button>
                     </div>
 
@@ -814,7 +819,9 @@ export default function MyJourney() {
           {/* Welcome + Search + Free Credits Strip */}
           <div className="mj-strip">
             <div className="mj-hello">
-              <h1>Welcome back{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}.</h1>
+              <h1>
+                Welcome back{(user?.fullName || user?.name) ? `, ${(user.fullName || user.name).trim().split(' ')[0]}` : ''}.
+              </h1>
               <p>Your saved reads, sessions and private notes, all in one place.</p>
             </div>
 
@@ -852,63 +859,72 @@ export default function MyJourney() {
         {/* ─── SECTION TABS BAR ─── */}
         <div className="mj-tabbar">
           <div className="mj-tabbar-inner">
-            <nav className="mj-tabs" role="tablist">
-              <button 
-                className={`mj-tab ${activeTab === 'coaching' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('coaching'); setSearchQuery(''); }}
+            {activeTab === 'profile' ? (
+              <button
+                onClick={() => {
+                  setActiveTab('coaching');
+                  setSearchQuery('');
+                }}
+                className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#eee7df] hover:bg-[#e4dbd0] text-[#1c1714] text-[13.5px] font-semibold tracking-wide transition-all shadow-xs cursor-pointer group"
+                title="Back to Dashboard"
               >
-                <CalendarBlank size={17} weight={activeTab === 'coaching' ? 'bold' : 'regular'} />
-                <span>Appointments</span>
+                <ArrowLeft size={16} weight="bold" className="text-[#c8512d] transition-transform group-hover:-translate-x-1" />
+                <span>Back to Dashboard</span>
               </button>
+            ) : (
+              <nav className="mj-tabs" role="tablist">
+                <button 
+                  className={`mj-tab ${activeTab === 'coaching' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('coaching'); setSearchQuery(''); }}
+                >
+                  <CalendarBlank size={17} weight={activeTab === 'coaching' ? 'bold' : 'regular'} />
+                  <span>Appointments</span>
+                </button>
 
-              <button 
-                className={`mj-tab ${activeTab === 'library' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('library'); setSearchQuery(''); }}
-              >
-                <BookmarkSimple size={17} weight={activeTab === 'library' ? 'bold' : 'regular'} />
-                <span>My library</span>
-              </button>
+                <button 
+                  className={`mj-tab ${activeTab === 'library' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('library'); setSearchQuery(''); }}
+                >
+                  <BookmarkSimple size={17} weight={activeTab === 'library' ? 'bold' : 'regular'} />
+                  <span>My library</span>
+                </button>
 
-              <button 
-                className={`mj-tab ${activeTab === 'notes' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('notes'); setSearchQuery(''); }}
-              >
-                <Notebook size={17} weight={activeTab === 'notes' ? 'bold' : 'regular'} />
-                <span>My notes</span>
-              </button>
+                <button 
+                  className={`mj-tab ${activeTab === 'notes' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('notes'); setSearchQuery(''); }}
+                >
+                  <Notebook size={17} weight={activeTab === 'notes' ? 'bold' : 'regular'} />
+                  <span>My notes</span>
+                </button>
 
-              <button 
-                className={`mj-tab ${activeTab === 'course' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('course'); setSearchQuery(''); }}
-              >
-                <Play size={17} weight={activeTab === 'course' ? 'fill' : 'regular'} />
-                <span>Course</span>
-              </button>
-            </nav>
+                <button 
+                  className={`mj-tab ${activeTab === 'course' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('course'); setSearchQuery(''); }}
+                >
+                  <Play size={17} weight={activeTab === 'course' ? 'fill' : 'regular'} />
+                  <span>Course</span>
+                </button>
+              </nav>
+            )}
 
-            {/* Right End of Tab Row: Profile Button (left) & Book a Session Button (end) */}
+            {/* Right End of Tab Row: Profile & Settings Button (left) & Book a Session Button (end) */}
             <div className="flex items-center gap-3">
-              {/* Black Profile Button - Exactly identical height, padding & typography */}
+              {/* Profile & Settings Button (Terracotta) */}
               <button
                 onClick={() => {
                   setActiveTab('profile');
                   setSearchQuery('');
                 }}
-                className={cn(
-                  "mj-btn h-[42px] px-6 text-[14px] font-semibold transition-all select-none",
-                  activeTab === 'profile'
-                    ? "bg-[#1c1714] text-white shadow-md ring-2 ring-[#c8512d]"
-                    : "bg-[#1c1714] text-white hover:bg-black shadow-sm"
-                )}
+                className="mj-btn h-[42px] px-6 text-[14px] font-semibold transition-all select-none bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0 ring-0 outline-none"
                 title="Profile & Settings"
               >
-                <span>Profile</span>
+                <span>Profile & Settings</span>
               </button>
 
-              {/* Book a session Button */}
+              {/* Book a session Button (Black) */}
               <button 
                 onClick={() => navigate('/book')}
-                className="mj-btn mj-btn-primary h-[42px] px-6 text-[14px] font-semibold"
+                className="mj-btn h-[42px] px-6 text-[14px] font-semibold bg-[#1c1714] hover:bg-black text-white shadow-sm transition-all"
               >
                 <CalendarBlank size={17} weight="bold" />
                 <span>Book a session</span>
@@ -1260,45 +1276,6 @@ export default function MyJourney() {
                     )}
                   </div>
                 </div>
-
-                {/* Free Sessions Grid (Course Students) */}
-                {(isCoursePurchaser || freeSessionsCount > 0) && (
-                  <div className="mj-free-grid">
-                    <div className="mj-section-title">Your free sessions</div>
-                    <div className="mj-grid-scroll mt-4" onWheel={handleGridWheel} data-lenis-prevent="true">
-                      <div className="mj-grid">
-                        {freeSessionSlots.map((slot, idx) => (
-                          <article 
-                            key={idx} 
-                            className={`mj-card mj-credit-card ${slot.state === 'used' ? 'used' : ''}`}
-                          >
-                            <div className={`mj-card-top ${slot.state === 'used' ? 'mj-c-sand' : getCardColor(slot.title || idx, idx)}`}>
-                              <div className="mj-row">
-                                <span className="mj-pill capitalize">{slot.state}</span>
-                              </div>
-                              <div className="mj-big">{slot.title}</div>
-                              <div className="mj-meta">{slot.date}</div>
-                            </div>
-                            <div className="mj-card-foot">
-                              <div className="mj-prog">
-                                <b>{slot.state === 'available' ? '₹0' : slot.state === 'booked' ? 'Upcoming' : 'Completed'}</b>
-                                <small>Included in course</small>
-                              </div>
-                              {slot.state === 'available' && (
-                                <button 
-                                  onClick={() => navigate('/book')}
-                                  className="mj-btn mj-btn-dark !flex-initial"
-                                >
-                                  Book
-                                </button>
-                              )}
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 

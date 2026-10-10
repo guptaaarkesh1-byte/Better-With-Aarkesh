@@ -1141,13 +1141,13 @@ export default function Articles() {
               className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
             >
               <Play size={13} weight="fill" style={{ color: currentCat.btnInk || '#1c1714' }} />
-              <span>Course</span>
+              <span>COURSE</span>
             </button>
 
-            {/* Book a Session Button */}
+            {/* My Journey Button */}
             <button 
               type="button" 
-              onClick={handleBookClick} 
+              onClick={() => navigate('/my-journey')} 
               style={{
                 backgroundColor: currentCat.btnBg || '#ffffff',
                 color: currentCat.btnInk || '#1c1714',
@@ -1155,7 +1155,7 @@ export default function Articles() {
               className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
             >
               <CalendarBlank size={15} weight="bold" style={{ color: currentCat.btnInk || '#1c1714' }} />
-              <span>Book a session</span>
+              <span>MY JOURNEY</span>
             </button>
 
             {/* Login / User Account */}
@@ -1246,24 +1246,9 @@ export default function Articles() {
                         }}
                         className="w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer mt-2"
                       >
-                        <span>CONTINUE YOUR JOURNEY</span>
+                        <span>MY JOURNEY & PROFILE</span>
                         <span className="text-base leading-none">→</span>
                       </button>
-
-                      {/* Nav Items - Only Profile */}
-                      <div className="flex flex-col gap-1 mt-3 pt-1">
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setDropdownOpen(false);
-                            navigate('/my-journey?tab=profile');
-                          }}
-                          className="flex items-center gap-3 py-2.5 text-[#1c1714] hover:text-[#c8512d] text-[14px] font-medium transition-colors w-full text-left cursor-pointer"
-                        >
-                          <User size={18} className="text-[#1c1714]" />
-                          <span>Profile</span>
-                        </button>
-                      </div>
                     </div>
 
                     {/* Bottom Logout Row */}
