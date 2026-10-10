@@ -3,8 +3,8 @@
 
 export const CDN_IMAGES = {
   // Hero & Coach
-  HERO_COACH: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289662/better_with_aarkesh/client/src/assets/hero-coach_1961.png',
-  HERO_MAIN: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289664/better_with_aarkesh/client/src/assets/hero_3849.png',
+  HERO_COACH: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png',
+  HERO_MAIN: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png',
   INSTRUCTOR_AVATAR: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289654/better_with_aarkesh/client/public/instructor_avatar_3503.jpg',
 
   // Principles & Key Sections

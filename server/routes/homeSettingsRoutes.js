@@ -13,7 +13,7 @@ const DEFAULT_SECTIONS = {
     ctaLink: '/book',
     secondaryCtaText: '',
     secondaryCtaLink: '',
-    bgImageUrl: 'https://api.aarkeshgupta.com/uploads/image-1790768916697.png',
+    bgImageUrl: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png',
     overlayOpacity: 16,
     showScrollIndicator: true,
   },

@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import defaultHeroImg from '../../assets/hero-coach.webp';
+import defaultHeroImg from '../../assets/hero-portrait.png';
 import { CDN_IMAGES, optimizeCloudinaryUrl } from '../../utils/cdnAssets';
 
 const HERO_CDN_IMG = optimizeCloudinaryUrl(CDN_IMAGES.HERO_COACH, 1920) || defaultHeroImg;

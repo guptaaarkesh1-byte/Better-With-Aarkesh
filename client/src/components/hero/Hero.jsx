@@ -13,7 +13,7 @@ const DEFAULT_HERO_DATA = {
   description: 'A space to think clearly, feel honestly and decide intentionally.',
   ctaText: 'Book a Session',
   ctaLink: '/book',
-  bgImageUrl: 'https://api.aarkeshgupta.com/uploads/image-1790768916697.png',
+  bgImageUrl: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png',
   overlayOpacity: 16,
   showScrollIndicator: true,
 };
@@ -91,7 +91,7 @@ export default function Hero() {
       <div className="block lg:hidden w-full relative pt-16 bg-[#E4E2EA]">
         <div className="relative w-full overflow-hidden">
           <img 
-            src={heroData.bgImageUrl || 'https://api.aarkeshgupta.com/uploads/image-1790768916697.png'}
+            src={heroData.bgImageUrl || 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png'}
             alt="Aarkesh"
             className="w-full h-auto object-contain block"
           />
