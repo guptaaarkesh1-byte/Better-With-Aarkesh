@@ -1,11 +1,6 @@
 import { useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import silhouetteImg from '../../assets/Page2/problem_silhouette.png';
-
-gsap.registerPlugin(ScrollTrigger);
 
 // =========================================================================
 // 🎛️ WORD CLOUD CONTROLS - (Customize Positions, Sizes & Colors Here)
@@ -50,34 +45,8 @@ export default function WordCloud({ customImg = '', wordColor = '', wordFontSize
   const imgSrc = resolveImageUrl(customImg, silhouetteImg);
   const scaleRatio = (Number(wordFontSize) || 18) / 18;
 
-  useGSAP(() => {
-    const words = gsap.utils.toArray('.floating-word');
-    
-    // Continuous gentle floating effect with bounded motion to prevent collisions
-    words.forEach((word) => {
-      const xMove = gsap.utils.random(-8, 8);
-      const yMove = gsap.utils.random(-8, 8);
-      const rot = gsap.utils.random(-2, 2);
-      const dur = gsap.utils.random(4, 7);
-      const delay = gsap.utils.random(0, 2);
-
-      gsap.to(word, {
-        x: xMove,
-        y: yMove,
-        rotation: rot,
-        duration: dur,
-        delay: delay,
-        ease: 'sine.inOut',
-        yoyo: true,
-        repeat: -1,
-        force3D: true,
-      });
-    });
-
-  }, { scope: container });
-
   return (
-    <div ref={container} className="relative w-full h-full min-h-[60vh] flex items-center justify-center overflow-hidden">
+    <div ref={container} className="relative w-full h-full min-h-full flex items-center justify-center overflow-hidden">
       <style>{`
         ${WORDS.map((w, i) => `
           .word-pos-${i} {

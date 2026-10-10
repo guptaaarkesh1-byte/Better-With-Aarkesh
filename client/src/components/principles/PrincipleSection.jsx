@@ -94,8 +94,8 @@ export default function PrincipleSection({
         </div>
       </div>
 
-      {/* ─── DESKTOP VIEW (100% untouched desktop layout) ─── */}
-      <div className={`hidden lg:flex relative flex-grow items-center justify-center pb-48 ${contentClassName}`}>
+      {/* ─── DESKTOP VIEW ─── */}
+      <div className={`hidden lg:flex relative flex-grow items-center justify-center pt-24 pb-16 lg:pt-28 lg:pb-20 ${contentClassName}`}>
         
         {/* Background Image */}
         <div className="absolute inset-0 z-0 pointer-events-none">

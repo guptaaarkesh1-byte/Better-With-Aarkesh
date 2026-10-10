@@ -97,10 +97,10 @@ export default function PrincipleContent({
           ...(headingFontSize ? { fontSize: `clamp(32px, 9.6vw, ${headingFontSize}px)` } : {})
         }}
       >
-        <span className={`phil-heading-word text-[#111010] pb-1 ${headlineWhite === headlineWhite?.toUpperCase() ? 'uppercase' : ''}`}>
+        <span className="phil-heading-word text-[#111010] pb-1 uppercase">
           {headlineWhite}
         </span>
-        <span className={`phil-heading-word text-[#c9542f] pb-1 not-italic font-medium ${headlineGold === headlineGold?.toUpperCase() ? 'uppercase' : ''}`}>
+        <span className="phil-heading-word text-[#c9542f] pb-1 not-italic font-medium uppercase">
           {headlineGold}
         </span>
       </h2>
