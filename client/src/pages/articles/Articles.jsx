@@ -1144,19 +1144,34 @@ export default function Articles() {
               <span>COURSE</span>
             </button>
 
-            {/* My Journey Button */}
-            <button 
-              type="button" 
-              onClick={() => navigate('/my-journey')} 
-              style={{
-                backgroundColor: currentCat.btnBg || '#ffffff',
-                color: currentCat.btnInk || '#1c1714',
-              }}
-              className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
-            >
-              <CalendarBlank size={15} weight="bold" style={{ color: currentCat.btnInk || '#1c1714' }} />
-              <span>MY JOURNEY</span>
-            </button>
+            {/* My Journey / Book a Session Button */}
+            {isLoggedIn ? (
+              <button 
+                type="button" 
+                onClick={() => navigate('/my-journey')} 
+                style={{
+                  backgroundColor: currentCat.btnBg || '#ffffff',
+                  color: currentCat.btnInk || '#1c1714',
+                }}
+                className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
+              >
+                <CalendarBlank size={15} weight="bold" style={{ color: currentCat.btnInk || '#1c1714' }} />
+                <span>MY JOURNEY</span>
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                onClick={() => navigate('/book')} 
+                style={{
+                  backgroundColor: currentCat.btnBg || '#ffffff',
+                  color: currentCat.btnInk || '#1c1714',
+                }}
+                className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
+              >
+                <CalendarBlank size={15} weight="bold" style={{ color: currentCat.btnInk || '#1c1714' }} />
+                <span>BOOK A SESSION</span>
+              </button>
+            )}
 
             {/* Login / User Account */}
             {!isLoggedIn ? (

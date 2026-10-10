@@ -1783,15 +1783,26 @@ export default function Library() {
             <span>COURSE</span>
           </button>
 
-          {/* My Journey Button */}
-          <button 
-            type="button" 
-            onClick={() => navigate('/my-journey')} 
-            className="bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase flex items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
-          >
-            <CalendarBlank size={15} weight="bold" className="text-white" />
-            <span>MY JOURNEY</span>
-          </button>
+          {/* My Journey / Book a Session Button */}
+          {isLoggedIn ? (
+            <button 
+              type="button" 
+              onClick={() => navigate('/my-journey')} 
+              className="bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase flex items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
+            >
+              <CalendarBlank size={15} weight="bold" className="text-white" />
+              <span>MY JOURNEY</span>
+            </button>
+          ) : (
+            <button 
+              type="button" 
+              onClick={() => navigate('/book')} 
+              className="bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase flex items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
+            >
+              <CalendarBlank size={15} weight="bold" className="text-white" />
+              <span>BOOK A SESSION</span>
+            </button>
+          )}
 
           {/* Login / User Account */}
           {!isLoggedIn ? (
