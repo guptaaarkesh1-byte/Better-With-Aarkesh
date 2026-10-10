@@ -4,17 +4,18 @@ import {
   CalendarBlank, BookmarkSimple, Notebook, Play,
   VideoCamera, CheckCircle, Plus, LockKey, MagnifyingGlass,
   X, SignOut, User, Lock, CaretRight, ArrowsClockwise, ArrowLeft,
-  CaretDown, CaretUp, Bell, ArrowRight
+  CaretDown, CaretUp, Bell, ArrowRight, Trash, Clock, NotePencil
 } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 import './my-journey.css';
 import RescheduleModal from './components/RescheduleModal';
 import UniversalVideoModal from '../../components/ui/UniversalVideoModal';
+import TinyMCEEditor from '../../components/ui/TinyMCEEditor';
 import { resolveImageUrl } from '../articles/ArticleReaderView';
 import ProfileTab from './components/settings/ProfileTab';
 import NotificationsTab from './components/settings/NotificationsTab';
 import SecurityPrivacyTab from './components/settings/SecurityPrivacyTab';
-import { getEffectiveUser } from '../../utils/authSync';
+import { getEffectiveUser, clearAllAuth, isAnyUserLoggedIn } from '../../utils/authSync';
 
 export default function MyJourney() {
   const navigate = useNavigate();
@@ -40,16 +41,13 @@ export default function MyJourney() {
       const fromUrl = parseTabName(params.get('tab'));
       if (fromUrl) return fromUrl;
 
-      // 2. Second priority: LocalStorage (what user selected last in this browser)
-      const fromStorage = parseTabName(localStorage.getItem('my_journey_active_tab'));
-      if (fromStorage) return fromStorage;
-
-      // 3. Third priority: Router location.state
+      // 2. Second priority: Router location.state
       const fromState = parseTabName(location.state?.activeTab);
       if (fromState) return fromState;
     } catch (e) {
       console.error(e);
     }
+    // Default is always Appointments ('coaching')
     return 'coaching';
   };
 
@@ -57,11 +55,9 @@ export default function MyJourney() {
   const [activeTab, setActiveTab] = useState(getInitialTab);
   const [settingsSubTab, setSettingsSubTab] = useState('PROFILE');
 
-  // Sync activeTab with URL search params, localStorage, and history state
+  // Sync activeTab with URL search params and history state
   useEffect(() => {
     if (activeTab) {
-      localStorage.setItem('my_journey_active_tab', activeTab);
-
       const tabParamMap = {
         coaching: 'appointments',
         library: 'library',
@@ -170,6 +166,31 @@ export default function MyJourney() {
   // Toast State
   const [toastMsg, setToastMsg] = useState('');
 
+  // Coach Note Read State
+  const [readCoachNotes, setReadCoachNotes] = useState(() => {
+    try {
+      const stored = localStorage.getItem('bwa_read_coach_notes');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const markCoachNoteAsRead = (apptId) => {
+    if (!apptId) return;
+    setReadCoachNotes(prev => {
+      const idStr = String(apptId);
+      if (prev.includes(idStr)) return prev;
+      const updated = [...prev, idStr];
+      try {
+        localStorage.setItem('bwa_read_coach_notes', JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save read notes', e);
+      }
+      return updated;
+    });
+  };
+
   // Lock background scroll and Lenis when any modal is active
   const isAnyModalOpen = Boolean(selectedSession || noteModalOpen || rescheduleSession || activeModalVideo);
 
@@ -235,6 +256,10 @@ export default function MyJourney() {
         if (data.courseSessionsGranted) {
           localStorage.setItem('isCoursePurchased', 'true');
         }
+      } else if (res.status === 401 || res.status === 403) {
+        clearAllAuth();
+        setUser(null);
+        navigate('/', { replace: true });
       }
     } catch (err) {
       console.error('Failed to fetch user profile:', err);
@@ -303,6 +328,13 @@ export default function MyJourney() {
   };
 
   useEffect(() => {
+    if (!isAnyUserLoggedIn()) {
+      clearAllAuth();
+      setUser(null);
+      navigate('/', { replace: true });
+      return;
+    }
+
     const loadAll = async () => {
       setLoading(true);
       await Promise.all([
@@ -336,7 +368,8 @@ export default function MyJourney() {
           },
           body: JSON.stringify({
             title: trimmedTitle,
-            body: noteBody
+            body: noteBody,
+            content: noteBody
           })
         });
         if (res.ok) {
@@ -354,7 +387,8 @@ export default function MyJourney() {
           },
           body: JSON.stringify({
             title: trimmedTitle,
-            body: noteBody
+            body: noteBody,
+            content: noteBody
           })
         });
         if (res.ok) {
@@ -375,10 +409,40 @@ export default function MyJourney() {
     }
   };
 
+  // Handle Delete Note
+  const handleDeleteNote = async (noteId, e) => {
+    e?.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this note?')) return;
+    
+    const token = localStorage.getItem('token');
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    if (!token || !noteId) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/notes/${noteId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setNotes(prev => prev.filter(n => n._id !== noteId));
+        if (editingNote?._id === noteId) {
+          setNoteModalOpen(false);
+          setEditingNote(null);
+        }
+        showToast('Note deleted');
+      } else {
+        showToast('Failed to delete note');
+      }
+    } catch (err) {
+      console.error('Error deleting note:', err);
+      showToast('Failed to delete note');
+    }
+  };
+
   const handleOpenNoteModal = (note = null, readonly = false) => {
     setEditingNote(note);
     setNoteTitle(note ? note.title : '');
-    setNoteBody(note ? note.body || '' : '');
+    setNoteBody(note ? (note.content || note.body || '') : '');
     setIsNoteReadOnly(readonly);
     setNoteModalOpen(true);
   };
@@ -407,9 +471,31 @@ export default function MyJourney() {
     }
   };
 
-  // Helper to format date cleanly for card header pill without awkward wrapping
+  // Helper to parse any date string safely
+  const parseAnyDate = (dateStr) => {
+    if (!dateStr) return null;
+    const str = String(dateStr).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      const [y, m, d] = str.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) return parsed;
+    return null;
+  };
+
+  // Helper to format date cleanly for card header pill (e.g. "Fri, Oct 16, 2026")
   const formatPillDate = (dateStr) => {
     if (!dateStr) return '';
+    const d = parseAnyDate(dateStr);
+    if (d) {
+      return d.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
     return String(dateStr)
       .replace('Monday', 'Mon')
       .replace('Tuesday', 'Tue')
@@ -429,6 +515,34 @@ export default function MyJourney() {
       .replace('October', 'Oct')
       .replace('November', 'Nov')
       .replace('December', 'Dec');
+  };
+
+  // Helper to format full date for modal (e.g. "Friday, October 16, 2026")
+  const formatFullDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = parseAnyDate(dateStr);
+    if (d) {
+      return d.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+    return String(dateStr);
+  };
+
+  // Helper to format time cleanly (e.g. "04:30 PM")
+  const formatSessionTime = (timeStr) => {
+    if (!timeStr) return '';
+    const str = String(timeStr).trim();
+    if (/^\d{1,2}:\d{2}$/.test(str)) {
+      const [h, m] = str.split(':').map(Number);
+      const period = h >= 12 ? 'PM' : 'AM';
+      const formattedHour = h % 12 || 12;
+      return `${String(formattedHour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+    }
+    return str;
   };
 
   // Helper to get timestamp for appointment date/time sorting
@@ -599,6 +713,18 @@ export default function MyJourney() {
     return { ...slot, state: 'used', date: 'Session completed' };
   });
 
+  // Helper to identify rescheduled appointments (pending or approved/completed reschedule)
+  const isRescheduledSession = (a) => Boolean(
+    a.status === 'RESCHEDULED' || 
+    (a.rescheduleRequest && (
+      a.rescheduleRequest.status === 'PENDING' || 
+      a.rescheduleRequest.status === 'pending' || 
+      a.rescheduleRequest.status === 'APPROVED' || 
+      a.rescheduleRequest.status === 'approved' || 
+      Boolean(a.rescheduleRequest.originalDate)
+    ))
+  );
+
   // Filter Appointments
   const q = searchQuery.toLowerCase().trim();
   const filteredAppointments = appointments
@@ -616,7 +742,7 @@ export default function MyJourney() {
       } else if (coachFilter === 'completed') {
         if (a.status !== 'COMPLETED') return false;
       } else if (coachFilter === 'rescheduled') {
-        if (!(a.status === 'RESCHEDULED' || (a.rescheduleRequest && a.rescheduleRequest.status === 'pending'))) return false;
+        if (!isRescheduledSession(a)) return false;
       } else if (coachFilter === 'canceled') {
         if (!(a.status === 'CANCELLED' || a.status === 'CANCELED')) return false;
       }
@@ -682,7 +808,7 @@ export default function MyJourney() {
   ];
 
   const filteredCourses = coursesList.filter(c => {
-    if (isCoursePurchaser && courseFilter === 'enrolled' && c.kind !== 'enrolled') return false;
+    if (courseFilter === 'enrolled' && c.kind !== 'enrolled') return false;
     if (!q) return true;
     return c.title.toLowerCase().includes(q);
   });
@@ -692,7 +818,7 @@ export default function MyJourney() {
   // Counts for Sidebar Badges
   const upcomingCount = appointments.filter(a => a.status === 'UPCOMING' || !a.status).length;
   const completedCount = appointments.filter(a => a.status === 'COMPLETED').length;
-  const rescheduledCount = appointments.filter(a => a.status === 'RESCHEDULED' || a.rescheduleRequest?.status === 'pending').length;
+  const rescheduledCount = appointments.filter(isRescheduledSession).length;
   const canceledCount = appointments.filter(a => a.status === 'CANCELLED' || a.status === 'CANCELED').length;
 
   const savedCount = savedArticles.length + savedVideos.length;
@@ -907,24 +1033,24 @@ export default function MyJourney() {
               </nav>
             )}
 
-            {/* Right End of Tab Row: Profile & Settings Button (left) & Book a Session Button (end) */}
+            {/* Right End of Tab Row: Profile & Settings Button (Black) & Book a Session Button (Orange) */}
             <div className="flex items-center gap-3">
-              {/* Profile & Settings Button (Terracotta) */}
+              {/* Profile & Settings Button (Black) */}
               <button
                 onClick={() => {
                   setActiveTab('profile');
                   setSearchQuery('');
                 }}
-                className="mj-btn h-[42px] px-6 text-[14px] font-semibold transition-all select-none bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0 ring-0 outline-none"
+                className="mj-btn h-[42px] px-6 text-[14px] font-semibold transition-all select-none bg-[#1c1714] hover:bg-black text-white shadow-sm border-0 ring-0 outline-none"
                 title="Profile & Settings"
               >
                 <span>Profile & Settings</span>
               </button>
 
-              {/* Book a session Button (Black) */}
+              {/* Book a session Button (Orange) */}
               <button 
                 onClick={() => navigate('/book')}
-                className="mj-btn h-[42px] px-6 text-[14px] font-semibold bg-[#1c1714] hover:bg-black text-white shadow-sm transition-all"
+                className="mj-btn h-[42px] px-6 text-[14px] font-semibold bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm transition-all border-0"
               >
                 <CalendarBlank size={17} weight="bold" />
                 <span>Book a session</span>
@@ -949,7 +1075,7 @@ export default function MyJourney() {
                     <p>You have {availableCredits} free 1-on-1 {availableCredits === 1 ? 'session' : 'sessions'} left with your course.</p>
                     <button 
                       onClick={() => navigate('/book')}
-                      className="mj-btn"
+                      className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
                     >
                       Book a free session
                     </button>
@@ -959,7 +1085,7 @@ export default function MyJourney() {
                     <p>Book a 1-on-1 coaching session to gain clarity, direction and personal breakthroughs.</p>
                     <button 
                       onClick={() => navigate('/book')}
-                      className="mj-btn"
+                      className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
                     >
                       Book a session
                     </button>
@@ -1062,17 +1188,21 @@ export default function MyJourney() {
                         />
                         <span className="mj-box"></span>
                         All courses
+                        <em>{coursesList.length}</em>
                       </label>
-                      <label className="mj-opt radio">
-                        <input 
-                          type="radio" 
-                          name="courseFilter" 
-                          checked={courseFilter === 'enrolled'}
-                          onChange={() => setCourseFilter('enrolled')}
-                        />
-                        <span className="mj-box"></span>
-                        My courses
-                      </label>
+                      {isCoursePurchaser && (
+                        <label className="mj-opt radio">
+                          <input 
+                            type="radio" 
+                            name="courseFilter" 
+                            checked={courseFilter === 'enrolled'}
+                            onChange={() => setCourseFilter('enrolled')}
+                          />
+                          <span className="mj-box"></span>
+                          My courses
+                          <em>{coursesList.filter(c => c.kind === 'enrolled').length}</em>
+                        </label>
+                      )}
                     </div>
                   )}
 
@@ -1159,15 +1289,33 @@ export default function MyJourney() {
                     {filteredAppointments.length > 0 ? (
                       filteredAppointments.map((appt, idx) => {
                         const isFree = Boolean(appt.isFreeSession || appt.orderId === 'COURSE_FREE_SESSION');
+                        const isPendingReschedule = Boolean(
+                          appt.rescheduleRequest && 
+                          (appt.rescheduleRequest.status === 'PENDING' || appt.rescheduleRequest.status === 'pending')
+                        );
+                        const isApprovedReschedule = Boolean(
+                          appt.status === 'RESCHEDULED' || 
+                          (appt.rescheduleRequest && (appt.rescheduleRequest.status === 'APPROVED' || appt.rescheduleRequest.status === 'approved'))
+                        );
+
                         const cardColor = 
                           appt.status === 'CANCELLED' || appt.status === 'CANCELED' 
                             ? 'mj-c-rose' 
-                            : getCardColor(appt._id || appt.date, idx);
+                            : isPendingReschedule
+                              ? 'mj-c-sand'
+                              : isApprovedReschedule
+                                ? 'mj-c-sky'
+                                : getCardColor(appt._id || appt.date, idx);
 
                         const statusTag = 
+                          isPendingReschedule ? 'Reschedule Pending' :
+                          isApprovedReschedule ? 'Rescheduled' :
                           appt.status === 'COMPLETED' ? 'Completed' :
                           appt.status === 'CANCELLED' || appt.status === 'CANCELED' ? 'Canceled' :
-                          appt.status === 'RESCHEDULED' ? 'Rescheduled' : 'Upcoming';
+                          'Upcoming';
+
+                        const hasCoachNotes = Boolean(appt.coachNotes || appt.notes);
+                        const hasUnreadCoachNote = hasCoachNotes && !readCoachNotes.includes(String(appt._id));
 
                         return (
                           <article key={appt._id} className="mj-card">
@@ -1180,18 +1328,119 @@ export default function MyJourney() {
                               </div>
                               <h3>1-on-1 coaching with Aarkesh</h3>
                               <div className="mj-meta">
-                                {appt.time} • {appt.duration || 60} min • Google Meet
+                                {formatSessionTime(appt.time)} • {appt.duration || 60} min • Google Meet
                               </div>
-                              <div className="mj-tags">
-                                <span className="mj-tag">{statusTag}</span>
+                              {appt.createdAt && (
+                                <div className="text-[11.5px] text-[#7a7269] mt-0.5 font-medium">
+                                  Booked on {formatPillDate(appt.createdAt)}
+                                </div>
+                              )}
+
+                              {/* Pending Reschedule Alert on Card */}
+                              {isPendingReschedule && (
+                                <div className="mt-2 text-xs font-semibold text-[#856404] bg-[#fff3cd] px-2.5 py-1.5 rounded-xl border border-[#ffeeba] flex items-center gap-1.5 shadow-xs">
+                                  <Clock size={14} weight="bold" className="shrink-0 text-[#856404]" />
+                                  <span className="line-clamp-1">
+                                    Requested: <b>{formatPillDate(appt.rescheduleRequest.date)} ({formatSessionTime(appt.rescheduleRequest.time)})</b>
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Approved Reschedule Notice on Card */}
+                              {isApprovedReschedule && appt.rescheduleRequest?.originalDate && (
+                                <div className="mt-2 text-xs font-medium text-[#1e598a] bg-[#dcedfb] px-2.5 py-1 rounded-lg border border-[#bfe0f9] flex items-center gap-1.5">
+                                  <CheckCircle size={13} weight="bold" className="shrink-0 text-[#1e598a]" />
+                                  <span className="line-clamp-1">
+                                    Rescheduled from {formatPillDate(appt.rescheduleRequest.originalDate)}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Coach Note Alert on Card (Visible only when unread) */}
+                              {hasUnreadCoachNote && (
+                                <div className="mt-2 text-xs font-semibold text-[#0c4a6e] bg-[#e0f2fe] px-2.5 py-1.5 rounded-xl border border-[#bae6fd] flex items-center justify-between gap-1.5 shadow-xs">
+                                  <div className="flex items-center gap-1.5">
+                                    <NotePencil size={14} weight="bold" className="shrink-0 text-[#0284c7]" />
+                                    <span>New Coach Note added</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      markCoachNoteAsRead(appt._id);
+                                      setSelectedSession(appt);
+                                      setSessionModalTab('notes');
+                                    }}
+                                    className="text-[11.5px] font-bold text-[#0284c7] hover:text-[#0369a1] underline cursor-pointer shrink-0"
+                                  >
+                                    View note →
+                                  </button>
+                                </div>
+                              )}
+
+                              <div className="mj-tags mt-2">
+                                <span className={cn(
+                                  "mj-tag",
+                                  isPendingReschedule && "!bg-[#ffe8a1] !text-[#664d03] font-bold",
+                                  isApprovedReschedule && "!bg-[#bfe0f9] !text-[#0c4a6e] font-bold"
+                                )}>
+                                  {statusTag}
+                                </span>
                                 <span className="mj-tag">{isFree ? 'Course Perk' : 'Paid'}</span>
-                                {appt.coachNotes && <span className="mj-tag">Coach notes</span>}
+                                {hasCoachNotes && (
+                                  hasUnreadCoachNote ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        markCoachNoteAsRead(appt._id);
+                                        setSelectedSession(appt);
+                                        setSessionModalTab('notes');
+                                      }}
+                                      className="mj-tag !bg-[#bae6fd] !text-[#0369a1] font-bold cursor-pointer hover:!bg-[#90cdf4] flex items-center gap-1 transition-all"
+                                    >
+                                      <NotePencil size={11} weight="bold" />
+                                      New note
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedSession(appt);
+                                        setSessionModalTab('notes');
+                                      }}
+                                      className="mj-tag !bg-[#f0ede8] !text-[#5c5449] font-medium cursor-pointer hover:!bg-[#e5e0d8] flex items-center gap-1 transition-all"
+                                    >
+                                      <NotePencil size={11} weight="bold" />
+                                      Coach note
+                                    </button>
+                                  )
+                                )}
                               </div>
                             </div>
 
                             <div className="mj-card-foot">
+                              {/* Direct View Coach Note Button */}
+                              {hasCoachNotes && (
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    markCoachNoteAsRead(appt._id);
+                                    setSelectedSession(appt);
+                                    setSessionModalTab('notes');
+                                  }}
+                                  className={cn(
+                                    "mj-btn font-semibold shadow-xs flex items-center justify-center gap-1.5",
+                                    hasUnreadCoachNote 
+                                      ? "!bg-[#0284c7] hover:!bg-[#0369a1] !text-white border-0" 
+                                      : "mj-btn-line text-[#332f2b]"
+                                  )}
+                                >
+                                  <NotePencil size={16} weight="bold" />
+                                  <span>View coach note</span>
+                                </button>
+                              )}
+
                               {/* Join Session button */}
-                              {(appt.status === 'UPCOMING' || !appt.status) && (
+                              {(appt.status === 'UPCOMING' || appt.status === 'RESCHEDULED' || !appt.status) && (
                                 <a 
                                   href={appt.meetLink || 'https://meet.google.com'}
                                   target="_blank"
@@ -1213,16 +1462,35 @@ export default function MyJourney() {
                                 View session details
                               </button>
 
-                              {(appt.status === 'UPCOMING' || !appt.status) && (
-                                <button 
-                                  onClick={() => setRescheduleSession(appt)}
-                                  className="mj-btn mj-btn-line"
-                                >
-                                  Reschedule
-                                </button>
+                              {(appt.status === 'UPCOMING' || appt.status === 'RESCHEDULED' || !appt.status) && (
+                                isPendingReschedule ? (
+                                  <button 
+                                    disabled
+                                    className="mj-btn mj-btn-line opacity-60 cursor-not-allowed text-xs font-semibold text-[#856404]"
+                                    title="A reschedule request is already under review by your coach"
+                                  >
+                                    <Clock size={15} weight="bold" />
+                                    <span>Reschedule Pending</span>
+                                  </button>
+                                ) : isApprovedReschedule ? (
+                                  <button 
+                                    disabled
+                                    className="mj-btn mj-btn-line opacity-45 cursor-not-allowed text-xs font-semibold text-[#7a7269] bg-[#f0ede8] border-[#e0dbd3]"
+                                    title="This session has already been rescheduled once and cannot be rescheduled again"
+                                  >
+                                    <span>Already Rescheduled</span>
+                                  </button>
+                                ) : (
+                                  <button 
+                                    onClick={() => setRescheduleSession(appt)}
+                                    className="mj-btn mj-btn-line"
+                                  >
+                                    Reschedule
+                                  </button>
+                                )
                               )}
 
-                              {appt.status !== 'UPCOMING' && appt.status !== 'COMPLETED' && (
+                              {appt.status !== 'UPCOMING' && appt.status !== 'RESCHEDULED' && appt.status !== 'COMPLETED' && (
                                 <button 
                                   onClick={() => navigate('/book')}
                                   className="mj-btn mj-btn-line"
@@ -1252,26 +1520,23 @@ export default function MyJourney() {
                                 ? "You don't have any upcoming sessions scheduled right now."
                                 : `No ${coachFilter} sessions to show.`}
                         </p>
-                        {(appointmentSort !== 'soonest' || (coachFilter === 'upcoming' && appointments.length === 0)) && (
-                          <div className="flex items-center justify-center gap-3 mt-4">
-                            {appointmentSort !== 'soonest' && (
-                              <button 
-                                onClick={() => setAppointmentSort('soonest')}
-                                className="mj-btn mj-btn-line"
-                              >
-                                Show all
-                              </button>
-                            )}
-                            {coachFilter === 'upcoming' && appointments.length === 0 && (
-                              <button 
-                                onClick={() => navigate('/book')}
-                                className="mj-btn mj-btn-dark"
-                              >
-                                Book a session
-                              </button>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex items-center justify-center gap-3 mt-4">
+                          {appointmentSort !== 'soonest' ? (
+                            <button 
+                              onClick={() => setAppointmentSort('soonest')}
+                              className="mj-btn mj-btn-line"
+                            >
+                              Show all
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => navigate('/book')}
+                              className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
+                            >
+                              Book a session
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1391,36 +1656,53 @@ export default function MyJourney() {
                 <div className="mj-grid-scroll" onWheel={handleGridWheel} data-lenis-prevent="true">
                   <div className="mj-grid">
                     {filteredNotes.length > 0 ? (
-                      filteredNotes.map((note, idx) => (
-                        <article key={note._id} className="mj-card mj-note">
-                          <div className={`mj-card-top ${getCardColor(note._id || note.title || idx, idx)}`}>
-                            <h3>{note.title || 'Untitled note'}</h3>
-                            <div className="mj-meta">
-                              {note.createdAt ? `Created ${new Date(note.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}` : 'Private note'}
-                            </div>
-                            {note.body && (
-                              <p className="text-xs text-[#5f5750] line-clamp-3 mt-1 leading-relaxed">
-                                {note.body}
-                              </p>
-                            )}
-                          </div>
+                      filteredNotes.map((note, idx) => {
+                        const rawText = (note.content || note.body || '')
+                          .replace(/<[^>]+>/g, ' ')
+                          .replace(/&nbsp;/g, ' ')
+                          .replace(/\s+/g, ' ')
+                          .trim();
 
-                          <div className="mj-note-actions">
-                            <button 
-                              onClick={() => handleOpenNoteModal(note, true)}
-                              className="mj-btn mj-btn-line"
-                            >
-                              Open
-                            </button>
-                            <button 
-                              onClick={() => handleOpenNoteModal(note, false)}
-                              className="mj-btn mj-btn-dark"
-                            >
-                              Edit
-                            </button>
-                          </div>
-                        </article>
-                      ))
+                        return (
+                          <article key={note._id} className="mj-card mj-note group relative flex flex-col justify-between">
+                            <div className={`mj-card-top ${getCardColor(note._id || note.title || idx, idx)}`}>
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className="line-clamp-2">{note.title || 'Untitled note'}</h3>
+                                <button
+                                  onClick={(e) => handleDeleteNote(note._id, e)}
+                                  className="p-1.5 -mr-1.5 -mt-1 rounded-full text-[#7a756b] hover:text-[#c8512d] hover:bg-black/5 transition-all shrink-0 cursor-pointer"
+                                  title="Delete note"
+                                >
+                                  <Trash size={16} weight="bold" />
+                                </button>
+                              </div>
+                              <div className="mj-meta">
+                                {note.createdAt ? `Created ${new Date(note.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}` : 'Private note'}
+                              </div>
+                              {rawText && (
+                                <p className="text-xs text-[#5f5750] line-clamp-3 mt-1.5 leading-relaxed">
+                                  {rawText}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="mj-note-actions flex items-center gap-2">
+                              <button 
+                                onClick={() => handleOpenNoteModal(note, true)}
+                                className="mj-btn mj-btn-line flex-1"
+                              >
+                                Open
+                              </button>
+                              <button 
+                                onClick={() => handleOpenNoteModal(note, false)}
+                                className="mj-btn mj-btn-dark flex-1"
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })
                     ) : (
                       <div className="mj-empty">
                         <h3>{searchQuery ? 'No notes found' : 'No notes yet'}</h3>
@@ -1449,49 +1731,61 @@ export default function MyJourney() {
 
                 <div className="mj-grid-scroll" onWheel={handleGridWheel} data-lenis-prevent="true">
                   <div className="mj-grid">
-                    {filteredCourses.map((c) => {
-                      const isEnrolled = c.kind === 'enrolled';
-                      return (
-                        <article key={c.id} className="mj-course-card">
-                          <div className={`mj-cthumb ${c.g}`}>
-                            <b>{c.title}</b>
-                            {c.kind !== 'recorded' && (
-                              <span className={`mj-badge ${isEnrolled ? 'enrolled' : ''}`}>
-                                <i></i>
-                                {isEnrolled ? 'Enrolled' : 'Live'}
-                              </span>
+                    {filteredCourses.length > 0 ? (
+                      filteredCourses.map((c) => {
+                        const isEnrolled = c.kind === 'enrolled';
+                        return (
+                          <article key={c.id} className="mj-course-card">
+                            <div className={`mj-cthumb ${c.g}`}>
+                              <b>{c.title}</b>
+                              {c.kind !== 'recorded' && (
+                                <span className={`mj-badge ${isEnrolled ? 'enrolled' : ''}`}>
+                                  <i></i>
+                                  {isEnrolled ? 'Enrolled' : 'Live'}
+                                </span>
+                              )}
+                            </div>
+
+                            <h3>{c.title}</h3>
+
+                            {isEnrolled ? (
+                              <div className="mj-price">
+                                <span className="font-semibold text-white/80">You are enrolled</span>
+                              </div>
+                            ) : (
+                              <div className="mj-price">
+                                <span>Price</span>
+                                <strong>{c.price}</strong>
+                                <s>{c.old}</s>
+                              </div>
                             )}
-                          </div>
 
-                          <h3>{c.title}</h3>
-
-                          {isEnrolled ? (
-                            <div className="mj-price">
-                              <span className="font-semibold text-white/80">You are enrolled</span>
-                            </div>
-                          ) : (
-                            <div className="mj-price">
-                              <span>Price</span>
-                              <strong>{c.price}</strong>
-                              <s>{c.old}</s>
-                            </div>
-                          )}
-
-                          <button 
-                            onClick={() => {
-                              if (isEnrolled) {
+                            <button 
+                              onClick={() => {
                                 navigate('/course/better-man?from=my-journey', { state: { from: 'my-journey' } });
-                              } else {
-                                navigate('/course/better-man?from=my-journey', { state: { from: 'my-journey' } });
-                              }
-                            }}
-                            className={`mj-cbtn ${isEnrolled ? 'solid' : ''}`}
-                          >
-                            {isEnrolled ? 'Continue course →' : 'Check Course →'}
-                          </button>
-                        </article>
-                      );
-                    })}
+                              }}
+                              className={`mj-cbtn ${isEnrolled ? 'solid' : ''}`}
+                            >
+                              {isEnrolled ? 'Continue course →' : 'Check Course →'}
+                            </button>
+                          </article>
+                        );
+                      })
+                    ) : (
+                      <div className="mj-empty">
+                        <h3>No enrolled courses found</h3>
+                        <p>You have not enrolled in this course yet. Check out the curriculum and enroll to get full access.</p>
+                        <button
+                          onClick={() => {
+                            setCourseFilter('all');
+                            navigate('/course/better-man');
+                          }}
+                          className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
+                        >
+                          Explore Course
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1574,7 +1868,7 @@ export default function MyJourney() {
               <div>
                 <h3>1-on-1 coaching with Aarkesh</h3>
                 <div className="mj-meta">
-                  {selectedSession.date} • {selectedSession.time}
+                  {formatFullDate(selectedSession.date)} • {formatSessionTime(selectedSession.time)}
                 </div>
               </div>
               <button 
@@ -1595,7 +1889,10 @@ export default function MyJourney() {
               </button>
               <button 
                 className={sessionModalTab === 'notes' ? 'active' : ''}
-                onClick={() => setSessionModalTab('notes')}
+                onClick={() => {
+                  setSessionModalTab('notes');
+                  if (selectedSession?._id) markCoachNoteAsRead(selectedSession._id);
+                }}
               >
                 Coach notes
               </button>
@@ -1604,14 +1901,49 @@ export default function MyJourney() {
             <div className="mj-modal-body" data-lenis-prevent="true">
               {sessionModalTab === 'details' ? (
                 <div>
+                  {/* Reschedule Request Status Box in Modal */}
+                  {selectedSession.rescheduleRequest && (selectedSession.rescheduleRequest.status === 'PENDING' || selectedSession.rescheduleRequest.status === 'pending') && (
+                    <div className="p-3.5 rounded-2xl bg-[#fffbeb] border border-[#fef3c7] mb-3.5 text-xs text-[#92400e]">
+                      <div className="font-bold text-sm mb-1 flex items-center gap-1.5 text-[#b45309]">
+                        <Clock size={16} weight="bold" /> Reschedule Request Pending Coach Review
+                      </div>
+                      <p>You have requested to change this session to <strong>{formatFullDate(selectedSession.rescheduleRequest.date)} at {formatSessionTime(selectedSession.rescheduleRequest.time)}</strong>.</p>
+                      {selectedSession.rescheduleRequest.reason && (
+                        <p className="mt-1 italic text-[#78350f]">Reason: "{selectedSession.rescheduleRequest.reason}"</p>
+                      )}
+                      <p className="mt-1 text-[#78350f]/80">Aarkesh will review and confirm shortly. You will also receive an email notification.</p>
+                    </div>
+                  )}
+
+                  {(selectedSession.status === 'RESCHEDULED' || selectedSession.rescheduleRequest?.status === 'APPROVED' || selectedSession.rescheduleRequest?.status === 'approved') && (
+                    <div className="p-3.5 rounded-2xl bg-[#ecfdf5] border border-[#d1fae5] mb-3.5 text-xs text-[#065f46]">
+                      <div className="font-bold text-sm mb-1 flex items-center gap-1.5 text-[#047857]">
+                        <CheckCircle size={16} weight="bold" /> Rescheduled Successfully
+                      </div>
+                      <p>This session is confirmed for <strong>{formatFullDate(selectedSession.date)} at {formatSessionTime(selectedSession.time)}</strong>.</p>
+                      {selectedSession.rescheduleRequest?.originalDate && (
+                        <p className="mt-1 text-[#047857]/80">Original slot: {formatFullDate(selectedSession.rescheduleRequest.originalDate)} at {formatSessionTime(selectedSession.rescheduleRequest.originalTime)}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedSession.rescheduleRequest?.status === 'REJECTED' && (
+                    <div className="p-3.5 rounded-2xl bg-[#fef2f2] border border-[#fee2e2] mb-3.5 text-xs text-[#991b1b]">
+                      <div className="font-bold text-sm mb-1 flex items-center gap-1.5 text-[#b91c1c]">
+                        <X size={16} weight="bold" /> Reschedule Request Declined
+                      </div>
+                      <p>Your previous reschedule request was declined. Your current session remains active for <strong>{formatFullDate(selectedSession.date)} at {formatSessionTime(selectedSession.time)}</strong>.</p>
+                    </div>
+                  )}
+
                   <div className="mj-rows">
                     <div>
                       <span>Date</span>
-                      <b>{selectedSession.date}</b>
+                      <b>{formatFullDate(selectedSession.date)}</b>
                     </div>
                     <div>
                       <span>Time</span>
-                      <b>{selectedSession.time}</b>
+                      <b>{formatSessionTime(selectedSession.time)}</b>
                     </div>
                     <div>
                       <span>Duration</span>
@@ -1631,6 +1963,12 @@ export default function MyJourney() {
                         {selectedSession.bookingId || `BWA-${(selectedSession._id || 'BK').toString().slice(-8).toUpperCase()}`}
                       </b>
                     </div>
+                    {selectedSession.createdAt && (
+                      <div>
+                        <span>Booked On</span>
+                        <b>{formatFullDate(selectedSession.createdAt)}</b>
+                      </div>
+                    )}
                     {selectedSession.isFreeSession || selectedSession.orderId === 'COURSE_FREE_SESSION' ? (
                       <>
                         <div>
@@ -1704,16 +2042,33 @@ export default function MyJourney() {
                     )}
 
                     {(selectedSession.status === 'UPCOMING' || !selectedSession.status) && (
-                      <button 
-                        onClick={() => {
-                          const apptToReschedule = selectedSession;
-                          setSelectedSession(null);
-                          setRescheduleSession(apptToReschedule);
-                        }}
-                        className="mj-btn mj-btn-dark"
-                      >
-                        Reschedule
-                      </button>
+                      (selectedSession.rescheduleRequest && (selectedSession.rescheduleRequest.status === 'PENDING' || selectedSession.rescheduleRequest.status === 'pending')) ? (
+                        <button 
+                          disabled
+                          className="mj-btn mj-btn-line opacity-60 cursor-not-allowed text-xs font-semibold text-[#856404]"
+                        >
+                          Reschedule Pending
+                        </button>
+                      ) : (selectedSession.status === 'RESCHEDULED' || selectedSession.rescheduleRequest?.status === 'APPROVED' || selectedSession.rescheduleRequest?.status === 'approved' || selectedSession.rescheduleRequest?.originalDate) ? (
+                        <button 
+                          disabled
+                          className="mj-btn mj-btn-line opacity-45 cursor-not-allowed text-xs font-semibold text-[#7a7269] bg-[#f0ede8] border-[#e0dbd3]"
+                          title="This session has already been rescheduled once and cannot be rescheduled again"
+                        >
+                          Already Rescheduled
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            const apptToReschedule = selectedSession;
+                            setSelectedSession(null);
+                            setRescheduleSession(apptToReschedule);
+                          }}
+                          className="mj-btn mj-btn-dark"
+                        >
+                          Reschedule
+                        </button>
+                      )
                     )}
 
                     <button 
@@ -1774,50 +2129,127 @@ export default function MyJourney() {
 
 
 
-      {/* ─── CREATE / EDIT NOTE MODAL ─── */}
+      {/* ─── CREATE / EDIT / VIEW NOTE MODAL ─── */}
       {noteModalOpen && (
         <div className="mj-overlay" onClick={() => setNoteModalOpen(false)} data-lenis-prevent="true">
-          <div className="mj-modal" onClick={(e) => e.stopPropagation()} data-lenis-prevent="true">
-            <h3>{editingNote ? (isNoteReadOnly ? 'Your note' : 'Edit note') : 'New note'}</h3>
-            <div className="mj-lock mb-3">
-              <LockKey size={15} weight="bold" className="text-[#c8512d]" />
-              <span>Only visible to you</span>
-            </div>
-
-            <input 
-              type="text" 
-              className="mj-field"
-              placeholder="Title"
-              maxLength={80}
-              value={noteTitle}
-              readOnly={isNoteReadOnly}
-              onChange={(e) => setNoteTitle(e.target.value)}
-            />
-
-            <textarea 
-              className="mj-field"
-              placeholder="Write your thoughts here..."
-              value={noteBody}
-              readOnly={isNoteReadOnly}
-              onChange={(e) => setNoteBody(e.target.value)}
-            />
-
-            <div className="mj-sess-foot">
+          <div 
+            className="mj-modal !max-w-[760px] w-full max-h-[90vh] flex flex-col overflow-hidden" 
+            onClick={(e) => e.stopPropagation()} 
+            data-lenis-prevent="true"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-[#e4dfd9] shrink-0">
+              <div className="flex items-center gap-3">
+                <h3 className="font-serif text-2xl font-bold text-[#1c1714]">
+                  {editingNote ? (isNoteReadOnly ? 'Your note' : 'Edit note') : 'New note'}
+                </h3>
+                <div className="mj-lock flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f6ebe1] text-[#c8512d] text-xs font-semibold">
+                  <LockKey size={13} weight="bold" />
+                  <span>Only visible to you</span>
+                </div>
+              </div>
               <button 
                 onClick={() => setNoteModalOpen(false)}
-                className="mj-btn mj-btn-line"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[#5f5750] hover:text-[#1c1714] hover:bg-black/5 transition-all cursor-pointer"
               >
-                {isNoteReadOnly ? 'Close' : 'Cancel'}
+                <X size={18} weight="bold" />
               </button>
-              {!isNoteReadOnly && (
-                <button 
-                  onClick={handleSaveNote}
-                  disabled={isSavingNote}
-                  className="mj-btn mj-btn-dark"
-                >
-                  {isSavingNote ? 'Saving...' : 'Save note'}
-                </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="overflow-y-auto flex-1 py-4 flex flex-col gap-4 pr-1">
+              {isNoteReadOnly ? (
+                <div className="flex flex-col gap-3">
+                  <h2 className="font-serif text-2xl font-bold text-[#1c1714] leading-tight">
+                    {noteTitle || 'Untitled note'}
+                  </h2>
+                  {editingNote?.createdAt && (
+                    <span className="text-xs text-[#9a918a]">
+                      Created {new Date(editingNote.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
+                  )}
+                  <div 
+                    className="prose prose-stone max-w-none text-[#2b2420] text-sm sm:text-base leading-relaxed mt-2 pt-3 border-t border-[#e4dfd9]"
+                    dangerouslySetInnerHTML={{ __html: noteBody || '<p className="text-[#9a918a] italic">No content in this note.</p>' }}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-[#5f5750] uppercase tracking-wider mb-1.5">
+                      Note Title
+                    </label>
+                    <input 
+                      type="text" 
+                      className="mj-field !bg-white focus:!bg-white"
+                      placeholder="Title"
+                      maxLength={120}
+                      value={noteTitle}
+                      onChange={(e) => setNoteTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="block text-xs font-bold text-[#5f5750] uppercase tracking-wider mb-1">
+                      Content & Thoughts
+                    </label>
+                    <TinyMCEEditor 
+                      value={noteBody}
+                      onChange={setNoteBody}
+                      minHeight={320}
+                      placeholder="Write your private thoughts, reflections and takeaways here..."
+                    />
+                  </div>
+                </>
               )}
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div className="flex items-center justify-between pt-3.5 border-t border-[#e4dfd9] shrink-0 gap-3">
+              {editingNote?._id ? (
+                <button 
+                  onClick={(e) => handleDeleteNote(editingNote._id, e)}
+                  className="mj-btn text-[#c8512d] hover:bg-red-50 hover:text-red-700 font-semibold px-4 !border-0 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash size={16} weight="bold" />
+                  <span>Delete note</span>
+                </button>
+              ) : <div></div>}
+
+              <div className="flex items-center gap-2">
+                {isNoteReadOnly ? (
+                  <>
+                    <button 
+                      onClick={() => setIsNoteReadOnly(false)}
+                      className="mj-btn bg-[#1c1714] hover:bg-black text-white"
+                    >
+                      Edit note
+                    </button>
+                    <button 
+                      onClick={() => setNoteModalOpen(false)}
+                      className="mj-btn mj-btn-line"
+                    >
+                      Close
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => setNoteModalOpen(false)}
+                      className="mj-btn mj-btn-line"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleSaveNote}
+                      disabled={isSavingNote}
+                      className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm"
+                    >
+                      {isSavingNote ? 'Saving...' : 'Save note'}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

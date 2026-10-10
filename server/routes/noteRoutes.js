@@ -18,11 +18,11 @@ router.get('/', protect, async (req, res) => {
 // Create a new note OR save coach notes for appointment
 router.post('/', optionalAuth, async (req, res) => {
   try {
-    const { title, content, attachedTo, appointmentId, coachNotes, notes: rawNotes } = req.body;
+    const { title, content, body, attachedTo, appointmentId, coachNotes, notes: rawNotes } = req.body;
     
     // If saving coach notes for an appointment
     if (appointmentId) {
-      const notesToSave = coachNotes !== undefined ? coachNotes : (rawNotes !== undefined ? rawNotes : (content || ''));
+      const notesToSave = coachNotes !== undefined ? coachNotes : (rawNotes !== undefined ? rawNotes : (content || body || ''));
       const appt = await Appointment.findByIdAndUpdate(
         appointmentId,
         { coachNotes: notesToSave },
@@ -42,7 +42,7 @@ router.post('/', optionalAuth, async (req, res) => {
     const note = new Note({
       user: req.user._id,
       title,
-      content,
+      content: content !== undefined ? content : (body || ''),
       attachedTo: attachedTo || 'Standalone note'
     });
 
@@ -56,7 +56,7 @@ router.post('/', optionalAuth, async (req, res) => {
 // Update a note
 router.put('/:id', protect, async (req, res) => {
   try {
-    const { title, content, attachedTo } = req.body;
+    const { title, content, body, attachedTo } = req.body;
 
     const note = await Note.findById(req.params.id);
 
@@ -69,7 +69,11 @@ router.put('/:id', protect, async (req, res) => {
     }
 
     note.title = title || note.title;
-    note.content = content !== undefined ? content : note.content;
+    if (content !== undefined) {
+      note.content = content;
+    } else if (body !== undefined) {
+      note.content = body;
+    }
     note.attachedTo = attachedTo || note.attachedTo;
 
     const updatedNote = await note.save();

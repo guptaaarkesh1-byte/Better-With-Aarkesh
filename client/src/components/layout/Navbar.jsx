@@ -577,22 +577,27 @@ export default function Navbar() {
           onSuccess={(data) => {
             setIsLoggedIn(true);
             setShowLoginModal(false);
-            if (data?.isRegister || data?.isNewUser) {
-              setToastMessage('Account created successfully');
+
+            const effective = getEffectiveUser();
+            const rawName = data?.user?.fullName || data?.user?.name || data?.fullName || data?.name || effective?.fullName || effective?.name || '';
+            const firstName = rawName.trim().split(' ')[0];
+            const isNew = Boolean(data?.isRegister || data?.isNewUser);
+
+            if (isNew) {
+              setToastMessage(firstName ? `Welcome to Better With Aarkesh, ${firstName}!` : 'Welcome to Better With Aarkesh!');
             } else {
-              setToastMessage('Logged in successfully');
+              setToastMessage(firstName ? `Welcome back, ${firstName}!` : 'Welcome back!');
             }
-            setTimeout(() => setToastMessage(''), 4000);
-            navigate('/my-journey');
+            setTimeout(() => setToastMessage(''), 4500);
           }}
         />
       )}
 
       {/* Toast Notification */}
       {toastMessage && createPortal(
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-white/95 backdrop-blur-xl border border-black/10 px-6 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] rounded-lg transition-all duration-300">
-          <p className="font-sans text-[0.68rem] uppercase tracking-[0.2em] text-[#111010] flex items-center gap-3 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#c9542f] animate-pulse"></span>
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-[#1c1714] text-white border border-[#c8512d]/40 px-6 py-3.5 shadow-[0_12px_36px_rgba(0,0,0,0.35)] rounded-full transition-all duration-300 flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
+          <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></span>
+          <p className="font-sans text-[13px] tracking-wide font-medium">
             {toastMessage}
           </p>
         </div>,

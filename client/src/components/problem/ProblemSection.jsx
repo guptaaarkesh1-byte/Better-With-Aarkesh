@@ -24,6 +24,11 @@ export default function ProblemSection() {
   return (
     <section ref={sectionRef} id="problem" className="relative w-full bg-[#f5f1e8]">
       
+      {/* Transition Intro (Statement section) - Placed at Top */}
+      <div className="relative z-40 w-full bg-[#f5f1e8] border-b border-[#ebd8c5]/40">
+        <TransitionIntro problemData={problemData || {}} />
+      </div>
+
       {/* ─── MOBILE VIEW ─── */}
       <div className="block lg:hidden w-full bg-gradient-to-b from-[#fcefe0] via-[#f8dec4] to-[#f6e7d8] pt-14 pb-10 overflow-hidden">
         {/* Head */}
@@ -86,11 +91,6 @@ export default function ProblemSection() {
           />
         </div>
 
-      </div>
-
-      {/* Transition Intro (Statement section) */}
-      <div className="relative z-40 w-full bg-[#f5f1e8]">
-        <TransitionIntro problemData={problemData || {}} />
       </div>
 
     </section>

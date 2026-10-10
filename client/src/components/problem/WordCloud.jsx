@@ -48,10 +48,61 @@ export default function WordCloud({ customImg = '', wordColor = '', wordFontSize
   return (
     <div ref={container} className="relative w-full h-full min-h-full flex items-center justify-center overflow-hidden">
       <style>{`
-        ${WORDS.map((w, i) => `
+        @keyframes bwaFloatA {
+          0%, 100% {
+            transform: translate3d(0px, 0px, 0) rotate(0deg);
+          }
+          33% {
+            transform: translate3d(4px, -6px, 0) rotate(0.6deg);
+          }
+          66% {
+            transform: translate3d(-5px, 5px, 0) rotate(-0.5deg);
+          }
+        }
+        @keyframes bwaFloatB {
+          0%, 100% {
+            transform: translate3d(0px, 0px, 0) rotate(0deg);
+          }
+          33% {
+            transform: translate3d(-5px, -7px, 0) rotate(-0.7deg);
+          }
+          66% {
+            transform: translate3d(5px, 4px, 0) rotate(0.5deg);
+          }
+        }
+        @keyframes bwaFloatC {
+          0%, 100% {
+            transform: translate3d(0px, 0px, 0) rotate(0deg);
+          }
+          33% {
+            transform: translate3d(5px, 6px, 0) rotate(0.6deg);
+          }
+          66% {
+            transform: translate3d(-4px, -7px, 0) rotate(-0.6deg);
+          }
+        }
+        @keyframes bwaFloatD {
+          0%, 100% {
+            transform: translate3d(0px, 0px, 0) rotate(0deg);
+          }
+          33% {
+            transform: translate3d(-4px, 5px, 0) rotate(-0.6deg);
+          }
+          66% {
+            transform: translate3d(5px, -6px, 0) rotate(0.6deg);
+          }
+        }
+
+        ${WORDS.map((w, i) => {
+          const animName = i % 4 === 0 ? 'bwaFloatA' : i % 4 === 1 ? 'bwaFloatB' : i % 4 === 2 ? 'bwaFloatC' : 'bwaFloatD';
+          const duration = (10.5 + ((i * 1.37) % 5.5)).toFixed(1) + 's';
+          const delay = (-1.2 * (i + 1)).toFixed(1) + 's';
+          return `
           .word-pos-${i} {
             top: ${w.mTop || w.top};
             left: ${w.mLeft || w.left};
+            animation: ${animName} ${duration} ease-in-out infinite alternate;
+            animation-delay: ${delay};
           }
           @media (min-width: 1024px) {
             .word-pos-${i} {
@@ -59,7 +110,7 @@ export default function WordCloud({ customImg = '', wordColor = '', wordFontSize
               left: ${w.left};
             }
           }
-        `).join('')}
+        `;}).join('')}
       `}</style>
       
       {/* Silhouette Image Full Background - Perfectly Centered on Mobile, Shifted to Right on Desktop */}

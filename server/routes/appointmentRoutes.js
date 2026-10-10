@@ -880,6 +880,9 @@ router.post('/:id/reschedule', optionalAuth, async (req, res) => {
     const appointment = await Appointment.findById(req.params.id);
     
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+    if (appointment.status === 'RESCHEDULED' || appointment.rescheduleRequest?.status === 'APPROVED' || Boolean(appointment.rescheduledFrom || appointment.rescheduleRequest?.originalDate)) {
+      return res.status(400).json({ message: 'This session has already been rescheduled once. Further reschedules are not permitted.' });
+    }
     if (req.user && appointment.userId && !req.user.isAdmin) {
       const isOwnerId = appointment.userId.toString() === req.user._id.toString();
       const isOwnerEmail = appointment.email && req.user.email && appointment.email.toLowerCase() === req.user.email.toLowerCase();
@@ -929,6 +932,9 @@ router.post('/:id/reschedule-paid', optionalAuth, async (req, res) => {
     const appointment = await Appointment.findById(req.params.id);
     
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+    if (appointment.status === 'RESCHEDULED' || appointment.rescheduleRequest?.status === 'APPROVED' || Boolean(appointment.rescheduledFrom || appointment.rescheduleRequest?.originalDate)) {
+      return res.status(400).json({ message: 'This session has already been rescheduled once. Further reschedules are not permitted.' });
+    }
     if (req.user && appointment.userId && !req.user.isAdmin) {
       const isOwnerId = appointment.userId.toString() === req.user._id.toString();
       const isOwnerEmail = appointment.email && req.user.email && appointment.email.toLowerCase() === req.user.email.toLowerCase();
@@ -1030,6 +1036,9 @@ router.post('/:id/reschedule-credit', optionalAuth, async (req, res) => {
     const appointment = await Appointment.findById(req.params.id);
     
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+    if (appointment.status === 'RESCHEDULED' || appointment.rescheduleRequest?.status === 'APPROVED' || Boolean(appointment.rescheduledFrom || appointment.rescheduleRequest?.originalDate)) {
+      return res.status(400).json({ message: 'This session has already been rescheduled once. Further reschedules are not permitted.' });
+    }
     if (req.user && appointment.userId && !req.user.isAdmin) {
       const isOwnerId = appointment.userId.toString() === req.user._id.toString();
       const isOwnerEmail = appointment.email && req.user.email && appointment.email.toLowerCase() === req.user.email.toLowerCase();

@@ -437,14 +437,14 @@
 .mj-promo .mj-btn {
   position: relative;
   width: 100%;
-  background: #ffffff;
-  color: var(--mj-ink);
+  background: var(--mj-accent);
+  color: #ffffff;
   font-weight: 700;
   height: 42px;
 }
 
 .mj-promo .mj-btn:hover {
-  background: #ffe9dd;
+  background: var(--mj-accent-hover);
 }
 
 /* ─── Filters Sidebar ─── */

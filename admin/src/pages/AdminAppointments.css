@@ -621,22 +621,26 @@
   color: var(--accent);
 }
 
-.bwa-btn-accent {
+.bwa-btn-accent,
+.bwa-btn-accent * {
   background: var(--accent);
-  color: #fff;
+  color: #ffffff !important;
 }
 
 .bwa-btn-accent:hover {
   background: var(--accent-d);
+  color: #ffffff !important;
 }
 
-.bwa-btn-dark {
+.bwa-btn-dark,
+.bwa-btn-dark * {
   background: var(--ink);
-  color: #fff;
+  color: #ffffff !important;
 }
 
 .bwa-btn-dark:hover {
-  background: #000;
+  background: #000000;
+  color: #ffffff !important;
 }
 
 .bwa-btn-danger {

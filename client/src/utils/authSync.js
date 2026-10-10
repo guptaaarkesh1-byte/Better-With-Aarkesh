@@ -95,6 +95,7 @@ export const isAnyUserLoggedIn = () => {
 
 export const getEffectiveUser = () => {
   try {
+    if (!isAnyUserLoggedIn()) return null;
     const raw = localStorage.getItem('userInfo') || localStorage.getItem('courseUser');
     return raw ? JSON.parse(raw) : null;
   } catch (e) {

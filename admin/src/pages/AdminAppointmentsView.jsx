@@ -193,7 +193,7 @@ export default function AdminAppointmentsView() {
   const isNeedsAction = (app) => {
     const s = (app.status || '').toUpperCase();
     if (s === 'COMPLETED' || s === 'REFUNDED' || s === 'CANCELLED') return false;
-    if (app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING') return true;
+    if (app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'pending') return true;
     if (app.paymentStatus === 'Pending' && !app.isFreeSession) return true;
 
     try {
@@ -204,6 +204,25 @@ export default function AdminAppointmentsView() {
     } catch (e) {}
 
     return false;
+  };
+
+  // Helper to determine if appointment is rescheduled (pending or approved/historical)
+  const isRescheduledAppt = (app) => {
+    if (!app) return false;
+    const s = (app.status || '').toUpperCase();
+    return Boolean(
+      s === 'RESCHEDULED' ||
+      app.rescheduledFrom ||
+      app.rescheduledDate ||
+      app.rescheduleRequested ||
+      (app.rescheduleRequest && (
+        app.rescheduleRequest.status === 'PENDING' ||
+        app.rescheduleRequest.status === 'pending' ||
+        app.rescheduleRequest.status === 'APPROVED' ||
+        app.rescheduleRequest.status === 'approved' ||
+        Boolean(app.rescheduleRequest.originalDate)
+      ))
+    );
   };
 
   // Build Unified Student / Client Directory
@@ -395,7 +414,7 @@ export default function AdminAppointmentsView() {
       const client = getClientForAppt(app);
       const s = (app.status || '').toUpperCase();
       const isFree = app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION';
-      const isRescheduled = Boolean(app.rescheduledFrom || app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING');
+      const isRescheduled = isRescheduledAppt(app);
 
       // Tab filter
       if (sessionTab === 'needs' && !isNeedsAction(app)) return false;
@@ -864,12 +883,13 @@ export default function AdminAppointmentsView() {
   // UI Pills
   const renderStatusPill = (app) => {
     const s = (app.status || '').toUpperCase();
-    const hasReschedule = app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING';
+    const hasPendingReschedule = app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'pending';
+    const isApprovedReschedule = s === 'RESCHEDULED' || Boolean(app.rescheduledFrom || app.rescheduleRequest?.status === 'APPROVED' || app.rescheduleRequest?.status === 'approved' || app.rescheduleRequest?.originalDate);
 
     if (s === 'CANCELLED') return <span className="bwa-pill p-cx">Cancelled</span>;
     if (s === 'COMPLETED') return <span className="bwa-pill p-done">Completed</span>;
     if (s === 'REFUNDED') return <span className="bwa-pill p-cx">Refunded</span>;
-    if (hasReschedule) return <span className="bwa-pill p-re">Wants to reschedule</span>;
+    if (hasPendingReschedule) return <span className="bwa-pill p-re">Wants to reschedule</span>;
 
     try {
       const appDateTime = new Date(`${app.date} ${app.time || '00:00'}`);
@@ -878,7 +898,7 @@ export default function AdminAppointmentsView() {
       }
     } catch (e) {}
 
-    if (app.rescheduledFrom) return <span className="bwa-pill p-re">Rescheduled</span>;
+    if (isApprovedReschedule) return <span className="bwa-pill p-re">Rescheduled</span>;
     return <span className="bwa-pill p-up">Upcoming</span>;
   };
 
@@ -1273,32 +1293,7 @@ export default function AdminAppointmentsView() {
               </div>
             </div>
 
-            {/* Needs Action Alert Banner */}
-            {stats.needsActionCount > 0 && (
-              <div className="bwa-alert">
-                <span className="ic">{stats.needsActionCount}</span>
-                <div>
-                  <b>
-                    {stats.needsActionCount} {stats.needsActionCount > 1 ? 'sessions need' : 'session needs'} your action
-                  </b>
-                  <span>
-                    {stats.rescheduleRequestsCount > 0 && `${stats.rescheduleRequestsCount} reschedule request(s)`}
-                    {stats.rescheduleRequestsCount > 0 && stats.needsActionCount - stats.rescheduleRequestsCount > 0 && ' · '}
-                    {stats.needsActionCount - stats.rescheduleRequestsCount > 0 &&
-                      `${stats.needsActionCount - stats.rescheduleRequestsCount} past / pending session(s)`}
-                  </span>
-                </div>
-                <button
-                  className="bwa-btn bwa-btn-accent bwa-btn-sm btn-action"
-                  onClick={() => {
-                    setView('sessions');
-                    setSessionTab('needs');
-                  }}
-                >
-                  Review
-                </button>
-              </div>
-            )}
+
 
             {/* 4-Group Stats Row */}
             <div className="bwa-stats-grid">
@@ -1383,9 +1378,7 @@ export default function AdminAppointmentsView() {
                     [
                       'rescheduled',
                       'Rescheduled',
-                      appointments.filter(
-                        (a) => a.rescheduledFrom || a.rescheduleRequested || a.rescheduleRequest?.status === 'PENDING'
-                      ).length
+                      appointments.filter(isRescheduledAppt).length
                     ],
                     [
                       'cancelled',
@@ -1573,7 +1566,7 @@ export default function AdminAppointmentsView() {
                   <div className="bwa-empty-box">
                     <h3>No appointments found</h3>
                     <p>Nothing matches these filters. Clear filters to see everything.</p>
-                    <button className="bwa-btn bwa-btn-dark" onClick={handleClearFilters}>
+                    <button className="bwa-btn bwa-btn-dark preserve-dark" style={{ color: '#ffffff', backgroundColor: '#1c1714' }} onClick={handleClearFilters}>
                       Clear filters
                     </button>
                   </div>
@@ -1608,9 +1601,14 @@ export default function AdminAppointmentsView() {
                             <span className="s">
                               {formatTime(app.time, app.date)} · {app.duration || 60} mins
                             </span>
-                            {app.rescheduledFrom && (
+                            {(app.rescheduledFrom || app.rescheduleRequest?.originalDate) && (
                               <span className="was">
-                                Was {formatDateShort(app.rescheduledFrom)}, {formatTime(app.rescheduledFrom)}
+                                Was {formatDateShort(app.rescheduledFrom || app.rescheduleRequest.originalDate)}, {formatTime(app.rescheduleRequest?.originalTime || app.rescheduledFrom)}
+                              </span>
+                            )}
+                            {app.createdAt && (
+                              <span className="s" style={{ fontSize: '0.74rem', color: '#7a7269', marginTop: '3px' }}>
+                                Booked: {formatDateShort(app.createdAt)} ({formatTime(null, app.createdAt)})
                               </span>
                             )}
                           </div>
@@ -1653,7 +1651,7 @@ export default function AdminAppointmentsView() {
                   <div className="bwa-empty-box">
                     <h3>No course students found</h3>
                     <p>Nothing matches these filters. Clear filters to see everyone.</p>
-                    <button className="bwa-btn bwa-btn-dark" onClick={handleClearFilters}>
+                    <button className="bwa-btn bwa-btn-dark preserve-dark" style={{ color: '#ffffff', backgroundColor: '#1c1714' }} onClick={handleClearFilters}>
                       Clear filters
                     </button>
                   </div>
@@ -1756,7 +1754,7 @@ export default function AdminAppointmentsView() {
                   <div className="bwa-empty-box">
                     <h3>No users found</h3>
                     <p>Nothing matches these filters. Clear filters to see everyone.</p>
-                    <button className="bwa-btn bwa-btn-dark" onClick={handleClearFilters}>
+                    <button className="bwa-btn bwa-btn-dark preserve-dark" style={{ color: '#ffffff', backgroundColor: '#1c1714' }} onClick={handleClearFilters}>
                       Clear filters
                     </button>
                   </div>
@@ -2100,6 +2098,12 @@ export default function AdminAppointmentsView() {
                           <div>
                             <span>Duration</span>
                             <b>{selectedAppt.duration || 60} Minutes</b>
+                          </div>
+                          <div>
+                            <span>Booked On</span>
+                            <b style={{ color: '#111010' }}>
+                              {selectedAppt.createdAt ? `${formatDateShort(selectedAppt.createdAt)}, ${formatTime(null, selectedAppt.createdAt)}` : '—'}
+                            </b>
                           </div>
                           <div>
                             <span>Status</span>
