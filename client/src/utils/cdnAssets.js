@@ -43,13 +43,21 @@ export const CDN_IMAGES = {
   RECOGNITION_HOLDING: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289734/better_with_aarkesh/client/src/assets/PerspectivePage/recognition/holding_it_in_3679.webp',
 };
 
+export const optimizeCloudinaryUrl = (url, width = 1920) => {
+  if (!url || typeof url !== 'string' || !url.includes('res.cloudinary.com')) return url;
+  if (url.includes('/image/upload/f_auto') || url.includes('/image/upload/q_auto')) return url;
+  const transform = width ? `f_auto,q_auto,w_${width}` : 'f_auto,q_auto';
+  return url.replace('/image/upload/', `/image/upload/${transform}/`);
+};
+
 /**
  * Returns a secure Cloudinary image URL or fallback
  */
 export const getCdnImage = (key, fallback = '') => {
   if (!key) return fallback;
-  if (key.startsWith('http://') || key.startsWith('https://')) return key;
-  return CDN_IMAGES[key] || fallback;
+  if (key.startsWith('http://') || key.startsWith('https://')) return optimizeCloudinaryUrl(key);
+  const src = CDN_IMAGES[key] || fallback;
+  return optimizeCloudinaryUrl(src);
 };
 
 export default CDN_IMAGES;

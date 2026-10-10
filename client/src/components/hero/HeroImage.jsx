@@ -2,9 +2,9 @@ import { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import defaultHeroImg from '../../assets/hero-coach.webp';
-import { CDN_IMAGES } from '../../utils/cdnAssets';
+import { CDN_IMAGES, optimizeCloudinaryUrl } from '../../utils/cdnAssets';
 
-const HERO_CDN_IMG = CDN_IMAGES.HERO_COACH || defaultHeroImg;
+const HERO_CDN_IMG = optimizeCloudinaryUrl(CDN_IMAGES.HERO_COACH, 1920) || defaultHeroImg;
 
 export default function HeroImage({ 
   bgImageUrl = '',
@@ -33,7 +33,7 @@ export default function HeroImage({
     if (url.startsWith('/uploads/')) {
       return `${apiUrl}${url}`;
     }
-    return url;
+    return optimizeCloudinaryUrl(url, 1920);
   };
 
   const imgSrc = resolveHeroImg(bgImageUrl);
@@ -41,30 +41,27 @@ export default function HeroImage({
   return (
     <div 
       ref={container} 
-      className="w-full h-full relative overflow-hidden bg-[#f5f1e8]"
+      className="w-full h-auto relative overflow-hidden"
     >
-      {/* Character Image wrapper with position offset support */}
-      <div 
-        className="absolute inset-x-0 top-0 -bottom-20 flex items-end justify-end transition-transform duration-300"
+      <img
+        ref={imageRef}
+        src={imgSrc}
+        alt="Aarkesh - Life Coach"
+        loading="eager"
+        fetchPriority="high"
+        decoding="sync"
+        onError={(e) => {
+          if (e.currentTarget.src !== defaultHeroImg) {
+            e.currentTarget.src = defaultHeroImg;
+          }
+        }}
+        className="w-full h-auto block object-contain object-right-top transition-transform duration-300"
         style={{
           transform: imagePositionY ? `translateY(${Number(imagePositionY)}px)` : undefined
         }}
-      >
-        <img
-          ref={imageRef}
-          src={imgSrc}
-          alt="Aarkesh - Life Coach"
-          loading="eager"
-          fetchPriority="high"
-          decoding="sync"
-          onError={(e) => {
-            if (e.currentTarget.src !== defaultHeroImg) {
-              e.currentTarget.src = defaultHeroImg;
-            }
-          }}
-          className="w-full h-full object-cover object-[70%_top] sm:object-[82%_top] md:object-[84%_top] lg:object-[82%_top]"
-        />
-      </div>
+      />
+      {/* Bottom 5% subtle gradient fade */}
+      <div className="absolute inset-x-0 bottom-0 h-[5%] bg-gradient-to-t from-[#f5f1e8] to-transparent pointer-events-none z-10" />
     </div>
   );
 }

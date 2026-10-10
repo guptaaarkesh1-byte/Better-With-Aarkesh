@@ -22,10 +22,10 @@ export default function ProblemSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} id="problem" className="relative w-full bg-[#f5f1e8]">
+    <section ref={sectionRef} id="problem" className="relative w-full z-20">
       
-      {/* Transition Intro (Statement section) - Placed at Top */}
-      <div className="relative z-40 w-full bg-[#f5f1e8] border-b border-[#ebd8c5]/40">
+      {/* Transition Intro (Statement section) - Positioned 50% over Hero and 50% over Problem section */}
+      <div className="relative z-30 w-full -mt-[60px] sm:-mt-[68px] lg:-mt-[74px]">
         <TransitionIntro problemData={problemData || {}} />
       </div>
 
@@ -42,24 +42,12 @@ export default function ProblemSection() {
           </h2>
         </div>
 
-        {/* Cloud Container with Floating Words */}
-        <div className="relative h-[492px] mt-2.5 overflow-hidden">
-          <span className="absolute font-serif font-medium text-[14.5px] whitespace-nowrap select-none" style={{ top: '14px', left: '7%', color: '#8a85d6', fontFamily: 'Fraunces, Georgia, serif' }}>What if?</span>
-          <span className="absolute font-serif font-medium text-[12.5px] whitespace-nowrap select-none" style={{ top: '46px', left: '36%', color: '#4f4a45', fontFamily: 'Fraunces, Georgia, serif' }}>Self doubt</span>
-          <span className="absolute font-serif font-semibold text-[17px] whitespace-nowrap select-none tracking-wide" style={{ top: '22px', right: '6%', color: '#c4713a', fontFamily: 'Fraunces, Georgia, serif' }}>Overthinking</span>
-          <span className="absolute font-serif font-medium text-[13px] whitespace-nowrap select-none" style={{ top: '96px', right: '14%', color: '#6e655c', fontFamily: 'Fraunces, Georgia, serif' }}>Regret</span>
-          <span className="absolute font-serif font-medium text-[14px] whitespace-nowrap select-none" style={{ top: '150px', left: '4%', color: '#c2416b', fontFamily: 'Fraunces, Georgia, serif' }}>Breakup</span>
-          <span className="absolute font-serif font-medium text-[12px] whitespace-nowrap select-none" style={{ top: '208px', left: '3%', color: '#c4713a', fontFamily: 'Fraunces, Georgia, serif' }}>Not enough</span>
-          <span className="absolute font-serif font-medium text-[13.5px] whitespace-nowrap select-none" style={{ top: '276px', left: '5%', color: '#2e8b57', fontFamily: 'Fraunces, Georgia, serif' }}>Past mistakes</span>
-          <span className="absolute font-serif font-medium text-[13.5px] whitespace-nowrap select-none" style={{ top: '342px', left: '3%', color: '#7a6ad8', fontFamily: 'Fraunces, Georgia, serif' }}>Comparison</span>
-          <span className="absolute font-serif font-medium text-[13px] whitespace-nowrap select-none" style={{ top: '416px', left: '7%', color: '#b83fc0', fontFamily: 'Fraunces, Georgia, serif' }}>People pleasing</span>
-          <span className="absolute font-serif font-medium text-[13px] whitespace-nowrap select-none" style={{ top: '150px', right: '6%', color: '#3f9e6a', fontFamily: 'Fraunces, Georgia, serif' }}>Family</span>
-          <span className="absolute font-serif font-medium text-[14px] whitespace-nowrap select-none" style={{ top: '196px', right: '3%', color: '#7a6ad8', fontFamily: 'Fraunces, Georgia, serif' }}>Uncertainty</span>
-          <span className="absolute font-serif font-medium text-[12px] whitespace-nowrap select-none" style={{ top: '246px', right: '8%', color: '#d9546d', fontFamily: 'Fraunces, Georgia, serif' }}>Failing</span>
-          <span className="absolute font-serif font-medium text-[16px] whitespace-nowrap select-none tracking-wide" style={{ top: '296px', right: '3%', color: '#d98a2b', fontFamily: 'Fraunces, Georgia, serif' }}>Career pressure</span>
-          <span className="absolute font-serif font-medium text-[14.5px] whitespace-nowrap select-none" style={{ top: '346px', right: '8%', color: '#c4532c', fontFamily: 'Fraunces, Georgia, serif' }}>Loneliness</span>
-          <span className="absolute font-serif font-medium text-[11.5px] whitespace-nowrap select-none" style={{ top: '394px', right: '4%', color: '#b8863f', fontFamily: 'Fraunces, Georgia, serif' }}>Judgement</span>
-          <span className="absolute font-serif font-medium text-[15.5px] whitespace-nowrap select-none tracking-wide" style={{ top: '442px', right: '3%', color: '#2e8b57', fontFamily: 'Fraunces, Georgia, serif' }}>Financial stress</span>
+        {/* Cloud Container with Silhouette Background Image & Floating Words */}
+        <div className="relative h-[500px] mt-4 overflow-hidden">
+          <WordCloud 
+            customImg={problemData?.bgImg || problemData?.silhouetteImg || ''} 
+            wordFontSize={problemData?.wordFontSize}
+          />
         </div>
 
         {/* Bottom Caption */}
@@ -74,7 +62,7 @@ export default function ProblemSection() {
       </div>
 
       {/* ─── DESKTOP VIEW ─── */}
-      <div className="hidden lg:flex relative w-full min-h-[540px] lg:h-[70vh] max-h-[720px] overflow-hidden items-center justify-center">
+      <div className="hidden lg:flex relative w-full min-h-[540px] lg:h-[70vh] max-h-[720px] overflow-hidden items-center justify-center bg-[#f5f1e8]">
         
         {/* DESKTOP HEADING & PARA */}
         <Container className="grid relative z-30 w-full grid-cols-1 lg:grid-cols-12 gap-8 items-center h-full pointer-events-none absolute inset-0">

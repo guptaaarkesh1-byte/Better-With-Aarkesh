@@ -4,7 +4,8 @@ import {
   CalendarBlank, BookmarkSimple, Notebook, Play,
   VideoCamera, CheckCircle, Plus, LockKey, MagnifyingGlass,
   X, SignOut, User, Lock, CaretRight, ArrowsClockwise, ArrowLeft,
-  CaretDown, CaretUp, Bell, ArrowRight, Trash, Clock, NotePencil
+  CaretDown, CaretUp, Bell, ArrowRight, Trash, Clock, NotePencil,
+  DotsThreeVertical
 } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 import './my-journey.css';
@@ -154,6 +155,24 @@ export default function MyJourney() {
   const [sessionModalTab, setSessionModalTab] = useState('details'); // 'details' | 'notes'
   const [rescheduleSession, setRescheduleSession] = useState(null);
   const [activeModalVideo, setActiveModalVideo] = useState(null);
+  const [cancelModalAppt, setCancelModalAppt] = useState(null);
+  const [isCancellingSession, setIsCancellingSession] = useState(false);
+  const [openCardMenuId, setOpenCardMenuId] = useState(null);
+
+  // Close card menu on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.mj-card-dots-wrap')) {
+        setOpenCardMenuId(null);
+      }
+    };
+    if (openCardMenuId) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [openCardMenuId]);
 
   // Note Modal States
   const [noteModalOpen, setNoteModalOpen] = useState(false);
@@ -192,7 +211,7 @@ export default function MyJourney() {
   };
 
   // Lock background scroll and Lenis when any modal is active
-  const isAnyModalOpen = Boolean(selectedSession || noteModalOpen || rescheduleSession || activeModalVideo);
+  const isAnyModalOpen = Boolean(selectedSession || noteModalOpen || rescheduleSession || activeModalVideo || cancelModalAppt);
 
   useEffect(() => {
     if (isAnyModalOpen) {
@@ -218,6 +237,39 @@ export default function MyJourney() {
   const showToast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 2500);
+  };
+
+  // Cancel Appointment API Handler
+  const handleConfirmCancelSession = async () => {
+    if (!cancelModalAppt) return;
+    setIsCancellingSession(true);
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/appointments/${cancelModalAppt._id}/cancel`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+
+      if (res.ok) {
+        setAppointments(prev => prev.map(a => 
+          a._id === cancelModalAppt._id ? { ...a, status: 'CANCELLED' } : a
+        ));
+        showToast('Session cancelled.');
+        setCancelModalAppt(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || 'Failed to cancel session.');
+      }
+    } catch (err) {
+      console.error('Cancel session error:', err);
+      alert('Error cancelling session. Please try again.');
+    } finally {
+      setIsCancellingSession(false);
+    }
   };
 
   // Seamless scroll chaining from inner grid to page when boundary is reached
@@ -859,7 +911,7 @@ export default function MyJourney() {
                 className="mj-btn mj-btn-primary"
               >
                 <Play size={14} weight="fill" />
-                <span>Course</span>
+                <span>COURSE</span>
               </button>
 
               {/* User Avatar (Round Icon Only) & Luxury Dropdown */}
@@ -1047,13 +1099,13 @@ export default function MyJourney() {
                 <span>Profile & Settings</span>
               </button>
 
-              {/* Book a session Button (Orange) */}
+              {/* Book session Button (Orange) */}
               <button 
                 onClick={() => navigate('/book')}
                 className="mj-btn h-[42px] px-6 text-[14px] font-semibold bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm transition-all border-0"
               >
                 <CalendarBlank size={17} weight="bold" />
-                <span>Book a session</span>
+                <span>BOOK SESSION</span>
               </button>
             </div>
           </div>
@@ -1077,7 +1129,7 @@ export default function MyJourney() {
                       onClick={() => navigate('/book')}
                       className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
                     >
-                      Book a free session
+                      BOOK FREE SESSION
                     </button>
                   </>
                 ) : (
@@ -1087,7 +1139,7 @@ export default function MyJourney() {
                       onClick={() => navigate('/book')}
                       className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
                     >
-                      Book a session
+                      BOOK SESSION
                     </button>
                   </>
                 )}
@@ -1320,11 +1372,47 @@ export default function MyJourney() {
                         return (
                           <article key={appt._id} className="mj-card">
                             <div className={`mj-card-top ${cardColor}`}>
-                              <div className="mj-row">
-                                <span className="mj-pill">{formatPillDate(appt.date)}</span>
-                                <span className="mj-pill">
-                                  {isFree ? 'Free session' : `${inr(appt.amount || (appt.duration === 90 ? 7500 : 5000))} paid`}
-                                </span>
+                              <div className="mj-row items-center justify-between">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="mj-pill">{formatPillDate(appt.date)}</span>
+                                  <span className="mj-pill">
+                                    {isFree ? 'Free session' : `${inr(appt.amount || (appt.duration === 90 ? 7500 : 5000))} paid`}
+                                  </span>
+                                </div>
+
+                                {/* 3-Dots Action Menu (Cancel Session) */}
+                                {(appt.status === 'UPCOMING' || !appt.status) && (
+                                  <div className="relative mj-card-dots-wrap shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenCardMenuId(openCardMenuId === appt._id ? null : appt._id);
+                                      }}
+                                      className="w-7 h-7 rounded-full flex items-center justify-center text-[#555047] hover:text-[#111010] hover:bg-black/8 transition-all cursor-pointer"
+                                      title="Session options"
+                                    >
+                                      <DotsThreeVertical size={20} weight="bold" />
+                                    </button>
+
+                                    {openCardMenuId === appt._id && (
+                                      <div className="absolute right-0 top-8 z-50 bg-white rounded-xl shadow-xl border border-black/10 py-1 min-w-[155px] animate-in fade-in zoom-in-95 duration-150">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenCardMenuId(null);
+                                            setCancelModalAppt(appt);
+                                          }}
+                                          className="w-full text-left px-3.5 py-2 text-[13px] font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer"
+                                        >
+                                          <Trash size={15} weight="bold" />
+                                          <span>Cancel session</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               <h3>1-on-1 coaching with Aarkesh</h3>
                               <div className="mj-meta">
@@ -1533,7 +1621,7 @@ export default function MyJourney() {
                               onClick={() => navigate('/book')}
                               className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
                             >
-                              Book a session
+                              BOOK SESSION
                             </button>
                           )}
                         </div>
@@ -1936,6 +2024,61 @@ export default function MyJourney() {
                     </div>
                   )}
 
+                  {/* Top Action Buttons (Join, Reschedule, Cancel) */}
+                  {(selectedSession.status === 'UPCOMING' || !selectedSession.status) && (
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                      <a 
+                        href={selectedSession.meetLink || 'https://meet.google.com'}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mj-btn mj-btn-primary flex items-center gap-2 flex-1 sm:flex-none justify-center"
+                      >
+                        <VideoCamera size={16} weight="bold" />
+                        <span>Join session</span>
+                      </a>
+
+                      {(selectedSession.rescheduleRequest && (selectedSession.rescheduleRequest.status === 'PENDING' || selectedSession.rescheduleRequest.status === 'pending')) ? (
+                        <button 
+                          disabled
+                          className="mj-btn mj-btn-line opacity-60 cursor-not-allowed text-xs font-semibold text-[#856404]"
+                        >
+                          Reschedule Pending
+                        </button>
+                      ) : (selectedSession.status === 'RESCHEDULED' || selectedSession.rescheduleRequest?.status === 'APPROVED' || selectedSession.rescheduleRequest?.status === 'approved' || selectedSession.rescheduleRequest?.originalDate) ? (
+                        <button 
+                          disabled
+                          className="mj-btn mj-btn-line opacity-45 cursor-not-allowed text-xs font-semibold text-[#7a7269] bg-[#f0ede8] border-[#e0dbd3]"
+                          title="This session has already been rescheduled once and cannot be rescheduled again"
+                        >
+                          Already Rescheduled
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            const apptToReschedule = selectedSession;
+                            setSelectedSession(null);
+                            setRescheduleSession(apptToReschedule);
+                          }}
+                          className="mj-btn mj-btn-dark"
+                        >
+                          Reschedule
+                        </button>
+                      )}
+
+                      <button 
+                        onClick={() => {
+                          const apptToCancel = selectedSession;
+                          setSelectedSession(null);
+                          setCancelModalAppt(apptToCancel);
+                        }}
+                        className="mj-btn border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 font-semibold flex items-center gap-1.5"
+                      >
+                        <Trash size={15} weight="bold" />
+                        <span>Cancel session</span>
+                      </button>
+                    </div>
+                  )}
+
                   <div className="mj-rows">
                     <div>
                       <span>Date</span>
@@ -2029,48 +2172,6 @@ export default function MyJourney() {
                   </div>
 
                   <div className="mj-sess-foot">
-                    {(selectedSession.status === 'UPCOMING' || !selectedSession.status) && (
-                      <a 
-                        href={selectedSession.meetLink || 'https://meet.google.com'}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mj-btn mj-btn-primary"
-                      >
-                        <VideoCamera size={16} weight="bold" />
-                        <span>Join session</span>
-                      </a>
-                    )}
-
-                    {(selectedSession.status === 'UPCOMING' || !selectedSession.status) && (
-                      (selectedSession.rescheduleRequest && (selectedSession.rescheduleRequest.status === 'PENDING' || selectedSession.rescheduleRequest.status === 'pending')) ? (
-                        <button 
-                          disabled
-                          className="mj-btn mj-btn-line opacity-60 cursor-not-allowed text-xs font-semibold text-[#856404]"
-                        >
-                          Reschedule Pending
-                        </button>
-                      ) : (selectedSession.status === 'RESCHEDULED' || selectedSession.rescheduleRequest?.status === 'APPROVED' || selectedSession.rescheduleRequest?.status === 'approved' || selectedSession.rescheduleRequest?.originalDate) ? (
-                        <button 
-                          disabled
-                          className="mj-btn mj-btn-line opacity-45 cursor-not-allowed text-xs font-semibold text-[#7a7269] bg-[#f0ede8] border-[#e0dbd3]"
-                          title="This session has already been rescheduled once and cannot be rescheduled again"
-                        >
-                          Already Rescheduled
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => {
-                            const apptToReschedule = selectedSession;
-                            setSelectedSession(null);
-                            setRescheduleSession(apptToReschedule);
-                          }}
-                          className="mj-btn mj-btn-dark"
-                        >
-                          Reschedule
-                        </button>
-                      )
-                    )}
-
                     <button 
                       onClick={() => setSelectedSession(null)}
                       className="mj-btn mj-btn-line"
@@ -2250,6 +2351,55 @@ export default function MyJourney() {
                   </>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── CANCEL SESSION CONFIRMATION MODAL ─── */}
+      {cancelModalAppt && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-black/10 relative animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => !isCancellingSession && setCancelModalAppt(null)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-[#7a7269] hover:text-[#111010] hover:bg-black/5 transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
+              <Trash size={24} weight="bold" />
+            </div>
+
+            <h3 className="font-serif text-2xl font-normal text-[#111010] mb-2" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+              Cancel Session?
+            </h3>
+            <p className="text-[14px] text-[#555047] leading-relaxed mb-6">
+              Are you sure you want to cancel your session on <strong className="text-[#111010] font-semibold">{formatPillDate(cancelModalAppt.date)}</strong> at <strong className="text-[#111010] font-semibold">{formatSessionTime(cancelModalAppt.time)}</strong>?
+              {Boolean(cancelModalAppt.isFreeSession || cancelModalAppt.orderId === 'COURSE_FREE_SESSION') && (
+                <span className="block mt-2.5 text-[#b45309] font-medium bg-amber-50 p-2.5 rounded-xl border border-amber-200/70 text-xs">
+                  ⚠️ Note: Free course session credits once booked are counted as used and will not be restored upon cancellation.
+                </span>
+              )}
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setCancelModalAppt(null)}
+                disabled={isCancellingSession}
+                className="px-4 py-2.5 rounded-xl font-sans text-sm font-semibold text-[#555047] hover:bg-black/5 transition-colors cursor-pointer"
+              >
+                Keep Session
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancelSession}
+                disabled={isCancellingSession}
+                className="px-5 py-2.5 rounded-xl font-sans text-sm font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-2"
+              >
+                {isCancellingSession ? 'Cancelling...' : 'Yes, Cancel Session'}
+              </button>
             </div>
           </div>
         </div>

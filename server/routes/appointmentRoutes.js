@@ -1558,21 +1558,6 @@ router.put('/:id/cancel', optionalAuth, async (req, res) => {
     appointment.status = 'CANCELLED';
     await appointment.save();
 
-    // --- Credit the free course session back on cancellation ---
-    if (appointment.isFreeSession && !appointment.freeSessionRefunded) {
-      try {
-        const refundedUser = await User.findOne({ email: appointment.email });
-        if (refundedUser) {
-          refundedUser.freeSessions = (refundedUser.freeSessions || 0) + 1;
-          await refundedUser.save();
-          appointment.freeSessionRefunded = true;
-          await appointment.save();
-        }
-      } catch (refundErr) {
-        console.error('Failed to refund free session credit:', refundErr);
-      }
-    }
-
     // --- Cal.com Integration ---
     if (process.env.CAL_API_KEY && appointment.calBookingUid) {
       try {

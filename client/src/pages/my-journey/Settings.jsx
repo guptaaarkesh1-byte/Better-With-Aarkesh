@@ -71,7 +71,7 @@ export default function Settings() {
                   className="mj-btn mj-btn-primary"
                 >
                   <Play size={14} weight="fill" />
-                  <span>Course</span>
+                  <span>COURSE</span>
                 </button>
 
                 {/* User Avatar (Round Shape) & Dropdown */}

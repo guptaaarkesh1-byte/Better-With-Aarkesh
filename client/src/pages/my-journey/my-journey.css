@@ -956,14 +956,13 @@
 .mj-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(28,23,20,.65);
-  backdrop-filter: blur(6px);
+  background: rgba(20, 16, 14, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px 16px;
   z-index: 1000;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .mj-modal {
@@ -980,10 +979,10 @@
 .mj-modal-sess {
   max-width: 560px;
   width: 100%;
-  max-height: calc(100dvh - 48px);
+  max-height: min(88vh, 720px);
   display: flex;
   flex-direction: column;
-  padding: 24px 24px 16px;
+  padding: 24px 24px 18px;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -994,7 +993,7 @@
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .mj-modal-body {
@@ -1002,13 +1001,14 @@
   flex: 1 1 auto;
   min-height: 0;
   padding-right: 6px;
-  padding-bottom: 24px;
+  padding-bottom: 16px;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .mj-modal-body::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .mj-modal-body::-webkit-scrollbar-track {
