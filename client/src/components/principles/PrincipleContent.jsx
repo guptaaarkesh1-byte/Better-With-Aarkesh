@@ -2,7 +2,6 @@ import { useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
-import { ArrowDown } from '@phosphor-icons/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -48,34 +47,8 @@ export default function PrincipleContent({
       { opacity: 0, y: 20 },
       { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.2 },
       "-=0.5"
-    )
-    .fromTo('.phil-button',
-      { opacity: 0, scale: 0.85 },
-      { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.5)' },
-      "-=0.4"
     );
   }, { scope: container, dependencies: [headlineWhite, headlineGold, paragraphs, eyebrow, id] });
-
-  const nextTargetMap = {
-    'think-principle': 'feel-principle',
-    'feel-principle': 'decide-principle',
-    'decide-principle': 'coaching'
-  };
-
-  const handleNextClick = () => {
-    const targetId = nextTargetMap[id] || 'coaching';
-    const el = document.getElementById(targetId);
-    if (el) {
-      if (window.lenis) {
-        window.lenis.scrollTo(el, { offset: 0, duration: 1.0 });
-      } else {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  };
-
-  const circlePx = buttonFontSize ? Math.round(buttonFontSize * 3.4) : null;
-  const iconPx = buttonFontSize ? Math.max(13, Math.round(buttonFontSize * 1.4)) : 18;
 
   return (
     <div ref={container} className={`${maxContentWidth} text-left relative z-20`}>
@@ -97,15 +70,15 @@ export default function PrincipleContent({
           ...(headingFontSize ? { fontSize: `clamp(32px, 9.6vw, ${headingFontSize}px)` } : {})
         }}
       >
-        <span className="phil-heading-word text-[#111010] pb-1 uppercase">
+        <span className="phil-heading-word text-[#111010] pb-1 whitespace-nowrap block">
           {headlineWhite}
         </span>
-        <span className="phil-heading-word text-[#c9542f] pb-1 not-italic font-medium uppercase">
+        <span className="phil-heading-word text-[#c9542f] pb-1 not-italic font-medium whitespace-nowrap block">
           {headlineGold}
         </span>
       </h2>
 
-      <div className="space-y-3.5 sm:space-y-5 mb-6 max-w-full">
+      <div className="space-y-3.5 sm:space-y-5 max-w-full">
         {paragraphs.map((p, i) => (
           <p 
             key={i} 
@@ -117,24 +90,6 @@ export default function PrincipleContent({
             dangerouslySetInnerHTML={{ __html: p }}
           />
         ))}
-      </div>
-
-      <div 
-        onClick={handleNextClick}
-        className="phil-button flex items-center gap-3.5 sm:gap-5 cursor-pointer group w-fit pt-2 select-none"
-      >
-        <div 
-          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border border-black/20 bg-white/80 flex items-center justify-center transition-all duration-300 group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] group-hover:scale-105 shadow-xs shrink-0"
-          style={circlePx ? { width: `${circlePx}px`, height: `${circlePx}px` } : undefined}
-        >
-          <ArrowDown size={iconPx} weight="bold" className="text-[#111010] transition-transform group-hover:text-[#c9542f] group-hover:translate-y-1" />
-        </div>
-        <span 
-          className="font-sans text-[11px] sm:text-xs md:text-[0.82rem] uppercase tracking-[0.22em] text-[#111010] font-semibold transition-colors group-hover:text-[#c9542f]"
-          style={{ fontSize: buttonFontSize ? `${buttonFontSize}px` : undefined }}
-        >
-          {buttonText || 'NEXT PRINCIPLE'}
-        </span>
       </div>
 
     </div>

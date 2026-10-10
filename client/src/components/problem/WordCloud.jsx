@@ -1,6 +1,8 @@
 import { useRef } from 'react';
 import { resolveImageUrl } from '../../utils/imageUrl';
-import silhouetteImg from '../../assets/Page2/problem_silhouette.png';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
+
+const silhouetteImg = CDN_IMAGES.PROBLEM_SILHOUETTE;
 
 // =========================================================================
 // 🎛️ WORD CLOUD CONTROLS - (Customize Positions, Sizes & Colors Here)

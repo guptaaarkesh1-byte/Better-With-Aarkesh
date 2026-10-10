@@ -1,6 +1,6 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
-import defaultBgImg from '../../assets/Page5/decide-intentionally.jpg';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { Sparkle, GitFork, Spiral, Target, SlidersHorizontal, ArrowRight } from '@phosphor-icons/react';
 
@@ -46,7 +46,7 @@ export default function DecidePrinciple() {
     `<span class='italic font-serif leading-relaxed text-[#c9542f] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${data?.closingLine || '....Then we help you walk it.'}</span>`
   ];
   const buttonText = data?.buttonText || '';
-  const bgImg = resolveImageUrl(data?.bgImg, defaultBgImg);
+  const bgImg = resolveImageUrl(data?.bgImg, '');
 
   const customFlow = (
     <div className="flex items-center gap-2 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">
@@ -60,7 +60,6 @@ export default function DecidePrinciple() {
     <PrincipleSection 
       id="decide-principle"
       bgImg={bgImg}
-      fallbackImg={defaultBgImg}
       eyebrow={eyebrow}
       headlineWhite={headlineWhite}
       headlineGold={headlineGold}

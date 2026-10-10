@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Container from '../ui/Container';
 import HeroContent from './HeroContent';
 import HeroImage from './HeroImage';
-import ScrollIndicator from '../ui/ScrollIndicator';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
@@ -55,7 +54,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section id="home" className="relative w-full min-h-[100svh] lg:min-h-[calc(100vh+80px)] h-auto bg-[#f5f1e8] snap-section">
+    <section id="home" className="relative w-full h-auto lg:min-h-[calc(100vh+80px)] bg-[#f5f1e8] snap-section">
       {/* Desktop Image (Defines section height naturally, 100% width, height: auto, uncropped) */}
       <div className="relative w-full hidden lg:block">
         <HeroImage 
@@ -72,35 +71,22 @@ export default function Hero() {
             <HeroContent heroData={heroData} />
           </div>
         </Container>
-
-        {/* Scroll Indicator positioned at first viewport bottom */}
-        {heroData.showScrollIndicator !== false && (
-          <div className="absolute top-[calc(100vh-3.5rem)] left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-center pointer-events-auto">
-            <a 
-              href="#problem" 
-              className="flex flex-col items-center gap-2 font-sans font-semibold text-[9.5px] tracking-[0.3em] uppercase text-[#7a756b] hover:text-[#c9542f] transition-colors"
-            >
-              <span>Scroll</span>
-              <i className="block w-[1.5px] h-[26px] bg-gradient-to-b from-[#c9542f] to-transparent" />
-            </a>
-          </div>
-        )}
       </div>
 
-      {/* ─── MOBILE VIEW (Image 100% width, height auto, text below, uncropped) ─── */}
-      <div className="block lg:hidden w-full relative pt-16 bg-[#E4E2EA]">
+      {/* ─── MOBILE VIEW (Image starts just below navbar, 100% width, 10% bottom fade, text below) ─── */}
+      <div className="block lg:hidden w-full relative pt-14 sm:pt-16 bg-[#f5f1e8]">
         <div className="relative w-full overflow-hidden">
           <img 
             src={heroData.bgImageUrl || 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png'}
             alt="Aarkesh"
             className="w-full h-auto object-contain block"
           />
-          {/* Bottom 5% subtle gradient fade */}
-          <div className="absolute inset-x-0 bottom-0 h-[5%] bg-gradient-to-t from-[#f5f1e8] to-transparent pointer-events-none" />
+          {/* Bottom 10% subtle gradient fade */}
+          <div className="absolute inset-x-0 bottom-0 h-[10%] bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/60 to-transparent pointer-events-none z-10" />
         </div>
 
         {/* Content Body Below Image */}
-        <div className="relative -mt-6 px-5 sm:px-8 pb-12 z-10 bg-[#f5f1e8]">
+        <div className="relative px-5 sm:px-8 pt-2 pb-14 sm:pb-20 z-10 bg-[#f5f1e8]">
           <HeroContent heroData={heroData} />
         </div>
       </div>

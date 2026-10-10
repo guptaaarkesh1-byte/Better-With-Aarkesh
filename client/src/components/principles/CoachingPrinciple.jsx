@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import Container from '../ui/Container';
-import defaultBgImg from '../../assets/Page6/coaching-process.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
   ChatTeardropText, 
@@ -12,6 +12,8 @@ import {
   Flag, 
   ChartLineUp
 } from '@phosphor-icons/react';
+
+const defaultBgImg = CDN_IMAGES.COACHING_PROCESS;
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -233,9 +235,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
         {/* Right-to-left soft cream fade for clean right edge */}
         <div className="absolute inset-y-0 right-0 w-48 md:w-64 bg-gradient-to-l from-[#f5f1e8]/70 via-[#f5f1e8]/30 to-transparent pointer-events-none z-10" />
         
-        {/* Soft edge blends */}
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/30 to-transparent" />
-        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#f5f1e8]/40 to-transparent" />
+        {/* Subtle edge blends */}
+        <div className="absolute inset-x-0 bottom-0 h-12 lg:h-16 bg-gradient-to-t from-[#f5f1e8] to-transparent pointer-events-none z-10" />
+        <div className="absolute inset-x-0 top-0 h-12 lg:h-16 bg-gradient-to-b from-[#f5f1e8] to-transparent pointer-events-none z-10" />
       </div>
 
       {/* Desktop Main Content Area */}
@@ -255,7 +257,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
             </div>
 
             <h2 
-              className="font-serif text-[1.25rem] xs:text-[1.4rem] sm:text-2xl md:text-4xl lg:text-[3.2rem] xl:text-[3.8rem] font-medium tracking-tight leading-[1.25] gap-2 sm:gap-3 mb-4 sm:mb-5 flex flex-col items-start coaching-fade"
+              className="font-serif text-[1.25rem] xs:text-[1.4rem] sm:text-2xl md:text-4xl lg:text-[3.2rem] xl:text-[3.8rem] font-medium tracking-tight leading-[1.25] gap-2 sm:gap-3 mb-8 sm:mb-10 lg:mb-12 flex flex-col items-start coaching-fade"
               style={{ 
                 fontFamily: 'Fraunces, Georgia, serif',
                 ...(data.headingFontSize ? { fontSize: `clamp(1.2rem, 4.5vw, ${data.headingFontSize}px)` } : {})
@@ -266,22 +268,22 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
             </h2>
 
             <p 
-              className="font-serif font-normal tracking-wide leading-snug mb-4 sm:mb-5 coaching-fade max-w-lg"
+              className="font-serif font-normal tracking-wide leading-snug mb-10 sm:mb-12 lg:mb-14 coaching-fade max-w-lg"
               style={{ 
                 fontFamily: 'Fraunces, Georgia, serif',
                 fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined
               }}
             >
-              <span className="italic text-[#111010] block" style={{ fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined }}>
+              <span className="italic text-[#111010] block text-[17px] lg:text-[1.18rem] leading-snug" style={{ fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined }}>
                 {data.subtitle || 'A clear path from where you are, to where you want to be.'}
               </span>
-              <span className="font-serif font-normal not-italic text-[#7a756b] mt-1.5 inline-block" style={{ fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined }}>
+              <span className="font-serif font-normal not-italic text-[#7a756b] mt-1.5 inline-block text-[15px] lg:text-[1.02rem]" style={{ fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined }}>
                 {data.subnote || 'Simple. Effective.'}
               </span>
             </p>
 
             {/* Grid Stepper: 3 rows x 2 columns with 5th item spanning 2 cols wide & centered */}
-            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3 lg:gap-3.5 max-w-xl lg:max-w-2xl">
+            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-3.5 lg:gap-4 max-w-xl lg:max-w-2xl">
               {steps.map((step, i) => {
                 const Icon = ICONS[i % ICONS.length];
                 const isActive = activeStep === i;
@@ -292,7 +294,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
                     onClick={() => setActiveStep(isActive ? null : i)}
                     className={`coaching-step w-full ${
                       isWide ? 'col-span-1 md:col-span-2 justify-center' : 'col-span-1'
-                    } relative z-50 flex ${isWide ? 'flex-col items-center justify-center text-center' : 'flex-row items-center gap-2.5 sm:gap-3'} group rounded-xl sm:rounded-2xl p-2.5 sm:p-3 transition-all duration-300 cursor-pointer ${
+                    } relative z-50 flex ${isWide ? 'flex-col items-center justify-center text-center' : 'flex-row items-center gap-2.5 sm:gap-3'} group rounded-xl sm:rounded-2xl p-3 sm:p-3.5 transition-all duration-300 cursor-pointer ${
                       isActive 
                         ? 'bg-[#fbf0eb] border border-[#c9542f]/50 shadow-[0_4px_16px_rgba(201, 84, 47,0.12)]' 
                         : 'bg-white/90 border border-black/8 hover:bg-white hover:border-[#c9542f]/35 shadow-[0_2px_10px_rgba(0,0,0,0.03)]'

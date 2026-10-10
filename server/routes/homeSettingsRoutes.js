@@ -27,6 +27,8 @@ const DEFAULT_SECTIONS = {
     headingFontSize: 56,
     descriptionFontSize: 22,
     wordFontSize: 18,
+    bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289678/better_with_aarkesh/client/src/assets/Page2/problem_silhouette_7637.png',
+    silhouetteImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289678/better_with_aarkesh/client/src/assets/Page2/problem_silhouette_7637.png',
     transEyebrow: "CLARITY ISN'T LUCK.",
     transHeading: "It's a skill. And it",
     transAccent: 'Changes Everything.',
@@ -44,7 +46,7 @@ const DEFAULT_SECTIONS = {
       headingFontSize: 64,
       descriptionFontSize: 18,
       buttonFontSize: 14,
-      bgImg: '/images/think-clearly.jpg',
+      bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289681/better_with_aarkesh/client/src/assets/Page3/think-clearly_9629.png',
     },
     feel: {
       eyebrow: 'PRINCIPLE 02',
@@ -57,7 +59,7 @@ const DEFAULT_SECTIONS = {
       headingFontSize: 64,
       descriptionFontSize: 18,
       buttonFontSize: 14,
-      bgImg: '/images/feel-honestly.jpg',
+      bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289687/better_with_aarkesh/client/src/assets/Page4/feel-honestly_6665.jpg',
     },
     decide: {
       eyebrow: 'PRINCIPLE 03',
@@ -71,7 +73,7 @@ const DEFAULT_SECTIONS = {
       headingFontSize: 64,
       descriptionFontSize: 18,
       buttonFontSize: 14,
-      bgImg: '/images/decide-intentionally.jpg',
+      bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289692/better_with_aarkesh/client/src/assets/Page5/decide-intentionally_1185.png',
     }
   },
   coachingProcess: {
@@ -80,7 +82,7 @@ const DEFAULT_SECTIONS = {
     headingAccent: 'built around you.',
     subtitle: 'A clear path from where you are, to where you want to be.',
     subnote: 'Simple. Effective.',
-    bgImg: '/images/coaching-process.jpg',
+    bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289659/better_with_aarkesh/client/src/assets/coaching-process_8570.png',
     steps: [
       { num: '01', title: 'CONNECT', text: 'We start with a meaningful conversation to understand what matters to you.' },
       { num: '02', title: 'CLARIFY', text: "We dig deep to bring clarity to your thoughts, patterns, and what's keeping you stuck." },
@@ -96,7 +98,7 @@ const DEFAULT_SECTIONS = {
     description: "We don't do hacks. We follow a proven, human first process designed to create deep, lasting change.",
     quoteLine1: "Transformation isn't a moment.",
     quoteAccent: "It's a journey you walk with the right guide.",
-    bgImg: '',
+    bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289703/better_with_aarkesh/client/src/assets/Page7/coaching-journey_2939.webp',
     steps: [
       { num: '01', title: 'CLARIFY', text: "Root cause clarity.\nReal understanding." },
       { num: '02', title: 'CONNECT', text: "Emotional honesty.\nValues alignment." },
@@ -121,21 +123,21 @@ const DEFAULT_SECTIONS = {
       sub1: 'Years in the cockpit.',
       sub2: 'High stakes. Clear decisions.',
       highlight: 'I know what pressure feels like.',
-      bgImg: '',
+      bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289785/better_with_aarkesh/server/uploads/pilot_4154.webp',
     },
     roleCoach: {
       title: 'COACH',
       sub1: 'ICF certified life coach.',
       sub2: 'Evidence based. Human first.',
       highlight: 'I walk beside you, not ahead of you.',
-      bgImg: '',
+      bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289705/better_with_aarkesh/client/src/assets/Page8/Coach_4913.webp',
     },
     roleHuman: {
       title: 'HUMAN',
       sub1: 'Flaws. Lessons. Growth.',
       sub2: 'Still figuring things out.',
       highlight: 'Just like you.',
-      bgImg: '',
+      bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289707/better_with_aarkesh/client/src/assets/Page8/human_6915.webp',
     },
     missionEyebrow: 'BEYOND THE ROLES',
     missionHeading: 'The journey that shaped the mission.',
@@ -148,7 +150,7 @@ const DEFAULT_SECTIONS = {
     headingLine1: 'Their words.',
     headingAccent: 'Their transformation.',
     description: 'What happens when you decide to do the work.',
-    bgImg: '',
+    bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289715/better_with_aarkesh/client/src/assets/Page9/testimonials-doorway_4204.webp',
     items: [
       {
         quote: "Aarkesh helped me see the patterns I was too close to notice. For the first time, I feel in control of my choices.",

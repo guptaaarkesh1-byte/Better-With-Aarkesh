@@ -1,6 +1,6 @@
 import { usePrinciplesData } from '../../hooks/usePrinciplesData';
 import PrincipleSection from './PrincipleSection';
-import defaultBgImg from '../../assets/Page4/feel-honestly.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { Sparkle, CloudRain, Waves, Heart, SunDim } from '@phosphor-icons/react';
 
@@ -39,13 +39,12 @@ export default function FeelPrinciple() {
     `<span class='font-serif font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${descText}</span>`
   ];
   const buttonText = data?.buttonText || '';
-  const bgImg = resolveImageUrl(data?.bgImg, defaultBgImg);
+  const bgImg = resolveImageUrl(data?.bgImg, '');
 
   return (
     <PrincipleSection 
       id="feel-principle"
       bgImg={bgImg}
-      fallbackImg={defaultBgImg}
       imagePosition="object-[70%_center] md:object-[75%_center] lg:object-[80%_center]"
       eyebrow={eyebrow}
       headlineWhite={headlineWhite}
@@ -53,7 +52,7 @@ export default function FeelPrinciple() {
       headlineGoldItalic={false}
       paragraphs={paragraphs}
       buttonText={buttonText}
-      maxContentWidth="max-w-[365px]"
+      maxContentWidth="max-w-[420px]"
       eyebrowFontSize={data?.eyebrowFontSize}
       headingFontSize={data?.headingFontSize}
       descriptionFontSize={data?.descriptionFontSize}

@@ -1200,20 +1200,22 @@ export default function Articles() {
                   }}
                   className="border rounded-full pl-1.5 pr-3.5 py-1 flex items-center gap-2.5 font-bold text-[12px] uppercase tracking-wider shadow-xs hover:opacity-90 transition-all cursor-pointer select-none"
                 >
-                  <div 
-                    className="relative w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden"
-                    style={{ backgroundColor: currentCat.accent || '#c8512d' }}
-                  >
-                    {effectiveUser?.photoUrl ? (
-                      <img 
-                        src={effectiveUser.photoUrl} 
-                        alt="" 
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-                        className="w-full h-full object-cover rounded-full absolute inset-0" 
-                      />
-                    ) : null}
-                    <span>{userInitial}</span>
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#22c55e] border-2 border-white rounded-full z-10" />
+                  <div className="relative w-7 h-7 shrink-0">
+                    <div 
+                      className="w-full h-full rounded-full text-white flex items-center justify-center font-bold text-xs overflow-hidden"
+                      style={{ backgroundColor: currentCat.accent || '#c8512d' }}
+                    >
+                      {effectiveUser?.photoUrl ? (
+                        <img 
+                          src={effectiveUser.photoUrl} 
+                          alt="" 
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                          className="w-full h-full object-cover rounded-full absolute inset-0" 
+                        />
+                      ) : null}
+                      <span>{userInitial}</span>
+                    </div>
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#22c55e] border-2 border-white rounded-full z-10 shadow-xs" />
                   </div>
                   <span>{userFirstName}</span>
                   {dropdownOpen ? (

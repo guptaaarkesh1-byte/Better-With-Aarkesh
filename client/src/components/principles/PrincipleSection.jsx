@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -10,7 +10,6 @@ gsap.registerPlugin(ScrollTrigger);
 export default function PrincipleSection({
   id,
   bgImg,
-  fallbackImg,
   eyebrow,
   headlineWhite,
   headlineGold,
@@ -32,8 +31,12 @@ export default function PrincipleSection({
   buttonFontSize
 }) {
   const sectionRef = useRef(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const isThinkPage = id === 'think-principle';
-  const isDecidePage = id === 'decide-principle';
+
+  useEffect(() => {
+    setIsLoaded(false);
+  }, [bgImg]);
 
   useGSAP(() => {
     // === THINK PAGE ANIMATIONS ===
@@ -60,17 +63,20 @@ export default function PrincipleSection({
       {/* ─── MOBILE VIEW (Matches user's mobile prototype) ─── */}
       <div className="block lg:hidden w-full relative border-t border-black/10">
         {/* Media Container with Image & Bottom Fade */}
-        <div className="relative h-[360px] w-full overflow-hidden">
-          <img 
-            src={bgImg} 
-            alt="Principle"
-            onError={(e) => {
-              if (fallbackImg && e.currentTarget.src !== fallbackImg) {
-                e.currentTarget.src = fallbackImg;
-              }
-            }}
-            className={`w-full h-full object-cover ${imagePosition || 'object-center'}`}
-          />
+        <div className="relative h-[360px] w-full overflow-hidden bg-[#ede6d8]">
+          {/* Shimmer loading placeholder */}
+          {!isLoaded && bgImg && (
+            <div className="absolute inset-0 bg-gradient-to-r from-[#ede6d8] via-[#f7f2e8] to-[#ede6d8] animate-pulse" />
+          )}
+
+          {bgImg && (
+            <img 
+              src={bgImg} 
+              alt="Principle"
+              onLoad={() => setIsLoaded(true)}
+              className={`w-full h-full object-cover transition-opacity duration-700 ${imagePosition || 'object-center'} ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            />
+          )}
           {/* Bottom gradient fade into cream background */}
           <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/80 to-transparent pointer-events-none" />
         </div>
@@ -97,27 +103,30 @@ export default function PrincipleSection({
       {/* ─── DESKTOP VIEW ─── */}
       <div className={`hidden lg:flex relative flex-grow items-center justify-center pt-24 pb-16 lg:pt-28 lg:pb-20 ${contentClassName}`}>
         
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <img 
-            src={bgImg} 
-            alt="Principle Background"
-            onError={(e) => {
-              if (fallbackImg && e.currentTarget.src !== fallbackImg) {
-                e.currentTarget.src = fallbackImg;
-              }
-            }}
-            className={`w-full h-full object-cover opacity-100 contrast-[1.08] saturate-[1.05] ${imagePosition || 'object-[75%_center] lg:object-[78%_center]'}`}
-            style={{ imageRendering: '-webkit-optimize-contrast' }}
-          />
+        {/* Background Image Container */}
+        <div className="absolute inset-0 z-0 pointer-events-none bg-[#f5f1e8]">
+          {/* Shimmer loading placeholder */}
+          {!isLoaded && bgImg && (
+            <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#ede6d8] to-[#f5f1e8] animate-pulse" />
+          )}
+
+          {bgImg && (
+            <img 
+              src={bgImg} 
+              alt="Principle Background"
+              onLoad={() => setIsLoaded(true)}
+              className={`w-full h-full object-cover contrast-[1.08] saturate-[1.05] transition-opacity duration-700 ${imagePosition || 'object-[75%_center] lg:object-[78%_center]'} ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+              style={{ imageRendering: '-webkit-optimize-contrast' }}
+            />
+          )}
           {/* Crisp text backdrop fade - confined to left side so right subject is 100% sharp and unfiltered */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/60 via-40% to-transparent w-[48%] md:w-[38%]" />
           
-          {/* Minimal bottom edge blend */}
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#f5f1e8]/40 to-transparent" />
+          {/* Subtle top edge blend */}
+          <div className="absolute inset-x-0 top-0 h-12 lg:h-16 bg-gradient-to-b from-[#f5f1e8] to-transparent pointer-events-none z-10" />
           
-          {/* Soft top edge blend */}
-          <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#f5f1e8]/30 to-transparent" />
+          {/* Subtle bottom edge blend */}
+          <div className="absolute inset-x-0 bottom-0 h-12 lg:h-16 bg-gradient-to-t from-[#f5f1e8] to-transparent pointer-events-none z-10" />
         </div>
 
         <Container className="relative z-10 w-full h-full flex items-center">

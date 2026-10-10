@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import Container from '../ui/Container';
-import defaultBgImg from '../../assets/Page7/coaching-journey.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
   Compass, 
@@ -14,9 +14,10 @@ import {
   ChatTeardropText,
   ListDashes,
   TrendUp,
-  Sparkle,
-  ArrowDown
+  Sparkle
 } from '@phosphor-icons/react';
+
+const defaultBgImg = CDN_IMAGES.COACHING_JOURNEY;
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -41,7 +42,7 @@ export const DESKTOP_IMAGE_CONTROLS = {
 // =========================================================================
 export const ALL_4_MOUNTAIN_POINTS_CONTROLS = {
   // ↔️ Left (-) ya Right (+) move karein: e.g. '-60px', '+40px', '-5%'
-  moveX: '180px',
+  moveX: '110px',
 
   // ↕️ Up (-) ya Down (+) move karein: e.g. '-40px', '+50px', '-3%'
   moveY: '40px',
@@ -268,14 +269,11 @@ export default function CoachingJourney() {
         {/* Soft cream gradients */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8] via-[#f5f1e8]/85 via-30% md:via-[#f5f1e8]/50 to-transparent w-[55%] md:w-[48%] z-10" />
         
-        {/* Right-to-left solid cream fade to eliminate sharp edge */}
-        <div className="absolute inset-y-0 right-0 w-44 sm:w-60 lg:w-96 bg-gradient-to-l from-[#f5f1e8] via-[#f5f1e8]/95 via-25% md:via-[#f5f1e8]/60 to-transparent pointer-events-none z-10" />
+        {/* Subtle Bottom edge blend */}
+        <div className="absolute inset-x-0 bottom-0 h-16 lg:h-20 bg-gradient-to-t from-[#f5f1e8] to-transparent pointer-events-none z-10" />
         
-        {/* Bottom edge blend */}
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/60 to-transparent pointer-events-none z-10" />
-        
-        {/* Top edge blend */}
-        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#f5f1e8]/40 to-transparent pointer-events-none z-10" />
+        {/* Subtle Top edge blend */}
+        <div className="absolute inset-x-0 top-0 h-12 lg:h-16 bg-gradient-to-b from-[#f5f1e8] to-transparent pointer-events-none z-10" />
       </div>
 
       {/* Main Content Area */}
@@ -364,7 +362,7 @@ export default function CoachingJourney() {
                       e.currentTarget.src = defaultBgImg;
                     }
                   }}
-                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  className="absolute inset-0 w-full h-full object-cover object-[72%_center]"
                 />
 
                 {/* 4 Stops along the path on mobile */}
@@ -526,74 +524,70 @@ export default function CoachingJourney() {
         
         {/* HOW IT WORKS Row */}
         <div className="w-full bg-[#ede7d8] border-t border-black/8 shadow-xs">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2.5 sm:py-3 flex items-center justify-between">
+          <Container className="pr-44 xl:pr-56 py-2.5 sm:py-3 flex items-center justify-start">
             
-            <div className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] pr-8 shrink-0">
+            <div className="font-sans text-xs sm:text-[0.82rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] pr-6 lg:pr-8 shrink-0">
               HOW IT WORKS
             </div>
 
-            <div className="flex items-center gap-6 md:gap-10 lg:gap-12 flex-grow justify-between pl-8 border-l border-black/10">
-              <div className="flex items-center gap-3 sm:gap-3.5 group">
-                <CalendarBlank className="text-[#c9542f] text-xl lg:text-[1.4rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
-                <p className="text-[#2b2723] text-xs md:text-sm font-light max-w-[185px] leading-snug">
+            <div className="flex items-center gap-4 md:gap-6 lg:gap-8 flex-grow justify-between pl-6 lg:pl-8 border-l border-black/10">
+              <div className="flex items-center gap-2.5 sm:gap-3 group">
+                <CalendarBlank className="text-[#c9542f] text-xl lg:text-[1.3rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
+                <p className="text-[#2b2723] text-xs md:text-[13px] font-light max-w-[170px] leading-snug">
                   {howItWorks[0] || 'Personalized coaching sessions tailored to you.'}
                 </p>
               </div>
               
-              <div className="hidden md:block text-black/25 text-xl font-light">›</div>
+              <div className="hidden md:block text-black/25 text-lg font-light">›</div>
 
-              <div className="flex items-center gap-3 sm:gap-3.5 group">
-                <ChatTeardropText className="text-[#c9542f] text-xl lg:text-[1.4rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
-                <p className="text-[#2b2723] text-xs md:text-sm font-light max-w-[185px] leading-snug">
+              <div className="flex items-center gap-2.5 sm:gap-3 group">
+                <ChatTeardropText className="text-[#c9542f] text-xl lg:text-[1.3rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
+                <p className="text-[#2b2723] text-xs md:text-[13px] font-light max-w-[170px] leading-snug">
                   {howItWorks[1] || 'Powerful conversations that create real shifts.'}
                 </p>
               </div>
 
-              <div className="hidden md:block text-black/25 text-xl font-light">›</div>
+              <div className="hidden md:block text-black/25 text-lg font-light">›</div>
 
-              <div className="flex items-center gap-3 sm:gap-3.5 group">
-                <ListDashes className="text-[#c9542f] text-xl lg:text-[1.4rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
-                <p className="text-[#2b2723] text-xs md:text-sm font-light max-w-[185px] leading-snug">
+              <div className="flex items-center gap-2.5 sm:gap-3 group">
+                <ListDashes className="text-[#c9542f] text-xl lg:text-[1.3rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
+                <p className="text-[#2b2723] text-xs md:text-[13px] font-light max-w-[170px] leading-snug">
                   {howItWorks[2] || 'Practical tools and frameworks you can use.'}
                 </p>
               </div>
 
-              <div className="hidden md:block text-black/25 text-xl font-light">›</div>
+              <div className="hidden md:block text-black/25 text-lg font-light">›</div>
 
-              <div className="flex items-center gap-3 sm:gap-3.5 group">
-                <TrendUp className="text-[#c9542f] text-xl lg:text-[1.4rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
-                <p className="text-[#2b2723] text-xs md:text-sm font-light max-w-[185px] leading-snug">
+              <div className="flex items-center gap-2.5 sm:gap-3 group">
+                <TrendUp className="text-[#c9542f] text-xl lg:text-[1.3rem] group-hover:scale-110 transition-transform shrink-0" weight="light" />
+                <p className="text-[#2b2723] text-xs md:text-[13px] font-light max-w-[170px] leading-snug">
                   {howItWorks[3] || 'Accountability that keeps you moving forward.'}
                 </p>
               </div>
             </div>
 
-          </div>
+          </Container>
         </div>
 
         {/* Transition Row */}
         <div className="w-full bg-[#f5f1e8] border-t border-black/8">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 sm:py-2.5 flex flex-col md:flex-row items-center justify-between gap-4">
+          <Container className="pr-44 xl:pr-56 py-2.5 sm:py-3 flex flex-col md:flex-row items-center justify-start gap-4">
             
-            <div className="flex items-center gap-4 sm:gap-5">
+            <div className="flex items-center gap-3.5 sm:gap-4">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-[#c9542f]/40 flex items-center justify-center shrink-0 bg-[#fbf0eb]">
                 <Sparkle className="text-[#c9542f] text-lg" weight="fill" />
               </div>
-              <div>
-                <p className="font-serif text-[#c9542f] text-sm lg:text-[1.05rem] mb-0.5 not-italic font-medium">{data.transitionAccent || 'Guided. Structured. Flexible.'}</p>
-                <p className="text-[#4a463e] text-xs md:text-sm font-light leading-snug">
+              <p className="flex flex-wrap items-baseline gap-x-2 text-xs md:text-sm leading-snug">
+                <span className="font-serif text-[#c9542f] text-sm lg:text-[1.05rem] not-italic font-medium">
+                  {((data.transitionAccent || 'Guided. Structured. Flexible.').replace(/[.:\s]+$/, ''))}:
+                </span>
+                <span className="text-[#4a463e] font-light">
                   {(data.transitionSubtext || 'A process that adapts to you so you can create a life that lasts.').replace(/—|--/g, ' ')}
-                </p>
-              </div>
+                </span>
+              </p>
             </div>
 
-            <div className="flex items-center gap-4 cursor-pointer group">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-black/20 bg-white flex items-center justify-center transition-all group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] group-hover:scale-105 shadow-xs">
-                <ArrowDown className="text-[#111010] text-sm transition-transform group-hover:text-[#c9542f] group-hover:translate-y-0.5" />
-              </div>
-            </div>
-
-          </div>
+          </Container>
         </div>
 
       </div>

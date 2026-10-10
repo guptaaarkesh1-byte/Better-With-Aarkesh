@@ -1350,20 +1350,25 @@ export default function MyJourney() {
                           (appt.rescheduleRequest && (appt.rescheduleRequest.status === 'APPROVED' || appt.rescheduleRequest.status === 'approved'))
                         );
 
+                        const isCompleted = appt.status === 'COMPLETED';
+                        const isCancelled = appt.status === 'CANCELLED' || appt.status === 'CANCELED';
+
                         const cardColor = 
-                          appt.status === 'CANCELLED' || appt.status === 'CANCELED' 
+                          isCancelled 
                             ? 'mj-c-rose' 
-                            : isPendingReschedule
-                              ? 'mj-c-sand'
-                              : isApprovedReschedule
-                                ? 'mj-c-sky'
-                                : getCardColor(appt._id || appt.date, idx);
+                            : isCompleted
+                              ? 'mj-c-mint'
+                              : isPendingReschedule
+                                ? 'mj-c-sand'
+                                : isApprovedReschedule
+                                  ? 'mj-c-sky'
+                                  : getCardColor(appt._id || appt.date, idx);
 
                         const statusTag = 
+                          isCancelled ? 'Canceled' :
+                          isCompleted ? 'Completed' :
                           isPendingReschedule ? 'Reschedule Pending' :
                           isApprovedReschedule ? 'Rescheduled' :
-                          appt.status === 'COMPLETED' ? 'Completed' :
-                          appt.status === 'CANCELLED' || appt.status === 'CANCELED' ? 'Canceled' :
                           'Upcoming';
 
                         const hasCoachNotes = Boolean(appt.coachNotes || appt.notes);
@@ -1381,7 +1386,7 @@ export default function MyJourney() {
                                 </div>
 
                                 {/* 3-Dots Action Menu (Cancel Session) */}
-                                {(appt.status === 'UPCOMING' || !appt.status) && (
+                                {!isCompleted && !isCancelled && (appt.status === 'UPCOMING' || !appt.status) && (
                                   <div className="relative mj-card-dots-wrap shrink-0">
                                     <button
                                       type="button"
@@ -1468,11 +1473,18 @@ export default function MyJourney() {
                               <div className="mj-tags mt-2">
                                 <span className={cn(
                                   "mj-tag",
+                                  isCompleted && "!bg-[#dcfce7] !text-[#15803d] font-bold border border-[#bbf7d0]",
                                   isPendingReschedule && "!bg-[#ffe8a1] !text-[#664d03] font-bold",
-                                  isApprovedReschedule && "!bg-[#bfe0f9] !text-[#0c4a6e] font-bold"
+                                  isApprovedReschedule && !isCompleted && "!bg-[#bfe0f9] !text-[#0c4a6e] font-bold",
+                                  isCancelled && "!bg-[#fee2e2] !text-[#991b1b] font-bold"
                                 )}>
                                   {statusTag}
                                 </span>
+                                {isCompleted && isApprovedReschedule && (
+                                  <span className="mj-tag !bg-[#e0f2fe] !text-[#0369a1] font-semibold">
+                                    Rescheduled
+                                  </span>
+                                )}
                                 <span className="mj-tag">{isFree ? 'Course Perk' : 'Paid'}</span>
                                 {hasCoachNotes && (
                                   hasUnreadCoachNote ? (
@@ -1527,8 +1539,8 @@ export default function MyJourney() {
                                 </button>
                               )}
 
-                              {/* Join Session button */}
-                              {(appt.status === 'UPCOMING' || appt.status === 'RESCHEDULED' || !appt.status) && (
+                              {/* Join Session button (Only for active upcoming sessions) */}
+                              {!isCompleted && !isCancelled && (appt.status === 'UPCOMING' || appt.status === 'RESCHEDULED' || !appt.status) && (
                                 <a 
                                   href={appt.meetLink || 'https://meet.google.com'}
                                   target="_blank"
@@ -1550,7 +1562,7 @@ export default function MyJourney() {
                                 View session details
                               </button>
 
-                              {(appt.status === 'UPCOMING' || appt.status === 'RESCHEDULED' || !appt.status) && (
+                              {!isCompleted && !isCancelled && (appt.status === 'UPCOMING' || appt.status === 'RESCHEDULED' || !appt.status) && (
                                 isPendingReschedule ? (
                                   <button 
                                     disabled

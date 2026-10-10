@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Container from '../ui/Container';
-import defaultBgImg from '../../assets/Page10/next-chapter-cozy.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
   ArrowRight, 
@@ -10,6 +10,8 @@ import {
   Target
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
+
+const defaultBgImg = CDN_IMAGES.NEXT_CHAPTER_COZY;
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 

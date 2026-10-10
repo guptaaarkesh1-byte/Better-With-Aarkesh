@@ -894,7 +894,7 @@ export default function AdminAppointmentsView() {
     try {
       const appDateTime = new Date(`${app.date} ${app.time || '00:00'}`);
       if (!isNaN(appDateTime.getTime()) && appDateTime < new Date()) {
-        return <span className="bwa-pill p-re">Past · close it</span>;
+        return <span className="bwa-pill p-none" style={{ background: '#f0ede8', color: '#66615b', fontWeight: 600 }}>Expired / Closed</span>;
       }
     } catch (e) {}
 

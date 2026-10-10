@@ -6,16 +6,29 @@ import TransitionIntro from './TransitionIntro';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
+const getInitialProblemData = () => {
+  try {
+    const cached = localStorage.getItem('cached_problem_settings');
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+  return null;
+};
+
 export default function ProblemSection() {
   const sectionRef = useRef(null);
-  const [problemData, setProblemData] = useState(null);
+  const [problemData, setProblemData] = useState(getInitialProblemData);
 
   useEffect(() => {
     let isMounted = true;
     fetch(`${API_URL}/api/home-settings/problem`)
       .then(res => res.ok ? res.json() : null)
       .then(d => {
-        if (d && isMounted) setProblemData(d);
+        if (d && isMounted) {
+          setProblemData(d);
+          try {
+            localStorage.setItem('cached_problem_settings', JSON.stringify(d));
+          } catch (e) {}
+        }
       })
       .catch(err => console.error('Failed to load problem settings:', err));
     return () => { isMounted = false; };
@@ -24,8 +37,8 @@ export default function ProblemSection() {
   return (
     <section ref={sectionRef} id="problem" className="relative w-full z-20">
       
-      {/* Transition Intro (Statement section) - Positioned 50% over Hero and 50% over Problem section */}
-      <div className="relative z-30 w-full -mt-[60px] sm:-mt-[68px] lg:-mt-[74px]">
+      {/* Transition Intro (Statement section) - Starts cleanly down below Hero button on mobile; overlaps on desktop */}
+      <div className="relative z-30 w-full mt-8 sm:mt-10 lg:-mt-[74px]">
         <TransitionIntro problemData={problemData || {}} />
       </div>
 

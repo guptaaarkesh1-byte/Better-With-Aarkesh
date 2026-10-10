@@ -57,7 +57,10 @@ export default function PrinciplesContainer({ children }) {
   }, []);
 
   return (
-    <div ref={container} className="relative w-full">
+    <div 
+      ref={container} 
+      className="relative z-20 w-full bg-[#f5f1e8]"
+    >
       {/* 
         Sticky Overlay for the Global Progress Bar 
         It sits on top of all the children (the Principle sections)

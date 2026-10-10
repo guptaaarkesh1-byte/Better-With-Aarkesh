@@ -1640,12 +1640,11 @@
 .bwa-scrim {
   position: fixed;
   inset: 0;
-  background: rgba(30, 20, 15, 0.6);
+  background: rgba(20, 15, 12, 0.65);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
   z-index: 998;
-  backdrop-filter: blur(4px);
 }
 
 .bwa-scrim.on {
@@ -1666,6 +1665,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: -15px 0 45px rgba(0, 0, 0, 0.25);
+  will-change: transform;
 }
 
 .bwa-drawer.on {
@@ -1698,6 +1698,9 @@
 .bwa-dbd {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  contain: content;
   padding: 22px 26px;
   background: #fdfbf7;
 }

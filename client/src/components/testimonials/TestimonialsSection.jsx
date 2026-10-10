@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Container from '../ui/Container';
-import defaultBgImg from '../../assets/Page9/testimonials-doorway.webp';
+import { CDN_IMAGES } from '../../utils/cdnAssets';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
   Quotes, 
@@ -12,6 +12,8 @@ import {
   Handshake, 
   Heart 
 } from '@phosphor-icons/react';
+
+const defaultBgImg = CDN_IMAGES.TESTIMONIALS_DOORWAY;
 import { Link } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
@@ -232,9 +234,9 @@ export default function TestimonialsSection() {
         {/* Soft cream gradient only on the left for text and cards */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#f5f1e8]/80 via-[#f5f1e8]/50 via-35% md:via-[#f5f1e8]/30 md:via-50% to-transparent w-full lg:w-[50%]" />
         
-        {/* Minimal edge blends */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#f5f1e8]/50 to-transparent" />
-        <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#f5f1e8]/40 to-transparent" />
+        {/* Subtle edge blends */}
+        <div className="absolute inset-x-0 bottom-0 h-12 lg:h-16 bg-gradient-to-t from-[#f5f1e8] to-transparent pointer-events-none z-10" />
+        <div className="absolute inset-x-0 top-0 h-12 lg:h-16 bg-gradient-to-b from-[#f5f1e8] to-transparent pointer-events-none z-10" />
       </div>
 
       <div className="hidden lg:flex relative z-10 flex-grow flex-col pt-24 pb-8 w-full">

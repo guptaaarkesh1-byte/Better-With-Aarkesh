@@ -14,15 +14,11 @@ import {
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 
-// Import default images
-import pilotImgLocal from '../../assets/Page8/pilot.webp';
-import coachImgLocal from '../../assets/Page8/Coach.webp';
-import humanImgLocal from '../../assets/Page8/human.webp';
 import { CDN_IMAGES } from '../../utils/cdnAssets';
 
-const pilotImg = CDN_IMAGES.ABOUT_PILOT || pilotImgLocal;
-const coachImg = CDN_IMAGES.ABOUT_COACH || coachImgLocal;
-const humanImg = CDN_IMAGES.ABOUT_HUMAN || humanImgLocal;
+const pilotImg = CDN_IMAGES.ABOUT_PILOT;
+const coachImg = CDN_IMAGES.ABOUT_COACH;
+const humanImg = CDN_IMAGES.ABOUT_HUMAN;
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
@@ -70,7 +66,10 @@ export default function MeetAarkesh() {
     return () => { isMounted = false; };
   }, []);
 
-  const eyebrowText = aboutData?.eyebrowText || 'MEET AARKESH';
+  const rawEyebrow = (aboutData?.eyebrowText !== undefined && aboutData?.eyebrowText !== null && aboutData?.eyebrowText !== '') 
+    ? aboutData.eyebrowText 
+    : 'MEET AARKESH';
+  const eyebrowText = rawEyebrow;
   const headingLine = aboutData?.headingLine || 'Three roles. One purpose.';
   const rawSubheading = aboutData?.subheading || 'Different lenses. Same mission your growth.';
   const subheading = rawSubheading.replace(/—\s*|--\s*/g, ' ');
@@ -156,11 +155,18 @@ export default function MeetAarkesh() {
       <div className="block md:hidden w-full px-5 py-14 border-t border-black/10">
         {/* Header */}
         <div className="flex flex-col items-center justify-center text-center">
-          <h2 className="flex items-center justify-center gap-3 font-serif font-medium text-[clamp(26px,7.4vw,30px)] uppercase tracking-tight text-[#B3441F] before:content-[''] before:w-7 before:h-[1.5px] before:bg-[#c9542f] before:flex-shrink-0 after:content-[''] after:w-7 after:h-[1.5px] after:bg-[#c9542f] after:flex-shrink-0">
-            {eyebrowText || 'MEET AARKESH'}
-          </h2>
-          <div className="mt-4 text-center">
-            <p className="font-serif font-medium text-[21px] leading-[1.25] tracking-tight text-[#141414]">
+          <div className="flex items-center justify-center gap-2.5 w-full max-w-sm mx-auto">
+            <div className="h-[1.5px] w-6 sm:w-8 bg-[#c9542f] shrink-0" />
+            <h2 
+              className="font-serif font-medium text-[clamp(17px,4.8vw,23px)] uppercase tracking-[0.14em] text-[#B3441F] whitespace-pre leading-none m-0"
+              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+            >
+              {eyebrowText}
+            </h2>
+            <div className="h-[1.5px] w-6 sm:w-8 bg-[#c9542f] shrink-0" />
+          </div>
+          <div className="mt-3.5 text-center">
+            <p className="font-serif font-medium text-[20px] sm:text-[22px] leading-[1.25] tracking-tight text-[#141414]">
               {headingLine || 'Three roles. One purpose.'}
             </p>
             <small className="block mt-2 font-sans font-normal text-sm leading-[1.5] text-[#55504a]">
@@ -251,7 +257,7 @@ export default function MeetAarkesh() {
         <div className="flex items-center gap-3.5">
           <div className="h-[2px] w-8 sm:w-10 bg-[#c9542f]" />
           <span 
-            className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.6rem] font-medium tracking-tight text-[#c9542f]"
+            className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.6rem] font-medium tracking-tight text-[#c9542f] whitespace-pre"
             style={{ 
               fontFamily: 'Fraunces, Georgia, serif',
               fontSize: aboutData?.eyebrowFontSize ? `${aboutData.eyebrowFontSize}px` : undefined 
@@ -363,55 +369,55 @@ export default function MeetAarkesh() {
 
       {/* Bottom Banner */}
       <div className="w-full bg-[#ede7d8] border-b border-black/10 meet-footer shrink-0">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-5 sm:py-7 flex flex-col xl:flex-row items-center justify-between gap-6 lg:gap-8">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-1 sm:py-1.5 lg:py-2 flex flex-col xl:flex-row items-center justify-start gap-4 lg:gap-6 xl:gap-8">
           
           {/* Left Side: Mission */}
-          <div className="flex-1 shrink-0 flex flex-col items-start w-full xl:w-auto">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-[1.5px] w-6 bg-[#c9542f] origin-left" />
-              <span className="font-sans text-xs sm:text-[0.75rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
+          <div className="shrink-0 flex flex-col items-start w-full xl:w-auto max-w-lg">
+            <div className="flex items-center gap-2 mb-0.5">
+              <div className="h-[1.5px] w-4 bg-[#c9542f] origin-left" />
+              <span className="font-sans text-[10px] sm:text-[11px] uppercase tracking-[0.22em] font-bold text-[#c9542f]">
                 {aboutData?.missionEyebrow || 'BEYOND THE ROLES'}
               </span>
             </div>
             
-            <h3 className="font-serif text-xl sm:text-2xl md:text-[1.65rem] text-[#111010] tracking-tight leading-tight mb-2">
+            <h3 className="font-serif text-base sm:text-lg md:text-[1.25rem] text-[#111010] tracking-tight leading-tight mb-0.5">
               {missionHeading}
             </h3>
             
-            <p className="text-[#555047] font-light text-xs sm:text-sm md:text-[0.92rem] max-w-xl leading-relaxed mt-1">
+            <p className="text-[#555047] font-light text-[10.5px] sm:text-[11.5px] max-w-lg leading-snug">
               {missionDescription}
             </p>
           </div>
 
           {/* Right Side: Features */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-8 md:gap-10 w-full xl:w-auto xl:border-l border-black/10 xl:pl-10">
-            <div className="flex items-center gap-3.5 group">
-              <div className="w-11 h-11 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
-                <Compass size={20} className="text-[#c9542f]" weight="regular" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 lg:gap-6 w-full xl:w-auto xl:border-l border-black/10 xl:pl-6 lg:pl-4">
+            <div className="flex items-center gap-2 sm:gap-2.5 group">
+              <div className="w-8 h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
+                <Compass size={16} className="text-[#c9542f]" weight="regular" />
               </div>
               <div className="flex flex-col">
-                <span className="font-sans text-sm sm:text-base font-semibold text-[#111010] mb-0.5">Real experience</span>
-                <span className="text-[#555047] text-xs sm:text-[0.82rem] font-light leading-snug">Life in high-pressure<br/>environments.</span>
+                <span className="font-sans text-[12px] sm:text-[13px] font-semibold text-[#111010] leading-tight mb-0.5">Real experience</span>
+                <span className="text-[#555047] text-[9.5px] sm:text-[10.5px] font-light leading-tight">Life in high-pressure<br/>environments.</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3.5 group">
-              <div className="w-11 h-11 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
-                <Brain size={20} className="text-[#c9542f]" weight="regular" />
+            <div className="flex items-center gap-2 sm:gap-2.5 group">
+              <div className="w-8 h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
+                <Brain size={16} className="text-[#c9542f]" weight="regular" />
               </div>
               <div className="flex flex-col">
-                <span className="font-sans text-sm sm:text-base font-semibold text-[#111010] mb-0.5">Deep training</span>
-                <span className="text-[#555047] text-xs sm:text-[0.82rem] font-light leading-snug">Backed by science.<br/>Rooted in empathy.</span>
+                <span className="font-sans text-[12px] sm:text-[13px] font-semibold text-[#111010] leading-tight mb-0.5">Deep training</span>
+                <span className="text-[#555047] text-[9.5px] sm:text-[10.5px] font-light leading-tight">Backed by science.<br/>Rooted in empathy.</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3.5 group">
-              <div className="w-11 h-11 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
-                <Users size={20} className="text-[#c9542f]" weight="regular" />
+            <div className="flex items-center gap-2 sm:gap-2.5 group">
+              <div className="w-8 h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
+                <Users size={16} className="text-[#c9542f]" weight="regular" />
               </div>
               <div className="flex flex-col">
-                <span className="font-sans text-sm sm:text-base font-semibold text-[#111010] mb-0.5">Relatable approach</span>
-                <span className="text-[#555047] text-xs sm:text-[0.82rem] font-light leading-snug">No jargon. No masks.<br/>Just real conversations.</span>
+                <span className="font-sans text-[12px] sm:text-[13px] font-semibold text-[#111010] leading-tight mb-0.5">Relatable approach</span>
+                <span className="text-[#555047] text-[9.5px] sm:text-[10.5px] font-light leading-tight">No jargon. No masks.<br/>Just real conversations.</span>
               </div>
             </div>
           </div>
