@@ -1,11 +1,16 @@
 // Firebase CDN Loader & Google Auth Helper (Zero-bundle overhead)
+const rawAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'better-with-aarkesh.firebaseapp.com';
+const resolvedAuthDomain = (rawAuthDomain.includes('aarkeshgupta.com') || !rawAuthDomain.includes('firebaseapp.com'))
+  ? 'better-with-aarkesh.firebaseapp.com'
+  : rawAuthDomain;
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDDhKKZMPPxwtjOY6xKl6Bk6xZjttZXLxQ',
+  authDomain: resolvedAuthDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'better-with-aarkesh',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'better-with-aarkesh.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '1050925204668',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:1050925204668:web:5a54ffaeaf644087ec7cb9'
 };
 
 const loadFirebaseCDN = () => {
