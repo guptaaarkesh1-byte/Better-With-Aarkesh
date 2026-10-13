@@ -3,6 +3,11 @@ import Container from '../ui/Container';
 import { CDN_IMAGES } from '../../utils/cdnAssets';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
+  getResponsiveHeadingFontSize, 
+  getResponsiveDescriptionFontSize, 
+  getResponsiveEyebrowFontSize 
+} from '../../utils/responsiveFont';
+import { 
   Quotes, 
   ArrowRight, 
   ChatCenteredText, 
@@ -252,7 +257,7 @@ export default function TestimonialsSection() {
                   <div className="h-[1.5px] w-6 bg-[#c9542f]" />
                   <span 
                     className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]"
-                    style={{ fontSize: data?.eyebrowFontSize ? `${data.eyebrowFontSize}px` : undefined }}
+                    style={{ fontSize: getResponsiveEyebrowFontSize(data?.eyebrowFontSize) }}
                   >
                     {eyebrow}
                   </span>
@@ -262,7 +267,7 @@ export default function TestimonialsSection() {
                   className="font-serif text-[1.75rem] xs:text-[1.95rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08] mb-1 max-w-full"
                   style={{ 
                     fontFamily: 'Fraunces, Georgia, serif',
-                    ...(data?.headingFontSize ? { fontSize: `clamp(1.65rem, 6.5vw, ${data.headingFontSize}px)` } : {})
+                    ...(data?.headingFontSize ? { fontSize: getResponsiveHeadingFontSize(data.headingFontSize) } : {})
                   }}
                 >
                   {heading1}<br/>
@@ -273,7 +278,7 @@ export default function TestimonialsSection() {
                   className="text-[#4a463e] text-xl lg:text-2xl font-serif font-normal tracking-wide leading-relaxed max-w-xl mt-2"
                   style={{ 
                     fontFamily: 'Fraunces, Georgia, serif',
-                    fontSize: data?.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined 
+                    fontSize: getResponsiveDescriptionFontSize(data?.descriptionFontSize) 
                   }}
                 >
                   {description}

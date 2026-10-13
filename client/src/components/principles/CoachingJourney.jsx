@@ -6,6 +6,11 @@ import Container from '../ui/Container';
 import { CDN_IMAGES } from '../../utils/cdnAssets';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
+  getResponsiveHeadingFontSize, 
+  getResponsiveDescriptionFontSize, 
+  getResponsiveEyebrowFontSize 
+} from '../../utils/responsiveFont';
+import { 
   Compass, 
   Heart, 
   GitFork, 
@@ -287,7 +292,7 @@ export default function CoachingJourney() {
               <div className="h-[1.5px] w-6 bg-[#c9542f] origin-left" />
               <span 
                 className="font-sans text-[0.82rem] sm:text-[0.90rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]"
-                style={{ fontSize: data.eyebrowFontSize ? `${data.eyebrowFontSize}px` : undefined }}
+                style={{ fontSize: getResponsiveEyebrowFontSize(data.eyebrowFontSize) }}
               >
                 {data.eyebrowText || 'THE COACHING JOURNEY'}
               </span>
@@ -297,7 +302,7 @@ export default function CoachingJourney() {
               className="font-serif text-[1.75rem] xs:text-[1.95rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.5rem] font-medium tracking-tight leading-[1.08] mb-5 sm:mb-6 flex flex-col items-start journey-fade max-w-full"
               style={{ 
                 fontFamily: 'Fraunces, Georgia, serif',
-                ...(data.headingFontSize ? { fontSize: `clamp(1.65rem, 6.5vw, ${data.headingFontSize}px)` } : {})
+                ...(data.headingFontSize ? { fontSize: getResponsiveHeadingFontSize(data.headingFontSize) } : {})
               }}
             >
               <span className="text-[#111010] pb-0.5">{data.headingLine1 || 'A clear process.'}</span>
@@ -308,7 +313,7 @@ export default function CoachingJourney() {
               className="font-serif text-base lg:text-lg text-[#4a463e] font-normal tracking-wide leading-relaxed mb-5 xl:mb-7 journey-fade max-w-lg"
               style={{ 
                 fontFamily: 'Fraunces, Georgia, serif',
-                fontSize: data.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined
+                fontSize: getResponsiveDescriptionFontSize(data.descriptionFontSize)
               }}
             >
               {(data.description || "We don't do hacks. We follow a proven, human first process designed to create deep, lasting change.").replace(/human-first/g, 'human first')}

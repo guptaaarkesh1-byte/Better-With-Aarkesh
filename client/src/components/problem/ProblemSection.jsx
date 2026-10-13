@@ -37,8 +37,8 @@ export default function ProblemSection() {
   return (
     <section ref={sectionRef} id="problem" className="sticky top-0 z-10 w-full min-h-screen flex flex-col justify-between bg-[#f5f1e8]">
       
-      {/* Transition Intro (Statement section) - Starts overlapping bottom of Hero */}
-      <div className="relative z-30 w-full -mt-[60px] sm:-mt-[68px] lg:-mt-[74px]">
+      {/* Transition Intro (Statement section) - Below Hero on mobile, overlapping on desktop */}
+      <div className="relative z-30 w-full mt-2 sm:mt-4 lg:-mt-[74px]">
         <TransitionIntro problemData={problemData || {}} />
       </div>
 

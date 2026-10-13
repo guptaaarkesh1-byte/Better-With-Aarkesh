@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Container from '../ui/Container';
 import { CaretDown, Sparkle } from '@phosphor-icons/react';
+import { 
+  getResponsiveHeadingFontSize, 
+  getResponsiveDescriptionFontSize, 
+  getResponsiveEyebrowFontSize 
+} from '../../utils/responsiveFont';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -71,17 +76,17 @@ export default function CoachingFaqSection() {
         <div className="flex flex-col items-center text-center mb-14 md:mb-18">
           <div 
             className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#fbf0eb] border border-[#e8c4e2] text-[#c9542f] text-[0.82rem] sm:text-[0.90rem] font-sans font-bold uppercase tracking-[0.25em] mb-4 shadow-xs"
-            style={{ fontSize: data?.eyebrowFontSize ? `${data.eyebrowFontSize}px` : undefined }}
+            style={{ fontSize: getResponsiveEyebrowFontSize(data?.eyebrowFontSize) }}
           >
             <Sparkle size={15} weight="fill" />
             <span>{badgeText}</span>
           </div>
 
           <h2 
-            className="font-serif text-4xl sm:text-5xl md:text-6xl text-[#111010] tracking-tight leading-tight max-w-3xl"
+            className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#111010] tracking-tight leading-tight max-w-3xl"
             style={{ 
               fontFamily: 'Fraunces, Georgia, serif',
-              fontSize: data?.headingFontSize ? `${data.headingFontSize}px` : undefined 
+              fontSize: getResponsiveHeadingFontSize(data?.headingFontSize)
             }}
           >
             {heading1}<br />
@@ -90,7 +95,7 @@ export default function CoachingFaqSection() {
 
           <p 
             className="font-sans text-base sm:text-lg md:text-[1.05rem] text-[#555047] max-w-2xl mt-4 leading-relaxed font-light"
-            style={{ fontSize: data?.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined }}
+            style={{ fontSize: getResponsiveDescriptionFontSize(data?.descriptionFontSize) }}
           >
             {data?.description || 'Have questions about starting your coaching journey? Here are straightforward answers to help you take the first step with complete confidence.'}
           </p>

@@ -3,6 +3,11 @@ import Container from '../ui/Container';
 import { CDN_IMAGES } from '../../utils/cdnAssets';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { 
+  getResponsiveHeadingFontSize, 
+  getResponsiveDescriptionFontSize, 
+  getResponsiveEyebrowFontSize 
+} from '../../utils/responsiveFont';
+import { 
   ArrowRight, 
   LockKey,
   CalendarBlank,
@@ -206,7 +211,7 @@ export default function FinalCtaSection() {
                 className="font-serif text-[1.75rem] xs:text-[1.95rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.5rem] text-[#111010] font-medium tracking-tight leading-[1.08] max-w-full"
                 style={{ 
                   fontFamily: 'Fraunces, Georgia, serif',
-                  ...(data?.headingFontSize ? { fontSize: `clamp(1.65rem, 6.5vw, ${data.headingFontSize}px)` } : {})
+                  ...(data?.headingFontSize ? { fontSize: getResponsiveHeadingFontSize(data.headingFontSize) } : {})
                 }}
               >
                 {heading1}<br/>
@@ -217,7 +222,7 @@ export default function FinalCtaSection() {
                 className="font-serif text-xl lg:text-2xl text-[#4a463e] font-normal tracking-wide leading-relaxed max-w-xl mt-2"
                 style={{ 
                   fontFamily: 'Fraunces, Georgia, serif',
-                  fontSize: data?.descriptionFontSize ? `${data.descriptionFontSize}px` : undefined 
+                  fontSize: getResponsiveDescriptionFontSize(data?.descriptionFontSize) 
                 }}
               >
                 {renderDescription(description)}

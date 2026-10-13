@@ -3,6 +3,11 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from '@phosphor-icons/react';
+import { 
+  getResponsiveHeadingFontSize, 
+  getResponsiveDescriptionFontSize, 
+  getResponsiveEyebrowFontSize 
+} from '../../utils/responsiveFont';
 
 export default function HeroContent({ heroData = {} }) {
   const container = useRef(null);
@@ -51,7 +56,7 @@ export default function HeroContent({ heroData = {} }) {
         <div className="hero-line h-[1.5px] w-10 bg-[#c9542f] origin-left" />
         <span 
           className="hero-eyebrow font-sans text-[0.82rem] sm:text-[0.90rem] font-bold uppercase tracking-[0.25em] text-[#c9542f]"
-          style={{ fontSize: heroData.eyebrowFontSize ? `${heroData.eyebrowFontSize}px` : undefined }}
+          style={{ fontSize: getResponsiveEyebrowFontSize(heroData.eyebrowFontSize) }}
         >
           {eyebrow}
         </span>
@@ -61,7 +66,7 @@ export default function HeroContent({ heroData = {} }) {
         className="hero-heading font-serif text-[2.1rem] xs:text-[2.4rem] sm:text-4xl md:text-6xl lg:text-[4.5rem] leading-[1.08] text-[#111010] font-medium tracking-tight mb-6 max-w-full"
         style={{ 
           fontFamily: 'Fraunces, Georgia, serif',
-          ...(heroData.headingFontSize ? { fontSize: `clamp(2rem, 7vw, ${heroData.headingFontSize}px)` } : {})
+          ...(heroData.headingFontSize ? { fontSize: getResponsiveHeadingFontSize(heroData.headingFontSize) } : {})
         }}
       >
         {heading1}
@@ -74,7 +79,7 @@ export default function HeroContent({ heroData = {} }) {
         className="hero-paragraph font-serif text-xl lg:text-2xl text-[#4a463e] font-normal tracking-wide leading-relaxed max-w-xl mb-10"
         style={{ 
           fontFamily: 'Fraunces, Georgia, serif',
-          fontSize: heroData.descriptionFontSize ? `${heroData.descriptionFontSize}px` : undefined 
+          fontSize: getResponsiveDescriptionFontSize(heroData.descriptionFontSize)
         }}
       >
         {description.includes('\n') ? (
