@@ -30,9 +30,9 @@ const ICONS = [Compass, Heart, GitFork, Mountains];
 // =========================================================================
 export const DESKTOP_IMAGE_CONTROLS = {
   zoom: 1.30,             // 🔍 Zoom / Scale: 1.0 (100%), 1.08 (108%), 1.15 (115%), 1.25 (125%)
-  posX: '8%',            // ↔️ Horizontal Position: '0%' (Left), '50%' (Center), '78%' (Right), '100%' (Far Right)
+  posX: 'right',          // ↔️ Horizontal Position: '0%' (Left), '50%' (Center), '78%' (Right), '100%' / 'right' (Far Right)
   posY: '35%',            // ↕️ Vertical Position: '0%' (Top), '35%' (Upper Center), '50%' (Center)
-  translateX: '-200px',      // 🎯 Fine-tune Left/Right pixel nudge: e.g. '+20px', '-40px'
+  translateX: '0px',      // 🎯 Fine-tune Left/Right pixel nudge: e.g. '+20px', '-40px'
   translateY: '0px',      // 🎯 Fine-tune Up/Down pixel nudge: e.g. '+15px', '-20px'
 };
 
@@ -262,6 +262,7 @@ export default function CoachingJourney() {
             }`}
             style={{
               objectPosition: `${DESKTOP_IMAGE_CONTROLS.posX} ${DESKTOP_IMAGE_CONTROLS.posY}`,
+              transformOrigin: 'right center',
               transform: `scale(${DESKTOP_IMAGE_CONTROLS.zoom}) translate(${DESKTOP_IMAGE_CONTROLS.translateX}, ${DESKTOP_IMAGE_CONTROLS.translateY}) translateZ(0)`
             }}
           />

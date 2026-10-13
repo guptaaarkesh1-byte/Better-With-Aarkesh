@@ -2,8 +2,80 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, BookmarkSimple, Check } from '@phosphor-icons/react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import LoginModal from '../../components/layout/LoginModal';
+import { CURATED_LIBRARY_ARTICLES } from '../../constants/libraryArticlesData';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+export function getArticleSubtext(art) {
+  if (!art) return '';
+  // 1. Explicit subtitle
+  if (art.subtitle && typeof art.subtitle === 'string' && art.subtitle.trim()) {
+    return art.subtitle.trim();
+  }
+  // 2. Explicit excerpt / description
+  if (art.excerpt && typeof art.excerpt === 'string' && art.excerpt.trim()) {
+    return `${art.excerpt.trim()}${art.highlightText ? ` *${art.highlightText}*` : ''}`;
+  }
+  if (art.description && typeof art.description === 'string' && art.description.trim()) {
+    return art.description.trim();
+  }
+  // 3. Match from CURATED_LIBRARY_ARTICLES
+  const matchCurated = CURATED_LIBRARY_ARTICLES?.find(
+    c => (art.slug && c.slug === art.slug) || 
+         (art.id && c.id === art.id) || 
+         (art.title && c.title && c.title.toLowerCase() === art.title.toLowerCase())
+  );
+  if (matchCurated?.subtitle && typeof matchCurated.subtitle === 'string' && matchCurated.subtitle.trim()) {
+    return matchCurated.subtitle.trim();
+  }
+  if (matchCurated?.excerpt && typeof matchCurated.excerpt === 'string' && matchCurated.excerpt.trim()) {
+    return matchCurated.excerpt.trim();
+  }
+  if (matchCurated?.description && typeof matchCurated.description === 'string' && matchCurated.description.trim()) {
+    return matchCurated.description.trim();
+  }
+
+  // 4. Drop cap text
+  if (art.dropCapText && typeof art.dropCapText === 'string' && art.dropCapText.trim()) {
+    return art.dropCapText.trim();
+  }
+
+  // 5. Paragraphs after drop cap
+  if (Array.isArray(art.paragraphsAfterDropCap) && art.paragraphsAfterDropCap.length > 0) {
+    const firstP = art.paragraphsAfterDropCap.find(p => p && typeof p === 'string' && p.trim());
+    if (firstP) return firstP.trim();
+  }
+
+  // 6. Blocks
+  if (Array.isArray(art.blocks) && art.blocks.length > 0) {
+    for (const b of art.blocks) {
+      if ((b.type === 'paragraph' || b.type === 'dropCap') && b.text && typeof b.text === 'string' && b.text.trim()) {
+        const clean = b.text.replace(/<[^>]+>/g, '').trim();
+        if (clean.length > 25) {
+          return clean.length > 200 ? clean.slice(0, 190).trim() + '...' : clean;
+        }
+      }
+    }
+  }
+
+  // 7. Body HTML
+  const rawHtml = art.bodyHtml || art.body_html || '';
+  if (rawHtml) {
+    const match = rawHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+    if (match && match[1]) {
+      const clean = match[1].replace(/<[^>]+>/g, '').trim();
+      if (clean.length > 25) {
+        return clean.length > 200 ? clean.slice(0, 190).trim() + '...' : clean;
+      }
+    }
+    const cleanAll = rawHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (cleanAll.length > 25) {
+      return cleanAll.length > 200 ? cleanAll.slice(0, 190).trim() + '...' : cleanAll;
+    }
+  }
+
+  return '';
+}
 
 export function resolveImageUrl(url, fallback = '') {
   if (!url) return fallback;
@@ -922,17 +994,18 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
               {renderFormattedTitle(article.title, theme.accent)}
             </h1>
 
-            <p 
-              className="text-base sm:text-lg font-normal leading-relaxed mb-8 max-w-xl"
-              style={{ color: theme.inkMuted, fontFamily: 'Fraunces, serif' }}
-            >
-              {renderFormattedTitle(
-                article.subtitle || 
-                (article.excerpt ? `${article.excerpt}${article.highlightText ? ` *${article.highlightText}*` : ''}` : '') ||
-                article.description || '',
-                theme.accent
-              )}
-            </p>
+            {(() => {
+              const subtext = getArticleSubtext(article);
+              if (!subtext) return null;
+              return (
+                <p 
+                  className="text-base sm:text-lg font-normal leading-relaxed mb-8 max-w-xl"
+                  style={{ color: theme.inkMuted, fontFamily: 'Fraunces, serif' }}
+                >
+                  {renderFormattedTitle(subtext, theme.accent)}
+                </p>
+              );
+            })()}
 
             <div className="flex flex-col gap-3.5">
               <span 

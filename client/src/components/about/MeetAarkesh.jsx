@@ -42,9 +42,9 @@ const getInitialAboutData = () => {
 };
 
 export const MEET_OVERLAY_CONFIG = {
-  peakStart: 0.15,         // Scroll progress where blur & text reach full strength (15%)
-  fadeStart: 0.40,         // Scroll progress where smooth fade-out begins (40%)
-  fadeEnd: 0.75,           // Scroll progress where blur & text are completely faded out (75%)
+  peakStart: 0.02,         // Section entering -> reaches full blur & text immediately
+  fadeStart: 0.30,         // Smooth fade-out starts after 30% scroll
+  fadeEnd: 0.60,           // Blur & text completely faded out by 60%
   maxBlurDesktop: 18,      // Max blur on desktop in pixels (18px)
   maxBlurMobile: 12,       // Max blur on mobile in pixels (12px, screens < 768px)
   textMain: 'MEET',        // Main title text
@@ -135,17 +135,20 @@ export default function MeetAarkesh() {
     if (!overlay || !container.current) return undefined;
     const title = overlay.querySelector('.meet-overlay-title');
 
-    let ticking = false;
-    const setHidden = () => {
-      overlay.style.opacity = '0';
+    let animationFrame = null;
+    const setHidden = (y = MEET_OVERLAY_CONFIG.startY) => {
+      overlay.style.backdropFilter = 'none';
+      overlay.style.webkitBackdropFilter = 'none';
+      overlay.style.backgroundColor = 'transparent';
       overlay.style.visibility = 'hidden';
       if (title) {
-        title.style.transform = `translateY(${MEET_OVERLAY_CONFIG.startY}px)`;
+        title.style.opacity = '0';
+        title.style.transform = `translateY(${y}px)`;
       }
     };
 
     const updateOverlay = () => {
-      ticking = false;
+      animationFrame = null;
       if (reducedMotion.matches) {
         setHidden();
         return;
@@ -162,60 +165,83 @@ export default function MeetAarkesh() {
 
       const rawP = 1 - rect.top / vh;
       const progress = Math.min(Math.max(rawP, 0), 1);
-      const { peakStart, fadeStart, fadeEnd, startY, peakY, endY } = MEET_OVERLAY_CONFIG;
+      const { peakStart, fadeStart, fadeEnd, startY, peakY, endY, maxBlurMobile, maxBlurDesktop } = MEET_OVERLAY_CONFIG;
 
       if (progress <= 0 || progress >= fadeEnd) {
         setHidden(progress <= 0 ? startY : endY);
         return;
       }
 
+      const maxBlur = window.innerWidth < 768 ? maxBlurMobile : maxBlurDesktop;
+
+      let blur = 0;
       let opacity = 0;
       let y = peakY;
 
       if (progress <= peakStart) {
+        // Phase 1 (0 -> 0.15): Ease-in ramp up as section enters
         const phase = progress / peakStart;
         const curve = 1 - (1 - phase) * (1 - phase);
+        blur = maxBlur * curve;
         opacity = curve;
         y = startY + (peakY - startY) * curve;
       } else if (progress <= fadeStart) {
+        // Phase 2 (0.15 -> 0.40): Steady full peak — strong blur & visible text
+        blur = maxBlur;
         opacity = 1;
         y = peakY;
       } else {
+        // Phase 3 (0.40 -> 0.75): After 40% scroll, smoothly fade out both blur and text in exact sync
         const phase = (progress - fadeStart) / (fadeEnd - fadeStart);
         const smoothDecrease = 0.5 * (1 + Math.cos(phase * Math.PI));
+        blur = maxBlur * smoothDecrease;
         opacity = smoothDecrease;
         y = endY + (peakY - endY) * smoothDecrease;
       }
 
+      const blurVal = blur.toFixed(1);
       const opVal = opacity.toFixed(3);
       const yVal = y.toFixed(1);
 
-      // 100% hardware-composited GPU update: zero recalculation of blur shaders
-      overlay.style.opacity = opVal;
+      overlay.style.backdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
+      overlay.style.webkitBackdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
+      overlay.style.backgroundColor = opacity > 0.01 ? `rgba(245, 241, 232, ${(opacity * 0.42).toFixed(3)})` : 'transparent';
       overlay.style.visibility = opacity > 0.005 ? 'visible' : 'hidden';
 
       if (title) {
+        title.style.opacity = opVal;
         title.style.transform = `translateY(${yVal}px)`;
       }
     };
 
     const requestUpdate = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(updateOverlay);
-        ticking = true;
+      if (animationFrame === null) {
+        animationFrame = window.requestAnimationFrame(updateOverlay);
       }
     };
+    const handleMotionPreference = () => requestUpdate();
 
     window.addEventListener('scroll', requestUpdate, { passive: true });
     window.addEventListener('resize', requestUpdate, { passive: true });
-    reducedMotion.addEventListener('change', requestUpdate);
+    reducedMotion.addEventListener('change', handleMotionPreference);
+
+    ScrollTrigger.addEventListener('scroll', requestUpdate);
+
+    if (window.lenis) {
+      window.lenis.on('scroll', requestUpdate);
+    }
 
     requestUpdate();
 
     return () => {
       window.removeEventListener('scroll', requestUpdate);
       window.removeEventListener('resize', requestUpdate);
-      reducedMotion.removeEventListener('change', requestUpdate);
+      reducedMotion.removeEventListener('change', handleMotionPreference);
+      ScrollTrigger.removeEventListener('scroll', requestUpdate);
+      if (window.lenis) {
+        window.lenis.off('scroll', requestUpdate);
+      }
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
     };
   }, []);
 

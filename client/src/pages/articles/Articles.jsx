@@ -434,13 +434,28 @@ export default function Articles() {
 
   // If viewing a specific article, show Reader View
   if (articleParam) {
-    const curated = getCuratedArticle(articleParam);
     const dbMatch = publishedArticles.find(
       a => a._id === articleParam || a.slug === articleParam || (a.title && a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === articleParam)
     );
+    
+    // Find matching curated article using articleParam, dbMatch slug, or dbMatch title
+    const curatedMatch = CURATED_LIBRARY_ARTICLES.find(
+      a => (articleParam && (a.id === articleParam || a.slug === articleParam || a.title?.toLowerCase() === articleParam?.toLowerCase())) ||
+           (dbMatch?.slug && a.slug === dbMatch.slug) ||
+           (dbMatch?.title && a.title?.toLowerCase() === dbMatch.title?.toLowerCase())
+    ) || getCuratedArticle(articleParam);
+
     const mergedArticle = dbMatch 
-      ? { ...curated, ...dbMatch, image: resolveImageUrl(dbMatch.featuredImage || dbMatch.image || curated?.image) } 
-      : curated;
+      ? { 
+          ...curatedMatch, 
+          ...dbMatch,
+          subtitle: (dbMatch.subtitle && dbMatch.subtitle.trim()) || curatedMatch?.subtitle || '',
+          description: (dbMatch.description && dbMatch.description.trim()) || curatedMatch?.description || '',
+          excerpt: (dbMatch.excerpt && dbMatch.excerpt.trim()) || curatedMatch?.excerpt || '',
+          readTime: dbMatch.readTime || curatedMatch?.readTime || '5 MIN READ',
+          image: resolveImageUrl(dbMatch.featuredImage || dbMatch.image || curatedMatch?.image) 
+        } 
+      : (curatedMatch || getCuratedArticle(articleParam));
 
     if (mergedArticle) {
       return (

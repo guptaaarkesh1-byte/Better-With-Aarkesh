@@ -60,6 +60,8 @@ export default function HeroImage({
           transform: imagePositionY ? `translateY(${Number(imagePositionY)}px)` : undefined
         }}
       />
+      {/* Bottom subtle gradient fade */}
+      <div className="absolute inset-x-0 bottom-0 h-12 sm:h-16 bg-gradient-to-t from-[#f5f1e8] to-transparent pointer-events-none z-10" />
     </div>
   );
 }
