@@ -130,6 +130,63 @@ body {
   font-family: var(--sans);
 }
 
+/* Footer text must remain inside narrow mobile viewports even when font sizes
+   are customized from the admin dashboard. */
+@media (max-width: 639px) {
+  .site-footer {
+    padding-top: 3.25rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .site-footer .footer-brand-title {
+    display: block;
+    max-width: calc(100vw - 7.5rem);
+    overflow-wrap: anywhere;
+    font-size: clamp(1.35rem, 6.5vw, 1.8rem) !important;
+    line-height: 1.05;
+  }
+
+  .site-footer .footer-description {
+    font-size: 0.95rem !important;
+    line-height: 1.6;
+  }
+
+  .site-footer .footer-email {
+    min-width: 0;
+    gap: 0.65rem;
+    font-size: 0.9rem !important;
+  }
+
+  .site-footer .footer-email a {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .site-footer .footer-column-title {
+    font-size: 0.68rem !important;
+    letter-spacing: 0.17em;
+  }
+
+  .site-footer .footer-link-list {
+    font-size: 0.875rem !important;
+    line-height: 1.45;
+  }
+
+  .site-footer .footer-link-list li,
+  .site-footer .footer-link-list a {
+    min-width: 0;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  .site-footer .footer-copyright {
+    font-size: 0.75rem !important;
+    line-height: 1.5;
+  }
+}
+
 /* Keyframe animations for mobile design elements */
 @keyframes drift {
   from {

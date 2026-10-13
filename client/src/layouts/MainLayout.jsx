@@ -100,9 +100,9 @@ export default function MainLayout({ children }) {
   }, [location.pathname, location.hash, location.search]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f1e8] text-paragraph relative selection:bg-accent-gold selection:text-black">
+    <div className="min-h-screen w-full flex flex-col bg-[#f5f1e8] text-paragraph relative selection:bg-accent-gold selection:text-black">
       <Navbar />
-      <main className="flex-grow flex flex-col">
+      <main className="w-full flex-grow flex flex-col">
         {children}
       </main>
       <FloatingCTA />

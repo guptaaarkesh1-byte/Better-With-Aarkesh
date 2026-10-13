@@ -1086,7 +1086,7 @@ export default function MyJourney() {
             )}
 
             {/* Right End of Tab Row: Profile & Settings Button (Black) & Book a Session Button (Orange) */}
-            <div className="flex items-center gap-3">
+            <div className="mj-tab-actions">
               {/* Profile & Settings Button (Black) */}
               <button
                 onClick={() => {
@@ -1153,6 +1153,16 @@ export default function MyJourney() {
                   {activeTab === 'coaching' && (
                     <div className="mj-group">
                       <span>Show</span>
+                      <label className="mj-mobile-filter">
+                        <span>Appointment status</span>
+                        <select value={coachFilter} onChange={(e) => setCoachFilter(e.target.value)}>
+                          <option value="upcoming">Upcoming ({upcomingCount})</option>
+                          <option value="completed">Completed ({completedCount})</option>
+                          <option value="rescheduled">Rescheduled ({rescheduledCount})</option>
+                          <option value="canceled">Canceled ({canceledCount})</option>
+                        </select>
+                      </label>
+                      <div className="mj-filter-options">
                       <label className="mj-opt radio">
                         <input 
                           type="radio" 
@@ -1197,12 +1207,21 @@ export default function MyJourney() {
                         Canceled
                         <em>{canceledCount}</em>
                       </label>
+                      </div>
                     </div>
                   )}
 
                   {activeTab === 'library' && (
                     <div className="mj-group">
                       <span>Status</span>
+                      <label className="mj-mobile-filter">
+                        <span>Library status</span>
+                        <select value={libraryFilter} onChange={(e) => setLibraryFilter(e.target.value)}>
+                          <option value="bookmarked">Saved ({savedCount})</option>
+                          <option value="completed">Completed ({finishedCount})</option>
+                        </select>
+                      </label>
+                      <div className="mj-filter-options">
                       <label className="mj-opt radio">
                         <input 
                           type="radio" 
@@ -1225,12 +1244,21 @@ export default function MyJourney() {
                         Completed
                         <em>{finishedCount}</em>
                       </label>
+                      </div>
                     </div>
                   )}
 
                   {activeTab === 'course' && (
                     <div className="mj-group">
                       <span>Show</span>
+                      <label className="mj-mobile-filter">
+                        <span>Course status</span>
+                        <select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}>
+                          <option value="all">All courses ({coursesList.length})</option>
+                          {isCoursePurchaser && <option value="enrolled">My courses ({coursesList.filter(c => c.kind === 'enrolled').length})</option>}
+                        </select>
+                      </label>
+                      <div className="mj-filter-options">
                       <label className="mj-opt radio">
                         <input 
                           type="radio" 
@@ -1255,6 +1283,7 @@ export default function MyJourney() {
                           <em>{coursesList.filter(c => c.kind === 'enrolled').length}</em>
                         </label>
                       )}
+                      </div>
                     </div>
                   )}
 
@@ -1281,9 +1310,9 @@ export default function MyJourney() {
                   </div>
 
                   {/* Right-aligned Sort By Controls */}
-                  <div className="flex items-center gap-2">
+                  <div className="mj-sort">
                     <span className="text-xs font-semibold text-[#7a7269] hidden md:inline">Sort:</span>
-                    <div className="flex items-center gap-1 p-1 bg-[#ede9e4] rounded-full border border-black/5 shadow-inner">
+                    <div className="mj-sort-options flex items-center gap-1 p-1 bg-[#ede9e4] rounded-full border border-black/5 shadow-inner">
                       <button
                         onClick={() => setAppointmentSort('soonest')}
                         className={cn(

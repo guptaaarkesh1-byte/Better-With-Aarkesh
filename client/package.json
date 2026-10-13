@@ -26,11 +26,14 @@
     "react-dom": "^19.2.7",
     "react-icons": "^5.7.0",
     "react-quill-new": "^3.8.3",
-    "react-router-dom": "^7.18.1",
+    "react-router-dom": "^7.18.2",
     "socket.io-client": "^4.8.4",
     "split-type": "^0.3.4",
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.1"
+  },
+  "overrides": {
+    "postcss-selector-parser": "^7.1.6"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.20",

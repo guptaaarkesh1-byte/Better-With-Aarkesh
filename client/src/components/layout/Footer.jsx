@@ -111,7 +111,7 @@ export default function Footer() {
   }, [currentYear]);
 
   return (
-    <footer className="w-full bg-[#ede7d8] border-t border-black/10 pt-16 sm:pt-24 pb-12 relative z-30 select-none overflow-hidden">
+    <footer className="site-footer w-full bg-[#ede7d8] border-t border-black/10 pt-16 sm:pt-24 pb-12 relative z-30 select-none overflow-hidden">
       {/* Subtle Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-[#c9542f]/5 rounded-full blur-[140px] pointer-events-none" />
 
@@ -127,7 +127,7 @@ export default function Footer() {
                 <Sparkle size={22} weight="fill" />
               </div>
               <span 
-                className="font-serif text-3xl sm:text-4xl text-[#111010] tracking-tight leading-none"
+                className="footer-brand-title font-serif text-3xl sm:text-4xl text-[#111010] tracking-tight leading-none"
                 style={{ fontSize: brandSettings.brandTitleFontSize ? `${brandSettings.brandTitleFontSize}px` : undefined }}
               >
                 BetterWith<em className="text-[#c9542f] not-italic font-normal ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>
@@ -135,7 +135,7 @@ export default function Footer() {
             </Link>
 
             <p 
-              className="font-sans text-base sm:text-[1.05rem] text-[#4a463e] font-normal leading-relaxed max-w-lg"
+              className="footer-description font-sans text-base sm:text-[1.05rem] text-[#4a463e] font-normal leading-relaxed max-w-lg"
               style={{ fontSize: brandSettings.bioFontSize ? `${brandSettings.bioFontSize}px` : undefined }}
             >
               {brandSettings.brandDescription}
@@ -144,7 +144,7 @@ export default function Footer() {
             {/* Direct Contact Email */}
             {brandSettings.brandEmail && (
               <div 
-                className="flex items-center gap-3 text-base sm:text-lg font-sans text-[#2b2723] pt-1"
+                className="footer-email flex items-center gap-3 text-base sm:text-lg font-sans text-[#2b2723] pt-1"
                 style={{ fontSize: brandSettings.bioFontSize ? `${brandSettings.bioFontSize}px` : undefined }}
               >
                 <EnvelopeSimple size={22} className="text-[#c9542f] shrink-0" weight="bold" />
@@ -226,14 +226,14 @@ export default function Footer() {
                   className={`flex flex-col items-start gap-4 sm:gap-5 ${isLegal ? 'col-span-2 sm:col-span-1 min-w-full sm:min-w-[190px]' : 'col-span-1 min-w-[140px] sm:min-w-[180px]'}`}
                 >
                   <h3 
-                    className="font-sans text-xs sm:text-sm md:text-[0.95rem] uppercase tracking-[0.22em] font-bold text-[#c9542f] truncate w-full"
+                    className="footer-column-title font-sans text-xs sm:text-sm md:text-[0.95rem] uppercase tracking-[0.22em] font-bold text-[#c9542f] truncate w-full"
                     style={{ fontSize: brandSettings.columnTitleFontSize ? `${brandSettings.columnTitleFontSize}px` : undefined }}
                   >
                     {col.title}
                   </h3>
                   
                   <ul 
-                    className={`font-sans text-sm sm:text-base md:text-[1.05rem] text-[#2b2723] font-normal leading-relaxed w-full ${
+                    className={`footer-link-list font-sans text-sm sm:text-base md:text-[1.05rem] text-[#2b2723] font-normal leading-relaxed w-full ${
                       isLegal ? 'grid grid-cols-2 sm:flex sm:flex-col gap-3 sm:gap-3.5' : 'flex flex-col gap-3 sm:gap-3.5'
                     }`}
                     style={{ fontSize: brandSettings.linksFontSize ? `${brandSettings.linksFontSize}px` : undefined }}
@@ -293,7 +293,7 @@ export default function Footer() {
         {/* ─── BOTTOM BAR: Clean Copyright Only ─── */}
         <div className="pt-8 sm:pt-10 border-t border-black/10 flex items-center justify-center text-center font-sans">
           <p 
-            className="text-sm sm:text-base text-[#6b665d]"
+            className="footer-copyright text-sm sm:text-base text-[#6b665d]"
             style={{ fontSize: brandSettings.copyrightFontSize ? `${brandSettings.copyrightFontSize}px` : undefined }}
           >
             {brandSettings.copyrightText || `© ${currentYear} Better With Aarkesh. All rights reserved.`}
