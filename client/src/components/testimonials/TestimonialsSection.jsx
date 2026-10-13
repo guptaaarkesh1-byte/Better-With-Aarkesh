@@ -124,7 +124,7 @@ export default function TestimonialsSection() {
   };
 
   return (
-    <section id="testimonials" className="relative w-full min-h-screen bg-[#f5f1e8] overflow-hidden flex flex-col snap-section">
+    <section id="testimonials" className="relative z-20 w-full min-h-screen bg-[#f5f1e8] overflow-hidden flex flex-col snap-section">
       
       {/* ─── MOBILE VIEW (Matches user's mobile prototype) ─── */}
       <div className="block lg:hidden w-full relative border-t border-black/10 py-14 min-h-[750px] flex flex-col isolate">
@@ -236,10 +236,10 @@ export default function TestimonialsSection() {
         
         {/* Subtle edge blends */}
         <div className="absolute inset-x-0 bottom-0 h-12 lg:h-16 bg-gradient-to-t from-[#f5f1e8] to-transparent pointer-events-none z-10" />
-        <div className="absolute inset-x-0 top-0 h-12 lg:h-16 bg-gradient-to-b from-[#f5f1e8] to-transparent pointer-events-none z-10" />
+        <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-[#f5f1e8] to-transparent pointer-events-none z-10" />
       </div>
 
-      <div className="hidden lg:flex relative z-10 flex-grow flex-col pt-24 pb-8 w-full">
+      <div className="hidden lg:flex relative z-10 flex-grow flex-col pt-8 lg:pt-10 pb-8 w-full">
         <Container className="flex-grow flex flex-col justify-between">
           
           <div className="flex w-full">

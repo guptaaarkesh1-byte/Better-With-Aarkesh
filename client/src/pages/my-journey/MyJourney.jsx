@@ -1657,20 +1657,41 @@ export default function MyJourney() {
                   <div className="mj-grid">
                     {filteredLibrary.length > 0 ? (
                       filteredLibrary.map((item, idx) => {
-                        const isArticle = item.itemType === 'article' || Boolean(item.categoryId);
+                        const isArticle = item.itemType === 'article' || Boolean(item.categoryId) || !item.videoUrl;
                         const title = item.title || item.heading || 'Article';
                         const catInfo = getArticleCategoryInfo(item);
                         const progress = getItemProgress(item);
+                        const resumePct = item.status === 'completed' ? 0 : progress;
+                        const catSlug = item.categoryId || catInfo?.slug || 'relationships';
+                        const articleIdentifier = item._id || item.slug || item.id || item.articleId;
+
+                        const handleOpenItem = () => {
+                          if (isArticle && articleIdentifier) {
+                            navigate(
+                              `/articles?category=${catSlug}&subCategory=${item.headingId || ''}&article=${articleIdentifier}${resumePct > 0 ? `&resumeProgress=${resumePct}` : ''}&from=my-journey`,
+                              { state: { from: 'my-journey', resumeProgress: resumePct } }
+                            );
+                          } else if (item.videoUrl) {
+                            setActiveModalVideo(item);
+                          }
+                        };
 
                         return (
-                          <article key={item._id || idx} className="mj-card">
+                          <article 
+                            key={item._id || idx} 
+                            className="mj-card group cursor-pointer"
+                            onClick={handleOpenItem}
+                          >
                             <div className={`mj-card-top ${catInfo.colorClass}`}>
                               <div className="mj-row">
                                 <span className="mj-pill">
                                   {item.status === 'completed' ? 'Completed' : 'Saved'}
                                 </span>
                                 <button 
-                                  onClick={(e) => handleRemoveArticle(item._id, e)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveArticle(item._id, e);
+                                  }}
                                   className="mj-icon-btn on"
                                   title="Remove bookmark"
                                 >
@@ -1695,14 +1716,11 @@ export default function MyJourney() {
                               </div>
 
                               <button 
-                                onClick={() => {
-                                  if (isArticle) {
-                                    navigate(`/articles?category=${item.categoryId || ''}&subCategory=${item.headingId || ''}&article=${item._id}&from=my-journey`, { state: { from: 'my-journey' } });
-                                  } else if (item.videoUrl) {
-                                    setActiveModalVideo(item);
-                                  }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenItem();
                                 }}
-                                className="mj-btn mj-btn-dark !flex-initial"
+                                className="mj-btn mj-btn-dark !flex-initial cursor-pointer"
                               >
                                 {item.status === 'completed' ? 'Read again' : progress > 0 ? 'Continue' : 'Start'}
                               </button>

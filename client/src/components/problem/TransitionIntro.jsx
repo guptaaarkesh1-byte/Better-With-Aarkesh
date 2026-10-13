@@ -7,7 +7,8 @@ export default function TransitionIntro({ problemData = {} }) {
 
   const transEyebrow = problemData.transEyebrow || "CLARITY ISN'T LUCK.";
   const transHeading = problemData.transHeading || "It's a skill. And it";
-  const transAccent = problemData.transAccent !== undefined ? problemData.transAccent : "Changes Everything.";
+  const rawAccent = problemData.transAccent !== undefined ? problemData.transAccent : "changes EVERYTHING.";
+  const transAccent = (rawAccent === "Changes Everything." || rawAccent === "changes everything.") ? "changes EVERYTHING." : rawAccent;
 
   useGSAP(() => {
     // Reveal animation
@@ -28,14 +29,14 @@ export default function TransitionIntro({ problemData = {} }) {
   return (
     <div 
       ref={container} 
-      className="relative w-full flex flex-col items-center justify-center text-center px-5 py-3.5 sm:py-4.5 lg:py-5 bg-[#f5f1e8]/40 border-t border-black/6"
+      className="relative w-full flex flex-col items-center justify-center text-center px-5 py-3.5 sm:py-4 lg:py-4.5 bg-white/20 backdrop-blur-md border-t border-white/70 shadow-[0_4px_24px_rgba(0,0,0,0.03)]"
     >
       <div className="relative z-10 flex flex-col items-center justify-center">
-        <span className="trans-eyebrow font-sans text-[11px] sm:text-xs uppercase tracking-[0.25em] font-bold text-[#c9542f] mb-1.5 inline-block">
+        <span className="trans-eyebrow font-sans text-[10.5px] sm:text-xs uppercase tracking-[0.25em] font-bold text-[#c9542f] mb-1.5 inline-block">
           {transEyebrow}
         </span>
 
-        <h2 className="font-serif text-[clamp(22px,5.5vw,30px)] md:text-3xl lg:text-[34px] font-normal tracking-tight text-[#111010] mb-0 leading-tight" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+        <h2 className="font-serif text-[clamp(22px,5.5vw,32px)] md:text-3xl lg:text-[36px] font-normal tracking-tight text-[#111010] mb-0 leading-tight" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
           <span>{transHeading} </span>
           <span className="relative inline text-[#c9542f] not-italic font-medium">
             {transAccent}

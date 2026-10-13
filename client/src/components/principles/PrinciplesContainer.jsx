@@ -59,7 +59,7 @@ export default function PrinciplesContainer({ children }) {
   return (
     <div 
       ref={container} 
-      className="relative z-20 w-full bg-[#f5f1e8]"
+      className="relative z-20 w-full"
     >
       {/* 
         Sticky Overlay for the Global Progress Bar 

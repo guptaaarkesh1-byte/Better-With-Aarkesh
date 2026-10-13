@@ -46,7 +46,7 @@ export default function DecidePrinciple() {
     `<span class='italic font-serif leading-relaxed text-[#c9542f] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${data?.closingLine || '....Then we help you walk it.'}</span>`
   ];
   const buttonText = data?.buttonText || '';
-  const bgImg = resolveImageUrl(data?.bgImg, '');
+  const bgImg = resolveImageUrl(data?.bgImg, CDN_IMAGES.DECIDE_INTENTIONALLY);
 
   const customFlow = (
     <div className="flex items-center gap-2 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-medium">

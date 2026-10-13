@@ -75,7 +75,7 @@ export default function FinalCtaSection() {
   };
 
   return (
-    <section id="book-session" className="relative w-full min-h-screen h-auto bg-[#f5f1e8] overflow-hidden flex flex-col snap-section">
+    <section id="book-session" className="relative z-30 w-full min-h-screen h-auto bg-[#f5f1e8] overflow-hidden flex flex-col snap-section">
       
       {/* ─── MOBILE VIEW (Matches user's mobile prototype) ─── */}
       <div className="block lg:hidden w-full border-t border-black/10 pb-10">

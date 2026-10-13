@@ -39,7 +39,7 @@ export default function FeelPrinciple() {
     `<span class='font-serif font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${descText}</span>`
   ];
   const buttonText = data?.buttonText || '';
-  const bgImg = resolveImageUrl(data?.bgImg, '');
+  const bgImg = resolveImageUrl(data?.bgImg, CDN_IMAGES.FEEL_HONESTLY);
 
   return (
     <PrincipleSection 

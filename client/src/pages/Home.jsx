@@ -15,16 +15,18 @@ export default function Home() {
   return (
     <>
       <Hero />
-      <ProblemSection />
-      <PrinciplesContainer>
-        <ThinkPrinciple />
-        <FeelPrinciple />
-        <DecidePrinciple />
-        <CoachingPrinciple />
-        <CoachingJourney />
-        <MeetAarkesh />
-        <TestimonialsSection />
-      </PrinciplesContainer>
+      <div className="relative">
+        <ProblemSection />
+        <PrinciplesContainer>
+          <ThinkPrinciple />
+          <FeelPrinciple />
+          <DecidePrinciple />
+          <CoachingPrinciple />
+          <CoachingJourney />
+          <MeetAarkesh />
+          <TestimonialsSection />
+        </PrinciplesContainer>
+      </div>
       <FinalCtaSection />
       <CoachingFaqSection />
     </>

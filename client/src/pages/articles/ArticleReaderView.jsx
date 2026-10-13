@@ -282,51 +282,109 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
     accent: categoryConfig?.accent || baseTheme.accent,
   };
 
-  const [isSaved, setIsSaved] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [resumeToast, setResumeToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const maxProgressRef = useRef(0);
-  const scrollTimeoutRef = useRef(null);
-  const hasRestoredRef = useRef(false);
-
   const getArticleKeys = () => {
     if (!article) return [];
     const keys = [];
-    if (article._id) keys.push(article._id);
-    if (article.id) keys.push(article.id);
-    if (article.slug) keys.push(article.slug);
-    return Array.from(new Set(keys));
+    if (article._id) keys.push(String(article._id));
+    if (article.id) keys.push(String(article.id));
+    if (article.slug) keys.push(String(article.slug));
+    if (article.articleId) keys.push(String(article.articleId));
+    if (article.title) {
+      keys.push(article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+    }
+    const paramArt = searchParams.get('article');
+    if (paramArt) keys.push(String(paramArt));
+    return Array.from(new Set(keys.filter(Boolean)));
   };
 
   const getSavedProgress = () => {
+    // 1. Explicit resumeProgress from URL search params
+    const urlProgress = parseFloat(searchParams.get('resumeProgress'));
+    if (!isNaN(urlProgress) && urlProgress > 0) {
+      return { percentage: Math.min(100, Math.round(urlProgress)) };
+    }
+
+    // 2. Explicit resumeProgress from React Router navigation state
+    const stateProgress = parseFloat(location.state?.resumeProgress);
+    if (!isNaN(stateProgress) && stateProgress > 0) {
+      return { percentage: Math.min(100, Math.round(stateProgress)) };
+    }
+
+    // 3. Saved progress in localStorage across all matching keys
     const keys = getArticleKeys();
     for (const key of keys) {
-      const data = localStorage.getItem(`article_progress_${key}`);
-      if (data) {
-        try {
+      try {
+        const data = localStorage.getItem(`article_progress_${key}`);
+        if (data) {
           const parsed = JSON.parse(data);
-          if (parsed && typeof parsed.percentage === 'number') {
+          if (parsed && typeof parsed.percentage === 'number' && parsed.percentage > 0) {
             return parsed;
           }
-        } catch (e) {
-          const num = parseInt(data);
+        }
+      } catch (e) {
+        try {
+          const raw = localStorage.getItem(`article_progress_${key}`);
+          const num = parseInt(raw);
           if (!isNaN(num) && num > 0) {
             return { scrollY: num, percentage: 0 };
           }
-        }
+        } catch (_) {}
       }
     }
+
+    // 4. Progress property on the article object itself
+    if (typeof article?.progress === 'number' && article.progress > 0) {
+      return { percentage: Math.min(100, Math.round(article.progress)) };
+    }
+
     return null;
   };
 
+  const [isSaved, setIsSaved] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const initialSaved = getSavedProgress();
+  const [progress, setProgress] = useState(() => initialSaved?.percentage || 0);
+  const [resumeToast, setResumeToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const maxProgressRef = useRef(initialSaved?.percentage || 0);
+  const scrollTimeoutRef = useRef(null);
+  const isRestoringRef = useRef(false);
+  const userHasScrolledRef = useRef(false);
+  const restoreTimersRef = useRef([]);
+
+  const calculateTargetY = (pct, fallbackScrollY) => {
+    const scrollHeight = Math.max(
+      document.documentElement.scrollHeight,
+      document.body.scrollHeight,
+      1
+    );
+    const clientHeight = window.innerHeight || document.documentElement.clientHeight || 1;
+    const maxScroll = Math.max(0, scrollHeight - clientHeight);
+    
+    if (maxScroll <= 0) return 0;
+    
+    // Exact percentage-based positioning matching reading progression
+    if (typeof pct === 'number' && pct > 0 && pct <= 100) {
+      return Math.round((pct / 100) * maxScroll);
+    }
+    
+    if (typeof fallbackScrollY === 'number' && fallbackScrollY > 0) {
+      return Math.min(fallbackScrollY, maxScroll);
+    }
+    
+    return 0;
+  };
+
   const saveCurrentProgress = () => {
-    if (!article) return;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const scrollHeight = document.documentElement.scrollHeight;
-    const clientHeight = window.innerHeight || document.documentElement.clientHeight;
-    const maxScroll = scrollHeight - clientHeight;
+    if (!article || isRestoringRef.current) return;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+    const scrollHeight = Math.max(
+      document.documentElement.scrollHeight,
+      document.body.scrollHeight,
+      1
+    );
+    const clientHeight = window.innerHeight || document.documentElement.clientHeight || 1;
+    const maxScroll = Math.max(0, scrollHeight - clientHeight);
     
     let currentPct = 0;
     if (maxScroll > 0) {
@@ -334,6 +392,8 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
     }
     
     const maxPct = Math.max(currentPct, maxProgressRef.current || 0);
+    if (maxPct <= 0) return;
+
     const keys = getArticleKeys();
     keys.forEach(key => {
       localStorage.setItem(`article_progress_${key}`, JSON.stringify({
@@ -344,50 +404,119 @@ export default function ArticleReaderView({ article, categoryConfig, onBack }) {
     });
   };
 
-  // Restore reading progress on mount
+  // Cancel automatic scroll restoration if user manually scrolls/touches
   useEffect(() => {
-    // Always start new/unopened article from the very top
-    if (window.lenis) {
-      window.lenis.scrollTo(0, { immediate: true });
-    } else {
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    }
+    const handleUserInteraction = () => {
+      if (isRestoringRef.current) {
+        userHasScrolledRef.current = true;
+        isRestoringRef.current = false;
+      }
+    };
+
+    window.addEventListener('wheel', handleUserInteraction, { passive: true });
+    window.addEventListener('touchstart', handleUserInteraction, { passive: true });
+    window.addEventListener('keydown', handleUserInteraction, { passive: true });
+
+    return () => {
+      window.removeEventListener('wheel', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+    };
+  }, []);
+
+  // Restore reading progress on mount or article switch
+  useEffect(() => {
+    userHasScrolledRef.current = false;
+    restoreTimersRef.current.forEach(t => clearTimeout(t));
+    restoreTimersRef.current = [];
 
     const saved = getSavedProgress();
-    if (saved && saved.scrollY > 150 && !hasRestoredRef.current) {
-      hasRestoredRef.current = true;
-      maxProgressRef.current = saved.percentage || 0;
-      setProgress(saved.percentage || 0);
-      
-      const targetY = saved.scrollY;
-      setTimeout(() => {
-        if (window.lenis) {
-          window.lenis.scrollTo(targetY, { immediate: false, duration: 1.0 });
-        } else {
-          window.scrollTo({ top: targetY, behavior: 'smooth' });
+    const targetPct = saved?.percentage || 0;
+    const hasScrollY = saved?.scrollY && saved.scrollY > 150;
+    const shouldRestore = (targetPct > 0 && targetPct < 100) || Boolean(hasScrollY && targetPct < 100);
+
+    if (shouldRestore) {
+      isRestoringRef.current = true;
+      maxProgressRef.current = Math.max(maxProgressRef.current, targetPct);
+      setProgress(maxProgressRef.current);
+
+      const performScroll = (immediate = false) => {
+        if (userHasScrolledRef.current) return;
+
+        if (window.lenis && typeof window.lenis.resize === 'function') {
+          window.lenis.resize();
         }
-        setToastMessage(`Resumed reading from ${saved.percentage || 0}%`);
+
+        const targetY = calculateTargetY(targetPct, saved?.scrollY);
+        if (targetY > 40) {
+          if (window.lenis) {
+            window.lenis.scrollTo(targetY, { 
+              immediate: immediate, 
+              duration: immediate ? 0 : 0.85 
+            });
+          } else {
+            window.scrollTo({ 
+              top: targetY, 
+              behavior: immediate ? 'instant' : 'smooth' 
+            });
+          }
+        }
+      };
+
+      // Stage 1: Fast align right after route mount
+      const t1 = setTimeout(() => {
+        performScroll(false);
+      }, 120);
+
+      // Stage 2: Refined align once editorial layout & fonts settle
+      const t2 = setTimeout(() => {
+        performScroll(false);
+        setToastMessage(`Resumed reading from ${targetPct}%`);
         setResumeToast(true);
-        setTimeout(() => setResumeToast(false), 4000);
+        const toastTimer = setTimeout(() => setResumeToast(false), 3800);
+        restoreTimersRef.current.push(toastTimer);
       }, 350);
+
+      // Stage 3: Final lock-in after artwork & images expand
+      const t3 = setTimeout(() => {
+        performScroll(false);
+        setTimeout(() => {
+          isRestoringRef.current = false;
+        }, 150);
+      }, 750);
+
+      restoreTimersRef.current.push(t1, t2, t3);
     } else {
-      maxProgressRef.current = 0;
-      setProgress(0);
-      hasRestoredRef.current = true;
+      isRestoringRef.current = false;
+      if (saved?.percentage === 100 || targetPct === 100) {
+        maxProgressRef.current = 0;
+        setProgress(0);
+      }
       if (window.lenis) {
         window.lenis.scrollTo(0, { immediate: true });
       } else {
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
     }
-  }, [article?._id, article?.id, article?.slug]);
+
+    return () => {
+      restoreTimersRef.current.forEach(t => clearTimeout(t));
+      restoreTimersRef.current = [];
+    };
+  }, [article?._id, article?.id, article?.slug, searchParams.get('resumeProgress')]);
 
   // Track scroll and compute reading percentage
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight;
-      const clientHeight = window.innerHeight || document.documentElement.clientHeight;
+      if (isRestoringRef.current) return;
+
+      const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+      const scrollHeight = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        1
+      );
+      const clientHeight = window.innerHeight || document.documentElement.clientHeight || 1;
       const maxScroll = scrollHeight - clientHeight;
       
       if (maxScroll > 0) {

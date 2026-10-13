@@ -79,15 +79,22 @@ export default function MainLayout({ children }) {
         clearTimeout(t3);
       };
     } else {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      if (lenisRef.current) {
-        lenisRef.current.scrollTo(0, { immediate: true });
+      const isArticleResume = location.pathname === '/articles' && (
+        location.search.includes('resumeProgress=') ||
+        Boolean(location.state?.resumeProgress)
+      );
+
+      if (!isArticleResume) {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        if (lenisRef.current) {
+          lenisRef.current.scrollTo(0, { immediate: true });
+        }
       }
       setTimeout(() => ScrollTrigger.refresh(), 100);
     }
-  }, [location.pathname, location.hash]);
+  }, [location.pathname, location.hash, location.search]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f1e8] text-paragraph relative selection:bg-accent-gold selection:text-black">

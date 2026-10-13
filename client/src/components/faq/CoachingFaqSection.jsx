@@ -62,7 +62,7 @@ export default function CoachingFaqSection() {
   };
 
   return (
-    <section id="faq" className="relative w-full bg-[#f5f1e8] text-[#111010] py-24 md:py-32 border-t border-black/8 overflow-hidden">
+    <section id="faq" className="relative z-30 w-full bg-[#f5f1e8] text-[#111010] py-24 md:py-32 border-t border-black/8 overflow-hidden">
       {/* Subtle Background Warm Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#c9542f]/5 rounded-full blur-[140px] pointer-events-none" />
 

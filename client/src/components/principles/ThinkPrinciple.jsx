@@ -37,7 +37,7 @@ export default function ThinkPrinciple() {
     `<span class='font-serif font-normal not-italic leading-relaxed text-[#4a463e] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${descText}</span>`
   ];
   const buttonText = data?.buttonText || 'SCROLL FOR NEXT PRINCIPLE';
-  const bgImg = resolveImageUrl(data?.bgImg, '');
+  const bgImg = resolveImageUrl(data?.bgImg, CDN_IMAGES.THINK_CLEARLY);
 
   return (
     <PrincipleSection 

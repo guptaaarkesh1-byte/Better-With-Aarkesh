@@ -435,7 +435,8 @@ export default function MyLibrarySection() {
                           <button 
                             onClick={(e) => { 
                               e.stopPropagation(); 
-                              navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}&from=my-journey`, { state: { from: 'my-journey' } }); 
+                              const resumePct = libraryTab === 'COMPLETED' ? 0 : readPercentage;
+                              navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}${resumePct > 0 ? `&resumeProgress=${resumePct}` : ''}&from=my-journey`, { state: { from: 'my-journey', resumeProgress: resumePct } }); 
                             }}
                             className="px-5 py-2 border border-[#c79c6e] text-[#c79c6e] rounded text-[0.6rem] uppercase tracking-[0.2em] font-medium"
                           >
@@ -471,7 +472,11 @@ export default function MyLibrarySection() {
                           
                           <div className="flex flex-wrap items-center gap-4">
                             <button 
-                              onClick={(e) => { e.stopPropagation(); navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}`); }}
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                const resumePct = libraryTab === 'COMPLETED' ? 0 : readPercentage;
+                                navigate(`/articles?category=${article.categoryId}&subCategory=${article.headingId}&article=${article._id}${resumePct > 0 ? `&resumeProgress=${resumePct}` : ''}&from=my-journey`, { state: { from: 'my-journey', resumeProgress: resumePct } }); 
+                              }}
                               className="px-6 py-3 border border-[#c79c6e] rounded text-[0.65rem] uppercase tracking-widest font-medium text-[#c79c6e] transition-colors hover:bg-[#c79c6e] hover:text-black"
                             >
                               {libraryTab === 'COMPLETED' ? 'REVISIT ARTICLE' : 'CONTINUE READING'}

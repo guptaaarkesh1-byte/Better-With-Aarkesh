@@ -41,6 +41,19 @@ const getInitialAboutData = () => {
   return null;
 };
 
+export const MEET_OVERLAY_CONFIG = {
+  peakStart: 0.15,         // Scroll progress where blur & text reach full strength (15%)
+  fadeStart: 0.40,         // Scroll progress where smooth fade-out begins (40%)
+  fadeEnd: 0.75,           // Scroll progress where blur & text are completely faded out (75%)
+  maxBlurDesktop: 18,      // Max blur on desktop in pixels (18px)
+  maxBlurMobile: 12,       // Max blur on mobile in pixels (12px, screens < 768px)
+  textMain: 'MEET',        // Main title text
+  textAccent: 'AARKESH',   // Accent word (styled with brand accent color)
+  startY: 10,              // Initial translateY at p = 0 (+10px)
+  peakY: 0,                // Center translateY at p = peak (0px)
+  endY: -10,               // Final translateY at p = fadeEnd (-10px)
+};
+
 export default function MeetAarkesh() {
   const container = useRef(null);
   const [aboutData, setAboutData] = useState(getInitialAboutData);
@@ -102,7 +115,7 @@ export default function MeetAarkesh() {
       highlight: coachData.highlight || 'I walk beside you, not ahead of you.',
       bgImg: resolveMeetImg(coachData.bgImg, coachImg),
       fallbackImg: coachImg,
-      imgPos: 'object-[center_85%]'
+      imgPos: 'object-[center_65%]'
     },
     {
       title: humanData.title || 'HUMAN',
@@ -116,6 +129,96 @@ export default function MeetAarkesh() {
     }
   ];
 
+  useEffect(() => {
+    const overlay = container.current?.querySelector('.meet-overlay');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (!overlay || !container.current) return undefined;
+    const title = overlay.querySelector('.meet-overlay-title');
+
+    let ticking = false;
+    const setHidden = () => {
+      overlay.style.opacity = '0';
+      overlay.style.visibility = 'hidden';
+      if (title) {
+        title.style.transform = `translateY(${MEET_OVERLAY_CONFIG.startY}px)`;
+      }
+    };
+
+    const updateOverlay = () => {
+      ticking = false;
+      if (reducedMotion.matches) {
+        setHidden();
+        return;
+      }
+
+      const rect = container.current.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+
+      // Fast cull: if section is offscreen, immediately return with zero work
+      if (rect.bottom < -100 || rect.top > vh + 100) {
+        setHidden();
+        return;
+      }
+
+      const rawP = 1 - rect.top / vh;
+      const progress = Math.min(Math.max(rawP, 0), 1);
+      const { peakStart, fadeStart, fadeEnd, startY, peakY, endY } = MEET_OVERLAY_CONFIG;
+
+      if (progress <= 0 || progress >= fadeEnd) {
+        setHidden(progress <= 0 ? startY : endY);
+        return;
+      }
+
+      let opacity = 0;
+      let y = peakY;
+
+      if (progress <= peakStart) {
+        const phase = progress / peakStart;
+        const curve = 1 - (1 - phase) * (1 - phase);
+        opacity = curve;
+        y = startY + (peakY - startY) * curve;
+      } else if (progress <= fadeStart) {
+        opacity = 1;
+        y = peakY;
+      } else {
+        const phase = (progress - fadeStart) / (fadeEnd - fadeStart);
+        const smoothDecrease = 0.5 * (1 + Math.cos(phase * Math.PI));
+        opacity = smoothDecrease;
+        y = endY + (peakY - endY) * smoothDecrease;
+      }
+
+      const opVal = opacity.toFixed(3);
+      const yVal = y.toFixed(1);
+
+      // 100% hardware-composited GPU update: zero recalculation of blur shaders
+      overlay.style.opacity = opVal;
+      overlay.style.visibility = opacity > 0.005 ? 'visible' : 'hidden';
+
+      if (title) {
+        title.style.transform = `translateY(${yVal}px)`;
+      }
+    };
+
+    const requestUpdate = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateOverlay);
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate, { passive: true });
+    reducedMotion.addEventListener('change', requestUpdate);
+
+    requestUpdate();
+
+    return () => {
+      window.removeEventListener('scroll', requestUpdate);
+      window.removeEventListener('resize', requestUpdate);
+      reducedMotion.removeEventListener('change', requestUpdate);
+    };
+  }, []);
+
   useGSAP(() => {
     const tl = gsap.timeline({
       scrollTrigger: {
@@ -126,14 +229,9 @@ export default function MeetAarkesh() {
       }
     });
 
-    tl.fromTo('.meet-header',
-      { opacity: 0, y: 25 },
-      { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1 }
-    )
-    .fromTo('.role-pane',
+    tl.fromTo('.role-pane',
       { opacity: 0, scale: 0.98 },
-      { opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out', stagger: 0.12 },
-      "-=0.3"
+      { opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out', stagger: 0.12 }
     )
     .fromTo('.meet-footer',
       { opacity: 0, y: 15 },
@@ -149,23 +247,18 @@ export default function MeetAarkesh() {
   };
 
   return (
-    <section ref={container} id="meet-aarkesh" className="relative w-full h-auto lg:h-screen min-h-screen flex flex-col bg-[#f5f1e8] overflow-hidden snap-section">
+    <section 
+      ref={container} 
+      id="meet-aarkesh" 
+      className="principle-slide-over relative z-20 w-full !min-h-0 h-auto flex flex-col bg-[#f5f1e8] overflow-hidden snap-section"
+      style={{ minHeight: 'auto' }}
+    >
       
       {/* ─── MOBILE VIEW (Matches user's mobile prototype) ─── */}
       <div className="block md:hidden w-full px-5 py-14 border-t border-black/10">
         {/* Header */}
         <div className="flex flex-col items-center justify-center text-center">
-          <div className="flex items-center justify-center gap-2.5 w-full max-w-sm mx-auto">
-            <div className="h-[1.5px] w-6 sm:w-8 bg-[#c9542f] shrink-0" />
-            <h2 
-              className="font-serif font-medium text-[clamp(17px,4.8vw,23px)] uppercase tracking-[0.14em] text-[#B3441F] whitespace-pre leading-none m-0"
-              style={{ fontFamily: 'Fraunces, Georgia, serif' }}
-            >
-              {eyebrowText}
-            </h2>
-            <div className="h-[1.5px] w-6 sm:w-8 bg-[#c9542f] shrink-0" />
-          </div>
-          <div className="mt-3.5 text-center">
+          <div className="text-center">
             <p className="font-serif font-medium text-[20px] sm:text-[22px] leading-[1.25] tracking-tight text-[#141414]">
               {headingLine || 'Three roles. One purpose.'}
             </p>
@@ -251,33 +344,16 @@ export default function MeetAarkesh() {
         </div>
       </div>
 
-      {/* ─── DESKTOP VIEW (100% untouched desktop layout) ─── */}
-      {/* Top Header: Only MEET AARKESH in top white/cream space */}
-      <div className="hidden md:flex flex-col items-center justify-center text-center z-20 px-6 pt-5 sm:pt-7 pb-3 sm:pb-4 meet-header shrink-0">
-        <div className="flex items-center gap-3.5">
-          <div className="h-[2px] w-8 sm:w-10 bg-[#c9542f]" />
-          <span 
-            className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.6rem] font-medium tracking-tight text-[#c9542f] whitespace-pre"
-            style={{ 
-              fontFamily: 'Fraunces, Georgia, serif',
-              fontSize: aboutData?.eyebrowFontSize ? `${aboutData.eyebrowFontSize}px` : undefined 
-            }}
-          >
-            {eyebrowText}
-          </span>
-          <div className="h-[2px] w-8 sm:w-10 bg-[#c9542f]" />
-        </div>
-      </div>
-
-      {/* Desktop Grid Panes */}
-      <div className="hidden md:flex w-full flex-grow flex-row border-y border-black/10 min-h-0 relative">
+      {/* ─── DESKTOP VIEW ─── */}
+      {/* 🎛️ Desktop Grid Panes - Change height here: e.g. lg:h-[540px], lg:h-[580px], lg:h-[600px] */}
+      <div className="hidden md:flex w-full h-[450px] sm:h-[480px] md:h-[510px] lg:h-[540px] flex-row border-t border-black/10 relative shrink-0">
         
         {roles.map((role, i) => {
           const Icon = role.icon;
           return (
             <div 
               key={i} 
-              className="role-pane relative h-auto flex-1 min-h-0 flex flex-col items-center justify-end pb-12 md:pb-16 p-6 group overflow-hidden border-r border-black/10 last:border-none cursor-pointer bg-[#f5f1e8]"
+              className="role-pane relative h-full flex-1 min-h-0 flex flex-col items-center justify-end pb-5 sm:pb-6 md:pb-7 lg:pb-8 px-4 sm:px-6 group overflow-hidden border-r border-black/10 last:border-none cursor-pointer bg-[#f5f1e8]"
               onMouseEnter={() => { if (i === 1) setIsMiddleHovered(true); }}
               onMouseLeave={() => { if (i === 1) setIsMiddleHovered(false); }}
             >
@@ -302,12 +378,12 @@ export default function MeetAarkesh() {
               {i === 1 && (
                 <>
                   <div 
-                    className={`flex absolute top-5 sm:top-6 lg:top-8 inset-x-0 flex-col items-center justify-center text-center z-20 px-4 sm:px-6 transition-all duration-300 ease-out pointer-events-none ${
+                    className={`flex absolute top-3 sm:top-4 md:top-5 inset-x-0 flex-col items-center justify-center text-center z-20 px-4 sm:px-6 transition-all duration-300 ease-out pointer-events-none ${
                       isMiddleHovered ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'
                     }`}
                   >
                     <h2 
-                      className="font-serif text-xl sm:text-2xl md:text-[1.65rem] lg:text-[1.95rem] font-medium tracking-tight text-white select-none"
+                      className="font-serif text-lg sm:text-xl md:text-[1.35rem] lg:text-[1.55rem] font-medium tracking-tight text-white select-none"
                       style={{ 
                         fontFamily: 'Fraunces, Georgia, serif',
                         fontSize: aboutData?.headingFontSize ? `${aboutData.headingFontSize}px` : undefined,
@@ -319,14 +395,18 @@ export default function MeetAarkesh() {
                     </h2>
                   </div>
 
+                  {/* 🎛️ "Different lenses..." Position - Responsive percentage from top (e.g. '56%', '58%', '60%') */}
                   <div 
-                    className={`flex absolute top-[52%] inset-x-0 flex-col items-center justify-center text-center z-20 px-4 transition-all duration-300 ease-out pointer-events-none ${
-                      isMiddleHovered ? 'opacity-0 -translate-y-4' : 'opacity-100 -translate-y-1/2'
+                    className={`flex absolute inset-x-0 flex-col items-center justify-center text-center z-20 px-4 transition-all duration-300 ease-out pointer-events-none ${
+                      isMiddleHovered ? 'opacity-0 -translate-y-4' : 'opacity-100'
                     }`}
-                    style={{ transform: isMiddleHovered ? 'translateY(-1rem)' : 'translateY(-50%)' }}
+                    style={{ 
+                      top: '58%',
+                      transform: isMiddleHovered ? 'translateY(-1rem)' : 'translateY(-50%)' 
+                    }}
                   >
                     <p 
-                      className="text-white text-xs md:text-[0.88rem] font-medium tracking-wide max-w-[90%] mx-auto select-none"
+                      className="text-white text-xs md:text-[0.82rem] font-medium tracking-wide max-w-[90%] mx-auto select-none"
                       style={{ 
                         fontSize: aboutData?.descriptionFontSize ? `${aboutData.descriptionFontSize}px` : undefined,
                         WebkitTextStroke: '0.38px #ff6b35',
@@ -340,12 +420,12 @@ export default function MeetAarkesh() {
               )}
 
               <div className="relative z-10 flex flex-col items-center text-center transition-transform duration-500 ease-out group-hover:-translate-y-2">
-                <div className="w-12 h-12 rounded-full border border-[#c9542f]/30 bg-white/95 shadow-md flex items-center justify-center mb-3 sm:mb-4 group-hover:border-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white transition-colors duration-300">
-                  <Icon className="text-[#c9542f] group-hover:text-white text-2xl transition-colors duration-300" weight="regular" />
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#c9542f]/30 bg-white/95 shadow-md flex items-center justify-center mb-2 sm:mb-2.5 group-hover:border-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white transition-colors duration-300">
+                  <Icon className="text-[#c9542f] group-hover:text-white text-xl sm:text-2xl transition-colors duration-300" weight="regular" />
                 </div>
                 
                 <h3 
-                  className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.3rem] tracking-widest font-bold mb-3 sm:mb-4 leading-tight transition-all duration-300 select-none group-hover:scale-105"
+                  className="font-serif text-xl sm:text-2xl md:text-[1.75rem] lg:text-[1.95rem] tracking-widest font-bold mb-2 sm:mb-2.5 leading-tight transition-all duration-300 select-none group-hover:scale-105"
                   style={{
                     color: '#111010',
                     WebkitTextStroke: '0.45px #ffffff',
@@ -357,9 +437,9 @@ export default function MeetAarkesh() {
                 </h3>
                 
                 <div className="flex flex-col items-center gap-1.5 sm:gap-2 opacity-0 transform translate-y-6 transition-all duration-400 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible px-4">
-                  <p className="text-[#111010] font-semibold text-sm sm:text-base md:text-[1.05rem] leading-snug">{role.sub1}</p>
-                  <p className="text-[#2b2723] font-medium text-sm sm:text-base md:text-[0.98rem] leading-snug mb-2">{role.sub2}</p>
-                  <p className="text-[#c9542f] font-serif italic text-base sm:text-lg md:text-xl lg:text-[1.25rem] font-bold leading-normal">{role.highlight}</p>
+                  <p className="text-[#111010] font-semibold text-xs sm:text-sm md:text-[0.95rem] leading-snug">{role.sub1}</p>
+                  <p className="text-[#2b2723] font-medium text-xs sm:text-sm md:text-[0.9rem] leading-snug mb-1.5">{role.sub2}</p>
+                  <p className="text-[#c9542f] font-serif italic text-sm sm:text-base md:text-lg lg:text-[1.1rem] font-bold leading-normal">{role.highlight}</p>
                 </div>
               </div>
             </div>
@@ -368,11 +448,11 @@ export default function MeetAarkesh() {
       </div>
 
       {/* Bottom Banner */}
-      <div className="w-full bg-[#ede7d8] border-b border-black/10 meet-footer shrink-0">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-1 sm:py-1.5 lg:py-2 flex flex-col xl:flex-row items-center justify-start gap-4 lg:gap-6 xl:gap-8">
+      <div className="w-full bg-[#ede7d8] border-t border-b border-black/10 meet-footer shrink-0">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-2.5 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-6 lg:gap-8">
           
           {/* Left Side: Mission */}
-          <div className="shrink-0 flex flex-col items-start w-full xl:w-auto max-w-lg">
+          <div className="shrink-0 flex flex-col items-start w-full md:w-auto max-w-lg">
             <div className="flex items-center gap-2 mb-0.5">
               <div className="h-[1.5px] w-4 bg-[#c9542f] origin-left" />
               <span className="font-sans text-[10px] sm:text-[11px] uppercase tracking-[0.22em] font-bold text-[#c9542f]">
@@ -390,39 +470,52 @@ export default function MeetAarkesh() {
           </div>
 
           {/* Right Side: Features */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 lg:gap-6 w-full xl:w-auto xl:border-l border-black/10 xl:pl-6 lg:pl-4">
+          <div className="flex flex-row items-center gap-3 sm:gap-4 lg:gap-6 shrink-0 md:border-l border-black/10 md:pl-5 lg:pl-6">
             <div className="flex items-center gap-2 sm:gap-2.5 group">
-              <div className="w-8 h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
-                <Compass size={16} className="text-[#c9542f]" weight="regular" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
+                <Compass size={15} className="text-[#c9542f]" weight="regular" />
               </div>
               <div className="flex flex-col">
-                <span className="font-sans text-[12px] sm:text-[13px] font-semibold text-[#111010] leading-tight mb-0.5">Real experience</span>
-                <span className="text-[#555047] text-[9.5px] sm:text-[10.5px] font-light leading-tight">Life in high-pressure<br/>environments.</span>
+                <span className="font-sans text-[11px] sm:text-[12.5px] font-semibold text-[#111010] leading-tight mb-0.5">Real experience</span>
+                <span className="text-[#555047] text-[9px] sm:text-[10px] font-light leading-tight">Life in high-pressure<br/>environments.</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-2.5 group">
-              <div className="w-8 h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
-                <Brain size={16} className="text-[#c9542f]" weight="regular" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
+                <Brain size={15} className="text-[#c9542f]" weight="regular" />
               </div>
               <div className="flex flex-col">
-                <span className="font-sans text-[12px] sm:text-[13px] font-semibold text-[#111010] leading-tight mb-0.5">Deep training</span>
-                <span className="text-[#555047] text-[9.5px] sm:text-[10.5px] font-light leading-tight">Backed by science.<br/>Rooted in empathy.</span>
+                <span className="font-sans text-[11px] sm:text-[12.5px] font-semibold text-[#111010] leading-tight mb-0.5">Deep training</span>
+                <span className="text-[#555047] text-[9px] sm:text-[10px] font-light leading-tight">Backed by science.<br/>Rooted in empathy.</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-2.5 group">
-              <div className="w-8 h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
-                <Users size={16} className="text-[#c9542f]" weight="regular" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
+                <Users size={15} className="text-[#c9542f]" weight="regular" />
               </div>
               <div className="flex flex-col">
-                <span className="font-sans text-[12px] sm:text-[13px] font-semibold text-[#111010] leading-tight mb-0.5">Relatable approach</span>
-                <span className="text-[#555047] text-[9.5px] sm:text-[10.5px] font-light leading-tight">No jargon. No masks.<br/>Just real conversations.</span>
+                <span className="font-sans text-[11px] sm:text-[12.5px] font-semibold text-[#111010] leading-tight mb-0.5">Relatable approach</span>
+                <span className="text-[#555047] text-[9px] sm:text-[10px] font-light leading-tight">No jargon. No masks.<br/>Just real conversations.</span>
               </div>
             </div>
           </div>
 
         </div>
+      </div>
+
+      {/* ─── SCROLL-DRIVEN BLUR + "MEET AARKESH" OVERLAY ─── */}
+      <div
+        className="meet-overlay absolute inset-0 z-50 flex items-start justify-center pt-3 sm:pt-4 md:pt-5 lg:pt-6 pointer-events-none"
+        aria-hidden="true"
+      >
+        <h2
+          className="meet-overlay-title uppercase font-serif text-[clamp(48px,8vw,124px)] leading-none tracking-tight font-medium text-[#111010] select-none px-4 text-center"
+          style={{ opacity: 0, transform: `translateY(${MEET_OVERLAY_CONFIG.startY}px)` }}
+        >
+          {MEET_OVERLAY_CONFIG.textMain} <span className="text-[#c8502d] not-italic">{MEET_OVERLAY_CONFIG.textAccent}</span>
+        </h2>
       </div>
 
     </section>

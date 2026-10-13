@@ -35,10 +35,10 @@ export default function ProblemSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} id="problem" className="relative w-full z-20">
+    <section ref={sectionRef} id="problem" className="sticky top-0 z-10 w-full min-h-screen flex flex-col justify-between bg-[#f5f1e8]">
       
-      {/* Transition Intro (Statement section) - Starts cleanly down below Hero button on mobile; overlaps on desktop */}
-      <div className="relative z-30 w-full mt-8 sm:mt-10 lg:-mt-[74px]">
+      {/* Transition Intro (Statement section) - Starts overlapping bottom of Hero */}
+      <div className="relative z-30 w-full -mt-[60px] sm:-mt-[68px] lg:-mt-[74px]">
         <TransitionIntro problemData={problemData || {}} />
       </div>
 
@@ -75,7 +75,7 @@ export default function ProblemSection() {
       </div>
 
       {/* ─── DESKTOP VIEW ─── */}
-      <div className="hidden lg:flex relative w-full min-h-[540px] lg:h-[70vh] max-h-[720px] overflow-hidden items-center justify-center bg-[#f5f1e8]">
+      <div className="hidden lg:flex relative w-full flex-grow min-h-[540px] overflow-hidden items-center justify-center bg-[#f5f1e8]">
         
         {/* DESKTOP HEADING & PARA */}
         <Container className="grid relative z-30 w-full grid-cols-1 lg:grid-cols-12 gap-8 items-center h-full pointer-events-none absolute inset-0">

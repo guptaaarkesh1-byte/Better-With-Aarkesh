@@ -269,9 +269,9 @@ export default function Articles() {
   // Track category changes and maintain scroll position when returning from an article
   const prevCategoryRef = useRef(categoryKey);
 
-  // Scroll to top ONLY when user changes category tab
+  // Scroll to top ONLY when user changes category tab in the articles grid (not when viewing an article)
   useEffect(() => {
-    if (prevCategoryRef.current !== categoryKey) {
+    if (!articleParam && prevCategoryRef.current !== categoryKey) {
       prevCategoryRef.current = categoryKey;
       sessionStorage.setItem(`articles_scroll_${categoryKey}`, '0');
       if (window.lenis) {
@@ -280,7 +280,7 @@ export default function Articles() {
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
     }
-  }, [categoryKey]);
+  }, [categoryKey, articleParam]);
 
   // Continuously track scroll position when browsing the category articles grid
   useEffect(() => {

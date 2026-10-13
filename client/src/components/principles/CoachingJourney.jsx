@@ -243,7 +243,7 @@ export default function CoachingJourney() {
   const resolvedJourneySrc = resolveImageUrl(data.bgImg, defaultBgImg);
 
   return (
-    <section ref={container} id="coaching-journey" className="principle-panel relative w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-[#f5f1e8] snap-start">
+    <section ref={container} id="coaching-journey" className="principle-panel sticky top-0 z-10 w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-[#f5f1e8]">
       
       {/* Background Image (Desktop Only) */}
       <div className="absolute inset-0 z-0 pointer-events-none pt-8 hidden lg:block overflow-hidden">
