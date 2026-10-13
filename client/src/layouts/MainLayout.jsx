@@ -56,9 +56,12 @@ export default function MainLayout({ children }) {
         const element = document.querySelector(targetHash);
         if (element) {
           ScrollTrigger.refresh();
+          // Keep hash targets below the fixed navigation bar rather than
+          // hiding the beginning of a section behind it.
+          const navHeight = document.querySelector('header')?.offsetHeight || 0;
           if (lenisRef.current) {
             lenisRef.current.scrollTo(element, { 
-              offset: 0, 
+              offset: -navHeight,
               duration: immediate ? 0 : 0.9, 
               immediate: immediate 
             });

@@ -214,10 +214,15 @@ export default function Navbar() {
       if (location.pathname === '/') {
         const el = document.getElementById(target);
         if (el) {
+            // The navbar is fixed, so leave its full height above the target.
+            const navHeight = navRef.current?.offsetHeight || 0;
           if (window.lenis) {
-            window.lenis.scrollTo(el, { offset: -20, duration: 1.2 });
+            window.lenis.scrollTo(el, { offset: -navHeight, duration: 1.2 });
           } else {
-            el.scrollIntoView({ behavior: 'smooth' });
+            window.scrollTo({
+              top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - navHeight),
+              behavior: 'smooth'
+            });
           }
         }
       }
