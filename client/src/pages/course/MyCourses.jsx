@@ -92,19 +92,21 @@ export default function MyCourses() {
           localStorage.setItem('courseUser', JSON.stringify(data));
           if (data.isPurchased) {
             localStorage.setItem('isCoursePurchased', 'true');
+          } else {
+            localStorage.removeItem('isCoursePurchased');
           }
         } else {
-          const storedUser = localStorage.getItem('courseUser');
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          }
+          clearAllAuth();
+          setUser(null);
+          navigate('/course');
+          return;
         }
       } catch (err) {
         console.error('Error fetching user profile for courses:', err);
-        const storedUser = localStorage.getItem('courseUser');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        }
+        clearAllAuth();
+        setUser(null);
+        navigate('/course');
+        return;
       } finally {
         setLoading(false);
       }

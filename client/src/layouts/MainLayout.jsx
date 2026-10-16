@@ -39,9 +39,21 @@ export default function MainLayout({ children }) {
       lenisRef.current?.raf(time * 1000);
     };
     gsap.ticker.add(updateLenis);
-    gsap.ticker.lagSmoothing(0);
+    // Refresh ScrollTrigger when fonts and DOM layout are fully prepared
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        ScrollTrigger.refresh();
+      });
+    }
+
+    const handleMotionChange = () => {
+      ScrollTrigger.refresh();
+    };
+    const motionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    motionMediaQuery.addEventListener('change', handleMotionChange);
 
     return () => {
+      motionMediaQuery.removeEventListener('change', handleMotionChange);
       gsap.ticker.remove(updateLenis);
       lenisRef.current?.destroy();
       window.lenis = undefined;

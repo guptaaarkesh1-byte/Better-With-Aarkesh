@@ -133,6 +133,13 @@ const appointmentSchema = new mongoose.Schema({
   isArchived: {
     type: Boolean,
     default: false,
+  },
+  isUserDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  userDeletedAt: {
+    type: Date,
   }
 }, { timestamps: true });
 

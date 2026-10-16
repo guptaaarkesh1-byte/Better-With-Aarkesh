@@ -22,32 +22,51 @@ export default function PrincipleContent({
   const container = useRef(null);
 
   useGSAP(() => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container.current,
-        start: 'top 75%',
-      }
+    const mm = gsap.matchMedia();
+
+    // ── Reduced motion branch: Immediately visible and static ──
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set(['.phil-eyebrow', '.phil-line', '.phil-heading-word', '.phil-paragraph'], {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        scaleX: 1,
+        filter: 'none',
+        clearProps: 'all'
+      });
     });
 
-    tl.fromTo('.phil-eyebrow',
-      { opacity: 0, x: -20 },
-      { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' }
-    )
-    .fromTo('.phil-line',
-      { scaleX: 0 },
-      { scaleX: 1, duration: 0.8, ease: 'power3.out' },
-      "<"
-    )
-    .fromTo('.phil-heading-word',
-      { opacity: 0, y: 25, filter: 'blur(8px)' },
-      { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.9, ease: 'power3.out', stagger: 0.18 },
-      "-=0.4"
-    )
-    .fromTo('.phil-paragraph',
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.2 },
-      "-=0.5"
-    );
+    // ── Standard motion branch ──
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 75%',
+        }
+      });
+
+      tl.fromTo('.phil-eyebrow',
+        { opacity: 0, x: -20 },
+        { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' }
+      )
+      .fromTo('.phil-line',
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.8, ease: 'power3.out' },
+        "<"
+      )
+      .fromTo('.phil-heading-word',
+        { opacity: 0, y: 25, filter: 'blur(8px)' },
+        { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.9, ease: 'power3.out', stagger: 0.18 },
+        "-=0.4"
+      )
+      .fromTo('.phil-paragraph',
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.2 },
+        "-=0.5"
+      );
+    });
+
+    return () => mm.revert();
   }, { scope: container, dependencies: [headlineWhite, headlineGold, paragraphs, eyebrow, id] });
 
   return (

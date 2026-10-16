@@ -131,139 +131,181 @@ export default function MeetAarkesh() {
 
   useEffect(() => {
     const overlay = container.current?.querySelector('.meet-overlay');
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (!overlay || !container.current) return undefined;
     const title = overlay.querySelector('.meet-overlay-title');
 
-    let animationFrame = null;
-    const setHidden = (y = MEET_OVERLAY_CONFIG.startY) => {
+    // Use gsap.matchMedia for seamless switching between reduced-motion and standard motion
+    const mm = gsap.matchMedia();
+
+    // ── Reduced motion branch: Immediately visible and static ──
+    mm.add('(prefers-reduced-motion: reduce)', () => {
       overlay.style.backdropFilter = 'none';
       overlay.style.webkitBackdropFilter = 'none';
       overlay.style.backgroundColor = 'transparent';
-      overlay.style.visibility = 'hidden';
+      overlay.style.visibility = 'visible';
+      overlay.removeAttribute('aria-hidden');
       if (title) {
-        title.style.opacity = '0';
-        title.style.transform = `translateY(${y}px)`;
+        title.style.opacity = '1';
+        title.style.transform = 'none';
       }
-    };
+    });
 
-    const updateOverlay = () => {
-      animationFrame = null;
-      if (reducedMotion.matches) {
-        setHidden();
-        return;
+    // ── No-preference branch: Scroll-driven blur & fade animation ──
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      let animationFrame = null;
+
+      const setHidden = (y = MEET_OVERLAY_CONFIG.startY) => {
+        overlay.style.backdropFilter = 'none';
+        overlay.style.webkitBackdropFilter = 'none';
+        overlay.style.backgroundColor = 'transparent';
+        overlay.style.visibility = 'hidden';
+        overlay.setAttribute('aria-hidden', 'true');
+        if (title) {
+          title.style.opacity = '0';
+          title.style.transform = `translateY(${y}px)`;
+        }
+      };
+
+      const setVisible = (blurVal, opVal, yVal, opacity, blur) => {
+        overlay.style.backdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
+        overlay.style.webkitBackdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
+        overlay.style.backgroundColor = opacity > 0.01 ? `rgba(245, 241, 232, ${(opacity * 0.42).toFixed(3)})` : 'transparent';
+        overlay.style.visibility = 'visible';
+        overlay.removeAttribute('aria-hidden');
+        if (title) {
+          title.style.opacity = opVal;
+          title.style.transform = `translateY(${yVal}px)`;
+        }
+      };
+
+      const updateOverlay = () => {
+        animationFrame = null;
+        if (!container.current) return;
+
+        const rect = container.current.getBoundingClientRect();
+        const vh = window.innerHeight || 1;
+
+        // Fast cull: if section is offscreen, immediately return with zero work
+        if (rect.bottom < -100 || rect.top > vh + 100) {
+          setHidden();
+          return;
+        }
+
+        const rawP = 1 - rect.top / vh;
+        const progress = Math.min(Math.max(rawP, 0), 1);
+        const { peakStart, fadeStart, fadeEnd, startY, peakY, endY, maxBlurMobile, maxBlurDesktop } = MEET_OVERLAY_CONFIG;
+
+        if (progress <= 0 || progress >= fadeEnd) {
+          setHidden(progress <= 0 ? startY : endY);
+          return;
+        }
+
+        const maxBlur = window.innerWidth < 768 ? maxBlurMobile : maxBlurDesktop;
+
+        let blur = 0;
+        let opacity = 0;
+        let y = peakY;
+
+        if (progress <= peakStart) {
+          // Phase 1 (0 -> 0.15): Ease-in ramp up as section enters
+          const phase = progress / peakStart;
+          const curve = 1 - (1 - phase) * (1 - phase);
+          blur = maxBlur * curve;
+          opacity = curve;
+          y = startY + (peakY - startY) * curve;
+        } else if (progress <= fadeStart) {
+          // Phase 2 (0.15 -> 0.40): Steady full peak — strong blur & visible text
+          blur = maxBlur;
+          opacity = 1;
+          y = peakY;
+        } else {
+          // Phase 3 (0.40 -> 0.75): After 40% scroll, smoothly fade out both blur and text
+          const phase = (progress - fadeStart) / (fadeEnd - fadeStart);
+          const smoothDecrease = 0.5 * (1 + Math.cos(phase * Math.PI));
+          blur = maxBlur * smoothDecrease;
+          opacity = smoothDecrease;
+          y = endY + (peakY - endY) * smoothDecrease;
+        }
+
+        const blurVal = blur.toFixed(1);
+        const opVal = opacity.toFixed(3);
+        const yVal = y.toFixed(1);
+
+        if (opacity > 0.005) {
+          setVisible(blurVal, opVal, yVal, opacity, blur);
+        } else {
+          setHidden(yVal);
+        }
+      };
+
+      const requestUpdate = () => {
+        if (animationFrame === null) {
+          animationFrame = window.requestAnimationFrame(updateOverlay);
+        }
+      };
+
+      window.addEventListener('scroll', requestUpdate, { passive: true });
+      window.addEventListener('resize', requestUpdate, { passive: true });
+      ScrollTrigger.addEventListener('scroll', requestUpdate);
+
+      if (window.lenis) {
+        window.lenis.on('scroll', requestUpdate);
       }
 
-      const rect = container.current.getBoundingClientRect();
-      const vh = window.innerHeight || 1;
+      requestUpdate();
 
-      // Fast cull: if section is offscreen, immediately return with zero work
-      if (rect.bottom < -100 || rect.top > vh + 100) {
-        setHidden();
-        return;
-      }
-
-      const rawP = 1 - rect.top / vh;
-      const progress = Math.min(Math.max(rawP, 0), 1);
-      const { peakStart, fadeStart, fadeEnd, startY, peakY, endY, maxBlurMobile, maxBlurDesktop } = MEET_OVERLAY_CONFIG;
-
-      if (progress <= 0 || progress >= fadeEnd) {
-        setHidden(progress <= 0 ? startY : endY);
-        return;
-      }
-
-      const maxBlur = window.innerWidth < 768 ? maxBlurMobile : maxBlurDesktop;
-
-      let blur = 0;
-      let opacity = 0;
-      let y = peakY;
-
-      if (progress <= peakStart) {
-        // Phase 1 (0 -> 0.15): Ease-in ramp up as section enters
-        const phase = progress / peakStart;
-        const curve = 1 - (1 - phase) * (1 - phase);
-        blur = maxBlur * curve;
-        opacity = curve;
-        y = startY + (peakY - startY) * curve;
-      } else if (progress <= fadeStart) {
-        // Phase 2 (0.15 -> 0.40): Steady full peak — strong blur & visible text
-        blur = maxBlur;
-        opacity = 1;
-        y = peakY;
-      } else {
-        // Phase 3 (0.40 -> 0.75): After 40% scroll, smoothly fade out both blur and text in exact sync
-        const phase = (progress - fadeStart) / (fadeEnd - fadeStart);
-        const smoothDecrease = 0.5 * (1 + Math.cos(phase * Math.PI));
-        blur = maxBlur * smoothDecrease;
-        opacity = smoothDecrease;
-        y = endY + (peakY - endY) * smoothDecrease;
-      }
-
-      const blurVal = blur.toFixed(1);
-      const opVal = opacity.toFixed(3);
-      const yVal = y.toFixed(1);
-
-      overlay.style.backdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
-      overlay.style.webkitBackdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
-      overlay.style.backgroundColor = opacity > 0.01 ? `rgba(245, 241, 232, ${(opacity * 0.42).toFixed(3)})` : 'transparent';
-      overlay.style.visibility = opacity > 0.005 ? 'visible' : 'hidden';
-
-      if (title) {
-        title.style.opacity = opVal;
-        title.style.transform = `translateY(${yVal}px)`;
-      }
-    };
-
-    const requestUpdate = () => {
-      if (animationFrame === null) {
-        animationFrame = window.requestAnimationFrame(updateOverlay);
-      }
-    };
-    const handleMotionPreference = () => requestUpdate();
-
-    window.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate, { passive: true });
-    reducedMotion.addEventListener('change', handleMotionPreference);
-
-    ScrollTrigger.addEventListener('scroll', requestUpdate);
-
-    if (window.lenis) {
-      window.lenis.on('scroll', requestUpdate);
-    }
-
-    requestUpdate();
+      return () => {
+        window.removeEventListener('scroll', requestUpdate);
+        window.removeEventListener('resize', requestUpdate);
+        ScrollTrigger.removeEventListener('scroll', requestUpdate);
+        if (window.lenis) {
+          window.lenis.off('scroll', requestUpdate);
+        }
+        if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+      };
+    });
 
     return () => {
-      window.removeEventListener('scroll', requestUpdate);
-      window.removeEventListener('resize', requestUpdate);
-      reducedMotion.removeEventListener('change', handleMotionPreference);
-      ScrollTrigger.removeEventListener('scroll', requestUpdate);
-      if (window.lenis) {
-        window.lenis.off('scroll', requestUpdate);
-      }
-      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+      mm.revert();
     };
   }, []);
 
   useGSAP(() => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container.current,
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
-      }
+    const mm = gsap.matchMedia();
+
+    // Reduced motion: fully visible static state
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set(['.role-pane', '.meet-footer'], {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        clearProps: 'transform'
+      });
     });
 
-    tl.fromTo('.role-pane',
-      { opacity: 0, scale: 0.98 },
-      { opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out', stagger: 0.12 }
-    )
-    .fromTo('.meet-footer',
-      { opacity: 0, y: 15 },
-      { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' },
-      "-=0.2"
-    );
+    // Standard motion: scroll-triggered entry
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 85%',
+          toggleActions: 'play none none none',
+          once: true,
+        }
+      });
+
+      tl.fromTo('.role-pane',
+        { opacity: 0, scale: 0.98 },
+        { opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out', stagger: 0.12 }
+      )
+      .fromTo('.meet-footer',
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' },
+        "-=0.2"
+      );
+    });
+
+    return () => mm.revert();
   }, { scope: container, dependencies: [aboutData] });
 
   const [openCardIndex, setOpenCardIndex] = useState(null);
@@ -534,11 +576,9 @@ export default function MeetAarkesh() {
       {/* ─── SCROLL-DRIVEN BLUR + "MEET AARKESH" OVERLAY ─── */}
       <div
         className="meet-overlay absolute inset-0 z-50 flex items-start justify-center pt-3 sm:pt-4 md:pt-5 lg:pt-6 pointer-events-none"
-        aria-hidden="true"
       >
         <h2
           className="meet-overlay-title uppercase font-serif text-[clamp(48px,8vw,124px)] leading-none tracking-tight font-medium text-[#111010] select-none px-4 text-center"
-          style={{ opacity: 0, transform: `translateY(${MEET_OVERLAY_CONFIG.startY}px)` }}
         >
           {MEET_OVERLAY_CONFIG.textMain} <span className="text-[#c8502d] not-italic">{MEET_OVERLAY_CONFIG.textAccent}</span>
         </h2>

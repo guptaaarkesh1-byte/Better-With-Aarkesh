@@ -248,6 +248,8 @@ export default function AdminAppointmentsView() {
         phone: stu.phone || stu.phoneNumber || '',
         joined: stu.purchaseDate || stu.createdAt || new Date().toISOString(),
         isPurchased: Boolean(isEnrolled),
+        isDeleted: Boolean(stu.isDeleted),
+        deletedAt: stu.deletedAt || null,
         hasFailedPayments: Boolean(stu.hasFailedPayments || (stu.purchases && stu.purchases.some(p => p.paymentStatus === 'Failed'))),
         purchases: stu.purchases || [],
         course: isEnrolled
@@ -288,6 +290,8 @@ export default function AdminAppointmentsView() {
           phone: app.phoneNumber ? `${app.countryCode || ''} ${app.phoneNumber}`.trim() : (app.phone || app.userId?.phone || ''),
           joined: app.createdAt || app.date || new Date().toISOString(),
           isPurchased: false,
+          isDeleted: Boolean(app.userId?.isDeleted || app.isUserDeleted),
+          deletedAt: app.userDeletedAt || app.userId?.deletedAt || null,
           hasFailedPayments: false,
           purchases: [],
           course: null,
@@ -299,6 +303,12 @@ export default function AdminAppointmentsView() {
       }
 
       const client = map.get(email);
+      if (app.userId?.isDeleted || app.isUserDeleted) {
+        client.isDeleted = true;
+        if (app.userDeletedAt || app.userId?.deletedAt) {
+          client.deletedAt = app.userDeletedAt || app.userId?.deletedAt;
+        }
+      }
       client.appointments.push(app);
       if (app.paymentStatus === 'Paid' && !app.isFreeSession && app.orderId !== 'COURSE_FREE_SESSION' && Number(app.amount) > 0) {
         client.totalPaid += Number(app.amount);
@@ -312,7 +322,10 @@ export default function AdminAppointmentsView() {
   const getClientForAppt = (app) => {
     const email = (app.email || app.userId?.email || '').toLowerCase().trim();
     const found = clientsDirectory.find((c) => c.email === email);
-    if (found) return found;
+    if (found) {
+      if (app.userId?.isDeleted || app.isUserDeleted) found.isDeleted = true;
+      return found;
+    }
 
     return {
       id: app._id,
@@ -321,6 +334,7 @@ export default function AdminAppointmentsView() {
       email: app.email || '—',
       phone: app.phoneNumber ? `${app.countryCode || ''} ${app.phoneNumber}`.trim() : (app.phone || ''),
       joined: app.createdAt || app.date,
+      isDeleted: Boolean(app.userId?.isDeleted || app.isUserDeleted),
       course: (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') ? { name: COURSE_NAME, amount: COURSE_PRICE, paidAt: app.date } : null,
       appointments: [app],
       totalPaid: app.amount || 0
@@ -1590,7 +1604,14 @@ export default function AdminAppointmentsView() {
                           <div className="bwa-who">
                             <span className="bwa-av">{client.name?.[0]?.toUpperCase() || 'C'}</span>
                             <div style={{ minWidth: 0 }}>
-                              <b>{client.name}</b>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <b>{client.name}</b>
+                                {Boolean(client.isDeleted || app.isUserDeleted) && (
+                                  <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                    Account Deleted
+                                  </span>
+                                )}
+                              </div>
                               <span className="s">{client.email}</span>
                               <span className="s">{client.phone || 'No phone'}</span>
                             </div>
@@ -1677,7 +1698,14 @@ export default function AdminAppointmentsView() {
                           <div className="bwa-who">
                             <span className="bwa-av">{client.name?.[0]?.toUpperCase() || 'S'}</span>
                             <div style={{ minWidth: 0 }}>
-                              <b>{client.name}</b>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <b>{client.name}</b>
+                                {client.isDeleted && (
+                                  <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                    Account Deleted
+                                  </span>
+                                )}
+                              </div>
                               <span className="s">{client.email}</span>
                               <span className="s">{client.phone || 'No phone'}</span>
                             </div>
@@ -1777,7 +1805,14 @@ export default function AdminAppointmentsView() {
                           <div className="bwa-who">
                             <span className="bwa-av">{client.name?.[0]?.toUpperCase() || 'C'}</span>
                             <div style={{ minWidth: 0 }}>
-                              <b>{client.name}</b>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <b>{client.name}</b>
+                                {client.isDeleted && (
+                                  <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                    Account Deleted
+                                  </span>
+                                )}
+                              </div>
                               <span className="s">{client.email}</span>
                               <span className="s">{client.phone || 'No phone'}</span>
                             </div>
@@ -1813,7 +1848,11 @@ export default function AdminAppointmentsView() {
                           </div>
 
                           <div className="bwa-cell" data-label="Status">
-                            {isCourse ? (
+                            {client.isDeleted ? (
+                              <span className="bwa-pill p-cancel" style={{ backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', fontWeight: 'bold' }}>
+                                Account Deleted
+                              </span>
+                            ) : isCourse ? (
                               <span className="bwa-pill p-done">Student</span>
                             ) : client.appointments.length > 0 ? (
                               <span className="bwa-pill p-up">1-on-1 Client</span>
@@ -1863,7 +1902,24 @@ export default function AdminAppointmentsView() {
                     <div className="bwa-who">
                       <span className="bwa-av">{client.name?.[0]?.toUpperCase() || 'C'}</span>
                       <div style={{ minWidth: 0 }}>
-                        <b>{client.name}</b>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                          <b>{client.name}</b>
+                          {client.isDeleted && (
+                            <span
+                              className="bwa-pill p-cancel"
+                              style={{
+                                fontSize: '0.65rem',
+                                padding: '2px 6px',
+                                backgroundColor: '#fee2e2',
+                                color: '#b91c1c',
+                                border: '1px solid #fca5a5',
+                                fontWeight: 'bold',
+                              }}
+                            >
+                              Account Deleted
+                            </span>
+                          )}
+                        </div>
                         <span className="s">{client.email}</span>
                         <span className="s">{client.phone || 'No phone'}</span>
                       </div>
@@ -1895,10 +1951,24 @@ export default function AdminAppointmentsView() {
                     </div>
 
                     <div className="bwa-cell" data-label="Status">
-                      {client.course ? (
+                      {client.isDeleted ? (
+                        <span
+                          className="bwa-pill p-cancel"
+                          style={{
+                            backgroundColor: '#fee2e2',
+                            color: '#b91c1c',
+                            border: '1px solid #fca5a5',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          Account Deleted
+                        </span>
+                      ) : client.course ? (
                         <span className="bwa-pill p-done">Student</span>
-                      ) : (
+                      ) : client.appointments.length > 0 ? (
                         <span className="bwa-pill p-up">1-on-1 Client</span>
+                      ) : (
+                        <span className="bwa-pill p-none">Registered</span>
                       )}
                     </div>
 
@@ -1988,7 +2058,24 @@ export default function AdminAppointmentsView() {
               <>
                 <div className="bwa-d-head">
                   <div>
-                    <h3>Appointment with {selectedClient.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <h3 style={{ margin: 0 }}>Appointment with {selectedClient.name}</h3>
+                      {(selectedClient.isDeleted || selectedAppt.isUserDeleted) && (
+                        <span
+                          className="bwa-pill p-cancel"
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '2px 8px',
+                            backgroundColor: '#fee2e2',
+                            color: '#b91c1c',
+                            border: '1px solid #fca5a5',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          Account Deleted
+                        </span>
+                      )}
+                    </div>
                     <span className="s">
                       {formatDate(selectedAppt.date)} at {formatTime(selectedAppt.time, selectedAppt.date)}
                     </span>
@@ -2037,6 +2124,26 @@ export default function AdminAppointmentsView() {
                   {/* TAB 1: OVERVIEW */}
                   {drawerTab === 'overview' && (
                     <>
+                      {(selectedClient.isDeleted || selectedAppt.isUserDeleted) && (
+                        <div
+                          style={{
+                            backgroundColor: '#fef2f2',
+                            border: '1px solid #fca5a5',
+                            color: '#991b1b',
+                            borderRadius: '8px',
+                            padding: '12px 14px',
+                            fontSize: '0.85rem',
+                            marginBottom: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontWeight: 500,
+                          }}
+                        >
+                          ⚠️ <span><strong>Account Deleted</strong>: This user has deleted their account from the portal.</span>
+                        </div>
+                      )}
+
                       <div className="bwa-glance">
                         {renderStatusPill(selectedAppt)}
                         {renderPaymentPill(selectedAppt)}
@@ -2537,7 +2644,24 @@ export default function AdminAppointmentsView() {
                 <div className="bwa-d-head">
                   <span className="bwa-av">{selectedClient.name?.[0]?.toUpperCase() || 'C'}</span>
                   <div>
-                    <h3>{selectedClient.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <h3 style={{ margin: 0 }}>{selectedClient.name}</h3>
+                      {selectedClient.isDeleted && (
+                        <span
+                          className="bwa-pill p-cancel"
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '2px 8px',
+                            backgroundColor: '#fee2e2',
+                            color: '#b91c1c',
+                            border: '1px solid #fca5a5',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          Account Deleted
+                        </span>
+                      )}
+                    </div>
                     <span className="s">
                       {selectedClient.course ? `Student account #${selectedClient.acct}` : 'Client account'}
                     </span>
@@ -2548,6 +2672,26 @@ export default function AdminAppointmentsView() {
                 </div>
 
                 <div className="bwa-d-body">
+                  {selectedClient.isDeleted && (
+                    <div
+                      style={{
+                        backgroundColor: '#fef2f2',
+                        border: '1px solid #fca5a5',
+                        color: '#991b1b',
+                        borderRadius: '8px',
+                        padding: '12px 14px',
+                        fontSize: '0.85rem',
+                        marginBottom: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontWeight: 500,
+                      }}
+                    >
+                      ⚠️ <span><strong>Account Deleted</strong>: This user submitted an account deletion request. Their active sessions have been cancelled and personal data cleared.</span>
+                    </div>
+                  )}
+
                   {/* Contact Info */}
                   <div className="bwa-box">
                     <h4>Contact</h4>

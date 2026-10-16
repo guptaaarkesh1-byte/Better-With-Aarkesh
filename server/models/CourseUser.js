@@ -41,6 +41,13 @@ const courseUserSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  deletedAt: {
+    type: Date,
+  },
 }, { timestamps: true });
 
 const CourseUser = mongoose.model('CourseUser', courseUserSchema);

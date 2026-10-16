@@ -94,24 +94,46 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
   const steps = data.steps || DEFAULT_COACHING_DATA.steps;
 
   useGSAP(() => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container.current,
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
+    const mm = gsap.matchMedia();
+
+    // ── Reduced motion branch: Immediately visible and static ──
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set(['.coaching-fade', '.coaching-step'], {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        clearProps: 'transform'
+      });
+    });
+
+    // ── Standard motion branch ──
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 85%',
+          toggleActions: 'play none none none',
+          once: true,
+        }
+      });
+
+      if (container.current?.querySelector('.coaching-fade')) {
+        tl.fromTo('.coaching-fade',
+          { opacity: 0, x: -20 },
+          { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out', stagger: 0.15 }
+        );
+      }
+
+      if (container.current?.querySelector('.coaching-step')) {
+        tl.fromTo('.coaching-step',
+          { opacity: 0, y: 20 },
+          { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.1 },
+          "-=0.4"
+        );
       }
     });
 
-    tl.fromTo('.coaching-fade',
-      { opacity: 0, x: -20 },
-      { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out', stagger: 0.15 }
-    )
-    .fromTo('.coaching-step',
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.1 },
-      "-=0.4"
-    );
+    return () => mm.revert();
   }, { scope: container, dependencies: [data] });
 
   const resolvedBgUrl = resolveImageUrl(data.bgImg, defaultBgImg);

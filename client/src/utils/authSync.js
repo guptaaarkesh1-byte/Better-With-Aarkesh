@@ -57,7 +57,9 @@ export const syncLoginData = (data = {}) => {
     freeSessions: data.freeSessions !== undefined ? Math.max(0, Number(data.freeSessions)) : 0,
     courseSessionsGranted: data.courseSessionsGranted || false,
     isPurchased: data.isPurchased || false,
-    purchasedCourses: data.purchasedCourses || []
+    purchasedCourses: data.purchasedCourses || [],
+    authProvider: data.authProvider || 'local',
+    photoUrl: data.photoUrl || '',
   };
 
   localStorage.setItem('userInfo', JSON.stringify(effectiveUserInfo));
@@ -74,7 +76,17 @@ export const syncLoginData = (data = {}) => {
     localStorage.setItem('courseToken', coachingToken);
   }
 
-  localStorage.setItem('courseUser', JSON.stringify(effectiveUserInfo));
+  const courseUserInfo = {
+    _id: data._id || data.courseUserId,
+    fullName: data.fullName || data.name || '',
+    email: (data.email || '').toLowerCase().trim(),
+    phoneNumber: data.phoneNumber || '',
+    isPurchased: data.isPurchased || false,
+    purchasedCourses: data.purchasedCourses || [],
+    authProvider: data.authProvider || 'local',
+    photoUrl: data.photoUrl || '',
+  };
+  localStorage.setItem('courseUser', JSON.stringify(courseUserInfo));
 
   if (data.isPurchased) {
     localStorage.setItem('isCoursePurchased', 'true');

@@ -2897,9 +2897,12 @@
    ═══════════════════════════════════════════════════════════════ */
 .auth-modal-scope {
   height: 100vh;
-  min-height: 100vh;
+  max-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   background: #050505;
   color: #EDEAE6;
   font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
@@ -2914,33 +2917,37 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 36px 32px 60px;
+  padding: 32px 28px 80px;
   background: radial-gradient(ellipse 80% 50% at 30% 0%, rgba(122, 42, 112, 0.28), transparent 70%), #050505;
-  overflow-y: auto;
+  overflow-y: auto !important;
   overflow-x: hidden;
   position: relative;
   height: 100%;
   max-height: 100vh;
+  max-height: 100dvh;
   min-height: 0;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200, 120, 190, 0.5) rgba(255, 255, 255, 0.05);
 }
 
 .auth-modal-scope .auth-l::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .auth-modal-scope .auth-l::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .auth-modal-scope .auth-l::-webkit-scrollbar-thumb {
-  background: rgba(200, 120, 190, 0.25);
+  background: rgba(200, 120, 190, 0.45);
   border-radius: 999px;
 }
 
 .auth-modal-scope .auth-l::-webkit-scrollbar-thumb:hover {
-  background: rgba(200, 120, 190, 0.45);
+  background: rgba(200, 120, 190, 0.75);
 }
 
 .auth-modal-scope .fbox {
@@ -3129,6 +3136,7 @@
   margin: 22px 0 0;
   color: #9E96A2;
   font-size: 15px;
+  padding-bottom: 40px;
 }
 
 .auth-modal-scope .alt button,
@@ -3358,6 +3366,32 @@
 .auth-modal-scope .close-btn:hover {
   background: rgba(255, 255, 255, 0.18);
   transform: scale(1.05);
+}
+
+@media (max-height: 880px) {
+  .auth-modal-scope .auth-l {
+    padding: 24px 24px 50px;
+  }
+  .auth-modal-scope .fbox h1 {
+    font-size: 26px;
+    margin-bottom: 4px;
+  }
+  .auth-modal-scope .fbox .sm {
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+  .auth-modal-scope .fld {
+    margin-bottom: 8px;
+  }
+  .auth-modal-scope .fld input,
+  .auth-modal-scope .fld select {
+    padding: 10px 13px;
+    font-size: 14px;
+  }
+  .auth-modal-scope .alt {
+    margin-top: 16px;
+    padding-bottom: 30px;
+  }
 }
 
 @media (max-width: 1000px) {

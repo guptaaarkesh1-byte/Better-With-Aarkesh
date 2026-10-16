@@ -21,11 +21,13 @@ import ContactUs from './pages/ContactUs';
 import { BookingProvider } from './context/BookingContext';
 import { ThemeProvider } from './context/ThemeContext';
 import BookingModal from './components/ui/BookingModal';
+import DynamicSEO from './components/common/DynamicSEO';
 
 function App() {
   return (
     <ThemeProvider>
       <BookingProvider>
+        <DynamicSEO />
         <Router>
           <MainLayout>
           <Routes>

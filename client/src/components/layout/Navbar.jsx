@@ -84,33 +84,54 @@ export default function Navbar() {
     setFreeSessionsCount(initialCredits);
 
     const token = localStorage.getItem('token');
+    const courseToken = localStorage.getItem('courseToken');
     const API_URL = import.meta.env.VITE_API_URL || '';
-    if (!token) return;
 
-    // Fetch user profile for latest free sessions
-    fetch(`${API_URL}/api/users/profile`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (data && data.freeSessions !== undefined) {
-          setFreeSessionsCount(Math.max(0, Number(data.freeSessions)));
-        }
-      })
-      .catch(() => {});
+    if (!token && !courseToken) {
+      setIsLoggedIn(false);
+      return;
+    }
 
-    // Fetch notes to check if coach sent any notes
-    fetch(`${API_URL}/api/notes`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.ok ? res.json() : [])
-      .then(data => {
-        if (Array.isArray(data)) {
-          const coachNotes = data.filter(n => n.author === 'COACH' || n.isCoachNote || n.unread);
-          setNewCoachNotesCount(coachNotes.length);
-        }
+    if (token) {
+      // Fetch user profile for latest free sessions and validate session
+      fetch(`${API_URL}/api/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
       })
-      .catch(() => {});
+        .then(res => {
+          if (res.status === 401 || res.status === 403 || res.status === 404) {
+            clearAllAuth();
+            setIsLoggedIn(false);
+            return null;
+          }
+          return res.ok ? res.json() : null;
+        })
+        .then(data => {
+          if (data && data.freeSessions !== undefined) {
+            setFreeSessionsCount(Math.max(0, Number(data.freeSessions)));
+          }
+        })
+        .catch(() => {});
+
+      // Fetch notes to check if coach sent any notes
+      fetch(`${API_URL}/api/notes`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => {
+          if (res.status === 401 || res.status === 403) {
+            clearAllAuth();
+            setIsLoggedIn(false);
+            return [];
+          }
+          return res.ok ? res.json() : [];
+        })
+        .then(data => {
+          if (Array.isArray(data)) {
+            const coachNotes = data.filter(n => n.author === 'COACH' || n.isCoachNote || n.unread);
+            setNewCoachNotesCount(coachNotes.length);
+          }
+        })
+        .catch(() => {});
+    }
   }, [isLoggedIn, location.pathname]);
 
   // Re-check auth status when route changes or auth event fires

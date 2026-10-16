@@ -1179,3 +1179,74 @@ body .ql-editor.ql-blank::before {
     box-shadow: 0 -14px 32px rgba(0, 0, 0, 0.18);
   }
 }
+
+/* ============================================================
+   ACCESSIBILITY: Reduced Motion Safety Net for Homepage Sections
+   Guarantees that overlay and scroll-revealed elements remain
+   fully visible when macOS/Windows "Reduce motion" is enabled.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  /* 1. Think Principle - My Ideology Overlay */
+  .think-ideology-overlay {
+    visibility: visible !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: transparent !important;
+  }
+  .think-ideology-title {
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+  }
+
+  /* 2. Meet Aarkesh Section */
+  .meet-overlay {
+    visibility: visible !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: transparent !important;
+  }
+  .meet-overlay-title {
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+  }
+  .role-pane,
+  .meet-footer {
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+  }
+
+  /* 3. Homepage Coaching Journey, Process & Content */
+  .journey-fade,
+  .journey-node,
+  .journey-bottom,
+  .coaching-fade,
+  .coaching-step,
+  .phil-eyebrow,
+  .phil-line,
+  .phil-heading-word,
+  .phil-heading-word .word,
+  .phil-paragraph,
+  .prob-line,
+  .prob-eyebrow,
+  .prob-heading,
+  .prob-divider,
+  .prob-paragraph,
+  .trans-eyebrow,
+  .hero-eyebrow,
+  .hero-line,
+  .hero-heading,
+  .hero-paragraph,
+  .hero-btn {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    visibility: visible !important;
+  }
+
+  .sunlight-overlay {
+    opacity: 0.6 !important;
+  }
+}

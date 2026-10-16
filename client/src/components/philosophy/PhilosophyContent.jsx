@@ -11,25 +11,34 @@ export default function PhilosophyContent() {
   const container = useRef(null);
 
   useGSAP(() => {
-    // Only animate the headline text reveal
-    const split = new SplitType('.phil-heading-word', { types: 'words' });
+    const mm = gsap.matchMedia();
 
-    gsap.set('.phil-heading-word .word', { opacity: 0, y: 40, filter: 'blur(12px)' });
-
-    gsap.to('.phil-heading-word .word', {
-      scrollTrigger: {
-        trigger: container.current,
-        start: 'top 75%',
-      },
-      opacity: 1,
-      y: 0,
-      filter: 'blur(0px)',
-      duration: 1, // standard duration for the reveal
-      stagger: 0.12,
-      ease: 'power3.out'
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set('.phil-heading-word', { opacity: 1, y: 0, filter: 'none', clearProps: 'all' });
     });
 
-    return () => split.revert();
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const split = new SplitType('.phil-heading-word', { types: 'words' });
+
+      gsap.set('.phil-heading-word .word', { opacity: 0, y: 40, filter: 'blur(12px)' });
+
+      gsap.to('.phil-heading-word .word', {
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 75%',
+        },
+        opacity: 1,
+        y: 0,
+        filter: 'blur(0px)',
+        duration: 1,
+        stagger: 0.12,
+        ease: 'power3.out'
+      });
+
+      return () => split.revert();
+    });
+
+    return () => mm.revert();
   }, { scope: container });
 
   return (

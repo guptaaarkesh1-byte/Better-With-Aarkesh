@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, X, Check, SpinnerGap, Warning, ArrowsClockwise, ShieldCheck, Trash, Eye, EyeSlash } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
+import { clearAllAuth } from '../../../../utils/authSync';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -213,13 +214,17 @@ export default function SecurityPrivacyTab() {
 
       setDeleteSuccess(true);
 
-      // Auto logout and redirect after 2s
+      // Clear all auth session data, tokens, and redirect immediately to homepage
+      clearAllAuth();
+      localStorage.clear();
+      sessionStorage.clear();
+      window.dispatchEvent(new Event('auth-change'));
+      window.dispatchEvent(new Event('course-auth-change'));
+
       setTimeout(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userInfo');
-        window.dispatchEvent(new Event('auth-change'));
-        navigate('/');
-      }, 2000);
+        setIsDeleteModalOpen(false);
+        window.location.href = '/';
+      }, 500);
     } catch (err) {
       console.error(err);
       setDeleteError('Failed to delete account. Please try again.');

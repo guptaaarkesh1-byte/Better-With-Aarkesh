@@ -10,6 +10,7 @@ import Appointment from '../models/Appointment.js';
 import Note from '../models/Note.js';
 import PastClient from '../models/PastClient.js';
 import CourseUser from '../models/CourseUser.js';
+import CoursePurchase from '../models/CoursePurchase.js';
 
 const router = express.Router();
 
@@ -688,30 +689,58 @@ router.post('/delete-account-verify', protect, async (req, res) => {
       );
     }
 
-    // 2. Delete all user notes
+    // 2. Delete all private notes from DB
     await Note.deleteMany({ user: user._id });
 
-    // 3. Clear and remove past appointment history from DB
-    if (cleanEmail) {
-      const escapedEmail = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      await Appointment.deleteMany({
-        $or: [
-          { userId: user._id },
-          { email: new RegExp(`^${escapedEmail}$`, 'i') }
-        ]
-      });
-    } else {
-      await Appointment.deleteMany({ userId: user._id });
-    }
+    // 3. Cancel upcoming appointments and mark all appointments with isUserDeleted
+    const escapedEmail = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const appFilter = cleanEmail 
+      ? { $or: [{ userId: user._id }, { email: new RegExp(`^${escapedEmail}$`, 'i') }] }
+      : { userId: user._id };
 
-    // 4. Clear saved and completed lists and mark user as deleted
+    await Appointment.updateMany(
+      { ...appFilter, status: 'UPCOMING' },
+      { $set: { status: 'CANCELLED', reason: 'Account deleted by user' } }
+    );
+    await Appointment.updateMany(
+      appFilter,
+      { $set: { isUserDeleted: true, userDeletedAt: new Date() } }
+    );
+
+    // 4. Wipe user private activity, history, bookmarks & lock login credentials
     user.savedArticles = [];
     user.savedVideos = [];
     user.completedArticles = [];
     user.completedVideos = [];
+    user.freeSessions = 0;
+    user.courseSessionsGranted = false;
+    user.googleId = '';
+    user.photoUrl = '';
+    user.password = await bcrypt.hash('DELETED_ACCOUNT_' + Date.now(), 10);
     user.isDeleted = true;
     user.deletedAt = new Date();
     await user.save();
+
+    // 5. If CourseUser exists with this email, also soft-delete and lock course access
+    if (cleanEmail) {
+      await CourseUser.updateMany(
+        { email: new RegExp(`^${escapedEmail}$`, 'i') },
+        {
+          $set: {
+            isDeleted: true,
+            deletedAt: new Date(),
+            freeSessions: 0,
+            isPurchased: false,
+            purchasedCourses: [],
+            password: await bcrypt.hash('DELETED_COURSE_ACCOUNT_' + Date.now(), 10)
+          }
+        }
+      );
+      await CoursePurchase.updateMany(
+        { studentEmail: new RegExp(`^${escapedEmail}$`, 'i') },
+        { $set: { isUserDeleted: true, userDeletedAt: new Date() } }
+      );
+    }
 
     deleteAccountOTPs.delete(userIdStr);
 

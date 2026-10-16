@@ -38,6 +38,10 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
 
+      if (req.user.isDeleted) {
+        return res.status(401).json({ message: 'Account deleted' });
+      }
+
       next();
     } catch (error) {
       console.error('Auth middleware error:', error.message);

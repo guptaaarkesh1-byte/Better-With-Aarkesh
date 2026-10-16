@@ -15,11 +15,20 @@ export default function ProblemContent({ problemData = {} }) {
   const quoteSubtext = problemData.quoteSubtext || "....Until you learn to see clearly";
 
   useGSAP(() => {
-    // Smooth reveal when section is viewed
-    gsap.fromTo(container.current, 
-      { opacity: 0, y: 15 }, 
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', delay: 0.1 }
-    );
+    const mm = gsap.matchMedia();
+
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set(container.current, { opacity: 1, y: 0, clearProps: 'transform' });
+    });
+
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.fromTo(container.current, 
+        { opacity: 0, y: 15 }, 
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', delay: 0.1 }
+      );
+    });
+
+    return () => mm.revert();
   }, { scope: container, dependencies: [eyebrow, heading1, headingAccent, quoteItalic, quoteSubtext] });
 
   return (

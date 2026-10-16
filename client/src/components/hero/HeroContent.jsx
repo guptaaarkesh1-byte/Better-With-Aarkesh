@@ -20,33 +20,48 @@ export default function HeroContent({ heroData = {} }) {
   const ctaLink = heroData.ctaLink || '/book';
 
   useGSAP(() => {
-    const tl = gsap.timeline({ delay: 0.4 });
+    const mm = gsap.matchMedia();
 
-    tl.fromTo('.hero-eyebrow', 
-      { opacity: 0, x: -16 }, 
-      { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' }
-    )
-    .fromTo('.hero-line',
-      { scaleX: 0 },
-      { scaleX: 1, duration: 0.8, ease: 'power3.out' },
-      "<"
-    )
-    .fromTo('.hero-heading',
-      { opacity: 0, y: 24 },
-      { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' },
-      "-=0.4"
-    )
-    .fromTo('.hero-paragraph',
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
-      "-=0.5"
-    )
-    .fromTo('.hero-btn',
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' },
-      "-=0.4"
-    );
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set(['.hero-eyebrow', '.hero-line', '.hero-heading', '.hero-paragraph', '.hero-btn'], {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        scaleX: 1,
+        clearProps: 'all'
+      });
+    });
 
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const tl = gsap.timeline({ delay: 0.4 });
+
+      tl.fromTo('.hero-eyebrow', 
+        { opacity: 0, x: -16 }, 
+        { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' }
+      )
+      .fromTo('.hero-line',
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.8, ease: 'power3.out' },
+        "<"
+      )
+      .fromTo('.hero-heading',
+        { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' },
+        "-=0.4"
+      )
+      .fromTo('.hero-paragraph',
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
+        "-=0.5"
+      )
+      .fromTo('.hero-btn',
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' },
+        "-=0.4"
+      );
+    });
+
+    return () => mm.revert();
   }, { scope: container, dependencies: [eyebrow, heading1, headingAccent, description] });
 
   return (

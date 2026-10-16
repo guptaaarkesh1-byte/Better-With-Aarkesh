@@ -692,7 +692,8 @@ router.get('/', protect, async (req, res) => {
         { userId: req.user._id },
         { email: new RegExp(`^${escapedEmail}$`, 'i') }
       ],
-      isArchived: { $ne: true }
+      isArchived: { $ne: true },
+      isUserDeleted: { $ne: true }
     }).sort({ createdAt: -1 });
 
     // Deduplicate by _id (in case both userId and email matched)

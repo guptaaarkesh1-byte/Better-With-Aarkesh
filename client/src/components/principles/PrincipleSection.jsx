@@ -82,123 +82,145 @@ export default function PrincipleSection({
   }, { scope: sectionRef });
 
   useEffect(() => {
-    if (!isThinkPage) return undefined;
+    if (!isThinkPage || !sectionRef.current) return undefined;
 
-    const overlay = sectionRef.current?.querySelector('.think-ideology-overlay');
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (!overlay || !sectionRef.current) return undefined;
+    const overlay = sectionRef.current.querySelector('.think-ideology-overlay');
+    if (!overlay) return undefined;
     const title = overlay.querySelector('.think-ideology-title');
 
-    let animationFrame = null;
-    const setHidden = (y = IDEOLOGY_CONFIG.startY) => {
+    // Use gsap.matchMedia for seamless switching between reduced-motion and standard motion
+    const mm = gsap.matchMedia();
+
+    // ── Reduced motion branch: Immediately visible and static ──
+    mm.add('(prefers-reduced-motion: reduce)', () => {
       overlay.style.backdropFilter = 'none';
       overlay.style.webkitBackdropFilter = 'none';
       overlay.style.backgroundColor = 'transparent';
-      overlay.style.setProperty('--ideology-blur', '0px');
-      overlay.style.setProperty('--ideology-opacity', '0');
-      overlay.style.setProperty('--ideology-y', `${y}px`);
-      overlay.style.visibility = 'hidden';
+      overlay.style.visibility = 'visible';
+      overlay.removeAttribute('aria-hidden');
       if (title) {
-        title.style.opacity = '0';
-        title.style.transform = `translateY(${y}px)`;
+        title.style.opacity = '1';
+        title.style.transform = 'none';
       }
-    };
+    });
 
-    const updateOverlay = () => {
-      animationFrame = null;
-      if (reducedMotion.matches) {
-        setHidden();
-        return;
+    // ── No-preference branch: Scroll-driven blur & fade animation ──
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      let animationFrame = null;
+
+      const setHidden = (y = IDEOLOGY_CONFIG.startY) => {
+        overlay.style.backdropFilter = 'none';
+        overlay.style.webkitBackdropFilter = 'none';
+        overlay.style.backgroundColor = 'transparent';
+        overlay.style.setProperty('--ideology-blur', '0px');
+        overlay.style.setProperty('--ideology-opacity', '0');
+        overlay.style.setProperty('--ideology-y', `${y}px`);
+        overlay.style.visibility = 'hidden';
+        overlay.setAttribute('aria-hidden', 'true');
+        if (title) {
+          title.style.opacity = '0';
+          title.style.transform = `translateY(${y}px)`;
+        }
+      };
+
+      const setVisible = (blurVal, opVal, yVal, opacity, blur) => {
+        overlay.style.backdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
+        overlay.style.webkitBackdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
+        overlay.style.backgroundColor = opacity > 0.01 ? `rgba(245, 241, 232, ${(opacity * 0.42).toFixed(3)})` : 'transparent';
+        overlay.style.setProperty('--ideology-blur', `${blurVal}px`);
+        overlay.style.setProperty('--ideology-opacity', opVal);
+        overlay.style.setProperty('--ideology-y', `${yVal}px`);
+        overlay.style.visibility = 'visible';
+        overlay.removeAttribute('aria-hidden');
+        if (title) {
+          title.style.opacity = opVal;
+          title.style.transform = `translateY(${yVal}px)`;
+        }
+      };
+
+      const updateOverlay = () => {
+        animationFrame = null;
+        if (!sectionRef.current) return;
+
+        const rect = sectionRef.current.getBoundingClientRect();
+        const vh = window.innerHeight || 1;
+
+        // Progress calculation:
+        // p = 0: THINK section's top edge is at bottom of viewport (rect.top === vh)
+        // p = 1: THINK section's top edge reaches top of viewport (rect.top === 0)
+        const rawP = 1 - rect.top / vh;
+        const progress = Math.min(Math.max(rawP, 0), 1);
+
+        const { peakStart, fadeStart, fadeEnd, startY, peakY, endY, maxBlurMobile, maxBlurDesktop } = IDEOLOGY_CONFIG;
+
+        if (progress <= 0 || progress >= fadeEnd) {
+          setHidden(progress <= 0 ? startY : endY);
+          return;
+        }
+
+        const maxBlur = window.innerWidth < 768 ? maxBlurMobile : maxBlurDesktop;
+
+        let blur = 0;
+        let opacity = 0;
+        let y = peakY;
+
+        if (progress <= peakStart) {
+          // Phase 1 (0 -> 0.15): Ease-in ramp up as Think enters
+          const phase = progress / peakStart;
+          const curve = 1 - (1 - phase) * (1 - phase);
+          blur = maxBlur * curve;
+          opacity = curve;
+          y = startY + (peakY - startY) * curve;
+        } else if (progress <= fadeStart) {
+          // Phase 2 (0.15 -> 0.40): Steady full peak — strong blur & visible text
+          blur = maxBlur;
+          opacity = 1;
+          y = peakY;
+        } else {
+          // Phase 3 (0.40 -> 0.75): After 40% scroll, smoothly fade out both blur and text
+          const phase = (progress - fadeStart) / (fadeEnd - fadeStart);
+          const smoothDecrease = 0.5 * (1 + Math.cos(phase * Math.PI));
+          blur = maxBlur * smoothDecrease;
+          opacity = smoothDecrease;
+          y = endY + (peakY - endY) * smoothDecrease;
+        }
+
+        const blurVal = blur.toFixed(1);
+        const opVal = opacity.toFixed(3);
+        const yVal = y.toFixed(1);
+
+        if (opacity > 0.005) {
+          setVisible(blurVal, opVal, yVal, opacity, blur);
+        } else {
+          setHidden(yVal);
+        }
+      };
+
+      const requestUpdate = () => {
+        if (animationFrame === null) animationFrame = window.requestAnimationFrame(updateOverlay);
+      };
+
+      window.addEventListener('scroll', requestUpdate, { passive: true });
+      window.addEventListener('resize', requestUpdate, { passive: true });
+
+      if (window.lenis) {
+        window.lenis.on('scroll', requestUpdate);
       }
 
-      const rect = sectionRef.current.getBoundingClientRect();
-      const vh = window.innerHeight || 1;
+      requestUpdate();
 
-      // ─────────────────────────────────────────────────────────────────
-      // PROGRESS CALCULATION:
-      // p = 0: THINK section's top edge is at bottom of viewport (rect.top === vh)
-      // p = 1: THINK section's top edge reaches top of viewport (rect.top === 0)
-      // ─────────────────────────────────────────────────────────────────
-      const rawP = 1 - rect.top / vh;
-      const progress = Math.min(Math.max(rawP, 0), 1);
-
-      const { peakStart, fadeStart, fadeEnd, startY, peakY, endY, maxBlurMobile, maxBlurDesktop } = IDEOLOGY_CONFIG;
-
-      if (progress <= 0 || progress >= fadeEnd) {
-        setHidden(progress <= 0 ? startY : endY);
-        return;
-      }
-
-      const maxBlur = window.innerWidth < 768 ? maxBlurMobile : maxBlurDesktop;
-
-      let blur = 0;
-      let opacity = 0;
-      let y = peakY;
-
-      if (progress <= peakStart) {
-        // Phase 1 (0 -> 0.15): Ease-in ramp up as Think enters
-        const phase = progress / peakStart;
-        const curve = 1 - (1 - phase) * (1 - phase);
-        blur = maxBlur * curve;
-        opacity = curve;
-        y = startY + (peakY - startY) * curve;
-      } else if (progress <= fadeStart) {
-        // Phase 2 (0.15 -> 0.40): Steady full peak — strong blur & visible text
-        blur = maxBlur;
-        opacity = 1;
-        y = peakY;
-      } else {
-        // Phase 3 (0.40 -> 0.75): After 40% scroll, smoothly fade out both blur and text in exact sync
-        const phase = (progress - fadeStart) / (fadeEnd - fadeStart);
-        const smoothDecrease = 0.5 * (1 + Math.cos(phase * Math.PI));
-        blur = maxBlur * smoothDecrease;
-        opacity = smoothDecrease;
-        y = endY + (peakY - endY) * smoothDecrease;
-      }
-
-      const blurVal = blur.toFixed(1);
-      const opVal = opacity.toFixed(3);
-      const yVal = y.toFixed(1);
-
-      // Explicitly set backdropFilter directly on style so all browsers immediately composite the blur on GPU
-      overlay.style.backdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
-      overlay.style.webkitBackdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
-      overlay.style.backgroundColor = opacity > 0.01 ? `rgba(245, 241, 232, ${(opacity * 0.42).toFixed(3)})` : 'transparent';
-      overlay.style.setProperty('--ideology-blur', `${blurVal}px`);
-      overlay.style.setProperty('--ideology-opacity', opVal);
-      overlay.style.setProperty('--ideology-y', `${yVal}px`);
-      overlay.style.visibility = opacity > 0.005 ? 'visible' : 'hidden';
-
-      // Explicitly set opacity and transform directly on the title element so text smoothly fades out identically to the blur
-      if (title) {
-        title.style.opacity = opVal;
-        title.style.transform = `translateY(${yVal}px)`;
-      }
-    };
-
-    const requestUpdate = () => {
-      if (animationFrame === null) animationFrame = window.requestAnimationFrame(updateOverlay);
-    };
-    const handleMotionPreference = () => requestUpdate();
-
-    window.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate, { passive: true });
-    reducedMotion.addEventListener('change', handleMotionPreference);
-
-    if (window.lenis) {
-      window.lenis.on('scroll', requestUpdate);
-    }
-
-    requestUpdate();
+      return () => {
+        window.removeEventListener('scroll', requestUpdate);
+        window.removeEventListener('resize', requestUpdate);
+        if (window.lenis) {
+          window.lenis.off('scroll', requestUpdate);
+        }
+        if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+      };
+    });
 
     return () => {
-      window.removeEventListener('scroll', requestUpdate);
-      window.removeEventListener('resize', requestUpdate);
-      reducedMotion.removeEventListener('change', handleMotionPreference);
-      if (window.lenis) {
-        window.lenis.off('scroll', requestUpdate);
-      }
-      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+      mm.revert();
     };
   }, [isThinkPage]);
 
@@ -318,11 +340,9 @@ export default function PrincipleSection({
       {isThinkPage && (
         <div
           className="think-ideology-overlay absolute inset-0 z-50 flex items-start justify-center pt-3 sm:pt-4 md:pt-5 lg:pt-6 pointer-events-none"
-          aria-hidden="true"
         >
           <h2
             className="think-ideology-title uppercase font-serif text-[clamp(48px,8vw,124px)] leading-none tracking-tight font-medium text-[#111010] select-none px-4 text-center"
-            style={{ opacity: 0, transform: `translateY(${IDEOLOGY_CONFIG.startY}px)` }}
           >
             {IDEOLOGY_CONFIG.textMain} <span className="text-[#c8502d] not-italic">{IDEOLOGY_CONFIG.textAccent}</span>
           </h2>

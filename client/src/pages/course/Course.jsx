@@ -294,12 +294,22 @@ export default function Course() {
       const res = await fetch(`${apiUrl}/api/course-auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (res.status === 401 || res.status === 403) {
+        clearAllAuth();
+        setIsLoggedIn(false);
+        setIsPurchased(false);
+        setShowDashboard(false);
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem('courseUser', JSON.stringify(data));
         if (data.isPurchased) {
           localStorage.setItem('isCoursePurchased', 'true');
           setIsPurchased(true);
+        } else {
+          localStorage.removeItem('isCoursePurchased');
+          setIsPurchased(false);
         }
         if (Array.isArray(data.purchasedCourses)) {
           setPurchasedCourses(data.purchasedCourses);

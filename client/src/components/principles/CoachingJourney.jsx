@@ -215,34 +215,64 @@ export default function CoachingJourney() {
   const howItWorks = data.howItWorks || DEFAULT_JOURNEY_DATA.howItWorks;
 
   useGSAP(() => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container.current,
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
+    const mm = gsap.matchMedia();
+
+    // ── Reduced motion branch: Immediately visible and static ──
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set(['.journey-fade', '.journey-node', '.journey-bottom'], {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        scale: 1,
+        clearProps: 'transform'
+      });
+    });
+
+    // ── Standard motion branch ──
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 85%',
+          toggleActions: 'play none none none',
+          once: true,
+        }
+      });
+
+      if (container.current?.querySelector('.journey-fade')) {
+        tl.fromTo('.journey-fade',
+          { opacity: 0, x: -20 },
+          { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out', stagger: 0.1 }
+        );
+      }
+
+      if (container.current?.querySelector('.journey-node')) {
+        tl.fromTo('.journey-node',
+          { opacity: 0, scale: 0.8 },
+          { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.5)', stagger: 0.2 },
+          "-=0.4"
+        );
+      }
+
+      // Safe guard: only animate .journey-quote if it exists in the DOM
+      if (container.current?.querySelector('.journey-quote')) {
+        tl.fromTo('.journey-quote',
+          { opacity: 0, x: 20 },
+          { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' },
+          "-=0.2"
+        );
+      }
+
+      if (container.current?.querySelector('.journey-bottom')) {
+        tl.fromTo('.journey-bottom',
+          { opacity: 0, y: 30 },
+          { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
+          "-=0.4"
+        );
       }
     });
 
-    tl.fromTo('.journey-fade',
-      { opacity: 0, x: -20 },
-      { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out', stagger: 0.1 }
-    )
-    .fromTo('.journey-node',
-      { opacity: 0, scale: 0.8 },
-      { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.5)', stagger: 0.2 },
-      "-=0.4"
-    )
-    .fromTo('.journey-quote',
-      { opacity: 0, x: 20 },
-      { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' },
-      "-=0.2"
-    )
-    .fromTo('.journey-bottom',
-      { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
-      "-=0.4"
-    );
+    return () => mm.revert();
   }, { scope: container, dependencies: [data] });
 
   const resolvedJourneySrc = resolveImageUrl(data.bgImg, defaultBgImg);

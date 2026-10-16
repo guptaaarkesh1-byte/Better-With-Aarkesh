@@ -11,19 +11,27 @@ export default function TransitionIntro({ problemData = {} }) {
   const transAccent = (rawAccent === "Changes Everything." || rawAccent === "changes everything.") ? "changes EVERYTHING." : rawAccent;
 
   useGSAP(() => {
-    // Reveal animation
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container.current,
-        start: 'top 80%',
-      }
+    const mm = gsap.matchMedia();
+
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set('.trans-eyebrow', { opacity: 1, y: 0, clearProps: 'transform' });
     });
 
-    tl.fromTo('.trans-eyebrow',
-      { opacity: 0, y: 10 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }
-    );
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 80%',
+        }
+      });
 
+      tl.fromTo('.trans-eyebrow',
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }
+      );
+    });
+
+    return () => mm.revert();
   }, { scope: container, dependencies: [transEyebrow, transHeading, transAccent] });
 
   return (

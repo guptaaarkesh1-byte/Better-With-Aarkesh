@@ -68,7 +68,7 @@ router.post('/register-init', async (req, res) => {
       const last10 = cleanPhoneDigits.slice(-10);
       const phoneRegex = new RegExp(`${last10}$`);
       const phoneExistsInUser = await User.findOne({ phoneNumber: phoneRegex, isDeleted: { $ne: true } });
-      const phoneExistsInCourse = await CourseUser.findOne({ phoneNumber: phoneRegex });
+      const phoneExistsInCourse = await CourseUser.findOne({ phoneNumber: phoneRegex, isDeleted: { $ne: true } });
 
       if (phoneExistsInUser || phoneExistsInCourse) {
         return res.status(400).json({ message: 'This phone number is already registered. Please sign in or use another number.' });
@@ -264,13 +264,16 @@ router.post('/register-verify', async (req, res) => {
       // 2. Clear any leftover user notes
       await Note.deleteMany({ user: userExists._id });
 
-      // 3. Delete previous appointments from old account so user gets a 100% clean fresh start
-      await Appointment.deleteMany({
-        $or: [
-          { userId: userExists._id },
-          { email: new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
-        ]
-      });
+      // 3. Ensure previous appointments from old account are marked isUserDeleted so admin keeps history while user starts 100% fresh
+      await Appointment.updateMany(
+        {
+          $or: [
+            { userId: userExists._id },
+            { email: new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+          ]
+        },
+        { $set: { isUserDeleted: true } }
+      );
 
       const dynamicFree = hasCoursePerks ? await getDynamicCourseFreeSessions('better-man') : 0;
       userExists.fullName = fullName;
@@ -317,8 +320,24 @@ router.post('/register-verify', async (req, res) => {
             phoneNumber: user.phoneNumber || '',
             isPurchased: false,
             purchasedCourses: [],
+            freeSessions: 0,
           });
           console.log(`✅ Auto-created CourseUser on coaching registration: ${cleanEmail}`);
+        } else if (linkedCourseUser.isDeleted) {
+          // Re-activate deleted CourseUser with fully fresh state
+          linkedCourseUser.isDeleted = false;
+          linkedCourseUser.deletedAt = null;
+          linkedCourseUser.fullName = user.fullName;
+          linkedCourseUser.password = hashedPassword;
+          linkedCourseUser.phoneNumber = user.phoneNumber || '';
+          linkedCourseUser.isPurchased = false;
+          linkedCourseUser.purchasedCourses = [];
+          linkedCourseUser.freeSessions = 0;
+          linkedCourseUser.authProvider = 'local';
+          linkedCourseUser.googleId = '';
+          linkedCourseUser.photoUrl = '';
+          await linkedCourseUser.save();
+          console.log(`✅ Re-activated deleted CourseUser on coaching registration: ${cleanEmail}`);
         } else {
           linkedCourseUser.password = hashedPassword;
           if (user.fullName) linkedCourseUser.fullName = user.fullName;
@@ -427,7 +446,7 @@ router.post('/login', async (req, res) => {
 
       // Also sync coaching password to CourseUser if they exist and passwords differ
       const linkedCourseUser = await CourseUser.findOne({ email: emailRegex });
-      if (linkedCourseUser) {
+      if (linkedCourseUser && !linkedCourseUser.isDeleted) {
         const coursePasswordMatch = await bcrypt.compare(password, linkedCourseUser.password);
         if (!coursePasswordMatch) {
           const salt = await bcrypt.genSalt(10);
@@ -437,7 +456,7 @@ router.post('/login', async (req, res) => {
         }
       }
 
-      // Auto-create CourseUser if not exists (for future course login)
+      // Auto-create/re-activate CourseUser if not exists or deleted (for future course login)
       let courseToken = null;
       let courseUserId = null;
       if (!linkedCourseUser) {
@@ -450,6 +469,7 @@ router.post('/login', async (req, res) => {
             phoneNumber: user.phoneNumber || '',
             isPurchased: false,
             purchasedCourses: [],
+            freeSessions: 0,
           });
           courseToken = generateToken(newCourseUser._id);
           courseUserId = newCourseUser._id;
@@ -457,6 +477,24 @@ router.post('/login', async (req, res) => {
         } catch (createErr) {
           // Non-fatal: course account may already exist with slight timing issues
         }
+      } else if (linkedCourseUser.isDeleted) {
+        // Re-activate deleted CourseUser with fresh state when coaching user logs in
+        const salt = await bcrypt.genSalt(10);
+        linkedCourseUser.isDeleted = false;
+        linkedCourseUser.deletedAt = null;
+        linkedCourseUser.password = await bcrypt.hash(password, salt);
+        linkedCourseUser.fullName = user.fullName;
+        linkedCourseUser.phoneNumber = user.phoneNumber || '';
+        linkedCourseUser.isPurchased = false;
+        linkedCourseUser.purchasedCourses = [];
+        linkedCourseUser.freeSessions = 0;
+        linkedCourseUser.authProvider = 'local';
+        linkedCourseUser.googleId = '';
+        linkedCourseUser.photoUrl = '';
+        await linkedCourseUser.save();
+        courseToken = generateToken(linkedCourseUser._id);
+        courseUserId = linkedCourseUser._id;
+        console.log(`✅ Re-activated deleted CourseUser when coaching user logged in: ${cleanEmail}`);
       } else {
         courseToken = generateToken(linkedCourseUser._id);
         courseUserId = linkedCourseUser._id;
@@ -814,8 +852,8 @@ router.post('/google', async (req, res) => {
     const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     let user = await User.findOne({ email: emailRegex });
-    const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
-    const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid' });
+    const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true, isDeleted: { $ne: true } });
+    const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid', isUserDeleted: { $ne: true } });
     const hasCoursePerks = !!courseUser || !!coursePurchase;
 
     let isNewUser = false;
@@ -840,25 +878,30 @@ router.post('/google', async (req, res) => {
       console.log(`✅ Created new Google-authenticated user: ${user.fullName} (${cleanEmail})`);
     } else {
       if (user.isDeleted) {
+        // Full reset for re-activation after deletion — completely fresh start
         user.isDeleted = false;
         user.deletedAt = null;
-      }
-      if (fullName) {
-        user.fullName = fullName;
-      }
-      if (photoUrl) {
-        user.photoUrl = photoUrl;
-      }
-      if (!user.authProvider || user.authProvider === 'local') {
+        user.freeSessions = 0;
+        user.courseSessionsGranted = false;
+        user.savedArticles = [];
+        user.savedVideos = [];
+        user.completedArticles = [];
+        user.completedVideos = [];
+        user.photoUrl = photoUrl || '';
+        user.googleId = uid || '';
         user.authProvider = 'google';
-      }
-      if (uid && !user.googleId) {
-        user.googleId = uid;
-      }
-      if (hasCoursePerks && !user.courseSessionsGranted) {
-        const dynamicFree = await getDynamicCourseFreeSessions('better-man');
-        user.freeSessions = dynamicFree;
-        user.courseSessionsGranted = true;
+        if (fullName) user.fullName = fullName;
+        if (phoneNumber) user.phoneNumber = phoneNumber;
+      } else {
+        if (fullName) user.fullName = fullName;
+        if (photoUrl) user.photoUrl = photoUrl;
+        if (!user.authProvider || user.authProvider === 'local') user.authProvider = 'google';
+        if (uid && !user.googleId) user.googleId = uid;
+        if (hasCoursePerks && !user.courseSessionsGranted) {
+          const dynamicFree = await getDynamicCourseFreeSessions('better-man');
+          user.freeSessions = dynamicFree;
+          user.courseSessionsGranted = true;
+        }
       }
       await user.save();
     }
@@ -877,17 +920,23 @@ router.post('/google', async (req, res) => {
         photoUrl: photoUrl || user.photoUrl || ''
       });
     } else {
-      if (fullName) {
-        linkedCourseUser.fullName = fullName;
-      }
-      if (photoUrl) {
-        linkedCourseUser.photoUrl = photoUrl;
-      }
-      if (!linkedCourseUser.authProvider || linkedCourseUser.authProvider === 'local') {
+      if (linkedCourseUser.isDeleted) {
+        // Full reset for re-activation after deletion — completely fresh start
+        linkedCourseUser.isDeleted = false;
+        linkedCourseUser.deletedAt = null;
+        linkedCourseUser.isPurchased = false;
+        linkedCourseUser.purchasedCourses = [];
+        linkedCourseUser.freeSessions = 0;
+        linkedCourseUser.photoUrl = photoUrl || '';
+        linkedCourseUser.googleId = uid || '';
         linkedCourseUser.authProvider = 'google';
-      }
-      if (uid && !linkedCourseUser.googleId) {
-        linkedCourseUser.googleId = uid;
+        if (fullName) linkedCourseUser.fullName = fullName;
+        if (phoneNumber) linkedCourseUser.phoneNumber = phoneNumber;
+      } else {
+        if (fullName) linkedCourseUser.fullName = fullName;
+        if (photoUrl) linkedCourseUser.photoUrl = photoUrl;
+        if (!linkedCourseUser.authProvider || linkedCourseUser.authProvider === 'local') linkedCourseUser.authProvider = 'google';
+        if (uid && !linkedCourseUser.googleId) linkedCourseUser.googleId = uid;
       }
       await linkedCourseUser.save();
     }

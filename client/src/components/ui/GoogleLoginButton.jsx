@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { signInWithGoogle } from '../../firebase/firebaseConfig';
 import { API_URL } from '../../utils/apiUrl';
+import { syncLoginData } from '../../utils/authSync';
 
 export default function GoogleLoginButton({
   onSuccess,
@@ -46,65 +47,26 @@ export default function GoogleLoginButton({
       const data = await res.json();
 
       if (res.ok) {
-        // Save auth tokens & userInfo
-        if (apiEndpoint.includes('course-auth')) {
-          if (data.token) localStorage.setItem('courseToken', data.token);
-          if (data.coachingToken) localStorage.setItem('token', data.coachingToken);
-          
-          const courseUserObj = {
-            _id: data._id,
-            fullName: data.fullName,
-            email: data.email,
-            phoneNumber: data.phoneNumber || '',
-            photoUrl: data.photoUrl || '',
-            isPurchased: !!data.isPurchased,
-            authProvider: data.authProvider || 'google'
-          };
-          localStorage.setItem('courseUser', JSON.stringify(courseUserObj));
+        const isCourseEndpoint = apiEndpoint.includes('course-auth');
 
-          const userInfoObj = {
-            _id: data.coachingUserId || data._id,
-            fullName: data.fullName,
-            email: data.email,
-            phoneNumber: data.phoneNumber || '',
-            countryCode: '+91',
-            photoUrl: data.photoUrl || '',
-            authProvider: data.authProvider || 'google'
-          };
-          localStorage.setItem('userInfo', JSON.stringify(userInfoObj));
+        if (isCourseEndpoint) {
+          // Course Google login: data.token = courseToken, data.coachingToken = coaching token
+          // Use syncLoginData with remapped fields for unified storage
+          syncLoginData({
+            ...data,
+            // syncLoginData expects: coachingToken for coaching, courseToken for course
+            // But course-auth/google returns: token=courseToken, coachingToken=coachingToken
+            courseToken: data.token,
+            coachingToken: data.coachingToken,
+            coachingUserId: data.coachingUserId,
+            // Ensure we pass authProvider for proper state
+            authProvider: data.authProvider || 'google',
+          });
         } else {
-          if (data.token) localStorage.setItem('token', data.token);
-          if (data.courseToken) localStorage.setItem('courseToken', data.courseToken);
-          
-          const userInfo = {
-            _id: data._id,
-            fullName: data.fullName,
-            email: data.email,
-            phoneNumber: data.phoneNumber || '',
-            countryCode: data.countryCode || '+91',
-            photoUrl: data.photoUrl || '',
-            dob: data.dob || '',
-            gender: data.gender || 'Prefer not to say',
-            freeSessions: data.freeSessions,
-            courseSessionsGranted: data.courseSessionsGranted,
-            authProvider: data.authProvider || 'google'
-          };
-          localStorage.setItem('userInfo', JSON.stringify(userInfo));
-
-          if (data.courseUserId || data.courseToken) {
-            localStorage.setItem('courseUser', JSON.stringify({
-              _id: data.courseUserId || data._id,
-              fullName: data.fullName,
-              email: data.email,
-              phoneNumber: data.phoneNumber || '',
-              photoUrl: data.photoUrl || '',
-              isPurchased: !!data.isCoursePurchased,
-              authProvider: data.authProvider || 'google'
-            }));
-          }
+          // Coaching Google login: data.token = coachingToken, data.courseToken = courseToken
+          syncLoginData(data);
         }
 
-        window.dispatchEvent(new Event('auth-change'));
         onSuccess?.(data);
       } else {
         onError?.(data.message || 'Google sign-in failed on server.');

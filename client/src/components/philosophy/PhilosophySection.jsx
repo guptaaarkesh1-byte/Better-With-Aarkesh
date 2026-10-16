@@ -12,39 +12,49 @@ export default function PhilosophySection() {
   const sectionRef = useRef(null);
 
   useGSAP(() => {
-    // 1. SUNLIGHT ANIMATION
-    gsap.to('.sunlight-overlay', {
-      scrollTrigger: {
-        trigger: sectionRef.current,
-        start: 'top 60%',
-      },
-      opacity: 1,
-      duration: 1.5,
-      ease: 'power2.out',
+    const mm = gsap.matchMedia();
+
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set('.sunlight-overlay', { opacity: 0.6 });
+      gsap.set('.phil-dust', { opacity: 0.3 });
     });
 
-    // 3. DUST PARTICLE ANIMATION
-    const dustParticles = gsap.utils.toArray('.phil-dust');
-    dustParticles.forEach((particle) => {
-      // Very gentle upward and sideways drift
-      gsap.fromTo(particle, 
-        {
-          opacity: gsap.utils.random(0.2, 0.5),
-          scale: gsap.utils.random(0.8, 1)
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      // 1. SUNLIGHT ANIMATION
+      gsap.to('.sunlight-overlay', {
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top 60%',
         },
-        {
-          y: `-=${gsap.utils.random(30, 80)}`,
-          x: `+=${gsap.utils.random(-40, 40)}`,
-          opacity: gsap.utils.random(0.5, 1),
-          scale: gsap.utils.random(1, 1.5),
-          duration: gsap.utils.random(4, 8),
-          repeat: -1,
-          yoyo: true,
-          ease: 'sine.inOut',
-          delay: gsap.utils.random(0, 2)
-        }
-      );
+        opacity: 1,
+        duration: 1.5,
+        ease: 'power2.out',
+      });
+
+      // 3. DUST PARTICLE ANIMATION
+      const dustParticles = gsap.utils.toArray('.phil-dust');
+      dustParticles.forEach((particle) => {
+        gsap.fromTo(particle, 
+          {
+            opacity: gsap.utils.random(0.2, 0.5),
+            scale: gsap.utils.random(0.8, 1)
+          },
+          {
+            y: `-=${gsap.utils.random(30, 80)}`,
+            x: `+=${gsap.utils.random(-40, 40)}`,
+            opacity: gsap.utils.random(0.5, 1),
+            scale: gsap.utils.random(1, 1.5),
+            duration: gsap.utils.random(4, 8),
+            repeat: -1,
+            yoyo: true,
+            ease: 'sine.inOut',
+            delay: gsap.utils.random(0, 2)
+          }
+        );
+      });
     });
+
+    return () => mm.revert();
   }, { scope: sectionRef });
 
   return (
