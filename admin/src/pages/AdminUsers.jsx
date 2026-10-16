@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useToast } from '../context/ToastContext';
 import { API_URL } from '../utils/apiUrl';
+import AdminQuestionnaireViewer from '../components/AdminQuestionnaireViewer';
 import './AdminAppointments.css';
 
 // Helper date formatters
@@ -186,7 +187,7 @@ export default function AdminUsers() {
             heard: app.source || '',
             brings: app.reason || '',
             extra: app.extra || '',
-            qa: Array.isArray(app.questionnaireAnswers) ? app.questionnaireAnswers : [],
+            qa: app.questionnaireAnswers || null,
             notes: app.coachNotes || '',
             payId: app.paymentId || (isFreeSession ? 'COURSE_INCLUDED' : 'pay_' + app._id.slice(-8)),
             order: app.orderId || (isFreeSession ? 'COURSE_FREE_SESSION' : 'order_' + app._id.slice(-8)),
@@ -1555,24 +1556,13 @@ export default function AdminUsers() {
                       </div>
                     </div>
 
-                    {selectedAppt.qa && selectedAppt.qa.length > 0 && (
-                      <div className="bwa-box" style={{ marginTop: '16px' }}>
-                        <div className="bwa-sec" style={{ margin: '0 0 14px' }}>
-                          Questionnaire Answers
-                          <span>{selectedAppt.qa.length} answered</span>
-                        </div>
-                        {selectedAppt.qa.map((item, idx) => {
-                          const question = Array.isArray(item) ? item[0] : item.question || item.q || `Question ${idx + 1}`;
-                          const answer = Array.isArray(item) ? item[1] : item.answer || item.a || 'Answered';
-                          return (
-                            <div className="bwa-qa" key={idx}>
-                              <small>Q{idx + 1}: {question}</small>
-                              <span className="bwa-ans">{answer}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <div style={{ marginTop: '16px' }}>
+                      <AdminQuestionnaireViewer
+                        questionnaireAnswers={selectedAppt.qa}
+                        clientName={selectedAppt.name || selectedClient.name || 'Client'}
+                        appointmentDate={selectedAppt.date ? `${selectedAppt.date} ${selectedAppt.time || ''}` : ''}
+                      />
+                    </div>
                   </div>
                 )}
 

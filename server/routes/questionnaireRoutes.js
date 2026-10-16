@@ -1,93 +1,92 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import Settings from '../models/Settings.js';
 
 const router = express.Router();
 
-export const DEFAULT_QUESTIONNAIRE = {
-  title: "Want to go deeper?",
-  subtitle: "A short questionnaire to help us make the most of our time together.",
-  badgeLabel: "Optional — ~30 mins",
-  buttonText: "TAKE QUESTIONNAIRE",
-  completedText: "Questionnaire Completed",
-  submitButtonText: "SUBMIT & CONTINUE",
-  questions: [
-    {
-      id: "q1",
-      question: "What's the primary area of your life you'd like to work on?",
-      required: false,
-      options: [
-        { id: "q1o1", label: "Career & Purpose" },
-        { id: "q1o2", label: "Relationships & Communication" },
-        { id: "q1o3", label: "Mental Health & Wellbeing" },
-        { id: "q1o4", label: "Confidence & Self-Worth" },
-        { id: "q1o5", label: "Life Direction & Clarity" }
-      ]
-    },
-    {
-      id: "q2",
-      question: "How would you describe where you are right now?",
-      required: false,
-      options: [
-        { id: "q2o1", label: "Stuck and unsure what's next" },
-        { id: "q2o2", label: "Making progress but need guidance" },
-        { id: "q2o3", label: "In a transition or big change" },
-        { id: "q2o4", label: "Feeling overwhelmed or burned out" },
-        { id: "q2o5", label: "Ready to level up" }
-      ]
-    },
-    {
-      id: "q3",
-      question: "What does success look like to you after this session?",
-      required: false,
-      options: [
-        { id: "q3o1", label: "Clarity on a decision or next step" },
-        { id: "q3o2", label: "A sense of relief and being heard" },
-        { id: "q3o3", label: "A practical action plan" },
-        { id: "q3o4", label: "Fresh perspective on my situation" },
-        { id: "q3o5", label: "Just to talk it through with someone" }
-      ]
-    },
-    {
-      id: "q4",
-      question: "Have you worked with a coach, mentor, or therapist before?",
-      required: false,
-      options: [
-        { id: "q4o1", label: "Yes, regularly in the past" },
-        { id: "q4o2", label: "Yes, a few sessions before" },
-        { id: "q4o3", label: "No, this is my first time" },
-        { id: "q4o4", label: "I have read self-help & done solo work" }
-      ]
-    },
-    {
-      id: "q5",
-      question: "What is your main priority or focus for our conversation?",
-      required: false,
-      options: [
-        { id: "q5o1", label: "Overcoming a specific roadblock" },
-        { id: "q5o2", label: "Building lasting habits & consistency" },
-        { id: "q5o3", label: "Navigating an emotional or personal challenge" },
-        { id: "q5o4", label: "Setting clear long-term goals" }
-      ]
-    }
-  ]
-};
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export function getDefaultQuestionnaire() {
+  try {
+    const configPath = path.join(__dirname, '../data/questionnaireConfig.json');
+    const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const flatQuestions = [];
+    (cfg.sections || []).forEach((sec) => {
+      (sec.questions || []).forEach((q) => {
+        flatQuestions.push({
+          ...q,
+          sectionId: sec.id,
+          sectionTitle: sec.title,
+          sectionIntro: sec.intro,
+          question: q.prompt
+        });
+      });
+    });
+
+    return {
+      title: cfg.copy?.card_title || 'Want to go deeper?',
+      subtitle: cfg.copy?.card_description || 'An optional questionnaire to help me prepare for our conversation. There are 45 questions, and every question can be skipped. Allow around 25–35 minutes if you choose to answer them all.',
+      badgeLabel: 'Optional • 45 Questions • ~25–35 mins',
+      buttonText: cfg.copy?.start_button || 'Start optional questionnaire',
+      resumeButtonText: cfg.copy?.resume_button || 'Continue questionnaire',
+      reviewButtonText: cfg.copy?.review_button || 'Review answers',
+      completedText: 'Questionnaire Completed',
+      submitButtonText: 'Save and return to booking',
+      sections: cfg.sections || [],
+      questions: flatQuestions
+    };
+  } catch (err) {
+    console.error('Failed to load questionnaireConfig.json:', err);
+    return { questions: [] };
+  }
+}
+
+export const DEFAULT_QUESTIONNAIRE = getDefaultQuestionnaire();
 
 // GET /api/questionnaire - Public
 router.get('/', async (req, res) => {
   try {
     const doc = await Settings.findOne({ key: 'questionnaire_settings' });
-    if (!doc || !doc.value) {
-      return res.json(DEFAULT_QUESTIONNAIRE);
+    const defaultData = getDefaultQuestionnaire();
+
+    if (!doc || !doc.value || !Array.isArray(doc.value.questions) || doc.value.questions.length < 45) {
+      await Settings.findOneAndUpdate(
+        { key: 'questionnaire_settings' },
+        { $set: { value: defaultData } },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+      return res.json(defaultData);
     }
+
     const result = {
-      ...DEFAULT_QUESTIONNAIRE,
+      ...defaultData,
       ...doc.value,
-      questions: doc.value.questions || DEFAULT_QUESTIONNAIRE.questions
+      sections: defaultData.sections,
+      questions: doc.value.questions && doc.value.questions.length >= 45 ? doc.value.questions : defaultData.questions
     };
     return res.json(result);
   } catch (err) {
     console.error('Error fetching questionnaire:', err);
     res.status(500).json({ message: 'Failed to fetch questionnaire' });
+  }
+});
+
+// POST /api/questionnaire/reset - Admin reset to official 45 questions
+router.post('/reset', async (req, res) => {
+  try {
+    const defaultData = getDefaultQuestionnaire();
+    await Settings.findOneAndUpdate(
+      { key: 'questionnaire_settings' },
+      { $set: { value: defaultData } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    res.json({ message: 'Questionnaire reset to default 45 questions successfully', data: defaultData });
+  } catch (err) {
+    console.error('Error resetting questionnaire:', err);
+    res.status(500).json({ message: 'Failed to reset questionnaire' });
   }
 });
 

@@ -22,7 +22,8 @@ import {
   ArrowDown, 
   Question, 
   CheckSquare, 
-  Square 
+  Square,
+  MagnifyingGlass 
 } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 
@@ -61,6 +62,26 @@ const SIDEBAR_TABS = [
   },
 ];
 
+const QUESTIONNAIRE_SECTIONS = [
+  { id: 's01', number: 1, title: 'Your current situation', range: 'Q01–Q05' },
+  { id: 's02', number: 2, title: 'The shift you want', range: 'Q06–Q10' },
+  { id: 's03', number: 3, title: 'Inner world and pressure', range: 'Q11–Q15' },
+  { id: 's04', number: 4, title: 'Core themes', range: 'Q16–Q20' },
+  { id: 's05', number: 5, title: 'Direction and decisions', range: 'Q21–Q25' },
+  { id: 's06', number: 6, title: 'Action and follow-through', range: 'Q26–Q30' },
+  { id: 's07', number: 7, title: 'How we work together', range: 'Q31–Q35' },
+  { id: 's08', number: 8, title: 'Logistics and format', range: 'Q36–Q40' },
+  { id: 's09', number: 9, title: 'Anything else', range: 'Q41–Q45' }
+];
+
+const DEFAULT_BOOKING_SETTINGS = {
+  general: {},
+  step1: {},
+  step2: {},
+  step3: { nextSteps: [] },
+  success: { nextSteps: [] }
+};
+
 export default function AdminBookingEditor() {
   const [activeTab, setActiveTab] = useState(() => {
     try {
@@ -87,17 +108,29 @@ export default function AdminBookingEditor() {
     } catch (e) {}
   }, [activeTab]);
 
-  const [settings, setSettings] = useState(null);
+  const [settings, setSettings] = useState(DEFAULT_BOOKING_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState(null);
 
   // ── Questionnaire State ──
-  const [questionnaire, setQuestionnaire] = useState(null);
+  const [questionnaire, setQuestionnaire] = useState({
+    title: 'Want to go deeper?',
+    subtitle: 'An optional questionnaire to help me prepare for our conversation. There are 45 questions, and every question can be skipped.',
+    badgeLabel: 'Optional • 45 Questions • ~25–35 mins',
+    buttonText: 'Start optional questionnaire',
+    resumeButtonText: 'Continue questionnaire',
+    reviewButtonText: 'Review answers',
+    completedText: 'Questionnaire Completed',
+    submitButtonText: 'Save and return to booking',
+    questions: []
+  });
   const [qLoading, setQLoading] = useState(false);
   const [qSaving, setQSaving] = useState(false);
   const [qSaveSuccess, setQSaveSuccess] = useState(false);
+  const [qSearch, setQSearch] = useState('');
+  const [qSectionFilter, setQSectionFilter] = useState('all');
 
   // Fetch all booking settings on load
   const fetchSettings = async () => {
@@ -108,15 +141,16 @@ export default function AdminBookingEditor() {
       if (!res.ok) throw new Error('Failed to load booking settings');
       const data = await res.json();
       setSettings({
-        general: data.general || {},
-        step1: data.step1 || {},
-        step2: data.step2 || {},
-        step3: { ...(data.step3 || {}), nextSteps: data.step3?.nextSteps || [] },
-        success: { ...(data.success || {}), nextSteps: data.success?.nextSteps || [] }
+        general: data?.general || {},
+        step1: data?.step1 || {},
+        step2: data?.step2 || {},
+        step3: { ...(data?.step3 || {}), nextSteps: data?.step3?.nextSteps || [] },
+        success: { ...(data?.success || {}), nextSteps: data?.success?.nextSteps || [] }
       });
     } catch (err) {
       console.error(err);
       setError(err.message || 'Error loading settings');
+      setSettings(prev => prev || DEFAULT_BOOKING_SETTINGS);
     } finally {
       setLoading(false);
     }
@@ -138,6 +172,32 @@ export default function AdminBookingEditor() {
   };
 
   const { showSuccess, showError } = useToast();
+
+  // Reset questionnaire to official 45 questions from backend
+  const handleResetQuestionnaire = async () => {
+    if (!window.confirm('Reset all questions to the official 45-question coaching questionnaire? This will restore all standard 45 questions across the 9 sections.')) {
+      return;
+    }
+    try {
+      setQLoading(true);
+      const res = await fetch(`${API_URL}/api/questionnaire/reset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+      if (!res.ok) throw new Error('Failed to reset questionnaire');
+      const data = await res.json();
+      setQuestionnaire(data.data || data);
+      showSuccess('Questionnaire restored to 45 official questions successfully!');
+    } catch (err) {
+      console.error(err);
+      showError(err.message || 'Failed to reset questionnaire');
+    } finally {
+      setQLoading(false);
+    }
+  };
 
   // Save questionnaire to backend
   const handleSaveQuestionnaire = async () => {
@@ -167,17 +227,30 @@ export default function AdminBookingEditor() {
   };
 
   const addQuestion = () => {
-    const newId = `q${Date.now()}`;
+    const questions = questionnaire?.questions || [];
+    const newNum = questions.length + 1;
+    const newId = `q${String(newNum).padStart(2, '0')}`;
+    const defaultSec = qSectionFilter !== 'all' 
+      ? QUESTIONNAIRE_SECTIONS.find(s => s.id === qSectionFilter) 
+      : QUESTIONNAIRE_SECTIONS[8];
+
     setQuestionnaire(prev => ({
       ...prev,
       questions: [
         ...(prev?.questions || []),
         {
           id: newId,
+          number: newNum,
           question: 'New question text?',
+          prompt: 'New question text?',
+          instruction: 'Select all that apply.',
+          type: 'multi_select',
           required: false,
+          sectionId: defaultSec?.id || 's09',
+          sectionTitle: defaultSec?.title || 'Anything else',
           options: [
-            { id: `${newId}o1`, label: 'Option 1' }
+            { id: `${newId}o1`, label: 'Option 1' },
+            { id: `${newId}o2`, label: 'Option 2' }
           ]
         }
       ]
@@ -185,16 +258,22 @@ export default function AdminBookingEditor() {
   };
 
   const removeQuestion = (qIdx) => {
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
     setQuestionnaire(prev => ({
       ...prev,
-      questions: prev.questions.filter((_, i) => i !== qIdx)
+      questions: (prev?.questions || []).filter((_, i) => i !== qIdx)
     }));
   };
 
   const updateQuestion = (qIdx, field, value) => {
     setQuestionnaire(prev => {
       const questions = [...(prev?.questions || [])];
-      questions[qIdx] = { ...questions[qIdx], [field]: value };
+      questions[qIdx] = { 
+        ...questions[qIdx], 
+        [field]: value,
+        ...(field === 'question' ? { prompt: value } : {}),
+        ...(field === 'prompt' ? { question: value } : {})
+      };
       return { ...prev, questions };
     });
   };
@@ -204,8 +283,8 @@ export default function AdminBookingEditor() {
       const questions = [...(prev?.questions || [])];
       const q = { ...questions[qIdx] };
       const existing = q.options || [];
-      if (existing.length >= 5) return prev; // max 5 options
-      const newOptId = `${q.id}o${Date.now()}`;
+      if (existing.length >= 25) return prev;
+      const newOptId = `${q.id || 'q'}o${existing.length + 1}_${Date.now()}`;
       q.options = [...existing, { id: newOptId, label: `Option ${existing.length + 1}` }];
       questions[qIdx] = q;
       return { ...prev, questions };
@@ -216,7 +295,7 @@ export default function AdminBookingEditor() {
     setQuestionnaire(prev => {
       const questions = [...(prev?.questions || [])];
       const q = { ...questions[qIdx] };
-      if ((q.options || []).length <= 1) return prev; // keep at least 1
+      if ((q.options || []).length <= 1) return prev;
       q.options = q.options.filter((_, i) => i !== oIdx);
       questions[qIdx] = q;
       return { ...prev, questions };
@@ -825,22 +904,42 @@ export default function AdminBookingEditor() {
 
               {/* Questionnaire Editor */}
               <div className="bg-[#0e0e0e] border border-[#c79c6e]/20 rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-gradient-to-r from-[#c79c6e]/5 to-transparent">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-white/5 bg-gradient-to-r from-[#c79c6e]/5 to-transparent">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center shrink-0">
                       <Question size={16} className="text-[#c79c6e]" />
                     </div>
                     <div>
-                      <span className="font-sans text-sm font-semibold text-white">Questionnaire Editor</span>
-                      <p className="font-sans text-[0.68rem] text-white/40 mt-0.5">Manage optional MCQ questionnaire shown in popup</p>
+                      <div className="flex items-center gap-2">
+                        <span className="font-sans text-sm font-semibold text-white">Questionnaire Editor</span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] font-sans text-[0.65rem] font-bold uppercase tracking-wider">
+                          {(questionnaire?.questions || []).length} Questions • 9 Sections
+                        </span>
+                      </div>
+                      <p className="font-sans text-[0.68rem] text-white/40 mt-0.5">Manage optional coaching questionnaire questions, options, and section copy</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/25 text-[#c79c6e] font-sans text-xs font-semibold">
-                      {(questionnaire?.questions || []).length} Question{(questionnaire?.questions || []).length !== 1 ? 's' : ''}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={handleResetQuestionnaire}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 hover:border-[#c79c6e]/50 text-white/60 hover:text-[#c79c6e] text-xs font-sans transition-all"
+                      title="Reset all questions to default 45 questions across 9 sections"
+                    >
+                      <ArrowClockwise size={13} />
+                      <span>Restore Default 45</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addQuestion}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-[#c79c6e] text-xs font-sans font-semibold hover:bg-[#c79c6e]/20 transition-all"
+                    >
+                      <Plus size={13} weight="bold" />
+                      <span>Add Question</span>
+                    </button>
                   </div>
                 </div>
+
                 {qLoading ? (
                   <div className="flex items-center justify-center py-12 gap-3">
                     <div className="w-6 h-6 border-2 border-[#c79c6e] border-t-transparent rounded-full animate-spin" />
@@ -848,6 +947,7 @@ export default function AdminBookingEditor() {
                   </div>
                 ) : questionnaire ? (
                   <div className="p-5 flex flex-col gap-6">
+                    {/* Banner Configuration */}
                     <div className="bg-[#111] border border-white/5 rounded-xl p-5 flex flex-col gap-4">
                       <span className="font-sans text-xs uppercase tracking-widest text-[#c79c6e] font-semibold">Banner Text (shown on Step 2 page)</span>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -857,97 +957,307 @@ export default function AdminBookingEditor() {
                         </div>
                         <div className="flex flex-col gap-1.5">
                           <label className="font-sans text-xs text-white/60">Badge Label</label>
-                          <input type="text" value={questionnaire.badgeLabel || ''} onChange={(e) => updateQField('badgeLabel', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Optional — ~30 mins" />
+                          <input type="text" value={questionnaire.badgeLabel || ''} onChange={(e) => updateQField('badgeLabel', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Optional • 45 Questions • ~25–35 mins" />
+                        </div>
+                        <div className="flex flex-col gap-1.5 md:col-span-2">
+                          <label className="font-sans text-xs text-white/60">Banner Subtitle / Description</label>
+                          <textarea rows={2} value={questionnaire.subtitle || ''} onChange={(e) => updateQField('subtitle', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e] resize-none" placeholder="An optional questionnaire to help me prepare for our conversation..." />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Banner Subtitle</label>
-                          <input type="text" value={questionnaire.subtitle || ''} onChange={(e) => updateQField('subtitle', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="A short questionnaire..." />
+                          <label className="font-sans text-xs text-white/60">Start Button Text</label>
+                          <input type="text" value={questionnaire.buttonText || ''} onChange={(e) => updateQField('buttonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Start optional questionnaire" />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Button Text</label>
-                          <input type="text" value={questionnaire.buttonText || ''} onChange={(e) => updateQField('buttonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="TAKE QUESTIONNAIRE" />
+                          <label className="font-sans text-xs text-white/60">Resume Button Text</label>
+                          <input type="text" value={questionnaire.resumeButtonText || ''} onChange={(e) => updateQField('resumeButtonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Continue questionnaire" />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Submit Button (inside popup)</label>
-                          <input type="text" value={questionnaire.submitButtonText || ''} onChange={(e) => updateQField('submitButtonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="SUBMIT & CONTINUE" />
+                          <label className="font-sans text-xs text-white/60">Review Button Text</label>
+                          <input type="text" value={questionnaire.reviewButtonText || ''} onChange={(e) => updateQField('reviewButtonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Review answers" />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Completed Banner Text</label>
-                          <input type="text" value={questionnaire.completedText || ''} onChange={(e) => updateQField('completedText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Questionnaire Completed" />
+                          <label className="font-sans text-xs text-white/60">Submit / Return Button (in modal)</label>
+                          <input type="text" value={questionnaire.submitButtonText || ''} onChange={(e) => updateQField('submitButtonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Save and return to booking" />
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-sans text-xs uppercase tracking-widest text-[#c79c6e] font-semibold">Questions</span>
-                          <p className="font-sans text-[0.68rem] text-white/30 mt-0.5">Each question supports up to 5 MCQ options</p>
+                    {/* Section Filter & Search */}
+                    <div className="flex flex-col gap-3 bg-[#111] border border-white/5 rounded-xl p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-sans text-xs uppercase tracking-widest text-[#c79c6e] font-semibold">Browse Questions</span>
+                          <span className="text-white/30 text-xs font-mono">({(questionnaire.questions || []).length} total)</span>
                         </div>
-                        <button type="button" onClick={addQuestion} disabled={(questionnaire.questions || []).length >= 10} className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#c79c6e]/40 text-[#c79c6e] text-xs font-sans font-semibold hover:bg-[#c79c6e]/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-                          <Plus size={14} weight="bold" />
-                          Add Question
-                        </button>
+                        <div className="relative min-w-[220px]">
+                          <MagnifyingGlass size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                          <input
+                            type="text"
+                            value={qSearch}
+                            onChange={(e) => setQSearch(e.target.value)}
+                            placeholder="Search question prompt or ID..."
+                            className="w-full bg-[#050505] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]"
+                          />
+                        </div>
                       </div>
 
-                      {(questionnaire.questions || []).length === 0 && (
-                        <div className="py-10 text-center border border-dashed border-white/10 rounded-xl">
-                          <Question size={32} className="text-white/20 mx-auto mb-3" />
-                          <p className="font-sans text-sm text-white/30">No questions yet. Click Add Question above.</p>
-                        </div>
-                      )}
+                      {/* Section Tabs */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 no-scrollbar">
+                        <button
+                          type="button"
+                          onClick={() => setQSectionFilter('all')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-sans whitespace-nowrap transition-all ${
+                            qSectionFilter === 'all'
+                              ? 'bg-[#c79c6e] text-black font-semibold shadow-sm'
+                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/5'
+                          }`}
+                        >
+                          All ({ (questionnaire.questions || []).length })
+                        </button>
+                        {QUESTIONNAIRE_SECTIONS.map((sec) => {
+                          const count = (questionnaire.questions || []).filter(q => 
+                            q.sectionId === sec.id || `s0${Math.min(9, Math.ceil((q.number || 1) / 5))}` === sec.id
+                          ).length;
+                          return (
+                            <button
+                              key={sec.id}
+                              type="button"
+                              onClick={() => setQSectionFilter(sec.id)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-sans whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                                qSectionFilter === sec.id
+                                  ? 'bg-[#c79c6e] text-black font-semibold shadow-sm'
+                                  : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/5'
+                              }`}
+                            >
+                              <span>{sec.number}. {sec.title}</span>
+                              <span className={`text-[0.65rem] px-1.5 py-0.2 rounded-full ${qSectionFilter === sec.id ? 'bg-black/20 text-black font-bold' : 'bg-white/10 text-white/50'}`}>
+                                {count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                      {(questionnaire.questions || []).map((q, qIdx) => (
-                        <div key={q.id || qIdx} className="bg-[#111] border border-white/8 rounded-xl overflow-hidden transition-all hover:border-white/15">
-                          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/5 bg-[#0d0d0d]">
-                            <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-md bg-[#c79c6e]/15 border border-[#c79c6e]/25 flex items-center justify-center font-mono text-[0.65rem] text-[#c79c6e] font-bold shrink-0">{qIdx + 1}</span>
-                              <button type="button" onClick={() => updateQuestion(qIdx, 'required', !q.required)} className={`flex items-center gap-1 px-2 py-1 rounded text-[0.65rem] font-sans font-semibold uppercase tracking-wider transition-all ${q.required ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400' : 'bg-white/5 border border-white/10 text-white/30 hover:text-white/50'}`}>
-                                {q.required ? <CheckSquare size={11} weight="fill" /> : <Square size={11} />}
-                                {q.required ? 'Required' : 'Optional'}
+                    {/* Questions Cards List */}
+                    <div className="flex flex-col gap-4">
+                      {(() => {
+                        const allQ = questionnaire.questions || [];
+                        const matched = allQ.map((q, origIdx) => ({ q, origIdx })).filter(({ q, origIdx }) => {
+                          const secMatch = qSectionFilter === 'all' || q.sectionId === qSectionFilter || `s0${Math.min(9, Math.ceil((q.number || (origIdx + 1)) / 5))}` === qSectionFilter;
+                          if (!secMatch) return false;
+                          if (!qSearch.trim()) return true;
+                          const s = qSearch.toLowerCase();
+                          const text = (q.prompt || q.question || '').toLowerCase();
+                          const id = (q.id || '').toLowerCase();
+                          const num = String(q.number || origIdx + 1);
+                          return text.includes(s) || id.includes(s) || num.includes(s);
+                        });
+
+                        if (matched.length === 0) {
+                          return (
+                            <div className="py-12 text-center border border-dashed border-white/10 rounded-xl">
+                              <Question size={32} className="text-white/20 mx-auto mb-2" />
+                              <p className="font-sans text-sm text-white/40">No questions match your current filter.</p>
+                              <button
+                                type="button"
+                                onClick={() => { setQSectionFilter('all'); setQSearch(''); }}
+                                className="mt-3 text-xs text-[#c79c6e] hover:underline font-sans"
+                              >
+                                Clear search & section filter
                               </button>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <button type="button" onClick={() => moveQuestion(qIdx, -1)} disabled={qIdx === 0} className="w-7 h-7 flex items-center justify-center rounded border border-white/10 text-white/40 hover:text-white hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-all"><ArrowUp size={12} /></button>
-                              <button type="button" onClick={() => moveQuestion(qIdx, 1)} disabled={qIdx === (questionnaire.questions || []).length - 1} className="w-7 h-7 flex items-center justify-center rounded border border-white/10 text-white/40 hover:text-white hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-all"><ArrowDown size={12} /></button>
-                              <button type="button" onClick={() => removeQuestion(qIdx)} className="w-7 h-7 flex items-center justify-center rounded border border-red-500/20 text-red-400/50 hover:text-red-400 hover:border-red-500/40 transition-all ml-1"><Trash size={12} /></button>
-                            </div>
-                          </div>
-                          <div className="p-4 flex flex-col gap-4">
-                            <div className="flex flex-col gap-1.5">
-                              <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">Question Text</label>
-                              <textarea rows={2} value={q.question || ''} onChange={(e) => updateQuestion(qIdx, 'question', e.target.value)} className="bg-[#080808] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#c79c6e] resize-none" placeholder="Type your question here..." />
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center justify-between">
-                                <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">MCQ Options <span className="text-white/25 font-normal normal-case tracking-normal">({(q.options || []).length}/5)</span></label>
-                                {(q.options || []).length < 5 && (
-                                  <button type="button" onClick={() => addOption(qIdx)} className="flex items-center gap-1 text-[0.68rem] text-[#c79c6e] hover:text-white font-sans font-semibold transition-colors"><Plus size={11} weight="bold" /> Add Option</button>
+                          );
+                        }
+
+                        return matched.map(({ q, origIdx }) => {
+                          const displayNum = q.number || origIdx + 1;
+                          const qType = q.type || 'multi_select';
+                          const isLongText = qType === 'long_text';
+                          const isIntegerChoice = qType === 'integer_choice';
+                          const maxSel = q.max_selections;
+
+                          return (
+                            <div key={q.id || origIdx} className="bg-[#111] border border-white/8 rounded-xl overflow-hidden transition-all hover:border-[#c79c6e]/30">
+                              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-white/5 bg-[#0d0d0d]">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="w-8 h-6 rounded-md bg-[#c79c6e]/15 border border-[#c79c6e]/25 flex items-center justify-center font-mono text-[0.7rem] text-[#c79c6e] font-bold shrink-0">
+                                    Q{String(displayNum).padStart(2, '0')}
+                                  </span>
+                                  <span className="font-mono text-[0.68rem] text-white/30">{q.id || `q${displayNum}`}</span>
+                                  {q.sectionTitle && (
+                                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/50 text-[0.65rem] font-sans">
+                                      {q.sectionTitle}
+                                    </span>
+                                  )}
+                                  <span className="px-2 py-0.5 rounded bg-[#c79c6e]/10 border border-[#c79c6e]/20 text-[#c79c6e] text-[0.65rem] font-mono uppercase">
+                                    {isLongText ? 'Long text' : isIntegerChoice ? 'Scale 0–10' : maxSel ? `Multi (max ${maxSel})` : qType === 'single_select' ? 'Single choice' : 'Multi-select'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateQuestion(origIdx, 'required', !q.required)}
+                                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[0.65rem] font-sans font-semibold uppercase tracking-wider transition-all ${
+                                      q.required
+                                        ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
+                                        : 'bg-white/5 border border-white/10 text-white/30 hover:text-white/50'
+                                    }`}
+                                  >
+                                    {q.required ? <CheckSquare size={11} weight="fill" /> : <Square size={11} />}
+                                    {q.required ? 'Required' : 'Optional'}
+                                  </button>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => moveQuestion(origIdx, -1)}
+                                    disabled={origIdx === 0}
+                                    className="w-7 h-7 flex items-center justify-center rounded border border-white/10 text-white/40 hover:text-white hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+                                    title="Move up"
+                                  >
+                                    <ArrowUp size={12} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveQuestion(origIdx, 1)}
+                                    disabled={origIdx === allQ.length - 1}
+                                    className="w-7 h-7 flex items-center justify-center rounded border border-white/10 text-white/40 hover:text-white hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+                                    title="Move down"
+                                  >
+                                    <ArrowDown size={12} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeQuestion(origIdx)}
+                                    className="w-7 h-7 flex items-center justify-center rounded border border-red-500/20 text-red-400/50 hover:text-red-400 hover:border-red-500/40 transition-all ml-1"
+                                    title="Delete question"
+                                  >
+                                    <Trash size={12} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="p-4 flex flex-col gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">Question Prompt</label>
+                                  <textarea
+                                    rows={2}
+                                    value={q.prompt || q.question || ''}
+                                    onChange={(e) => updateQuestion(origIdx, 'prompt', e.target.value)}
+                                    className="bg-[#080808] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#c79c6e] resize-none"
+                                    placeholder="Type your question here..."
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div className="flex flex-col gap-1.5">
+                                    <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">Instruction / Helper Subtext</label>
+                                    <input
+                                      type="text"
+                                      value={q.instruction || ''}
+                                      onChange={(e) => updateQuestion(origIdx, 'instruction', e.target.value)}
+                                      className="bg-[#080808] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#c79c6e]"
+                                      placeholder="e.g. Select up to 3 / Select all that apply..."
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1.5">
+                                    <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">Assigned Section</label>
+                                    <select
+                                      value={q.sectionId || 's01'}
+                                      onChange={(e) => {
+                                        const sec = QUESTIONNAIRE_SECTIONS.find(s => s.id === e.target.value);
+                                        updateQuestion(origIdx, 'sectionId', e.target.value);
+                                        if (sec) updateQuestion(origIdx, 'sectionTitle', sec.title);
+                                      }}
+                                      className="bg-[#080808] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c79c6e]"
+                                    >
+                                      {QUESTIONNAIRE_SECTIONS.map(s => (
+                                        <option key={s.id} value={s.id}>{s.number}. {s.title} ({s.range})</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+
+                                {/* Options handling based on question type */}
+                                {isLongText ? (
+                                  <div className="p-3.5 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-white/40 text-xs font-sans">
+                                      <NotePencil size={14} className="text-[#c79c6e]" />
+                                      <span>Open-ended multi-line text input on client side (No MCQ choices needed).</span>
+                                    </div>
+                                    <span className="font-mono text-[0.65rem] text-white/30">max: {q.max_characters || 2000} chars</span>
+                                  </div>
+                                ) : isIntegerChoice ? (
+                                  <div className="p-3.5 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-white/40 text-xs font-sans">
+                                      <Sparkle size={14} className="text-[#c79c6e]" />
+                                      <span>0–10 numeric rating scale with explicit "Not sure" button.</span>
+                                    </div>
+                                    <span className="font-mono text-[0.65rem] text-[#c79c6e]">0 to 10 Scale</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                      <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">
+                                        Options <span className="text-white/25 font-normal normal-case tracking-normal">({(q.options || []).length} choices)</span>
+                                      </label>
+                                      <button
+                                        type="button"
+                                        onClick={() => addOption(origIdx)}
+                                        className="flex items-center gap-1 text-[0.68rem] text-[#c79c6e] hover:text-white font-sans font-semibold transition-colors"
+                                      >
+                                        <Plus size={11} weight="bold" /> Add Option
+                                      </button>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                      {(q.options || []).map((opt, oIdx) => (
+                                        <div key={opt.id || oIdx} className="flex items-center gap-2 group">
+                                          <span className="w-6 h-6 rounded border border-white/10 flex items-center justify-center font-mono text-[0.65rem] text-white/30 shrink-0 bg-[#080808]">
+                                            {String.fromCharCode(65 + (oIdx % 26))}
+                                          </span>
+                                          <input
+                                            type="text"
+                                            value={opt.label || ''}
+                                            onChange={(e) => updateOption(origIdx, oIdx, e.target.value)}
+                                            className="flex-1 bg-[#080808] border border-white/8 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#c79c6e]/50 transition-colors group-hover:border-white/15"
+                                            placeholder={`Option ${oIdx + 1} text...`}
+                                          />
+                                          {opt.is_exclusive && (
+                                            <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-sans text-[0.62rem] whitespace-nowrap">
+                                              Exclusive
+                                            </span>
+                                          )}
+                                          {opt.allows_write_in && (
+                                            <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 font-sans text-[0.62rem] whitespace-nowrap">
+                                              Write-in
+                                            </span>
+                                          )}
+                                          <button
+                                            type="button"
+                                            onClick={() => removeOption(origIdx, oIdx)}
+                                            disabled={(q.options || []).length <= 1}
+                                            className="w-7 h-7 flex items-center justify-center rounded text-red-400/40 hover:text-red-400 disabled:opacity-20 disabled:cursor-not-allowed transition-all shrink-0"
+                                            title="Delete option"
+                                          >
+                                            <Trash size={12} />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
                               </div>
-                              <div className="flex flex-col gap-2">
-                                {(q.options || []).map((opt, oIdx) => (
-                                  <div key={opt.id || oIdx} className="flex items-center gap-2 group">
-                                    <span className="w-6 h-6 rounded border border-white/10 flex items-center justify-center font-mono text-[0.65rem] text-white/30 shrink-0 bg-[#080808]">{String.fromCharCode(65 + oIdx)}</span>
-                                    <input type="text" value={opt.label || ''} onChange={(e) => updateOption(qIdx, oIdx, e.target.value)} className="flex-1 bg-[#080808] border border-white/8 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#c79c6e]/50 transition-colors group-hover:border-white/15" placeholder={`Option ${oIdx + 1} text...`} />
-                                    <button type="button" onClick={() => removeOption(qIdx, oIdx)} disabled={(q.options || []).length <= 1} className="w-7 h-7 flex items-center justify-center rounded text-red-400/40 hover:text-red-400 disabled:opacity-20 disabled:cursor-not-allowed transition-all shrink-0"><Trash size={12} /></button>
-                                  </div>
-                                ))}
-                              </div>
-                              {(q.options || []).length >= 5 && (
-                                <p className="font-sans text-[0.65rem] text-amber-400/60 mt-1">Maximum 5 options per question reached.</p>
-                              )}
                             </div>
-                          </div>
-                        </div>
-                      ))}
+                          );
+                        });
+                      })()}
 
                       {/* Bottom Add Question Button */}
                       <button 
                         type="button" 
                         onClick={addQuestion} 
-                        disabled={(questionnaire.questions || []).length >= 10} 
-                        className="flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-xl border border-dashed border-[#c79c6e]/30 hover:border-[#c79c6e] text-[#c79c6e] hover:bg-[#c79c6e]/10 text-xs font-sans font-semibold uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-xl border border-dashed border-[#c79c6e]/30 hover:border-[#c79c6e] text-[#c79c6e] hover:bg-[#c79c6e]/10 text-xs font-sans font-semibold uppercase tracking-wider transition-all"
                       >
                         <Plus size={15} weight="bold" />
                         <span>Add Question</span>
@@ -955,7 +1265,7 @@ export default function AdminBookingEditor() {
 
                       {(questionnaire.questions || []).length > 0 && (
                         <div className="text-center">
-                          <span className="font-sans text-[0.68rem] text-white/20">{(questionnaire.questions || []).length} question{(questionnaire.questions || []).length !== 1 ? 's' : ''} total</span>
+                          <span className="font-sans text-[0.68rem] text-white/20">{(questionnaire.questions || []).length} questions total across 9 sections</span>
                         </div>
                       )}
                     </div>

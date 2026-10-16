@@ -12,6 +12,7 @@ import { Resend } from 'resend';
 import { sendCoachingBookingConfirmationEmail, generateCoachingAgreementPdf } from '../services/coachingAgreementService.js';
 import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
 import { validateEmailFormat } from '../services/emailOtpService.js';
+import { validateQuestionnaireSubmission } from '../services/questionnaireValidator.js';
 
 const router = express.Router();
 
@@ -292,6 +293,26 @@ router.post('/', optionalAuth, async (req, res) => {
       }
     }
 
+    // Check if slot is already booked / occupied
+    const existingSlot = await Appointment.findOne({
+      date,
+      time,
+      status: { $in: ['UPCOMING', 'COMPLETED'] },
+      paymentStatus: { $ne: 'Failed' }
+    });
+    if (existingSlot) {
+      return res.status(409).json({ message: 'This time slot is no longer available. Please select another date or time.' });
+    }
+
+    // Validate questionnaire submission (blank is valid)
+    let validatedQuestionnaire = null;
+    let questionnaireDraftId = null;
+    if (questionnaireAnswers) {
+      const qResult = validateQuestionnaireSubmission(questionnaireAnswers);
+      validatedQuestionnaire = qResult.cleanPayload;
+      questionnaireDraftId = qResult.cleanPayload?.booking_draft_id || req.body.booking_draft_id || null;
+    }
+
     // --- Free session booking (3 free sessions included with course purchase) ---
     if (useFreeSession) {
       const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -334,7 +355,8 @@ router.post('/', optionalAuth, async (req, res) => {
         source,
         reason,
         extra,
-        questionnaireAnswers: questionnaireAnswers || null,
+        questionnaireAnswers: validatedQuestionnaire || null,
+        questionnaireBookingDraftId: questionnaireDraftId,
         status: 'UPCOMING',
         duration,
         isFirstSession,
@@ -456,7 +478,8 @@ router.post('/', optionalAuth, async (req, res) => {
       source,
       reason,
       extra,
-      questionnaireAnswers: questionnaireAnswers || null,
+      questionnaireAnswers: validatedQuestionnaire || null,
+      questionnaireBookingDraftId: questionnaireDraftId,
       status: 'UPCOMING',
       duration,
       isFirstSession,
@@ -629,6 +652,39 @@ router.put('/:id/finalize', optionalAuth, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error finalizing appointment' });
+  }
+});
+
+// POST /api/appointments/:id/questionnaire-retry - Save questionnaire answers if initial save failed
+router.post('/:id/questionnaire-retry', optionalAuth, async (req, res) => {
+  try {
+    const { questionnaireAnswers, bookingDraftId, email } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    // Authorize retry: user matches appointment userId, or appointment email matches, or draft ID matches
+    const isOwner = (req.user && String(req.user._id) === String(appointment.userId)) ||
+                    (email && email.trim().toLowerCase() === appointment.email.toLowerCase()) ||
+                    (bookingDraftId && appointment.questionnaireBookingDraftId === bookingDraftId);
+
+    if (!isOwner) {
+      return res.status(403).json({ message: 'Unauthorized to update questionnaire answers for this appointment' });
+    }
+
+    const qResult = validateQuestionnaireSubmission(questionnaireAnswers);
+    appointment.questionnaireAnswers = qResult.cleanPayload;
+    if (qResult.cleanPayload?.booking_draft_id) {
+      appointment.questionnaireBookingDraftId = qResult.cleanPayload.booking_draft_id;
+    }
+    await appointment.save();
+
+    res.json({ success: true, message: 'Questionnaire answers saved successfully' });
+  } catch (error) {
+    console.error('Error retrying questionnaire save:', error);
+    res.status(500).json({ message: 'Failed to save questionnaire answers' });
   }
 });
 

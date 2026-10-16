@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useToast } from '../context/ToastContext';
 import Icon from '../components/common/AdminIcons';
 import { API_URL } from '../utils/apiUrl';
+import AdminQuestionnaireViewer from '../components/AdminQuestionnaireViewer';
 import './AdminAppointments.css';
 
 const inr = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
@@ -2527,51 +2528,12 @@ export default function AdminAppointmentsView() {
                         </div>
                       </div>
 
-                      {/* Deep Reflection Questionnaire Answers (if submitted) */}
-                      {(() => {
-                        const qaList = formatQuestionnaireAnswers(selectedAppt.questionnaireAnswers || selectedAppt.qa);
-                        if (qaList.length > 0) {
-                          return (
-                            <div className="bwa-box">
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <h4 className="big" style={{ margin: 0 }}>Deep Reflection Questionnaire</h4>
-                                <span className="bwa-pill p-done" style={{ fontSize: '0.65rem' }}>{qaList.length} Answered ✓</span>
-                              </div>
-                              <p className="hint" style={{ marginBottom: '14px' }}>
-                                Optional ~30 minute deep questionnaire answers submitted by client.
-                              </p>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {qaList.map((item, idx) => (
-                                  <div 
-                                    key={idx} 
-                                    style={{ 
-                                      background: '#faf7f2', 
-                                      border: '1px solid rgba(0,0,0,0.07)', 
-                                      borderRadius: '12px', 
-                                      padding: '12px 14px' 
-                                    }}
-                                  >
-                                    <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, color: 'var(--accent, #c9542f)', marginBottom: '4px' }}>
-                                      Q{idx + 1}: {item.question}
-                                    </div>
-                                    <div style={{ fontSize: '0.85rem', color: '#111010', lineHeight: 1.45, fontWeight: 500 }}>
-                                      {item.answer}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="bwa-box" style={{ background: 'rgba(0,0,0,0.02)', borderStyle: 'dashed' }}>
-                            <h4 style={{ fontSize: '0.82rem', color: '#7a756b', margin: '0 0 4px' }}>Deep Reflection Questionnaire</h4>
-                            <p style={{ margin: 0, fontSize: '0.75rem', color: '#9c9689' }}>
-                              Client did not complete the optional ~30-min deep questionnaire for this session.
-                            </p>
-                          </div>
-                        );
-                      })()}
+                      {/* Optional Coaching Questionnaire Answers */}
+                      <AdminQuestionnaireViewer
+                        questionnaireAnswers={selectedAppt.questionnaireAnswers || selectedAppt.qa}
+                        clientName={selectedAppt.name || selectedAppt.userName || 'Client'}
+                        appointmentDate={selectedAppt.date ? `${selectedAppt.date} ${selectedAppt.time || ''}` : ''}
+                      />
                     </div>
                   )}
 

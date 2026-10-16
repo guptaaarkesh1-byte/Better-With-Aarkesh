@@ -1,0 +1,3050 @@
+{
+  "schema_version": "1.0.0",
+  "questionnaire_id": "bwa_optional_coaching",
+  "content_version": "2026-10-16-v1",
+  "title": "Optional coaching questionnaire",
+  "language": "en",
+  "purpose": "Preparation for a coaching conversation",
+  "estimated_minutes": {
+    "min": 25,
+    "max": 35,
+    "status": "unpiloted_estimate"
+  },
+  "required": false,
+  "scoring": null,
+  "flow": {
+    "placement": "booking_details_after_slot_selection",
+    "presentation": "same_page_modal",
+    "questions_per_step": 1,
+    "question_order": "fixed",
+    "branching": false,
+    "section_intro": "show_on_first_question_in_section",
+    "draft_storage": "sessionStorage_scoped_to_booking_draft",
+    "send_answers_on": "final_booking_confirmation",
+    "resume_across_devices": false,
+    "close_preserves_draft": true,
+    "backdrop_click_closes": false,
+    "skip_with_existing_answer": "confirm_clear_then_advance",
+    "next_with_blank_answer": "record_skipped_then_advance",
+    "auto_advance_on_selection": false,
+    "progress": {
+      "mode": "question_position",
+      "show_answered_count_separately": true
+    },
+    "review_inside_modal": true,
+    "can_return_early": true,
+    "clear_questionnaire_draft_after": [
+      "successful_booking_and_answer_save",
+      "explicit_remove_answers"
+    ],
+    "note": "Closing a browser tab may lose the draft. No server-side answer draft is part of this default."
+  },
+  "copy": {
+    "card_title": "Want to go deeper?",
+    "card_description": "An optional questionnaire to help me prepare for our conversation. There are 45 questions, and every question can be skipped. Allow around 25–35 minutes if you choose to answer them all.",
+    "start_button": "Start optional questionnaire",
+    "resume_button": "Continue questionnaire",
+    "review_button": "Review answers",
+    "intro": "There are no right or wrong answers. Share only what you feel comfortable sharing. You can skip any question or return to booking whenever you like.",
+    "draft_notice": "Your progress is kept in this tab during booking. It may be lost if you close the tab. Answers are sent to Aarkesh when you confirm your booking.",
+    "back_button": "Back",
+    "next_button": "Next",
+    "skip_button": "Skip this question",
+    "return_button": "Save and return to booking",
+    "remove_answers_button": "Remove questionnaire answers",
+    "review_heading": "Review your answers",
+    "finish_message": "Thank you for sharing what feels useful. You can review your answers or return to booking.",
+    "selection_limit_error": "Choose up to {max} options. Deselect one to choose another.",
+    "privacy_policy_url": null,
+    "privacy_policy_note": "Connect to the current published policy before launch; do not ship a placeholder URL."
+  },
+  "response_contract": {
+    "required_metadata": [
+      "questionnaire_id",
+      "content_version",
+      "booking_draft_id",
+      "opened",
+      "responses"
+    ],
+    "opened": "Boolean; true once the questionnaire was opened, including if no answers were given",
+    "server_link_after_booking": "booking_id",
+    "response_fields": {
+      "question_id": "Stable question ID",
+      "state": "unanswered | skipped | answered",
+      "selected_option_ids": "Array of option IDs, empty for a text question",
+      "text": "String or null; only for a text question",
+      "other_text_by_option_id": "Object mapping selected write-in option IDs to optional text"
+    },
+    "rules": [
+      "Not sure, Not applicable and Prefer not to say are answered states with their actual option IDs.",
+      "A selected confidence value of 0 is an answer; never treat it as empty.",
+      "Unanswered and skipped responses have no selected options, text or write-ins.",
+      "Trim text for blank detection; do not require a minimum number of characters.",
+      "Keep question and option IDs stable; retain the content version with every saved response."
+    ]
+  },
+  "sections": [
+    {
+      "id": "s01",
+      "order": 1,
+      "title": "Your current situation",
+      "intro": "Start with what matters now, including what is already helping you.",
+      "questions": [
+        {
+          "id": "q01",
+          "number": 1,
+          "prompt": "Which areas of your life would you most like to explore?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 3,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q01_o01",
+              "label": "Work or study",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q01_o02",
+              "label": "Relationships",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q01_o03",
+              "label": "Confidence or self-worth",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q01_o04",
+              "label": "A difficult decision",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q01_o05",
+              "label": "Habits or follow-through",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q01_o06",
+              "label": "A life transition",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q01_o07",
+              "label": "Wellbeing or energy",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q01_o08",
+              "label": "Direction or purpose",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q01_o09",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q01_o10",
+              "label": "Not sure yet",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 3."
+        },
+        {
+          "id": "q02",
+          "number": 2,
+          "prompt": "What would you notice in your everyday life if coaching were useful over the next three months?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "Two or three sentences are enough. It is fine if you are still working this out.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        },
+        {
+          "id": "q03",
+          "number": 3,
+          "prompt": "How long has the main issue you want to explore been on your mind?",
+          "type": "single_select",
+          "source_kind": "single",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q03_o01",
+              "label": "Less than a month",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q03_o02",
+              "label": "One to six months",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q03_o03",
+              "label": "Six months to two years",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q03_o04",
+              "label": "More than two years",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q03_o05",
+              "label": "It comes and goes",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q03_o06",
+              "label": "I am exploring rather than addressing one issue",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q03_o07",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response."
+        },
+        {
+          "id": "q04",
+          "number": 4,
+          "prompt": "What is already going reasonably well in your life?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 3,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q04_o01",
+              "label": "Supportive relationships",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q04_o02",
+              "label": "Work or learning",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q04_o03",
+              "label": "Routines",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q04_o04",
+              "label": "Physical energy",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q04_o05",
+              "label": "Financial stability",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q04_o06",
+              "label": "Interests or creativity",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q04_o07",
+              "label": "My ability to reflect",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q04_o08",
+              "label": "A sense of purpose",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q04_o09",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q04_o10",
+              "label": "Nothing comes to mind right now",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 3."
+        },
+        {
+          "id": "q05",
+          "number": 5,
+          "prompt": "Which current circumstances most affect the time or energy you have available for change?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 3,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q05_o01",
+              "label": "Work or study demands",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q05_o02",
+              "label": "Caring responsibilities",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q05_o03",
+              "label": "Financial pressure",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q05_o04",
+              "label": "Health or sleep difficulties",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q05_o05",
+              "label": "Relationship strain",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q05_o06",
+              "label": "A major transition",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q05_o07",
+              "label": "Limited practical support",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q05_o08",
+              "label": "Limited access to opportunities",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q05_o09",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q05_o10",
+              "label": "No major constraint comes to mind",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q05_o11",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 3."
+        }
+      ]
+    },
+    {
+      "id": "s02",
+      "order": 2,
+      "title": "What matters to you",
+      "intro": "There is no preferred set of values. Responsibilities, relationships and personal wishes can all matter.",
+      "questions": [
+        {
+          "id": "q06",
+          "number": 6,
+          "prompt": "Which values matter most to you at this stage of your life?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 5,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q06_o01",
+              "label": "Independence",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o02",
+              "label": "Belonging",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o03",
+              "label": "Care",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o04",
+              "label": "Stability",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o05",
+              "label": "Achievement",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o06",
+              "label": "Learning",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o07",
+              "label": "Creativity",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o08",
+              "label": "Fairness",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o09",
+              "label": "Honesty",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o10",
+              "label": "Adventure",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o11",
+              "label": "Faith or spirituality",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o12",
+              "label": "Contribution",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o13",
+              "label": "Health",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o14",
+              "label": "Rest",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o15",
+              "label": "Enjoyment",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q06_o16",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q06_o17",
+              "label": "Not sure yet",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 5."
+        },
+        {
+          "id": "q07",
+          "number": 7,
+          "prompt": "Which value would you most like to give more room in your life?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "A word or phrase is enough. You can use a value you did not choose above.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        },
+        {
+          "id": "q08",
+          "number": 8,
+          "prompt": "What recent choice felt consistent with something you genuinely value?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "A small, ordinary choice counts.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        },
+        {
+          "id": "q09",
+          "number": 9,
+          "prompt": "Which competing priorities feel most relevant to you right now?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q09_o01",
+              "label": "Stability and exploration",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q09_o02",
+              "label": "Belonging and speaking honestly",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q09_o03",
+              "label": "Caring for others and time for myself",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q09_o04",
+              "label": "Achievement and rest",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q09_o05",
+              "label": "Independence and commitment",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q09_o06",
+              "label": "Fairness and keeping the peace",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q09_o07",
+              "label": "A different tension",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q09_o08",
+              "label": "No particular tension",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q09_o09",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2."
+        },
+        {
+          "id": "q10",
+          "number": 10,
+          "prompt": "What gives your main goal its importance to you?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 3,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q10_o01",
+              "label": "I find it personally meaningful",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q10_o02",
+              "label": "I enjoy the activity itself",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q10_o03",
+              "label": "It supports people I care about",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q10_o04",
+              "label": "It fulfils a responsibility I have chosen",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q10_o05",
+              "label": "It meets a practical or financial need",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q10_o06",
+              "label": "It matters to family or community",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q10_o07",
+              "label": "It would help me feel accepted or respected",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q10_o08",
+              "label": "I want to avoid criticism or failure",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q10_o09",
+              "label": "Comparison with others",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q10_o10",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q10_o11",
+              "label": "Not sure yet",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 3."
+        }
+      ]
+    },
+    {
+      "id": "s03",
+      "order": 3,
+      "title": "How you make sense of things",
+      "intro": "These questions explore your starting points, assumptions and beliefs.",
+      "questions": [
+        {
+          "id": "q11",
+          "number": 11,
+          "prompt": "What usually helps you make sense of a complicated situation?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q11_o01",
+              "label": "Concrete facts or examples",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q11_o02",
+              "label": "Seeing the wider pattern",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q11_o03",
+              "label": "Thinking privately",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q11_o04",
+              "label": "Talking it through",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q11_o05",
+              "label": "Noticing my emotional response",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q11_o06",
+              "label": "Trying a small action",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q11_o07",
+              "label": "Input from someone experienced",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q11_o08",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q11_o09",
+              "label": "It varies too much to say",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q11_o10",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2."
+        },
+        {
+          "id": "q12",
+          "number": 12,
+          "prompt": "In the past four weeks, how often have you returned to the same concern without gaining new information?",
+          "type": "single_select",
+          "source_kind": "frequency",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q12_o01",
+              "label": "Never",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q12_o02",
+              "label": "Rarely",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q12_o03",
+              "label": "Sometimes",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q12_o04",
+              "label": "Often",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q12_o05",
+              "label": "Almost always",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q12_o06",
+              "label": "Not applicable",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q12_o07",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response. Think about occasions when this could have happened."
+        },
+        {
+          "id": "q13",
+          "number": 13,
+          "prompt": "Think of the most recent time information challenged a view you held. What did you do first?",
+          "type": "single_select",
+          "source_kind": "single",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q13_o01",
+              "label": "Changed my view",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q13_o02",
+              "label": "Changed part of my view",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q13_o03",
+              "label": "Looked for more evidence",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q13_o04",
+              "label": "Explained why I still disagreed",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q13_o05",
+              "label": "Dismissed the information",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q13_o06",
+              "label": "Put the issue aside",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q13_o07",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q13_o08",
+              "label": "I cannot recall an example",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response."
+        },
+        {
+          "id": "q14",
+          "number": 14,
+          "prompt": "Which thoughts tend to show up when you are under pressure?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q14_o01",
+              "label": "I should be able to handle this alone",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q14_o02",
+              "label": "A mistake could change how people see me",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q14_o03",
+              "label": "I need to avoid disappointing people",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q14_o04",
+              "label": "I need more certainty before acting",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q14_o05",
+              "label": "My needs deserve consideration too",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q14_o06",
+              "label": "I can learn while I work this out",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q14_o07",
+              "label": "I need help with this",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q14_o08",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q14_o09",
+              "label": "No familiar thought comes to mind",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q14_o10",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2."
+        },
+        {
+          "id": "q15",
+          "number": 15,
+          "prompt": "What is one rule about how you should live that you have begun to question?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "You can leave this blank if no such rule comes to mind.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        }
+      ]
+    },
+    {
+      "id": "s04",
+      "order": 4,
+      "title": "One recent difficult moment",
+      "intro": "Use one manageable example from the past four weeks for these five questions. An ordinary disagreement or disappointment is enough. Choose something you are comfortable writing about.",
+      "questions": [
+        {
+          "id": "q16",
+          "number": 16,
+          "prompt": "What happened in the recent difficult moment you have chosen?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "Describe what someone could have seen or heard. You can leave out names and private details.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        },
+        {
+          "id": "q17",
+          "number": 17,
+          "prompt": "At the time, what did you think the situation meant?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q17_o01",
+              "label": "I was being rejected or excluded",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q17_o02",
+              "label": "I had failed or disappointed someone",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q17_o03",
+              "label": "I was losing control",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q17_o04",
+              "label": "I was being treated unfairly",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q17_o05",
+              "label": "I was being misunderstood",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q17_o06",
+              "label": "Something important might be at risk",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q17_o07",
+              "label": "It was difficult, but I did not take it personally",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q17_o08",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q17_o09",
+              "label": "I could not make sense of it",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2.",
+          "context": {
+            "source_question_id": "q16",
+            "show_if_answered": true,
+            "display": "collapsed_read_only_preview",
+            "reminder": "Think of the same recent difficult moment. You can answer even if you chose not to describe it.",
+            "required_to_continue": false
+          }
+        },
+        {
+          "id": "q18",
+          "number": 18,
+          "prompt": "Which feelings did you notice in that moment?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 3,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q18_o01",
+              "label": "Hurt",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q18_o02",
+              "label": "Anger",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q18_o03",
+              "label": "Worry",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q18_o04",
+              "label": "Sadness",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q18_o05",
+              "label": "Shame or embarrassment",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q18_o06",
+              "label": "Frustration",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q18_o07",
+              "label": "Relief",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q18_o08",
+              "label": "Confusion",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q18_o09",
+              "label": "Numbness",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q18_o10",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q18_o11",
+              "label": "I could not identify a feeling",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 3.",
+          "context": {
+            "source_question_id": "q16",
+            "show_if_answered": true,
+            "display": "collapsed_read_only_preview",
+            "reminder": "Think of the same recent difficult moment. You can answer even if you chose not to describe it.",
+            "required_to_continue": false
+          }
+        },
+        {
+          "id": "q19",
+          "number": 19,
+          "prompt": "What did you actually do next?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q19_o01",
+              "label": "Asked for clarification",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q19_o02",
+              "label": "Said what I needed",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q19_o03",
+              "label": "Explained or defended myself",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q19_o04",
+              "label": "Agreed or reassured",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q19_o05",
+              "label": "Became quiet or withdrew",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q19_o06",
+              "label": "Pushed harder to be heard",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q19_o07",
+              "label": "Paused before responding",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q19_o08",
+              "label": "Sought support",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q19_o09",
+              "label": "Distracted myself",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q19_o10",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q19_o11",
+              "label": "I cannot recall",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2.",
+          "context": {
+            "source_question_id": "q16",
+            "show_if_answered": true,
+            "display": "collapsed_read_only_preview",
+            "reminder": "Think of the same recent difficult moment. You can answer even if you chose not to describe it.",
+            "required_to_continue": false
+          }
+        },
+        {
+          "id": "q20",
+          "number": 20,
+          "prompt": "Looking back, how did your response affect what mattered to you?",
+          "type": "single_select",
+          "source_kind": "single",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q20_o01",
+              "label": "It helped both at the time and afterwards",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q20_o02",
+              "label": "It helped at the time but created a difficulty later",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q20_o03",
+              "label": "It was uncomfortable at first but helped later",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q20_o04",
+              "label": "It was unhelpful both at the time and afterwards",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q20_o05",
+              "label": "It made little difference",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q20_o06",
+              "label": "It had a different effect",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q20_o07",
+              "label": "It is too early to tell",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q20_o08",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response.",
+          "context": {
+            "source_question_id": "q16",
+            "show_if_answered": true,
+            "display": "collapsed_read_only_preview",
+            "reminder": "Think of the same recent difficult moment. You can answer even if you chose not to describe it.",
+            "required_to_continue": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "s05",
+      "order": 5,
+      "title": "Habits and follow through",
+      "intro": "Consider what you actually do, as well as the conditions that make action easier or harder.",
+      "questions": [
+        {
+          "id": "q21",
+          "number": 21,
+          "prompt": "In the past four weeks, how often have you started an important task at roughly the time you intended?",
+          "type": "single_select",
+          "source_kind": "frequency",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q21_o01",
+              "label": "Never",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q21_o02",
+              "label": "Rarely",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q21_o03",
+              "label": "Sometimes",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q21_o04",
+              "label": "Often",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q21_o05",
+              "label": "Almost always",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q21_o06",
+              "label": "Not applicable",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q21_o07",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response. Think about occasions when this could have happened."
+        },
+        {
+          "id": "q22",
+          "number": 22,
+          "prompt": "When an important task does not get started, what most often gets in the way?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 3,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q22_o01",
+              "label": "The next step is unclear",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q22_o02",
+              "label": "The task feels too large",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q22_o03",
+              "label": "I am worried about the result",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q22_o04",
+              "label": "I have little interest in the task",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q22_o05",
+              "label": "Other demands take priority",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q22_o06",
+              "label": "Low energy",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q22_o07",
+              "label": "Distractions",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q22_o08",
+              "label": "I am waiting for useful information",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q22_o09",
+              "label": "I lack time or resources",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q22_o10",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q22_o11",
+              "label": "This is not a recurring difficulty",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q22_o12",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 3."
+        },
+        {
+          "id": "q23",
+          "number": 23,
+          "prompt": "When a routine you wanted to keep breaks down, what do you usually do next?",
+          "type": "single_select",
+          "source_kind": "single",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q23_o01",
+              "label": "Resume at the next opportunity",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q23_o02",
+              "label": "Make the routine smaller or easier",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q23_o03",
+              "label": "Change the plan",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q23_o04",
+              "label": "Wait for a fresh start",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q23_o05",
+              "label": "Stop pursuing that routine",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q23_o06",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q23_o07",
+              "label": "It varies",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q23_o08",
+              "label": "Not applicable",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response."
+        },
+        {
+          "id": "q24",
+          "number": 24,
+          "prompt": "Which conditions most often help you follow through?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 3,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q24_o01",
+              "label": "A clear first step",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o02",
+              "label": "A deadline",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o03",
+              "label": "A reason I care about",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o04",
+              "label": "Company while I work",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o05",
+              "label": "Visible progress",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o06",
+              "label": "Smaller tasks",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o07",
+              "label": "Freedom to choose my approach",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o08",
+              "label": "A suitable environment",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o09",
+              "label": "An agreed check-in",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o10",
+              "label": "Enough rest",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q24_o11",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q24_o12",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 3."
+        },
+        {
+          "id": "q25",
+          "number": 25,
+          "prompt": "What helped a change you have made actually last?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "Use any change, however small. You can skip this if no example comes to mind.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        }
+      ]
+    },
+    {
+      "id": "s06",
+      "order": 6,
+      "title": "Relationships and communication",
+      "intro": "Your responses may differ with different people. Include that context where it matters.",
+      "questions": [
+        {
+          "id": "q26",
+          "number": 26,
+          "prompt": "In a disagreement, which responses most often come first for you?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q26_o01",
+              "label": "Ask to understand the other person",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q26_o02",
+              "label": "Explain my position",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q26_o03",
+              "label": "Look for a practical solution",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q26_o04",
+              "label": "Try to keep the peace",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q26_o05",
+              "label": "Become quiet",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q26_o06",
+              "label": "Push harder to be heard",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q26_o07",
+              "label": "Ask for a pause",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q26_o08",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q26_o09",
+              "label": "It depends strongly on the person or situation",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q26_o10",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2."
+        },
+        {
+          "id": "q27",
+          "number": 27,
+          "prompt": "In the past four weeks, how often have you agreed to something you would rather have declined?",
+          "type": "single_select",
+          "source_kind": "frequency",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q27_o01",
+              "label": "Never",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q27_o02",
+              "label": "Rarely",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q27_o03",
+              "label": "Sometimes",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q27_o04",
+              "label": "Often",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q27_o05",
+              "label": "Almost always",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q27_o06",
+              "label": "Not applicable",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q27_o07",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response. Think about occasions when this could have happened."
+        },
+        {
+          "id": "q28",
+          "number": 28,
+          "prompt": "What most often makes it difficult to ask for what you need?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q28_o01",
+              "label": "I am not clear about what I need",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q28_o02",
+              "label": "I worry about being a burden",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q28_o03",
+              "label": "I expect rejection or criticism",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q28_o04",
+              "label": "I feel I should manage without asking",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q28_o05",
+              "label": "There can be real consequences for me",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q28_o06",
+              "label": "I struggle to find the words",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q28_o07",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q28_o08",
+              "label": "I can usually ask comfortably",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q28_o09",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2."
+        },
+        {
+          "id": "q29",
+          "number": 29,
+          "prompt": "When you realise your behaviour has hurt someone, what do you tend to do first?",
+          "type": "single_select",
+          "source_kind": "single",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q29_o01",
+              "label": "Listen to understand the impact",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q29_o02",
+              "label": "Apologise",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q29_o03",
+              "label": "Explain what I intended",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q29_o04",
+              "label": "Try to put it right",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q29_o05",
+              "label": "Withdraw while I work out what to say",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q29_o06",
+              "label": "Seek reassurance that the relationship is okay",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q29_o07",
+              "label": "Find it hard to acknowledge what happened",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q29_o08",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q29_o09",
+              "label": "It varies",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q29_o10",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response."
+        },
+        {
+          "id": "q30",
+          "number": 30,
+          "prompt": "What helps you feel understood by another person?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 3,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q30_o01",
+              "label": "Uninterrupted listening",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q30_o02",
+              "label": "Questions that help me think",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q30_o03",
+              "label": "Acknowledgement of my feelings",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q30_o04",
+              "label": "Practical help",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q30_o05",
+              "label": "Honest feedback",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q30_o06",
+              "label": "Warmth or comfort",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q30_o07",
+              "label": "Time before talking",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q30_o08",
+              "label": "Humour",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q30_o09",
+              "label": "Privacy",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q30_o10",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q30_o11",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 3."
+        }
+      ]
+    },
+    {
+      "id": "s07",
+      "order": 7,
+      "title": "Your everyday preferences and strengths",
+      "intro": "Think about your usual preferences across different settings. These are descriptions, not personality categories.",
+      "questions": [
+        {
+          "id": "q31",
+          "number": 31,
+          "prompt": "After several hours with other people, what do you usually want?",
+          "type": "single_select",
+          "source_kind": "single",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q31_o01",
+              "label": "More social time",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q31_o02",
+              "label": "Quiet time alone",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q31_o03",
+              "label": "Time with one or two familiar people",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q31_o04",
+              "label": "It depends mainly on who I was with",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q31_o05",
+              "label": "It depends mainly on what we were doing",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q31_o06",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q31_o07",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response."
+        },
+        {
+          "id": "q32",
+          "number": 32,
+          "prompt": "When you begin something unfamiliar, which starting approach feels most natural?",
+          "type": "single_select",
+          "source_kind": "single",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q32_o01",
+              "label": "Try a small version and learn as I go",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q32_o02",
+              "label": "Learn about it before trying",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q32_o03",
+              "label": "Ask someone experienced",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q32_o04",
+              "label": "Make a detailed plan",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q32_o05",
+              "label": "Explore several possibilities first",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q32_o06",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q32_o07",
+              "label": "It varies",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q32_o08",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response."
+        },
+        {
+          "id": "q33",
+          "number": 33,
+          "prompt": "How much structure usually helps you in an ordinary week?",
+          "type": "single_select",
+          "source_kind": "single",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q33_o01",
+              "label": "A fairly fixed schedule",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q33_o02",
+              "label": "A few reliable routines with room to adjust",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q33_o03",
+              "label": "Clear priorities with flexible timing",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q33_o04",
+              "label": "Very little advance planning",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q33_o05",
+              "label": "Different amounts in different areas",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q33_o06",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q33_o07",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response."
+        },
+        {
+          "id": "q34",
+          "number": 34,
+          "prompt": "Which strengths do people most often rely on you for?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 3,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q34_o01",
+              "label": "Listening",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o02",
+              "label": "Clear thinking",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o03",
+              "label": "Reliability",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o04",
+              "label": "Initiative",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o05",
+              "label": "Creativity",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o06",
+              "label": "Humour",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o07",
+              "label": "Steadiness",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o08",
+              "label": "Honesty",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o09",
+              "label": "Care",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o10",
+              "label": "Organisation",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o11",
+              "label": "Attention to detail",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o12",
+              "label": "Seeing possibilities",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q34_o13",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q34_o14",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 3."
+        },
+        {
+          "id": "q35",
+          "number": 35,
+          "prompt": "In what circumstances can one of your strengths become less helpful?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "Name the strength and the situation, if an example comes to mind.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        }
+      ]
+    },
+    {
+      "id": "s08",
+      "order": 8,
+      "title": "Decisions and the life you want",
+      "intro": "A small, realistic direction is enough. You do not need a complete plan.",
+      "questions": [
+        {
+          "id": "q36",
+          "number": 36,
+          "prompt": "What would you like an ordinary week in your life to contain more of?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "Think about lived experience, rather than how it would look to somebody else.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        },
+        {
+          "id": "q37",
+          "number": 37,
+          "prompt": "For a decision you are currently facing, what is least clear?",
+          "type": "single_select",
+          "source_kind": "single",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q37_o01",
+              "label": "What I want",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q37_o02",
+              "label": "What options are realistically available",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q37_o03",
+              "label": "The likely consequences",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q37_o04",
+              "label": "Which expectations to prioritise",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q37_o05",
+              "label": "What I can afford in time, money or energy",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q37_o06",
+              "label": "How to take the first step",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q37_o07",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q37_o08",
+              "label": "I am not currently facing a decision",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q37_o09",
+              "label": "Not sure",
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose one response."
+        },
+        {
+          "id": "q38",
+          "number": 38,
+          "prompt": "Which possible costs feel hardest to accept in the change you want?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q38_o01",
+              "label": "Uncertainty",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q38_o02",
+              "label": "Failure",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q38_o03",
+              "label": "Financial loss",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q38_o04",
+              "label": "Relationship strain",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q38_o05",
+              "label": "Regret",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q38_o06",
+              "label": "Changing how I see myself",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q38_o07",
+              "label": "Losing freedom",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q38_o08",
+              "label": "Disappointing people",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q38_o09",
+              "label": "Time or energy required",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q38_o10",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q38_o11",
+              "label": "No particular cost stands out",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q38_o12",
+              "label": "Not sure",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2."
+        },
+        {
+          "id": "q39",
+          "number": 39,
+          "prompt": "How confident are you that you could take one small useful step in the next two weeks?",
+          "type": "integer_choice",
+          "source_kind": "confidence",
+          "required": false,
+          "help_text": "Choose any whole number from 0 to 10, or mark Not sure. This describes your confidence today.",
+          "min_selections": 0,
+          "max_selections": 1,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q39_0",
+              "label": "0",
+              "numeric_value": 0,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_1",
+              "label": "1",
+              "numeric_value": 1,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_2",
+              "label": "2",
+              "numeric_value": 2,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_3",
+              "label": "3",
+              "numeric_value": 3,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_4",
+              "label": "4",
+              "numeric_value": 4,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_5",
+              "label": "5",
+              "numeric_value": 5,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_6",
+              "label": "6",
+              "numeric_value": 6,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_7",
+              "label": "7",
+              "numeric_value": 7,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_8",
+              "label": "8",
+              "numeric_value": 8,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_9",
+              "label": "9",
+              "numeric_value": 9,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_10",
+              "label": "10",
+              "numeric_value": 10,
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q39_not_sure",
+              "label": "Not sure",
+              "numeric_value": null,
+              "exclusive": false,
+              "write_in": null
+            }
+          ],
+          "instruction": "Choose a whole number from 0 to 10, or Not sure.",
+          "scale": {
+            "min": 0,
+            "max": 10,
+            "step": 1,
+            "min_label": "Not at all confident",
+            "max_label": "Very confident",
+            "default": null
+          }
+        },
+        {
+          "id": "q40",
+          "number": 40,
+          "prompt": "What is one small step you could realistically try in the next two weeks?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "I do not know yet is a useful answer too.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        }
+      ]
+    },
+    {
+      "id": "s09",
+      "order": 9,
+      "title": "How we can work together",
+      "intro": "Help me understand what you have tried and what would make our conversation useful.",
+      "questions": [
+        {
+          "id": "q41",
+          "number": 41,
+          "prompt": "What have you already tried in relation to the issue you want to explore?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "There is no need to describe treatment or disclose private records.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q41_o01",
+              "label": "Reflecting or journalling",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q41_o02",
+              "label": "Talking with someone I trust",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q41_o03",
+              "label": "Books, videos or courses",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q41_o04",
+              "label": "Changing a habit or routine",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q41_o05",
+              "label": "Changing practical circumstances",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q41_o06",
+              "label": "Previous coaching",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q41_o07",
+              "label": "Professional mental health support",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q41_o08",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q41_o09",
+              "label": "Nothing yet",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q41_o10",
+              "label": "Prefer not to say",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select all that apply."
+        },
+        {
+          "id": "q42",
+          "number": 42,
+          "prompt": "What would you most value from me in our first conversation?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q42_o01",
+              "label": "Space to talk and be heard",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q42_o02",
+              "label": "Help understanding my feelings",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q42_o03",
+              "label": "A different perspective",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q42_o04",
+              "label": "Questions about my assumptions",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q42_o05",
+              "label": "Help examining a decision",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q42_o06",
+              "label": "A practical next step",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q42_o07",
+              "label": "An agreed way to follow through",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q42_o08",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q42_o09",
+              "label": "Not sure yet",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2."
+        },
+        {
+          "id": "q43",
+          "number": 43,
+          "prompt": "If I offer a perspective you disagree with, what would help us examine it together?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": 2,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q43_o01",
+              "label": "Ask me what does not fit",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q43_o02",
+              "label": "Compare it with a specific example",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q43_o03",
+              "label": "Explain the reasoning more clearly",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q43_o04",
+              "label": "Give me time to think before responding",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q43_o05",
+              "label": "Explore both interpretations",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q43_o06",
+              "label": "Check whether the wording felt judgemental",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q43_o07",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q43_o08",
+              "label": "Not sure yet",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select up to 2."
+        },
+        {
+          "id": "q44",
+          "number": 44,
+          "prompt": "Are there any adjustments you would like us to discuss so you can participate comfortably?",
+          "type": "multi_select",
+          "source_kind": "multi",
+          "required": false,
+          "help_text": "",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": null,
+          "options": [
+            {
+              "id": "q44_o01",
+              "label": "A slower pace",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q44_o02",
+              "label": "More direct or simpler language",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q44_o03",
+              "label": "Time to think before answering",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q44_o04",
+              "label": "Short breaks",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q44_o05",
+              "label": "Written prompts or a brief written recap",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q44_o06",
+              "label": "A language or accessibility need",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q44_o07",
+              "label": "Care around a particular topic",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q44_o08",
+              "label": "A practical difficulty with privacy or timing",
+              "exclusive": false,
+              "write_in": null
+            },
+            {
+              "id": "q44_o09",
+              "label": "Something else",
+              "exclusive": false,
+              "write_in": {
+                "required": false,
+                "max_characters": 300,
+                "label": "Add a little detail if you like"
+              }
+            },
+            {
+              "id": "q44_o10",
+              "label": "No adjustment comes to mind",
+              "exclusive": true,
+              "write_in": null
+            },
+            {
+              "id": "q44_o11",
+              "label": "Prefer to discuss this in the session",
+              "exclusive": true,
+              "write_in": null
+            }
+          ],
+          "instruction": "Select all that apply."
+        },
+        {
+          "id": "q45",
+          "number": 45,
+          "prompt": "What would you like me to know that these questions have not given you room to say?",
+          "type": "long_text",
+          "source_kind": "text",
+          "required": false,
+          "help_text": "You can also use this space to name something you would prefer to discuss in the session.",
+          "min_selections": 0,
+          "max_selections": null,
+          "max_characters": 2000,
+          "options": [],
+          "instruction": "Optional. A brief answer is enough."
+        }
+      ]
+    }
+  ],
+  "launch_configuration_required": [
+    "Current privacy policy link and actual access and retention arrangements",
+    "Existing booking engine slot reservation or expiry behaviour",
+    "Authenticated coach view linked to the booking"
+  ]
+}

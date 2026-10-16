@@ -10,17 +10,49 @@ import BookingCancelled from '../components/booking/BookingCancelled';
 import LoginModal from '../components/layout/LoginModal';
 import bookingBgLocal from '../assets/images/booking_bg_lamp.png';
 import { CDN_IMAGES } from '../utils/cdnAssets';
+import config from '../data/questionnaireConfig.json';
+import { 
+  getOrCreateBookingDraftId, 
+  loadQuestionnaireDraft, 
+  clearQuestionnaireDraft, 
+  buildResponseContractPayload 
+} from '../utils/questionnaireDraft';
 
 const bookingBg = CDN_IMAGES.BOOKING_LAMP_BG || bookingBgLocal;
 
 export default function Booking() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token'));
-  const [step, setStep] = useState(1);
+  
+  // Maintain session-scoped draft ID
+  const [draftId] = useState(() => getOrCreateBookingDraftId());
+  const [questionnaireDraft, setQuestionnaireDraft] = useState(() => {
+    return loadQuestionnaireDraft(draftId) || {
+      booking_draft_id: draftId,
+      questionnaire_id: config.questionnaire_id || 'bwa_optional_coaching',
+      content_version: config.content_version || '2026-10-16-v1',
+      opened: false,
+      last_screen: 'intro',
+      answers: {}
+    };
+  });
+
+  const [step, setStep] = useState(() => {
+    const savedStep = sessionStorage.getItem('bookingStep');
+    if (savedStep) {
+      const parsed = parseInt(savedStep, 10);
+      if (parsed >= 1 && parsed <= 3) return parsed;
+    }
+    return 1;
+  });
+
   const [bookingData, setBookingData] = useState(() => {
-    // Always start fresh — do not restore from sessionStorage
-    sessionStorage.removeItem('bookingStep');
-    sessionStorage.removeItem('bookingData');
+    const savedData = sessionStorage.getItem('bookingData');
+    if (savedData) {
+      try {
+        return JSON.parse(savedData);
+      } catch (e) {}
+    }
     const token = localStorage.getItem('token');
     const saved = token ? localStorage.getItem('userInfo') : null;
     const userInfo = saved ? JSON.parse(saved) : {};
@@ -367,9 +399,17 @@ export default function Booking() {
         ? (bookingData.otherSource?.trim() ? `Other: ${bookingData.otherSource.trim()}` : 'Other')
         : bookingData.source;
 
+      const questionnairePayload = buildResponseContractPayload(questionnaireDraft, draftId);
+
       const payloadData = {
         ...bookingData,
-        source: finalSource
+        source: finalSource,
+        questionnaire_id: questionnairePayload.questionnaire_id,
+        content_version: questionnairePayload.content_version,
+        booking_draft_id: questionnairePayload.booking_draft_id,
+        questionnaire_opened: questionnairePayload.opened,
+        questionnaire_responses: questionnairePayload.responses,
+        questionnaireAnswers: questionnairePayload
       };
 
       // --- Course Free Session Zero-Payment Checkout ---
@@ -384,7 +424,14 @@ export default function Booking() {
         });
 
         if (!freeRes.ok) {
-          const errData = await freeRes.json();
+          const errData = await freeRes.json().catch(() => ({}));
+          // Handle slot expiry or collision: return to Step 1 without discarding details or answers
+          if (freeRes.status === 409 || errData.message?.toLowerCase().includes('slot') || errData.message?.toLowerCase().includes('available')) {
+            setError(errData.message || 'This time slot was just booked or is no longer available. Please select another time.');
+            setStep(1);
+            setIsLoading(false);
+            return;
+          }
           throw new Error(errData.message || 'Failed to book complimentary coaching session');
         }
 
@@ -401,6 +448,8 @@ export default function Booking() {
           hasFreeSessions: freeData.freeSessionsRemaining > 0
         }));
 
+        clearQuestionnaireDraft(draftId);
+        sessionStorage.removeItem('bwa_booking_draft_id');
         sessionStorage.removeItem('bookingStep');
         sessionStorage.removeItem('bookingData');
         setIsLoading(false);
@@ -507,6 +556,8 @@ export default function Booking() {
                 appointmentId, 
                 paidAmount: chargedAmountInRupees 
               });
+              clearQuestionnaireDraft(draftId);
+              sessionStorage.removeItem('bwa_booking_draft_id');
               sessionStorage.removeItem('bookingStep');
               sessionStorage.removeItem('bookingData');
               nextStep();
@@ -702,6 +753,9 @@ export default function Booking() {
                   isAuthenticated={!!localStorage.getItem('token')}
                   freeSessionInfo={freeSessionInfo}
                   settings={bookingSettings.step2}
+                  questionnaireDraft={questionnaireDraft}
+                  draftId={draftId}
+                  onUpdateDraft={setQuestionnaireDraft}
                 />
               )}
               {step === 3 && (
