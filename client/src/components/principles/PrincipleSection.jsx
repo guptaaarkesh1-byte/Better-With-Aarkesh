@@ -343,8 +343,13 @@ export default function PrincipleSection({
         >
           <h2
             className="think-ideology-title uppercase font-serif text-[clamp(48px,8vw,124px)] leading-none tracking-tight font-medium text-[#111010] select-none px-4 text-center"
+            style={{
+              color: '#111010',
+              WebkitTextStroke: '1.1px #ffa260',
+              textShadow: '0 0 6px rgba(255, 170, 100, 0.95), 0 0 14px rgba(255, 185, 125, 0.8), 0 0 25px rgba(255, 205, 150, 0.55)'
+            }}
           >
-            {IDEOLOGY_CONFIG.textMain} <span className="text-[#c8502d] not-italic">{IDEOLOGY_CONFIG.textAccent}</span>
+            {IDEOLOGY_CONFIG.textMain} {IDEOLOGY_CONFIG.textAccent}
           </h2>
         </div>
       )}
