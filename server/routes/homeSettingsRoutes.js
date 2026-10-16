@@ -39,6 +39,7 @@ const DEFAULT_SECTIONS = {
       eyebrow: 'PRINCIPLE 01',
       title: 'THINK',
       subtitle: 'CLEARLY.',
+      overlayTitle: 'MY IDEOLOGY',
       highlight: 'Clarity is the bridge between intention and action.',
       description: 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.',
       buttonText: 'SCROLL FOR NEXT PRINCIPLE',
@@ -116,6 +117,7 @@ const DEFAULT_SECTIONS = {
   },
   about: {
     eyebrowText: 'MEET AARKESH',
+    overlayTitle: 'MEET AARKESH',
     headingLine: 'Three roles. One purpose.',
     subheading: 'Different lenses. Same mission your growth.',
     rolePilot: {

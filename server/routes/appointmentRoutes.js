@@ -11,6 +11,7 @@ import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 import { Resend } from 'resend';
 import { sendCoachingBookingConfirmationEmail, generateCoachingAgreementPdf } from '../services/coachingAgreementService.js';
 import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
+import { validateEmailFormat } from '../services/emailOtpService.js';
 
 const router = express.Router();
 
@@ -270,9 +271,10 @@ router.post('/', optionalAuth, async (req, res) => {
   try {
     const { date, time, name, email, countryCode, phoneNumber, source, reason, extra, questionnaireAnswers, paymentId, orderId, signature, useFreeSession } = req.body;
 
-    const normalizedEmail = (email || (req.user && req.user.email) || '').toLowerCase().trim();
-    if (!normalizedEmail || !normalizedEmail.endsWith('@gmail.com')) {
-      return res.status(400).json({ message: 'Only @gmail.com email addresses are accepted for session booking.' });
+    const rawEmail = (email || (req.user && req.user.email) || '').trim().toLowerCase();
+    const { valid, error: emailError, cleanEmail: normalizedEmail } = validateEmailFormat(rawEmail);
+    if (!valid || !normalizedEmail) {
+      return res.status(400).json({ message: emailError || 'Please enter a valid email address.' });
     }
 
     const phone = (phoneNumber || (req.user && req.user.phoneNumber) || '').trim();

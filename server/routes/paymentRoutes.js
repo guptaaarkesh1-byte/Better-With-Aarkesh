@@ -12,6 +12,7 @@ import User from '../models/User.js';
 import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
 import { sendCoursePurchaseInvoiceEmail, sendCoursePaymentFailedEmail } from '../services/courseEmailService.js';
 import { DEFAULT_COURSE_DETAILS_MAP } from './courseDetailSettingsRoutes.js';
+import { validateEmailFormat } from '../services/emailOtpService.js';
 
 const router = express.Router();
 
@@ -108,9 +109,10 @@ router.post('/create-order', optionalAuth, async (req, res) => {
   try {
     const { email, phoneNumber, sessionDuration, duration, currency = 'INR', receipt = `rcpt_${Date.now()}` } = req.body;
     
-    const normalizedEmail = (email || (req.user && req.user.email) || '').toLowerCase().trim();
-    if (!normalizedEmail || !normalizedEmail.endsWith('@gmail.com')) {
-      return res.status(400).json({ message: 'Only @gmail.com email addresses are accepted for session booking.' });
+    const rawEmail = (email || (req.user && req.user.email) || '').trim().toLowerCase();
+    const { valid, error: emailError, cleanEmail: normalizedEmail } = validateEmailFormat(rawEmail);
+    if (!valid || !normalizedEmail) {
+      return res.status(400).json({ message: emailError || 'Please enter a valid email address.' });
     }
 
     const phone = (phoneNumber || (req.user && req.user.phoneNumber) || '').trim();

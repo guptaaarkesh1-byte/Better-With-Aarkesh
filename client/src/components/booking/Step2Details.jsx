@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Clock, ArrowLeft, ArrowRight, ArrowUpRight, Sparkle, CheckCircle } from '@phosphor-icons/react';
 import { COUNTRY_CODES } from '../../utils/countryCodes';
 import QuestionnaireModal from './QuestionnaireModal';
@@ -8,30 +8,59 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
   const [questionnaireAnswers, setQuestionnaireAnswers] = useState({});
 
+  const [emailError, setEmailError] = useState('');
+  const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
+  
+  const emailSectionRef = useRef(null);
+  const emailInputRef = useRef(null);
+
+  const scrollToEmail = () => {
+    if (emailSectionRef.current) {
+      emailSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (emailInputRef.current) {
+      emailInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    setTimeout(() => {
+      emailInputRef.current?.focus({ preventScroll: true });
+    }, 350);
+  };
+
+  // Standard RFC-compliant email validation (no @gmail restriction)
+  const isValidEmailFormat = (email) => {
+    if (!email || typeof email !== 'string') return false;
+    const clean = email.trim().toLowerCase();
+    const rfcRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    return rfcRegex.test(clean);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     updateData({ [name]: value });
   };
 
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    updateData({ email: val });
+    if (emailError) {
+      if (!val.trim()) {
+        setEmailError('Please enter your email address.');
+      } else if (!isValidEmailFormat(val)) {
+        setEmailError('Please enter a valid email address.');
+      } else {
+        setEmailError('');
+      }
+    }
+  };
+
   const handleQuestionnaireComplete = (answers) => {
     setQuestionnaireAnswers(answers);
     setQuestionnaireCompleted(true);
-    // Store answers in booking data
     updateData({ questionnaireAnswers: answers });
   };
 
-  const isValidEmail = (email) => {
-    if (!email) return false;
-    const clean = email.trim().toLowerCase();
-    return /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(clean);
-  };
-
-  const emailTrimmed = (data.email || '').trim().toLowerCase();
-  const isInvalidGmail = emailTrimmed.length > 0 && !isValidEmail(data.email) && (emailTrimmed.includes('@') || emailTrimmed.length > 5);
-
-  const [phoneError, setPhoneError] = useState('');
-  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
-
+  // Check phone availability
   useEffect(() => {
     const checkPhone = async () => {
       const cleanPhone = (data.phoneNumber || '').replace(/\D/g, '');
@@ -67,12 +96,61 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
     return () => clearTimeout(timer);
   }, [data.phoneNumber, data.email]);
 
-  const isFormValid = data.name.trim() !== '' && isValidEmail(data.email) && data.reason.trim() !== '' &&
+  const isEmailValid = isValidEmailFormat(data.email);
+
+  const isFormValid =
+    data.name.trim() !== '' &&
+    isEmailValid &&
+    data.reason.trim() !== '' &&
     (isAuthenticated || (data.phoneNumber && data.phoneNumber.length === 10 && !phoneError));
 
-  const handleContinue = () => {
-    if (isFormValid) {
+  const handleContinue = async () => {
+    if (!data.name?.trim()) return;
+
+    if (!data.email?.trim()) {
+      setEmailError('Please enter your email address.');
+      scrollToEmail();
+      return;
+    }
+
+    if (!isValidEmailFormat(data.email)) {
+      setEmailError('Please enter a valid email address.');
+      scrollToEmail();
+      return;
+    }
+
+    if (!isAuthenticated && (!data.phoneNumber || data.phoneNumber.length !== 10 || phoneError)) {
+      return;
+    }
+
+    if (!data.reason?.trim()) return;
+
+    // Backend email validity check (DNS MX records, disposable domain, format - NO OTP)
+    try {
+      setIsValidatingEmail(true);
+      setEmailError('');
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${API_URL}/api/auth/validate-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email.trim().toLowerCase() })
+      });
+
+      const resData = await res.json();
+      if (!res.ok || !resData.valid) {
+        setEmailError(resData.message || 'Please enter a valid email address.');
+        scrollToEmail();
+        return;
+      }
+
+      // Email is verified valid by backend! Continue directly to next step without OTP
       onNext();
+    } catch (err) {
+      console.error('Email validation error:', err);
+      setEmailError('Please enter a valid email address.');
+      scrollToEmail();
+    } finally {
+      setIsValidatingEmail(false);
     }
   };
 
@@ -171,25 +249,31 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
         </div>
 
         {/* Email */}
-        <div>
+        <div ref={emailSectionRef}>
           <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
-            {settings.emailLabel || 'EMAIL (GMAIL ONLY)'}
+            {settings.emailLabel || 'EMAIL'}
           </label>
           <input
+            ref={emailInputRef}
             type="email"
             name="email"
             value={data.email}
-            onChange={handleInputChange}
-            placeholder={settings.emailPlaceholder || "your.email@gmail.com"}
+            onChange={handleEmailChange}
+            onBlur={() => {
+              if (data.email && !isValidEmailFormat(data.email)) {
+                setEmailError('Please enter a valid email address.');
+              }
+            }}
+            placeholder={settings.emailPlaceholder || "your.email@example.com"}
             className={`w-full bg-white border rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none shadow-xs transition-colors ${
-              isInvalidGmail
+              emailError
                 ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500 bg-red-50/15'
                 : 'border-black/15 focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f]'
             }`}
           />
-          {isInvalidGmail && (
+          {emailError && (
             <p className="text-xs text-red-600 font-sans mt-1.5 flex items-center gap-1 font-medium animate-in fade-in duration-200">
-              Only @gmail.com email addresses are accepted for session booking.
+              {emailError}
             </p>
           )}
         </div>
@@ -351,16 +435,25 @@ export default function Step2Details({ data, updateData, onNext, onBack, isAuthe
         
         <button
           onClick={handleContinue}
-          disabled={!isFormValid}
+          disabled={!isFormValid || isValidatingEmail}
           className={`flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-bold tracking-wider uppercase transition-all w-full md:w-auto justify-center cursor-pointer
-            ${!isFormValid 
+            ${!isFormValid || isValidatingEmail
               ? 'bg-black/5 text-black/30 border border-black/10 cursor-not-allowed' 
               : 'bg-[#111010] text-white hover:bg-[#c9542f] shadow-md hover:-translate-y-0.5'
             }
           `}
         >
-          {settings.continueButtonText || 'CONTINUE TO CONFIRMATION'}
-          <ArrowRight className="text-base sm:text-lg" weight="bold" />
+          {isValidatingEmail ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>CHECKING EMAIL...</span>
+            </>
+          ) : (
+            <>
+              <span>{settings.continueButtonText || 'CONTINUE TO CONFIRMATION'}</span>
+              <ArrowRight className="text-base sm:text-lg" weight="bold" />
+            </>
+          )}
         </button>
       </div>
 

@@ -10,6 +10,7 @@ import Note from '../models/Note.js';
 import PastClient from '../models/PastClient.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
+import { validateEmailFormat, sendOtpEmail, verifyOtp, verifyEmailDeliverability } from '../services/emailOtpService.js';
 
 const router = express.Router();
 
@@ -34,10 +35,13 @@ const pendingPasswordResets = new Map();
 router.post('/register-init', async (req, res) => {
   try {
     const { fullName, email, password, countryCode, phoneNumber } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+    
+    // 1. Standard format validation
+    const { valid, error: formatError, cleanEmail } = validateEmailFormat(email);
+    if (!valid) {
+      return res.status(400).json({ message: formatError || 'Please enter a valid email address.' });
     }
-    const cleanEmail = email.trim().toLowerCase();
+
     const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     // Check if active user exists
@@ -75,134 +79,33 @@ router.post('/register-init', async (req, res) => {
       }
     }
 
-    // Generate 6-digit OTP
-    const otp = generateOTP();
-    
-    // Store in memory for 10 minutes
+    // Send OTP via unified service with DNS MX lookup & rate limiting
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const sendResult = await sendOtpEmail({
+      email: cleanEmail,
+      ip: clientIp,
+      purpose: 'register',
+      recipientName: fullName
+    });
+
+    if (!sendResult.success) {
+      return res.status(400).json({ message: sendResult.error });
+    }
+
+    // Store registration payload in memory for 10 minutes
     pendingRegistrations.set(cleanEmail, {
       fullName,
       email: cleanEmail,
       password,
       countryCode,
       phoneNumber,
-      otp,
       expires: Date.now() + 10 * 60 * 1000
     });
 
-    console.log(`\n========================================`);
-    console.log(`🔑 [USER REGISTRATION OTP] ${cleanEmail} -> OTP: ${otp}`);
-    console.log(`========================================\n`);
-
-    try {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      
-      const emailHtmlTemplate = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Verify Your Email</title>
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
-          <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #FAF8F5; padding: 30px 15px;">
-            <tr>
-              <td align="center">
-                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; width: 100%; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
-                  
-                  <!-- Brand Header -->
-                  <tr>
-                    <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
-                      <table width="100%" cellpadding="0" cellspacing="0">
-                        <tr>
-                          <td>
-                            <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; letter-spacing: -0.5px; font-family: Georgia, serif;">
-                              BetterWith<span style="color: #C25E38;">Aarkesh</span>
-                            </div>
-                            <div style="font-size: 11px; color: #C25E38; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 600;">
-                              Executive Coaching Portal
-                            </div>
-                          </td>
-                          <td align="right">
-                            <span style="display: inline-block; padding: 5px 12px; background-color: rgba(194, 94, 56, 0.1); border: 1px solid rgba(194, 94, 56, 0.3); color: #C25E38; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">
-                              VERIFICATION CODE
-                            </span>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-
-                  <!-- Main Content -->
-                  <tr>
-                    <td style="padding: 32px 36px 28px;">
-                      <h2 style="margin: 0 0 10px; font-size: 20px; color: #1A1A1A; font-weight: 600;">
-                        Welcome to Better With Aarkesh! ✨
-                      </h2>
-                      <p style="margin: 0 0 16px; font-size: 14px; color: #555555; line-height: 1.6;">
-                        Hi ${fullName}, thank you for beginning your coaching journey. Please use the One-Time Password (OTP) below to verify your email address:
-                      </p>
-
-                      <!-- OTP Display Box -->
-                      <div style="text-align: center; margin: 30px 0 28px;">
-                        <div style="display: inline-block; background-color: #FDF7F3; border: 1.5px solid #C25E38; padding: 14px 34px; border-radius: 12px; box-shadow: 0 6px 18px rgba(194, 94, 56, 0.12);">
-                          <span style="font-size: 32px; font-weight: 800; color: #C25E38; letter-spacing: 8px; font-family: monospace;">${otp}</span>
-                        </div>
-                      </div>
-
-                      <div style="background-color: #FAF7F2; border: 1px solid #EBE4DA; border-radius: 10px; padding: 14px 18px; text-align: center;">
-                        <p style="margin: 0; font-size: 12px; color: #777777; line-height: 1.5;">
-                          ⏳ This OTP is valid for <strong style="color: #C25E38;">10 minutes</strong>. For your security, please do not share this code with anyone.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td style="padding: 20px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11px; color: #777777; line-height: 1.5;">
-                      <div>Better With Aarkesh · Executive Leadership &amp; Gravitas Coaching</div>
-                      <div>For assistance, contact <a href="mailto:coaching@aarkeshgupta.com" style="color: #C25E38; text-decoration: none;">coaching@aarkeshgupta.com</a></div>
-                    </td>
-                  </tr>
-
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `;
-
-      const { data, error } = await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
-        to: cleanEmail,
-        subject: 'Verify your email - Better With Aarkesh',
-        html: emailHtmlTemplate,
-      });
-
-      if (error) {
-        console.warn('⚠️ Resend Warning:', error.message || error);
-        if (process.env.NODE_ENV !== 'production') {
-          return res.status(200).json({ 
-            message: 'OTP generated (Dev Mode: Check backend console for OTP)', 
-            devOtp: otp 
-          });
-        }
-        return res.status(500).json({ message: error.message || 'Failed to send OTP email' });
-      }
-
-      res.status(200).json({ message: 'OTP sent successfully' });
-    } catch (emailError) {
-      console.warn('⚠️ Email send exception:', emailError.message);
-      if (process.env.NODE_ENV !== 'production') {
-        return res.status(200).json({ 
-          message: 'OTP generated (Dev Mode: Check backend console for OTP)', 
-          devOtp: otp 
-        });
-      }
-      res.status(500).json({ message: 'Failed to send OTP email' });
-    }
+    return res.status(200).json({ 
+      message: sendResult.message, 
+      devOtp: sendResult.devOtp 
+    });
   } catch (error) {
     console.error('OTP Init Error:', error.message);
     res.status(500).json({ message: 'Server error' });
@@ -228,9 +131,13 @@ router.post('/register-verify', async (req, res) => {
       return res.status(400).json({ message: 'OTP expired. Please try registering again.' });
     }
 
-    if (pendingData.otp !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
+    // Verify OTP via unified OTP service
+    const verifyResult = verifyOtp({ email: cleanEmail, otp, purpose: 'register' });
+    if (!verifyResult.success) {
+      return res.status(400).json({ message: verifyResult.error });
     }
+
+    pendingRegistrations.delete(cleanEmail);
 
     // OTP is valid, proceed with user creation
     const { fullName, password, countryCode, phoneNumber } = pendingData;
@@ -373,6 +280,68 @@ router.post('/register-verify', async (req, res) => {
   } catch (error) {
     console.error('Registration Verify Error:', error.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/auth/send-verification-otp
+// @desc    Send OTP to verify an email (used by Session Booking /book and account verification)
+// @access  Public
+router.post('/send-verification-otp', async (req, res) => {
+  try {
+    const { email, name, purpose = 'booking' } = req.body;
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    const result = await sendOtpEmail({
+      email,
+      ip: clientIp,
+      purpose,
+      recipientName: name
+    });
+
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
+    }
+
+    res.status(200).json({ message: result.message, devOtp: result.devOtp });
+  } catch (err) {
+    console.error('Send verification OTP error:', err);
+    res.status(500).json({ message: "We couldn't send an OTP to this email. Please enter a valid email address." });
+  }
+});
+
+// @route   POST /api/auth/verify-booking-otp
+// @desc    Verify OTP for session booking
+// @access  Public
+router.post('/verify-booking-otp', async (req, res) => {
+  try {
+    const { email, otp, purpose = 'booking' } = req.body;
+    const result = verifyOtp({ email, otp, purpose });
+
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
+    }
+
+    res.status(200).json({ success: true, message: 'Email verified successfully' });
+  } catch (err) {
+    console.error('Verify booking OTP error:', err);
+    res.status(500).json({ message: 'Server error verifying OTP' });
+  }
+});
+
+// @route   POST /api/auth/validate-email
+// @desc    Validate email format, disposable list, and DNS MX records without sending OTP
+// @access  Public
+router.post('/validate-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const result = await verifyEmailDeliverability(email);
+    if (!result.valid) {
+      return res.status(400).json({ valid: false, message: result.message });
+    }
+    return res.status(200).json({ valid: true, cleanEmail: result.cleanEmail });
+  } catch (err) {
+    console.error('Validate email error:', err);
+    return res.status(400).json({ valid: false, message: 'Please enter a valid email address.' });
   }
 });
 

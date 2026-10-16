@@ -20,8 +20,20 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
   const [otpValues, setOtpValues] = useState(['', '', '', '']);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isForgotOtpStep, setIsForgotOtpStep] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   
   const otpRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+
+  // Resend OTP cooldown timer
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((c) => (c > 0 ? c - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,6 +51,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
       setOtpValues(['', '', '', '']);
       setIsForgotPassword(false);
       setIsForgotOtpStep(false);
+      setResendCooldown(0);
     }
   }, [isOpen, defaultMode, defaultEmail, defaultFullName, defaultCountryCode, defaultPhoneNumber]);
 
@@ -56,6 +69,11 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
         }
         if (!email.trim()) {
           setError('Please enter your email address');
+          return;
+        }
+        const rfcEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+        if (!rfcEmailRegex.test(email.trim().toLowerCase())) {
+          setError('Please enter a valid email address.');
           return;
         }
         if (phoneNumber.length !== 10) {
@@ -99,6 +117,15 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
 
       if (isForgotPassword) {
         if (!isForgotOtpStep) {
+          if (!email.trim()) {
+            setError('Please enter your email address');
+            return;
+          }
+          const rfcEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+          if (!rfcEmailRegex.test(email.trim().toLowerCase())) {
+            setError('Please enter a valid email address.');
+            return;
+          }
           endpoint = `${API_URL}/api/auth/forgot-password-init`;
           body = { email };
         } else {
@@ -128,6 +155,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
           if (!isForgotOtpStep) {
             setIsForgotOtpStep(true);
             setError('');
+            setResendCooldown(45);
           } else {
             setIsForgotPassword(false);
             setIsForgotOtpStep(false);
@@ -143,6 +171,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             setIsOtpStep(true);
             setError('');
             setOtpValues(['', '', '', '']);
+            setResendCooldown(45);
           } else {
             // Register verify succeeded with OTP -> complete login & onboarding
             localStorage.setItem('token', data.token);
@@ -513,12 +542,16 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
           </div>
         </form>
 
-        {isOtpStep && !isForgotOtpStep && (
+        {(isOtpStep || isForgotOtpStep) && (
           <div className="mt-4 flex items-center justify-between text-center pt-2">
             <button 
               type="button"
               onClick={() => {
-                setIsOtpStep(false);
+                if (isForgotOtpStep) {
+                  setIsForgotOtpStep(false);
+                } else {
+                  setIsOtpStep(false);
+                }
                 setError('');
               }}
               className="font-sans text-[0.68rem] uppercase tracking-[0.18em] font-semibold text-[#555047] hover:text-[#c9542f] transition-colors cursor-pointer"
@@ -527,19 +560,29 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             </button>
             <button 
               type="button"
+              disabled={resendCooldown > 0 || isLoading}
               onClick={async () => {
+                if (resendCooldown > 0 || isLoading) return;
                 try {
                   setIsLoading(true);
                   setError('');
                   const API_URL = import.meta.env.VITE_API_URL || '';
-                  const res = await fetch(`${API_URL}/api/auth/register-init`, {
+                  const endpoint = isForgotOtpStep 
+                    ? `${API_URL}/api/auth/forgot-password-init`
+                    : `${API_URL}/api/auth/register-init`;
+                  const body = isForgotOtpStep
+                    ? { email }
+                    : { fullName, email, password, countryCode, phoneNumber };
+
+                  const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, email, password, countryCode, phoneNumber }),
+                    body: JSON.stringify(body),
                   });
                   const data = await res.json();
                   if (res.ok) {
                     setOtpValues(['', '', '', '']);
+                    setResendCooldown(45);
                     setError('New OTP sent to your email.');
                   } else {
                     setError(data.message || 'Failed to resend OTP');
@@ -550,9 +593,13 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                   setIsLoading(false);
                 }
               }}
-              className="font-sans text-[0.68rem] uppercase tracking-[0.18em] font-bold text-[#c9542f] hover:text-[#111010] transition-colors cursor-pointer"
+              className={`font-sans text-[0.68rem] uppercase tracking-[0.18em] font-bold transition-colors ${
+                resendCooldown > 0 || isLoading
+                  ? 'text-[#7a756b]/50 cursor-not-allowed'
+                  : 'text-[#c9542f] hover:text-[#111010] cursor-pointer'
+              }`}
             >
-              Resend OTP
+              {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : 'Resend OTP'}
             </button>
           </div>
         )}

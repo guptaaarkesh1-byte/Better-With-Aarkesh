@@ -585,7 +585,7 @@ export default function MeetAarkesh() {
             textShadow: '0 0 6px rgba(255, 170, 100, 0.95), 0 0 14px rgba(255, 185, 125, 0.8), 0 0 25px rgba(255, 205, 150, 0.55)'
           }}
         >
-          {MEET_OVERLAY_CONFIG.textMain} {MEET_OVERLAY_CONFIG.textAccent}
+          {aboutData?.overlayTitle || `${MEET_OVERLAY_CONFIG.textMain} ${MEET_OVERLAY_CONFIG.textAccent}`}
         </h2>
       </div>
 

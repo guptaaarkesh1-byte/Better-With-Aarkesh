@@ -8,6 +8,7 @@ const DEFAULT_THINK_DATA = {
   eyebrow: 'PRINCIPLE 01',
   title: 'THINK',
   subtitle: 'CLEARLY.',
+  overlayTitle: 'MY IDEOLOGY',
   highlight: 'Clarity is the bridge between intention and action.',
   description: 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.',
   buttonText: 'SCROLL FOR NEXT PRINCIPLE',
@@ -21,6 +22,7 @@ export default function ThinkPrinciple() {
   const eyebrow = data.eyebrow || 'PRINCIPLE 01';
   const headlineWhite = data.title || 'THINK';
   const headlineGold = data.subtitle || 'CLEARLY.';
+  const overlayTitle = data.overlayTitle || 'MY IDEOLOGY';
   const rawHighlight = data?.highlight || 'Clarity is the bridge between intention and action.';
   const formattedHighlight = rawHighlight.includes('\n')
     ? rawHighlight.replace(/\n/g, '<br />')
@@ -48,6 +50,7 @@ export default function ThinkPrinciple() {
       headlineWhite={headlineWhite}
       headlineGold={headlineGold}
       headlineGoldItalic={false}
+      overlayTitle={overlayTitle}
       paragraphs={paragraphs}
       buttonText={buttonText}
       maxContentWidth="max-w-[365px]"

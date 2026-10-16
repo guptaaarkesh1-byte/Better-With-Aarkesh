@@ -2613,6 +2613,23 @@ export default function AdminHomeEditor() {
                           className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
                         />
                       </div>
+
+                      <div className="flex flex-col gap-1.5 pt-3 border-t border-white/5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-[#ffa260] flex items-center gap-1.5">
+                            <Sparkle size={14} weight="fill" className="text-[#ffa260]" />
+                            <span>Scroll Overlay Title (Glow Heading)</span>
+                          </label>
+                          <span className="text-[0.62rem] text-white/40 font-normal">Shown as big center text while scrolling into section</span>
+                        </div>
+                        <input
+                          type="text"
+                          value={p.overlayTitle !== undefined ? p.overlayTitle : 'MY IDEOLOGY'}
+                          onChange={(e) => handlePrincipleChange('think', 'overlayTitle', e.target.value)}
+                          placeholder="MY IDEOLOGY"
+                          className="w-full bg-[#050505] border border-[#ffa260]/40 rounded-lg px-4 py-3 text-sm text-white focus:border-[#ffa260]"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -3462,6 +3479,23 @@ export default function AdminHomeEditor() {
                     onChange={(e) => handleSectionChange('eyebrowText', e.target.value)}
                     placeholder="MEET AARKESH"
                     className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-white/5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-[#ffa260] flex items-center gap-1.5">
+                      <Sparkle size={14} weight="fill" className="text-[#ffa260]" />
+                      <span>Scroll Overlay Title (Glow Heading)</span>
+                    </label>
+                    <span className="text-[0.62rem] text-white/40 font-normal">Shown as big center text while scrolling into section</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={currentAbout.overlayTitle !== undefined ? currentAbout.overlayTitle : 'MEET AARKESH'}
+                    onChange={(e) => handleSectionChange('overlayTitle', e.target.value)}
+                    placeholder="MEET AARKESH"
+                    className="w-full bg-[#050505] border border-[#ffa260]/40 rounded-lg px-4 py-3 text-sm text-white focus:border-[#ffa260]"
                   />
                 </div>
 
