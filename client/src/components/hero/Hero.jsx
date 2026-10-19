@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import Container from '../ui/Container';
 import HeroContent from './HeroContent';
-import HeroImage from './HeroImage';
+import HeroImage, { resolveHeroImg } from './HeroImage';
+import defaultHeroImg from '../../assets/hero-portrait.png';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
@@ -77,8 +78,16 @@ export default function Hero() {
       <div className="block lg:hidden w-full relative pt-14 sm:pt-16 bg-[#f5f1e8]">
         <div className="relative w-full overflow-hidden">
           <img 
-            src={heroData.bgImageUrl || 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png'}
-            alt="Aarkesh"
+            src={resolveHeroImg(heroData.bgImageUrl)}
+            alt="Aarkesh - Life Coach"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+            onError={(e) => {
+              if (e.currentTarget.src !== defaultHeroImg) {
+                e.currentTarget.src = defaultHeroImg;
+              }
+            }}
             className="w-full h-auto object-contain block"
           />
           {/* Bottom 10% subtle gradient fade */}

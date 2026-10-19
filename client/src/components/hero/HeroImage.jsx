@@ -6,6 +6,25 @@ import { CDN_IMAGES, optimizeCloudinaryUrl } from '../../utils/cdnAssets';
 
 const HERO_CDN_IMG = optimizeCloudinaryUrl(CDN_IMAGES.HERO_COACH, 1920) || defaultHeroImg;
 
+// Resolve image URL safely:
+export const resolveHeroImg = (url) => {
+  if (!url || url.includes('image-1790768916697.png') || url.includes('hero-coach')) {
+    return HERO_CDN_IMG;
+  }
+  // If running on live site/phone and URL has localhost, fallback to reliable Cloudinary CDN
+  if (url.includes('localhost') && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return HERO_CDN_IMG;
+  }
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
+  if (url.includes('localhost:5000/uploads/')) {
+    return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
+  }
+  if (url.startsWith('/uploads/')) {
+    return `${apiUrl}${url}`;
+  }
+  return optimizeCloudinaryUrl(url, 1920) || HERO_CDN_IMG;
+};
+
 export default function HeroImage({ 
   bgImageUrl = '',
   overlayOpacity = 0,
@@ -20,21 +39,6 @@ export default function HeroImage({
       { opacity: 1, duration: 0.3, ease: 'power2.out' }
     );
   }, { scope: container });
-
-  // Resolve image URL:
-  const resolveHeroImg = (url) => {
-    if (!url || url.includes('image-1790768916697.png') || url.includes('hero-coach')) {
-      return HERO_CDN_IMG;
-    }
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
-    if (url.includes('localhost:5000/uploads/')) {
-      return url.replace('http://localhost:5000/uploads/', `${apiUrl}/uploads/`);
-    }
-    if (url.startsWith('/uploads/')) {
-      return `${apiUrl}${url}`;
-    }
-    return optimizeCloudinaryUrl(url, 1920);
-  };
 
   const imgSrc = resolveHeroImg(bgImageUrl);
 
