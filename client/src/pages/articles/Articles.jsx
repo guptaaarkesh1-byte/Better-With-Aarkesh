@@ -253,6 +253,17 @@ export default function Articles() {
     };
   }, [dropdownOpen]);
 
+  // Lock body scroll when mobile menu overlay is open so background page doesn't scroll
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [mobileMenuOpen]);
+
   const effectiveUser = getEffectiveUser();
   const rawName = effectiveUser?.fullName || effectiveUser?.name || 'User';
   const userFirstName = rawName.trim().split(' ')[0].toUpperCase();
@@ -268,6 +279,18 @@ export default function Articles() {
 
   // Track category changes and maintain scroll position when returning from an article
   const prevCategoryRef = useRef(categoryKey);
+  const activePillRef = useRef(null);
+
+  // Auto-scroll active category pill into center on mobile
+  useEffect(() => {
+    if (activePillRef.current) {
+      activePillRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
+  }, [categoryKey]);
 
   // Scroll to top ONLY when user changes category tab in the articles grid (not when viewing an article)
   useEffect(() => {
@@ -607,18 +630,9 @@ export default function Articles() {
         .themed-category-root .cat-sticky-header {
           position: sticky;
           top: 0;
-          z-index: 90;
+          z-index: 1000;
           background: ${currentCat.bg};
           border-bottom: 1px solid ${currentCat.borderLine};
-        }
-
-        .themed-category-root header.cat-page-nav {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px 48px;
-          border-bottom: 1px solid ${currentCat.borderLine};
-          background: ${currentCat.bg};
         }
 
         .themed-category-root header.cat-page-nav {
@@ -631,6 +645,8 @@ export default function Articles() {
           width: 100%;
           box-sizing: border-box;
           gap: 16px;
+          position: relative;
+          z-index: 1001;
         }
 
         .themed-category-root .logo {
@@ -775,23 +791,70 @@ export default function Articles() {
 
         @media (max-width: 1080px) {
           .themed-category-root .navlinks { display: none; }
-          .themed-category-root header.cat-page-nav { padding: 14px 20px; }
-          .themed-category-root .mobile-toggle { display: block; }
+          .themed-category-root header.cat-page-nav { 
+            padding: 12px 16px; 
+            height: 56px;
+            min-height: 56px;
+          }
+          .themed-category-root .mobile-toggle { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+          }
           .themed-category-root .navcta .my-journey-btn,
           .themed-category-root .navcta .course-pill-btn { display: none; }
+          
           .themed-category-root .mobile-drawer {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: calc(100dvh - 56px);
+            background: ${currentCat.bg};
+            z-index: 999;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            padding: 24px 20px 30px;
-            background: ${currentCat.bg};
-            border-bottom: 1px solid ${currentCat.borderLine};
+            gap: 0;
+            padding: 10px 20px 40px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+            border-top: 1px solid ${currentCat.borderLine};
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
           }
-          .themed-category-root .mobile-drawer a {
-            font-size: 15px;
+          .themed-category-root .mobile-drawer a,
+          .themed-category-root .mobile-drawer button {
+            font-size: 15.5px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
+            padding: 16px 4px;
+            border-bottom: 1px solid ${currentCat.borderLine};
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: inherit;
+            transition: opacity 0.2s, padding-left 0.2s;
+            text-decoration: none;
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+          }
+          .themed-category-root .mobile-drawer a:hover,
+          .themed-category-root .mobile-drawer button:hover {
+            opacity: 0.8;
+            padding-left: 6px;
+          }
+          .themed-category-root .mobile-drawer a:last-child,
+          .themed-category-root .mobile-drawer button:last-child {
+            border-bottom: none;
           }
         }
 
@@ -1109,21 +1172,98 @@ export default function Articles() {
           }
         }
 
-        @media (max-width: 640px) {
-          .themed-category-root header.cat-page-nav { padding: 16px 20px; }
-          .themed-category-root .category-hero { padding: 0 20px 40px; }
-          .themed-category-root .articles-cards-grid { grid-template-columns: 1fr; }
-          .themed-category-root footer.cat-page-footer { flex-direction: column; gap: 14px; text-align: center; padding: 24px 20px; }
+        @media (max-width: 768px) {
+          .themed-category-root header.cat-page-nav { 
+            padding: 12px 16px; 
+            gap: 10px;
+          }
+          .themed-category-root .logo {
+            font-size: clamp(17px, 4.4vw, 21px);
+          }
+          .themed-category-root .category-hero { 
+            padding: 0 16px 40px; 
+          }
+          .themed-category-root .cat-header-top {
+            margin-top: 14px;
+            margin-bottom: 12px;
+          }
+          .themed-category-root .cat-showcase-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: auto;
+            margin-bottom: 24px;
+            text-align: center;
+          }
+          .themed-category-root .cat-big-word {
+            order: 1;
+            font-size: clamp(32px, 8.8vw, 48px) !important;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            text-align: center !important;
+            margin: 0;
+            word-break: break-word;
+          }
+          .themed-category-root .cat-sphere {
+            order: 2;
+            width: 170px !important;
+            height: 170px !important;
+            margin: 0 auto;
+          }
+          .themed-category-root .cards-section-head {
+            margin-bottom: 16px;
+          }
+          .themed-category-root .articles-cards-grid { 
+            grid-template-columns: 1fr; 
+            gap: 18px;
+            margin-bottom: 40px;
+          }
+          .themed-category-root .card-image-wrap {
+            height: 190px;
+          }
+          .themed-category-root .card-body {
+            padding: 18px 16px;
+          }
+          .themed-category-root .card-title {
+            font-size: 17px;
+            line-height: 1.35;
+            margin: 0 0 8px;
+          }
+          .themed-category-root .card-excerpt {
+            font-size: 12.5px;
+            line-height: 1.55;
+            margin: 0 0 14px;
+          }
+          .themed-category-root footer.cat-page-footer { 
+            flex-direction: column; 
+            gap: 12px; 
+            text-align: center; 
+            padding: 24px 16px 36px; 
+          }
           .themed-category-root .topic-switcher-wrapper {
-            padding: 8px 20px 12px;
+            padding: 8px 12px 10px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          .themed-category-root .topic-switcher-wrapper::-webkit-scrollbar {
+            display: none;
           }
           .themed-category-root .topic-switcher-bar {
-            grid-template-columns: repeat(3, 1fr);
+            display: flex;
+            flex-wrap: nowrap;
             gap: 8px;
+            width: max-content;
+            padding-right: 12px;
           }
           .themed-category-root .topic-pill {
-            padding: 9px 8px;
+            padding: 8px 16px;
             font-size: 11px;
+            letter-spacing: 0.05em;
+            flex-shrink: 0;
+            white-space: nowrap;
+            border-radius: 9999px;
           }
         }
       `}</style>
@@ -1144,7 +1284,7 @@ export default function Articles() {
             <Link to="/#faq">FAQ</Link>
           </nav>
 
-          <div className="navcta flex items-center gap-2.5">
+          <div className="navcta flex items-center gap-2 sm:gap-2.5">
             {/* Course Button */}
             <button 
               type="button"
@@ -1153,9 +1293,9 @@ export default function Articles() {
                 backgroundColor: currentCat.btnBg || '#ffffff',
                 color: currentCat.btnInk || '#1c1714',
               }}
-              className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
+              className="rounded-full px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 text-[11px] sm:text-[12px] font-bold uppercase tracking-wider flex items-center gap-1 sm:gap-1.5 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0 whitespace-nowrap shrink-0"
             >
-              <Play size={13} weight="fill" style={{ color: currentCat.btnInk || '#1c1714' }} />
+              <Play size={12} weight="fill" style={{ color: currentCat.btnInk || '#1c1714' }} />
               <span>COURSE</span>
             </button>
 
@@ -1168,7 +1308,7 @@ export default function Articles() {
                   backgroundColor: currentCat.btnBg || '#ffffff',
                   color: currentCat.btnInk || '#1c1714',
                 }}
-                className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
+                className="hidden md:flex rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider items-center gap-2 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0 whitespace-nowrap"
               >
                 <CalendarBlank size={15} weight="bold" style={{ color: currentCat.btnInk || '#1c1714' }} />
                 <span>MY JOURNEY</span>
@@ -1181,7 +1321,7 @@ export default function Articles() {
                   backgroundColor: currentCat.btnBg || '#ffffff',
                   color: currentCat.btnInk || '#1c1714',
                 }}
-                className="rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0"
+                className="hidden md:flex rounded-full px-4 lg:px-5 py-2 text-[12.5px] font-bold uppercase tracking-wider items-center gap-2 shadow-xs transition-all cursor-pointer hover:opacity-90 active:scale-95 border-0 whitespace-nowrap"
               >
                 <CalendarBlank size={15} weight="bold" style={{ color: currentCat.btnInk || '#1c1714' }} />
                 <span>BOOK A SESSION</span>
@@ -1198,13 +1338,13 @@ export default function Articles() {
                   color: currentCat.ink || '#ffffff',
                   borderColor: currentCat.borderLine || 'rgba(255, 255, 255, 0.2)',
                 }}
-                className="border rounded-full px-4 py-2 text-[12px] font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-xs hover:opacity-90 active:scale-95"
+                className="hidden md:flex border rounded-full px-4 py-2 text-[12px] font-bold tracking-wider uppercase transition-all items-center gap-1.5 cursor-pointer shadow-xs hover:opacity-90 active:scale-95 whitespace-nowrap"
               >
                 <User size={14} weight="bold" />
                 <span>LOGIN</span>
               </button>
             ) : (
-              <div className="relative" ref={userMenuRef}>
+              <div className="relative hidden md:block" ref={userMenuRef}>
                 <button 
                   type="button"
                   onClick={() => setDropdownOpen(prev => !prev)} 
@@ -1305,21 +1445,148 @@ export default function Articles() {
             )}
 
             <button 
-              className="mobile-toggle"
+              type="button"
+              className="mobile-toggle p-1 text-inherit transition-colors cursor-pointer shrink-0"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X size={24} /> : <List size={24} />}
+              {mobileMenuOpen ? <X size={24} weight="bold" /> : <List size={24} weight="bold" />}
             </button>
           </div>
         </header>
 
-        {/* Topic Switcher Pills (Sticky with Navbar) */}
-        <div className="topic-switcher-wrapper">
+        {/* Mobile Drawer Overlay (Homepage Style, Themed to Category) */}
+        <div 
+          className={`fixed inset-x-0 top-[56px] z-[95] flex flex-col md:hidden w-full max-h-[calc(100svh-56px)] overflow-y-auto px-5 py-4 shadow-[0_30px_40px_-20px_rgba(0,0,0,0.45)] transition-all duration-300 ease-out origin-top border-b ${
+            mobileMenuOpen 
+              ? "opacity-100 translate-y-0 visible pointer-events-auto" 
+              : "opacity-0 -translate-y-3 invisible pointer-events-none"
+          }`}
+          style={{
+            backgroundColor: currentCat.bg,
+            color: currentCat.ink,
+            borderColor: currentCat.borderLine,
+          }}
+        >
+          <nav className="flex flex-col w-full" aria-label="Primary">
+            {[
+              { label: 'Home', href: '/' },
+              { label: 'Coaching', href: '/#coaching' },
+              { label: 'About', href: '/#meet-aarkesh' },
+              { label: 'Testimonials', href: '/#testimonials' },
+              { label: 'Library', href: '/library', active: true },
+              { label: 'FAQ', href: '/#faq' },
+            ].map((link) => {
+              const active = Boolean(link.active);
+              return (
+                <Link
+                  key={link.label}
+                  to={link.href}
+                  className="py-3.5 border-b font-serif text-[26px] leading-[1.1] tracking-tight flex items-center justify-between transition-colors"
+                  style={{
+                    fontFamily: 'Fraunces, Georgia, serif',
+                    borderColor: currentCat.borderLine,
+                    color: active ? (currentCat.accent || '#c8512d') : currentCat.ink,
+                  }}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span>{link.label}</span>
+                  {active && (
+                    <span 
+                      className="w-2.5 h-2.5 rounded-full shrink-0" 
+                      style={{ backgroundColor: currentCat.accent || '#c8512d' }} 
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Action Buttons Row matching Homepage */}
+          <div className="grid grid-cols-2 gap-3 mt-5">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                navigate('/course');
+              }}
+              style={{
+                backgroundColor: currentCat.accent || '#c8512d',
+                color: '#ffffff',
+              }}
+              className="h-11 rounded-full font-medium text-[12.5px] flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer shadow-sm"
+            >
+              <Play size={14} weight="fill" />
+              <span>Course</span>
+            </button>
+
+            {!isLoggedIn ? (
+              <button 
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowLoginModal(true);
+                }}
+                style={{
+                  backgroundColor: currentCat.cardBg || 'rgba(255, 255, 255, 0.08)',
+                  color: currentCat.ink || '#ffffff',
+                  borderColor: currentCat.borderLine || 'rgba(255, 255, 255, 0.2)',
+                }}
+                className="h-11 rounded-full border font-bold text-[12px] tracking-wider uppercase flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+              >
+                <User size={15} weight="bold" />
+                <span>LOGIN</span>
+              </button>
+            ) : (
+              <button 
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate('/my-journey');
+                }}
+                style={{
+                  backgroundColor: currentCat.cardBg || 'rgba(255, 255, 255, 0.08)',
+                  color: currentCat.ink || '#ffffff',
+                  borderColor: currentCat.borderLine || 'rgba(255, 255, 255, 0.2)',
+                }}
+                className="h-11 rounded-full border font-bold text-[12px] tracking-wider uppercase flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+              >
+                <div 
+                  className="w-5 h-5 rounded-full text-white flex items-center justify-center text-[10px] font-bold"
+                  style={{ backgroundColor: currentCat.accent || '#c8512d' }}
+                >
+                  {userInitial}
+                </div>
+                <span>MY JOURNEY</span>
+              </button>
+            )}
+
+            {/* Full Width Book A Session CTA */}
+            <button 
+              type="button"
+              className="col-span-2 h-12 rounded-full font-medium text-[13px] flex items-center justify-center gap-2 transition-transform active:scale-[0.99] cursor-pointer shadow-md mt-1"
+              style={{
+                backgroundColor: currentCat.accent || '#c8512d',
+                color: '#ffffff',
+              }}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                navigate('/book');
+              }}
+            >
+              <CalendarBlank size={16} weight="bold" />
+              <span>Book a session</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Topic Switcher Pills (Sticky with Navbar, hidden on mobile when drawer is open) */}
+        <div className={`topic-switcher-wrapper ${mobileMenuOpen ? 'hidden md:block' : ''}`}>
           <div className="topic-switcher-bar">
             {Object.values(CATEGORY_CONFIGS).map((cat) => (
               <Link
                 key={cat.id}
+                ref={(el) => { if (cat.id === currentCat.id) activePillRef.current = el; }}
                 to={`/articles?category=${cat.id}`}
                 className={`topic-pill ${cat.id === currentCat.id ? 'active' : ''}`}
                 onClick={() => {
@@ -1339,20 +1606,6 @@ export default function Articles() {
           </div>
         </div>
       </div>
-
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="mobile-drawer">
-          <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-          <Link to="/#coaching" onClick={() => setMobileMenuOpen(false)}>Coaching</Link>
-          <Link to="/#meet-aarkesh" onClick={() => setMobileMenuOpen(false)}>About</Link>
-          <Link to="/#testimonials" onClick={() => setMobileMenuOpen(false)}>Testimonials</Link>
-          <Link to="/library" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'underline' }}>Library</Link>
-          <Link to="/#faq" onClick={() => setMobileMenuOpen(false)}>FAQ</Link>
-          <Link to="/my-journey" onClick={() => setMobileMenuOpen(false)}>My Journey</Link>
-          <Link to="/course" onClick={() => setMobileMenuOpen(false)}>Course</Link>
-        </div>
-      )}
 
       {/* ---------- CATEGORY SHOWCASE & HERO ---------- */}
       <main className="category-hero">

@@ -739,29 +739,39 @@ export default function MyJourney() {
   // Free Sessions Calculations
   const totalCourseCredits = 3;
   const bookedOrUsedFreeCount = appointments.filter(
-    a => (a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION') && a.status !== 'CANCELLED'
+    a => (a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION') && a.status !== 'CANCELLED' && a.status !== 'CANCELED'
   ).length;
-  const availableCredits = Math.max(0, freeSessionsCount);
-  const usedCredits = Math.min(totalCourseCredits, totalCourseCredits - availableCredits);
+
+  const hasFreeSessionsBenefit = Boolean(
+    isCoursePurchaser || 
+    freeSessionsCount > 0 || 
+    appointments.some(a => a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION')
+  );
+
+  const availableCredits = hasFreeSessionsBenefit
+    ? (freeSessionsCount > 0 ? freeSessionsCount : Math.max(0, totalCourseCredits - bookedOrUsedFreeCount))
+    : 0;
+
+  const usedCredits = Math.min(totalCourseCredits, Math.max(0, totalCourseCredits - availableCredits));
 
   // Build Free Session Credit Cards
   const freeSessionSlots = [
-    { id: 1, title: 'Session 1' },
-    { id: 2, title: 'Session 2' },
-    { id: 3, title: 'Session 3' }
+    { id: 1, title: 'Free Session 1' },
+    { id: 2, title: 'Free Session 2' },
+    { id: 3, title: 'Free Session 3' }
   ].map((slot, index) => {
     const freeAppts = appointments.filter(
-      a => (a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION') && a.status !== 'CANCELLED'
+      a => (a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION') && a.status !== 'CANCELLED' && a.status !== 'CANCELED'
     );
     const linkedAppt = freeAppts[index];
 
     if (linkedAppt) {
       if (linkedAppt.status === 'COMPLETED') {
-        return { ...slot, state: 'used', date: `Held on ${linkedAppt.date}`, appt: linkedAppt };
+        return { ...slot, state: 'used', date: `Held on ${formatPillDate(linkedAppt.date)}`, appt: linkedAppt };
       }
-      return { ...slot, state: 'booked', date: `${linkedAppt.date}, ${linkedAppt.time}`, appt: linkedAppt };
+      return { ...slot, state: 'booked', date: `${formatPillDate(linkedAppt.date)}, ${formatSessionTime(linkedAppt.time)}`, appt: linkedAppt };
     }
-    if (index < (totalCourseCredits - usedCredits)) {
+    if (index < (totalCourseCredits - usedCredits) || (index === 0 && availableCredits > 0) || (index < availableCredits + usedCredits)) {
       return { ...slot, state: 'available', date: '1-on-1 with Aarkesh · 60 min' };
     }
     return { ...slot, state: 'used', date: 'Session completed' };
@@ -914,7 +924,7 @@ export default function MyJourney() {
             <div className="mj-actions">
               <button 
                 onClick={() => navigate('/course')}
-                className="mj-btn mj-btn-primary"
+                className="mj-btn mj-btn-primary hidden md:inline-flex"
               >
                 <Play size={14} weight="fill" />
                 <span>COURSE</span>
@@ -939,10 +949,10 @@ export default function MyJourney() {
                 </div>
 
                 {avatarMenuOpen && (
-                  <div className="absolute right-0 top-full mt-3 w-[290px] bg-[#faf8f6] border border-[#e4dfd9] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] overflow-hidden z-[200] text-[#1c1714] animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="p-6 pb-4 text-left">
-                      <div className="flex items-center gap-3.5 mb-4">
-                        <div className="w-[46px] h-[46px] rounded-full bg-[#c8512d] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-sm overflow-hidden relative border border-[#e4dfd9]">
+                  <div className="absolute right-0 top-full mt-2.5 w-[265px] sm:w-[280px] bg-[#faf8f6] border border-[#e4dfd9] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.28)] overflow-hidden z-[999] text-[#1c1714] animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="p-4 sm:p-5 pb-3 text-left">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-[42px] h-[42px] rounded-full bg-[#c8512d] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm overflow-hidden relative border border-[#e4dfd9]">
                           {user?.photoUrl ? (
                             <img 
                               src={user.photoUrl} 
@@ -954,11 +964,11 @@ export default function MyJourney() {
                           <span>{(user?.fullName || 'Y').charAt(0).toUpperCase()}</span>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[#c8512d] text-[10.5px] font-bold tracking-[0.18em] uppercase mb-0.5">
+                          <p className="text-[#c8512d] text-[10px] font-bold tracking-[0.16em] uppercase mb-0.5">
                             WELCOME BACK
                           </p>
                           <h3 
-                            className="text-[22px] font-semibold text-[#1c1714] leading-tight capitalize truncate"
+                            className="text-[19px] font-semibold text-[#1c1714] leading-tight capitalize truncate"
                             style={{ fontFamily: 'Fraunces, Georgia, serif' }}
                           >
                             {user?.fullName ? user.fullName.split(' ')[0] : 'User'}
@@ -966,21 +976,21 @@ export default function MyJourney() {
                         </div>
                       </div>
 
-                      {/* Continue Journey Button */}
+                      {/* Account Settings / Journey Button */}
                       <button
                         onClick={() => {
                           setAvatarMenuOpen(false);
-                          setActiveTab('coaching');
+                          setActiveTab('profile');
                         }}
-                        className="w-full h-11 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[11px] tracking-[0.14em] uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer"
+                        className="w-full h-10 rounded-full bg-[#1c1714] hover:bg-black text-white font-bold text-[10.5px] tracking-[0.12em] uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
                       >
-                        <span>MY JOURNEY & PROFILE</span>
-                        <span className="text-base leading-none">→</span>
+                        <span>ACCOUNT SETTINGS</span>
+                        <span className="text-sm leading-none">→</span>
                       </button>
                     </div>
 
                     {/* Bottom Logout Row */}
-                    <div className="border-t border-[#e4dfd9] px-6 py-3 bg-[#faf8f6]">
+                    <div className="border-t border-[#e4dfd9] px-4 sm:px-5 py-2.5 bg-[#f5f1eb]">
                       <button 
                         onClick={() => {
                           setAvatarMenuOpen(false);
@@ -988,9 +998,9 @@ export default function MyJourney() {
                           window.dispatchEvent(new Event('auth-change'));
                           navigate('/');
                         }}
-                        className="flex items-center gap-2.5 text-[#9a918a] hover:text-[#c8512d] text-[13.5px] font-medium transition-colors w-full text-left cursor-pointer"
+                        className="flex items-center gap-2 text-[#7a7269] hover:text-[#c8512d] text-[12.5px] font-medium transition-colors w-full text-left cursor-pointer"
                       >
-                        <SignOut size={18} />
+                        <SignOut size={16} />
                         <span>Log out</span>
                       </button>
                     </div>
@@ -1020,20 +1030,40 @@ export default function MyJourney() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoComplete="off"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-white/50 hover:text-white p-1 transition-colors cursor-pointer"
+                >
+                  <X size={14} weight="bold" />
+                </button>
+              )}
             </label>
 
             {/* Free Sessions Chip (Only for course students / users with credits) */}
-            {(isCoursePurchaser || freeSessionsCount > 0) && (
+            {hasFreeSessionsBenefit && (
               <div className="mj-credit">
-                <div className="mj-dots">
-                  {[0, 1, 2].map((idx) => (
-                    <i key={idx} className={idx < (totalCourseCredits - usedCredits) ? '' : 'used'} />
-                  ))}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="mj-dots shrink-0">
+                    {[0, 1, 2].map((idx) => (
+                      <i key={idx} className={idx < usedCredits ? 'used' : ''} />
+                    ))}
+                  </div>
+                  <div className="min-w-0">
+                    <b className="truncate block">{usedCredits} of {totalCourseCredits} free sessions used</b>
+                    <small className="truncate block text-[#b9b0a8]">{availableCredits} {availableCredits === 1 ? 'session' : 'sessions'} left in your course</small>
+                  </div>
                 </div>
-                <div>
-                  <b>{usedCredits} of {totalCourseCredits} free sessions used</b>
-                  <small>{availableCredits} {availableCredits === 1 ? 'session' : 'sessions'} left in your course</small>
-                </div>
+                {availableCredits > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/book')}
+                    className="px-2.5 py-1 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-[11px] font-bold tracking-wide uppercase shadow-xs shrink-0 transition-transform active:scale-95 cursor-pointer"
+                  >
+                    Book free
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1043,72 +1073,70 @@ export default function MyJourney() {
         {/* ─── SECTION TABS BAR ─── */}
         <div className="mj-tabbar">
           <div className="mj-tabbar-inner">
-            {activeTab === 'profile' ? (
-              <button
-                onClick={() => {
-                  setActiveTab('coaching');
-                  setSearchQuery('');
-                }}
-                className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#eee7df] hover:bg-[#e4dbd0] text-[#1c1714] text-[13.5px] font-semibold tracking-wide transition-all shadow-xs cursor-pointer group"
-                title="Back to Dashboard"
+            <nav className="mj-tabs" role="tablist">
+              <button 
+                className={`mj-tab ${activeTab === 'coaching' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('coaching'); setSearchQuery(''); }}
               >
-                <ArrowLeft size={16} weight="bold" className="text-[#c8512d] transition-transform group-hover:-translate-x-1" />
-                <span>Back to Dashboard</span>
+                <CalendarBlank size={17} weight={activeTab === 'coaching' ? 'bold' : 'regular'} />
+                <span>Appointments</span>
               </button>
-            ) : (
-              <nav className="mj-tabs" role="tablist">
-                <button 
-                  className={`mj-tab ${activeTab === 'coaching' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('coaching'); setSearchQuery(''); }}
-                >
-                  <CalendarBlank size={17} weight={activeTab === 'coaching' ? 'bold' : 'regular'} />
-                  <span>Appointments</span>
-                </button>
 
-                <button 
-                  className={`mj-tab ${activeTab === 'library' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('library'); setSearchQuery(''); }}
-                >
-                  <BookmarkSimple size={17} weight={activeTab === 'library' ? 'bold' : 'regular'} />
-                  <span>My library</span>
-                </button>
+              <button 
+                className={`mj-tab ${activeTab === 'library' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('library'); setSearchQuery(''); }}
+              >
+                <BookmarkSimple size={17} weight={activeTab === 'library' ? 'bold' : 'regular'} />
+                <span>My library</span>
+              </button>
 
-                <button 
-                  className={`mj-tab ${activeTab === 'notes' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('notes'); setSearchQuery(''); }}
-                >
-                  <Notebook size={17} weight={activeTab === 'notes' ? 'bold' : 'regular'} />
-                  <span>My notes</span>
-                </button>
+              <button 
+                className={`mj-tab ${activeTab === 'notes' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('notes'); setSearchQuery(''); }}
+              >
+                <Notebook size={17} weight={activeTab === 'notes' ? 'bold' : 'regular'} />
+                <span>My notes</span>
+              </button>
 
-                <button 
-                  className={`mj-tab ${activeTab === 'course' ? 'active' : ''}`}
-                  onClick={() => { setActiveTab('course'); setSearchQuery(''); }}
-                >
-                  <Play size={17} weight={activeTab === 'course' ? 'fill' : 'regular'} />
-                  <span>Course</span>
-                </button>
-              </nav>
-            )}
+              <button 
+                className={`mj-tab ${activeTab === 'course' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('course'); setSearchQuery(''); }}
+              >
+                <Play size={17} weight={activeTab === 'course' ? 'fill' : 'regular'} />
+                <span>Course</span>
+              </button>
 
-            {/* Right End of Tab Row: Profile & Settings Button (Black) & Book a Session Button (Orange) */}
-            <div className="mj-tab-actions">
-              {/* Profile & Settings Button (Black) */}
+              {/* Mobile-friendly Profile & Settings Tab */}
+              <button 
+                className={`mj-tab md:hidden ${activeTab === 'profile' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('profile'); setSearchQuery(''); }}
+              >
+                <User size={17} weight={activeTab === 'profile' ? 'bold' : 'regular'} />
+                <span>Profile</span>
+              </button>
+            </nav>
+
+            {/* Right End of Tab Row (Desktop): Profile & Settings Button & Book session Button */}
+            <div className="mj-tab-actions hidden md:flex">
               <button
                 onClick={() => {
                   setActiveTab('profile');
                   setSearchQuery('');
                 }}
-                className="mj-btn h-[42px] px-6 text-[14px] font-semibold transition-all select-none bg-[#1c1714] hover:bg-black text-white shadow-sm border-0 ring-0 outline-none"
+                className={cn(
+                  "mj-btn h-[42px] px-6 text-[14px] font-semibold transition-all select-none shadow-sm border-0 ring-0 outline-none cursor-pointer",
+                  activeTab === 'profile'
+                    ? "bg-[#c8512d] text-white hover:bg-[#b3461f]"
+                    : "bg-[#1c1714] hover:bg-black text-white"
+                )}
                 title="Profile & Settings"
               >
                 <span>Profile & Settings</span>
               </button>
 
-              {/* Book session Button (Orange) */}
               <button 
                 onClick={() => navigate('/book')}
-                className="mj-btn h-[42px] px-6 text-[14px] font-semibold bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm transition-all border-0"
+                className="mj-btn h-[42px] px-6 text-[14px] font-semibold bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm transition-all border-0 cursor-pointer"
               >
                 <CalendarBlank size={17} weight="bold" />
                 <span>BOOK SESSION</span>
@@ -1158,137 +1186,195 @@ export default function MyJourney() {
                   
                   {activeTab === 'coaching' && (
                     <div className="mj-group">
-                      <span>Show</span>
-                      <label className="mj-mobile-filter">
-                        <span>Appointment status</span>
-                        <select value={coachFilter} onChange={(e) => setCoachFilter(e.target.value)}>
-                          <option value="upcoming">Upcoming ({upcomingCount})</option>
-                          <option value="completed">Completed ({completedCount})</option>
-                          <option value="rescheduled">Rescheduled ({rescheduledCount})</option>
-                          <option value="canceled">Canceled ({canceledCount})</option>
-                        </select>
-                      </label>
-                      <div className="mj-filter-options">
-                      <label className="mj-opt radio">
-                        <input 
-                          type="radio" 
-                          name="coachFilter" 
-                          checked={coachFilter === 'upcoming'}
-                          onChange={() => setCoachFilter('upcoming')}
-                        />
-                        <span className="mj-box"></span>
-                        Upcoming
-                        <em>{upcomingCount}</em>
-                      </label>
-                      <label className="mj-opt radio">
-                        <input 
-                          type="radio" 
-                          name="coachFilter" 
-                          checked={coachFilter === 'completed'}
-                          onChange={() => setCoachFilter('completed')}
-                        />
-                        <span className="mj-box"></span>
-                        Completed
-                        <em>{completedCount}</em>
-                      </label>
-                      <label className="mj-opt radio">
-                        <input 
-                          type="radio" 
-                          name="coachFilter" 
-                          checked={coachFilter === 'rescheduled'}
-                          onChange={() => setCoachFilter('rescheduled')}
-                        />
-                        <span className="mj-box"></span>
-                        Rescheduled
-                        <em>{rescheduledCount}</em>
-                      </label>
-                      <label className="mj-opt radio">
-                        <input 
-                          type="radio" 
-                          name="coachFilter" 
-                          checked={coachFilter === 'canceled'}
-                          onChange={() => setCoachFilter('canceled')}
-                        />
-                        <span className="mj-box"></span>
-                        Canceled
-                        <em>{canceledCount}</em>
-                      </label>
+                      <span className="hidden md:block">Show</span>
+                      {/* Mobile Filter Chips */}
+                      <div className="mj-mobile-chips-scroll md:hidden">
+                        <button 
+                          type="button"
+                          onClick={() => setCoachFilter('upcoming')}
+                          className={cn("mj-mobile-chip", coachFilter === 'upcoming' && "active")}
+                        >
+                          <span>Upcoming</span>
+                          <span className="mj-chip-badge">{upcomingCount}</span>
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setCoachFilter('completed')}
+                          className={cn("mj-mobile-chip", coachFilter === 'completed' && "active")}
+                        >
+                          <span>Completed</span>
+                          <span className="mj-chip-badge">{completedCount}</span>
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setCoachFilter('rescheduled')}
+                          className={cn("mj-mobile-chip", coachFilter === 'rescheduled' && "active")}
+                        >
+                          <span>Rescheduled</span>
+                          <span className="mj-chip-badge">{rescheduledCount}</span>
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setCoachFilter('canceled')}
+                          className={cn("mj-mobile-chip", coachFilter === 'canceled' && "active")}
+                        >
+                          <span>Canceled</span>
+                          <span className="mj-chip-badge">{canceledCount}</span>
+                        </button>
+                      </div>
+
+                      {/* Desktop Radio Filters */}
+                      <div className="mj-filter-options hidden md:flex md:flex-col">
+                        <label className="mj-opt radio">
+                          <input 
+                            type="radio" 
+                            name="coachFilter" 
+                            checked={coachFilter === 'upcoming'}
+                            onChange={() => setCoachFilter('upcoming')}
+                          />
+                          <span className="mj-box"></span>
+                          Upcoming
+                          <em>{upcomingCount}</em>
+                        </label>
+                        <label className="mj-opt radio">
+                          <input 
+                            type="radio" 
+                            name="coachFilter" 
+                            checked={coachFilter === 'completed'}
+                            onChange={() => setCoachFilter('completed')}
+                          />
+                          <span className="mj-box"></span>
+                          Completed
+                          <em>{completedCount}</em>
+                        </label>
+                        <label className="mj-opt radio">
+                          <input 
+                            type="radio" 
+                            name="coachFilter" 
+                            checked={coachFilter === 'rescheduled'}
+                            onChange={() => setCoachFilter('rescheduled')}
+                          />
+                          <span className="mj-box"></span>
+                          Rescheduled
+                          <em>{rescheduledCount}</em>
+                        </label>
+                        <label className="mj-opt radio">
+                          <input 
+                            type="radio" 
+                            name="coachFilter" 
+                            checked={coachFilter === 'canceled'}
+                            onChange={() => setCoachFilter('canceled')}
+                          />
+                          <span className="mj-box"></span>
+                          Canceled
+                          <em>{canceledCount}</em>
+                        </label>
                       </div>
                     </div>
                   )}
 
                   {activeTab === 'library' && (
                     <div className="mj-group">
-                      <span>Status</span>
-                      <label className="mj-mobile-filter">
-                        <span>Library status</span>
-                        <select value={libraryFilter} onChange={(e) => setLibraryFilter(e.target.value)}>
-                          <option value="bookmarked">Saved ({savedCount})</option>
-                          <option value="completed">Completed ({finishedCount})</option>
-                        </select>
-                      </label>
-                      <div className="mj-filter-options">
-                      <label className="mj-opt radio">
-                        <input 
-                          type="radio" 
-                          name="libraryFilter" 
-                          checked={libraryFilter === 'bookmarked'}
-                          onChange={() => setLibraryFilter('bookmarked')}
-                        />
-                        <span className="mj-box"></span>
-                        Saved
-                        <em>{savedCount}</em>
-                      </label>
-                      <label className="mj-opt radio">
-                        <input 
-                          type="radio" 
-                          name="libraryFilter" 
-                          checked={libraryFilter === 'completed'}
-                          onChange={() => setLibraryFilter('completed')}
-                        />
-                        <span className="mj-box"></span>
-                        Completed
-                        <em>{finishedCount}</em>
-                      </label>
+                      <span className="hidden md:block">Status</span>
+                      {/* Mobile Filter Chips */}
+                      <div className="mj-mobile-chips-scroll md:hidden">
+                        <button 
+                          type="button"
+                          onClick={() => setLibraryFilter('bookmarked')}
+                          className={cn("mj-mobile-chip", libraryFilter === 'bookmarked' && "active")}
+                        >
+                          <span>Saved</span>
+                          <span className="mj-chip-badge">{savedCount}</span>
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setLibraryFilter('completed')}
+                          className={cn("mj-mobile-chip", libraryFilter === 'completed' && "active")}
+                        >
+                          <span>Completed</span>
+                          <span className="mj-chip-badge">{finishedCount}</span>
+                        </button>
+                      </div>
+
+                      {/* Desktop Radio Filters */}
+                      <div className="mj-filter-options hidden md:flex md:flex-col">
+                        <label className="mj-opt radio">
+                          <input 
+                            type="radio" 
+                            name="libraryFilter" 
+                            checked={libraryFilter === 'bookmarked'}
+                            onChange={() => setLibraryFilter('bookmarked')}
+                          />
+                          <span className="mj-box"></span>
+                          Saved
+                          <em>{savedCount}</em>
+                        </label>
+                        <label className="mj-opt radio">
+                          <input 
+                            type="radio" 
+                            name="libraryFilter" 
+                            checked={libraryFilter === 'completed'}
+                            onChange={() => setLibraryFilter('completed')}
+                          />
+                          <span className="mj-box"></span>
+                          Completed
+                          <em>{finishedCount}</em>
+                        </label>
                       </div>
                     </div>
                   )}
 
                   {activeTab === 'course' && (
                     <div className="mj-group">
-                      <span>Show</span>
-                      <label className="mj-mobile-filter">
-                        <span>Course status</span>
-                        <select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}>
-                          <option value="all">All courses ({coursesList.length})</option>
-                          {isCoursePurchaser && <option value="enrolled">My courses ({coursesList.filter(c => c.kind === 'enrolled').length})</option>}
-                        </select>
-                      </label>
-                      <div className="mj-filter-options">
-                      <label className="mj-opt radio">
-                        <input 
-                          type="radio" 
-                          name="courseFilter" 
-                          checked={courseFilter === 'all'}
-                          onChange={() => setCourseFilter('all')}
-                        />
-                        <span className="mj-box"></span>
-                        All courses
-                        <em>{coursesList.length}</em>
-                      </label>
-                      {isCoursePurchaser && (
+                      <span className="hidden md:block">Show</span>
+                      {/* Mobile Filter Chips */}
+                      <div className="mj-mobile-chips-scroll md:hidden">
+                        <button 
+                          type="button"
+                          onClick={() => setCourseFilter('all')}
+                          className={cn("mj-mobile-chip", courseFilter === 'all' && "active")}
+                        >
+                          <span>All courses</span>
+                          <span className="mj-chip-badge">{coursesList.length}</span>
+                        </button>
+                        {isCoursePurchaser && (
+                          <button 
+                            type="button"
+                            onClick={() => setCourseFilter('enrolled')}
+                            className={cn("mj-mobile-chip", courseFilter === 'enrolled' && "active")}
+                          >
+                            <span>My courses</span>
+                            <span className="mj-chip-badge">{coursesList.filter(c => c.kind === 'enrolled').length}</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Desktop Radio Filters */}
+                      <div className="mj-filter-options hidden md:flex md:flex-col">
                         <label className="mj-opt radio">
                           <input 
                             type="radio" 
                             name="courseFilter" 
-                            checked={courseFilter === 'enrolled'}
-                            onChange={() => setCourseFilter('enrolled')}
+                            checked={courseFilter === 'all'}
+                            onChange={() => setCourseFilter('all')}
                           />
                           <span className="mj-box"></span>
-                          My courses
-                          <em>{coursesList.filter(c => c.kind === 'enrolled').length}</em>
+                          All courses
+                          <em>{coursesList.length}</em>
                         </label>
-                      )}
+                        {isCoursePurchaser && (
+                          <label className="mj-opt radio">
+                            <input 
+                              type="radio" 
+                              name="courseFilter" 
+                              checked={courseFilter === 'enrolled'}
+                              onChange={() => setCourseFilter('enrolled')}
+                            />
+                            <span className="mj-box"></span>
+                            My courses
+                            <em>{coursesList.filter(c => c.kind === 'enrolled').length}</em>
+                          </label>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1306,13 +1392,23 @@ export default function MyJourney() {
             {activeTab === 'coaching' && (
               <div>
                 <div className="mj-head">
-                  <div className="mj-head-left">
-                    <h2>
-                      {coachFilter === 'upcoming' ? 'Appointments' :
-                       coachFilter === 'completed' ? 'Completed sessions' :
-                       coachFilter === 'rescheduled' ? 'Rescheduled sessions' : 'Canceled sessions'}
-                    </h2>
-                    <span className="mj-count">{filteredAppointments.length}</span>
+                  <div className="mj-head-left flex items-center justify-between gap-2 w-full">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <h2 className="truncate font-serif text-[18px] sm:text-[20px] font-semibold text-[#1c1714]">
+                        {coachFilter === 'upcoming' ? 'Appointments' :
+                         coachFilter === 'completed' ? 'Completed' :
+                         coachFilter === 'rescheduled' ? 'Rescheduled' : 'Canceled'}
+                      </h2>
+                      <span className="mj-count shrink-0 text-xs px-2.5 py-0.5">{filteredAppointments.length}</span>
+                    </div>
+
+                    <button
+                      onClick={() => navigate('/book')}
+                      className="md:hidden shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-[11px] font-bold tracking-wide uppercase shadow-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      <Plus size={11} weight="bold" />
+                      <span>Book</span>
+                    </button>
                   </div>
 
                   {/* Right-aligned Sort By Controls */}
@@ -1412,8 +1508,8 @@ export default function MyJourney() {
                         return (
                           <article key={appt._id} className="mj-card">
                             <div className={`mj-card-top ${cardColor}`}>
-                              <div className="mj-row items-center justify-between">
-                                <div className="flex items-center gap-1.5 flex-wrap">
+                              <div className="flex items-center justify-between gap-2 w-full">
+                                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                                   <span className="mj-pill">{formatPillDate(appt.date)}</span>
                                   <span className="mj-pill">
                                     {isFree ? 'Free session' : `${inr(appt.amount || (appt.duration === 90 ? 7500 : 5000))} paid`}
@@ -1422,17 +1518,17 @@ export default function MyJourney() {
 
                                 {/* 3-Dots Action Menu (Cancel Session) */}
                                 {!isCompleted && !isCancelled && (appt.status === 'UPCOMING' || !appt.status) && (
-                                  <div className="relative mj-card-dots-wrap shrink-0">
+                                  <div className="relative mj-card-dots-wrap shrink-0 ml-1">
                                     <button
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setOpenCardMenuId(openCardMenuId === appt._id ? null : appt._id);
                                       }}
-                                      className="w-7 h-7 rounded-full flex items-center justify-center text-[#555047] hover:text-[#111010] hover:bg-black/8 transition-all cursor-pointer"
+                                      className="w-8 h-8 rounded-full bg-white/75 hover:bg-white text-[#3d3731] hover:text-black flex items-center justify-center shadow-xs transition-all cursor-pointer"
                                       title="Session options"
                                     >
-                                      <DotsThreeVertical size={20} weight="bold" />
+                                      <DotsThreeVertical size={18} weight="bold" />
                                     </button>
 
                                     {openCardMenuId === appt._id && (
@@ -1587,43 +1683,45 @@ export default function MyJourney() {
                                 </a>
                               )}
 
-                              <button 
-                                onClick={() => {
-                                  setSelectedSession(appt);
-                                  setSessionModalTab('details');
-                                }}
-                                className="mj-btn mj-btn-dark"
-                              >
-                                View session details
-                              </button>
+                              <div className="grid grid-cols-2 gap-2 w-full">
+                                <button 
+                                  onClick={() => {
+                                    setSelectedSession(appt);
+                                    setSessionModalTab('details');
+                                  }}
+                                  className="mj-btn mj-btn-dark !h-10 !text-xs !py-0 !px-2 flex items-center justify-center truncate"
+                                >
+                                  View details
+                                </button>
 
-                              {!isCompleted && !isCancelled && (appt.status === 'UPCOMING' || appt.status === 'RESCHEDULED' || !appt.status) && (
-                                isPendingReschedule ? (
-                                  <button 
-                                    disabled
-                                    className="mj-btn mj-btn-line opacity-60 cursor-not-allowed text-xs font-semibold text-[#856404]"
-                                    title="A reschedule request is already under review by your coach"
-                                  >
-                                    <Clock size={15} weight="bold" />
-                                    <span>Reschedule Pending</span>
-                                  </button>
-                                ) : isApprovedReschedule ? (
-                                  <button 
-                                    disabled
-                                    className="mj-btn mj-btn-line opacity-45 cursor-not-allowed text-xs font-semibold text-[#7a7269] bg-[#f0ede8] border-[#e0dbd3]"
-                                    title="This session has already been rescheduled once and cannot be rescheduled again"
-                                  >
-                                    <span>Already Rescheduled</span>
-                                  </button>
-                                ) : (
-                                  <button 
-                                    onClick={() => setRescheduleSession(appt)}
-                                    className="mj-btn mj-btn-line"
-                                  >
-                                    Reschedule
-                                  </button>
-                                )
-                              )}
+                                {!isCompleted && !isCancelled && (appt.status === 'UPCOMING' || appt.status === 'RESCHEDULED' || !appt.status) && (
+                                  isPendingReschedule ? (
+                                    <button 
+                                      disabled
+                                      className="mj-btn mj-btn-line opacity-60 cursor-not-allowed !h-10 !text-[11px] !py-0 !px-2 flex items-center justify-center font-semibold text-[#856404] truncate"
+                                      title="A reschedule request is already under review by your coach"
+                                    >
+                                      <Clock size={13} weight="bold" />
+                                      <span>Pending</span>
+                                    </button>
+                                  ) : isApprovedReschedule ? (
+                                    <button 
+                                      disabled
+                                      className="mj-btn mj-btn-line opacity-45 cursor-not-allowed !h-10 !text-[11px] !py-0 !px-2 flex items-center justify-center font-semibold text-[#7a7269] bg-[#f0ede8] border-[#e0dbd3] truncate"
+                                      title="This session has already been rescheduled once"
+                                    >
+                                      <span>Rescheduled</span>
+                                    </button>
+                                  ) : (
+                                    <button 
+                                      onClick={() => setRescheduleSession(appt)}
+                                      className="mj-btn mj-btn-line !h-10 !text-xs !py-0 !px-2 flex items-center justify-center truncate"
+                                    >
+                                      Reschedule
+                                    </button>
+                                  )
+                                )}
+                              </div>
 
                               {appt.status !== 'UPCOMING' && appt.status !== 'RESCHEDULED' && appt.status !== 'COMPLETED' && (
                                 <button 
@@ -1676,6 +1774,7 @@ export default function MyJourney() {
                     )}
                   </div>
                 </div>
+
               </div>
             )}
 
@@ -1683,8 +1782,12 @@ export default function MyJourney() {
             {activeTab === 'library' && (
               <div>
                 <div className="mj-head">
-                  <h2>{libraryFilter === 'completed' ? 'Completed' : 'Saved for you'}</h2>
-                  <span className="mj-count">{filteredLibrary.length}</span>
+                  <div className="mj-head-left flex items-center gap-2 w-full">
+                    <h2 className="truncate font-serif text-[18px] sm:text-[20px] font-semibold text-[#1c1714]">
+                      {libraryFilter === 'completed' ? 'Completed' : 'Saved for you'}
+                    </h2>
+                    <span className="mj-count shrink-0 text-xs px-2.5 py-0.5">{filteredLibrary.length}</span>
+                  </div>
                 </div>
                 <p className="mj-sub">Articles and videos you chose to return to.</p>
 
@@ -1785,26 +1888,28 @@ export default function MyJourney() {
             {activeTab === 'notes' && (
               <div>
                 <div className="mj-head">
-                  <h2>My notes</h2>
-                  <span className="mj-count">{filteredNotes.length}</span>
+                  <div className="mj-head-left flex items-center justify-between gap-2.5 w-full">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <h2 className="truncate font-serif text-[18px] sm:text-[22px] font-semibold text-[#1c1714]">
+                        My notes
+                      </h2>
+                      <span className="mj-count shrink-0 text-xs px-2.5 py-0.5">{filteredNotes.length}</span>
+                    </div>
 
-                  <div className="flex-1"></div>
-
-                  <button 
-                    onClick={() => handleOpenNoteModal(null, false)}
-                    className="mj-btn mj-btn-primary"
-                  >
-                    <Plus size={17} weight="bold" />
-                    <span>Create a note</span>
-                  </button>
+                    <button 
+                      onClick={() => handleOpenNoteModal(null, false)}
+                      className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-xs font-bold tracking-wide shadow-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      <Plus size={13} weight="bold" />
+                      <span>Create note</span>
+                    </button>
+                  </div>
                 </div>
 
-                <p className="mj-sub">
-                  <span className="mj-lock">
-                    <LockKey size={16} weight="bold" className="text-[#c8512d]" />
-                    Only visible to you
-                  </span>
-                </p>
+                <div className="flex items-center gap-1.5 text-xs text-[#7a7269] mt-2.5 mb-4 px-0.5">
+                  <LockKey size={14} weight="bold" className="text-[#c8512d]" />
+                  <span>Only visible to you</span>
+                </div>
 
                 <div className="mj-grid-scroll" onWheel={handleGridWheel} data-lenis-prevent="true">
                   <div className="mj-grid">
@@ -1946,51 +2051,51 @@ export default function MyJourney() {
 
             {/* 5. PROFILE & SETTINGS VIEW */}
             {activeTab === 'profile' && (
-              <div className="w-full max-w-[700px] mx-auto py-2">
-                <div className="text-center mb-8">
-                  <h2 className="font-serif text-3xl font-semibold text-[#1c1714] tracking-tight">Profile & Settings</h2>
-                  <p className="text-sm text-[#5f5750] mt-1">Manage your details, preferences, and account security.</p>
+              <div className="w-full max-w-[700px] mx-auto py-1">
+                <div className="text-center mb-4 sm:mb-6">
+                  <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1c1714] tracking-tight">Account Settings</h2>
+                  <p className="text-xs sm:text-sm text-[#5f5750] mt-1">Manage your details, preferences, and account security.</p>
                 </div>
 
                 {/* Subtabs for Settings */}
-                <div className="flex items-center justify-center gap-2 p-1.5 bg-[#ede9e4] rounded-full w-fit mx-auto mb-8">
+                <div className="flex items-center justify-center gap-1 sm:gap-2 p-1 bg-[#ede9e4] rounded-full w-full max-w-[360px] sm:max-w-fit mx-auto mb-6">
                   <button
                     onClick={() => setSettingsSubTab('PROFILE')}
                     className={cn(
-                      "px-5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer",
+                      "flex-1 sm:flex-initial px-3 sm:px-5 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap",
                       settingsSubTab === 'PROFILE'
                         ? "bg-[#1c1714] text-white shadow-sm"
                         : "text-[#5f5750] hover:text-[#1c1714]"
                     )}
                   >
-                    <User size={15} />
+                    <User size={14} weight="bold" />
                     <span>Profile</span>
                   </button>
 
                   <button
                     onClick={() => setSettingsSubTab('NOTIFICATIONS')}
                     className={cn(
-                      "px-5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer",
+                      "flex-1 sm:flex-initial px-3 sm:px-5 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap",
                       settingsSubTab === 'NOTIFICATIONS'
                         ? "bg-[#1c1714] text-white shadow-sm"
                         : "text-[#5f5750] hover:text-[#1c1714]"
                     )}
                   >
-                    <Bell size={15} />
-                    <span>Notifications</span>
+                    <Bell size={14} weight="bold" />
+                    <span>Alerts</span>
                   </button>
 
                   <button
                     onClick={() => setSettingsSubTab('SECURITY')}
                     className={cn(
-                      "px-5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer",
+                      "flex-1 sm:flex-initial px-3 sm:px-5 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap",
                       settingsSubTab === 'SECURITY'
                         ? "bg-[#1c1714] text-white shadow-sm"
                         : "text-[#5f5750] hover:text-[#1c1714]"
                     )}
                   >
-                    <LockKey size={15} />
-                    <span>Security & Privacy</span>
+                    <LockKey size={14} weight="bold" />
+                    <span>Security<span className="hidden sm:inline"> & Privacy</span></span>
                   </button>
                 </div>
 

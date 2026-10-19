@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { clearAllAuth } from '../../utils/authSync';
+import { clearAllAuth, getEffectiveUser, isAnyUserLoggedIn } from '../../utils/authSync';
 import {
   User,
   SignOut,
@@ -8,11 +8,17 @@ import {
   BookOpen,
   Books,
   ArrowRight,
+  ArrowLeft,
   Sparkle,
   CalendarPlus,
   Receipt,
   Printer,
-  Play
+  Play,
+  List,
+  X,
+  House,
+  Question,
+  GraduationCap
 } from '@phosphor-icons/react';
 import FlippingWordSwap from '../../components/ui/FlippingWordSwap';
 import { API_URL } from '../../utils/apiUrl';
@@ -32,10 +38,19 @@ const resolveImageUrl = (url) => {
 
 export default function MyCourses() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('courseUser') || localStorage.getItem('userInfo');
+      if (stored) return JSON.parse(stored);
+      return getEffectiveUser();
+    } catch {
+      return getEffectiveUser();
+    }
+  });
+  const [loading, setLoading] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [coursesMap, setCoursesMap] = useState({});
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Navbar Profile Dropdown
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -71,8 +86,10 @@ export default function MyCourses() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const token = localStorage.getItem('courseToken');
+    const token = localStorage.getItem('courseToken') || localStorage.getItem('token');
     if (!token) {
+      const eff = getEffectiveUser();
+      if (eff) setUser(eff);
       setLoading(false);
       return;
     }
@@ -96,17 +113,27 @@ export default function MyCourses() {
             localStorage.removeItem('isCoursePurchased');
           }
         } else {
+          const eff = getEffectiveUser();
+          if (eff) {
+            setUser(eff);
+          } else {
+            clearAllAuth();
+            setUser(null);
+            navigate('/course');
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user profile for courses:', err);
+        const eff = getEffectiveUser();
+        if (eff) {
+          setUser(eff);
+        } else {
           clearAllAuth();
           setUser(null);
           navigate('/course');
           return;
         }
-      } catch (err) {
-        console.error('Error fetching user profile for courses:', err);
-        clearAllAuth();
-        setUser(null);
-        navigate('/course');
-        return;
       } finally {
         setLoading(false);
       }
@@ -160,8 +187,9 @@ export default function MyCourses() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const displayName = user?.fullName || 'Executive Member';
-  const isPurchased = user?.isPurchased || localStorage.getItem('isCoursePurchased') === 'true';
+  const effectiveUser = user || getEffectiveUser();
+  const displayName = effectiveUser?.fullName || 'Executive Member';
+  const isPurchased = effectiveUser?.isPurchased || localStorage.getItem('isCoursePurchased') === 'true';
 
   const formatPurchaseDate = (dateStr) => {
     if (!dateStr) return 'August 29, 2025';
@@ -359,29 +387,30 @@ export default function MyCourses() {
           </Link>
         </nav>
 
-        {/* Right Controls: Avatar with Dropdown or Sign In */}
+        {/* Right Controls: Desktop Profile or Mobile Hamburger */}
         <div className="nav-r flex items-center gap-2.5 sm:gap-3">
           <Link
             to="/library"
-            className="course-nav-library-btn"
+            className="course-nav-library-btn hidden sm:inline-flex"
             title="Explore Library"
           >
             <Books size={16} weight="bold" />
             <span>LIBRARY</span>
           </Link>
 
-          {localStorage.getItem('courseToken') ? (
+          {isAnyUserLoggedIn() ? (
             <>
               <Link
                 to="/my-course"
-                className="course-nav-mycourse-btn active"
+                className="course-nav-mycourse-btn active hidden sm:inline-flex"
                 title="My Enrolled Courses"
               >
                 <BookOpen size={16} weight="bold" />
                 <span>MY COURSE</span>
               </Link>
 
-              <div className="relative" ref={profileMenuRef}>
+              {/* Desktop Profile Dropdown (HIDDEN ON MOBILE) */}
+              <div className="relative hidden md:block" ref={profileMenuRef}>
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
@@ -391,71 +420,175 @@ export default function MyCourses() {
                   <User size={17} weight="bold" />
                 </button>
 
-              {profileDropdownOpen && (
-                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left animate-fadeIn">
-                  {/* User Email & Name Header */}
-                  <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
-                    <div className="text-xs font-bold text-white truncate">
-                      {user?.fullName || 'Student Account'}
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left animate-fadeIn">
+                    {/* User Email & Name Header */}
+                    <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
+                      <div className="text-xs font-bold text-white truncate">
+                        {displayName}
+                      </div>
+                      <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={effectiveUser?.email}>
+                        {effectiveUser?.email || 'Logged In'}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={user?.email}>
-                      {user?.email || 'Logged In'}
-                    </div>
-                  </div>
 
-                  <Link
-                    to="/library"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
-                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
-                  >
-                    <Books size={18} className="text-[#C878BE] shrink-0" />
-                    <span>Library</span>
-                  </Link>
-                  <Link
-                    to="/my-course"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
-                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
-                  >
-                    <BookOpen size={18} className="text-[#C878BE] shrink-0" />
-                    <span>My Course</span>
-                  </Link>
-                  <Link
-                    to="/course/profile"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
-                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
-                  >
-                    <User size={18} className="text-[#C878BE] shrink-0" />
-                    <span>Profile</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProfileDropdownOpen(false);
-                      handleLogout();
-                    }}
-                    className="w-full px-5 py-3 text-left text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer bg-transparent border-none outline-none"
-                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
-                  >
-                    <SignOut size={18} className="text-red-400 shrink-0" />
-                    <span>Log Out</span>
-                  </button>
-                </div>
-              )}
-            </div>
+                    <Link
+                      to="/library"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                      style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
+                    >
+                      <Books size={18} className="text-[#C878BE] shrink-0" />
+                      <span>Library</span>
+                    </Link>
+                    <Link
+                      to="/my-course"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                      style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
+                    >
+                      <BookOpen size={18} className="text-[#C878BE] shrink-0" />
+                      <span>My Course</span>
+                    </Link>
+                    <Link
+                      to="/course/profile"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                      style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
+                    >
+                      <User size={18} className="text-[#C878BE] shrink-0" />
+                      <span>Profile</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full px-5 py-3 text-left text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors flex items-center gap-3 cursor-pointer bg-transparent border-none outline-none"
+                      style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
+                    >
+                      <SignOut size={18} className="text-red-400 shrink-0" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <Link
               to="/course"
-              className="sign-in-btn"
+              className="sign-in-btn hidden md:inline-flex"
             >
               SIGN IN
             </Link>
           )}
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#C878BE]/40 bg-[#120613] flex items-center justify-center text-[#E3B8DE] hover:bg-[#C878BE] hover:text-black transition-all shadow-[0_0_15px_rgba(200,120,190,0.2)] shrink-0 cursor-pointer"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X size={18} weight="bold" /> : <List size={18} weight="bold" />}
+          </button>
         </div>
       </header>
+
+      {/* Mobile Drawer Overlay */}
+      <div 
+        className={`fixed inset-x-0 top-[52px] sm:top-[60px] z-[998] bg-[#0E0610]/98 backdrop-blur-2xl border-b border-white/10 flex flex-col md:hidden w-full max-h-[calc(100svh-60px)] overflow-y-auto px-5 py-5 shadow-[0_30px_60px_rgba(0,0,0,0.85)] transition-all duration-300 ease-out origin-top ${
+          mobileMenuOpen ? 'opacity-100 translate-y-0 visible pointer-events-auto' : 'opacity-0 -translate-y-3 invisible pointer-events-none'
+        }`}
+      >
+        {/* Top Item: PROFILE */}
+        {isAnyUserLoggedIn() ? (
+          <Link
+            to="/course/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-[#C878BE]/40 flex items-center gap-3 transition-colors mb-3"
+          >
+            <div className="w-10 h-10 rounded-full bg-[#120613] border border-[#C878BE]/50 flex items-center justify-center text-[#E3B8DE] font-bold text-sm shrink-0">
+              <User size={18} weight="bold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold text-white truncate">
+                {displayName}
+              </div>
+              <div className="text-xs text-[#E3B8DE] truncate">
+                {effectiveUser?.email || 'View Profile'}
+              </div>
+            </div>
+            <span className="text-xs text-white/40">Profile →</span>
+          </Link>
+        ) : (
+          <Link
+            to="/course"
+            onClick={() => setMobileMenuOpen(false)}
+            className="w-full py-3 rounded-2xl bg-[#C878BE] text-black font-bold text-xs tracking-widest uppercase hover:bg-[#d690cd] transition-all text-center mb-3 shadow-[0_0_20px_rgba(200,120,190,0.3)] block"
+          >
+            SIGN IN / REGISTER
+          </Link>
+        )}
+
+        {/* Clean Nav Links: HOME, COURSES, FAQ, and MY COURSE */}
+        <div className="flex flex-col gap-1 w-full">
+          <Link
+            to="/course"
+            onClick={() => setMobileMenuOpen(false)}
+            className="px-4 py-3 rounded-xl text-sm font-semibold tracking-wide text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center justify-between"
+          >
+            <span>HOME</span>
+          </Link>
+
+          <Link
+            to="/course/all"
+            onClick={() => setMobileMenuOpen(false)}
+            className="px-4 py-3 rounded-xl text-sm font-semibold tracking-wide text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center justify-between"
+          >
+            <span>COURSES</span>
+          </Link>
+
+          <a
+            href="/course#faq"
+            onClick={() => setMobileMenuOpen(false)}
+            className="px-4 py-3 rounded-xl text-sm font-semibold tracking-wide text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center justify-between"
+          >
+            <span>FAQ</span>
+          </a>
+
+          {/* MY COURSE - Active here */}
+          <Link
+            to="/my-course"
+            onClick={() => setMobileMenuOpen(false)}
+            className="px-4 py-3 rounded-xl bg-[#C878BE]/15 border border-[#C878BE]/40 text-[#E3B8DE] font-bold text-sm tracking-wide flex items-center justify-between transition-all mt-1"
+          >
+            <div className="flex items-center gap-2">
+              <BookOpen size={16} weight="bold" className="text-[#C878BE]" />
+              <span>MY COURSE</span>
+            </div>
+            <span className="text-xs text-[#C878BE]">Active</span>
+          </Link>
+        </div>
+
+        {/* LOG OUT at the bottom */}
+        {isAnyUserLoggedIn() && (
+          <div className="pt-3 mt-3 border-t border-white/10">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleLogout();
+              }}
+              className="w-full px-4 py-2.5 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs font-semibold tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              <SignOut size={16} />
+              <span>LOG OUT</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════
           MAIN MY COURSE DASHBOARD CONTAINER
@@ -468,7 +601,7 @@ export default function MyCourses() {
               <p className="text-xs uppercase tracking-widest text-white/50">Loading your courses...</p>
             </div>
           </div>
-        ) : !user && !localStorage.getItem('courseToken') ? (
+        ) : !effectiveUser && !isAnyUserLoggedIn() ? (
           <div className="rounded-3xl border border-[#C878BE]/20 bg-[#0e0a16] p-10 text-center max-w-md mx-auto my-12 shadow-2xl">
             <div className="w-16 h-16 rounded-full bg-[#C878BE]/10 border border-[#C878BE]/30 flex items-center justify-center mx-auto mb-5 text-[#E3B8DE]">
               <BookOpen size={30} weight="light" />
@@ -499,6 +632,13 @@ export default function MyCourses() {
               
               {/* Top My Course Bar */}
               <div className="pb-4 border-b border-white/10">
+                <Link
+                  to="/course"
+                  className="inline-flex items-center gap-2 text-xs font-semibold text-[#E3B8DE] hover:text-white transition-colors mb-3.5 group cursor-pointer"
+                >
+                  <ArrowLeft size={15} weight="bold" className="group-hover:-translate-x-1 transition-transform text-[#C878BE]" />
+                  <span>Back to Course</span>
+                </Link>
                 <h1 
                   className="text-2xl sm:text-3xl text-white font-bold tracking-tight"
                   style={{ fontFamily: 'var(--head)' }}
@@ -591,11 +731,11 @@ export default function MyCourses() {
                       </div>
 
                       {/* Right: Harmonized Matching CTA Buttons */}
-                      <div className="flex flex-row xl:flex-col items-center gap-3 shrink-0 pt-2 xl:pt-0 min-w-[210px]">
+                      <div className="flex flex-col sm:flex-row xl:flex-col items-stretch gap-2.5 sm:gap-3 shrink-0 pt-2 xl:pt-0 w-full xl:w-56">
                         {/* Primary Button: Resume Learning */}
                         <Link
                           to={item.slug === 'better-man' ? '/course?learn=true' : `/course/${item.slug}?learn=true`}
-                          className="my-course-action-btn resume flex-1 xl:flex-none w-full"
+                          className="my-course-action-btn resume w-full"
                         >
                           <Play size={14} weight="fill" />
                           <span>Resume Learning</span>
@@ -606,7 +746,7 @@ export default function MyCourses() {
                           type="button"
                           onClick={handleBookFreeSession}
                           disabled={isSyncingCoaching}
-                          className="my-course-action-btn book flex-1 xl:flex-none w-full"
+                          className="my-course-action-btn book w-full"
                         >
                           <CalendarPlus size={15} weight="bold" />
                           <span>{isSyncingCoaching ? 'Opening...' : 'Book a Session'}</span>

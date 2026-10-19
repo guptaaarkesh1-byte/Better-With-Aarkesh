@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { clearAllAuth } from '../../utils/authSync';
+import { clearAllAuth, getEffectiveUser, isAnyUserLoggedIn } from '../../utils/authSync';
 import {
   User,
   Envelope,
@@ -37,6 +37,7 @@ import {
   Headphones,
   Play,
   X,
+  List,
   ChatsCircle,
   LightbulbFilament,
   CheckSquareOffset,
@@ -52,16 +53,18 @@ export default function CourseProfile() {
   // ONLY 2 main tabs as requested: 'BASIC_INFO' | 'MY_PROGRAMS'
   const initialTab = searchParams.get('tab') === 'MY_PROGRAMS' || searchParams.get('tab') === 'courses' ? 'MY_PROGRAMS' : 'BASIC_INFO';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState(() => {
     try {
-      const stored = localStorage.getItem('courseUser');
-      return stored ? JSON.parse(stored) : null;
+      const stored = localStorage.getItem('courseUser') || localStorage.getItem('userInfo');
+      if (stored) return JSON.parse(stored);
+      return getEffectiveUser();
     } catch {
-      return null;
+      return getEffectiveUser();
     }
   });
   const isGoogleUser = user?.authProvider === 'google';
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [copiedTxn, setCopiedTxn] = useState(false);
   const [showSecuritySection, setShowSecuritySection] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -74,8 +77,8 @@ export default function CourseProfile() {
 
   // Edit Profile Form State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [fullName, setFullName] = useState(() => user?.fullName || user?.name || '');
+  const [phoneNumber, setPhoneNumber] = useState(() => user?.phoneNumber || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
   const [profileErrorMsg, setProfileErrorMsg] = useState('');
@@ -115,7 +118,9 @@ export default function CourseProfile() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const token = localStorage.getItem('courseToken');
+    const courseToken = localStorage.getItem('courseToken');
+    const mainToken = localStorage.getItem('token');
+    const token = courseToken || mainToken;
     if (!token) {
       setLoading(false);
       return;
@@ -124,7 +129,8 @@ export default function CourseProfile() {
     const fetchUserProfile = async () => {
       try {
         const API_URL = import.meta.env.VITE_API_URL || '';
-        const res = await fetch(`${API_URL}/api/course-auth/me`, {
+        const endpoint = courseToken ? `${API_URL}/api/course-auth/me` : `${API_URL}/api/users/profile`;
+        const res = await fetch(endpoint, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -133,26 +139,26 @@ export default function CourseProfile() {
         if (res.ok) {
           const data = await res.json();
           setUser(data);
-          setFullName(data.fullName || '');
+          setFullName(data.fullName || data.name || '');
           setPhoneNumber(data.phoneNumber || '');
           localStorage.setItem('courseUser', JSON.stringify(data));
-          if (data.isPurchased) {
+          if (data.isPurchased || data.isCoursePurchased) {
             localStorage.setItem('isCoursePurchased', 'true');
-          } else {
-            localStorage.removeItem('isCoursePurchased');
           }
         } else {
-          clearAllAuth();
-          setUser(null);
-          navigate('/course');
-          return;
+          const eff = getEffectiveUser();
+          if (eff) {
+            setUser(eff);
+            setFullName(eff.fullName || eff.name || '');
+            setPhoneNumber(eff.phoneNumber || '');
+          }
         }
       } catch (err) {
         console.error('Error fetching course profile:', err);
-        clearAllAuth();
-        setUser(null);
-        navigate('/course');
-        return;
+        const eff = getEffectiveUser();
+        if (eff) {
+          setUser(eff);
+        }
       } finally {
         setLoading(false);
       }
@@ -421,7 +427,7 @@ export default function CourseProfile() {
             <span>LIBRARY</span>
           </Link>
 
-          {localStorage.getItem('courseToken') ? (
+          {isAnyUserLoggedIn() ? (
             <>
               <Link
                 to="/my-course"
@@ -435,7 +441,14 @@ export default function CourseProfile() {
               <div className="relative" ref={profileMenuRef}>
                 <button
                   type="button"
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  onClick={() => {
+                    if (window.innerWidth <= 768) {
+                      setMobileMenuOpen(!mobileMenuOpen);
+                      setProfileDropdownOpen(false);
+                    } else {
+                      setProfileDropdownOpen(!profileDropdownOpen);
+                    }
+                  }}
                   className="course-profile-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#C878BE]/50 bg-[#120613] flex items-center justify-center text-[#E3B8DE] hover:bg-[#C878BE] hover:text-black transition-all shadow-[0_0_20px_rgba(200,120,190,0.25)] shrink-0 cursor-pointer"
                   title={displayName || "Student Profile"}
                 >
@@ -447,7 +460,7 @@ export default function CourseProfile() {
                   {/* User Email & Name Header */}
                   <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
                     <div className="text-xs font-bold text-white truncate">
-                      {user?.fullName || 'Student Account'}
+                      {user?.fullName || displayName || 'Student Account'}
                     </div>
                     <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={user?.email}>
                       {user?.email || 'Logged In'}
@@ -505,8 +518,139 @@ export default function CourseProfile() {
               SIGN IN
             </Link>
           )}
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setMobileMenuOpen(!mobileMenuOpen);
+              setProfileDropdownOpen(false);
+            }}
+            className="md:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#C878BE]/40 bg-[#120613] flex items-center justify-center text-[#E3B8DE] hover:bg-[#C878BE] hover:text-black transition-all shadow-[0_0_15px_rgba(200,120,190,0.2)] shrink-0 cursor-pointer"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X size={18} weight="bold" /> : <List size={18} weight="bold" />}
+          </button>
         </div>
       </header>
+
+      {/* Mobile Drawer Overlay */}
+      <div 
+        className={`fixed inset-x-0 top-[52px] sm:top-[60px] z-[998] bg-[#0E0610]/98 backdrop-blur-2xl border-b border-white/10 flex flex-col md:hidden w-full max-h-[calc(100svh-60px)] overflow-y-auto px-5 py-5 shadow-[0_30px_60px_rgba(0,0,0,0.85)] transition-all duration-300 ease-out origin-top ${
+          mobileMenuOpen ? 'opacity-100 translate-y-0 visible pointer-events-auto' : 'opacity-0 -translate-y-3 invisible pointer-events-none'
+        }`}
+      >
+        <div className="flex flex-col gap-1 w-full pb-3 border-b border-white/10">
+          <Link
+            to="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="px-3 py-2.5 rounded-xl text-sm font-semibold tracking-wide text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center justify-between"
+          >
+            <span>HOME</span>
+            <span className="text-xs text-white/40">Main Site →</span>
+          </Link>
+          <Link
+            to="/course"
+            onClick={() => setMobileMenuOpen(false)}
+            className="px-3 py-2.5 rounded-xl text-sm font-semibold tracking-wide text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center justify-between"
+          >
+            <span>THE BETTER MAN</span>
+            <span className="text-xs text-[#C878BE]">Featured</span>
+          </Link>
+          <Link
+            to="/course/all"
+            onClick={() => setMobileMenuOpen(false)}
+            className="px-3 py-2.5 rounded-xl text-sm font-semibold tracking-wide text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center justify-between"
+          >
+            <span>ALL COURSES</span>
+            <span className="text-xs text-white/40">Catalog →</span>
+          </Link>
+          <Link
+            to="/library"
+            onClick={() => setMobileMenuOpen(false)}
+            className="px-3 py-2.5 rounded-xl text-sm font-semibold tracking-wide text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2.5">
+              <Books size={17} className="text-[#C878BE]" />
+              <span>LIBRARY</span>
+            </div>
+            <span className="text-xs text-white/40">Articles</span>
+          </Link>
+        </div>
+
+        {/* User Account / Navigation in Mobile Drawer */}
+        <div className="pt-4 flex flex-col gap-2">
+          {isAnyUserLoggedIn() ? (
+            <>
+              <div className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/10 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-[#120613] border border-[#C878BE]/50 flex items-center justify-center text-[#E3B8DE] font-bold text-xs shrink-0">
+                  <User size={16} weight="bold" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-white truncate">
+                    {user?.fullName || displayName || 'Student Account'}
+                  </div>
+                  <div className="text-[11px] text-[#E3B8DE] truncate">
+                    {user?.email || 'Logged In'}
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                to="/my-course"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C878BE]/20 to-[#7A2A70]/30 border border-[#C878BE]/40 text-[#E3B8DE] hover:text-white font-semibold text-xs tracking-wider flex items-center justify-between transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <BookOpen size={16} weight="bold" className="text-[#C878BE]" />
+                  <span>MY ENROLLED COURSE</span>
+                </div>
+                <span>→</span>
+              </Link>
+
+              <Link
+                to="/course/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full px-4 py-2.5 rounded-xl text-[#C878BE] bg-white/5 text-xs font-semibold tracking-wider flex items-center gap-2.5 transition-colors border border-white/5"
+              >
+                <User size={16} className="text-[#C878BE]" />
+                <span>STUDENT PROFILE</span>
+              </Link>
+
+              <Link
+                to="/my-journey"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full px-4 py-2.5 rounded-xl text-white/80 hover:text-white hover:bg-white/5 text-xs font-semibold tracking-wider flex items-center gap-2.5 transition-colors border border-white/5"
+              >
+                <Sparkle size={16} className="text-[#C878BE]" />
+                <span>MY JOURNEY & COACHING</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="w-full mt-1 px-4 py-2.5 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs font-semibold tracking-wider flex items-center gap-2.5 transition-colors border border-red-500/20 cursor-pointer"
+              >
+                <SignOut size={16} />
+                <span>LOG OUT</span>
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col gap-2 pt-1">
+              <Link
+                to="/course"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-3 rounded-full bg-[#C878BE] text-black font-bold text-xs tracking-widest uppercase hover:bg-[#d690cd] transition-all text-center"
+              >
+                SIGN IN / REGISTER
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Main 2-Column Dashboard Layout with Top Spacing for Fixed Navbar */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 pt-28 sm:pt-32 pb-16 relative z-10">
@@ -517,7 +661,7 @@ export default function CourseProfile() {
               <p className="text-xs uppercase tracking-widest text-white/50">Loading your profile...</p>
             </div>
           </div>
-        ) : !user && !localStorage.getItem('courseToken') ? (
+        ) : !user && !isAnyUserLoggedIn() ? (
           <div className="rounded-3xl border border-[#C878BE]/20 bg-[#0e0a16] p-10 text-center max-w-md mx-auto my-12 shadow-2xl">
             <div className="w-16 h-16 rounded-full bg-[#C878BE]/10 border border-[#C878BE]/30 flex items-center justify-center mx-auto mb-5 text-[#E3B8DE]">
               <User size={30} weight="light" />

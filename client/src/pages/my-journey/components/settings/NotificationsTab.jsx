@@ -82,9 +82,9 @@ export default function NotificationsTab() {
   };
 
   return (
-    <div className="w-full max-w-2xl border border-black/10 rounded-2xl p-6 sm:p-8 md:p-10 bg-white shadow-xs flex flex-col animate-in fade-in duration-500">
-      <h2 className="font-serif text-2xl sm:text-3xl text-[#111010] mb-2 font-medium">Notifications</h2>
-      <p className="font-sans text-[#555047] text-sm mb-8 sm:mb-10 font-light">
+    <div className="w-full max-w-2xl border border-black/10 rounded-2xl p-4 sm:p-6 md:p-8 bg-white shadow-xs flex flex-col animate-in fade-in duration-500">
+      <h2 className="font-serif text-xl sm:text-2xl text-[#111010] mb-1 font-medium">Notifications</h2>
+      <p className="font-sans text-[#555047] text-xs sm:text-sm mb-5 sm:mb-8 font-light">
         Choose how and when you would like to hear from us.
       </p>
 

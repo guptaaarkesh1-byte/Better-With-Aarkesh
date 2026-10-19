@@ -8,6 +8,7 @@ import config from '../data/questionnaireConfig.json';
 
 const DRAFT_ID_KEY = 'bwa_booking_draft_id';
 const DRAFT_PREFIX = 'bwa_q_draft_';
+const LOCAL_DRAFT_KEY = 'bwa_saved_questionnaire_draft';
 
 /**
  * Check if sessionStorage is available and functional
@@ -25,14 +26,28 @@ export function isSessionStorageAvailable() {
 
 /**
  * Get or create a random booking_draft_id for the current session.
+ * Re-uses existing draftId from localStorage if a previous unbooked draft exists.
  */
 export function getOrCreateBookingDraftId() {
-  if (!isSessionStorageAvailable()) {
-    return `bwa_draft_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  let draftId = null;
+  if (isSessionStorageAvailable()) {
+    draftId = sessionStorage.getItem(DRAFT_ID_KEY);
   }
-  let draftId = sessionStorage.getItem(DRAFT_ID_KEY);
+  if (!draftId) {
+    try {
+      const rawLocal = localStorage.getItem(LOCAL_DRAFT_KEY);
+      if (rawLocal) {
+        const parsed = JSON.parse(rawLocal);
+        if (parsed?.draftId) {
+          draftId = parsed.draftId;
+        }
+      }
+    } catch (e) {}
+  }
   if (!draftId) {
     draftId = `bwa_draft_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  }
+  if (isSessionStorageAvailable()) {
     try {
       sessionStorage.setItem(DRAFT_ID_KEY, draftId);
     } catch (e) {
@@ -62,50 +77,80 @@ export function getAllQuestions() {
 }
 
 /**
- * Load draft from sessionStorage for the given draftId.
+ * Load draft from sessionStorage or localStorage for the given draftId.
  */
 export function loadQuestionnaireDraft(draftId) {
-  if (!draftId || !isSessionStorageAvailable()) return null;
-  try {
-    const raw = sessionStorage.getItem(`${DRAFT_PREFIX}${draftId}`);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error('Failed to load questionnaire draft from sessionStorage:', err);
-    return null;
+  // 1. Try sessionStorage first
+  if (draftId && isSessionStorageAvailable()) {
+    try {
+      const raw = sessionStorage.getItem(`${DRAFT_PREFIX}${draftId}`);
+      if (raw) return JSON.parse(raw);
+    } catch (err) {}
   }
+
+  // 2. Fallback to localStorage (survives back navigation, tab reload, browser restarts)
+  try {
+    const rawLocal = localStorage.getItem(LOCAL_DRAFT_KEY);
+    if (rawLocal) {
+      const parsed = JSON.parse(rawLocal);
+      if (parsed?.draftData) {
+        // Sync into current sessionStorage
+        if (draftId && isSessionStorageAvailable()) {
+          try {
+            sessionStorage.setItem(`${DRAFT_PREFIX}${draftId}`, JSON.stringify(parsed.draftData));
+          } catch (e) {}
+        }
+        return parsed.draftData;
+      }
+    }
+  } catch (err) {}
+
+  return null;
 }
 
 /**
- * Save draft to sessionStorage.
+ * Save draft to both sessionStorage and localStorage.
  * Returns { success: boolean, storageAvailable: boolean, error?: string }
  */
 export function saveQuestionnaireDraft(draftId, draftData) {
   const available = isSessionStorageAvailable();
-  if (!available) {
-    return { success: false, storageAvailable: false, error: 'Session storage unavailable' };
-  }
   if (!draftId) {
-    return { success: false, storageAvailable: true, error: 'No draft ID provided' };
+    return { success: false, storageAvailable: available, error: 'No draft ID provided' };
   }
   try {
-    sessionStorage.setItem(`${DRAFT_PREFIX}${draftId}`, JSON.stringify(draftData));
-    return { success: true, storageAvailable: true };
-  } catch (err) {
-    console.warn('Quota or storage error saving questionnaire draft:', err);
-    return { success: false, storageAvailable: false, error: err?.message || 'Storage quota exceeded' };
-  }
+    if (available) {
+      sessionStorage.setItem(`${DRAFT_PREFIX}${draftId}`, JSON.stringify(draftData));
+    }
+  } catch (err) {}
+  try {
+    localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify({
+      draftId,
+      draftData,
+      savedAt: Date.now()
+    }));
+  } catch (err) {}
+  return { success: true, storageAvailable: true };
 }
 
 /**
- * Remove questionnaire draft from sessionStorage.
+ * Remove questionnaire draft from sessionStorage and localStorage.
  */
 export function clearQuestionnaireDraft(draftId) {
-  if (!isSessionStorageAvailable()) return;
   try {
-    if (draftId) {
+    if (draftId && isSessionStorageAvailable()) {
       sessionStorage.removeItem(`${DRAFT_PREFIX}${draftId}`);
     }
+    if (isSessionStorageAvailable()) {
+      sessionStorage.removeItem(DRAFT_ID_KEY);
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i);
+        if (key && (key.startsWith(DRAFT_PREFIX) || key === DRAFT_ID_KEY)) {
+          sessionStorage.removeItem(key);
+        }
+      }
+    }
+    // Remove persistent draft so fresh booking starts clean
+    localStorage.removeItem(LOCAL_DRAFT_KEY);
   } catch (err) {
     console.error('Error clearing questionnaire draft:', err);
   }

@@ -41,12 +41,12 @@ function App() {
             <Route path="/my-journey/notes" element={<Notes />} />
             <Route path="/prepare" element={<Prepare />} />
             <Route path="/articles" element={<Articles />} />
+            <Route path="/course/profile" element={<CourseProfile />} />
+            <Route path="/course-profile" element={<CourseProfile />} />
             <Route path="/course" element={<Course />} />
             <Route path="/course/:slug" element={<Course />} />
             <Route path="/courses" element={<Course />} />
             <Route path="/courses/:slug" element={<Course />} />
-            <Route path="/course/profile" element={<CourseProfile />} />
-            <Route path="/course-profile" element={<CourseProfile />} />
             <Route path="/my-course" element={<MyCourses />} />
             <Route path="/my-courses" element={<MyCourses />} />
             <Route path="/classroom" element={<MyCourses />} />

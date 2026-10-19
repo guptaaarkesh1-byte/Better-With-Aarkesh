@@ -423,48 +423,70 @@ export default function Step2Details({
 
       {/* Questionnaire Card (Optional 45-Question Coaching Questionnaire) */}
       <div
-        className={`mt-6 sm:mt-8 border rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6 transition-all duration-300 shadow-sm ${
+        className={`mt-6 sm:mt-8 border rounded-2xl p-4 sm:p-6 lg:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 transition-all duration-300 shadow-xs ${
           answeredCount > 0
             ? 'border-[#e8c4e2] bg-[#fbf0eb]'
-            : 'border-black/10 bg-white/90'
+            : 'border-black/10 bg-white/95'
         }`}
       >
-        <div className="flex gap-3.5 sm:gap-4 items-start">
-          <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 transition-all duration-300 shadow-xs ${
-            answeredCount > 0 ? 'border-[#e8c4e2] bg-white' : 'border-black/10 bg-[#faf7f2]'
-          }`}>
-            {answeredCount > 0
-              ? <CheckCircle className="text-[#c9542f]" size={22} weight="fill" />
-              : <Sparkle className="text-[#c9542f] text-xl sm:text-2xl" weight="light" />
-            }
+        <div className="flex flex-col sm:flex-row gap-3.5 sm:gap-4 items-start flex-1 min-w-0">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 shadow-xs ${
+              answeredCount > 0 ? 'border-[#e8c4e2] bg-white' : 'border-black/10 bg-[#faf7f2]'
+            }`}>
+              {answeredCount > 0
+                ? <CheckCircle className="text-[#c9542f]" size={20} weight="fill" />
+                : <Sparkle className="text-[#c9542f] text-lg sm:text-xl" weight="fill" />
+              }
+            </div>
+            <div className="sm:hidden flex-1 min-w-0">
+              <h4 className="text-[#111010] font-serif font-medium text-base leading-tight">
+                {config.copy?.card_title || 'Want to go deeper?'}
+              </h4>
+            </div>
           </div>
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h4 className="text-[#111010] font-serif font-normal text-base sm:text-lg">
+
+          <div className="space-y-2 flex-1 min-w-0">
+            <div className="hidden sm:flex flex-wrap items-center gap-2">
+              <h4 className="text-[#111010] font-serif font-medium text-base sm:text-lg">
                 {config.copy?.card_title || 'Want to go deeper?'}
               </h4>
               <span className="font-sans text-[0.65rem] uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
                 Optional • 45 Questions • ~25–35 mins
               </span>
             </div>
-            <p className="text-[#555047] text-xs sm:text-sm font-light leading-relaxed max-w-xl">
+
+            <div className="sm:hidden flex flex-wrap gap-1.5 pt-0.5">
+              <span className="font-sans text-[0.62rem] uppercase tracking-wide font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
+                Optional
+              </span>
+              <span className="font-sans text-[0.62rem] uppercase tracking-wide font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
+                45 Questions
+              </span>
+              <span className="font-sans text-[0.62rem] uppercase tracking-wide font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
+                ~25–35 mins
+              </span>
+            </div>
+
+            <p className="text-[#555047] text-xs sm:text-sm font-light leading-relaxed">
               {config.copy?.card_description ||
                 'An optional questionnaire to help me prepare for our conversation. There are 45 questions, and every question can be skipped. Allow around 25–35 minutes if you choose to answer them all.'}
             </p>
+
             {answeredCount > 0 && (
-              <p className="text-xs font-semibold text-[#c9542f] pt-0.5">
-                {answeredCount} of 45 answers currently saved in this tab.
+              <p className="text-xs font-semibold text-[#c9542f]">
+                ✓ {answeredCount} of 45 answers currently saved in this tab.
               </p>
             )}
           </div>
         </div>
 
-        <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
+        <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto pt-1 sm:pt-0">
           <button
             ref={openQuestionnaireBtnRef}
             type="button"
             onClick={() => setShowQuestionnaire(true)}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white font-sans text-xs tracking-wider font-bold uppercase transition-all shadow-sm cursor-pointer whitespace-nowrap w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-5 py-3.5 sm:py-3 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white font-sans text-xs tracking-wider font-bold uppercase transition-all shadow-xs cursor-pointer w-full sm:w-auto"
           >
             <span>
               {activeDraft?.last_screen === 'review'
@@ -475,7 +497,7 @@ export default function Step2Details({
                 ? (config.copy?.resume_button || 'Continue questionnaire')
                 : (config.copy?.start_button || 'Start optional questionnaire')}
             </span>
-            <ArrowUpRight size={16} weight="bold" />
+            <ArrowUpRight size={15} weight="bold" />
           </button>
 
           {(answeredCount > 0 || activeDraft?.opened) && (

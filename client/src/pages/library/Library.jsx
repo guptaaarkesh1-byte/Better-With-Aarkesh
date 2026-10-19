@@ -37,6 +37,17 @@ export default function Library() {
     };
   }, [dropdownOpen]);
 
+  // Lock body scroll when mobile menu overlay is open so background page doesn't scroll
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [mobileMenuOpen]);
+
   const effectiveUser = getEffectiveUser();
   const rawName = effectiveUser?.fullName || effectiveUser?.name || 'User';
   const userFirstName = rawName.trim().split(' ')[0].toUpperCase();
@@ -444,7 +455,8 @@ export default function Library() {
           justify-content: space-between;
           padding: 14px clamp(16px, 3.2vw, 44px);
           border-bottom: 1px solid var(--line);
-          position: relative;
+          position: sticky;
+          top: 0;
           z-index: 1200;
           background: var(--cream);
           width: 100%;
@@ -1729,30 +1741,105 @@ export default function Library() {
         }
 
         @media (max-width: 980px) {
-          .library-root .cta-nav .navlinks { display: none; }
-          .library-root .cta-nav .navcta .my-journey-btn { display: none; }
-        }
+          .library-root header.nav {
+            padding: 12px 16px;
+          }
+          .library-root .logo {
+            font-size: clamp(19px, 4.4vw, 24px);
+          }
+          .library-root .navlinks { 
+            display: none; 
+          }
+          .library-root .mobile-toggle { 
+            display: block; 
+          }
+          .library-root .cta-nav .navlinks { 
+            display: none; 
+          }
+          .library-root .cta-nav .navcta .my-journey-btn { 
+            display: none; 
+          }
 
-        @media (max-width: 980px) {
+          /* Hero Section Mobile Tuning */
+          .library-root .hero {
+            padding: 24px 16px 16px;
+            --heading-shift-y: 0px;
+            --search-shift-y: 0px;
+          }
+          .library-root .hero-cloud-stage {
+            transform: none !important;
+            padding: 0 4px;
+          }
+          .library-root .hero-cloud-stage h1 {
+            font-size: clamp(28px, 7.8vw, 44px) !important;
+            line-height: 1.15;
+            max-width: 100%;
+          }
+          .library-root .hero-search-wrap {
+            transform: none !important;
+            max-width: min(320px, calc(100% - 24px)) !important;
+            margin: 12px auto 0 !important;
+          }
+
+          /* Category Section Cards Mobile Tuning */
+          .library-root .cat-sec {
+            padding: 28px 18px 44px !important;
+            border-top-left-radius: 28px;
+            border-top-right-radius: 28px;
+            min-height: auto;
+          }
+          .library-root .cat-top {
+            margin-bottom: 12px;
+          }
           .library-root .cat-layout {
             flex-direction: column;
-            gap: 24px;
+            gap: 14px;
             text-align: center;
+            min-height: auto;
+          }
+          .library-root .cat-word {
+            font-size: clamp(32px, 8.8vw, 50px) !important;
+            line-height: 0.95 !important;
+            letter-spacing: -0.02em !important;
+            word-break: break-word !important;
+            text-align: center !important;
+            margin: 0 !important;
+            max-width: 100% !important;
           }
           .library-root .cat-word.left,
           .library-root .cat-word.right {
-            text-align: center;
+            text-align: center !important;
           }
           .library-root .circle-reveal {
             order: -1;
-            width: 220px;
-            height: 220px;
+            width: 160px !important;
+            height: 160px !important;
             margin: 0 auto;
           }
+          .library-root .art-list {
+            margin-top: 22px;
+            margin-bottom: 14px;
+          }
+          .library-root .art-row {
+            padding: 13px 0;
+          }
+          .library-root .art-row h4 {
+            font-size: 15px;
+          }
+
+          /* CTA Section Mobile Tuning */
+          .library-root .cta-content {
+            padding: 16px 12px;
+          }
+          .library-root .cta-content h2 {
+            font-size: clamp(30px, 8.5vw, 52px);
+          }
+
           .library-root footer {
             flex-direction: column;
             gap: 16px;
             text-align: center;
+            padding: 24px 16px 20px;
           }
         }
       `}</style>
@@ -1767,28 +1854,26 @@ export default function Library() {
           <Link to="/">Home</Link>
           <Link to="/#coaching">Coaching</Link>
           <Link to="/#meet-aarkesh">About</Link>
-          <Link to="/#testimonials">Testimonials</Link>
-          <Link to="/library" className="active">Library</Link>
           <Link to="/#faq">FAQ</Link>
         </nav>
 
-        <div className="navcta flex items-center gap-2.5">
+        <div className="navcta flex items-center gap-2 sm:gap-2.5">
           {/* Course Button */}
           <button 
             type="button"
             onClick={() => navigate('/course')} 
-            className="bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
+            className="bg-[#c8512d] hover:bg-black text-white rounded-full px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 text-[11px] sm:text-[12px] font-bold tracking-wider uppercase flex items-center gap-1 sm:gap-1.5 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer whitespace-nowrap"
           >
-            <Play size={13} weight="fill" className="text-white" />
+            <Play size={12} weight="fill" className="text-white" />
             <span>COURSE</span>
           </button>
 
-          {/* My Journey / Book a Session Button */}
+          {/* My Journey / Book a Session Button (Desktop only, available in drawer on mobile) */}
           {isLoggedIn ? (
             <button 
               type="button" 
               onClick={() => navigate('/my-journey')} 
-              className="bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase flex items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
+              className="hidden md:flex bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer whitespace-nowrap"
             >
               <CalendarBlank size={15} weight="bold" className="text-white" />
               <span>MY JOURNEY</span>
@@ -1797,25 +1882,25 @@ export default function Library() {
             <button 
               type="button" 
               onClick={() => navigate('/book')} 
-              className="bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase flex items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer"
+              className="hidden md:flex bg-[#c8512d] hover:bg-black text-white rounded-full px-4 lg:px-5 py-2 text-[12px] font-bold tracking-wider uppercase items-center gap-2 shadow-[0_2px_8px_rgba(200,81,45,0.25)] transition-all cursor-pointer whitespace-nowrap"
             >
               <CalendarBlank size={15} weight="bold" className="text-white" />
               <span>BOOK A SESSION</span>
             </button>
           )}
 
-          {/* Login / User Account */}
+          {/* Login / User Account (Desktop only, available in drawer on mobile) */}
           {!isLoggedIn ? (
             <button 
               type="button"
               onClick={() => setShowLoginModal(true)} 
-              className="bg-white border border-[#1c1714] hover:border-[#c8512d] hover:text-[#c8512d] text-[#1c1714] rounded-full px-4 py-2 text-[12px] font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="hidden md:flex bg-white border border-[#1c1714] hover:border-[#c8512d] hover:text-[#c8512d] text-[#1c1714] rounded-full px-4 py-2 text-[12px] font-bold tracking-wider uppercase transition-all items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
             >
               <User size={14} weight="bold" />
               <span>LOGIN</span>
             </button>
           ) : (
-            <div className="relative" ref={userMenuRef}>
+            <div className="relative hidden md:block" ref={userMenuRef}>
               <button 
                 type="button"
                 onClick={() => setDropdownOpen(prev => !prev)} 
@@ -1894,7 +1979,7 @@ export default function Library() {
                         setDropdownOpen(false);
                         clearAllAuth();
                         setIsLoggedIn(false);
-                        navigate('/library');
+                        navigate('/');
                       }}
                       className="flex items-center gap-2.5 text-[#9a918a] hover:text-[#c8512d] text-[13.5px] font-medium transition-colors w-full text-left cursor-pointer"
                     >
@@ -1909,25 +1994,67 @@ export default function Library() {
           
           <button 
             type="button"
-            className="mobile-toggle"
+            className="mobile-toggle p-1.5 text-[#111010] hover:text-[#c8512d] transition-colors cursor-pointer"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle navigation menu"
           >
-            {mobileMenuOpen ? <X size={24} /> : <List size={24} />}
+            {mobileMenuOpen ? <X size={24} weight="bold" /> : <List size={24} weight="bold" />}
           </button>
         </div>
       </header>
 
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="mobile-drawer">
-          <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-          <Link to="/#coaching" onClick={() => setMobileMenuOpen(false)}>Coaching</Link>
-          <Link to="/#meet-aarkesh" onClick={() => setMobileMenuOpen(false)}>About</Link>
-          <Link to="/#testimonials" onClick={() => setMobileMenuOpen(false)}>Testimonials</Link>
-          <Link to="/library" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'underline' }}>Library</Link>
-          <Link to="/#faq" onClick={() => setMobileMenuOpen(false)}>FAQ</Link>
-          <Link to="/course" onClick={() => setMobileMenuOpen(false)}>Course</Link>
+      {/* Mobile Drawer Overlay (Homepage Style) */}
+      <div 
+        className={`fixed inset-x-0 top-[56px] z-[1250] flex flex-col md:hidden w-full max-h-[calc(100svh-56px)] overflow-y-auto px-5 py-4 bg-[#f5f1e8] text-[#111010] border-b border-black/10 shadow-[0_30px_40px_-20px_rgba(0,0,0,0.35)] transition-all duration-300 ease-out origin-top ${
+          mobileMenuOpen 
+            ? "opacity-100 translate-y-0 visible pointer-events-auto" 
+            : "opacity-0 -translate-y-3 invisible pointer-events-none"
+        }`}
+      >
+        <nav className="flex flex-col w-full" aria-label="Primary">
+          {[
+            { label: 'Home', href: '/' },
+            { label: 'Coaching', href: '/#coaching' },
+            { label: 'About', href: '/#meet-aarkesh' },
+            { label: 'Testimonials', href: '/#testimonials' },
+            { label: 'Library', href: '/library', active: true },
+            { label: 'FAQ', href: '/#faq' },
+          ].map((link) => {
+            const active = Boolean(link.active);
+            return (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="py-3.5 border-b border-black/10 font-serif text-[26px] leading-[1.1] tracking-tight flex items-center justify-between transition-colors text-[#111010] hover:text-[#c8512d]"
+                style={{
+                  fontFamily: 'Fraunces, Georgia, serif',
+                  color: active ? '#c8512d' : '#111010',
+                }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>{link.label}</span>
+                {active && (
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#c8512d] shrink-0" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Action Buttons Row matching Homepage */}
+        <div className="grid grid-cols-2 gap-3 mt-5">
+          <button
+            type="button"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              navigate('/course');
+            }}
+            className="h-11 rounded-full bg-[#c8512d] text-white font-medium text-[12.5px] flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer shadow-sm"
+          >
+            <Play size={14} weight="fill" />
+            <span>Course</span>
+          </button>
+
           {!isLoggedIn ? (
             <button 
               type="button"
@@ -1935,14 +2062,41 @@ export default function Library() {
                 setMobileMenuOpen(false);
                 setShowLoginModal(true);
               }}
+              className="h-11 rounded-full border border-[#1c1714] bg-white text-[#1c1714] font-bold text-[12px] tracking-wider uppercase flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
             >
-              Login
+              <User size={15} weight="bold" />
+              <span>LOGIN</span>
             </button>
           ) : (
-            <Link to="/my-journey" onClick={() => setMobileMenuOpen(false)}>My Journey</Link>
+            <button 
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                navigate('/my-journey');
+              }}
+              className="h-11 rounded-full border border-[#1c1714] bg-white text-[#1c1714] font-bold text-[12px] tracking-wider uppercase flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+            >
+              <div className="w-5 h-5 rounded-full bg-[#c8512d] text-white flex items-center justify-center text-[10px] font-bold">
+                {userInitial}
+              </div>
+              <span>MY JOURNEY</span>
+            </button>
           )}
+
+          {/* Full Width Book A Session CTA */}
+          <button 
+            type="button"
+            className="col-span-2 h-12 rounded-full bg-[#c8512d] text-white font-medium text-[13px] flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(200,81,45,0.3)] mt-1 transition-transform active:scale-[0.99] cursor-pointer"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              navigate('/book');
+            }}
+          >
+            <CalendarBlank size={16} weight="bold" />
+            <span>Book a session</span>
+          </button>
         </div>
-      )}
+      </div>
 
       {/* ---------- MARQUEE STRIP (BLACK STRIP WITH COLORFUL DIAMOND SPARKLES) ---------- */}
       <div className="marquee">

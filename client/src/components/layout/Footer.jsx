@@ -122,13 +122,14 @@ export default function Footer() {
           
           {/* ─── COLUMN 1: Brand & Bio ─── */}
           <div className="w-full lg:w-[420px] shrink-0 flex flex-col items-start gap-6 pr-0 lg:pr-6">
-            <Link to="/" className="group inline-flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-[#fbf0eb] border border-[#e8c4e2] flex items-center justify-center text-[#c9542f] group-hover:scale-105 transition-transform shadow-xs">
-                <Sparkle size={22} weight="fill" />
+            <Link to="/" className="group inline-flex items-center gap-2.5 sm:gap-3.5 max-w-full">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#fbf0eb] border border-[#e8c4e2] flex items-center justify-center text-[#c9542f] group-hover:scale-105 transition-transform shadow-xs shrink-0">
+                <Sparkle size={18} className="sm:hidden" weight="fill" />
+                <Sparkle size={22} className="hidden sm:block" weight="fill" />
               </div>
               <span 
-                className="footer-brand-title font-serif text-3xl sm:text-4xl text-[#111010] tracking-tight leading-none"
-                style={{ fontSize: brandSettings.brandTitleFontSize ? `${brandSettings.brandTitleFontSize}px` : undefined }}
+                className="footer-brand-title font-serif text-[1.4rem] sm:text-2xl md:text-3xl lg:text-4xl text-[#111010] tracking-tight leading-none whitespace-nowrap"
+                style={{ fontSize: brandSettings.brandTitleFontSize ? `clamp(1.3rem, 5.5vw, ${brandSettings.brandTitleFontSize}px)` : undefined }}
               >
                 BetterWith<em className="text-[#c9542f] not-italic font-normal ml-0.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>Aarkesh</em>
               </span>

@@ -378,7 +378,7 @@ export default function QuestionnaireModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-0 sm:p-4 md:p-6"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-0 sm:p-4 md:p-6 h-[100dvh] w-full"
       style={{ backgroundColor: 'rgba(17, 16, 16, 0.65)', backdropFilter: 'blur(6px)' }}
       // Backdrop click explicitly does NOTHING per spec
       onClick={(e) => e.stopPropagation()}
@@ -389,30 +389,30 @@ export default function QuestionnaireModal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex="-1"
-        className="relative w-full max-w-[840px] h-full sm:h-auto sm:max-h-[90vh] bg-[#f5f1e8] text-[#111010] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-black/10 focus:outline-none"
+        className="relative w-full max-w-[840px] h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#f5f1e8] text-[#111010] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-black/10 focus:outline-none"
       >
         {/* TOP HEADER BAR */}
-        <div className="shrink-0 px-4 sm:px-6 py-3.5 sm:py-4 bg-[#f5f1e8] border-b border-black/10 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-[#c9542f]" />
-            <h1 id={titleId} className="font-sans text-xs tracking-widest uppercase font-bold text-[#7a756b]">
+        <div className="shrink-0 px-3.5 sm:px-6 py-2.5 sm:py-3.5 bg-[#f5f1e8] border-b border-black/10 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-[#c9542f] shrink-0" />
+            <h1 id={titleId} className="font-sans text-[0.68rem] sm:text-xs tracking-wider uppercase font-bold text-[#7a756b] truncate">
               {config.title || 'Optional Coaching Questionnaire'}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {isQuestionScreen && (
-              <span className="font-sans text-xs text-[#555047] bg-black/5 px-2.5 py-1 rounded-full font-medium">
-                {answeredCount} answered
+              <span className="font-sans text-[0.68rem] sm:text-xs text-[#555047] bg-black/5 px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
+                {answeredCount} <span className="hidden xs:inline">answered</span>
               </span>
             )}
             <button
               onClick={handleSaveAndReturn}
               aria-label="Save and return to booking"
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#111010] hover:text-[#c9542f] bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#111010] hover:text-[#c9542f] bg-black/5 hover:bg-black/10 px-2.5 sm:px-3 py-1.5 rounded-full transition-colors cursor-pointer whitespace-nowrap"
             >
               <span>Save & Close</span>
-              <X size={15} weight="bold" />
+              <X size={14} weight="bold" />
             </button>
           </div>
         </div>
@@ -443,7 +443,8 @@ export default function QuestionnaireModal({
         {/* SCROLLABLE QUESTION / SCREEN BODY */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6"
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-8 py-4 sm:py-7 space-y-5 sm:space-y-6 pb-12 sm:pb-8 touch-pan-y"
+          style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {/* ============================================================ */}
           {/* SCREEN: OPENING / INTRO                                      */}
@@ -526,16 +527,22 @@ export default function QuestionnaireModal({
           {/* SCREEN: QUESTION (0..44)                                     */}
           {/* ============================================================ */}
           {isQuestionScreen && (
-            <div className="space-y-6">
+            <div className="space-y-5 sm:space-y-6">
               {/* SECTION HEADER & INTRO */}
               <div className="space-y-1.5 pb-2 border-b border-black/5">
-                <div className="flex items-center justify-between text-xs text-[#7a756b] uppercase tracking-wider font-semibold">
-                  <span>Section {currentQ.sectionId.replace('s0', '').replace('s', '')}: {currentQ.sectionTitle}</span>
-                  <span className="font-mono text-[#c9542f]">Question {currentQ.number} of {totalQuestions}</span>
+                <div className="flex items-baseline justify-between gap-2 text-[0.68rem] sm:text-xs text-[#7a756b] uppercase tracking-wider font-semibold">
+                  <span className="leading-tight">
+                    Section {currentQ.sectionId.replace('s0', '').replace('s', '')}: {currentQ.sectionTitle}
+                  </span>
+                  <span className="font-mono text-[#c9542f] shrink-0 font-bold whitespace-nowrap">
+                    <span className="hidden xs:inline">Question </span>
+                    <span className="xs:hidden">Q</span>
+                    {currentQ.number} of {totalQuestions}
+                  </span>
                 </div>
 
                 {isFirstInSection && currentQ.sectionIntro && (
-                  <div className="mt-2 p-3.5 rounded-xl bg-white/60 border border-black/10 text-xs sm:text-sm text-[#555047] italic">
+                  <div className="mt-2 p-3 sm:p-3.5 rounded-xl bg-white/70 border border-black/10 text-xs sm:text-sm text-[#555047] italic leading-relaxed">
                     {currentQ.sectionIntro}
                   </div>
                 )}
@@ -569,11 +576,11 @@ export default function QuestionnaireModal({
               )}
 
               {/* QUESTION PROMPT */}
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <h2
                   ref={headingRef}
                   tabIndex="-1"
-                  className="text-xl sm:text-2xl font-serif font-normal text-[#111010] leading-snug focus:outline-none"
+                  className="text-lg sm:text-2xl font-serif font-normal text-[#111010] leading-snug focus:outline-none"
                 >
                   {currentQ.prompt}
                 </h2>
@@ -585,7 +592,7 @@ export default function QuestionnaireModal({
                 )}
 
                 {/* Question type instruction */}
-                <div className="text-xs font-semibold uppercase tracking-wider text-[#c9542f]">
+                <div className="text-[0.68rem] sm:text-xs font-bold uppercase tracking-wider text-[#c9542f]">
                   {currentQ.type === 'multi_select' && (
                     <span>
                       {currentQ.max_selections
@@ -611,7 +618,10 @@ export default function QuestionnaireModal({
               {/* CONTROL 1: MULTI_SELECT (CHECKBOXES - 2 COLUMNS)             */}
               {/* ============================================================ */}
               {currentQ.type === 'multi_select' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                <div
+                  className="max-h-[48vh] sm:max-h-none overflow-y-auto overscroll-contain pr-1 sm:pr-0 p-0.5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 touch-pan-y"
+                  style={{ scrollbarWidth: 'thin', scrollbarColor: '#c9542f transparent', WebkitOverflowScrolling: 'touch' }}
+                >
                   {(currentQ.options || []).map((opt) => {
                     const isChecked = Array.isArray(currentAnswer?.selected_option_ids) &&
                       currentAnswer.selected_option_ids.includes(opt.id);
@@ -694,7 +704,10 @@ export default function QuestionnaireModal({
               {/* CONTROL 2: SINGLE_SELECT (RADIO BUTTONS - 2 COLUMNS)         */}
               {/* ============================================================ */}
               {currentQ.type === 'single_select' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                <div
+                  className="max-h-[48vh] sm:max-h-none overflow-y-auto overscroll-contain pr-1 sm:pr-0 p-0.5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 touch-pan-y"
+                  style={{ scrollbarWidth: 'thin', scrollbarColor: '#c9542f transparent', WebkitOverflowScrolling: 'touch' }}
+                >
                   {(currentQ.options || []).map((opt) => {
                     const isSelected = Array.isArray(currentAnswer?.selected_option_ids) &&
                       currentAnswer.selected_option_ids.includes(opt.id);
@@ -991,42 +1004,43 @@ export default function QuestionnaireModal({
         </div>
 
         {/* BOTTOM FIXED NAVIGATION BAR */}
-        <div className="shrink-0 px-4 sm:px-8 py-3.5 sm:py-4 bg-[#f5f1e8] border-t border-black/10 flex items-center justify-between gap-3">
+        <div className="shrink-0 px-3.5 sm:px-8 py-3 sm:py-4 bg-[#f5f1e8] border-t border-black/10 flex items-center justify-between gap-2 sm:gap-3">
           {isQuestionScreen ? (
             <>
               {/* BACK BUTTON */}
               <button
                 onClick={handleBack}
-                className="flex items-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl border border-black/15 bg-white/80 hover:bg-white text-xs sm:text-sm font-semibold text-[#111010] transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl border border-black/15 bg-white/90 hover:bg-white text-xs sm:text-sm font-semibold text-[#111010] transition-colors cursor-pointer shrink-0"
               >
-                <ArrowLeft size={16} />
+                <ArrowLeft size={15} />
                 <span>{config.copy?.back_button || 'Back'}</span>
               </button>
 
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center justify-end gap-1.5 sm:gap-3 min-w-0">
                 {/* SKIP BUTTON */}
                 <button
                   onClick={handleSkipClick}
-                  className="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#7a756b] hover:text-[#111010] transition-colors cursor-pointer"
+                  className="px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#7a756b] hover:text-[#111010] transition-colors cursor-pointer whitespace-nowrap text-center"
                 >
-                  {config.copy?.skip_button || 'Skip this question'}
+                  <span className="hidden sm:inline">{config.copy?.skip_button || 'Skip this question'}</span>
+                  <span className="sm:hidden">Skip</span>
                 </button>
 
                 {/* NEXT BUTTON */}
                 <button
                   onClick={handleNext}
-                  className="flex items-center gap-1.5 px-6 sm:px-7 py-2.5 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white text-xs sm:text-sm font-bold tracking-wider uppercase transition-all shadow-md cursor-pointer"
+                  className="flex items-center justify-center gap-1 sm:gap-1.5 px-4 sm:px-7 py-2 sm:py-2.5 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white text-xs sm:text-sm font-bold tracking-wider uppercase transition-all shadow-md cursor-pointer shrink-0 whitespace-nowrap"
                 >
                   <span>{currentQIndex === totalQuestions - 1 ? 'Review' : (config.copy?.next_button || 'Next')}</span>
-                  <ArrowRight size={16} weight="bold" />
+                  <ArrowRight size={15} weight="bold" />
                 </button>
               </div>
             </>
           ) : screen === 'review' ? (
-            <>
+            <div className="w-full flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
               <button
                 onClick={() => setScreen(totalQuestions - 1)}
-                className="flex items-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl border border-black/15 bg-white/80 hover:bg-white text-xs sm:text-sm font-semibold text-[#111010] transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl border border-black/15 bg-white/90 hover:bg-white text-xs sm:text-sm font-semibold text-[#111010] transition-colors cursor-pointer w-full sm:w-auto"
               >
                 <ArrowLeft size={16} />
                 <span>Back to Question 45</span>
@@ -1034,19 +1048,19 @@ export default function QuestionnaireModal({
 
               <button
                 onClick={handleSaveAndReturn}
-                className="flex items-center gap-2 px-7 py-2.5 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white text-xs sm:text-sm font-bold tracking-wider uppercase transition-all shadow-md cursor-pointer"
+                className="flex items-center justify-center gap-2 px-5 sm:px-7 py-2.5 sm:py-3 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white text-xs sm:text-sm font-bold tracking-wider uppercase transition-all shadow-md cursor-pointer w-full sm:w-auto"
               >
                 <span>{config.copy?.return_button || 'Save and return to booking'}</span>
                 <Check size={16} weight="bold" />
               </button>
-            </>
+            </div>
           ) : (
             // Opening screen bottom bar
-            <div className="w-full flex justify-between items-center text-xs text-[#7a756b]">
+            <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-[#7a756b] text-center sm:text-left">
               <span>Clicking outside does not close this questionnaire.</span>
               <button
                 onClick={handleSaveAndReturn}
-                className="text-[#111010] hover:text-[#c9542f] font-semibold cursor-pointer underline"
+                className="text-[#111010] hover:text-[#c9542f] font-semibold cursor-pointer underline py-1"
               >
                 Return to Booking
               </button>

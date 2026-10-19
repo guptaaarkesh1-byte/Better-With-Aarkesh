@@ -534,6 +534,14 @@ export default function Booking() {
         sessionStorage.removeItem('bwa_booking_draft_id');
         sessionStorage.removeItem('bookingStep');
         sessionStorage.removeItem('bookingData');
+        setQuestionnaireDraft({
+          booking_draft_id: `bwa_draft_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          questionnaire_id: config.questionnaire_id || 'bwa_optional_coaching',
+          content_version: config.content_version || '2026-10-16-v1',
+          opened: false,
+          last_screen: 'intro',
+          answers: {}
+        });
         setIsLoading(false);
         nextStep();
         return;
@@ -643,6 +651,14 @@ export default function Booking() {
               sessionStorage.removeItem('bwa_booking_draft_id');
               sessionStorage.removeItem('bookingStep');
               sessionStorage.removeItem('bookingData');
+              setQuestionnaireDraft({
+                booking_draft_id: `bwa_draft_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+                questionnaire_id: config.questionnaire_id || 'bwa_optional_coaching',
+                content_version: config.content_version || '2026-10-16-v1',
+                opened: false,
+                last_screen: 'intro',
+                answers: {}
+              });
               nextStep();
             } else {
               const data = await finalRes.json();
@@ -859,22 +875,21 @@ export default function Booking() {
         </div>
 
         {/* Footer Note */}
-        <div className="mt-6 sm:mt-8 flex flex-col items-center justify-center gap-1 text-center">
-          <div className="flex items-center gap-2">
-            {/* Lock Icon */}
-            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M11.6667 7.33333H2.33333C1.59695 7.33333 1 7.93029 1 8.66667V13.3333C1 14.0697 1.59695 14.6667 2.33333 14.6667H11.6667C12.403 14.6667 13 14.0697 13 13.3333V8.66667C13 7.93029 12.403 7.33333 11.6667 7.33333Z" stroke="#c9542f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M4.3335 7.33333V4.66667C4.3335 3.95942 4.61445 3.28115 5.11455 2.78105C5.61465 2.28095 6.29292 2 7.00016 2C7.70741 2 8.38568 2.28095 8.88578 2.78105C9.38588 3.28115 9.66683 3.95942 9.66683 4.66667V7.33333" stroke="#c9542f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span className="font-sans text-xs text-[#555047] font-medium">
+        <div className="mt-6 sm:mt-8 flex items-center justify-center gap-2 text-center px-4 max-w-md mx-auto">
+          <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 text-[#c9542f]">
+            <path d="M11.6667 7.33333H2.33333C1.59695 7.33333 1 7.93029 1 8.66667V13.3333C1 14.0697 1.59695 14.6667 2.33333 14.6667H11.6667C12.403 14.6667 13 14.0697 13 13.3333V8.66667C13 7.93029 12.403 7.33333 11.6667 7.33333Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M4.3335 7.33333V4.66667C4.3335 3.95942 4.61445 3.28115 5.11455 2.78105C5.61465 2.28095 6.29292 2 7.00016 2C7.70741 2 8.38568 2.28095 8.88578 2.78105C9.38588 3.28115 9.66683 3.95942 9.66683 4.66667V7.33333" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <div className="text-left font-sans text-xs leading-snug">
+            <span className="text-[#555047] font-medium block">
               {bookingSettings.general.privacyNoteLine1 || 'Your information is private and only visible to me.'}
             </span>
+            {bookingSettings.general.privacyNoteLine2 && (
+              <span className="text-[#7a756b] block text-[0.7rem] sm:text-xs">
+                {bookingSettings.general.privacyNoteLine2}
+              </span>
+            )}
           </div>
-          {bookingSettings.general.privacyNoteLine2 && (
-            <span className="font-sans text-xs text-[#7a756b]">
-              {bookingSettings.general.privacyNoteLine2}
-            </span>
-          )}
         </div>
 
       </div>
