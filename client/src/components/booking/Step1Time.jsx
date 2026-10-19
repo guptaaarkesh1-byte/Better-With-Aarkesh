@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { 
   CaretLeft, CaretRight, CalendarBlank, CheckCircle, 
-  ArrowRight, CaretDown, SunHorizon, Sun, Moon, Clock 
+  ArrowRight, CaretDown, SunHorizon, Sun, Moon, Clock, WarningCircle
 } from '@phosphor-icons/react';
+import { holdSlot } from '../../utils/slotHoldService';
+import { getOrCreateBookingDraftId } from '../../utils/questionnaireDraft';
 
 const getGroupedSlots = (slots) => {
   const groups = {
@@ -34,7 +36,7 @@ const getGroupedSlots = (slots) => {
   return groups;
 };
 
-export default function Step1Time({ data, updateData, onNext, onBack, settings = {} }) {
+export default function Step1Time({ data, updateData, onNext, onBack, settings = {}, draftId }) {
   const PERIOD_CONFIG = {
     morning: {
       label: settings?.morningLabel || 'Morning',
@@ -81,6 +83,8 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
   const [times, setTimes] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState(null);
+  const [isHoldingSlot, setIsHoldingSlot] = useState(false);
+  const [slotConflictMsg, setSlotConflictMsg] = useState('');
 
   // Dynamic Calendar logic
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
@@ -92,61 +96,62 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const years = Array.from({ length: 5 }, (_, i) => today.getFullYear() + i);
 
+  const activeHolderId = draftId || data.holderId || data.booking_draft_id || getOrCreateBookingDraftId();
+
+  // Helper to re-fetch slots on the current day
+  const fetchLiveSlots = async (dayToFetch = selectedDay) => {
+    if (!dayToFetch) {
+      setTimes([]);
+      return;
+    }
+    setIsLoadingSlots(true);
+    setSlotsError(null);
+    try {
+      const monthStr = String(currentMonth + 1).padStart(2, '0');
+      const dayStr = String(dayToFetch).padStart(2, '0');
+      const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
+
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const emailQuery = data.email ? `&email=${encodeURIComponent(data.email)}` : '';
+      const holderQuery = activeHolderId ? `&holderId=${encodeURIComponent(activeHolderId)}` : '';
+      const res = await fetch(`${API_URL}/api/cal/slots?date=${dateStr}${emailQuery}${holderQuery}`);
+      
+      if (!res.ok) throw new Error('Failed to fetch slots');
+      
+      const resData = await res.json();
+      const dailySlots = resData?.data?.slots?.[dateStr] || [];
+      
+      if (resData?.metadata?.duration) {
+        updateData({ sessionDuration: resData.metadata.duration });
+      }
+      
+      const formattedTimes = dailySlots.map(slot => {
+        const dateObj = new Date(slot.time);
+        return dateObj.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      });
+      
+      setTimes(formattedTimes);
+    } catch (err) {
+      console.error(err);
+      setSlotsError("Could not load available times for this date.");
+    } finally {
+      setIsLoadingSlots(false);
+    }
+  };
+
   // Fetch live slots when a day is selected
   React.useEffect(() => {
     if (!selectedDay) {
       setTimes([]);
+      setSelectedTime(null);
       return;
     }
-
-    const fetchSlots = async () => {
-      setIsLoadingSlots(true);
-      setSlotsError(null);
-      setTimes([]);
-      
-      try {
-        // Format date as YYYY-MM-DD
-        const monthStr = String(currentMonth + 1).padStart(2, '0');
-        const dayStr = String(selectedDay).padStart(2, '0');
-        const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
-
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const emailQuery = data.email ? `&email=${encodeURIComponent(data.email)}` : '';
-        const res = await fetch(`${API_URL}/api/cal/slots?date=${dateStr}${emailQuery}`);
-        
-        if (!res.ok) throw new Error('Failed to fetch slots');
-        
-        const resData = await res.json();
-        
-        // Cal.com returns data.slots["YYYY-MM-DD"]
-        const dailySlots = resData?.data?.slots?.[dateStr] || [];
-        
-        // Update duration state for UI
-        if (resData?.metadata?.duration) {
-          updateData({ sessionDuration: resData.metadata.duration });
-        }
-        
-        // Format ISO times to local 12-hour strings
-        const formattedTimes = dailySlots.map(slot => {
-          const dateObj = new Date(slot.time);
-          return dateObj.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          });
-        });
-        
-        setTimes(formattedTimes);
-      } catch (err) {
-        console.error(err);
-        setSlotsError("Could not load available times for this date.");
-      } finally {
-        setIsLoadingSlots(false);
-      }
-    };
-
-    fetchSlots();
-  }, [selectedDay, currentMonth, currentYear, data.email]);
+    fetchLiveSlots(selectedDay);
+  }, [selectedDay, currentMonth, currentYear, data.email, activeHolderId]);
 
   const handleNextMonth = () => {
     if (currentMonth === 11) {
@@ -155,11 +160,10 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
     } else {
       setCurrentMonth(currentMonth + 1);
     }
-    setSelectedDay(null); // Require user to pick a new day in the new month
+    setSelectedDay(null);
   };
 
   const handlePrevMonth = () => {
-    // Prevent going to past months
     if (currentYear === today.getFullYear() && currentMonth === today.getMonth()) return;
 
     if (currentMonth === 0) {
@@ -171,15 +175,78 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
     setSelectedDay(null);
   };
 
-  const handleContinue = () => {
+  // User clicks a slot to lock/reserve it
+  const handleSelectTime = async (time) => {
+    setSlotConflictMsg('');
+    setSelectedTime(time);
+    setIsHoldingSlot(true);
+
+    const monthStr = String(currentMonth + 1).padStart(2, '0');
+    const dayStr = String(selectedDay).padStart(2, '0');
+    const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
+
+    const dateObj = new Date(currentYear, currentMonth, selectedDay);
+    const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+    const monthName = monthNames[currentMonth];
+    const displayDate = `${dayOfWeek}, ${monthName} ${selectedDay}, ${currentYear}`;
+
+    const result = await holdSlot({
+      dateKey: dateStr,
+      displayDate,
+      time,
+      holderId: activeHolderId,
+      email: data.email
+    });
+
+    setIsHoldingSlot(false);
+
+    if (result.conflict) {
+      setSlotConflictMsg(result.message || 'This time slot was just selected by another client. Please choose another time.');
+      setSelectedTime(null);
+      // Immediately refresh slots so contested slot vanishes from view
+      fetchLiveSlots(selectedDay);
+    } else {
+      updateData({ 
+        date: displayDate, 
+        dateKey: dateStr,
+        time,
+        holderId: activeHolderId
+      });
+    }
+  };
+
+  const handleContinue = async () => {
     if (selectedDay && selectedTime) {
+      setIsHoldingSlot(true);
       const dateObj = new Date(currentYear, currentMonth, selectedDay);
       const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
       const monthName = monthNames[currentMonth];
+      const monthStr = String(currentMonth + 1).padStart(2, '0');
+      const dayStr = String(selectedDay).padStart(2, '0');
+      const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
+      const displayDate = `${dayOfWeek}, ${monthName} ${selectedDay}, ${currentYear}`;
+
+      const result = await holdSlot({
+        dateKey: dateStr,
+        displayDate,
+        time: selectedTime,
+        holderId: activeHolderId,
+        email: data.email
+      });
+      setIsHoldingSlot(false);
+
+      if (result.conflict) {
+        setSlotConflictMsg(result.message || 'This time slot was just selected by another client. Please choose another time.');
+        setSelectedTime(null);
+        fetchLiveSlots(selectedDay);
+        return;
+      }
 
       updateData({ 
-        date: `${dayOfWeek}, ${monthName} ${selectedDay}, ${currentYear}`, 
-        time: selectedTime 
+        date: displayDate, 
+        dateKey: dateStr,
+        time: selectedTime,
+        holderId: activeHolderId
       });
       onNext();
     }
@@ -355,6 +422,16 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
             className="flex flex-col gap-4 max-h-[300px] sm:max-h-[380px] overflow-y-auto custom-scrollbar pr-1 sm:pr-2 overscroll-contain"
             data-lenis-prevent="true"
           >
+            {slotConflictMsg && (
+              <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/95 text-amber-900 text-xs sm:text-sm flex items-start gap-2.5 shadow-xs animate-fadeIn">
+                <WarningCircle className="text-amber-600 text-lg shrink-0 mt-0.5" weight="fill" />
+                <div className="flex-1">
+                  <span className="font-semibold block mb-0.5">Time Slot Unavailable</span>
+                  <span>{slotConflictMsg}</span>
+                </div>
+              </div>
+            )}
+
             {!selectedDay && (
               <div className="text-[#7a756b] text-xs sm:text-sm font-light italic p-6 text-center border border-black/10 rounded-2xl bg-white/60">
                 Select a date from the calendar to view available times.
@@ -417,12 +494,14 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                                 <button
                                   key={time}
                                   type="button"
-                                  onClick={() => setSelectedTime(time)}
+                                  onClick={() => handleSelectTime(time)}
+                                  disabled={isHoldingSlot}
                                   className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-left transition-all flex items-center justify-between group cursor-pointer
                                     ${isSelected 
                                       ? 'bg-[#fbf0eb] border-2 border-[#c9542f] text-[#c9542f] shadow-xs' 
                                       : 'bg-white border-black/10 text-[#111010] hover:border-[#c9542f] hover:bg-[#fbf0eb]/50'
                                     }
+                                    ${isHoldingSlot && !isSelected ? 'opacity-60 cursor-not-allowed' : ''}
                                   `}
                                 >
                                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
@@ -432,7 +511,11 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                                     </span>
                                   </div>
                                   {isSelected && (
-                                    <CheckCircle className="text-[#c9542f] text-base shrink-0 ml-1" weight="fill" />
+                                    isHoldingSlot ? (
+                                      <div className="w-3.5 h-3.5 border-2 border-[#c9542f]/30 border-t-[#c9542f] rounded-full animate-spin ml-1 shrink-0" />
+                                    ) : (
+                                      <CheckCircle className="text-[#c9542f] text-base shrink-0 ml-1" weight="fill" />
+                                    )
                                   )}
                                 </button>
                               );
@@ -472,9 +555,9 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
           
           <button
             onClick={handleContinue}
-            disabled={!selectedDay || !selectedTime}
+            disabled={!selectedDay || !selectedTime || isHoldingSlot}
             className={`flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-bold tracking-wider uppercase transition-all w-full md:w-auto cursor-pointer
-              ${(!selectedDay || !selectedTime) 
+              ${(!selectedDay || !selectedTime || isHoldingSlot) 
                 ? 'bg-black/5 text-black/30 border border-black/10 cursor-not-allowed' 
                 : 'bg-[#111010] text-white hover:bg-[#c9542f] shadow-md hover:-translate-y-0.5'
               }

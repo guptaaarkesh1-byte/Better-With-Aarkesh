@@ -3470,19 +3470,8 @@ export default function AdminHomeEditor() {
               {/* Header Box */}
               <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Section Header</span>
-                
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Eyebrow Text</label>
-                  <input
-                    type="text"
-                    value={currentAbout.eyebrowText || ''}
-                    onChange={(e) => handleSectionChange('eyebrowText', e.target.value)}
-                    placeholder="MEET AARKESH"
-                    className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
-                  />
-                </div>
 
-                <div className="flex flex-col gap-1.5 pt-2 border-t border-white/5">
+                <div className="flex flex-col gap-1.5 pt-1">
                   <div className="flex items-center justify-between">
                     <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-[#ffa260] flex items-center gap-1.5">
                       <Sparkle size={14} weight="fill" className="text-[#ffa260]" />

@@ -826,8 +826,15 @@ router.post('/google', async (req, res) => {
     const hasCoursePerks = !!courseUser || !!coursePurchase;
 
     let isNewUser = false;
-    if (!user) {
+    if (!user || user.isDeleted) {
       isNewUser = true;
+      if (user?.isDeleted) {
+        await User.deleteMany({ email: emailRegex });
+        try {
+          await PastClient.deleteMany({ email: emailRegex });
+        } catch {}
+        console.log(`🗑️ Removed old deleted User & PastClient records for fresh start: ${cleanEmail}`);
+      }
       const dynamicFree = hasCoursePerks ? await getDynamicCourseFreeSessions('better-man') : 0;
       const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
 
@@ -844,40 +851,27 @@ router.post('/google', async (req, res) => {
         googleId: uid || '',
         photoUrl: photoUrl || ''
       });
-      console.log(`✅ Created new Google-authenticated user: ${user.fullName} (${cleanEmail})`);
+      console.log(`✅ Created fresh Google-authenticated user: ${user.fullName} (${cleanEmail})`);
     } else {
-      if (user.isDeleted) {
-        // Full reset for re-activation after deletion — completely fresh start
-        user.isDeleted = false;
-        user.deletedAt = null;
-        user.freeSessions = 0;
-        user.courseSessionsGranted = false;
-        user.savedArticles = [];
-        user.savedVideos = [];
-        user.completedArticles = [];
-        user.completedVideos = [];
-        user.photoUrl = photoUrl || '';
-        user.googleId = uid || '';
-        user.authProvider = 'google';
-        if (fullName) user.fullName = fullName;
-        if (phoneNumber) user.phoneNumber = phoneNumber;
-      } else {
-        if (fullName) user.fullName = fullName;
-        if (photoUrl) user.photoUrl = photoUrl;
-        if (!user.authProvider || user.authProvider === 'local') user.authProvider = 'google';
-        if (uid && !user.googleId) user.googleId = uid;
-        if (hasCoursePerks && !user.courseSessionsGranted) {
-          const dynamicFree = await getDynamicCourseFreeSessions('better-man');
-          user.freeSessions = dynamicFree;
-          user.courseSessionsGranted = true;
-        }
+      if (fullName) user.fullName = fullName;
+      if (photoUrl) user.photoUrl = photoUrl;
+      if (!user.authProvider || user.authProvider === 'local') user.authProvider = 'google';
+      if (uid && !user.googleId) user.googleId = uid;
+      if (hasCoursePerks && !user.courseSessionsGranted) {
+        const dynamicFree = await getDynamicCourseFreeSessions('better-man');
+        user.freeSessions = dynamicFree;
+        user.courseSessionsGranted = true;
       }
       await user.save();
     }
 
     // Sync CourseUser as well
     let linkedCourseUser = await CourseUser.findOne({ email: emailRegex });
-    if (!linkedCourseUser) {
+    if (!linkedCourseUser || linkedCourseUser.isDeleted) {
+      if (linkedCourseUser?.isDeleted) {
+        await CourseUser.deleteMany({ email: emailRegex });
+        console.log(`🗑️ Removed old deleted CourseUser for fresh start: ${cleanEmail}`);
+      }
       const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
       linkedCourseUser = await CourseUser.create({
         fullName: user.fullName,
@@ -888,25 +882,12 @@ router.post('/google', async (req, res) => {
         googleId: uid || '',
         photoUrl: photoUrl || user.photoUrl || ''
       });
+      console.log(`✅ Created fresh Google-authenticated linked CourseUser: ${linkedCourseUser.fullName} (${cleanEmail})`);
     } else {
-      if (linkedCourseUser.isDeleted) {
-        // Full reset for re-activation after deletion — completely fresh start
-        linkedCourseUser.isDeleted = false;
-        linkedCourseUser.deletedAt = null;
-        linkedCourseUser.isPurchased = false;
-        linkedCourseUser.purchasedCourses = [];
-        linkedCourseUser.freeSessions = 0;
-        linkedCourseUser.photoUrl = photoUrl || '';
-        linkedCourseUser.googleId = uid || '';
-        linkedCourseUser.authProvider = 'google';
-        if (fullName) linkedCourseUser.fullName = fullName;
-        if (phoneNumber) linkedCourseUser.phoneNumber = phoneNumber;
-      } else {
-        if (fullName) linkedCourseUser.fullName = fullName;
-        if (photoUrl) linkedCourseUser.photoUrl = photoUrl;
-        if (!linkedCourseUser.authProvider || linkedCourseUser.authProvider === 'local') linkedCourseUser.authProvider = 'google';
-        if (uid && !linkedCourseUser.googleId) linkedCourseUser.googleId = uid;
-      }
+      if (fullName) linkedCourseUser.fullName = fullName;
+      if (photoUrl) linkedCourseUser.photoUrl = photoUrl;
+      if (!linkedCourseUser.authProvider || linkedCourseUser.authProvider === 'local') linkedCourseUser.authProvider = 'google';
+      if (uid && !linkedCourseUser.googleId) linkedCourseUser.googleId = uid;
       await linkedCourseUser.save();
     }
 

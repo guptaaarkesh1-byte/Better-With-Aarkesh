@@ -2530,7 +2530,13 @@ export default function AdminAppointmentsView() {
 
                       {/* Optional Coaching Questionnaire Answers */}
                       <AdminQuestionnaireViewer
-                        questionnaireAnswers={selectedAppt.questionnaireAnswers || selectedAppt.qa}
+                        questionnaireAnswers={
+                          selectedAppt.questionnaireAnswers ||
+                          selectedAppt.qa ||
+                          selectedAppt.questionnaire ||
+                          selectedAppt.answers?.questionnaireAnswers ||
+                          selectedAppt.answers
+                        }
                         clientName={selectedAppt.name || selectedAppt.userName || 'Client'}
                         appointmentDate={selectedAppt.date ? `${selectedAppt.date} ${selectedAppt.time || ''}` : ''}
                       />

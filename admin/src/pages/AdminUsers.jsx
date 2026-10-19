@@ -1558,7 +1558,13 @@ export default function AdminUsers() {
 
                     <div style={{ marginTop: '16px' }}>
                       <AdminQuestionnaireViewer
-                        questionnaireAnswers={selectedAppt.qa}
+                        questionnaireAnswers={
+                          selectedAppt.questionnaireAnswers ||
+                          selectedAppt.qa ||
+                          selectedAppt.questionnaire ||
+                          selectedAppt.answers?.questionnaireAnswers ||
+                          selectedAppt.answers
+                        }
                         clientName={selectedAppt.name || selectedClient.name || 'Client'}
                         appointmentDate={selectedAppt.date ? `${selectedAppt.date} ${selectedAppt.time || ''}` : ''}
                       />

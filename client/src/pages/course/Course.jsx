@@ -241,11 +241,12 @@ export default function Course() {
   };
   const [showPricingModal, setShowPricingModal] = useState(false);
   const getPurchasedSlugs = () => {
+    if (!isAnyUserLoggedIn()) return [];
     try {
-      const u = JSON.parse(localStorage.getItem('courseUser') || '{}');
+      const u = getEffectiveUser() || {};
       if (Array.isArray(u.purchasedCourses) && u.purchasedCourses.length > 0) return u.purchasedCourses;
     } catch {}
-    return localStorage.getItem('isCoursePurchased') === 'true' ? ['better-man'] : [];
+    return (isAnyUserLoggedIn() && localStorage.getItem('isCoursePurchased') === 'true') ? ['better-man'] : [];
   };
   const [purchasedCourses, setPurchasedCourses] = useState(getPurchasedSlugs);
 
@@ -257,8 +258,8 @@ export default function Course() {
     const isLearn = params.get('learn') === 'true';
     return isLearn && hasToken && isPurchasedStored && !isCheckout;
   });
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('courseToken'));
-  const [isPurchased, setIsPurchased] = useState(() => localStorage.getItem('isCoursePurchased') === 'true');
+  const [isLoggedIn, setIsLoggedIn] = useState(() => isAnyUserLoggedIn());
+  const [isPurchased, setIsPurchased] = useState(() => isAnyUserLoggedIn() && localStorage.getItem('isCoursePurchased') === 'true');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCheckout, setShowCheckout] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -287,7 +288,7 @@ export default function Course() {
 
   // Sync user profile on mount & focus to get accurate purchasedCourses and freeSessions remaining
   const syncProfile = useCallback(async () => {
-    const token = localStorage.getItem('courseToken');
+    const token = localStorage.getItem('courseToken') || localStorage.getItem('token');
     if (!token) return;
     try {
       const apiUrl = API_URL;
@@ -299,6 +300,7 @@ export default function Course() {
         setIsLoggedIn(false);
         setIsPurchased(false);
         setShowDashboard(false);
+        setPurchasedCourses([]);
         return;
       }
       if (res.ok) {
@@ -309,10 +311,13 @@ export default function Course() {
           setIsPurchased(true);
         } else {
           localStorage.removeItem('isCoursePurchased');
+          localStorage.removeItem('purchasedCourses');
           setIsPurchased(false);
         }
         if (Array.isArray(data.purchasedCourses)) {
           setPurchasedCourses(data.purchasedCourses);
+        } else {
+          setPurchasedCourses([]);
         }
         if (data.freeSessions !== undefined) {
           const count = Math.max(0, Number(data.freeSessions));
@@ -330,14 +335,16 @@ export default function Course() {
     const handleFocus = () => syncProfile();
     const handleAuthEvent = () => {
       const hasAuth = isAnyUserLoggedIn();
-      const isPurchasedStored = localStorage.getItem('isCoursePurchased') === 'true';
+      const isPurchasedStored = hasAuth && localStorage.getItem('isCoursePurchased') === 'true';
       setIsLoggedIn(hasAuth);
       setIsPurchased(isPurchasedStored);
       if (!hasAuth) {
         setShowDashboard(false);
         setShowCheckout(false);
         setShowProfileMenu(false);
+        setPurchasedCourses([]);
       } else {
+        setPurchasedCourses(getPurchasedSlugs());
         syncProfile();
       }
     };
@@ -1360,13 +1367,15 @@ export default function Course() {
   }, [coursesList, courseDetailsMap, slug]);
 
   const isThisCoursePurchased = useMemo(() => {
+    if (!isLoggedIn) return false;
     const targetSlug = activeCourse?.slug || 'better-man';
-    return purchasedCourses.includes(targetSlug);
-  }, [purchasedCourses, activeCourse?.slug]);
+    return Array.isArray(purchasedCourses) && purchasedCourses.includes(targetSlug);
+  }, [isLoggedIn, purchasedCourses, activeCourse?.slug]);
 
   const hasAnyCoursePurchased = useMemo(() => {
-    return (Array.isArray(purchasedCourses) && purchasedCourses.length > 0) || isPurchased;
-  }, [purchasedCourses, isPurchased]);
+    if (!isLoggedIn) return false;
+    return (Array.isArray(purchasedCourses) && purchasedCourses.length > 0) || Boolean(isPurchased);
+  }, [isLoggedIn, purchasedCourses, isPurchased]);
 
   // Sync custom course video modules if defined in course settings
   useEffect(() => {
@@ -1824,16 +1833,16 @@ export default function Course() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const token = localStorage.getItem('courseToken');
+    const hasAuth = isAnyUserLoggedIn();
     const purchased = localStorage.getItem('isCoursePurchased') === 'true';
-    if (token) {
+    if (hasAuth) {
       setIsLoggedIn(true);
       setIsPurchased(purchased);
       const isLearnParam = searchParams.get('learn') === 'true';
       if (purchased && isLearnParam) {
         setShowDashboard(true);
       }
-      const userStr = localStorage.getItem('courseUser');
+      const userStr = localStorage.getItem('courseUser') || localStorage.getItem('userInfo');
       if (userStr) {
         try {
           const userObj = JSON.parse(userStr);
@@ -2070,14 +2079,18 @@ export default function Course() {
             const count = Math.max(0, Number(data.freeSessions));
             setFreeSessionsRemaining(count);
           }
+          const isPurchasedVal = Boolean(data.isPurchased || data.isCoursePurchased);
           const userSlugs = Array.isArray(data.purchasedCourses) && data.purchasedCourses.length > 0
             ? data.purchasedCourses
-            : (data.isPurchased ? ['better-man'] : []);
+            : (isPurchasedVal ? ['better-man'] : []);
           setPurchasedCourses(userSlugs);
-          if (data.isPurchased && !isComingSoon) {
+          if (isPurchasedVal && !isComingSoon) {
             setIsPurchased(true);
+            localStorage.setItem('isCoursePurchased', 'true');
           } else {
             setIsPurchased(false);
+            localStorage.removeItem('isCoursePurchased');
+            localStorage.removeItem('purchasedCourses');
           }
           setShowDashboard(false);
           setShowCheckout(false);
@@ -2105,14 +2118,18 @@ export default function Course() {
       const count = Math.max(0, Number(data.freeSessions));
       setFreeSessionsRemaining(count);
     }
+    const isPurchasedVal = Boolean(data.isPurchased || data.isCoursePurchased);
     const userSlugs = Array.isArray(data.purchasedCourses) && data.purchasedCourses.length > 0
       ? data.purchasedCourses
-      : (data.isPurchased ? ['better-man'] : []);
+      : (isPurchasedVal ? ['better-man'] : []);
     setPurchasedCourses(userSlugs);
-    if (data.isPurchased && !isComingSoon) {
+    if (isPurchasedVal && !isComingSoon) {
       setIsPurchased(true);
+      localStorage.setItem('isCoursePurchased', 'true');
     } else {
       setIsPurchased(false);
+      localStorage.removeItem('isCoursePurchased');
+      localStorage.removeItem('purchasedCourses');
     }
     setShowDashboard(false);
     setShowCheckout(false);
@@ -2242,10 +2259,10 @@ export default function Course() {
                   {/* User Email & Name Header */}
                   <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
                     <div className="text-xs font-bold text-white truncate">
-                      {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').fullName || 'Student Account'; } catch { return 'Student Account'; } })()}
+                      {(() => { const u = getEffectiveUser(); return u?.fullName || 'Student Account'; })()}
                     </div>
-                    <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || ''; } catch { return ''; } })()}>
-                      {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || 'Logged In'; } catch { return 'Logged In'; } })()}
+                    <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={(() => { const u = getEffectiveUser(); return u?.email || ''; })()}>
+                      {(() => { const u = getEffectiveUser(); return u?.email || 'Logged In'; })()}
                     </div>
                   </div>
 
@@ -2679,10 +2696,10 @@ export default function Course() {
                   {/* User Email & Name Header */}
                   <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
                     <div className="text-xs font-bold text-white truncate">
-                      {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').fullName || 'Student Account'; } catch { return 'Student Account'; } })()}
+                      {(() => { const u = getEffectiveUser(); return u?.fullName || 'Student Account'; })()}
                     </div>
-                    <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || ''; } catch { return ''; } })()}>
-                      {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || 'Logged In'; } catch { return 'Logged In'; } })()}
+                    <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={(() => { const u = getEffectiveUser(); return u?.email || ''; })()}>
+                      {(() => { const u = getEffectiveUser(); return u?.email || 'Logged In'; })()}
                     </div>
                   </div>
 
@@ -2695,15 +2712,27 @@ export default function Course() {
                     <Books size={18} className="text-[#C878BE] shrink-0" />
                     <span>Library</span>
                   </Link>
-                  <Link
-                    to="/my-course"
-                    onClick={() => setShowProfileMenu(false)}
-                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
-                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
-                  >
-                    <BookOpen size={18} className="text-[#C878BE] shrink-0" />
-                    <span>My Course</span>
-                  </Link>
+                  {hasAnyCoursePurchased ? (
+                    <Link
+                      to="/my-course"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                      style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
+                    >
+                      <BookOpen size={18} className="text-[#C878BE] shrink-0" />
+                      <span>My Course</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/course/better-man"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                      style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
+                    >
+                      <BookOpen size={18} className="text-[#C878BE] shrink-0" />
+                      <span>Check Course</span>
+                    </Link>
+                  )}
                   <Link
                     to="/course/profile"
                     onClick={() => setShowProfileMenu(false)}
@@ -2887,67 +2916,25 @@ export default function Course() {
                       <span>My Course</span>
                       <span aria-hidden="true">→</span>
                     </button>
-                  ) : isLoggedIn ? (
+                  ) : (
                     <button 
                       type="button" 
                       className="btn" 
                       onClick={() => {
-                        const link = landingSettings?.hero?.secondaryBtnLink || '/course/better-man';
-                        if (link.startsWith('#')) {
-                          const el = document.querySelector(link);
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        } else if (link.startsWith('http://') || link.startsWith('https://')) {
-                          window.location.href = link;
-                        } else {
-                          const targetPath = link.startsWith('/') ? link : `/course/${link}`;
-                          navigate(targetPath);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
+                        navigate('/course/better-man');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      style={{ fontSize: landingSettings?.hero?.buttonSize ? `${landingSettings.hero.buttonSize}px` : undefined }}
+                      style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        gap: '8px',
+                        fontSize: landingSettings?.hero?.buttonSize ? `${landingSettings.hero.buttonSize}px` : undefined 
+                      }}
                     >
-                      {landingSettings?.hero?.secondaryBtnText || 'Check Course'} <span aria-hidden="true">→</span>
+                      <span>Check Course</span>
+                      <span aria-hidden="true">→</span>
                     </button>
-                  ) : (
-                    <>
-                      {landingSettings?.hero?.showPrimaryBtn !== false && (
-                        <button 
-                          type="button" 
-                          className="btn" 
-                          onClick={handleEnroll}
-                          style={{ fontSize: landingSettings?.hero?.buttonSize ? `${landingSettings.hero.buttonSize}px` : undefined }}
-                        >
-                          {landingSettings?.hero?.primaryBtnText || 'Register Now'} <span aria-hidden="true">→</span>
-                        </button>
-                      )}
-                      {landingSettings?.hero?.showSecondaryBtn !== false && (
-                        <button 
-                          type="button" 
-                          className="btn line" 
-                          onClick={() => {
-                            const link = landingSettings?.hero?.secondaryBtnLink || '/course/better-man';
-                            if (link.startsWith('#')) {
-                              const el = document.querySelector(link);
-                              if (el) el.scrollIntoView({ behavior: 'smooth' });
-                            } else if (link.startsWith('http://') || link.startsWith('https://')) {
-                              window.location.href = link;
-                            } else {
-                              const targetPath = link.startsWith('/') ? link : `/course/${link}`;
-                              navigate(targetPath);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                          }}
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.06)',
-                            border: '1px solid rgba(200, 120, 190, 0.4)',
-                            color: '#FFFFFF',
-                            fontSize: landingSettings?.hero?.buttonSize ? `${landingSettings.hero.buttonSize}px` : undefined
-                          }}
-                        >
-                          {landingSettings?.hero?.secondaryBtnText || 'Check Course'} <span aria-hidden="true">→</span>
-                        </button>
-                      )}
-                    </>
                   )}
                 </div>
               </div>
@@ -4208,10 +4195,10 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
                 {/* User Email & Name Header */}
                 <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
                   <div className="text-xs font-bold text-white truncate">
-                    {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').fullName || 'Student Account'; } catch { return 'Student Account'; } })()}
+                    {(() => { const u = getEffectiveUser(); return u?.fullName || 'Student Account'; })()}
                   </div>
-                  <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || ''; } catch { return ''; } })()}>
-                    {(() => { try { return JSON.parse(localStorage.getItem('courseUser') || '{}').email || 'Logged In'; } catch { return 'Logged In'; } })()}
+                  <div className="text-[11px] text-[#E3B8DE] font-sans truncate mt-0.5" title={(() => { const u = getEffectiveUser(); return u?.email || ''; })()}>
+                    {(() => { const u = getEffectiveUser(); return u?.email || 'Logged In'; })()}
                   </div>
                 </div>
 
@@ -4635,11 +4622,7 @@ function AuthModal({
                       apiEndpoint="/api/course-auth/google"
                       text={loginMode === 'login' ? 'Continue with Google' : 'Sign up with Google'}
                       onSuccess={(data) => {
-                        if (typeof onGoogleSuccess === 'function') {
-                          onGoogleSuccess(data);
-                        } else {
-                          setShowCourseLogin(false);
-                        }
+                        onGoogleSuccess?.(data);
                       }}
                       onError={(msg) => setError(msg)}
                     />

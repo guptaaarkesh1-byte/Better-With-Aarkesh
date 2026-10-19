@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Info, CheckCircle, WarningCircle, CircleNotch, Camera, Trash, GoogleLogo } from '@phosphor-icons/react';
 import API_URL from '../../../../utils/apiUrl';
+import { clearAllAuth } from '../../../../utils/authSync';
 
 export default function ProfileTab() {
   const [userInfo, setUserInfo] = useState(() => {
     try {
+      const token = localStorage.getItem('token') || localStorage.getItem('courseToken');
+      if (!token) return {};
       const saved = localStorage.getItem('userInfo') || localStorage.getItem('user') || localStorage.getItem('courseUser');
       return saved ? JSON.parse(saved) : {};
     } catch {
@@ -29,7 +32,10 @@ export default function ProfileTab() {
     const fetchLatestProfile = async () => {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('courseToken');
-        if (!token) return;
+        if (!token) {
+          clearAllAuth();
+          return;
+        }
 
         const res = await fetch(`${API_URL}/api/users/profile`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -50,6 +56,9 @@ export default function ProfileTab() {
             }
             localStorage.setItem('userInfo', JSON.stringify(data));
           }
+        } else if (res.status === 401 || res.status === 403 || res.status === 404) {
+          clearAllAuth();
+          window.location.href = '/';
         }
       } catch (err) {
         console.error('Failed to load profile:', err);

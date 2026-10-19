@@ -64,6 +64,14 @@ export default function Navbar() {
     };
   }, [dropdownOpen]);
 
+  // Handle auto-open login modal when redirected with ?login=true
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if ((params.get('login') === 'true' || params.get('login') === '1' || location.state?.openLogin) && !isLoggedIn) {
+      setShowLoginModal(true);
+    }
+  }, [location.search, location.state, isLoggedIn]);
+
   // Compute user display details
   const effectiveUser = getEffectiveUser();
   const rawName = effectiveUser?.fullName || effectiveUser?.name || 'User';

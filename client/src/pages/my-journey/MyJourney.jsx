@@ -307,6 +307,8 @@ export default function MyJourney() {
         localStorage.setItem('freeSessions', String(freeCount));
         if (data.courseSessionsGranted) {
           localStorage.setItem('isCoursePurchased', 'true');
+        } else {
+          localStorage.removeItem('isCoursePurchased');
         }
       } else if (res.status === 401 || res.status === 403) {
         clearAllAuth();
@@ -383,7 +385,7 @@ export default function MyJourney() {
     if (!isAnyUserLoggedIn()) {
       clearAllAuth();
       setUser(null);
-      navigate('/', { replace: true });
+      navigate('/?login=true', { replace: true });
       return;
     }
 
@@ -881,6 +883,10 @@ export default function MyJourney() {
     activeTab === 'coaching' ? 'Search appointments' :
     activeTab === 'library' ? 'Search your library' :
     activeTab === 'notes' ? 'Search your notes' : 'Search courses';
+
+  if (!isAnyUserLoggedIn()) {
+    return null;
+  }
 
   return (
     <div className="mj-container">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sparkle, CheckCircle } from '@phosphor-icons/react';
 import BookingStepper from '../components/booking/BookingStepper';
@@ -17,6 +17,11 @@ import {
   clearQuestionnaireDraft, 
   buildResponseContractPayload 
 } from '../utils/questionnaireDraft';
+import { 
+  heartbeatSlot, 
+  releaseSlot, 
+  releaseSlotBeacon 
+} from '../utils/slotHoldService';
 
 const bookingBg = CDN_IMAGES.BOOKING_LAMP_BG || bookingBgLocal;
 
@@ -26,6 +31,7 @@ export default function Booking() {
   
   // Maintain session-scoped draft ID
   const [draftId] = useState(() => getOrCreateBookingDraftId());
+  const bookingCompletedRef = useRef(false);
   const [questionnaireDraft, setQuestionnaireDraft] = useState(() => {
     return loadQuestionnaireDraft(draftId) || {
       booking_draft_id: draftId,
@@ -325,6 +331,80 @@ export default function Booking() {
     sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
   }, [bookingData]);
 
+  // Keep latest bookingData in ref for unmount/beforeunload cleanup
+  const bookingDataRef = useRef(bookingData);
+  useEffect(() => {
+    bookingDataRef.current = bookingData;
+  }, [bookingData]);
+
+  // -------------------------------------------------------------
+  // Slot Hold Lifecycle: Heartbeat while user is in booking flow
+  // (Step 1, Step 2, Questionnaire Modal, or Step 3)
+  // Keeps slot reserved and unavailable for any other user
+  // -------------------------------------------------------------
+  useEffect(() => {
+    if (step > 3 || bookingCompletedRef.current) return;
+    const currentData = bookingDataRef.current;
+    if (!currentData?.time || !currentData?.dateKey) return;
+
+    // Send immediate heartbeat on mount / step change if slot is already selected
+    heartbeatSlot({
+      holderId: draftId,
+      dateKey: currentData.dateKey,
+      time: currentData.time
+    });
+
+    const interval = setInterval(() => {
+      const activeData = bookingDataRef.current;
+      if (!bookingCompletedRef.current && activeData?.time && activeData?.dateKey) {
+        heartbeatSlot({
+          holderId: draftId,
+          dateKey: activeData.dateKey,
+          time: activeData.time
+        });
+      }
+    }, 2 * 60 * 1000); // refresh hold every 2 minutes
+
+    return () => clearInterval(interval);
+  }, [bookingData.dateKey, bookingData.time, draftId, step]);
+
+  // -------------------------------------------------------------
+  // Slot Hold Lifecycle: Release slot if user navigates away
+  // or leaves the booking page without completing payment
+  // -------------------------------------------------------------
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (!bookingCompletedRef.current && draftId) {
+        const activeData = bookingDataRef.current;
+        if (activeData?.time && activeData?.dateKey) {
+          releaseSlotBeacon({
+            holderId: draftId,
+            dateKey: activeData.dateKey,
+            time: activeData.time
+          });
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // If user navigates away from Book a Session to another page (Home, Courses, etc.)
+      // and has NOT completed booking, immediately release the held slot so others can book it!
+      if (!bookingCompletedRef.current && draftId) {
+        const activeData = bookingDataRef.current;
+        if (activeData?.time && activeData?.dateKey) {
+          releaseSlot({
+            holderId: draftId,
+            dateKey: activeData.dateKey,
+            time: activeData.time
+          });
+        }
+      }
+    };
+  }, [draftId]);
+
   // Always scroll to top when landing on the booking page or changing steps
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -406,7 +486,8 @@ export default function Booking() {
         source: finalSource,
         questionnaire_id: questionnairePayload.questionnaire_id,
         content_version: questionnairePayload.content_version,
-        booking_draft_id: questionnairePayload.booking_draft_id,
+        booking_draft_id: questionnairePayload.booking_draft_id || draftId,
+        holderId: draftId,
         questionnaire_opened: questionnairePayload.opened,
         questionnaire_responses: questionnairePayload.responses,
         questionnaireAnswers: questionnairePayload
@@ -435,6 +516,7 @@ export default function Booking() {
           throw new Error(errData.message || 'Failed to book complimentary coaching session');
         }
 
+        bookingCompletedRef.current = true;
         const freeData = await freeRes.json();
         handleAutoLoginOnBooking(freeData);
         updateData({ 
@@ -550,6 +632,7 @@ export default function Booking() {
             });
 
             if (finalRes.ok) {
+              bookingCompletedRef.current = true;
               const finalData = await finalRes.json();
               handleAutoLoginOnBooking(finalData);
               updateData({ 
@@ -742,6 +825,7 @@ export default function Booking() {
                   onBack={prevStep}
                   freeSessionInfo={freeSessionInfo}
                   settings={bookingSettings.step1}
+                  draftId={draftId}
                 />
               )}
               {step === 2 && (

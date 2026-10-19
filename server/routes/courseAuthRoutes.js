@@ -634,7 +634,18 @@ const protectCourse = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-      req.courseUser = await CourseUser.findById(decoded.id).select('-password');
+      if (decoded && decoded.id) {
+        req.courseUser = await CourseUser.findById(decoded.id).select('-password');
+        if (!req.courseUser) {
+          const coachingUser = await User.findById(decoded.id).select('-password');
+          if (coachingUser && coachingUser.email) {
+            req.courseUser = await CourseUser.findOne({
+              email: new RegExp(`^${coachingUser.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+              isDeleted: { $ne: true }
+            }).select('-password');
+          }
+        }
+      }
       if (!req.courseUser) {
         return res.status(401).json({ message: 'Course user not found' });
       }
@@ -1206,49 +1217,48 @@ router.post('/google', async (req, res) => {
 
     let courseUser = await CourseUser.findOne({ email: emailRegex });
     const coursePurchase = await CoursePurchase.findOne({ email: emailRegex, paymentStatus: 'paid', isUserDeleted: { $ne: true } });
-    const isPurchased = !!courseUser?.isPurchased || !!coursePurchase;
+    const isPurchased = (courseUser && !courseUser.isDeleted && !!courseUser.isPurchased) || !!coursePurchase;
 
     let isNewUser = false;
-    if (!courseUser) {
+    if (!courseUser || courseUser.isDeleted) {
       isNewUser = true;
+      if (courseUser?.isDeleted) {
+        await CourseUser.deleteMany({ email: emailRegex });
+        console.log(`🗑️ Removed old deleted CourseUser records for fresh start: ${cleanEmail}`);
+      }
       const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
       courseUser = await CourseUser.create({
         fullName: fullName || cleanEmail.split('@')[0],
         email: cleanEmail,
         password: randomPassword,
         phoneNumber: phoneNumber || '',
-        isPurchased,
+        isPurchased: false,
+        purchasedCourses: [],
+        freeSessions: 0,
         authProvider: 'google',
         googleId: uid || '',
         photoUrl: photoUrl || ''
       });
-      console.log(`✅ Created new Google-authenticated course user: ${courseUser.fullName} (${cleanEmail})`);
+      console.log(`✅ Created fresh Google-authenticated course user: ${courseUser.fullName} (${cleanEmail})`);
     } else {
-      if (courseUser.isDeleted) {
-        // Full reset for re-activation after deletion — completely fresh start
-        courseUser.isDeleted = false;
-        courseUser.deletedAt = null;
-        courseUser.isPurchased = false;
-        courseUser.purchasedCourses = [];
-        courseUser.freeSessions = 0;
-        courseUser.photoUrl = photoUrl || '';
-        courseUser.googleId = uid || '';
-        courseUser.authProvider = 'google';
-        if (fullName) courseUser.fullName = fullName;
-        if (phoneNumber) courseUser.phoneNumber = phoneNumber;
-      } else {
-        if (fullName) courseUser.fullName = fullName;
-        if (photoUrl) courseUser.photoUrl = photoUrl;
-        if (coursePurchase && !courseUser.isPurchased) courseUser.isPurchased = true;
-        if (!courseUser.authProvider || courseUser.authProvider === 'local') courseUser.authProvider = 'google';
-        if (uid && !courseUser.googleId) courseUser.googleId = uid;
-      }
+      if (fullName) courseUser.fullName = fullName;
+      if (photoUrl) courseUser.photoUrl = photoUrl;
+      if (coursePurchase && !courseUser.isPurchased) courseUser.isPurchased = true;
+      if (!courseUser.authProvider || courseUser.authProvider === 'local') courseUser.authProvider = 'google';
+      if (uid && !courseUser.googleId) courseUser.googleId = uid;
       await courseUser.save();
     }
 
     // Sync coaching User as well
     let coachingUser = await User.findOne({ email: emailRegex });
-    if (!coachingUser) {
+    if (!coachingUser || coachingUser.isDeleted) {
+      if (coachingUser?.isDeleted) {
+        await User.deleteOne({ _id: coachingUser._id });
+        try {
+          await PastClient.deleteMany({ email: emailRegex });
+        } catch {}
+        console.log(`🗑️ Removed old deleted User & PastClient records for fresh start: ${cleanEmail}`);
+      }
       const dynamicFree = isPurchased ? await getDynamicCourseFreeSessions('better-man') : 0;
       const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
       coachingUser = await User.create({
@@ -1264,28 +1274,12 @@ router.post('/google', async (req, res) => {
         googleId: uid || '',
         photoUrl: photoUrl || ''
       });
+      console.log(`✅ Created fresh Google-authenticated coaching user: ${coachingUser.fullName} (${cleanEmail})`);
     } else {
-      if (coachingUser.isDeleted) {
-        // Full reset for coaching account on re-activation after deletion
-        coachingUser.isDeleted = false;
-        coachingUser.deletedAt = null;
-        coachingUser.freeSessions = 0;
-        coachingUser.courseSessionsGranted = false;
-        coachingUser.savedArticles = [];
-        coachingUser.savedVideos = [];
-        coachingUser.completedArticles = [];
-        coachingUser.completedVideos = [];
-        coachingUser.photoUrl = photoUrl || '';
-        coachingUser.googleId = uid || '';
-        coachingUser.authProvider = 'google';
-        if (fullName) coachingUser.fullName = fullName;
-        if (phoneNumber) coachingUser.phoneNumber = phoneNumber;
-      } else {
-        if (fullName) coachingUser.fullName = fullName;
-        if (photoUrl) coachingUser.photoUrl = photoUrl;
-        if (!coachingUser.authProvider || coachingUser.authProvider === 'local') coachingUser.authProvider = 'google';
-        if (uid && !coachingUser.googleId) coachingUser.googleId = uid;
-      }
+      if (fullName) coachingUser.fullName = fullName;
+      if (photoUrl) coachingUser.photoUrl = photoUrl;
+      if (!coachingUser.authProvider || coachingUser.authProvider === 'local') coachingUser.authProvider = 'google';
+      if (uid && !coachingUser.googleId) coachingUser.googleId = uid;
       await coachingUser.save();
     }
 
@@ -1301,8 +1295,10 @@ router.post('/google', async (req, res) => {
       isPurchased: courseUser.isPurchased,
       authProvider: courseUser.authProvider || 'google',
       token,
+      courseToken: token,
       coachingToken,
       coachingUserId: coachingUser._id,
+      courseUserId: courseUser._id,
       isNewUser,
       isRegister: isNewUser,
       message: isNewUser ? 'Account created successfully with Google' : 'Logged in successfully with Google'

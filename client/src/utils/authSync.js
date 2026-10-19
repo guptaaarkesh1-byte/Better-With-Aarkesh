@@ -43,7 +43,7 @@ export const syncLoginData = (data = {}) => {
   if (!data) return;
 
   // 1. Sync Coaching Token & User
-  const coachingToken = data.coachingToken || data.token;
+  const coachingToken = data.coachingToken || (data.courseToken ? (data.token !== data.courseToken ? data.token : null) : data.token);
   if (coachingToken) {
     localStorage.setItem('token', coachingToken);
   }
@@ -56,8 +56,8 @@ export const syncLoginData = (data = {}) => {
     countryCode: data.countryCode || '+91',
     freeSessions: data.freeSessions !== undefined ? Math.max(0, Number(data.freeSessions)) : 0,
     courseSessionsGranted: data.courseSessionsGranted || false,
-    isPurchased: data.isPurchased || false,
-    purchasedCourses: data.purchasedCourses || [],
+    isPurchased: Boolean(data.isPurchased || data.isCoursePurchased),
+    purchasedCourses: Array.isArray(data.purchasedCourses) ? data.purchasedCourses : [],
     authProvider: data.authProvider || 'local',
     photoUrl: data.photoUrl || '',
   };
@@ -68,32 +68,37 @@ export const syncLoginData = (data = {}) => {
   }
 
   // 2. Sync Course Token & User
-  const courseToken = data.courseToken || (data.token && data.purchasedCourses !== undefined ? data.token : null);
+  // If data.coachingToken exists, data.token was generated for CourseUser
+  const courseToken = data.courseToken || (data.coachingToken ? data.token : data.token);
   if (courseToken) {
     localStorage.setItem('courseToken', courseToken);
   } else if (coachingToken) {
-    // If only coaching token is returned, keep courseToken synced with token as fallback
     localStorage.setItem('courseToken', coachingToken);
   }
 
   const courseUserInfo = {
-    _id: data._id || data.courseUserId,
+    _id: data.courseUserId || data._id,
     fullName: data.fullName || data.name || '',
     email: (data.email || '').toLowerCase().trim(),
     phoneNumber: data.phoneNumber || '',
-    isPurchased: data.isPurchased || false,
-    purchasedCourses: data.purchasedCourses || [],
+    isPurchased: Boolean(data.isPurchased || data.isCoursePurchased),
+    purchasedCourses: Array.isArray(data.purchasedCourses) ? data.purchasedCourses : [],
     authProvider: data.authProvider || 'local',
     photoUrl: data.photoUrl || '',
   };
   localStorage.setItem('courseUser', JSON.stringify(courseUserInfo));
 
-  if (data.isPurchased) {
+  const isPurchased = Boolean(data.isPurchased || data.isCoursePurchased);
+  if (isPurchased) {
     localStorage.setItem('isCoursePurchased', 'true');
+  } else {
+    localStorage.removeItem('isCoursePurchased');
   }
 
   if (Array.isArray(data.purchasedCourses) && data.purchasedCourses.length > 0) {
     localStorage.setItem('purchasedCourses', JSON.stringify(data.purchasedCourses));
+  } else {
+    localStorage.removeItem('purchasedCourses');
   }
 
   // Dispatch synchronized events across all components

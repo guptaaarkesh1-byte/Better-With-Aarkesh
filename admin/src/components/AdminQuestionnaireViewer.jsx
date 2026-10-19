@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import config from '../data/questionnaireConfig.json';
 
 export default function AdminQuestionnaireViewer({ 
@@ -7,8 +7,22 @@ export default function AdminQuestionnaireViewer({
   appointmentDate = '' 
 }) {
   const printContainerRef = useRef(null);
+  const [filterMode, setFilterMode] = useState('answered'); // 'answered' | 'all'
 
-  if (!questionnaireAnswers) {
+  // Safely parse JSON if provided as string
+  const parsedData = useMemo(() => {
+    if (!questionnaireAnswers) return null;
+    if (typeof questionnaireAnswers === 'string') {
+      try {
+        return JSON.parse(questionnaireAnswers);
+      } catch (e) {
+        return { rawText: questionnaireAnswers };
+      }
+    }
+    return questionnaireAnswers;
+  }, [questionnaireAnswers]);
+
+  if (!parsedData) {
     return (
       <div className="bwa-box" style={{ background: 'rgba(0,0,0,0.02)', borderStyle: 'dashed', padding: '16px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -24,42 +38,108 @@ export default function AdminQuestionnaireViewer({
     );
   }
 
-  // Handle new structured response contract
-  const isStructured = questionnaireAnswers && typeof questionnaireAnswers === 'object' && Array.isArray(questionnaireAnswers.responses);
+  // Raw unparsed text fallback
+  if (parsedData.rawText) {
+    return (
+      <div className="bwa-box">
+        <h4 className="big" style={{ margin: '0 0 8px' }}>Questionnaire Responses</h4>
+        <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.82rem', background: '#faf7f2', padding: '12px', borderRadius: '8px' }}>
+          {parsedData.rawText}
+        </pre>
+      </div>
+    );
+  }
 
-  if (!isStructured) {
-    // Legacy fallback format (array of strings or { question, answer })
-    const legacyList = Array.isArray(questionnaireAnswers)
-      ? questionnaireAnswers
-      : Object.entries(questionnaireAnswers).map(([k, v]) => ({ question: k, answer: typeof v === 'object' ? JSON.stringify(v) : String(v) }));
+  const contentVersion = parsedData.content_version || parsedData.contentVersion || '2026-10-16-v1';
+  const savedAt = parsedData.saved_at || parsedData.savedAt;
 
-    if (legacyList.length === 0) {
-      return (
-        <div className="bwa-box" style={{ background: 'rgba(0,0,0,0.02)', borderStyle: 'dashed', padding: '16px 20px' }}>
-          <span className="bwa-pill" style={{ background: '#eee', color: '#777', fontSize: '0.65rem' }}>
-            Not started
-          </span>
-          <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#9c9689' }}>
-            No questionnaire answers recorded.
-          </p>
-        </div>
-      );
+  // Build a normalized response map for quick lookup
+  const { responseMap, legacyList } = useMemo(() => {
+    const map = new Map();
+    const legacy = [];
+
+    // Extract list of responses
+    let rawList = [];
+    if (Array.isArray(parsedData.responses)) {
+      rawList = parsedData.responses;
+    } else if (Array.isArray(parsedData.answers)) {
+      rawList = parsedData.answers;
+    } else if (Array.isArray(parsedData)) {
+      rawList = parsedData;
+    } else if (typeof parsedData === 'object' && parsedData !== null) {
+      // Could be key-value pairs like { q01: [...], q02: "text" }
+      const entries = Object.entries(parsedData.answers || parsedData);
+      entries.forEach(([k, v]) => {
+        if (['questionnaire_id', 'content_version', 'booking_draft_id', 'opened', 'saved_at', 'status'].includes(k)) return;
+        rawList.push({ question_id: k, ...(typeof v === 'object' && v !== null && v.state ? v : { value: v }) });
+      });
     }
 
+    rawList.forEach((r, idx) => {
+      if (!r) return;
+      const qId = r.question_id || r.questionId || r.id || r.q;
+      if (qId) {
+        const normId = String(qId).toLowerCase();
+        map.set(normId, r);
+        // Map q1 <-> q01
+        if (normId.startsWith('q')) {
+          const num = parseInt(normId.replace('q', ''), 10);
+          if (!isNaN(num)) {
+            map.set(`q${num}`, r);
+            map.set(`q${String(num).padStart(2, '0')}`, r);
+          }
+        }
+      } else if (r.question || r.answer || typeof r === 'string') {
+        legacy.push({
+          question: r.question || `Question ${idx + 1}`,
+          answer: r.answer || (typeof r === 'object' ? JSON.stringify(r) : String(r))
+        });
+      }
+    });
+
+    return { responseMap: map, legacyList: legacy };
+  }, [parsedData]);
+
+  // Calculate statistics across all 9 sections
+  let answeredCount = 0;
+  let skippedCount = 0;
+  let unansweredCount = 0;
+
+  (config.sections || []).forEach((sec) => {
+    (sec.questions || []).forEach((q) => {
+      const resp = responseMap.get(q.id.toLowerCase()) || responseMap.get(`q${q.number}`);
+      const isAnswered = resp && (
+        resp.state === 'answered' ||
+        (Array.isArray(resp.selected_option_ids) && resp.selected_option_ids.length > 0) ||
+        (Array.isArray(resp.value) && resp.value.length > 0) ||
+        (typeof resp.text === 'string' && resp.text.trim()) ||
+        (typeof resp.value === 'string' && resp.value.trim()) ||
+        (typeof resp.answer === 'string' && resp.answer.trim())
+      );
+      const isSkipped = resp && resp.state === 'skipped';
+
+      if (isAnswered) answeredCount++;
+      else if (isSkipped) skippedCount++;
+      else unansweredCount++;
+    });
+  });
+
+  // If no structured matches were found but legacy list exists
+  if (answeredCount === 0 && legacyList.length > 0) {
     return (
       <div className="bwa-box">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <h4 className="big" style={{ margin: 0 }}>Questionnaire Answers (Legacy)</h4>
+          <h4 className="big" style={{ margin: 0 }}>Client Questionnaire Answers</h4>
           <span className="bwa-pill p-done" style={{ fontSize: '0.65rem' }}>{legacyList.length} Answered ✓</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {legacyList.map((item, idx) => (
-            <div key={idx} style={{ background: '#faf7f2', border: '1px solid rgba(0,0,0,0.07)', borderRadius: '10px', padding: '10px 14px' }}>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--accent, #c9542f)', marginBottom: '3px' }}>
-                Q{idx + 1}: {item.question || item.q || `Question ${idx + 1}`}
+            <div key={idx} style={{ background: '#faf7f2', border: '1px solid rgba(0,0,0,0.07)', borderRadius: '10px', padding: '12px 14px' }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--accent, #c9542f)', marginBottom: '4px' }}>
+                {item.question}
               </div>
               <div style={{ fontSize: '0.85rem', color: '#111010', lineHeight: 1.45 }}>
-                {item.answer || item.a || String(item)}
+                {item.answer}
               </div>
             </div>
           ))}
@@ -67,51 +147,6 @@ export default function AdminQuestionnaireViewer({
       </div>
     );
   }
-
-  // Structured response contract processing
-  const { questionnaire_id, content_version, opened, saved_at, responses = [] } = questionnaireAnswers;
-
-  if (!opened && responses.length === 0) {
-    return (
-      <div className="bwa-box" style={{ background: 'rgba(0,0,0,0.02)', borderStyle: 'dashed', padding: '16px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <span className="bwa-pill" style={{ background: '#eee', color: '#777', fontSize: '0.65rem' }}>
-            Not started
-          </span>
-          <h4 style={{ fontSize: '0.88rem', color: '#7a756b', margin: 0 }}>Optional Coaching Questionnaire</h4>
-        </div>
-        <p style={{ margin: 0, fontSize: '0.78rem', color: '#9c9689' }}>
-          Client did not open the optional questionnaire for this session.
-        </p>
-      </div>
-    );
-  }
-
-  // Create response lookup map
-  const responseMap = new Map();
-  responses.forEach((r) => {
-    if (r && r.question_id) {
-      responseMap.set(r.question_id, r);
-    }
-  });
-
-  // Calculate summary counts
-  let answeredCount = 0;
-  let skippedCount = 0;
-  let unansweredCount = 0;
-
-  (config.sections || []).forEach((sec) => {
-    (sec.questions || []).forEach((q) => {
-      const resp = responseMap.get(q.id);
-      if (resp && resp.state === 'answered') {
-        answeredCount++;
-      } else if (resp && resp.state === 'skipped') {
-        skippedCount++;
-      } else {
-        unansweredCount++;
-      }
-    });
-  });
 
   const handlePrint = () => {
     const printContent = printContainerRef.current;
@@ -151,7 +186,7 @@ export default function AdminQuestionnaireViewer({
           <div class="meta">
             <strong>Client:</strong> ${clientName} | 
             <strong>Date:</strong> ${appointmentDate || 'Coaching Session'} | 
-            <strong>Version:</strong> ${contentVersion || '2026-10-16-v1'} | 
+            <strong>Version:</strong> ${contentVersion} | 
             <strong>Completed:</strong> ${answeredCount} answered, ${skippedCount} skipped, ${unansweredCount} unanswered
           </div>
           ${printContent.innerHTML}
@@ -167,18 +202,18 @@ export default function AdminQuestionnaireViewer({
   };
 
   return (
-    <div className="bwa-box" style={{ padding: '20px 24px' }}>
+    <div className="bwa-box" style={{ padding: '20px 22px' }}>
       {/* HEADER SECTION */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: '14px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <h4 className="big" style={{ margin: 0 }}>Optional Coaching Questionnaire</h4>
             <span className="bwa-pill" style={{ background: '#fbf0eb', color: '#c9542f', borderColor: '#e8c4e2', fontSize: '0.65rem', fontWeight: 700 }}>
-              v{contentVersion || '2026-10-16-v1'}
+              v{contentVersion}
             </span>
           </div>
           <p className="hint" style={{ margin: 0 }}>
-            {saved_at ? `Responses recorded on ${new Date(saved_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'Saved during booking confirmation.'}
+            {savedAt ? `Recorded on ${new Date(savedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'Submitted by client during booking.'}
           </p>
         </div>
 
@@ -207,119 +242,193 @@ export default function AdminQuestionnaireViewer({
         </div>
       </div>
 
+      {/* FILTER BAR: ANSWERED ONLY VS ALL 45 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#faf7f2', padding: '8px 12px', borderRadius: '8px', marginBottom: '18px', border: '1px solid rgba(0,0,0,0.06)' }}>
+        <span style={{ fontSize: '0.78rem', color: '#7a756b', fontWeight: 500 }}>
+          Showing: <strong style={{ color: '#111' }}>{filterMode === 'answered' ? `${answeredCount} Answered questions` : 'All 45 questions (9 sections)'}</strong>
+        </span>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button
+            type="button"
+            onClick={() => setFilterMode('answered')}
+            style={{
+              padding: '4px 10px',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              borderRadius: '6px',
+              border: filterMode === 'answered' ? '1px solid #c9542f' : '1px solid #ddd',
+              background: filterMode === 'answered' ? '#c9542f' : '#fff',
+              color: filterMode === 'answered' ? '#fff' : '#666',
+              cursor: 'pointer'
+            }}
+          >
+            Answered Only ({answeredCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode('all')}
+            style={{
+              padding: '4px 10px',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              borderRadius: '6px',
+              border: filterMode === 'all' ? '1px solid #c9542f' : '1px solid #ddd',
+              background: filterMode === 'all' ? '#c9542f' : '#fff',
+              color: filterMode === 'all' ? '#fff' : '#666',
+              cursor: 'pointer'
+            }}
+          >
+            All 45 Questions
+          </button>
+        </div>
+      </div>
+
       {/* QUESTIONNAIRE BODY (9 SECTIONS) */}
       <div ref={printContainerRef} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-        {(config.sections || []).map((sec) => (
-          <div key={sec.id} className="section" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: '4px' }}>
-              <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, color: 'var(--accent, #c9542f)' }}>
-                Section {sec.id.replace('s0', '').replace('s', '')}: {sec.title}
-              </div>
-              {sec.intro && (
-                <div style={{ fontSize: '0.75rem', color: '#7a756b', fontStyle: 'italic', marginTop: '2px' }}>
-                  {sec.intro}
+        {(config.sections || []).map((sec) => {
+          // Filter questions in this section
+          const sectionQuestions = (sec.questions || []).filter((q) => {
+            const resp = responseMap.get(q.id.toLowerCase()) || responseMap.get(`q${q.number}`);
+            const isAnswered = resp && (
+              resp.state === 'answered' ||
+              (Array.isArray(resp.selected_option_ids) && resp.selected_option_ids.length > 0) ||
+              (Array.isArray(resp.value) && resp.value.length > 0) ||
+              (typeof resp.text === 'string' && resp.text.trim()) ||
+              (typeof resp.value === 'string' && resp.value.trim()) ||
+              (typeof resp.answer === 'string' && resp.answer.trim())
+            );
+            if (filterMode === 'answered') return isAnswered;
+            return true;
+          });
+
+          if (sectionQuestions.length === 0 && filterMode === 'answered') {
+            return null; // hide section if no answered questions in this section
+          }
+
+          return (
+            <div key={sec.id} className="section" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: '4px' }}>
+                <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, color: 'var(--accent, #c9542f)' }}>
+                  Section {sec.id.replace('s0', '').replace('s', '')}: {sec.title}
                 </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(sec.questions || []).map((q) => {
-                const resp = responseMap.get(q.id);
-                const isAnswered = resp && resp.state === 'answered';
-                const isSkipped = resp && resp.state === 'skipped';
-
-                return (
-                  <div
-                    key={q.id}
-                    className="q-box"
-                    style={{
-                      background: isAnswered ? '#ffffff' : '#faf7f2',
-                      border: isAnswered ? '1px solid rgba(201, 84, 47, 0.25)' : '1px solid rgba(0,0,0,0.06)',
-                      borderRadius: '10px',
-                      padding: '12px 14px',
-                      boxShadow: isAnswered ? '0 1px 3px rgba(0,0,0,0.03)' : 'none'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
-                      <div className="q-title" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#111010', lineHeight: 1.4 }}>
-                        <span style={{ color: '#c9542f', marginRight: '6px', fontFamily: 'monospace' }}>
-                          Q{q.number}.
-                        </span>
-                        {q.prompt}
-                      </div>
-
-                      <span
-                        className={`q-badge ${isAnswered ? 'b-ans' : isSkipped ? 'b-skp' : 'b-una'}`}
-                        style={{
-                          fontSize: '0.62rem',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          whiteSpace: 'nowrap',
-                          background: isAnswered ? '#e6f4ea' : isSkipped ? '#f0ede8' : '#faf8f5',
-                          color: isAnswered ? '#137333' : isSkipped ? '#5f6368' : '#9c9689'
-                        }}
-                      >
-                        {isAnswered ? 'Answered' : isSkipped ? 'Skipped' : 'Unanswered'}
-                      </span>
-                    </div>
-
-                    {/* ANSWER DETAIL */}
-                    {isAnswered && (
-                      <div className="answer" style={{ marginTop: '6px', fontSize: '0.84rem', color: '#222' }}>
-                        {/* Text questions */}
-                        {q.type === 'long_text' && (
-                          <div style={{ background: '#faf7f2', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', whiteSpace: 'pre-wrap', lineHeight: 1.5, color: '#111010' }}>
-                            {resp.text}
-                          </div>
-                        )}
-
-                        {/* Option based questions */}
-                        {['multi_select', 'single_select', 'integer_choice'].includes(q.type) && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {(resp.selected_option_ids || []).map((optId) => {
-                              const optDef = (q.options || []).find((o) => o.id === optId);
-                              const writeIn = resp.other_text_by_option_id?.[optId];
-
-                              // Q39 special confidence display
-                              let labelDisplay = optDef?.label || optId;
-                              if (q.id === 'q39') {
-                                if (optId === 'q39_0') labelDisplay = '0 — Not at all confident';
-                                else if (optId === 'q39_10') labelDisplay = '10 — Very confident';
-                                else if (optId === 'q39_not_sure') labelDisplay = 'Not sure';
-                                else labelDisplay = `Confidence level: ${optDef?.label || optId}`;
-                              }
-
-                              return (
-                                <div key={optId} style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                                  <span style={{ color: '#c9542f', fontSize: '0.8rem' }}>•</span>
-                                  <span style={{ fontWeight: 600, color: '#111010' }}>{labelDisplay}</span>
-                                  {writeIn && (
-                                    <span className="details" style={{ color: '#666', fontStyle: 'italic', fontSize: '0.8rem' }}>
-                                      — Details: "{writeIn}"
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {!isAnswered && (
-                      <div style={{ fontSize: '0.78rem', color: '#9c9689', fontStyle: 'italic' }}>
-                        {isSkipped ? 'Client chose to skip this question.' : 'No response provided.'}
-                      </div>
-                    )}
+                {sec.intro && (
+                  <div style={{ fontSize: '0.75rem', color: '#7a756b', fontStyle: 'italic', marginTop: '2px' }}>
+                    {sec.intro}
                   </div>
-                );
-              })}
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {sectionQuestions.map((q) => {
+                  const resp = responseMap.get(q.id.toLowerCase()) || responseMap.get(`q${q.number}`);
+                  const isAnswered = resp && (
+                    resp.state === 'answered' ||
+                    (Array.isArray(resp.selected_option_ids) && resp.selected_option_ids.length > 0) ||
+                    (Array.isArray(resp.value) && resp.value.length > 0) ||
+                    (typeof resp.text === 'string' && resp.text.trim()) ||
+                    (typeof resp.value === 'string' && resp.value.trim()) ||
+                    (typeof resp.answer === 'string' && resp.answer.trim())
+                  );
+                  const isSkipped = resp && resp.state === 'skipped';
+
+                  // Options and text extraction
+                  const selectedOptions = resp?.selected_option_ids || (Array.isArray(resp?.value) ? resp.value : resp?.value ? [resp.value] : []);
+                  const textAnswer = resp?.text || (typeof resp?.value === 'string' ? resp.value : null) || resp?.answer || null;
+                  const writeIns = resp?.other_text_by_option_id || {};
+
+                  return (
+                    <div
+                      key={q.id}
+                      className="q-box"
+                      style={{
+                        background: isAnswered ? '#ffffff' : '#faf7f2',
+                        border: isAnswered ? '1px solid rgba(201, 84, 47, 0.3)' : '1px solid rgba(0,0,0,0.06)',
+                        borderRadius: '10px',
+                        padding: '12px 14px',
+                        boxShadow: isAnswered ? '0 1px 3px rgba(0,0,0,0.03)' : 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
+                        <div className="q-title" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#111010', lineHeight: 1.4 }}>
+                          <span style={{ color: '#c9542f', marginRight: '6px', fontFamily: 'monospace' }}>
+                            Q{q.number}.
+                          </span>
+                          {q.prompt}
+                        </div>
+
+                        <span
+                          className={`q-badge ${isAnswered ? 'b-ans' : isSkipped ? 'b-skp' : 'b-una'}`}
+                          style={{
+                            fontSize: '0.62rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            whiteSpace: 'nowrap',
+                            background: isAnswered ? '#e6f4ea' : isSkipped ? '#f0ede8' : '#faf8f5',
+                            color: isAnswered ? '#137333' : isSkipped ? '#5f6368' : '#9c9689'
+                          }}
+                        >
+                          {isAnswered ? 'Answered' : isSkipped ? 'Skipped' : 'Unanswered'}
+                        </span>
+                      </div>
+
+                      {/* ANSWER DETAIL */}
+                      {isAnswered && (
+                        <div className="answer" style={{ marginTop: '8px', fontSize: '0.84rem', color: '#222' }}>
+                          {/* Long text / Free form answer */}
+                          {(q.type === 'long_text' || (!selectedOptions.length && textAnswer)) && (
+                            <div style={{ background: '#faf7f2', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', whiteSpace: 'pre-wrap', lineHeight: 1.5, color: '#111010' }}>
+                              {textAnswer || resp?.text || 'Response submitted'}
+                            </div>
+                          )}
+
+                          {/* Options selected */}
+                          {selectedOptions.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                              {selectedOptions.map((optId) => {
+                                const optDef = (q.options || []).find((o) => o.id === optId);
+                                const writeInVal = writeIns[optId];
+
+                                // Q39 scale confidence display
+                                let labelDisplay = optDef?.label || optId;
+                                if (q.id === 'q39') {
+                                  if (optId === 'q39_0') labelDisplay = '0 — Not at all confident';
+                                  else if (optId === 'q39_10') labelDisplay = '10 — Very confident';
+                                  else if (optId === 'q39_not_sure') labelDisplay = 'Not sure';
+                                  else labelDisplay = `Rating: ${optDef?.label || optId}`;
+                                }
+
+                                return (
+                                  <div key={optId} style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ color: '#c9542f', fontSize: '0.85rem' }}>✓</span>
+                                    <span style={{ fontWeight: 600, color: '#111010' }}>{labelDisplay}</span>
+                                    {writeInVal && (
+                                      <span className="details" style={{ color: '#666', fontStyle: 'italic', fontSize: '0.8rem', background: '#f5f2eb', padding: '2px 6px', borderRadius: '4px' }}>
+                                        Details: "{writeInVal}"
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!isAnswered && (
+                        <div style={{ fontSize: '0.78rem', color: '#9c9689', fontStyle: 'italic', marginTop: '4px' }}>
+                          {isSkipped ? 'Client skipped this question.' : 'No response recorded.'}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

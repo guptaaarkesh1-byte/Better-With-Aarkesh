@@ -7,6 +7,7 @@ import CourseUser from '../models/CourseUser.js';
 import CoursePurchase from '../models/CoursePurchase.js';
 import Settings from '../models/Settings.js';
 import PastClient from '../models/PastClient.js';
+import SlotHold from '../models/SlotHold.js';
 import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 import { Resend } from 'resend';
 import { sendCoachingBookingConfirmationEmail, generateCoachingAgreementPdf } from '../services/coachingAgreementService.js';
@@ -304,6 +305,18 @@ router.post('/', optionalAuth, async (req, res) => {
       return res.status(409).json({ message: 'This time slot is no longer available. Please select another date or time.' });
     }
 
+    // Check if slot is held by another user
+    const currentHolderId = req.body.booking_draft_id || req.body.holderId;
+    const activeHold = await SlotHold.findOne({
+      time: new RegExp(`^0?${String(time).trim().replace(/^0/, '')}$`, 'i'),
+      status: 'HELD',
+      expiresAt: { $gt: new Date() },
+      ...(currentHolderId ? { holderId: { $ne: String(currentHolderId).trim() } } : {})
+    });
+    if (activeHold) {
+      return res.status(409).json({ message: 'This time slot is currently being booked by another client. Please select another date or time.' });
+    }
+
     // Validate questionnaire submission (blank is valid)
     let validatedQuestionnaire = null;
     let questionnaireDraftId = null;
@@ -383,6 +396,12 @@ router.post('/', optionalAuth, async (req, res) => {
       }).catch(emailErr => {
         console.error("Failed to send free session confirmation email with PDF agreement:", emailErr);
       });
+
+      // Release any temporary hold for this user session since appointment is now confirmed
+      const holderIdToClear = req.body.booking_draft_id || questionnaireDraftId || req.body.holderId;
+      if (holderIdToClear) {
+        await SlotHold.deleteMany({ holderId: holderIdToClear });
+      }
 
       const authData = await getOrCreateBookingUser({
         name,
@@ -498,6 +517,12 @@ router.post('/', optionalAuth, async (req, res) => {
         { email: normalizedEmail, phoneNumber: phone },
         { upsert: true }
       );
+    }
+
+    // Release any temporary hold for this user session since appointment is now confirmed
+    const holderIdToClear = req.body.booking_draft_id || questionnaireDraftId || req.body.holderId;
+    if (holderIdToClear) {
+      await SlotHold.deleteMany({ holderId: holderIdToClear });
     }
 
     // Cal.com sync is now handled in /finalize route

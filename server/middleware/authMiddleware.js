@@ -24,14 +24,8 @@ const protect = async (req, res, next) => {
         }
       }
 
-      if (!req.user) {
-        req.user = await User.findOne({ 
-          $or: [
-            { email: decoded?.email || 'admin@betterwithaarkesh.com' },
-            { email: 'admin@aarkeshgupta.com' },
-            { isAdmin: true }
-          ] 
-        }).select('-password');
+      if (!req.user && decoded?.email) {
+        req.user = await User.findOne({ email: decoded.email.toLowerCase().trim() }).select('-password');
       }
 
       if (!req.user) {

@@ -901,29 +901,28 @@ export default function AdminBookingEditor() {
                 </div>
               </div>
 
-
               {/* Questionnaire Editor */}
-              <div className="bg-[#0e0e0e] border border-[#c79c6e]/20 rounded-xl overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-white/5 bg-gradient-to-r from-[#c79c6e]/5 to-transparent">
+              <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-5 border-b border-stone-200 bg-[#faf7f2]">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center shrink-0">
-                      <Question size={16} className="text-[#c79c6e]" />
+                    <div className="w-9 h-9 rounded-xl bg-[#c79c6e]/15 border border-[#c79c6e]/30 flex items-center justify-center shrink-0">
+                      <Question size={18} className="text-[#a06235]" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-sans text-sm font-semibold text-white">Questionnaire Editor</span>
-                        <span className="px-2 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#c79c6e] font-sans text-[0.65rem] font-bold uppercase tracking-wider">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-sans text-sm font-semibold text-stone-900">Questionnaire Editor</span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#a06235] font-sans text-[0.68rem] font-bold uppercase tracking-wider">
                           {(questionnaire?.questions || []).length} Questions • 9 Sections
                         </span>
                       </div>
-                      <p className="font-sans text-[0.68rem] text-white/40 mt-0.5">Manage optional coaching questionnaire questions, options, and section copy</p>
+                      <p className="font-sans text-xs text-stone-500 mt-0.5">Manage optional coaching questionnaire questions, options, and section copy</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={handleResetQuestionnaire}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 hover:border-[#c79c6e]/50 text-white/60 hover:text-[#c79c6e] text-xs font-sans transition-all"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 bg-white hover:border-[#c9542f] text-stone-700 hover:text-[#c9542f] text-xs font-sans font-medium transition-all shadow-sm"
                       title="Reset all questions to default 45 questions across 9 sections"
                     >
                       <ArrowClockwise size={13} />
@@ -932,7 +931,7 @@ export default function AdminBookingEditor() {
                     <button
                       type="button"
                       onClick={addQuestion}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#c79c6e]/10 border border-[#c79c6e]/30 text-[#c79c6e] text-xs font-sans font-semibold hover:bg-[#c79c6e]/20 transition-all"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#c79c6e] text-white hover:bg-[#b0885e] text-xs font-sans font-semibold transition-all shadow-sm"
                     >
                       <Plus size={13} weight="bold" />
                       <span>Add Question</span>
@@ -943,60 +942,60 @@ export default function AdminBookingEditor() {
                 {qLoading ? (
                   <div className="flex items-center justify-center py-12 gap-3">
                     <div className="w-6 h-6 border-2 border-[#c79c6e] border-t-transparent rounded-full animate-spin" />
-                    <span className="text-white/40 text-sm font-sans">Loading questionnaire...</span>
+                    <span className="text-stone-500 text-sm font-sans">Loading questionnaire...</span>
                   </div>
                 ) : questionnaire ? (
-                  <div className="p-5 flex flex-col gap-6">
+                  <div className="p-6 flex flex-col gap-6 bg-[#faf8f5]">
                     {/* Banner Configuration */}
-                    <div className="bg-[#111] border border-white/5 rounded-xl p-5 flex flex-col gap-4">
-                      <span className="font-sans text-xs uppercase tracking-widest text-[#c79c6e] font-semibold">Banner Text (shown on Step 2 page)</span>
+                    <div className="bg-white border border-stone-200 rounded-xl p-5 flex flex-col gap-4 shadow-sm">
+                      <span className="font-sans text-xs uppercase tracking-widest text-[#a06235] font-bold">Banner Text (shown on Step 2 page)</span>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Banner Title</label>
-                          <input type="text" value={questionnaire.title || ''} onChange={(e) => updateQField('title', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Want to go deeper?" />
+                          <label className="font-sans text-xs text-stone-600 font-medium">Banner Title</label>
+                          <input type="text" value={questionnaire.title || ''} onChange={(e) => updateQField('title', e.target.value)} className="bg-white border border-stone-300 rounded-lg px-4 py-2 text-sm text-stone-900 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e]" placeholder="Want to go deeper?" />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Badge Label</label>
-                          <input type="text" value={questionnaire.badgeLabel || ''} onChange={(e) => updateQField('badgeLabel', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Optional • 45 Questions • ~25–35 mins" />
+                          <label className="font-sans text-xs text-stone-600 font-medium">Badge Label</label>
+                          <input type="text" value={questionnaire.badgeLabel || ''} onChange={(e) => updateQField('badgeLabel', e.target.value)} className="bg-white border border-stone-300 rounded-lg px-4 py-2 text-sm text-stone-900 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e]" placeholder="Optional • 45 Questions • ~25–35 mins" />
                         </div>
                         <div className="flex flex-col gap-1.5 md:col-span-2">
-                          <label className="font-sans text-xs text-white/60">Banner Subtitle / Description</label>
-                          <textarea rows={2} value={questionnaire.subtitle || ''} onChange={(e) => updateQField('subtitle', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e] resize-none" placeholder="An optional questionnaire to help me prepare for our conversation..." />
+                          <label className="font-sans text-xs text-stone-600 font-medium">Banner Subtitle / Description</label>
+                          <textarea rows={2} value={questionnaire.subtitle || ''} onChange={(e) => updateQField('subtitle', e.target.value)} className="bg-white border border-stone-300 rounded-lg px-4 py-2 text-sm text-stone-900 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e] resize-none" placeholder="An optional questionnaire to help me prepare for our conversation..." />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Start Button Text</label>
-                          <input type="text" value={questionnaire.buttonText || ''} onChange={(e) => updateQField('buttonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Start optional questionnaire" />
+                          <label className="font-sans text-xs text-stone-600 font-medium">Start Button Text</label>
+                          <input type="text" value={questionnaire.buttonText || ''} onChange={(e) => updateQField('buttonText', e.target.value)} className="bg-white border border-stone-300 rounded-lg px-4 py-2 text-sm text-stone-900 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e]" placeholder="Start optional questionnaire" />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Resume Button Text</label>
-                          <input type="text" value={questionnaire.resumeButtonText || ''} onChange={(e) => updateQField('resumeButtonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Continue questionnaire" />
+                          <label className="font-sans text-xs text-stone-600 font-medium">Resume Button Text</label>
+                          <input type="text" value={questionnaire.resumeButtonText || ''} onChange={(e) => updateQField('resumeButtonText', e.target.value)} className="bg-white border border-stone-300 rounded-lg px-4 py-2 text-sm text-stone-900 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e]" placeholder="Continue questionnaire" />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Review Button Text</label>
-                          <input type="text" value={questionnaire.reviewButtonText || ''} onChange={(e) => updateQField('reviewButtonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Review answers" />
+                          <label className="font-sans text-xs text-stone-600 font-medium">Review Button Text</label>
+                          <input type="text" value={questionnaire.reviewButtonText || ''} onChange={(e) => updateQField('reviewButtonText', e.target.value)} className="bg-white border border-stone-300 rounded-lg px-4 py-2 text-sm text-stone-900 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e]" placeholder="Review answers" />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-sans text-xs text-white/60">Submit / Return Button (in modal)</label>
-                          <input type="text" value={questionnaire.submitButtonText || ''} onChange={(e) => updateQField('submitButtonText', e.target.value)} className="bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#c79c6e]" placeholder="Save and return to booking" />
+                          <label className="font-sans text-xs text-stone-600 font-medium">Submit / Return Button (in modal)</label>
+                          <input type="text" value={questionnaire.submitButtonText || ''} onChange={(e) => updateQField('submitButtonText', e.target.value)} className="bg-white border border-stone-300 rounded-lg px-4 py-2 text-sm text-stone-900 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e]" placeholder="Save and return to booking" />
                         </div>
                       </div>
                     </div>
 
                     {/* Section Filter & Search */}
-                    <div className="flex flex-col gap-3 bg-[#111] border border-white/5 rounded-xl p-4">
+                    <div className="flex flex-col gap-3 bg-white border border-stone-200 rounded-xl p-4 shadow-sm">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <span className="font-sans text-xs uppercase tracking-widest text-[#c79c6e] font-semibold">Browse Questions</span>
-                          <span className="text-white/30 text-xs font-mono">({(questionnaire.questions || []).length} total)</span>
+                          <span className="font-sans text-xs uppercase tracking-widest text-[#a06235] font-bold">Browse Questions</span>
+                          <span className="text-stone-500 text-xs font-mono">({(questionnaire.questions || []).length} total)</span>
                         </div>
                         <div className="relative min-w-[220px]">
-                          <MagnifyingGlass size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                          <MagnifyingGlass size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                           <input
                             type="text"
                             value={qSearch}
                             onChange={(e) => setQSearch(e.target.value)}
                             placeholder="Search question prompt or ID..."
-                            className="w-full bg-[#050505] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]"
+                            className="w-full bg-[#faf8f5] border border-stone-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#c79c6e] focus:bg-white"
                           />
                         </div>
                       </div>
@@ -1008,8 +1007,8 @@ export default function AdminBookingEditor() {
                           onClick={() => setQSectionFilter('all')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-sans whitespace-nowrap transition-all ${
                             qSectionFilter === 'all'
-                              ? 'bg-[#c79c6e] text-black font-semibold shadow-sm'
-                              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/5'
+                              ? 'bg-[#c9542f] text-white font-semibold shadow-sm'
+                              : 'bg-[#faf8f5] text-stone-700 hover:text-stone-900 hover:bg-stone-200/50 border border-stone-200'
                           }`}
                         >
                           All ({ (questionnaire.questions || []).length })
@@ -1025,12 +1024,12 @@ export default function AdminBookingEditor() {
                               onClick={() => setQSectionFilter(sec.id)}
                               className={`px-3 py-1.5 rounded-lg text-xs font-sans whitespace-nowrap transition-all flex items-center gap-1.5 ${
                                 qSectionFilter === sec.id
-                                  ? 'bg-[#c79c6e] text-black font-semibold shadow-sm'
-                                  : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/5'
+                                  ? 'bg-[#c9542f] text-white font-semibold shadow-sm'
+                                  : 'bg-[#faf8f5] text-stone-700 hover:text-stone-900 hover:bg-stone-200/50 border border-stone-200'
                               }`}
                             >
                               <span>{sec.number}. {sec.title}</span>
-                              <span className={`text-[0.65rem] px-1.5 py-0.2 rounded-full ${qSectionFilter === sec.id ? 'bg-black/20 text-black font-bold' : 'bg-white/10 text-white/50'}`}>
+                              <span className={`text-[0.65rem] px-1.5 py-0.2 rounded-full ${qSectionFilter === sec.id ? 'bg-black/20 text-white font-bold' : 'bg-stone-200/70 text-stone-600'}`}>
                                 {count}
                               </span>
                             </button>
@@ -1056,13 +1055,13 @@ export default function AdminBookingEditor() {
 
                         if (matched.length === 0) {
                           return (
-                            <div className="py-12 text-center border border-dashed border-white/10 rounded-xl">
-                              <Question size={32} className="text-white/20 mx-auto mb-2" />
-                              <p className="font-sans text-sm text-white/40">No questions match your current filter.</p>
+                            <div className="py-12 text-center border border-dashed border-stone-300 rounded-xl bg-white">
+                              <Question size={32} className="text-stone-300 mx-auto mb-2" />
+                              <p className="font-sans text-sm text-stone-500">No questions match your current filter.</p>
                               <button
                                 type="button"
                                 onClick={() => { setQSectionFilter('all'); setQSearch(''); }}
-                                className="mt-3 text-xs text-[#c79c6e] hover:underline font-sans"
+                                className="mt-3 text-xs text-[#c9542f] hover:underline font-sans font-medium"
                               >
                                 Clear search & section filter
                               </button>
@@ -1078,28 +1077,29 @@ export default function AdminBookingEditor() {
                           const maxSel = q.max_selections;
 
                           return (
-                            <div key={q.id || origIdx} className="bg-[#111] border border-white/8 rounded-xl overflow-hidden transition-all hover:border-[#c79c6e]/30">
-                              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-white/5 bg-[#0d0d0d]">
+                            <div key={q.id || origIdx} className="bg-white border border-stone-200 rounded-xl overflow-hidden shadow-sm hover:border-[#c79c6e]/60 transition-all">
+                              {/* Top Bar - Warm Light Header */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-stone-200 bg-[#f7f4ee]">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="w-8 h-6 rounded-md bg-[#c79c6e]/15 border border-[#c79c6e]/25 flex items-center justify-center font-mono text-[0.7rem] text-[#c79c6e] font-bold shrink-0">
+                                  <span className="w-8 h-6 rounded-md bg-[#c79c6e]/20 border border-[#c79c6e]/40 flex items-center justify-center font-mono text-[0.7rem] text-[#914d1e] font-bold shrink-0">
                                     Q{String(displayNum).padStart(2, '0')}
                                   </span>
-                                  <span className="font-mono text-[0.68rem] text-white/30">{q.id || `q${displayNum}`}</span>
+                                  <span className="font-mono text-[0.68rem] text-stone-500 font-semibold">{q.id || `q${displayNum}`}</span>
                                   {q.sectionTitle && (
-                                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/50 text-[0.65rem] font-sans">
+                                    <span className="px-2 py-0.5 rounded bg-white border border-stone-300 text-stone-700 text-[0.65rem] font-sans font-medium">
                                       {q.sectionTitle}
                                     </span>
                                   )}
-                                  <span className="px-2 py-0.5 rounded bg-[#c79c6e]/10 border border-[#c79c6e]/20 text-[#c79c6e] text-[0.65rem] font-mono uppercase">
+                                  <span className="px-2 py-0.5 rounded bg-[#c79c6e]/15 border border-[#c79c6e]/30 text-[#914d1e] text-[0.65rem] font-mono font-semibold uppercase">
                                     {isLongText ? 'Long text' : isIntegerChoice ? 'Scale 0–10' : maxSel ? `Multi (max ${maxSel})` : qType === 'single_select' ? 'Single choice' : 'Multi-select'}
                                   </span>
                                   <button
                                     type="button"
                                     onClick={() => updateQuestion(origIdx, 'required', !q.required)}
-                                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[0.65rem] font-sans font-semibold uppercase tracking-wider transition-all ${
+                                    className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[0.65rem] font-sans font-semibold uppercase tracking-wider transition-all ${
                                       q.required
-                                        ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
-                                        : 'bg-white/5 border border-white/10 text-white/30 hover:text-white/50'
+                                        ? 'bg-amber-100 border border-amber-300 text-amber-800'
+                                        : 'bg-white border border-stone-300 text-stone-600 hover:text-stone-900'
                                     }`}
                                   >
                                     {q.required ? <CheckSquare size={11} weight="fill" /> : <Square size={11} />}
@@ -1112,7 +1112,7 @@ export default function AdminBookingEditor() {
                                     type="button"
                                     onClick={() => moveQuestion(origIdx, -1)}
                                     disabled={origIdx === 0}
-                                    className="w-7 h-7 flex items-center justify-center rounded border border-white/10 text-white/40 hover:text-white hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+                                    className="w-7 h-7 flex items-center justify-center rounded border border-stone-300 bg-white text-stone-600 hover:text-stone-900 hover:border-stone-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xs"
                                     title="Move up"
                                   >
                                     <ArrowUp size={12} />
@@ -1121,7 +1121,7 @@ export default function AdminBookingEditor() {
                                     type="button"
                                     onClick={() => moveQuestion(origIdx, 1)}
                                     disabled={origIdx === allQ.length - 1}
-                                    className="w-7 h-7 flex items-center justify-center rounded border border-white/10 text-white/40 hover:text-white hover:border-white/30 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+                                    className="w-7 h-7 flex items-center justify-center rounded border border-stone-300 bg-white text-stone-600 hover:text-stone-900 hover:border-stone-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xs"
                                     title="Move down"
                                   >
                                     <ArrowDown size={12} />
@@ -1129,7 +1129,7 @@ export default function AdminBookingEditor() {
                                   <button
                                     type="button"
                                     onClick={() => removeQuestion(origIdx)}
-                                    className="w-7 h-7 flex items-center justify-center rounded border border-red-500/20 text-red-400/50 hover:text-red-400 hover:border-red-500/40 transition-all ml-1"
+                                    className="w-7 h-7 flex items-center justify-center rounded border border-red-200 bg-white text-red-500 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all ml-1 shadow-xs"
                                     title="Delete question"
                                   >
                                     <Trash size={12} />
@@ -1137,31 +1137,31 @@ export default function AdminBookingEditor() {
                                 </div>
                               </div>
 
-                              <div className="p-4 flex flex-col gap-4">
+                              <div className="p-5 flex flex-col gap-4">
                                 <div className="flex flex-col gap-1.5">
-                                  <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">Question Prompt</label>
+                                  <label className="font-sans text-[0.68rem] text-stone-600 uppercase tracking-wider font-semibold">Question Prompt</label>
                                   <textarea
                                     rows={2}
                                     value={q.prompt || q.question || ''}
                                     onChange={(e) => updateQuestion(origIdx, 'prompt', e.target.value)}
-                                    className="bg-[#080808] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#c79c6e] resize-none"
+                                    className="bg-white border border-stone-300 rounded-lg px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e] resize-none"
                                     placeholder="Type your question here..."
                                   />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <div className="flex flex-col gap-1.5">
-                                    <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">Instruction / Helper Subtext</label>
+                                    <label className="font-sans text-[0.68rem] text-stone-600 uppercase tracking-wider font-semibold">Instruction / Helper Subtext</label>
                                     <input
                                       type="text"
                                       value={q.instruction || ''}
                                       onChange={(e) => updateQuestion(origIdx, 'instruction', e.target.value)}
-                                      className="bg-[#080808] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#c79c6e]"
+                                      className="bg-white border border-stone-300 rounded-lg px-3 py-2 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e]"
                                       placeholder="e.g. Select up to 3 / Select all that apply..."
                                     />
                                   </div>
                                   <div className="flex flex-col gap-1.5">
-                                    <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">Assigned Section</label>
+                                    <label className="font-sans text-[0.68rem] text-stone-600 uppercase tracking-wider font-semibold">Assigned Section</label>
                                     <select
                                       value={q.sectionId || 's01'}
                                       onChange={(e) => {
@@ -1169,7 +1169,7 @@ export default function AdminBookingEditor() {
                                         updateQuestion(origIdx, 'sectionId', e.target.value);
                                         if (sec) updateQuestion(origIdx, 'sectionTitle', sec.title);
                                       }}
-                                      className="bg-[#080808] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c79c6e]"
+                                      className="bg-white border border-stone-300 rounded-lg px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e]"
                                     >
                                       {QUESTIONNAIRE_SECTIONS.map(s => (
                                         <option key={s.id} value={s.id}>{s.number}. {s.title} ({s.range})</option>
@@ -1180,56 +1180,56 @@ export default function AdminBookingEditor() {
 
                                 {/* Options handling based on question type */}
                                 {isLongText ? (
-                                  <div className="p-3.5 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-white/40 text-xs font-sans">
-                                      <NotePencil size={14} className="text-[#c79c6e]" />
+                                  <div className="p-3.5 rounded-lg bg-[#faf8f5] border border-stone-200 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-stone-600 text-xs font-sans">
+                                      <NotePencil size={15} className="text-[#a06235]" />
                                       <span>Open-ended multi-line text input on client side (No MCQ choices needed).</span>
                                     </div>
-                                    <span className="font-mono text-[0.65rem] text-white/30">max: {q.max_characters || 2000} chars</span>
+                                    <span className="font-mono text-[0.68rem] text-stone-400">max: {q.max_characters || 2000} chars</span>
                                   </div>
                                 ) : isIntegerChoice ? (
-                                  <div className="p-3.5 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-white/40 text-xs font-sans">
-                                      <Sparkle size={14} className="text-[#c79c6e]" />
+                                  <div className="p-3.5 rounded-lg bg-[#faf8f5] border border-stone-200 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-stone-600 text-xs font-sans">
+                                      <Sparkle size={15} className="text-[#a06235]" />
                                       <span>0–10 numeric rating scale with explicit "Not sure" button.</span>
                                     </div>
-                                    <span className="font-mono text-[0.65rem] text-[#c79c6e]">0 to 10 Scale</span>
+                                    <span className="font-mono text-[0.68rem] text-[#a06235] font-semibold">0 to 10 Scale</span>
                                   </div>
                                 ) : (
                                   <div className="flex flex-col gap-2">
                                     <div className="flex items-center justify-between">
-                                      <label className="font-sans text-[0.68rem] text-white/50 uppercase tracking-wider">
-                                        Options <span className="text-white/25 font-normal normal-case tracking-normal">({(q.options || []).length} choices)</span>
+                                      <label className="font-sans text-[0.68rem] text-stone-600 uppercase tracking-wider font-semibold">
+                                        Options <span className="text-stone-400 font-normal normal-case tracking-normal">({(q.options || []).length} choices)</span>
                                       </label>
                                       <button
                                         type="button"
                                         onClick={() => addOption(origIdx)}
-                                        className="flex items-center gap-1 text-[0.68rem] text-[#c79c6e] hover:text-white font-sans font-semibold transition-colors"
+                                        className="flex items-center gap-1 text-[0.72rem] text-[#c9542f] hover:text-[#914d1e] font-sans font-semibold transition-colors"
                                       >
-                                        <Plus size={11} weight="bold" /> Add Option
+                                        <Plus size={12} weight="bold" /> Add Option
                                       </button>
                                     </div>
 
                                     <div className="flex flex-col gap-2">
                                       {(q.options || []).map((opt, oIdx) => (
                                         <div key={opt.id || oIdx} className="flex items-center gap-2 group">
-                                          <span className="w-6 h-6 rounded border border-white/10 flex items-center justify-center font-mono text-[0.65rem] text-white/30 shrink-0 bg-[#080808]">
+                                          <span className="w-6 h-6 rounded border border-stone-300 bg-[#faf8f5] flex items-center justify-center font-mono text-[0.68rem] text-stone-600 font-bold shrink-0">
                                             {String.fromCharCode(65 + (oIdx % 26))}
                                           </span>
                                           <input
                                             type="text"
                                             value={opt.label || ''}
                                             onChange={(e) => updateOption(origIdx, oIdx, e.target.value)}
-                                            className="flex-1 bg-[#080808] border border-white/8 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#c79c6e]/50 transition-colors group-hover:border-white/15"
+                                            className="flex-1 bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#c79c6e] focus:ring-1 focus:ring-[#c79c6e] transition-colors"
                                             placeholder={`Option ${oIdx + 1} text...`}
                                           />
                                           {opt.is_exclusive && (
-                                            <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-sans text-[0.62rem] whitespace-nowrap">
+                                            <span className="px-2 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-800 font-sans text-[0.62rem] font-semibold whitespace-nowrap">
                                               Exclusive
                                             </span>
                                           )}
                                           {opt.allows_write_in && (
-                                            <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 font-sans text-[0.62rem] whitespace-nowrap">
+                                            <span className="px-2 py-0.5 rounded bg-blue-100 border border-blue-300 text-blue-800 font-sans text-[0.62rem] font-semibold whitespace-nowrap">
                                               Write-in
                                             </span>
                                           )}
@@ -1237,7 +1237,7 @@ export default function AdminBookingEditor() {
                                             type="button"
                                             onClick={() => removeOption(origIdx, oIdx)}
                                             disabled={(q.options || []).length <= 1}
-                                            className="w-7 h-7 flex items-center justify-center rounded text-red-400/40 hover:text-red-400 disabled:opacity-20 disabled:cursor-not-allowed transition-all shrink-0"
+                                            className="w-7 h-7 flex items-center justify-center rounded text-stone-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-20 disabled:cursor-not-allowed transition-all shrink-0"
                                             title="Delete option"
                                           >
                                             <Trash size={12} />
@@ -1257,7 +1257,7 @@ export default function AdminBookingEditor() {
                       <button 
                         type="button" 
                         onClick={addQuestion} 
-                        className="flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-xl border border-dashed border-[#c79c6e]/30 hover:border-[#c79c6e] text-[#c79c6e] hover:bg-[#c79c6e]/10 text-xs font-sans font-semibold uppercase tracking-wider transition-all"
+                        className="flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-xl border border-dashed border-[#c79c6e] text-[#c9542f] bg-white hover:bg-[#c79c6e]/10 text-xs font-sans font-semibold uppercase tracking-wider transition-all shadow-xs"
                       >
                         <Plus size={15} weight="bold" />
                         <span>Add Question</span>
@@ -1265,14 +1265,14 @@ export default function AdminBookingEditor() {
 
                       {(questionnaire.questions || []).length > 0 && (
                         <div className="text-center">
-                          <span className="font-sans text-[0.68rem] text-white/20">{(questionnaire.questions || []).length} questions total across 9 sections</span>
+                          <span className="font-sans text-xs text-stone-400">{(questionnaire.questions || []).length} questions total across 9 sections</span>
                         </div>
                       )}
                     </div>
                   </div>
                 ) : (
                   <div className="py-10 text-center">
-                    <p className="font-sans text-sm text-white/30">Failed to load questionnaire. Try refreshing.</p>
+                    <p className="font-sans text-sm text-stone-400">Failed to load questionnaire. Try refreshing.</p>
                   </div>
                 )}
               </div>

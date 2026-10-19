@@ -428,7 +428,8 @@ export default function SecurityPrivacyTab() {
           )}
         </div>
 
-        {/* Delete Account Trigger Card */}
+        {/* Delete Account Trigger Card (Hidden for now as requested) */}
+        {/*
         <div className="flex flex-col md:flex-row md:items-center justify-between border border-red-200 bg-red-50/50 rounded-2xl p-5 sm:p-6 hover:border-red-300 transition-colors group">
           <div className="flex flex-col gap-1.5 max-w-md">
             <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-red-600">DELETE ACCOUNT</span>
@@ -443,6 +444,7 @@ export default function SecurityPrivacyTab() {
             <Trash size={15} weight="bold" /> DELETE ACCOUNT
           </button>
         </div>
+        */}
 
       </div>
 
