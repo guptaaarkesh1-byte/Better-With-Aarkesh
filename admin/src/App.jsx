@@ -10,7 +10,9 @@ import {
   SignOut,
   LockKey,
   Gear,
-  GraduationCap
+  GraduationCap,
+  Eye,
+  EyeSlash
 } from '@phosphor-icons/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -21,6 +23,7 @@ import { API_URL } from './utils/apiUrl';
 function AdminLogin({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -74,14 +77,29 @@ function AdminLogin({ onLogin }) {
           
           <div className="flex flex-col gap-2">
             <label className="font-sans text-xs uppercase tracking-widest text-white/40">Password</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
-              placeholder="••••••••"
-              required
-            />
+            <div className="relative w-full">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-[#111] border border-white/10 rounded-lg pl-4 pr-11 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#c79c6e]/50 transition-colors"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors p-1 flex items-center justify-center cursor-pointer focus:outline-none"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeSlash size={19} weight="regular" />
+                ) : (
+                  <Eye size={19} weight="regular" />
+                )}
+              </button>
+            </div>
           </div>
 
           {error && <span className="text-red-500 text-xs font-sans mt-[-8px]">{error}</span>}
