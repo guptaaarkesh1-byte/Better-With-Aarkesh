@@ -10,7 +10,12 @@ import PastClient from '../models/PastClient.js';
 import SlotHold from '../models/SlotHold.js';
 import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 import { Resend } from 'resend';
-import { sendCoachingBookingConfirmationEmail, generateCoachingAgreementPdf } from '../services/coachingAgreementService.js';
+import { 
+  sendCoachBookingAlertEmail, 
+  sendClientCoachingAgreementEmail, 
+  generateCoachingAgreementPdf,
+  generateGoogleMeetLink
+} from '../services/coachingAgreementService.js';
 import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
 import { validateEmailFormat } from '../services/emailOtpService.js';
 import { validateQuestionnaireSubmission } from '../services/questionnaireValidator.js';
@@ -148,12 +153,16 @@ const syncAppointmentToCal = async (appointment) => {
       } else if (calData?.data?.locationValue) {
         appointment.meetLink = calData.data.locationValue;
       }
-
-      await appointment.save();
     }
   } catch (calError) {
     console.error("Cal.com API sync error:", calError);
   }
+
+  // Ensure appointment always has a valid Google Meet link
+  if (!appointment.meetLink) {
+    appointment.meetLink = generateGoogleMeetLink();
+  }
+  await appointment.save();
 };
 
 // @desc    Check if session is first (60m) or returning (90m) + return updatable fees
@@ -388,13 +397,12 @@ router.post('/', optionalAuth, async (req, res) => {
       // Sync with Cal.com just like a paid booking
       await syncAppointmentToCal(createdFreeAppointment);
 
-      // Send confirmation emails with dynamic Coaching Agreement PDF attached
-      sendCoachingBookingConfirmationEmail({
+      // Send coach alert email; client agreement is held for admin review in dashboard
+      sendCoachBookingAlertEmail({
         appointment: createdFreeAppointment,
-        isFreeSession: true,
-        freeSessionsRemaining: coachingUser.freeSessions
+        isFreeSession: true
       }).catch(emailErr => {
-        console.error("Failed to send free session confirmation email with PDF agreement:", emailErr);
+        console.error("Failed to send coach booking alert email:", emailErr);
       });
 
       // Release any temporary hold for this user session since appointment is now confirmed
@@ -620,21 +628,25 @@ router.put('/:id/finalize', optionalAuth, async (req, res) => {
           if (possibleMeetLink && typeof possibleMeetLink === 'string' && possibleMeetLink.startsWith('http')) {
              appointment.meetLink = possibleMeetLink;
           }
-
-          await appointment.save();
         }
       } catch (calError) {
         console.error("Failed to sync with Cal.com:", calError);
       }
     }
+
+    // Ensure appointment always has a valid Google Meet link
+    if (!appointment.meetLink) {
+      appointment.meetLink = generateGoogleMeetLink();
+    }
+    await appointment.save();
     // ---------------------------
     
-    // Send confirmation email with dynamic Coaching Agreement PDF attached
-    sendCoachingBookingConfirmationEmail({
-      appointment: updatedAppointment,
+    // Send coach alert email; client agreement is held for admin review in dashboard
+    sendCoachBookingAlertEmail({
+      appointment,
       isFreeSession: false
     }).catch(emailErr => {
-      console.error('Failed to send paid booking confirmation email with PDF agreement:', emailErr);
+      console.error('Failed to send coach booking alert email:', emailErr);
     });
 
     const authData = await getOrCreateBookingUser({
@@ -867,8 +879,15 @@ router.get('/admin', protect, admin, async (req, res) => {
       const resolvedPhone = appObj.phoneNumber || appObj.phone || (appObj.userId && (appObj.userId.phoneNumber || appObj.userId.phone)) || courseUserPhoneMap.get(appEmail) || '';
       const resolvedCountryCode = appObj.countryCode || (appObj.userId && appObj.userId.countryCode) || '';
 
+      let resolvedMeetLink = appObj.meetLink;
+      if (!resolvedMeetLink || !resolvedMeetLink.trim()) {
+        resolvedMeetLink = generateGoogleMeetLink();
+        Appointment.updateOne({ _id: app._id }, { $set: { meetLink: resolvedMeetLink } }).catch(() => {});
+      }
+
       return {
         ...appObj,
+        meetLink: resolvedMeetLink,
         phoneNumber: resolvedPhone,
         phone: resolvedPhone,
         countryCode: resolvedCountryCode,
@@ -1726,6 +1745,116 @@ router.put('/:id/cancel', optionalAuth, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error cancelling appointment' });
+  }
+});
+
+// @route   GET /api/appointments/:id/agreement-preview
+// @desc    Generate & stream dynamic Coaching Agreement PDF for admin preview
+// @access  Private/Admin
+router.get('/:id/agreement-preview', protect, admin, async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    const customData = appointment.agreementData || {};
+    const clientName = (customData.clientName || appointment.name || 'Valued Client').trim();
+    const clientEmail = (customData.clientEmail || appointment.email).trim().toLowerCase();
+    const clientPhone = (customData.clientPhone || appointment.phoneNumber || appointment.phone || '').trim();
+    const cleanDate = (customData.sessionDate || appointment.date || 'Scheduled Date').trim();
+    const cleanTime = (customData.sessionTime || appointment.time || 'Scheduled Time').trim();
+    const meetLink = (customData.meetLink || appointment.meetLink || '').trim();
+    const modeOfCoaching = (customData.modeOfCoaching || 'Online Video (Google Meet)').trim();
+    const betweenSessionSupport = customData.betweenSessionSupport || '';
+    const additionalAgreedTerms = customData.additionalAgreedTerms || '';
+
+    const pdfBuffer = await generateCoachingAgreementPdf({
+      clientName,
+      clientEmail,
+      clientPhone,
+      sessionDate: cleanDate,
+      sessionTime: cleanTime,
+      agreementDate: customData.agreementDate || new Date().toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }),
+      isPackage: appointment.isFreeSession || Boolean(appointment.isCoursePackage),
+      modeOfCoaching,
+      meetLink,
+      betweenSessionSupport,
+      additionalAgreedTerms
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Agreement_Preview_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Failed to generate agreement preview:', error);
+    res.status(500).json({ message: 'Server error generating agreement preview' });
+  }
+});
+
+// @route   PUT /api/appointments/:id/agreement-data
+// @desc    Update editable agreement details
+// @access  Private/Admin
+router.put('/:id/agreement-data', protect, admin, async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    appointment.agreementData = {
+      ...(appointment.agreementData || {}),
+      ...(req.body || {})
+    };
+
+    const updated = await appointment.save();
+    res.json({
+      success: true,
+      message: 'Agreement details updated successfully',
+      agreementData: updated.agreementData
+    });
+  } catch (error) {
+    console.error('Failed to update agreement data:', error);
+    res.status(500).json({ message: 'Server error updating agreement data' });
+  }
+});
+
+// @route   POST /api/appointments/:id/agreement-send
+// @desc    Approve and send Coaching Agreement to client
+// @access  Private/Admin
+router.post('/:id/agreement-send', protect, admin, async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    const customData = {
+      ...(appointment.agreementData || {}),
+      ...(req.body || {})
+    };
+
+    // Send confirmation email with PDF to client
+    await sendClientCoachingAgreementEmail({ appointment, customData });
+
+    appointment.agreementStatus = 'APPROVED_SENT';
+    appointment.agreementSentAt = new Date();
+    appointment.agreementData = customData;
+
+    const saved = await appointment.save();
+
+    res.json({
+      success: true,
+      message: 'Coaching agreement approved and successfully sent to client!',
+      appointment: saved
+    });
+  } catch (error) {
+    console.error('Failed to approve and send agreement:', error);
+    res.status(500).json({ message: error.message || 'Server error sending agreement to client' });
   }
 });
 

@@ -85,6 +85,8 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
   const [slotsError, setSlotsError] = useState(null);
   const [isHoldingSlot, setIsHoldingSlot] = useState(false);
   const [slotConflictMsg, setSlotConflictMsg] = useState('');
+  const [availableDays, setAvailableDays] = useState(null);
+  const [isLoadingMonth, setIsLoadingMonth] = useState(false);
 
   // Dynamic Calendar logic
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
@@ -97,6 +99,44 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
   const years = Array.from({ length: 5 }, (_, i) => today.getFullYear() + i);
 
   const activeHolderId = draftId || data.holderId || data.booking_draft_id || getOrCreateBookingDraftId();
+
+  // Fetch month availability to fade out dates with 0 slots (Google Calendar / Cal.com sync)
+  const fetchMonthAvailability = async (year, month) => {
+    setIsLoadingMonth(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const emailQuery = data.email ? `&email=${encodeURIComponent(data.email)}` : '';
+      const res = await fetch(`${API_URL}/api/cal/month-availability?year=${year}&month=${month + 1}${emailQuery}`);
+      if (!res.ok) throw new Error('Failed to fetch month availability');
+      const resData = await res.json();
+      if (Array.isArray(resData?.availableDays)) {
+        setAvailableDays(resData.availableDays);
+        return;
+      }
+    } catch (err) {
+      console.error('Error fetching month availability:', err);
+    } finally {
+      setIsLoadingMonth(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchMonthAvailability(currentYear, currentMonth);
+  }, [currentMonth, currentYear, data.email]);
+
+  // If currently selected day becomes unavailable, deselect it
+  React.useEffect(() => {
+    if (availableDays !== null && selectedDay) {
+      const isPast =
+        (currentYear === today.getFullYear() && currentMonth === today.getMonth() && selectedDay < today.getDate()) ||
+        (currentYear < today.getFullYear()) ||
+        (currentYear === today.getFullYear() && currentMonth < today.getMonth());
+      if (isPast || !availableDays.includes(selectedDay)) {
+        setSelectedDay(null);
+        setTimes([]);
+      }
+    }
+  }, [availableDays]);
 
   // Helper to re-fetch slots on the current day
   const fetchLiveSlots = async (dayToFetch = selectedDay) => {
@@ -376,17 +416,24 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
               {[...Array(daysInMonth)].map((_, i) => {
                 const day = i + 1;
                 const isSelected = selectedDay === day;
-                const isPast = currentYear === today.getFullYear() && currentMonth === today.getMonth() && day < today.getDate();
+                const isPast =
+                  (currentYear === today.getFullYear() && currentMonth === today.getMonth() && day < today.getDate()) ||
+                  (currentYear < today.getFullYear()) ||
+                  (currentYear === today.getFullYear() && currentMonth < today.getMonth());
+                
+                // Day is unavailable if in the past OR if monthly availability loaded and day has 0 slots
+                const isUnavailable = isPast || (availableDays !== null && !availableDays.includes(day));
                 
                 return (
                   <div key={day} className="flex items-center justify-center">
                     <button
-                      onClick={() => !isPast && setSelectedDay(day)}
-                      disabled={isPast}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center font-sans text-xs sm:text-sm transition-all cursor-pointer
-                        ${isPast ? 'text-black/20 cursor-not-allowed' : ''}
-                        ${!isPast && isSelected ? 'bg-[#c9542f] text-white font-bold shadow-xs' : ''}
-                        ${!isPast && !isSelected ? 'text-[#111010] hover:bg-[#fbf0eb] hover:text-[#c9542f] font-normal' : ''}
+                      onClick={() => !isUnavailable && setSelectedDay(day)}
+                      disabled={isUnavailable}
+                      title={isUnavailable ? (isPast ? 'Past date' : 'No slots available on this date') : undefined}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center font-sans text-xs sm:text-sm transition-all
+                        ${isUnavailable ? 'text-black/20 cursor-not-allowed opacity-40 hover:bg-transparent pointer-events-none' : 'cursor-pointer'}
+                        ${!isUnavailable && isSelected ? 'bg-[#c9542f] text-white font-bold shadow-xs' : ''}
+                        ${!isUnavailable && !isSelected ? 'text-[#111010] hover:bg-[#fbf0eb] hover:text-[#c9542f] font-normal' : ''}
                       `}
                     >
                       {day}

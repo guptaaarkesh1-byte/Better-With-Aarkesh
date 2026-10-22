@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import Icon from '../components/common/AdminIcons';
 import { API_URL } from '../utils/apiUrl';
@@ -49,8 +50,12 @@ export default function AdminAppointmentsView() {
   // 3-Way Segmented View: 'sessions' (Appointments) | 'courses' (Course students) | 'all_clients' (All students & clients)
   const [view, setView] = useState('sessions');
 
+  const [searchParams] = useSearchParams();
+  const urlApptId = searchParams.get('apptId');
+  const urlTab = searchParams.get('tab');
+
   // Filter Tabs per view
-  const [sessionTab, setSessionTab] = useState('all'); // all, needs, today, upcoming, completed, rescheduled, cancelled, refunded
+  const [sessionTab, setSessionTab] = useState(urlTab || 'all'); // all, needs, today, upcoming, completed, rescheduled, cancelled, refunded
   const [courseTab, setCourseTab] = useState('all'); // all, free_left, free_done, failed
   const [allClientTab, setAllClientTab] = useState('all'); // all, course_students, coaching_only, registered_only
 
@@ -89,6 +94,22 @@ export default function AdminAppointmentsView() {
   const [coachNotesText, setCoachNotesText] = useState('');
   const [notesSaveStatus, setNotesSaveStatus] = useState('saved'); // 'saved' | 'saving' | 'dirty'
   const notesTimerRef = useRef(null);
+
+  // Coaching Agreement Review & Approval state
+  const [agreementForm, setAgreementForm] = useState({
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    sessionDate: '',
+    sessionTime: '',
+    modeOfCoaching: 'Online Video (Google Meet)',
+    meetLink: '',
+    betweenSessionSupport: '',
+    additionalAgreedTerms: '',
+    agreementDate: ''
+  });
+  const [isSavingAgreement, setIsSavingAgreement] = useState(false);
+  const [isSendingAgreement, setIsSendingAgreement] = useState(false);
 
   // Fetch all initial data
   const fetchData = async () => {
@@ -137,6 +158,12 @@ export default function AdminAppointmentsView() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (urlTab) {
+      setSessionTab(urlTab);
+    }
+  }, [urlTab]);
 
   // Format Helpers
   const parseDate = (dStr) => {
@@ -194,6 +221,7 @@ export default function AdminAppointmentsView() {
   const isNeedsAction = (app) => {
     const s = (app.status || '').toUpperCase();
     if (s === 'COMPLETED' || s === 'REFUNDED' || s === 'CANCELLED') return false;
+    if (app.agreementStatus === 'PENDING_REVIEW') return true;
     if (app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'pending') return true;
     if (app.paymentStatus === 'Pending' && !app.isFreeSession) return true;
 
@@ -698,17 +726,46 @@ export default function AdminAppointmentsView() {
   }, [filteredAllClients, sortBy]);
 
   // Drawer Open Handlers
-  const openApptDrawer = (appt) => {
+  const openApptDrawer = (appt, initialTab = null) => {
     const client = getClientForAppt(appt);
     setSelectedAppt(appt);
     setSelectedClient(client);
     setDrawerMode('appt');
-    setDrawerTab('overview');
+    setDrawerTab(initialTab || (appt.agreementStatus === 'PENDING_REVIEW' ? 'agreement' : 'overview'));
     setCoachNotesText(appt.coachNotes || appt.notes || '');
     setNotesSaveStatus('saved');
     setRefundConfirmId(null);
+
+    const custom = appt.agreementData || {};
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const randPart = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const defaultMeetLink = custom.meetLink || appt.meetLink || `https://meet.google.com/${randPart(3)}-${randPart(4)}-${randPart(3)}`;
+
+    setAgreementForm({
+      clientName: custom.clientName || appt.name || client?.name || '',
+      clientEmail: custom.clientEmail || appt.email || client?.email || '',
+      clientPhone: custom.clientPhone || appt.phoneNumber || appt.phone || client?.phone || '',
+      sessionDate: custom.sessionDate || appt.date || '',
+      sessionTime: custom.sessionTime || appt.time || '',
+      modeOfCoaching: custom.modeOfCoaching || 'Online Video (Google Meet)',
+      meetLink: defaultMeetLink,
+      betweenSessionSupport: custom.betweenSessionSupport || '',
+      additionalAgreedTerms: custom.additionalAgreedTerms || '',
+      agreementDate: custom.agreementDate || (appt.agreementSentAt ? formatDate(appt.agreementSentAt) : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))
+    });
+
     setDrawerOpen(true);
   };
+
+  // Auto-open appointment drawer if apptId is provided in URL
+  useEffect(() => {
+    if (urlApptId && appointments.length > 0) {
+      const match = appointments.find((a) => String(a._id) === String(urlApptId));
+      if (match) {
+        openApptDrawer(match);
+      }
+    }
+  }, [urlApptId, appointments]);
 
   const openClientDrawer = (client) => {
     setSelectedClient(client);
@@ -874,6 +931,104 @@ export default function AdminAppointmentsView() {
     }
   };
 
+  // Save Agreement Draft
+  const handleSaveAgreementDraft = async () => {
+    if (!selectedAppt?._id) return;
+    setIsSavingAgreement(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/appointments/${selectedAppt._id}/agreement-data`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(agreementForm)
+      });
+      if (!res.ok) throw new Error('Failed to save agreement draft');
+      showSuccess('Agreement draft saved successfully!');
+      setSelectedAppt((prev) => (prev ? {
+        ...prev,
+        agreementData: { ...(prev.agreementData || {}), ...agreementForm }
+      } : prev));
+      setAppointments((prev) => prev.map((a) => (a._id === selectedAppt._id ? {
+        ...a,
+        agreementData: { ...(a.agreementData || {}), ...agreementForm }
+      } : a)));
+    } catch (err) {
+      showError(err.message || 'Error saving agreement draft');
+    } finally {
+      setIsSavingAgreement(false);
+    }
+  };
+
+  // Preview Agreement PDF
+  const handlePreviewAgreementPdf = async () => {
+    if (!selectedAppt?._id) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      // Save any pending edits first so preview is identical
+      await fetch(`${API_URL}/api/appointments/${selectedAppt._id}/agreement-data`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(agreementForm)
+      });
+
+      const res = await fetch(`${API_URL}/api/appointments/${selectedAppt._id}/agreement-preview`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to generate PDF preview');
+      const blob = await res.blob();
+      const fileUrl = URL.createObjectURL(blob);
+      window.open(fileUrl, '_blank');
+    } catch (err) {
+      showError(err.message || 'Failed to preview agreement PDF');
+    }
+  };
+
+  // Approve & Send Agreement to Client
+  const handleSendAgreementToClient = async () => {
+    if (!selectedAppt?._id) return;
+    if (!agreementForm.clientEmail) {
+      showError('Client email is required to send agreement.');
+      return;
+    }
+    setIsSendingAgreement(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/appointments/${selectedAppt._id}/agreement-send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(agreementForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to send agreement');
+
+      showSuccess(`✓ Agreement approved & sent to ${agreementForm.clientEmail}!`);
+      
+      const updatedAppt = data.appointment || {
+        ...selectedAppt,
+        agreementStatus: 'APPROVED_SENT',
+        agreementSentAt: new Date(),
+        agreementData: agreementForm
+      };
+
+      setSelectedAppt(updatedAppt);
+      setAppointments((prev) => prev.map((a) => (a._id === selectedAppt._id ? updatedAppt : a)));
+      fetchData();
+    } catch (err) {
+      showError(err.message || 'Failed to dispatch agreement to client.');
+    } finally {
+      setIsSendingAgreement(false);
+    }
+  };
+
   // Clear Filters
   const handleClearFilters = () => {
     setSearchQuery('');
@@ -905,6 +1060,37 @@ export default function AdminAppointmentsView() {
     if (s === 'COMPLETED') return <span className="bwa-pill p-done">Completed</span>;
     if (s === 'REFUNDED') return <span className="bwa-pill p-cx">Refunded</span>;
     if (hasPendingReschedule) return <span className="bwa-pill p-re">Wants to reschedule</span>;
+    if (app.agreementStatus === 'PENDING_REVIEW') {
+      return (
+        <button
+          type="button"
+          className="bwa-pill"
+          style={{
+            background: '#fef3c7',
+            color: '#92400e',
+            border: '1px solid #fde68a',
+            fontWeight: 700,
+            cursor: 'pointer',
+            padding: '4px 11px',
+            borderRadius: '99px',
+            fontSize: '12px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            boxShadow: '0 1px 3px rgba(217, 119, 6, 0.12)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            openApptDrawer(app, 'agreement');
+          }}
+          title="Click to open Agreement review in sidebar"
+        >
+          <span>⏳ Review agreement</span>
+          <span style={{ fontSize: '11px', fontWeight: 800 }}>&rarr;</span>
+        </button>
+      );
+    }
 
     try {
       const appDateTime = new Date(`${app.date} ${app.time || '00:00'}`);
@@ -2052,16 +2238,19 @@ export default function AdminAppointmentsView() {
         aria-modal="true"
         aria-label="Detail Drawer"
       >
-        {selectedClient && (
-          <>
-            {drawerMode === 'appt' && selectedAppt ? (
-              /* ================= APPOINTMENT DETAIL DRAWER ================= */
-              <>
-                <div className="bwa-d-head">
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <h3 style={{ margin: 0 }}>Appointment with {selectedClient.name}</h3>
-                      {(selectedClient.isDeleted || selectedAppt.isUserDeleted) && (
+        {(() => {
+          const client = selectedClient || (selectedAppt ? getClientForAppt(selectedAppt) : null);
+          if (!client && !selectedAppt) return null;
+          return (
+            <>
+              {drawerMode === 'appt' && selectedAppt ? (
+                /* ================= APPOINTMENT DETAIL DRAWER ================= */
+                <>
+                  <div className="bwa-d-head">
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <h3 style={{ margin: 0 }}>Appointment with {client?.name || selectedAppt.name || 'Client'}</h3>
+                        {(client?.isDeleted || selectedAppt.isUserDeleted) && (
                         <span
                           className="bwa-pill p-cancel"
                           style={{
@@ -2087,7 +2276,7 @@ export default function AdminAppointmentsView() {
                 </div>
 
                 <div className="bwa-d-body">
-                  {/* 4 Tabs: Overview / Reschedule / Client answers / Coach notes */}
+                  {/* 5 Tabs: Overview / Agreement / Reschedule / Client answers / Coach notes */}
                   <div className="bwa-dtabs" role="tablist">
                     <button
                       role="tab"
@@ -2095,6 +2284,25 @@ export default function AdminAppointmentsView() {
                       onClick={() => setDrawerTab('overview')}
                     >
                       Overview
+                    </button>
+                    <button
+                      role="tab"
+                      className={drawerTab === 'agreement' ? 'on' : ''}
+                      onClick={() => setDrawerTab('agreement')}
+                      style={selectedAppt.agreementStatus === 'PENDING_REVIEW' ? { color: '#92400e', fontWeight: 700 } : {}}
+                    >
+                      Agreement
+                      {selectedAppt.agreementStatus === 'PENDING_REVIEW' && (
+                        <span style={{
+                          display: 'inline-block',
+                          marginLeft: '5px',
+                          width: '7px',
+                          height: '7px',
+                          borderRadius: '50%',
+                          backgroundColor: '#d97706',
+                          verticalAlign: 'middle'
+                        }} />
+                      )}
                     </button>
                     <button
                       role="tab"
@@ -2125,6 +2333,42 @@ export default function AdminAppointmentsView() {
                   {/* TAB 1: OVERVIEW */}
                   {drawerTab === 'overview' && (
                     <>
+                      {selectedAppt.agreementStatus === 'PENDING_REVIEW' && (
+                        <div
+                          style={{
+                            background: '#fffbeb',
+                            border: '1px solid #fde68a',
+                            borderRadius: '10px',
+                            padding: '12px 14px',
+                            marginBottom: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            flexWrap: 'wrap'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>📝</span>
+                            <div>
+                              <strong style={{ color: '#92400e', fontSize: '0.86rem', display: 'block' }}>
+                                Agreement Pending Review
+                              </strong>
+                              <span style={{ color: '#78350f', fontSize: '0.78rem' }}>
+                                Client has not received confirmation email or agreement PDF yet.
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            className="bwa-btn bwa-btn-sm"
+                            style={{ background: '#d97706', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.75rem', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer' }}
+                            onClick={() => setDrawerTab('agreement')}
+                          >
+                            Review &amp; Send Agreement &rarr;
+                          </button>
+                        </div>
+                      )}
+
                       {(selectedClient.isDeleted || selectedAppt.isUserDeleted) && (
                         <div
                           style={{
@@ -2310,15 +2554,15 @@ export default function AdminAppointmentsView() {
                         <div className="bwa-kv">
                           <div>
                             <span>Name</span>
-                            <b>{selectedClient.name}</b>
+                            <b>{client?.name || selectedAppt.name || 'Client'}</b>
                           </div>
                           <div>
                             <span>Email</span>
-                            <b>{selectedClient.email}</b>
+                            <b>{client?.email || selectedAppt.email || '—'}</b>
                           </div>
                           <div>
                             <span>Phone</span>
-                            <b>{selectedClient.phone || '—'}</b>
+                            <b>{client?.phone || selectedAppt.phoneNumber || selectedAppt.phone || '—'}</b>
                           </div>
                           <div>
                             <span>Session duration</span>
@@ -2328,32 +2572,32 @@ export default function AdminAppointmentsView() {
                       </div>
 
                       {/* Course Purchase Box */}
-                      {selectedClient.course ? (
+                      {client?.course ? (
                         <div className="bwa-box">
                           <h4>
                             Course purchase <span className="bwa-pill p-done">Enrolled</span>
                           </h4>
                           <div className="bwa-line-row">
                             <span>Course</span>
-                            <b>{selectedClient.course.name}</b>
+                            <b>{client.course.name}</b>
                           </div>
                           <div className="bwa-line-row">
                             <span>Bought on</span>
                             <b>
-                              {formatDateShort(selectedClient.course.paidAt)},{' '}
-                              {formatTime(selectedClient.course.paidAt)}
+                              {formatDateShort(client.course.paidAt)},{' '}
+                              {formatTime(client.course.paidAt)}
                             </b>
                           </div>
                           <div className="bwa-line-row">
                             <span>Amount paid</span>
-                            <b>{inr(selectedClient.course.amount)}</b>
+                            <b>{inr(client.course.amount)}</b>
                           </div>
                           <div className="bwa-line-row">
                             <span>Free 1-on-1 sessions</span>
                             <b>
-                              {getClientFreeUsed(selectedClient)} of {getClientTotalFree(selectedClient)} used ·{' '}
+                              {getClientFreeUsed(client)} of {getClientTotalFree(client)} used ·{' '}
                               <span style={{ color: 'var(--accent)' }}>
-                                {Math.max(0, getClientTotalFree(selectedClient) - getClientFreeUsed(selectedClient))} left
+                                {Math.max(0, getClientTotalFree(client) - getClientFreeUsed(client))} left
                               </span>
                             </b>
                           </div>
@@ -2362,7 +2606,7 @@ export default function AdminAppointmentsView() {
                               style={{
                                 width: `${Math.min(
                                   100,
-                                  (getClientFreeUsed(selectedClient) / getClientTotalFree(selectedClient)) * 100
+                                  (getClientFreeUsed(client) / getClientTotalFree(client)) * 100
                                 )}%`
                               }}
                             />
@@ -2468,7 +2712,275 @@ export default function AdminAppointmentsView() {
                     </>
                   )}
 
-                  {/* TAB 2: RESCHEDULE */}
+                  {/* TAB 2: AGREEMENT */}
+                  {drawerTab === 'agreement' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* Status Callout Banner */}
+                      {selectedAppt.agreementStatus === 'PENDING_REVIEW' ? (
+                        <div
+                          style={{
+                            background: '#fffbeb',
+                            border: '1px solid #fde68a',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>⏳</span>
+                          <div>
+                            <h4 style={{ margin: '0 0 4px', color: '#92400e', fontSize: '0.95rem', fontWeight: 700 }}>
+                              Action Required: Review &amp; Approve Coaching Agreement
+                            </h4>
+                            <p style={{ margin: 0, color: '#78350f', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                              The client has booked this session, but the confirmation email with the official Coaching Agreement has <strong>NOT</strong> been sent yet.
+                              Review the details below, customize the coaching focus or communication support notes, preview the exact PDF replica, and click <strong>"Approve &amp; Send Agreement"</strong> to deliver it to the client.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            background: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>✅</span>
+                          <div>
+                            <h4 style={{ margin: '0 0 4px', color: '#166534', fontSize: '0.95rem', fontWeight: 700 }}>
+                              Coaching Agreement Approved &amp; Sent
+                            </h4>
+                            <p style={{ margin: 0, color: '#15803d', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                              Delivered to <strong>{agreementForm.clientEmail || selectedAppt.email}</strong> on{' '}
+                              {selectedAppt.agreementSentAt
+                                ? `${formatDate(selectedAppt.agreementSentAt)} at ${formatTime(null, selectedAppt.agreementSentAt)}`
+                                : 'file'}. You can preview the PDF or re-send with updated details anytime.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Agreement Editor Card */}
+                      <div className="bwa-box">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                          <div>
+                            <h4 className="big" style={{ margin: 0 }}>Editable Agreement Form</h4>
+                            <p className="hint" style={{ margin: '2px 0 0' }}>Fields populated in the generated legal PDF document.</p>
+                          </div>
+                          <button
+                            type="button"
+                            className="bwa-btn bwa-btn-line bwa-btn-sm"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+                            onClick={handlePreviewAgreementPdf}
+                          >
+                            <span>📄</span> Preview PDF (New Tab)
+                          </button>
+                        </div>
+
+                        {/* Client Meta Fields */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '14px' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                              Client Name
+                            </label>
+                            <input
+                              type="text"
+                              className="bwa-input"
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                              value={agreementForm.clientName}
+                              onChange={(e) => setAgreementForm({ ...agreementForm, clientName: e.target.value })}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                              Client Email
+                            </label>
+                            <input
+                              type="email"
+                              className="bwa-input"
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                              value={agreementForm.clientEmail}
+                              onChange={(e) => setAgreementForm({ ...agreementForm, clientEmail: e.target.value })}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                              Client Phone
+                            </label>
+                            <input
+                              type="text"
+                              className="bwa-input"
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                              value={agreementForm.clientPhone}
+                              onChange={(e) => setAgreementForm({ ...agreementForm, clientPhone: e.target.value })}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                              Agreement Date
+                            </label>
+                            <input
+                              type="text"
+                              className="bwa-input"
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                              value={agreementForm.agreementDate}
+                              onChange={(e) => setAgreementForm({ ...agreementForm, agreementDate: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Session Schedule Fields */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '14px', background: '#faf8f5', padding: '12px', borderRadius: '8px', border: '1px solid #ede7df' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                              Session Date
+                            </label>
+                            <input
+                              type="text"
+                              className="bwa-input"
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                              value={agreementForm.sessionDate}
+                              onChange={(e) => setAgreementForm({ ...agreementForm, sessionDate: e.target.value })}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                              Session Time
+                            </label>
+                            <input
+                              type="text"
+                              className="bwa-input"
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                              value={agreementForm.sessionTime}
+                              onChange={(e) => setAgreementForm({ ...agreementForm, sessionTime: e.target.value })}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                              Mode of Coaching
+                            </label>
+                            <input
+                              type="text"
+                              className="bwa-input"
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                              value={agreementForm.modeOfCoaching}
+                              onChange={(e) => setAgreementForm({ ...agreementForm, modeOfCoaching: e.target.value })}
+                            />
+                          </div>
+
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <label style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', margin: 0 }}>
+                                Google Meet Link
+                              </label>
+                              {agreementForm.meetLink && (
+                                <a
+                                  href={agreementForm.meetLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{ fontSize: '0.72rem', color: '#c9542f', fontWeight: 600, textDecoration: 'underline' }}
+                                >
+                                  Test Link ↗
+                                </a>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              className="bwa-input"
+                              placeholder="https://meet.google.com/..."
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                              value={agreementForm.meetLink}
+                              onChange={(e) => setAgreementForm({ ...agreementForm, meetLink: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Section 6: Between-Session Support */}
+                        <div style={{ marginBottom: '14px' }}>
+                          <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                            Section 6: Between-Session Communication &amp; Support (Optional Customization)
+                          </label>
+                          <textarea
+                            className="bwa-textarea"
+                            rows={3}
+                            placeholder="Leave blank for standard terms (WhatsApp / Email, 24-48h turnaround) or specify custom arrangement..."
+                            style={{ width: '100%', minHeight: '65px', padding: '8px 10px', fontSize: '0.84rem', borderRadius: '6px', border: '1px solid #d6cfc7', fontFamily: 'inherit' }}
+                            value={agreementForm.betweenSessionSupport}
+                            onChange={(e) => setAgreementForm({ ...agreementForm, betweenSessionSupport: e.target.value })}
+                          />
+                          <p className="hint" style={{ margin: '3px 0 0', fontSize: '0.72rem' }}>
+                            Leave blank to show standard placeholder lines, or enter custom between-session communication terms.
+                          </p>
+                        </div>
+
+                        {/* Additional Agreed Terms */}
+                        <div style={{ marginBottom: '18px' }}>
+                          <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                            Additional Agreed Terms, if any (Optional Customization)
+                          </label>
+                          <textarea
+                            className="bwa-textarea"
+                            rows={3}
+                            placeholder="Write any special or additional agreed terms to include at the end of the agreement..."
+                            style={{ width: '100%', minHeight: '65px', padding: '8px 10px', fontSize: '0.84rem', borderRadius: '6px', border: '1px solid #d6cfc7', fontFamily: 'inherit' }}
+                            value={agreementForm.additionalAgreedTerms}
+                            onChange={(e) => setAgreementForm({ ...agreementForm, additionalAgreedTerms: e.target.value })}
+                          />
+                          <p className="hint" style={{ margin: '3px 0 0', fontSize: '0.72rem' }}>
+                            Leave blank to show standard blank lines in the PDF, or enter custom terms.
+                          </p>
+                        </div>
+
+                        {/* Agreement Form Action Buttons */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #eae2d6' }}>
+                          <button
+                            type="button"
+                            className="bwa-btn bwa-btn-line"
+                            style={{ fontWeight: 600 }}
+                            onClick={handlePreviewAgreementPdf}
+                          >
+                            👁️ Preview PDF
+                          </button>
+
+                          <button
+                            type="button"
+                            className="bwa-btn bwa-btn-line"
+                            disabled={isSavingAgreement || isSendingAgreement}
+                            onClick={handleSaveAgreementDraft}
+                          >
+                            {isSavingAgreement ? 'Saving Draft...' : '💾 Save Draft'}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="bwa-btn bwa-btn-accent"
+                            style={{ background: '#c9542f', color: '#fff', fontWeight: 700, padding: '9px 20px', borderRadius: '8px' }}
+                            disabled={isSavingAgreement || isSendingAgreement}
+                            onClick={handleSendAgreementToClient}
+                          >
+                            {isSendingAgreement
+                              ? 'Delivering Agreement...'
+                              : selectedAppt.agreementStatus === 'APPROVED_SENT'
+                              ? '✓ Re-send Agreement to Client'
+                              : '🚀 Approve & Send Agreement to Client'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 3: RESCHEDULE */}
                   {drawerTab === 'reschedule' && (
                     <div>
                       {hasValidRescheduleRequest(selectedAppt) ? (
@@ -2585,6 +3097,15 @@ export default function AdminAppointmentsView() {
                 </div>
 
                 <div className="bwa-d-foot">
+                  {selectedAppt.agreementStatus === 'PENDING_REVIEW' && drawerTab !== 'agreement' && (
+                    <button
+                      className="bwa-btn bwa-btn-accent"
+                      style={{ background: '#d97706', color: '#fff', border: 'none' }}
+                      onClick={() => setDrawerTab('agreement')}
+                    >
+                      Review Agreement &rarr;
+                    </button>
+                  )}
                   {(selectedAppt.status || '').toUpperCase() === 'UPCOMING' && (
                     <>
                       <button
@@ -2887,7 +3408,8 @@ export default function AdminAppointmentsView() {
               </>
             )}
           </>
-        )}
+        );
+      })()}
       </aside>
     </div>
   );

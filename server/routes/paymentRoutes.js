@@ -102,13 +102,41 @@ router.post('/fees', protect, admin, async (req, res) => {
   }
 });
 
-// @desc    Create Razorpay Order
-// @route   POST /api/payment/create-order
+// @desc    Create Razorpay Order (Standard Web Checkout & Session Booking)
+// @route   POST /api/payment/create-order and POST /api/create-order
 // @access  Public/Optional
 router.post('/create-order', optionalAuth, async (req, res) => {
   try {
-    const { email, phoneNumber, sessionDuration, duration, currency = 'INR', receipt = `rcpt_${Date.now()}` } = req.body;
-    
+    const { amount, currency = 'INR', receipt = `rcpt_${Date.now()}`, email, phoneNumber, sessionDuration, duration } = req.body;
+
+    // 1. Direct Razorpay Standard Checkout flow (amount provided in paise, or direct test call)
+    if (amount !== undefined && !sessionDuration && !duration && !email) {
+      const paiseAmount = Number(amount);
+      if (isNaN(paiseAmount) || paiseAmount < 100) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Validation error: amount is required and must be at least 100 paise (₹1).' 
+        });
+      }
+
+      const instance = await getRazorpayInstance();
+      const order = await instance.orders.create({
+        amount: Math.round(paiseAmount),
+        currency: currency || 'INR',
+        receipt: String(receipt),
+      });
+
+      return res.json({
+        order_id: order.id,
+        id: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        receipt: order.receipt,
+        status: order.status,
+      });
+    }
+
+    // 2. Coaching Session Booking flow
     const rawEmail = (email || (req.user && req.user.email) || '').trim().toLowerCase();
     const { valid, error: emailError, cleanEmail: normalizedEmail } = validateEmailFormat(rawEmail);
     if (!valid || !normalizedEmail) {
@@ -130,7 +158,7 @@ router.post('/create-order', optionalAuth, async (req, res) => {
       }
     }
 
-    // 1. Fetch fees from settings
+    // Fetch fees from settings
     let feeSettings = await Settings.findOne({ key: 'fees' });
     let fee60min = 5000;
     let fee90min = 7500;
@@ -139,7 +167,7 @@ router.post('/create-order', optionalAuth, async (req, res) => {
       fee90min = Number(feeSettings.value.fee90min) || 7500;
     }
 
-    // 2. Check if user is first session (Registered or Unregistered)
+    // Check if user is first session
     let isFirstSession = true;
     if (normalizedEmail) {
       const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -167,17 +195,17 @@ router.post('/create-order', optionalAuth, async (req, res) => {
       targetDuration = isFirstSession ? 60 : 90;
     }
 
-    let amount;
-    if (req.body.amount !== undefined && Number(req.body.amount) > 0) {
-      amount = Number(req.body.amount);
+    let resolvedAmountRupees;
+    if (amount !== undefined && Number(amount) > 0) {
+      resolvedAmountRupees = Number(amount);
     } else {
-      amount = targetDuration === 90 ? fee90min : fee60min;
+      resolvedAmountRupees = targetDuration === 90 ? fee90min : fee60min;
     }
     
     const instance = await getRazorpayInstance();
     
     const options = {
-      amount: amount * 100, // amount in smallest currency unit (paise)
+      amount: resolvedAmountRupees * 100, // amount in smallest currency unit (paise)
       currency,
       receipt,
       notes: {
@@ -190,13 +218,61 @@ router.post('/create-order', optionalAuth, async (req, res) => {
     const order = await instance.orders.create(options);
     res.json({
       ...order,
+      order_id: order.id,
       targetDuration,
       isFirstSession,
-      amountRupees: amount
+      amountRupees: resolvedAmountRupees
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: error.message || 'Error creating order' });
+    console.error('Create order error:', error);
+    if (error.statusCode === 401 || error.status === 401) {
+      return res.status(401).json({ success: false, message: 'Razorpay authentication failed. Please check credentials.' });
+    }
+    res.status(500).json({ success: false, message: error.message || 'Error creating order' });
+  }
+});
+
+// @desc    Standard Payment Signature Verification
+// @route   POST /api/payment/verify-payment and POST /api/verify-payment
+// @access  Public
+router.post('/verify-payment', async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required parameters: razorpay_order_id, razorpay_payment_id, and razorpay_signature are required.' 
+      });
+    }
+
+    const { keySecret } = await getRazorpayKeys();
+    if (!keySecret) {
+      return res.status(500).json({ success: false, message: 'Razorpay secret key not configured' });
+    }
+
+    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', keySecret)
+      .update(body.toString())
+      .digest('hex');
+
+    if (expectedSignature === razorpay_signature) {
+      return res.status(200).json({
+        success: true,
+        message: 'Payment verified successfully',
+        order_id: razorpay_order_id,
+        payment_id: razorpay_payment_id,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid payment signature. Verification failed.',
+      });
+    }
+  } catch (error) {
+    console.error('Verify payment error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Server error verifying payment' });
   }
 });
 

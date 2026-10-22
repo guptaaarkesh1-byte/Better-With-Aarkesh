@@ -47,7 +47,10 @@ export default function AdminOverview() {
   const totalClientsCount = new Set(appointments.map(a => a.email || a.userId?.email).filter(Boolean)).size;
   const coachingRevenue = appointments.filter(a => !a.isFreeSession && a.paymentStatus === 'Paid').length * 5000;
   const totalCombinedRevenue = (courseStats.totalRevenue || 0) + coachingRevenue;
-  const upcomingCount = appointments.filter(a => a.status !== 'Completed' && a.status !== 'Refunded').length;
+  const upcomingCount = appointments.filter(a => {
+    const s = String(a.status || '').toUpperCase();
+    return s !== 'COMPLETED' && s !== 'REFUNDED' && s !== 'CANCELLED';
+  }).length;
 
   const stats = [
     {
@@ -80,12 +83,48 @@ export default function AdminOverview() {
     }
   ];
 
-  // Sessions today or needing action
+  const isSameDayAsToday = (dateVal) => {
+    if (!dateVal) return false;
+    const today = new Date();
+    
+    // 1. Try parsing standard Date string directly (e.g. "Thursday, October 22, 2026", "2026-10-22", etc.)
+    const parsed = new Date(dateVal);
+    if (!isNaN(parsed.getTime())) {
+      return (
+        parsed.getFullYear() === today.getFullYear() &&
+        parsed.getMonth() === today.getMonth() &&
+        parsed.getDate() === today.getDate()
+      );
+    }
+
+    // 2. Fallback for YYYY-MM-DD or DD-MM-YYYY
+    const parts = String(dateVal).trim().split(/[-/]/).map(Number);
+    if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+      if (parts[0] > 1000) {
+        return (
+          parts[0] === today.getFullYear() &&
+          parts[1] === today.getMonth() + 1 &&
+          parts[2] === today.getDate()
+        );
+      }
+      if (parts[2] > 1000) {
+        return (
+          parts[2] === today.getFullYear() &&
+          parts[1] === today.getMonth() + 1 &&
+          parts[0] === today.getDate()
+        );
+      }
+    }
+
+    return false;
+  };
+
+  // Sessions today (active coaching sessions scheduled for today)
   const todaySessions = appointments.filter(a => {
     if (!a.date) return false;
-    const today = new Date();
-    const [y, m, d] = String(a.date).split('-').map(Number);
-    return today.getFullYear() === y && today.getMonth() + 1 === m && today.getDate() === d;
+    const statusUpper = String(a.status || '').toUpperCase();
+    if (statusUpper === 'CANCELLED' || statusUpper === 'REFUNDED') return false;
+    return isSameDayAsToday(a.date);
   });
 
   const chartData = [
@@ -180,9 +219,15 @@ export default function AdminOverview() {
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'Completed', value: appointments.filter(a => a.status === 'Completed').length },
-                      { name: 'Upcoming', value: appointments.filter(a => a.status !== 'Completed' && a.status !== 'Refunded').length },
-                      { name: 'Refunded', value: appointments.filter(a => a.status === 'Refunded').length }
+                      { name: 'Completed', value: appointments.filter(a => String(a.status || '').toUpperCase() === 'COMPLETED').length },
+                      { name: 'Upcoming', value: appointments.filter(a => {
+                        const s = String(a.status || '').toUpperCase();
+                        return s !== 'COMPLETED' && s !== 'REFUNDED' && s !== 'CANCELLED';
+                      }).length },
+                      { name: 'Refunded', value: appointments.filter(a => {
+                        const s = String(a.status || '').toUpperCase();
+                        return s === 'REFUNDED' || s === 'CANCELLED';
+                      }).length }
                     ]}
                     cx="50%"
                     cy="50%"
@@ -211,7 +256,32 @@ export default function AdminOverview() {
             <h3>Sessions today ({todaySessions.length})</h3>
             <p className="sub" style={{ margin: 0 }}>Immediate coaching schedule for today.</p>
           </div>
-          <Link to="/appointments" className="bwa-btn sm">
+          <Link 
+            to="/appointments?tab=today" 
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              background: '#FFFFFF',
+              border: '1px solid #E6DCCB',
+              borderRadius: '8px',
+              color: '#2B211C',
+              fontSize: '12.5px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              boxShadow: '0 1px 2px rgba(43,33,28,0.04)',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#C8532F';
+              e.currentTarget.style.color = '#C8532F';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#E6DCCB';
+              e.currentTarget.style.color = '#2B211C';
+            }}
+          >
             View Clients & Sessions →
           </Link>
         </div>
@@ -230,7 +300,7 @@ export default function AdminOverview() {
                   <th>Time</th>
                   <th>Duration</th>
                   <th>Type</th>
-                  <th>Action</th>
+                  <th style={{ textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -244,9 +314,37 @@ export default function AdminOverview() {
                         {app.isFreeSession ? 'Course Session' : 'Coaching'}
                       </span>
                     </td>
-                    <td>
-                      <Link to="/appointments" className="bwa-btn sm">
-                        Open in Clients & Sessions
+                    <td style={{ textAlign: 'right' }}>
+                      <Link 
+                        to={`/appointments?tab=today&apptId=${app._id}`} 
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '7px 15px',
+                          background: '#FFFFFF',
+                          border: '1px solid #E6DCCB',
+                          borderRadius: '8px',
+                          color: '#2B211C',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          boxShadow: '0 1px 2px rgba(43,33,28,0.04)',
+                          transition: 'all 0.15s ease',
+                          whiteSpace: 'nowrap'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#C8532F';
+                          e.currentTarget.style.color = '#C8532F';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(200,83,47,0.12)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = '#E6DCCB';
+                          e.currentTarget.style.color = '#2B211C';
+                          e.currentTarget.style.boxShadow = '0 1px 2px rgba(43,33,28,0.04)';
+                        }}
+                      >
+                        View Appointment →
                       </Link>
                     </td>
                   </tr>

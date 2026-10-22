@@ -84,7 +84,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
             {settings.titleLine1 || 'Thank you for trusting me'}<br/>{settings.titleLine2 || 'with a part of your story.'}
           </h1>
           <p className="text-[#555047] text-sm md:text-base font-light leading-relaxed max-w-lg mx-auto">
-            {settings.subtitleLine1 || "I've sent a confirmation email with everything you'll need."}
+            {settings.subtitleLine1 || "Coach Aarkesh will review your intake details to prepare your personalized Coaching Agreement and email your official confirmation shortly."}
             {settings.subtitleLine2 && (
               <>
                 <br className="hidden md:block" />
@@ -205,7 +205,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {(settings.nextSteps && settings.nextSteps.length > 0 ? settings.nextSteps : [
-            { title: "CONFIRMATION EMAIL", description: "You'll receive a confirmation email with all the details and next steps." },
+            { title: "AGREEMENT & CONFIRMATION", description: "Coach Aarkesh will personally review your booking and email your official confirmation with your Coaching Agreement attached." },
             { title: "CALENDAR INVITE", description: "A calendar invite has been sent. Add it to your calendar." },
             { title: "MEETING LINK", description: "Your Google Meet link is included in the email. Check your spam folder if you don't see it." },
             { title: "BE YOURSELF", description: "This is a space for honesty, clarity, and real conversations. You don't have to have it all figured out." }

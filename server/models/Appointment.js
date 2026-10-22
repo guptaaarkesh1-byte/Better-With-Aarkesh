@@ -96,6 +96,19 @@ const appointmentSchema = new mongoose.Schema({
   meetLink: {
     type: String,
   },
+  agreementStatus: {
+    type: String,
+    enum: ['PENDING_REVIEW', 'APPROVED_SENT'],
+    default: 'PENDING_REVIEW',
+  },
+  agreementSentAt: {
+    type: Date,
+    default: null,
+  },
+  agreementData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
   coachNotes: {
     type: String,
     default: '',

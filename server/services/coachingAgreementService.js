@@ -2,6 +2,15 @@ import PDFDocument from 'pdfkit';
 import { Resend } from 'resend';
 
 /**
+ * Generate a realistic Google Meet link fallback (e.g., https://meet.google.com/abc-defg-hij)
+ */
+export function generateGoogleMeetLink() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz';
+  const randPart = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `https://meet.google.com/${randPart(3)}-${randPart(4)}-${randPart(3)}`;
+}
+
+/**
  * Generate an exact 1:1 replica of the Coaching Agreement PDF.
  * Pure white document, Times serif typography, identical section structure, dividers, and blank signature lines.
  */
@@ -88,7 +97,11 @@ export async function generateCoachingAgreementPdf(data = {}) {
       doc.moveDown(0.6);
       doc.text(`Start Date: ${startDateTime || '_______________________________________'}`);
       doc.moveDown(0.6);
-      doc.text(`Mode of Coaching: ${modeOfCoaching || '_________________________________'}`);
+      doc.text(`Mode of Coaching: ${modeOfCoaching || 'Online Video (Google Meet)'}`);
+      if (data.meetLink) {
+        doc.moveDown(0.5);
+        doc.text(`Meeting Link: ${data.meetLink}`);
+      }
       doc.moveDown(1.0);
 
       drawDivider(doc.y);
@@ -179,11 +192,16 @@ export async function generateCoachingAgreementPdf(data = {}) {
       doc.text('Unless otherwise agreed, communication between sessions is primarily for scheduling, administration and brief follow-up.');
       doc.moveDown(0.6);
       doc.text('Any additional between-session support agreed for this engagement:');
-      doc.moveDown(0.8);
-      doc.font(fontRegular).fillColor('#999999').text('_________________________________________________________________________________');
-      doc.moveDown(0.4);
-      doc.text('_________________________________________________________________________________');
-      doc.fillColor('#000000');
+      doc.moveDown(0.6);
+      if (data.betweenSessionSupport && String(data.betweenSessionSupport).trim()) {
+        doc.font(fontItalic).text(String(data.betweenSessionSupport).trim());
+        doc.font(fontRegular);
+      } else {
+        doc.font(fontRegular).fillColor('#999999').text('_________________________________________________________________________________');
+        doc.moveDown(0.4);
+        doc.text('_________________________________________________________________________________');
+        doc.fillColor('#000000');
+      }
       doc.moveDown(1.0);
 
       drawDivider(doc.y);
@@ -267,12 +285,17 @@ export async function generateCoachingAgreementPdf(data = {}) {
       // Additional Agreed Terms
       doc.font(fontBold).fontSize(11.5).text('Additional Agreed Terms, if any');
       doc.moveDown(0.8);
-      doc.font(fontRegular).fillColor('#999999').text('_________________________________________________________________________________');
-      doc.moveDown(0.4);
-      doc.text('_________________________________________________________________________________');
-      doc.moveDown(0.4);
-      doc.text('_________________________________________________________________________________');
-      doc.fillColor('#000000');
+      if (data.additionalAgreedTerms && String(data.additionalAgreedTerms).trim()) {
+        doc.font(fontItalic).fontSize(10.5).lineGap(3.5).text(String(data.additionalAgreedTerms).trim());
+        doc.font(fontRegular);
+      } else {
+        doc.font(fontRegular).fillColor('#999999').text('_________________________________________________________________________________');
+        doc.moveDown(0.4);
+        doc.text('_________________________________________________________________________________');
+        doc.moveDown(0.4);
+        doc.text('_________________________________________________________________________________');
+        doc.fillColor('#000000');
+      }
 
       doc.end();
     } catch (err) {
@@ -284,44 +307,222 @@ export async function generateCoachingAgreementPdf(data = {}) {
 /**
  * Send Coaching Session Confirmation Email with dynamically filled PDF Agreement attached.
  */
-export async function sendCoachingBookingConfirmationEmail({
-  appointment,
-  isFreeSession = false,
-  freeSessionsRemaining = null,
-}) {
-  if (!appointment || !appointment.email) return;
+/**
+ * Send Admin / Coach Alert Email when a new booking is created.
+ * The client does NOT receive the agreement yet; it awaits Aarkesh sir's review in Admin Dashboard.
+ */
+export async function sendCoachBookingAlertEmail({ appointment, isFreeSession = false }) {
+  if (!appointment) return;
 
   try {
     const resendApiKey = process.env.RESEND_API_KEY;
     if (!resendApiKey) {
-      console.warn('⚠️ RESEND_API_KEY not configured. Skipping coaching booking confirmation email.');
+      console.warn('⚠️ RESEND_API_KEY not configured. Skipping coach booking alert email.');
       return;
     }
 
     const resend = new Resend(resendApiKey);
     const clientName = appointment.name || 'Valued Client';
-    const clientEmail = appointment.email.trim().toLowerCase();
+    const clientEmail = (appointment.email || '').trim().toLowerCase();
     const cleanDate = appointment.date || 'Scheduled Date';
     const cleanTime = appointment.time || 'Scheduled Time';
     const duration = appointment.duration || 60;
     const isFirstSession = appointment.isFirstSession;
-    const meetLink = appointment.meetLink || '';
+    let meetLink = (appointment.meetLink || '').trim();
+    if (!meetLink) {
+      meetLink = generateGoogleMeetLink();
+      appointment.meetLink = meetLink;
+      if (typeof appointment.save === 'function') {
+        appointment.save().catch(() => {});
+      }
+    }
 
-    // Generate exact replica PDF Buffer
+    const coachEmailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Coaching Booking Alert</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
+        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #FAF8F5; padding: 30px 15px;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; width: 100%; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
+                
+                <!-- Brand Header -->
+                <tr>
+                  <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td>
+                          <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; letter-spacing: -0.5px; font-family: Georgia, serif;">
+                            BetterWith<span style="color: #C25E38;">Aarkesh</span>
+                          </div>
+                          <div style="font-size: 11px; color: #C25E38; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 700;">
+                            🚨 ACTION REQUIRED · REVIEW COACHING AGREEMENT
+                          </div>
+                        </td>
+                        <td align="right">
+                          <span style="display: inline-block; padding: 5px 12px; background-color: #FEF3C7; border: 1px solid #F59E0B; color: #B45309; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">
+                            NEEDS ACTION
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Content Banner -->
+                <tr>
+                  <td style="padding: 28px 36px;">
+                    <h2 style="margin: 0 0 10px; font-size: 20px; color: #1A1A1A; font-weight: 600;">
+                      New Booking from ${clientName}
+                    </h2>
+                    <p style="margin: 0 0 20px; font-size: 14px; color: #555555; line-height: 1.6;">
+                      A new coaching session has been reserved. The client has <strong>NOT</strong> been sent their Coaching Agreement yet. It is awaiting your review and approval in the Admin Dashboard.
+                    </p>
+
+                    <!-- Client & Session Details Box -->
+                    <div style="background-color: #FAF7F2; border: 1px solid #EBE4DA; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px;">
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;" width="140">Client Name:</td>
+                          <td style="padding: 6px 0; color: #1A1A1A; font-weight: 600;">${clientName}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Client Email:</td>
+                          <td style="padding: 6px 0; color: #C25E38; font-weight: 600;"><a href="mailto:${clientEmail}" style="color: #C25E38; text-decoration: none;">${clientEmail}</a></td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Phone Number:</td>
+                          <td style="padding: 6px 0; color: #1A1A1A; font-family: monospace;">${appointment.phoneNumber || appointment.phone || 'Not provided'}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Date &amp; Time:</td>
+                          <td style="padding: 6px 0; color: #1A1A1A; font-weight: 600;">${cleanDate} at ${cleanTime} (IST)</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Duration / Type:</td>
+                          <td style="padding: 6px 0; color: #C25E38; font-weight: 600;">${duration} mins (${isFirstSession ? 'First Session' : 'Returning Client'})</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #777777;">Booking Type:</td>
+                          <td style="padding: 6px 0; color: ${isFreeSession ? '#059669' : '#1A1A1A'}; font-weight: 600;">${isFreeSession ? 'Course Bonus (Complimentary)' : 'Standard Paid Session'}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 10px 0; color: #777777;" valign="top">Meeting Link:</td>
+                          <td style="padding: 10px 0;">
+                            <a href="${meetLink}" target="_blank" style="color: #C25E38; font-weight: 700; text-decoration: underline; font-size: 13.5px; word-break: break-all;">
+                              ${meetLink}
+                            </a>
+                            <div style="margin-top: 6px;">
+                              <a href="${meetLink}" target="_blank" style="display: inline-block; background-color: #2D3748; color: #FFFFFF; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 5px; text-decoration: none;">
+                                Join / Test Meeting &rarr;
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+
+                    <!-- Workflow Callout -->
+                    <div style="background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
+                      <div style="font-size: 13px; font-weight: 700; color: #92400E; margin-bottom: 4px;">
+                        📝 Action Required: Review &amp; Send Agreement
+                      </div>
+                      <div style="font-size: 12px; color: #78350F; line-height: 1.5;">
+                        Log in to your <strong>Admin Dashboard &rarr; Appointments &rarr; Needs Action</strong> tab to review client details, add custom coaching notes or terms, preview the generated PDF, and click <strong>Approve &amp; Send</strong> to dispatch the agreement to the client.
+                      </div>
+                    </div>
+
+                    <div style="text-align: center; margin: 28px 0 10px;">
+                      <a href="https://aarkeshgupta.com/admin/appointments" style="display: inline-block; background-color: #C25E38; color: #FFFFFF; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 14px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 14px rgba(194, 94, 56, 0.3);">
+                        Review &amp; Send Agreement &rarr;
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 20px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11px; color: #777777; line-height: 1.5;">
+                    <div>Better With Aarkesh · Admin Coaching Dashboard Notification</div>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
+      to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
+      subject: `🚨 Review Required: New Booking from ${clientName} (${cleanDate} at ${cleanTime})`,
+      html: coachEmailHtml,
+    });
+
+    console.log(`✉️ Dispatched coach alert email for new booking by ${clientEmail}`);
+  } catch (err) {
+    console.error('Failed to send coach booking alert email:', err);
+  }
+}
+
+/**
+ * Send Coaching Agreement & Official Confirmation to the client once approved by Aarkesh sir.
+ */
+export async function sendClientCoachingAgreementEmail({ appointment, customData = {} }) {
+  if (!appointment || !appointment.email) return;
+
+  try {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      console.warn('⚠️ RESEND_API_KEY not configured. Skipping client coaching agreement email.');
+      return;
+    }
+
+    const resend = new Resend(resendApiKey);
+
+    // Merge appointment defaults with any custom overrides made by Aarkesh sir
+    const clientName = (customData.clientName || appointment.name || 'Valued Client').trim();
+    const clientEmail = (customData.clientEmail || appointment.email).trim().toLowerCase();
+    const clientPhone = (customData.clientPhone || appointment.phoneNumber || appointment.phone || '').trim();
+    const cleanDate = (customData.sessionDate || appointment.date || 'Scheduled Date').trim();
+    const cleanTime = (customData.sessionTime || appointment.time || 'Scheduled Time').trim();
+    const duration = customData.duration || appointment.duration || 60;
+    const isFirstSession = appointment.isFirstSession;
+    let meetLink = (customData.meetLink || appointment.meetLink || '').trim();
+    if (!meetLink) {
+      meetLink = generateGoogleMeetLink();
+      appointment.meetLink = meetLink;
+      appointment.save().catch(() => {});
+    }
+    const modeOfCoaching = (customData.modeOfCoaching || 'Online Video (Google Meet)').trim();
+    const betweenSessionSupport = customData.betweenSessionSupport || appointment.agreementData?.betweenSessionSupport || '';
+    const additionalAgreedTerms = customData.additionalAgreedTerms || appointment.agreementData?.additionalAgreedTerms || '';
+
+    // Generate exact replica PDF Buffer with any customized fields
     const pdfBuffer = await generateCoachingAgreementPdf({
       clientName,
       clientEmail,
-      clientPhone: appointment.phoneNumber || appointment.phone || '',
+      clientPhone,
       sessionDate: cleanDate,
       sessionTime: cleanTime,
-      agreementDate: new Date(appointment.createdAt || Date.now()).toLocaleDateString('en-GB', {
+      agreementDate: customData.agreementDate || new Date().toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
       }),
-      isPackage: isFreeSession || Boolean(appointment.isCoursePackage),
-      modeOfCoaching: 'Online Video (Google Meet)',
+      isPackage: appointment.isFreeSession || Boolean(appointment.isCoursePackage),
+      modeOfCoaching,
       meetLink,
+      betweenSessionSupport,
+      additionalAgreedTerms
     });
 
     const safeFilename = `Coaching_Agreement_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
@@ -370,7 +571,7 @@ export async function sendCoachingBookingConfirmationEmail({
                       Session Confirmed, ${clientName}!
                     </h2>
                     <p style="margin: 0 0 20px; font-size: 14px; color: #555555; line-height: 1.6;">
-                      Your private 1-on-1 coaching session with Aarkesh Gupta has been reserved on the schedule.
+                      Your private 1-on-1 coaching session with Aarkesh Gupta has been confirmed. Your official <strong>Coaching Agreement</strong> has been reviewed, prepared, and attached below.
                     </p>
 
                     <!-- Session Details Box -->
@@ -390,21 +591,34 @@ export async function sendCoachingBookingConfirmationEmail({
                         </tr>
                         <tr>
                           <td style="padding: 6px 0; color: #777777;">Format:</td>
-                          <td style="padding: 6px 0; color: #1A1A1A;">Private 1-on-1 Video Consultation</td>
+                          <td style="padding: 6px 0; color: #1A1A1A;">${modeOfCoaching}</td>
                         </tr>
-                        ${freeSessionsRemaining !== null ? `
                         <tr>
-                          <td style="padding: 6px 0; color: #777777;">Remaining Credits:</td>
-                          <td style="padding: 6px 0; color: #059669; font-weight: 600;">${freeSessionsRemaining} Complimentary Sessions</td>
+                          <td style="padding: 10px 0; color: #777777;" valign="top">Meeting Link:</td>
+                          <td style="padding: 10px 0;">
+                            <a href="${meetLink}" target="_blank" style="color: #C25E38; font-weight: 700; text-decoration: underline; font-size: 13.5px; word-break: break-all;">
+                              ${meetLink}
+                            </a>
+                          </td>
                         </tr>
-                        ` : ''}
-                        ${meetLink ? `
-                        <tr>
-                          <td style="padding: 6px 0; color: #777777;">Meeting Link:</td>
-                          <td style="padding: 6px 0;"><a href="${meetLink}" style="color: #C25E38; font-weight: 600; text-decoration: underline;">Join Google Meet Call</a></td>
-                        </tr>
-                        ` : ''}
                       </table>
+                    </div>
+
+                    <!-- Google Meet Join Card -->
+                    <div style="background-color: #F0FDF4; border: 1px solid #86EFAC; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; text-align: center;">
+                      <div style="font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 6px;">
+                        📹 Your Google Meet Video Session
+                      </div>
+                      <div style="font-size: 13px; color: #15803D; margin-bottom: 12px; word-break: break-all;">
+                        <a href="${meetLink}" target="_blank" style="color: #15803D; font-weight: 700; text-decoration: underline;">
+                          ${meetLink}
+                        </a>
+                      </div>
+                      <div>
+                        <a href="${meetLink}" target="_blank" style="display: inline-block; background-color: #15803D; color: #FFFFFF; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 24px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 12px rgba(22, 101, 52, 0.2);">
+                          Join Google Meet Call &rarr;
+                        </a>
+                      </div>
                     </div>
 
                     <!-- PDF Attachment Callout -->
@@ -413,7 +627,7 @@ export async function sendCoachingBookingConfirmationEmail({
                         📄 Attached: Coaching Agreement
                       </div>
                       <div style="font-size: 12px; color: #666666; line-height: 1.5;">
-                        Your <strong>Coaching Agreement (${safeFilename})</strong> is attached to this email for your reference and records.
+                        Your personalized <strong>Coaching Agreement (${safeFilename})</strong> is attached to this email for your reference and records.
                       </div>
                     </div>
 
@@ -439,116 +653,6 @@ export async function sendCoachingBookingConfirmationEmail({
       </html>
     `;
 
-    const coachEmailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>New Coaching Booking Alert</title>
-      </head>
-      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
-        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #FAF8F5; padding: 30px 15px;">
-          <tr>
-            <td align="center">
-              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; width: 100%; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
-                
-                <!-- Brand Header -->
-                <tr>
-                  <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td>
-                          <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; letter-spacing: -0.5px; font-family: Georgia, serif;">
-                            BetterWith<span style="color: #C25E38;">Aarkesh</span>
-                          </div>
-                          <div style="font-size: 11px; color: #C25E38; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 700;">
-                            🚨 ADMIN ALERT · NEW COACHING BOOKING
-                          </div>
-                        </td>
-                        <td align="right">
-                          <span style="display: inline-block; padding: 5px 12px; background-color: rgba(194, 94, 56, 0.1); border: 1px solid rgba(194, 94, 56, 0.3); color: #C25E38; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">
-                            ${duration} MINS
-                          </span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
-                <!-- Content Banner -->
-                <tr>
-                  <td style="padding: 28px 36px;">
-                    <h2 style="margin: 0 0 10px; font-size: 20px; color: #1A1A1A; font-weight: 600;">
-                      ${clientName} just booked a 1-on-1 session!
-                    </h2>
-                    <p style="margin: 0 0 20px; font-size: 14px; color: #555555; line-height: 1.6;">
-                      A new executive coaching session has been reserved and confirmed on your calendar.
-                    </p>
-
-                    <!-- Client & Session Details Box -->
-                    <div style="background-color: #FAF7F2; border: 1px solid #EBE4DA; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-                      <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px;">
-                        <tr>
-                          <td style="padding: 6px 0; color: #777777;" width="140">Client Name:</td>
-                          <td style="padding: 6px 0; color: #1A1A1A; font-weight: 600;">${clientName}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 6px 0; color: #777777;">Client Email:</td>
-                          <td style="padding: 6px 0; color: #C25E38; font-weight: 600;"><a href="mailto:${clientEmail}" style="color: #C25E38; text-decoration: none;">${clientEmail}</a></td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 6px 0; color: #777777;">Phone Number:</td>
-                          <td style="padding: 6px 0; color: #1A1A1A; font-family: monospace;">${appointment.phoneNumber || appointment.phone || 'Not provided'}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 6px 0; color: #777777;">Date &amp; Time:</td>
-                          <td style="padding: 6px 0; color: #1A1A1A; font-weight: 600;">${cleanDate} at ${cleanTime} (IST)</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 6px 0; color: #777777;">Duration / Type:</td>
-                          <td style="padding: 6px 0; color: #C25E38; font-weight: 600;">${duration} mins (${isFirstSession ? 'First Session' : 'Returning Client'})</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 6px 0; color: #777777;">Booking Type:</td>
-                          <td style="padding: 6px 0; color: ${isFreeSession ? '#059669' : '#1A1A1A'}; font-weight: 600;">${isFreeSession ? 'Course Bonus (Complimentary)' : 'Standard Paid Session'}</td>
-                        </tr>
-                        ${meetLink ? `
-                        <tr>
-                          <td style="padding: 6px 0; color: #777777;">Meet Link:</td>
-                          <td style="padding: 6px 0;"><a href="${meetLink}" style="color: #C25E38; font-weight: 600; text-decoration: underline;">${meetLink}</a></td>
-                        </tr>
-                        ` : ''}
-                      </table>
-                    </div>
-
-                    <!-- PDF Attached Callout -->
-                    <div style="background-color: #FDF9F5; border: 1px dashed #C25E38; border-radius: 12px; padding: 18px 20px;">
-                      <div style="font-size: 13px; font-weight: 600; color: #C25E38; margin-bottom: 4px;">
-                        📄 Attached: Coaching Agreement PDF
-                      </div>
-                      <div style="font-size: 12px; color: #666666; line-height: 1.5;">
-                        The dynamically generated Coaching Agreement for <strong>${clientName}</strong> is attached to this email.
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-
-                <!-- Footer -->
-                <tr>
-                  <td style="padding: 20px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11px; color: #777777; line-height: 1.5;">
-                    <div>Better With Aarkesh · Admin Coaching Dashboard Notification</div>
-                  </td>
-                </tr>
-
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
-
     const attachments = [
       {
         filename: safeFilename,
@@ -556,28 +660,24 @@ export async function sendCoachingBookingConfirmationEmail({
       }
     ];
 
-    const emailPromises = [
-      // Send to Client with PDF attachment
-      resend.emails.send({
-        from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
-        to: clientEmail,
-        subject: `Coaching Session Confirmed + Coaching Agreement — ${cleanDate}`,
-        html: clientEmailHtml,
-        attachments,
-      }),
-      // Send to Coach / Admin with PDF attachment
-      resend.emails.send({
-        from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
-        to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
-        subject: `New Coaching Booking: ${clientName} (${cleanDate} at ${cleanTime})`,
-        html: coachEmailHtml,
-        attachments,
-      })
-    ];
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
+      to: clientEmail,
+      subject: `Coaching Session Confirmed + Coaching Agreement — ${cleanDate}`,
+      html: clientEmailHtml,
+      attachments,
+    });
 
-    const results = await Promise.allSettled(emailPromises);
-    console.log(`✉️ Dispatched booking confirmation emails with agreement PDF for ${clientEmail}:`, results.map(r => r.status));
+    console.log(`✉️ Successfully delivered approved Coaching Agreement PDF to ${clientEmail}`);
   } catch (err) {
-    console.error('Failed to send booking confirmation email with PDF agreement:', err);
+    console.error('Failed to send approved client agreement email:', err);
+    throw err;
   }
+}
+
+/**
+ * Backwards compatibility wrapper (if called elsewhere)
+ */
+export async function sendCoachingBookingConfirmationEmail(params) {
+  return sendCoachBookingAlertEmail(params);
 }

@@ -21,7 +21,8 @@ export default function Step2Details({
   settings = {},
   questionnaireDraft: parentDraft,
   draftId: parentDraftId,
-  onUpdateDraft: parentUpdateDraft
+  onUpdateDraft: parentUpdateDraft,
+  onOpenLogin
 }) {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
@@ -363,16 +364,33 @@ export default function Step2Details({
                 type="tel" 
                 name="phoneNumber"
                 value={data.phoneNumber}
-                onChange={(e) => updateData({ phoneNumber: e.target.value.replace(/\D/g, '') })}
+                onChange={(e) => updateData({ phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                 maxLength={10}
                 className="w-full bg-transparent text-[#111010] font-sans text-sm focus:outline-none placeholder-[#9c9689]"
                 placeholder={settings.phonePlaceholder || "0000000000"}
               />
             </div>
             {phoneError && (
-              <p className="text-xs text-red-600 font-sans mt-1.5 flex items-center gap-1 font-medium animate-in fade-in duration-200">
-                {phoneError}
-              </p>
+              <div className="mt-1.5 space-y-1 animate-in fade-in duration-200">
+                <p className="text-xs text-red-600 font-sans flex items-center gap-1 font-medium">
+                  {phoneError}
+                </p>
+                <p className="text-xs text-[#555047] font-sans">
+                  Please{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onOpenLogin) {
+                        onOpenLogin(data.phoneNumber, data.email);
+                      }
+                    }}
+                    className="text-[#c9542f] font-semibold underline underline-offset-2 hover:text-[#9e3a1b] cursor-pointer transition-colors"
+                  >
+                    login
+                  </button>{' '}
+                  with registered account.
+                </p>
+              </div>
             )}
           </div>
         )}

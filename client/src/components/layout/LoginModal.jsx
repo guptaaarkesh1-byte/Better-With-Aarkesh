@@ -42,7 +42,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
       setPassword('');
       setConfirmPassword('');
       setFullName(defaultFullName || '');
-      setEmail(defaultEmail || '');
+      setEmail(defaultEmail || (defaultMode === 'login' && defaultPhoneNumber ? defaultPhoneNumber : ''));
       setCountryCode(defaultCountryCode || '+91');
       setPhoneNumber(defaultPhoneNumber || '');
       setError('');
@@ -363,15 +363,15 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
 
               <div>
                 <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
-                  Email Address
+                  {isLogin ? 'Email Address or Mobile' : 'Email Address'}
                 </label>
                 <input 
-                  type="email" 
+                  type={isLogin ? 'text' : 'email'} 
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-white/80 border border-black/10 focus:border-[#c9542f] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 shadow-2xs"
-                  placeholder="john@example.com"
+                  placeholder={isLogin ? "Email or 10-digit mobile number" : "john@example.com"}
                 />
               </div>
 

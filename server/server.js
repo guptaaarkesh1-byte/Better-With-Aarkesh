@@ -94,6 +94,14 @@ app.use('/api/cal', calRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/payment', paymentRoutes);
+app.post('/api/create-order', (req, res, next) => {
+  req.url = '/create-order';
+  paymentRoutes(req, res, next);
+});
+app.post('/api/verify-payment', (req, res, next) => {
+  req.url = '/verify-payment';
+  paymentRoutes(req, res, next);
+});
 app.use('/api/articles', articleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);

@@ -850,12 +850,18 @@ export default function Booking() {
                   updateData={updateData} 
                   onNext={nextStep} 
                   onBack={prevStep}
-                  isAuthenticated={!!localStorage.getItem('token')}
+                  isAuthenticated={!!localStorage.getItem('token') || isLoggedIn}
                   freeSessionInfo={freeSessionInfo}
                   settings={bookingSettings.step2}
                   questionnaireDraft={questionnaireDraft}
                   draftId={draftId}
                   onUpdateDraft={setQuestionnaireDraft}
+                  onOpenLogin={(phone, email) => {
+                    setAuthMode('login');
+                    if (phone) setAuthDefaultPhone(phone);
+                    if (email) setAuthDefaultEmail(email);
+                    setShowAuthModal(true);
+                  }}
                 />
               )}
               {step === 3 && (

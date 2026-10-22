@@ -25,7 +25,7 @@ import {
   Clock,
   Users
 } from '@phosphor-icons/react';
-import { API_URL } from '../utils/apiUrl';
+import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 
 // Left Sidebar Sections for Course Landing Page
 export const COURSE_CATALOG_TABS = [
@@ -529,7 +529,7 @@ export default function AdminCourseLandingCatalogEditor() {
             <ArrowClockwise size={14} /> Reload
           </button>
           <a
-            href="http://localhost:5173/course"
+            href={getLiveSiteUrl('/course')}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#c9542f]/10 border border-[#c9542f]/30 hover:bg-[#c9542f]/20 text-[#c9542f] text-xs font-semibold tracking-wider uppercase transition-colors"

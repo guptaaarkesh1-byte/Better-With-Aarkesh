@@ -31,7 +31,7 @@ import {
 import { CURATED_LIBRARY_ARTICLES } from '../../../client/src/constants/libraryArticlesData';
 import TiptapEditor from '../components/ui/TiptapEditor';
 
-import { API_URL } from '../utils/apiUrl';
+import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 
 // Left Sidebar Navigation Tabs for Library Page Editor
 export const LIBRARY_SIDEBAR_TABS = [
@@ -891,7 +891,7 @@ export default function AdminLibraryEditor() {
                 <ArrowClockwise size={14} /> Reload
               </button>
               <a
-                href="http://localhost:5173/library"
+                href={getLiveSiteUrl('/library')}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#c9542f]/10 border border-[#c9542f]/30 hover:bg-[#c9542f]/20 text-[#c9542f] text-xs font-semibold tracking-wider uppercase transition-colors"

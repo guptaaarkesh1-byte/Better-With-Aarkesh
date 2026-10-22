@@ -32,7 +32,7 @@ const DEFAULT_SECTIONS = {
     transEyebrow: "CLARITY ISN'T LUCK.",
     transHeading: "It's a skill. And it",
     transAccent: 'Changes Everything.',
-    transBgImg: '',
+    transBgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289677/better_with_aarkesh/client/src/assets/Page2/bottom_6752.webp',
   },
   principles: {
     think: {
@@ -225,7 +225,7 @@ const DEFAULT_SECTIONS = {
     ctaText: 'BOOK YOUR SESSION',
     ctaLink: '/book',
     confidentialText: '100% Confidential & Safe Space',
-    bgImg: '',
+    bgImg: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289675/better_with_aarkesh/client/src/assets/Page10/next-chapter-cozy_4728.webp',
     quoteLine1: "You don't have to have it all figured out.",
     quoteLine2: "You just have to be willing to begin."
   }
@@ -252,6 +252,12 @@ router.get('/', async (req, res) => {
       faq: { ...DEFAULT_SECTIONS.faq, ...(doc.value?.faq || {}) },
       cta: { ...DEFAULT_SECTIONS.cta, ...(doc.value?.cta || {}) },
     };
+
+    // Ensure fallback images if stored values are empty strings
+    if (!result.cta.bgImg) result.cta.bgImg = DEFAULT_SECTIONS.cta.bgImg;
+    if (!result.problem.transBgImg) result.problem.transBgImg = DEFAULT_SECTIONS.problem.transBgImg;
+    if (!result.coachingJourney.bgImg) result.coachingJourney.bgImg = DEFAULT_SECTIONS.coachingJourney.bgImg;
+
     res.json(result);
   } catch (err) {
     console.error('Error fetching home settings:', err);
@@ -272,7 +278,12 @@ router.get('/:section', async (req, res) => {
       return res.json(defaultSectionData);
     }
     
-    res.json({ ...defaultSectionData, ...doc.value[section] });
+    const secResult = { ...defaultSectionData, ...doc.value[section] };
+    if (section === 'cta' && !secResult.bgImg) secResult.bgImg = DEFAULT_SECTIONS.cta.bgImg;
+    if (section === 'problem' && !secResult.transBgImg) secResult.transBgImg = DEFAULT_SECTIONS.problem.transBgImg;
+    if (section === 'coachingJourney' && !secResult.bgImg) secResult.bgImg = DEFAULT_SECTIONS.coachingJourney.bgImg;
+
+    res.json(secResult);
   } catch (err) {
     console.error(`Error fetching section ${req.params.section}:`, err);
     res.status(500).json({ message: 'Failed to fetch section settings' });

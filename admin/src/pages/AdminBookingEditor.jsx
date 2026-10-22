@@ -27,7 +27,7 @@ import {
 } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 
-import { API_URL } from '../utils/apiUrl';
+import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 
 const SIDEBAR_TABS = [
   { 
@@ -494,7 +494,7 @@ export default function AdminBookingEditor() {
         {/* Global Actions */}
         <div className="flex items-center gap-3">
           <a
-            href="http://localhost:5173/book"
+            href={getLiveSiteUrl('/book')}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 text-xs font-medium transition-all"

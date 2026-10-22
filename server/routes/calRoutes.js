@@ -134,6 +134,132 @@ router.get('/slots', async (req, res) => {
   }
 });
 
+// GET /api/cal/month-availability?year=YYYY&month=MM&email=...
+router.get('/month-availability', async (req, res) => {
+  try {
+    const { year, month, email } = req.query;
+    if (!year || !month) {
+      return res.status(400).json({ message: 'year and month are required' });
+    }
+
+    const y = parseInt(year, 10);
+    const m = parseInt(month, 10); // 1-indexed (1 to 12)
+    const daysInMonth = new Date(y, m, 0).getDate();
+
+    const mStr = String(m).padStart(2, '0');
+    const startTime = new Date(`${y}-${mStr}-01T00:00:00.000Z`).toISOString();
+    const endTime = new Date(`${y}-${mStr}-${String(daysInMonth).padStart(2, '0')}T23:59:59.999Z`).toISOString();
+
+    // Check if user is returning
+    let isFirstSession = true;
+    if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
+      const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pastAppointments = await Appointment.countDocuments({ 
+        email: new RegExp(`^${escapedEmail}$`, 'i'),
+        status: { $in: ['UPCOMING', 'COMPLETED'] },
+        paymentStatus: { $ne: 'Failed' }
+      });
+      isFirstSession = pastAppointments === 0;
+    }
+
+    const eventTypeId = isFirstSession 
+      ? (process.env.CAL_EVENT_TYPE_ID_60 || 6863088) 
+      : (process.env.CAL_EVENT_TYPE_ID_90 || 6863088);
+
+    const response = await fetch(`https://api.cal.com/v2/slots/available?eventTypeId=${eventTypeId}&startTime=${startTime}&endTime=${endTime}`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.CAL_API_KEY}`,
+        'cal-api-version': '2024-08-13'
+      }
+    });
+
+    if (!response.ok) {
+      return res.json({ availableDays: [], slotsCountByDate: {} });
+    }
+
+    const data = await response.json();
+    const slotsMap = data?.data?.slots || {};
+
+    // Get all booked appointments for this month
+    const monthName = getMonthName(m - 1);
+    const bookedAppointments = await Appointment.find({
+      date: new RegExp(`(${y}-${mStr}|${monthName}.*${y})`, 'i'),
+      status: { $in: ['UPCOMING', 'COMPLETED'] },
+      paymentStatus: { $ne: 'Failed' }
+    });
+
+    // Get active holds for this month
+    const now = new Date();
+    const activeHolds = await SlotHold.find({
+      dateKey: new RegExp(`^${y}-${mStr}`),
+      status: 'HELD',
+      expiresAt: { $gt: now }
+    });
+
+    const unavailableByDate = {};
+    activeHolds.forEach(h => {
+      if (h.dateKey && h.time) {
+        if (!unavailableByDate[h.dateKey]) unavailableByDate[h.dateKey] = new Set();
+        unavailableByDate[h.dateKey].add(normalizeTime(h.time));
+      }
+    });
+    bookedAppointments.forEach(a => {
+      let dKey = null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(a.date)) {
+        dKey = a.date;
+      } else {
+        const match = String(a.date).match(/(\w+)\s+(\d+),\s+(\d{4})/);
+        if (match) {
+          const mIdx = [
+            'january', 'february', 'march', 'april', 'may', 'june',
+            'july', 'august', 'september', 'october', 'november', 'december'
+          ].indexOf(match[1].toLowerCase());
+          if (mIdx !== -1) {
+            dKey = `${match[3]}-${String(mIdx + 1).padStart(2, '0')}-${String(match[2]).padStart(2, '0')}`;
+          }
+        }
+      }
+      if (dKey && a.time) {
+        if (!unavailableByDate[dKey]) unavailableByDate[dKey] = new Set();
+        unavailableByDate[dKey].add(normalizeTime(a.time));
+      }
+    });
+
+    const availableDays = [];
+    const slotsCountByDate = {};
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = `${y}-${mStr}-${String(day).padStart(2, '0')}`;
+      const rawSlots = slotsMap[dateKey];
+      if (Array.isArray(rawSlots) && rawSlots.length > 0) {
+        const unavail = unavailableByDate[dateKey] || new Set();
+        const validSlots = rawSlots.filter(slot => {
+          const d = new Date(slot.time);
+          const t1 = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          const t2 = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          return !unavail.has(normalizeTime(t1)) && !unavail.has(normalizeTime(t2));
+        });
+        if (validSlots.length > 0) {
+          availableDays.push(day);
+          slotsCountByDate[dateKey] = validSlots.length;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      year: y,
+      month: m,
+      availableDays,
+      slotsCountByDate
+    });
+  } catch (error) {
+    console.error("Failed to fetch month availability:", error);
+    res.status(500).json({ message: 'Server error fetching month availability' });
+  }
+});
+
 // POST /api/cal/slots/hold - Temporary lock on a slot for 15 minutes
 router.post('/slots/hold', async (req, res) => {
   try {

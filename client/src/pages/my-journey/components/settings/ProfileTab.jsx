@@ -47,7 +47,7 @@ export default function ProfileTab() {
             setUserInfo(data);
             if (data.fullName) setFullName(data.fullName);
             if (data.email) setEmail(data.email);
-            if (data.phoneNumber) setPhoneNumber(data.phoneNumber);
+            if (data.phoneNumber) setPhoneNumber(String(data.phoneNumber).replace(/\D/g, '').slice(-10));
             if (data.dob) setDob(data.dob);
             if (data.gender) setGender(data.gender);
             if (data.photoUrl !== undefined) {
@@ -129,6 +129,13 @@ export default function ProfileTab() {
     setIsSaving(true);
     setStatusMessage({ type: '', text: '' });
 
+    const cleanPhone = (phoneNumber || '').replace(/\D/g, '').slice(0, 10);
+    if (cleanPhone && cleanPhone.length !== 10) {
+      setStatusMessage({ type: 'error', text: 'Please enter a valid 10-digit mobile number.' });
+      setIsSaving(false);
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('courseToken');
       const res = await fetch(`${API_URL}/api/users/profile`, {
@@ -139,7 +146,7 @@ export default function ProfileTab() {
         },
         body: JSON.stringify({
           fullName,
-          phoneNumber,
+          phoneNumber: cleanPhone,
           dob,
           gender,
           photoUrl
@@ -167,7 +174,7 @@ export default function ProfileTab() {
 
   const handleCancel = () => {
     setFullName(userInfo.fullName || userInfo.name || '');
-    setPhoneNumber(userInfo.phoneNumber || userInfo.phone || '');
+    setPhoneNumber(String(userInfo.phoneNumber || userInfo.phone || '').replace(/\D/g, '').slice(-10));
     setDob(userInfo.dob || '');
     setGender(userInfo.gender || 'Prefer not to say');
     setPhotoUrl(userInfo.photoUrl || '');
@@ -284,9 +291,13 @@ export default function ProfileTab() {
           <label className="font-sans text-[0.65rem] uppercase tracking-[0.15em] text-[#7a756b] font-bold">Mobile / WhatsApp</label>
           <input 
             type="tel" 
+            maxLength={10}
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="+91 9876543210"
+            onChange={(e) => {
+              const onlyNums = e.target.value.replace(/\D/g, '').slice(0, 10);
+              setPhoneNumber(onlyNums);
+            }}
+            placeholder="10-digit mobile number"
             className="w-full bg-[#fcfbfa] border border-black/10 rounded-xl px-4 py-3 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] transition-colors"
           />
         </div>

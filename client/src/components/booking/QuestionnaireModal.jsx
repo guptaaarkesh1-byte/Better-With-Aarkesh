@@ -38,6 +38,7 @@ export default function QuestionnaireModal({
 
   const modalRef = useRef(null);
   const scrollContainerRef = useRef(null);
+  const answersScrollRef = useRef(null);
   const headingRef = useRef(null);
   const titleId = useId();
 
@@ -54,12 +55,27 @@ export default function QuestionnaireModal({
     }
   }, [isOpen]);
 
-  // W3C Modal accessibility: Inert background and focus trapping
+  // W3C Modal accessibility & Background Scroll Lock (Lock html + body with position fixed for Mac elastic bounce / trackpad chaining)
   useEffect(() => {
     if (!isOpen) return;
 
-    // Prevent body scrolling
-    const originalOverflow = document.body.style.overflow;
+    // Pause Lenis smooth scrolling so it does not intercept trackpad / wheel events
+    try {
+      window.lenis?.stop();
+    } catch (e) {}
+
+    // Prevent body and html scrolling on macOS / mobile
+    const scrollY = window.scrollY;
+    const originalBodyPosition = document.body.style.position;
+    const originalBodyTop = document.body.style.top;
+    const originalBodyWidth = document.body.style.width;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
 
     // Mark main root inert for assistive tech
@@ -112,7 +128,19 @@ export default function QuestionnaireModal({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
+      clearTimeout(focusTimer);
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.position = originalBodyPosition;
+      document.body.style.top = originalBodyTop;
+      document.body.style.width = originalBodyWidth;
+      document.body.style.overflow = originalBodyOverflow;
+      window.scrollTo(0, scrollY);
+
+      // Resume Lenis smooth scrolling
+      try {
+        window.lenis?.start();
+      } catch (e) {}
+
       if (rootEl) {
         rootEl.removeAttribute('aria-hidden');
         rootEl.inert = false;
@@ -133,6 +161,9 @@ export default function QuestionnaireModal({
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
     }
+    if (answersScrollRef.current) {
+      answersScrollRef.current.scrollTop = 0;
+    }
     const timer = setTimeout(() => {
       if (headingRef.current) {
         headingRef.current.focus();
@@ -142,6 +173,24 @@ export default function QuestionnaireModal({
     setSkipConfirmTarget(null);
     return () => clearTimeout(timer);
   }, [screen, isOpen]);
+
+  // Forward trackpad wheel scrolling from header/title into answers container
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+    const modalEl = modalRef.current;
+
+    const handleWheel = (e) => {
+      const scrollEl = answersScrollRef.current || scrollContainerRef.current;
+      if (!scrollEl) return;
+      const isInside = scrollEl.contains(e.target);
+      if (!isInside) {
+        scrollEl.scrollTop += e.deltaY;
+      }
+    };
+
+    modalEl.addEventListener('wheel', handleWheel, { passive: true });
+    return () => modalEl.removeEventListener('wheel', handleWheel);
+  }, [isOpen, screen]);
 
   if (!isOpen) return null;
 
@@ -378,6 +427,7 @@ export default function QuestionnaireModal({
 
   return createPortal(
     <div
+      data-lenis-prevent="true"
       className="fixed inset-0 z-[99999] flex items-center justify-center p-0 sm:p-4 md:p-6 h-[100dvh] w-full"
       style={{ backgroundColor: 'rgba(17, 16, 16, 0.65)', backdropFilter: 'blur(6px)' }}
       // Backdrop click explicitly does NOTHING per spec
@@ -389,7 +439,8 @@ export default function QuestionnaireModal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex="-1"
-        className="relative w-full max-w-[840px] h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#f5f1e8] text-[#111010] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-black/10 focus:outline-none"
+        data-lenis-prevent="true"
+        className="relative w-full max-w-[840px] h-[92dvh] max-h-[820px] bg-[#f5f1e8] text-[#111010] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-black/10 focus:outline-none"
       >
         {/* TOP HEADER BAR */}
         <div className="shrink-0 px-3.5 sm:px-6 py-2.5 sm:py-3.5 bg-[#f5f1e8] border-b border-black/10 flex items-center justify-between gap-2">
@@ -440,94 +491,10 @@ export default function QuestionnaireModal({
           </div>
         )}
 
-        {/* SCROLLABLE QUESTION / SCREEN BODY */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-8 py-4 sm:py-7 space-y-5 sm:space-y-6 pb-12 sm:pb-8 touch-pan-y"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          {/* ============================================================ */}
-          {/* SCREEN: OPENING / INTRO                                      */}
-          {/* ============================================================ */}
-          {screen === 'intro' && (
-            <div className="space-y-6 max-w-xl mx-auto py-2 sm:py-4 flex flex-col items-center text-center">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#fbf0eb] border border-[#e8c4e2] text-[#c9542f] text-xs font-medium uppercase tracking-wider mx-auto">
-                <Sparkle size={14} weight="fill" />
-                <span>45 Questions • ~25–35 mins</span>
-              </div>
-
-              <h2
-                ref={headingRef}
-                tabIndex="-1"
-                className="text-2xl sm:text-3xl font-serif font-normal text-[#111010] focus:outline-none text-center"
-              >
-                Welcome to your optional preparation
-              </h2>
-
-              <p className="text-sm sm:text-base text-[#555047] leading-relaxed text-center max-w-lg">
-                {config.copy?.intro ||
-                  'There are no right or wrong answers. Share only what you feel comfortable sharing. You can skip any question or return to booking whenever you like.'}
-              </p>
-
-              <div className="w-full p-4 sm:p-5 rounded-2xl bg-white/70 border border-black/10 space-y-3 text-left">
-                <div className="flex items-start gap-3">
-                  <ShieldCheck size={20} className="text-[#c9542f] shrink-0 mt-0.5" />
-                  <div className="space-y-1.5 text-xs sm:text-sm text-[#555047] leading-relaxed">
-                    <p className="font-semibold text-[#111010]">Private & Tab-Scoped</p>
-                    <p>
-                      {config.copy?.draft_notice ||
-                        'Your progress is kept in this tab during booking. It may be lost if you close the tab. Answers are sent to Aarkesh when you confirm your booking.'}
-                    </p>
-                    <p>
-                      These responses help Aarkesh prepare for your conversation.{' '}
-                      <a
-                        href={privacyUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#c9542f] underline hover:text-[#111010]"
-                      >
-                        Read privacy policy
-                      </a>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {answeredCount > 0 && (
-                <div className="w-full p-4 rounded-xl bg-[#fbf0eb] border border-[#e8c4e2] text-xs sm:text-sm text-[#111010] flex items-center justify-between text-left">
-                  <span>You have <strong>{answeredCount}</strong> answers saved in this tab.</span>
-                  <button
-                    onClick={() => setScreen('review')}
-                    className="text-[#c9542f] font-bold uppercase tracking-wider text-xs hover:underline cursor-pointer"
-                  >
-                    View answers
-                  </button>
-                </div>
-              )}
-
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
-                <button
-                  onClick={() => setScreen(0)}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white text-xs sm:text-sm font-bold tracking-wider uppercase transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <span>{answeredCount > 0 ? 'Continue Questionnaire' : 'Start Questionnaire'}</span>
-                  <ArrowRight size={16} weight="bold" />
-                </button>
-                <button
-                  onClick={handleSaveAndReturn}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-black/15 bg-white/80 hover:bg-white text-[#111010] text-xs sm:text-sm font-semibold tracking-wide transition-colors cursor-pointer text-center"
-                >
-                  Return to Booking Details
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ============================================================ */}
-          {/* SCREEN: QUESTION (0..44)                                     */}
-          {/* ============================================================ */}
-          {isQuestionScreen && (
-            <div className="space-y-5 sm:space-y-6">
+        {isQuestionScreen ? (
+          <div className="flex-1 min-h-0 flex flex-col px-4 sm:px-8 pt-3 sm:pt-4 pb-1 overflow-hidden">
+            {/* PINNED QUESTION HEADER */}
+            <div className="shrink-0 space-y-1.5 sm:space-y-2 pb-2.5 sm:pb-3 border-b border-black/5">
               {/* SECTION HEADER & INTRO */}
               <div className="space-y-1.5 pb-2 border-b border-black/5">
                 <div className="flex items-baseline justify-between gap-2 text-[0.68rem] sm:text-xs text-[#7a756b] uppercase tracking-wider font-semibold">
@@ -613,14 +580,25 @@ export default function QuestionnaireModal({
                   <span>{limitWarning}</span>
                 </div>
               )}
+            </div>
 
+            {/* SCROLLABLE ANSWERS CONTAINER (Only middle answers scroll, exactly like time slot section) */}
+            <div
+              ref={answersScrollRef}
+              data-lenis-prevent="true"
+              tabIndex={0}
+              className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 sm:pr-2 pt-2.5 pb-8 overscroll-contain outline-none"
+              style={{
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
               {/* ============================================================ */}
               {/* CONTROL 1: MULTI_SELECT (CHECKBOXES - 2 COLUMNS)             */}
               {/* ============================================================ */}
               {currentQ.type === 'multi_select' && (
                 <div
-                  className="max-h-[48vh] sm:max-h-none overflow-y-auto overscroll-contain pr-1 sm:pr-0 p-0.5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 touch-pan-y"
-                  style={{ scrollbarWidth: 'thin', scrollbarColor: '#c9542f transparent', WebkitOverflowScrolling: 'touch' }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 p-0.5"
+                  
                 >
                   {(currentQ.options || []).map((opt) => {
                     const isChecked = Array.isArray(currentAnswer?.selected_option_ids) &&
@@ -705,8 +683,8 @@ export default function QuestionnaireModal({
               {/* ============================================================ */}
               {currentQ.type === 'single_select' && (
                 <div
-                  className="max-h-[48vh] sm:max-h-none overflow-y-auto overscroll-contain pr-1 sm:pr-0 p-0.5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 touch-pan-y"
-                  style={{ scrollbarWidth: 'thin', scrollbarColor: '#c9542f transparent', WebkitOverflowScrolling: 'touch' }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 p-0.5"
+                  
                 >
                   {(currentQ.options || []).map((opt) => {
                     const isSelected = Array.isArray(currentAnswer?.selected_option_ids) &&
@@ -884,12 +862,93 @@ export default function QuestionnaireModal({
                 </div>
               )}
             </div>
+          </div>
+        ) : (
+          <div
+            ref={scrollContainerRef}
+            data-lenis-prevent="true"
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar px-4 sm:px-8 py-4 sm:py-7 space-y-5 sm:space-y-6 pb-12 sm:pb-8"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {screen === 'intro' && (
+            <div className="space-y-6 max-w-xl mx-auto py-2 sm:py-4 flex flex-col items-center text-center">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#fbf0eb] border border-[#e8c4e2] text-[#c9542f] text-xs font-medium uppercase tracking-wider mx-auto">
+                <Sparkle size={14} weight="fill" />
+                <span>45 Questions • ~25–35 mins</span>
+              </div>
+
+              <h2
+                ref={headingRef}
+                tabIndex="-1"
+                className="text-2xl sm:text-3xl font-serif font-normal text-[#111010] focus:outline-none text-center"
+              >
+                Welcome to your optional preparation
+              </h2>
+
+              <p className="text-sm sm:text-base text-[#555047] leading-relaxed text-center max-w-lg">
+                {config.copy?.intro ||
+                  'There are no right or wrong answers. Share only what you feel comfortable sharing. You can skip any question or return to booking whenever you like.'}
+              </p>
+
+              <div className="w-full p-4 sm:p-5 rounded-2xl bg-white/70 border border-black/10 space-y-3 text-left">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck size={20} className="text-[#c9542f] shrink-0 mt-0.5" />
+                  <div className="space-y-1.5 text-xs sm:text-sm text-[#555047] leading-relaxed">
+                    <p className="font-semibold text-[#111010]">Private & Tab-Scoped</p>
+                    <p>
+                      {config.copy?.draft_notice ||
+                        'Your progress is kept in this tab during booking. It may be lost if you close the tab. Answers are sent to Aarkesh when you confirm your booking.'}
+                    </p>
+                    <p>
+                      These responses help Aarkesh prepare for your conversation.{' '}
+                      <a
+                        href={privacyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#c9542f] underline hover:text-[#111010]"
+                      >
+                        Read privacy policy
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {answeredCount > 0 && (
+                <div className="w-full p-4 rounded-xl bg-[#fbf0eb] border border-[#e8c4e2] text-xs sm:text-sm text-[#111010] flex items-center justify-between text-left">
+                  <span>You have <strong>{answeredCount}</strong> answers saved in this tab.</span>
+                  <button
+                    onClick={() => setScreen('review')}
+                    className="text-[#c9542f] font-bold uppercase tracking-wider text-xs hover:underline cursor-pointer"
+                  >
+                    View answers
+                  </button>
+                </div>
+              )}
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
+                <button
+                  onClick={() => setScreen(0)}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white text-xs sm:text-sm font-bold tracking-wider uppercase transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>{answeredCount > 0 ? 'Continue Questionnaire' : 'Start Questionnaire'}</span>
+                  <ArrowRight size={16} weight="bold" />
+                </button>
+                <button
+                  onClick={handleSaveAndReturn}
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-black/15 bg-white/80 hover:bg-white text-[#111010] text-xs sm:text-sm font-semibold tracking-wide transition-colors cursor-pointer text-center"
+                >
+                  Return to Booking Details
+                </button>
+              </div>
+            </div>
           )}
 
           {/* ============================================================ */}
-          {/* SCREEN: REVIEW (AFTER Q45)                                   */}
+          {/* SCREEN: QUESTION (0..44)                                     */}
           {/* ============================================================ */}
-          {screen === 'review' && (
+
+            {screen === 'review' && (
             <div className="space-y-6 max-w-2xl mx-auto py-2">
               <div className="space-y-2 border-b border-black/10 pb-4">
                 <h2
@@ -1001,8 +1060,8 @@ export default function QuestionnaireModal({
               </div>
             </div>
           )}
-        </div>
-
+          </div>
+        )}
         {/* BOTTOM FIXED NAVIGATION BAR */}
         <div className="shrink-0 px-3.5 sm:px-8 py-3 sm:py-4 bg-[#f5f1e8] border-t border-black/10 flex items-center justify-between gap-2 sm:gap-3">
           {isQuestionScreen ? (

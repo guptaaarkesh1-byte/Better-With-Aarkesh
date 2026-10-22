@@ -57,20 +57,20 @@ import {
   Faders
 } from '@phosphor-icons/react';
 
-// Exact Default Assets from Frontend Website
-import defaultHeroImg from '../../../client/src/assets/hero.webp';
-import defaultTransImg from '../../../client/src/assets/Page2/bottom.webp';
-import defaultThinkImg from '../../../client/src/assets/Page3/think-clearly.png';
-import defaultFeelImg from '../../../client/src/assets/Page4/feel-honestly.webp';
-import defaultDecideImg from '../../../client/src/assets/Page5/decide-intentionally.jpg';
-import defaultCoachingProcessImg from '../../../client/src/assets/Page6/coaching-process.webp';
-import defaultCoachingJourneyImg from '../../../client/src/assets/Page7/coaching-journey.webp';
-import defaultPilotImg from '../../../client/src/assets/Page8/pilot.webp';
-import defaultCoachImg from '../../../client/src/assets/Page8/Coach.webp';
-import defaultHumanImg from '../../../client/src/assets/Page8/human.webp';
-import defaultTestimonialsImg from '../../../client/src/assets/Page9/testimonials-doorway.webp';
-import defaultCtaImg from '../../../client/src/assets/Page10/next-chapter-cozy.webp';
-import { API_URL } from '../utils/apiUrl';
+// Exact Default Assets using high-performance Cloudinary CDN URLs (100% reliable across dev & production)
+const defaultHeroImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png';
+const defaultTransImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289677/better_with_aarkesh/client/src/assets/Page2/bottom_6752.webp';
+const defaultThinkImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289681/better_with_aarkesh/client/src/assets/Page3/think-clearly_9629.png';
+const defaultFeelImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289687/better_with_aarkesh/client/src/assets/Page4/feel-honestly_6665.jpg';
+const defaultDecideImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289692/better_with_aarkesh/client/src/assets/Page5/decide-intentionally_1185.png';
+const defaultCoachingProcessImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289659/better_with_aarkesh/client/src/assets/coaching-process_8570.png';
+const defaultCoachingJourneyImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289703/better_with_aarkesh/client/src/assets/Page7/coaching-journey_2939.webp';
+const defaultPilotImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289785/better_with_aarkesh/server/uploads/pilot_4154.webp';
+const defaultCoachImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289705/better_with_aarkesh/client/src/assets/Page8/Coach_4913.webp';
+const defaultHumanImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289707/better_with_aarkesh/client/src/assets/Page8/human_6915.webp';
+const defaultTestimonialsImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289715/better_with_aarkesh/client/src/assets/Page9/testimonials-doorway_4204.webp';
+const defaultCtaImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791289675/better_with_aarkesh/client/src/assets/Page10/next-chapter-cozy_4728.webp';
+import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 
 const SIDEBAR_TABS = [
   { id: 'masterTypography', label: 'Master Font Studio', icon: <Faders size={18} weight="bold" />, description: 'Universal font size control for all home sections', badge: 'MASTER' },
@@ -121,6 +121,8 @@ function ImageEditorCard({
       src.startsWith('/@fs') ||
       src.startsWith('/@id') ||
       src.startsWith('/src') ||
+      src.startsWith('/assets') ||
+      src.startsWith('assets/') ||
       src.startsWith('/node_modules') ||
       src.startsWith('/@vite')
     ) {
@@ -129,8 +131,8 @@ function ImageEditorCard({
     if (src.startsWith('/uploads/') || src.startsWith('/images/')) {
       return `${API_URL}${src}`;
     }
-    if (src.startsWith('/')) {
-      return `${API_URL}${src}`;
+    if (src.startsWith('uploads/') || src.startsWith('images/')) {
+      return `${API_URL}/${src}`;
     }
     return src;
   };
@@ -1434,7 +1436,7 @@ export default function AdminHomeEditor() {
         {/* Global Actions */}
         <div className="flex items-center gap-3">
           <a
-            href="http://localhost:5173"
+            href={getLiveSiteUrl('/')}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 text-xs font-medium transition-all"

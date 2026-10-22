@@ -352,14 +352,23 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
-    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+    const cleanPhoneDigits = cleanEmail.replace(/\D/g, '').slice(-10);
+    const isPhoneLogin = !cleanEmail.includes('@') && cleanPhoneDigits.length === 10;
 
     // Check for user
-    let user = await User.findOne({ email: emailRegex });
+    let user;
+    if (isPhoneLogin) {
+      user = await User.findOne({ phoneNumber: new RegExp(`${cleanPhoneDigits}$`), isDeleted: { $ne: true } });
+    } else {
+      user = await User.findOne({ email: emailRegex });
+    }
 
     if (!user) {
       // Check if they only have a course account — auto-create coaching account
-      const courseOnlyUser = await CourseUser.findOne({ email: emailRegex });
+      const courseQuery = isPhoneLogin 
+        ? { phoneNumber: new RegExp(`${cleanPhoneDigits}$`), isDeleted: { $ne: true } }
+        : { email: emailRegex };
+      const courseOnlyUser = await CourseUser.findOne(courseQuery);
       if (courseOnlyUser) {
         const courseMatch = await bcrypt.compare(password, courseOnlyUser.password);
         if (courseMatch) {
@@ -367,13 +376,13 @@ router.post('/login', async (req, res) => {
           const hashedPassword = await bcrypt.hash(password, salt);
           user = await User.create({
             fullName: courseOnlyUser.fullName,
-            email: cleanEmail,
+            email: courseOnlyUser.email.toLowerCase(),
             password: hashedPassword,
             phoneNumber: courseOnlyUser.phoneNumber || '',
             freeSessions: 0,
             courseSessionsGranted: false,
           });
-          console.log(`✅ Auto-created coaching User for course user: ${cleanEmail}`);
+          console.log(`✅ Auto-created coaching User for course user: ${courseOnlyUser.email}`);
         }
       }
       if (!user) {
@@ -406,7 +415,7 @@ router.post('/login', async (req, res) => {
 
     if (isMatch) {
       // If user purchased course, calculate and sync accurate dynamic free sessions
-      const sessionInfo = await calculateAndSyncFreeSessions(cleanEmail);
+      const sessionInfo = await calculateAndSyncFreeSessions(user.email);
       if (sessionInfo.isCoursePurchaser) {
         user.freeSessions = sessionInfo.remaining;
         user.courseSessionsGranted = true;
@@ -414,7 +423,7 @@ router.post('/login', async (req, res) => {
       }
 
       // Also sync coaching password to CourseUser if they exist and passwords differ
-      const linkedCourseUser = await CourseUser.findOne({ email: emailRegex });
+      const linkedCourseUser = await CourseUser.findOne({ email: user.email.toLowerCase() });
       if (linkedCourseUser && !linkedCourseUser.isDeleted) {
         const coursePasswordMatch = await bcrypt.compare(password, linkedCourseUser.password);
         if (!coursePasswordMatch) {
