@@ -465,7 +465,7 @@ export default function Booking() {
     }
   };
 
-  const submitBooking = async () => {
+  const submitBooking = async (couponInfo = null) => {
     setIsLoading(true);
     setError('');
     try {
@@ -569,7 +569,7 @@ export default function Booking() {
         throw new Error('Payment gateway not configured.');
       }
 
-      // 3. Create an order
+      // 3. Create an order (passing optional couponCode)
       const orderRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/create-order`, {
         method: 'POST',
         headers: authHeaders,
@@ -577,7 +577,8 @@ export default function Booking() {
           email: bookingData.email,
           phoneNumber: bookingData.phoneNumber,
           sessionDuration: bookingData.sessionDuration || 60,
-          currency: 'INR' 
+          currency: 'INR',
+          couponCode: couponInfo?.code || ''
         })
       });
       const orderData = await orderRes.json();
@@ -597,6 +598,9 @@ export default function Booking() {
           ...payloadData,
           orderId: orderData.id,
           amount: chargedAmountInRupees,
+          originalAmount: orderData.originalAmount || currentFee,
+          couponCode: orderData.couponCode || couponInfo?.code || '',
+          discountAmount: orderData.discountAmount || couponInfo?.discountAmount || 0,
           duration: finalDuration,
           isFirstSession: orderData.isFirstSession ?? bookingData.isFirstSession
         }),

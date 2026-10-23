@@ -82,6 +82,20 @@ export default function AdminAppointmentsView() {
   const [feeDirty, setFeeDirty] = useState(false);
   const [savingFees, setSavingFees] = useState(false);
 
+  // Coaching Session Coupons state
+  const [coupons, setCoupons] = useState([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [savingCoupon, setSavingCoupon] = useState(false);
+  const [editingCouponId, setEditingCouponId] = useState(null);
+  const [couponForm, setCouponForm] = useState({
+    code: '',
+    discountType: 'percentage',
+    discountValue: 20,
+    applicableTo: 'session',
+    isActive: true,
+    description: ''
+  });
+
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState('appt'); // 'appt' | 'client'
@@ -118,11 +132,12 @@ export default function AdminAppointmentsView() {
       const token = localStorage.getItem('adminToken');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [appRes, stuRes, statsRes, feeRes] = await Promise.all([
+      const [appRes, stuRes, statsRes, feeRes, couponRes] = await Promise.all([
         fetch(`${API_URL}/api/appointments/admin`, { headers }),
         fetch(`${API_URL}/api/course-auth/admin/students`, { headers }),
         fetch(`${API_URL}/api/course-auth/admin/stats`, { headers }),
-        fetch(`${API_URL}/api/appointments/fees`, { headers })
+        fetch(`${API_URL}/api/appointments/fees`, { headers }),
+        fetch(`${API_URL}/api/coupons`, { headers }).catch(() => null)
       ]);
 
       if (appRes.ok) {
@@ -146,6 +161,11 @@ export default function AdminAppointmentsView() {
           fee60min: fData.fee60min || 5000,
           fee90min: fData.fee90min || 7500
         });
+      }
+
+      if (couponRes && couponRes.ok) {
+        const cData = await couponRes.json();
+        setCoupons(Array.isArray(cData) ? cData : []);
       }
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -910,6 +930,12 @@ export default function AdminAppointmentsView() {
 
   // Save Fees Settings
   const handleSaveFees = async () => {
+    const f60 = Number(fees.fee60min) || 0;
+    const f90 = Number(fees.fee90min) || 0;
+    if (f60 <= 0 || f90 <= 0) {
+      showError('Please enter valid session fees for both 60-min and 90-min sessions.');
+      return;
+    }
     setSavingFees(true);
     try {
       const token = localStorage.getItem('adminToken');
@@ -919,15 +945,173 @@ export default function AdminAppointmentsView() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(fees)
+        body: JSON.stringify({ fee60min: f60, fee90min: f90 })
       });
       if (!res.ok) throw new Error('Failed to update fees');
+      setFees({ fee60min: f60, fee90min: f90 });
       setFeeDirty(false);
       showSuccess('Coaching fee settings updated successfully!');
     } catch (err) {
       showError('Failed to save fee settings.');
     } finally {
       setSavingFees(false);
+    }
+  };
+
+  // Coaching Session Coupons handlers
+  const fetchCouponsOnly = async () => {
+    setLoadingCoupons(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/coupons`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCoupons(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to load coupons:', err);
+    } finally {
+      setLoadingCoupons(false);
+    }
+  };
+
+  const sessionCouponsList = useMemo(() => {
+    return coupons.filter(c => !c.applicableTo || c.applicableTo === 'session' || c.applicableTo === 'all');
+  }, [coupons]);
+
+  const handleSaveCoupon = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const cleanCode = (couponForm.code || '').trim().toUpperCase();
+    if (!cleanCode) {
+      showError('Please enter a coupon code.');
+      return;
+    }
+    const val = Number(couponForm.discountValue);
+    if (!val || val <= 0) {
+      showError('Please enter a valid discount value.');
+      return;
+    }
+    if (couponForm.discountType === 'percentage' && (val <= 0 || val > 100)) {
+      showError('Percentage discount must be between 1% and 100%.');
+      return;
+    }
+
+    setSavingCoupon(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const url = editingCouponId 
+        ? `${API_URL}/api/coupons/${editingCouponId}`
+        : `${API_URL}/api/coupons`;
+      const method = editingCouponId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          code: cleanCode,
+          discountType: couponForm.discountType,
+          discountValue: val,
+          applicableTo: couponForm.applicableTo || 'session',
+          isActive: Boolean(couponForm.isActive),
+          description: (couponForm.description || '').trim()
+        })
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.message || 'Failed to save coupon');
+      }
+
+      showSuccess(editingCouponId ? `Coupon "${cleanCode}" updated!` : `Coupon "${cleanCode}" created successfully!`);
+      setEditingCouponId(null);
+      setCouponForm({
+        code: '',
+        discountType: 'percentage',
+        discountValue: 20,
+        applicableTo: 'session',
+        isActive: true,
+        description: ''
+      });
+      fetchCouponsOnly();
+    } catch (err) {
+      showError(err.message || 'Error saving coupon.');
+    } finally {
+      setSavingCoupon(false);
+    }
+  };
+
+  const handleToggleCouponActive = async (cpn) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const newActive = !cpn.isActive;
+      // Optimistic update
+      setCoupons(prev => prev.map(c => (c._id === cpn._id ? { ...c, isActive: newActive } : c)));
+
+      const res = await fetch(`${API_URL}/api/coupons/${cpn._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ isActive: newActive })
+      });
+      if (!res.ok) {
+        fetchCouponsOnly();
+        throw new Error('Failed to toggle coupon status');
+      }
+      showInfo(`Coupon "${cpn.code}" is now ${newActive ? 'Active' : 'Disabled'}.`);
+    } catch (err) {
+      showError('Failed to change coupon status.');
+    }
+  };
+
+  const handleEditCoupon = (cpn) => {
+    setEditingCouponId(cpn._id);
+    setCouponForm({
+      code: cpn.code,
+      discountType: cpn.discountType || 'percentage',
+      discountValue: cpn.discountValue,
+      applicableTo: cpn.applicableTo || 'session',
+      isActive: cpn.isActive !== false,
+      description: cpn.description || ''
+    });
+    const el = document.getElementById('session-coupon-editor');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleCancelEditCoupon = () => {
+    setEditingCouponId(null);
+    setCouponForm({
+      code: '',
+      discountType: 'percentage',
+      discountValue: 20,
+      applicableTo: 'session',
+      isActive: true,
+      description: ''
+    });
+  };
+
+  const handleDeleteCoupon = async (cpn) => {
+    if (!window.confirm(`Are you sure you want to delete coupon "${cpn.code}"?`)) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/coupons/${cpn._id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to delete coupon');
+      showSuccess(`Coupon "${cpn.code}" removed.`);
+      if (editingCouponId === cpn._id) {
+        handleCancelEditCoupon();
+      }
+      fetchCouponsOnly();
+    } catch (err) {
+      showError('Failed to delete coupon.');
     }
   };
 
@@ -2171,56 +2355,527 @@ export default function AdminAppointmentsView() {
           </div>
         )}
 
-        {/* ----------------- SUBNAV TAB 3: FEE SETTINGS ----------------- */}
+        {/* ----------------- SUBNAV TAB 3: FEE SETTINGS & COUPON CONTROL ----------------- */}
         {subnavTab === 'fees' && (
-          <div className="bwa-card" style={{ maxWidth: '680px', margin: '0 auto' }}>
-            <div className="bwa-box">
-              <h4 className="big">1-on-1 Session Pricing</h4>
-              <p className="hint">Set your base rates for 60-minute and 90-minute private coaching calls.</p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
-                <div className="bwa-f" style={{ maxWidth: 'none' }}>
-                  <label>60-Minute Session Fee (INR)</label>
-                  <input
-                    type="number"
-                    value={fees.fee60min}
-                    onChange={(e) => {
-                      setFees((prev) => ({ ...prev, fee60min: Number(e.target.value) }));
-                      setFeeDirty(true);
-                    }}
-                  />
+          <div style={{ maxWidth: '840px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Card 1: 1-on-1 Session Base Rates */}
+            <div className="bwa-card">
+              <div className="bwa-box">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                  <Icon name="rupee" size={20} style={{ color: 'var(--accent)' }} />
+                  <h4 className="big" style={{ margin: 0 }}>1-on-1 Session Pricing</h4>
                 </div>
+                <p className="hint">Set your base rates for 60-minute and 90-minute private coaching calls.</p>
 
-                <div className="bwa-f" style={{ maxWidth: 'none' }}>
-                  <label>90-Minute Session Fee (INR)</label>
-                  <input
-                    type="number"
-                    value={fees.fee90min}
-                    onChange={(e) => {
-                      setFees((prev) => ({ ...prev, fee90min: Number(e.target.value) }));
-                      setFeeDirty(true);
-                    }}
-                  />
-                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+                  <div className="bwa-f" style={{ maxWidth: 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label style={{ margin: 0 }}>60-Minute Session Fee (INR)</label>
+                      {(fees.fee60min !== '' && fees.fee60min !== 0 && fees.fee60min !== '0' && fees.fee60min !== null && fees.fee60min !== undefined) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFees((prev) => ({ ...prev, fee60min: '' }));
+                            setFeeDirty(true);
+                          }}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'var(--muted)',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            padding: '0 4px',
+                            textDecoration: 'underline'
+                          }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Enter 60-min session fee (e.g. 5000)"
+                        value={fees.fee60min === 0 || fees.fee60min === '0' || fees.fee60min === '' || fees.fee60min === null || fees.fee60min === undefined ? '' : fees.fee60min}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setFees((prev) => ({ ...prev, fee60min: val }));
+                          setFeeDirty(true);
+                        }}
+                        style={{ paddingRight: (fees.fee60min !== '' && fees.fee60min !== 0 && fees.fee60min !== '0') ? '34px' : '14px' }}
+                      />
+                      {(fees.fee60min !== '' && fees.fee60min !== 0 && fees.fee60min !== '0' && fees.fee60min !== null && fees.fee60min !== undefined) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFees((prev) => ({ ...prev, fee60min: '' }));
+                            setFeeDirty(true);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            border: 'none',
+                            background: '#f0ede6',
+                            color: 'var(--ink)',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            lineHeight: 1
+                          }}
+                          title="Clear"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-                <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
-                  <button
-                    className="bwa-btn bwa-btn-accent"
-                    onClick={handleSaveFees}
-                    disabled={savingFees || !feeDirty}
-                  >
-                    {savingFees ? 'Saving...' : 'Save Pricing Changes'}
-                  </button>
-                  {feeDirty && (
+                  <div className="bwa-f" style={{ maxWidth: 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label style={{ margin: 0 }}>90-Minute Session Fee (INR)</label>
+                      {(fees.fee90min !== '' && fees.fee90min !== 0 && fees.fee90min !== '0' && fees.fee90min !== null && fees.fee90min !== undefined) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFees((prev) => ({ ...prev, fee90min: '' }));
+                            setFeeDirty(true);
+                          }}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'var(--muted)',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            padding: '0 4px',
+                            textDecoration: 'underline'
+                          }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Enter 90-min session fee (e.g. 7500)"
+                        value={fees.fee90min === 0 || fees.fee90min === '0' || fees.fee90min === '' || fees.fee90min === null || fees.fee90min === undefined ? '' : fees.fee90min}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setFees((prev) => ({ ...prev, fee90min: val }));
+                          setFeeDirty(true);
+                        }}
+                        style={{ paddingRight: (fees.fee90min !== '' && fees.fee90min !== 0 && fees.fee90min !== '0') ? '34px' : '14px' }}
+                      />
+                      {(fees.fee90min !== '' && fees.fee90min !== 0 && fees.fee90min !== '0' && fees.fee90min !== null && fees.fee90min !== undefined) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFees((prev) => ({ ...prev, fee90min: '' }));
+                            setFeeDirty(true);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            border: 'none',
+                            background: '#f0ede6',
+                            color: 'var(--ink)',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            lineHeight: 1
+                          }}
+                          title="Clear"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '8px', display: 'flex', gap: '10px' }}>
                     <button
-                      className="bwa-btn bwa-btn-line"
-                      onClick={() => {
-                        fetchData();
-                        setFeeDirty(false);
-                      }}
+                      className="bwa-btn bwa-btn-accent"
+                      onClick={handleSaveFees}
+                      disabled={savingFees || !feeDirty}
                     >
-                      Discard
+                      {savingFees ? 'Saving...' : 'Save Pricing Changes'}
                     </button>
+                    {feeDirty && (
+                      <button
+                        className="bwa-btn bwa-btn-line"
+                        onClick={() => {
+                          fetchData();
+                          setFeeDirty(false);
+                        }}
+                      >
+                        Discard
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: 1-on-1 Coaching Session Coupon Codes & % Off Control */}
+            <div className="bwa-card" id="session-coupon-editor">
+              <div className="bwa-box">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                      <Icon name="tag" size={20} style={{ color: 'var(--accent)' }} />
+                      <h4 className="big" style={{ margin: 0 }}>Coaching Session Coupons &amp; % Discount Control</h4>
+                    </div>
+                    <p className="hint">
+                      Create and control discount coupon codes with custom % off for clients booking 1-on-1 coaching sessions.
+                    </p>
+                  </div>
+                  {editingCouponId && (
+                    <span className="bwa-pill" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', fontWeight: 700 }}>
+                      Editing Coupon
+                    </span>
+                  )}
+                </div>
+
+                {/* Form to Add / Edit Coupon */}
+                <form onSubmit={handleSaveCoupon} style={{ background: '#fcfbf9', border: '1px solid var(--line)', borderRadius: '16px', padding: '20px', marginTop: '18px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <span style={{ fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, color: 'var(--muted)' }}>
+                      {editingCouponId ? `Edit Coupon: ${couponForm.code}` : '+ Add New Coaching Coupon Code'}
+                    </span>
+                    {editingCouponId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditCoupon}
+                        className="bwa-link-btn"
+                        style={{ height: 'auto', margin: 0, padding: 0, fontSize: '12px' }}
+                      >
+                        Cancel Edit
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                    {/* Coupon Code Input */}
+                    <div className="bwa-f" style={{ maxWidth: 'none' }}>
+                      <label>Coupon Code (e.g. AARKESH50)</label>
+                      <input
+                        type="text"
+                        placeholder="ENTER CODE"
+                        style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}
+                        value={couponForm.code}
+                        onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                      />
+                    </div>
+
+                    {/* Discount Value & Type */}
+                    <div className="bwa-f" style={{ maxWidth: 'none' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
+                        <label style={{ margin: 0 }}>Discount {couponForm.discountType === 'percentage' ? '% Off' : 'Flat Off (INR)'}</label>
+                        <div style={{ display: 'inline-flex', gap: '4px', background: 'var(--sand)', padding: '2px', borderRadius: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setCouponForm({ ...couponForm, discountType: 'percentage' })}
+                            style={{
+                              border: 0,
+                              background: couponForm.discountType === 'percentage' ? '#ffffff' : 'transparent',
+                              color: couponForm.discountType === 'percentage' ? 'var(--ink)' : 'var(--muted)',
+                              fontWeight: 700,
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            % Off
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCouponForm({ ...couponForm, discountType: 'fixed' })}
+                            style={{
+                              border: 0,
+                              background: couponForm.discountType === 'fixed' ? '#ffffff' : 'transparent',
+                              color: couponForm.discountType === 'fixed' ? 'var(--ink)' : 'var(--muted)',
+                              fontWeight: 700,
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Flat INR
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder={couponForm.discountType === 'percentage' ? '50' : '1000'}
+                          value={couponForm.discountValue === 0 || couponForm.discountValue === '0' || couponForm.discountValue === '' || couponForm.discountValue === null || couponForm.discountValue === undefined ? '' : couponForm.discountValue}
+                          onFocus={(e) => e.target.select()}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            setCouponForm({ ...couponForm, discountValue: val });
+                          }}
+                          style={{ paddingRight: '40px', fontWeight: 700, fontSize: '15px' }}
+                        />
+                        <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', fontWeight: 800, color: 'var(--muted)', fontSize: '14px', pointerEvents: 'none' }}>
+                          {couponForm.discountType === 'percentage' ? '%' : 'INR'}
+                        </span>
+                      </div>
+
+                      {/* Quick Percentage Presets */}
+                      {couponForm.discountType === 'percentage' && (
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                          {[10, 20, 30, 50, 75].map((pct) => (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => setCouponForm({ ...couponForm, discountValue: pct })}
+                              style={{
+                                border: '1px solid',
+                                borderColor: Number(couponForm.discountValue) === pct ? 'var(--accent)' : 'var(--line)',
+                                background: Number(couponForm.discountValue) === pct ? 'rgba(200, 80, 45, 0.12)' : '#ffffff',
+                                color: Number(couponForm.discountValue) === pct ? 'var(--accent-d)' : 'var(--muted)',
+                                fontWeight: 700,
+                                fontSize: '11px',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              {pct}% off
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Scope / Applicable To */}
+                    <div className="bwa-f" style={{ maxWidth: 'none' }}>
+                      <label>Applicable Scope</label>
+                      <select
+                        value={couponForm.applicableTo}
+                        onChange={(e) => setCouponForm({ ...couponForm, applicableTo: e.target.value })}
+                      >
+                        <option value="session">Coaching Sessions Only</option>
+                        <option value="all">Both Coaching Sessions &amp; Courses</option>
+                      </select>
+                    </div>
+
+                    {/* Description */}
+                    <div className="bwa-f" style={{ maxWidth: 'none' }}>
+                      <label>Description / Note (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Special 50% discount for mentoring"
+                        value={couponForm.description}
+                        onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status Toggle & Submit Button */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--line)', flexWrap: 'wrap', gap: '12px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: 'var(--ink)' }}>
+                      <input
+                        type="checkbox"
+                        checked={couponForm.isActive}
+                        onChange={(e) => setCouponForm({ ...couponForm, isActive: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                      />
+                      <span>Active coupon (immediately usable by clients)</span>
+                    </label>
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {editingCouponId && (
+                        <button
+                          type="button"
+                          className="bwa-btn bwa-btn-line"
+                          onClick={handleCancelEditCoupon}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        className="bwa-btn bwa-btn-accent"
+                        disabled={savingCoupon}
+                      >
+                        {savingCoupon ? 'Saving...' : (editingCouponId ? 'Save Changes' : '+ Create Coupon')}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+                {/* Coaching Coupons List */}
+                <div style={{ marginTop: '28px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)' }}>
+                      Coaching Session Coupons ({sessionCouponsList.length})
+                    </h5>
+                    <button
+                      type="button"
+                      className="bwa-btn bwa-btn-line bwa-btn-sm"
+                      onClick={fetchCouponsOnly}
+                      disabled={loadingCoupons}
+                      style={{ fontSize: '11px', padding: '4px 10px' }}
+                    >
+                      {loadingCoupons ? 'Refreshing...' : '↻ Refresh'}
+                    </button>
+                  </div>
+
+                  {sessionCouponsList.length === 0 ? (
+                    <div style={{ padding: '32px 16px', textAlign: 'center', background: '#faf8f5', borderRadius: '12px', border: '1px dashed var(--line)' }}>
+                      <p style={{ margin: 0, color: 'var(--muted)', fontSize: '13px' }}>
+                        No session coupons created yet. Use the form above to create your first coupon!
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {sessionCouponsList.map((cpn) => {
+                        const isPerc = cpn.discountType === 'percentage';
+                        const discountLabel = isPerc ? `${cpn.discountValue}% OFF` : `₹${cpn.discountValue.toLocaleString('en-IN')} OFF`;
+                        const isEditingThis = editingCouponId === cpn._id;
+
+                        return (
+                          <div
+                            key={cpn._id || cpn.code}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '14px 16px',
+                              background: isEditingThis ? 'rgba(200, 80, 45, 0.05)' : '#ffffff',
+                              border: isEditingThis ? '1.5px solid var(--accent)' : '1px solid var(--line)',
+                              borderRadius: '12px',
+                              gap: '14px',
+                              flexWrap: 'wrap',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '200px' }}>
+                              <span
+                                style={{
+                                  fontFamily: 'monospace',
+                                  fontSize: '14px',
+                                  fontWeight: 800,
+                                  color: 'var(--ink)',
+                                  background: 'var(--sand)',
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  letterSpacing: '0.06em'
+                                }}
+                              >
+                                {cpn.code}
+                              </span>
+                              <button
+                                type="button"
+                                className="bwa-copy-btn"
+                                style={{ padding: '2px 8px', fontSize: '11px' }}
+                                onClick={() => copyToClipboard(cpn.code)}
+                              >
+                                Copy
+                              </button>
+                              <span
+                                className="bwa-pill"
+                                style={{
+                                  background: cpn.isActive ? '#e8f5e9' : '#f5f5f5',
+                                  color: cpn.isActive ? '#1b5e20' : '#757575',
+                                  border: cpn.isActive ? '1px solid #a5d6a7' : '1px solid #e0e0e0',
+                                  fontWeight: 800,
+                                  fontSize: '11px',
+                                  padding: '3px 8px'
+                                }}
+                              >
+                                {discountLabel}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '11.5px', color: 'var(--muted)', background: 'var(--paper)', padding: '2px 8px', borderRadius: '4px' }}>
+                                {cpn.applicableTo === 'all' ? 'Sessions & Courses' : 'Coaching Only'}
+                              </span>
+
+                              {cpn.usedCount !== undefined && (
+                                <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
+                                  {cpn.usedCount} used
+                                </span>
+                              )}
+
+                              {/* Active Status Toggle Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleCouponActive(cpn)}
+                                style={{
+                                  border: 0,
+                                  cursor: 'pointer',
+                                  borderRadius: '99px',
+                                  padding: '4px 10px',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  background: cpn.isActive ? '#dcfce7' : '#fee2e2',
+                                  color: cpn.isActive ? '#15803d' : '#b91c1c',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title="Click to toggle active status"
+                              >
+                                {cpn.isActive ? '● Active' : '○ Disabled'}
+                              </button>
+
+                              {/* Edit Action */}
+                              <button
+                                type="button"
+                                className="bwa-btn bwa-btn-line bwa-btn-sm"
+                                onClick={() => handleEditCoupon(cpn)}
+                                style={{ padding: '4px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                title="Edit discount % or code"
+                              >
+                                <Icon name="edit" size={12} />
+                                <span>Edit</span>
+                              </button>
+
+                              {/* Delete Action */}
+                              <button
+                                type="button"
+                                className="bwa-btn bwa-btn-danger bwa-btn-sm"
+                                onClick={() => handleDeleteCoupon(cpn)}
+                                style={{ padding: '4px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                title="Delete coupon"
+                              >
+                                <Icon name="trash" size={12} />
+                              </button>
+                            </div>
+
+                            {cpn.description && (
+                              <div style={{ width: '100%', fontSize: '11.5px', color: 'var(--muted)', marginTop: '-4px', paddingLeft: '2px' }}>
+                                {cpn.description}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               </div>

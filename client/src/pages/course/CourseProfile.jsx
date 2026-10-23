@@ -169,7 +169,8 @@ export default function CourseProfile() {
 
   const handleLogout = () => {
     clearAllAuth();
-    navigate('/course');
+    navigate('/');
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleUpdateProfile = async (e) => {
@@ -1306,7 +1307,15 @@ export default function CourseProfile() {
                 <div className="text-right">
                   <p className="text-white/40 uppercase tracking-wider text-[10px]">Program</p>
                   <p className="text-white font-semibold">Mastery Course Lifetime</p>
+                  {user?.latestPurchase?.originalAmount && user?.latestPurchase?.discountAmount > 0 && (
+                    <p className="text-white/40 line-through text-[11px]">₹{Number(user.latestPurchase.originalAmount).toLocaleString('en-IN')}</p>
+                  )}
                   <p className="text-[#E3B8DE] font-bold">₹{(user?.latestPurchase?.amount || 11800).toLocaleString('en-IN')}</p>
+                  {user?.latestPurchase?.couponCode && (
+                    <span className="inline-block mt-1 px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold font-mono">
+                      Coupon: {user.latestPurchase.couponCode} {user.latestPurchase.discountAmount > 0 ? `(-₹${Number(user.latestPurchase.discountAmount).toLocaleString('en-IN')})` : ''}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

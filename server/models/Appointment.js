@@ -52,6 +52,17 @@ const appointmentSchema = new mongoose.Schema({
   amount: {
     type: Number,
   },
+  originalAmount: {
+    type: Number,
+  },
+  couponCode: {
+    type: String,
+    default: '',
+  },
+  discountAmount: {
+    type: Number,
+    default: 0,
+  },
   paymentId: {
     type: String,
   },

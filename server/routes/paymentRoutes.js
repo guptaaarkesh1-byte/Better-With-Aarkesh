@@ -13,6 +13,7 @@ import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
 import { sendCoursePurchaseInvoiceEmail, sendCoursePaymentFailedEmail } from '../services/courseEmailService.js';
 import { DEFAULT_COURSE_DETAILS_MAP } from './courseDetailSettingsRoutes.js';
 import { validateEmailFormat } from '../services/emailOtpService.js';
+import { validateCouponInternal, incrementCouponUsage } from './couponRoutes.js';
 
 const router = express.Router();
 
@@ -107,7 +108,7 @@ router.post('/fees', protect, admin, async (req, res) => {
 // @access  Public/Optional
 router.post('/create-order', optionalAuth, async (req, res) => {
   try {
-    const { amount, currency = 'INR', receipt = `rcpt_${Date.now()}`, email, phoneNumber, sessionDuration, duration } = req.body;
+    const { amount, currency = 'INR', receipt = `rcpt_${Date.now()}`, email, phoneNumber, sessionDuration, duration, couponCode } = req.body;
 
     // 1. Direct Razorpay Standard Checkout flow (amount provided in paise, or direct test call)
     if (amount !== undefined && !sessionDuration && !duration && !email) {
@@ -195,23 +196,36 @@ router.post('/create-order', optionalAuth, async (req, res) => {
       targetDuration = isFirstSession ? 60 : 90;
     }
 
-    let resolvedAmountRupees;
-    if (amount !== undefined && Number(amount) > 0) {
+    const originalFee = targetDuration === 90 ? fee90min : fee60min;
+    let resolvedAmountRupees = originalFee;
+    let appliedDiscount = 0;
+    let validCouponCode = '';
+
+    if (couponCode) {
+      const couponRes = await validateCouponInternal(couponCode, 'session', originalFee);
+      if (couponRes.valid) {
+        resolvedAmountRupees = couponRes.finalAmount;
+        appliedDiscount = couponRes.discountAmount;
+        validCouponCode = couponRes.code;
+      }
+    } else if (amount !== undefined && Number(amount) > 0 && Number(amount) <= originalFee) {
       resolvedAmountRupees = Number(amount);
-    } else {
-      resolvedAmountRupees = targetDuration === 90 ? fee90min : fee60min;
+      appliedDiscount = originalFee - resolvedAmountRupees;
     }
     
     const instance = await getRazorpayInstance();
     
     const options = {
-      amount: resolvedAmountRupees * 100, // amount in smallest currency unit (paise)
+      amount: Math.round(resolvedAmountRupees * 100), // amount in smallest currency unit (paise)
       currency,
       receipt,
       notes: {
         duration: `${targetDuration} mins`,
         sessionType: isFirstSession ? 'First Session (60 mins)' : 'Returning Session (90 mins)',
-        email: normalizedEmail
+        email: normalizedEmail,
+        couponCode: validCouponCode,
+        discountAmount: String(appliedDiscount),
+        originalAmount: String(originalFee)
       }
     };
 
@@ -221,7 +235,10 @@ router.post('/create-order', optionalAuth, async (req, res) => {
       order_id: order.id,
       targetDuration,
       isFirstSession,
-      amountRupees: resolvedAmountRupees
+      amountRupees: resolvedAmountRupees,
+      originalAmount: originalFee,
+      discountAmount: appliedDiscount,
+      couponCode: validCouponCode
     });
   } catch (error) {
     console.error('Create order error:', error);
@@ -323,7 +340,7 @@ router.post('/settings', protect, admin, async (req, res) => {
 // @access  Public
 router.post('/course-order', async (req, res) => {
   try {
-    const { email, courseId, courseSlug, amount } = req.body;
+    const { email, courseId, courseSlug, amount, couponCode } = req.body;
     
     // 1. Check dynamic course settings from Settings collection or DEFAULT_COURSE_DETAILS_MAP
     let matchedCourse = null;
@@ -361,6 +378,20 @@ router.post('/course-order', async (req, res) => {
       basePrice = course.price;
     }
 
+    // Apply Coupon if supplied
+    let appliedDiscount = 0;
+    let validCouponCode = '';
+    let discountedBasePrice = basePrice;
+
+    if (couponCode) {
+      const couponRes = await validateCouponInternal(couponCode, 'course', basePrice);
+      if (couponRes.valid) {
+        appliedDiscount = couponRes.discountAmount;
+        discountedBasePrice = couponRes.finalAmount;
+        validCouponCode = couponRes.code;
+      }
+    }
+
     // Determine GST Rate and Mode
     let isGstOn = true;
     let gstRate = 18;
@@ -383,14 +414,14 @@ router.post('/course-order', async (req, res) => {
     const gstAmount = (!isGstOn || gstRate === 0) 
       ? 0 
       : isGstIncluded 
-      ? Math.round(basePrice - (basePrice / (1 + gstRate / 100))) 
-      : Math.round((basePrice * gstRate) / 100);
+      ? Math.round(discountedBasePrice - (discountedBasePrice / (1 + gstRate / 100))) 
+      : Math.round((discountedBasePrice * gstRate) / 100);
 
-    const calculatedTotal = isGstIncluded ? basePrice : (basePrice + gstAmount);
+    const calculatedTotal = isGstIncluded ? discountedBasePrice : (discountedBasePrice + gstAmount);
 
     // Use exact amount if passed by client, otherwise calculatedTotal
     const clientAmount = Number(amount);
-    const finalAmount = (!isNaN(clientAmount) && clientAmount > 0) ? clientAmount : calculatedTotal;
+    const finalAmount = (!isNaN(clientAmount) && clientAmount > 0 && clientAmount <= calculatedTotal) ? clientAmount : calculatedTotal;
     
     const instance = await getRazorpayInstance();
     
@@ -398,12 +429,22 @@ router.post('/course-order', async (req, res) => {
       amount: Math.round(finalAmount * 100), // in paise
       currency: 'INR',
       receipt: `course_${Date.now()}`,
+      notes: {
+        email: email || '',
+        courseSlug: courseSlug || 'better-man',
+        couponCode: validCouponCode,
+        discountAmount: String(appliedDiscount),
+        originalBasePrice: String(basePrice)
+      }
     };
 
     const order = await instance.orders.create(options);
     res.json({
       ...order,
       basePrice,
+      discountedBasePrice,
+      discountAmount: appliedDiscount,
+      couponCode: validCouponCode,
       gstRate,
       gstAmount,
       finalAmount,
@@ -420,7 +461,7 @@ router.post('/course-order', async (req, res) => {
 // @access  Public
 router.post('/course-verify', async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, token, courseSlug, amount } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, token, courseSlug, amount, couponCode, discountAmount, originalAmount } = req.body;
 
     // Resolve Razorpay credentials using the same unified helper
     const { keySecret } = await getRazorpayKeys();
@@ -528,12 +569,22 @@ router.post('/course-verify', async (req, res) => {
               basePrice = primaryCourse.price;
             }
 
+            const rawOrigAmount = originalAmount ? Number(originalAmount) : basePrice;
+            const parsedDiscount = Number(discountAmount) || 0;
+            const cleanCoupon = (couponCode || '').trim().toUpperCase();
+
             let gstRate = matchedCourse?.gstRate !== undefined ? Number(matchedCourse.gstRate) : 18;
             let isGstIncluded = matchedCourse?.isGstIncluded !== undefined ? Boolean(matchedCourse.isGstIncluded) : Boolean(primaryCourse?.isGstIncluded);
-            let gstAmount = isGstIncluded
-              ? Math.round(basePrice - (basePrice / (1 + (gstRate / 100))))
-              : Math.round((basePrice * gstRate) / 100);
-            let finalAmount = Number(amount) || (isGstIncluded ? basePrice : basePrice + gstAmount);
+
+            const netTaxableBase = parsedDiscount > 0 ? Math.max(0, rawOrigAmount - parsedDiscount) : rawOrigAmount;
+
+            let gstAmount = (!isGstIncluded && gstRate === 0)
+              ? 0
+              : (isGstIncluded
+                  ? Math.round(netTaxableBase - (netTaxableBase / (1 + (gstRate / 100))))
+                  : Math.round((netTaxableBase * gstRate) / 100));
+
+            let finalAmount = Number(amount) || (isGstIncluded ? netTaxableBase : netTaxableBase + gstAmount);
 
             await CoursePurchase.findOneAndUpdate(
               { transactionId: razorpay_payment_id },
@@ -553,10 +604,17 @@ router.post('/course-verify', async (req, res) => {
                 transactionId: razorpay_payment_id,
                 razorpayOrderId: razorpay_order_id,
                 razorpayPaymentId: razorpay_payment_id,
+                originalAmount: rawOrigAmount,
+                couponCode: cleanCoupon,
+                discountAmount: parsedDiscount,
                 purchaseDate: new Date(),
               },
               { upsert: true, returnDocument: 'after' }
             );
+
+            if (couponCode) {
+              incrementCouponUsage(couponCode).catch(e => console.error('Coupon usage increment error:', e));
+            }
 
             // Asynchronously dispatch official tax invoice + 3 free sessions email
             sendCoursePurchaseInvoiceEmail({
@@ -566,7 +624,10 @@ router.post('/course-verify', async (req, res) => {
               txnId: razorpay_payment_id,
               orderId: razorpay_order_id,
               amount: finalAmount,
-              basePrice: isGstIncluded ? (basePrice - gstAmount) : basePrice,
+              originalAmount: rawOrigAmount,
+              couponCode: cleanCoupon,
+              discountAmount: parsedDiscount,
+              basePrice: rawOrigAmount,
               gstRate,
               gstAmount,
               isGstIncluded,
@@ -590,7 +651,10 @@ router.post('/course-verify', async (req, res) => {
                 courseSlug: targetSlug,
                 courseTitle,
                 amount: finalAmount,
-                basePrice: isGstIncluded ? (basePrice - gstAmount) : basePrice,
+                originalAmount: rawOrigAmount,
+                couponCode: cleanCoupon,
+                discountAmount: parsedDiscount,
+                basePrice: rawOrigAmount,
                 gstRate,
                 gstAmount,
                 isGstIncluded,

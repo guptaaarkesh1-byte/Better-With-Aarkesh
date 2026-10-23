@@ -3406,6 +3406,9 @@
     padding: 40px 22px 80px;
     flex-shrink: 0;
   }
+  .auth-modal-scope .auth-r.auth-r-login-clean {
+    display: none !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════

@@ -19,8 +19,13 @@ export const ICONS = {
       <path d="m16 10 5-3v10l-5-3" />
     </>
   ),
-  upload: <path d="M12 16V4m-4 4 4-4 4 4M5 20h14" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </>
+  ),
   x: <path d="m6 6 12 12M18 6 6 18" />,
   user: (
     <>

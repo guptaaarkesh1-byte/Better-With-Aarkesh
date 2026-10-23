@@ -64,6 +64,16 @@ export const DEFAULT_COURSE_DETAILS_MAP = {
       quote: "A room doesn't respond to volume. It responds to certainty.",
       p2: 'Through 8 structured modules, you dismantle the nervous system habits that cause rushing, stammering, and over-explaining. You learn how to anchor your physical presence, speak with calm resonance, and command respectful silence before uttering a single sentence.',
       distinction: 'Reactive men seek approval through fast speech and validation. Anchored men lead through stillness, calibrated pauses, and clear boundaries.'
+    },
+    loginScreen: {
+      enabled: true,
+      heading: 'Pick up where you left off.',
+      items: [
+        'Continue your modules from the last video',
+        'Book your private sessions with Aarkesh',
+        'Download your workbooks and frameworks',
+        'Lifetime updates with no recurring fees'
+      ]
     }
   }
 };

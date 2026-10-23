@@ -39,6 +39,17 @@ const coursePurchaseSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  originalAmount: {
+    type: Number,
+  },
+  couponCode: {
+    type: String,
+    default: '',
+  },
+  discountAmount: {
+    type: Number,
+    default: 0,
+  },
   currency: {
     type: String,
     default: 'INR',

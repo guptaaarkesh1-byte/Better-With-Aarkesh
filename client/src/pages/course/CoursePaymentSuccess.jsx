@@ -15,7 +15,8 @@ import {
   ArrowCounterClockwise,
   ArrowLeft,
   Question,
-  DownloadSimple
+  DownloadSimple,
+  Tag
 } from '@phosphor-icons/react';
 
 export default function CoursePaymentSuccess({ 
@@ -49,11 +50,46 @@ export default function CoursePaymentSuccess({
     ? (rawBonusSubtitle ? rawBonusSubtitle.replace(/₹[\d,]+/g, `₹${(freeSessionsCount * 5000).toLocaleString('en-IN')}`) : `Valued at ₹${(freeSessionsCount * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus`) 
     : 'Included with your enrollment';
   
-  const finalAmount = purchaseData?.finalAmount || purchaseData?.amount || 11800;
-  const basePrice = purchaseData?.basePrice || 10000;
-  const gstRate = purchaseData?.gstRate !== undefined ? purchaseData.gstRate : 18;
-  const gstAmount = purchaseData?.gstAmount !== undefined ? purchaseData.gstAmount : 1800;
+  const finalAmount = Number(purchaseData?.finalAmount || purchaseData?.amount) || 11800;
+  const rawBase = Number(purchaseData?.originalAmount || purchaseData?.basePrice) || 15000;
+  const couponCode = (purchaseData?.couponCode || '').trim().toUpperCase();
+  let discountAmount = Number(purchaseData?.discountAmount) || 0;
+  const gstRate = purchaseData?.gstRate !== undefined ? Number(purchaseData.gstRate) : 18;
   const isGstIncluded = Boolean(purchaseData?.isGstIncluded);
+
+  // Auto-resolve coupon discount when applied
+  if (!isFailed) {
+    if (couponCode && discountAmount <= 0) {
+      if (isGstIncluded) {
+        discountAmount = Math.max(0, rawBase - finalAmount);
+      } else {
+        const impliedNet = Math.round(finalAmount / (1 + (gstRate / 100)));
+        discountAmount = Math.max(0, rawBase - impliedNet);
+      }
+    } else if (!couponCode && discountAmount <= 0) {
+      const fullExpected = isGstIncluded ? rawBase : Math.round(rawBase * (1 + (gstRate / 100)));
+      if (finalAmount < fullExpected - 10) {
+        if (isGstIncluded) {
+          discountAmount = Math.max(0, rawBase - finalAmount);
+        } else {
+          const impliedNet = Math.round(finalAmount / (1 + (gstRate / 100)));
+          discountAmount = Math.max(0, rawBase - impliedNet);
+        }
+      }
+    }
+  }
+
+  const hasCoupon = discountAmount > 0 || Boolean(couponCode);
+  const netTaxableBase = hasCoupon ? Math.max(0, rawBase - discountAmount) : rawBase;
+
+  // Calculate GST on netTaxableBase
+  const gstAmount = (!isGstIncluded && gstRate === 0)
+    ? 0
+    : (isGstIncluded
+        ? Math.round(netTaxableBase - (netTaxableBase / (1 + (gstRate / 100))))
+        : Math.round((netTaxableBase * gstRate) / 100));
+
+  const originalCourseFee = rawBase;
 
   const purchaseDate = purchaseData?.purchaseDate 
     ? new Date(purchaseData.purchaseDate) 
@@ -288,6 +324,13 @@ export default function CoursePaymentSuccess({
               </div>
               <p className="text-white/50 print:text-gray-600 font-mono text-[11px]">Order ID: {orderId}</p>
               <p className="text-white/40 print:text-gray-500 text-[11px]">Gateway: Razorpay 256-bit Secure</p>
+              {hasCoupon && !isFailed && (
+                <div className="pt-1 flex items-center sm:justify-end gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold tracking-wider uppercase font-mono">
+                    <Tag size={11} weight="bold" /> Coupon Applied: {couponCode || 'PROMOTIONAL'} (-₹{discountAmount.toLocaleString('en-IN')})
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -314,9 +357,28 @@ export default function CoursePaymentSuccess({
                   </td>
                   <td className="py-3 text-center text-white/70 print:text-gray-700 font-mono">1</td>
                   <td className="py-3 text-right font-mono text-white print:text-black">
-                    ₹{basePrice.toLocaleString('en-IN')}
+                    ₹{originalCourseFee.toLocaleString('en-IN')}
                   </td>
                 </tr>
+
+                {/* Coupon Discount Row */}
+                {hasCoupon && !isFailed && (
+                  <tr className="bg-emerald-500/[0.04]">
+                    <td className="py-2.5 pr-4">
+                      <span className="text-emerald-400 font-semibold print:text-emerald-700 flex items-center gap-1.5">
+                        <Tag size={13} weight="fill" />
+                        Coupon Discount {couponCode ? `(${couponCode})` : 'Applied'}
+                      </span>
+                      <span className="text-[11px] text-emerald-400/70 print:text-emerald-600 block mt-0.5">
+                        Promotional tuition fee waiver applied at checkout
+                      </span>
+                    </td>
+                    <td className="py-2.5 text-center text-emerald-400 print:text-emerald-700 font-mono">1</td>
+                    <td className="py-2.5 text-right font-mono font-bold text-emerald-400 print:text-emerald-700">
+                      -₹{discountAmount.toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                )}
 
                 {/* GST */}
                 {gstRate > 0 && (
@@ -377,8 +439,20 @@ export default function CoursePaymentSuccess({
             <div className="w-full sm:w-auto space-y-1.5 sm:text-right font-mono text-xs">
               <div className="flex justify-between sm:justify-end gap-6 text-white/70 print:text-gray-700">
                 <span>Subtotal:</span>
-                <span>₹{basePrice.toLocaleString('en-IN')}</span>
+                <span>₹{originalCourseFee.toLocaleString('en-IN')}</span>
               </div>
+              {hasCoupon && !isFailed && (
+                <div className="flex justify-between sm:justify-end gap-6 text-emerald-400 print:text-emerald-700 font-semibold">
+                  <span>Coupon Discount {couponCode ? `(${couponCode})` : ''}:</span>
+                  <span>-₹{discountAmount.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+              {hasCoupon && !isFailed && (
+                <div className="flex justify-between sm:justify-end gap-6 text-white/50 print:text-gray-600 text-[11px]">
+                  <span>Net Taxable Base:</span>
+                  <span>₹{netTaxableBase.toLocaleString('en-IN')}</span>
+                </div>
+              )}
               {gstRate > 0 && (
                 <div className="flex justify-between sm:justify-end gap-6 text-white/70 print:text-gray-700">
                   <span>GST ({gstRate}%):</span>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   CalendarBlank, Clock, User, VideoCamera, 
   EnvelopeSimple, Lock, ArrowLeft, LockKey, CheckSquare, Square, ClockCounterClockwise,
-  Receipt
+  Receipt, Tag, CheckCircle
 } from '@phosphor-icons/react';
 import PolicyModal from '../ui/PolicyModal';
 
@@ -10,7 +10,80 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
   const [agreed, setAgreed] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
 
+  // Coupon state
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState('');
+
   const isFreeSession = freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0;
+
+  const handleApplyCoupon = async (e) => {
+    if (e) e.preventDefault();
+    const code = couponInput.trim().toUpperCase();
+    if (!code) {
+      setCouponError('Please enter a coupon code.');
+      setCouponSuccess('');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError('');
+    setCouponSuccess('');
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          type: 'session',
+          amount: fee
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.valid) {
+        setCouponError(result.message || 'Invalid coupon code. Try AARKESH50 or BETTER20');
+        setCouponSuccess('');
+      } else {
+        setAppliedCoupon(result);
+        setCouponSuccess(result.message || 'Coupon applied successfully!');
+        setCouponError('');
+      }
+    } catch (err) {
+      // Offline fallback: check known standard coupons
+      const c = code.toUpperCase();
+      if (c === 'AARKESH50' || c === 'CLAIM50' || c === 'SHERY50') {
+        const discountAmount = Math.round(fee * 0.5);
+        setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 50, discountAmount, finalAmount: fee - discountAmount });
+        setCouponSuccess('Coupon applied! 50% discount applied successfully.');
+      } else if (c === 'BETTER20') {
+        const discountAmount = Math.round(fee * 0.2);
+        setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 20, discountAmount, finalAmount: fee - discountAmount });
+        setCouponSuccess('Coupon applied! 20% discount applied successfully.');
+      } else if (c === 'WELCOME10') {
+        const discountAmount = Math.round(fee * 0.1);
+        setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 10, discountAmount, finalAmount: fee - discountAmount });
+        setCouponSuccess('Coupon applied! 10% discount applied successfully.');
+      } else {
+        setCouponError('Invalid coupon code. Try AARKESH50 or BETTER20');
+      }
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError('');
+    setCouponSuccess('');
+  };
+
+  const finalFee = appliedCoupon ? appliedCoupon.finalAmount : fee;
+  const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
 
   const nextStepIcons = [EnvelopeSimple, CalendarBlank, Lock, User];
 
@@ -104,7 +177,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
 
             <div className="flex items-start gap-3 sm:gap-4 pt-2 border-t border-black/10">
               <Receipt className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 w-full">
                 <span className="font-sans text-[0.65rem] uppercase tracking-widest text-[#7a756b] font-bold">{settings.totalAmountLabel || 'Total Amount'}</span>
                 {isFreeSession ? (
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -115,10 +188,79 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
                     </span>
                   </div>
                 ) : (
-                  <span className="font-serif text-2xl sm:text-3xl font-bold text-[#111010]">₹{fee.toLocaleString('en-IN')}</span>
+                  <div>
+                    {appliedCoupon ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-wrap items-baseline gap-2.5">
+                          <span className="font-serif text-2xl sm:text-3xl font-bold text-[#111010]">₹{finalFee.toLocaleString('en-IN')}</span>
+                          <span className="font-sans text-sm line-through text-[#7a756b]">₹{fee.toLocaleString('en-IN')}</span>
+                          <span className="px-2 py-0.5 rounded-full bg-[#e8f5e9] text-[#2e7d32] border border-[#a5d6a7] text-[0.68rem] font-bold tracking-wide">
+                            SAVE ₹{discountAmount.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="font-serif text-2xl sm:text-3xl font-bold text-[#111010]">₹{fee.toLocaleString('en-IN')}</span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
+
+            {/* Coupon Code Section (ONLY for paid sessions, hidden when isFreeSession) */}
+            {!isFreeSession && (
+              <div className="pt-3 border-t border-black/10">
+                {!appliedCoupon ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-sans text-[#7a756b] font-semibold">
+                      <Tag size={14} className="text-[#c9542f]" weight="bold" />
+                      <span>Have a coupon code?</span>
+                    </div>
+                    <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => {
+                          setCouponInput(e.target.value.toUpperCase());
+                          if (couponError) setCouponError('');
+                        }}
+                        placeholder="Enter coupon code"
+                        className="flex-1 px-3.5 py-2 text-xs font-sans uppercase font-medium bg-[#fcfaf7] border border-black/15 rounded-xl text-[#111010] placeholder:normal-case placeholder:text-[#999] focus:outline-none focus:border-[#c9542f] transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        disabled={couponLoading || !couponInput.trim()}
+                        className="px-4 py-2 text-xs font-sans font-bold uppercase tracking-wider text-white bg-[#c9542f] hover:bg-[#b04523] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer shadow-xs"
+                      >
+                        {couponLoading ? '...' : 'Apply'}
+                      </button>
+                    </form>
+                    {couponError && (
+                      <p className="text-[0.72rem] text-red-600 font-sans mt-1">
+                        {couponError}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f0f9f1] border border-[#a5d6a7]/60 text-xs">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={16} weight="fill" className="text-[#2e7d32]" />
+                      <span className="font-mono font-bold text-[#2e7d32]">{appliedCoupon.code}</span>
+                      <span className="text-[#2e7d32] font-sans font-medium text-[0.72rem]">
+                        ({appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountValue}% OFF` : `₹${appliedCoupon.discountValue} OFF`})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      className="text-xs font-sans text-[#7a756b] hover:text-red-600 underline cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
           </div>
         </div>
@@ -207,7 +349,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
           
           <div className="flex flex-col gap-2 shrink-0">
             <button
-              onClick={onNext}
+              onClick={() => onNext(appliedCoupon)}
               disabled={!agreed || isLoading}
               className={`flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-bold tracking-wider uppercase transition-all whitespace-nowrap shrink-0 cursor-pointer
                 ${(!agreed || isLoading)

@@ -14,6 +14,9 @@ export async function sendCoursePurchaseInvoiceEmail({
   txnId = '',
   orderId = '',
   amount = 11800,
+  originalAmount = 0,
+  couponCode = '',
+  discountAmount = 0,
   basePrice = 10000,
   gstRate = 18,
   gstAmount = 1800,
@@ -48,6 +51,28 @@ export async function sendCoursePurchaseInvoiceEmail({
     const invoiceNumber = `INV-${dateObj.getFullYear()}${String(dateObj.getMonth() + 1).padStart(2, '0')}-${cleanTxnId.slice(-6).toUpperCase()}`;
     const mainHeading = invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`;
     const mainSubtitle = invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community';
+    let parsedDiscount = Number(discountAmount) || 0;
+    const cleanCoupon = (couponCode || '').trim().toUpperCase();
+    const parsedAmount = Number(amount) || 11800;
+    const displayBase = Number(originalAmount || basePrice) || 15000;
+
+    // Auto-resolve coupon discount if not explicitly passed
+    if (parsedDiscount <= 0 && (cleanCoupon || parsedAmount < displayBase)) {
+      if (isGstIncluded) {
+        parsedDiscount = Math.max(0, displayBase - parsedAmount);
+      } else {
+        const impliedNet = Math.round(parsedAmount / (1 + (gstRate / 100)));
+        parsedDiscount = Math.max(0, displayBase - impliedNet);
+      }
+    }
+
+    const hasCoupon = parsedDiscount > 0 || Boolean(cleanCoupon);
+    const netTaxableBase = hasCoupon ? Math.max(0, displayBase - parsedDiscount) : displayBase;
+    const computedGstAmount = (!isGstIncluded && gstRate === 0)
+      ? 0
+      : (isGstIncluded
+          ? Math.round(netTaxableBase - (netTaxableBase / (1 + (gstRate / 100))))
+          : Math.round((netTaxableBase * gstRate) / 100));
     const clientUrl = getClientUrl();
     const courseAccessUrl = `${clientUrl}/course`;
     const adminDashboardUrl = `${clientUrl}/admin`;
@@ -154,19 +179,31 @@ export async function sendCoursePurchaseInvoiceEmail({
                             <div style="font-size: 11px; color: #9d8c9b; margin-top: 3px;">${mainSubtitle}</div>
                           </td>
                           <td align="center" style="color: #cbbcc9; font-family: monospace;">1</td>
-                          <td align="right" style="font-weight: 600; color: #ffffff; font-family: monospace;">₹${Number(basePrice).toLocaleString('en-IN')}</td>
+                          <td align="right" style="font-weight: 600; color: #ffffff; font-family: monospace;">₹${displayBase.toLocaleString('en-IN')}</td>
                         </tr>
 
-                        <!-- Line Item 2: GST -->
+                        <!-- Line Item 2: Coupon Discount (if applied) -->
+                        ${hasCoupon ? `
+                        <tr style="border-bottom: 1px solid #230b25; background-color: rgba(16, 185, 129, 0.05);">
+                          <td style="padding: 10px 0;">
+                            <div style="color: #34d399; font-weight: 600;">🏷️ Coupon Discount ${cleanCoupon ? `(${cleanCoupon})` : 'Applied'}</div>
+                            <div style="font-size: 11px; color: #34d399; opacity: 0.8; margin-top: 2px;">Promotional tuition fee waiver applied at checkout</div>
+                          </td>
+                          <td align="center" style="color: #34d399; font-family: monospace;">1</td>
+                          <td align="right" style="color: #34d399; font-family: monospace; font-weight: 600;">-₹${parsedDiscount.toLocaleString('en-IN')}</td>
+                        </tr>
+                        ` : ''}
+
+                        <!-- Line Item 3: GST -->
                         <tr style="border-bottom: 1px solid #230b25;">
                           <td style="padding: 10px 0;">
                             <div style="color: #d4cad3;">Goods &amp; Services Tax (GST @ ${gstRate}%) ${isGstIncluded ? '<span style="font-size: 10px; color: #9d8c9b;">(Inclusive)</span>' : ''}</div>
                           </td>
                           <td align="center" style="color: #7f6e7d; font-family: monospace;">-</td>
-                          <td align="right" style="color: #d4cad3; font-family: monospace;">₹${Number(gstAmount).toLocaleString('en-IN')}</td>
+                          <td align="right" style="color: #d4cad3; font-family: monospace;">₹${Number(computedGstAmount).toLocaleString('en-IN')}</td>
                         </tr>
 
-                        <!-- Line Item 3: Bonus -->
+                        <!-- Line Item 4: Bonus -->
                         ${bonusItemTitle ? `
                         <tr style="border-bottom: 1px solid #230b25;">
                           <td style="padding: 10px 0;">
@@ -184,11 +221,21 @@ export async function sendCoursePurchaseInvoiceEmail({
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 16px; border-top: 1px solid #331135; padding-top: 12px; font-size: 12px;">
                       <tr>
                         <td align="right" style="color: #9d8c9b; padding-bottom: 6px;">Course Subtotal:</td>
-                        <td align="right" width="100" style="color: #ffffff; font-family: monospace; padding-bottom: 6px;">₹${Number(basePrice).toLocaleString('en-IN')}</td>
+                        <td align="right" width="100" style="color: #ffffff; font-family: monospace; padding-bottom: 6px;">₹${displayBase.toLocaleString('en-IN')}</td>
+                      </tr>
+                      ${hasCoupon ? `
+                      <tr>
+                        <td align="right" style="color: #34d399; padding-bottom: 6px;">Coupon Discount ${cleanCoupon ? `(${cleanCoupon})` : ''}:</td>
+                        <td align="right" width="100" style="color: #34d399; font-family: monospace; padding-bottom: 6px;">-₹${parsedDiscount.toLocaleString('en-IN')}</td>
                       </tr>
                       <tr>
+                        <td align="right" style="color: #9d8c9b; padding-bottom: 6px; font-size: 11px;">Net Taxable Base:</td>
+                        <td align="right" width="100" style="color: #ffffff; font-family: monospace; padding-bottom: 6px; font-size: 11px;">₹${netTaxableBase.toLocaleString('en-IN')}</td>
+                      </tr>
+                      ` : ''}
+                      <tr>
                         <td align="right" style="color: #9d8c9b; padding-bottom: 6px;">GST (${gstRate}%):</td>
-                        <td align="right" width="100" style="color: #E3B8DE; font-family: monospace; padding-bottom: 6px;">₹${Number(gstAmount).toLocaleString('en-IN')}</td>
+                        <td align="right" width="100" style="color: #E3B8DE; font-family: monospace; padding-bottom: 6px;">₹${Number(computedGstAmount).toLocaleString('en-IN')}</td>
                       </tr>
                       <tr style="font-size: 15px; font-weight: bold;">
                         <td align="right" style="color: #ffffff; padding-top: 8px; border-top: 1px solid #331135;">Total Paid:</td>
@@ -299,6 +346,12 @@ export async function sendCoursePurchaseInvoiceEmail({
                         <td style="padding: 6px 0; color: #9d8c9b;">Purchased Course:</td>
                         <td style="padding: 6px 0; color: #E3B8DE; font-weight: 600;">${courseTitle}</td>
                       </tr>
+                      ${hasCoupon ? `
+                      <tr>
+                        <td style="padding: 6px 0; color: #34d399;">Coupon Applied:</td>
+                        <td style="padding: 6px 0; color: #34d399; font-weight: 700; font-family: monospace;">${cleanCoupon} (-₹${parsedDiscount.toLocaleString('en-IN')})</td>
+                      </tr>
+                      ` : ''}
                       <tr>
                         <td style="padding: 6px 0; color: #9d8c9b;">Private Sessions Credited:</td>
                         <td style="padding: 6px 0; color: #34d399; font-weight: 600;">3 Free 1-on-1 Sessions (Active)</td>
@@ -331,14 +384,24 @@ export async function sendCoursePurchaseInvoiceEmail({
                             <div style="font-size: 11px; color: #9d8c9b; margin-top: 2px;">${mainSubtitle}</div>
                           </td>
                           <td align="center" style="color: #cbbcc9; font-family: monospace;">1</td>
-                          <td align="right" style="font-weight: 600; color: #ffffff; font-family: monospace;">₹${Number(basePrice).toLocaleString('en-IN')}</td>
+                          <td align="right" style="font-weight: 600; color: #ffffff; font-family: monospace;">₹${displayBase.toLocaleString('en-IN')}</td>
                         </tr>
+                        ${hasCoupon ? `
+                        <tr style="border-bottom: 1px solid #230b25; background-color: rgba(16, 185, 129, 0.05);">
+                          <td style="padding: 10px 0;">
+                            <div style="color: #34d399; font-weight: 600;">🏷️ Coupon Discount ${cleanCoupon ? `(${cleanCoupon})` : 'Applied'}</div>
+                            <div style="font-size: 11px; color: #34d399; opacity: 0.8; margin-top: 2px;">Promotional tuition fee waiver applied at checkout</div>
+                          </td>
+                          <td align="center" style="color: #34d399; font-family: monospace;">1</td>
+                          <td align="right" style="color: #34d399; font-family: monospace; font-weight: 600;">-₹${parsedDiscount.toLocaleString('en-IN')}</td>
+                        </tr>
+                        ` : ''}
                         <tr style="border-bottom: 1px solid #230b25;">
                           <td style="padding: 10px 0; color: #d4cad3;">
                             GST (${gstRate}%) ${isGstIncluded ? '(Inclusive)' : ''}
                           </td>
                           <td align="center" style="color: #7f6e7d; font-family: monospace;">-</td>
-                          <td align="right" style="color: #d4cad3; font-family: monospace;">₹${Number(gstAmount).toLocaleString('en-IN')}</td>
+                          <td align="right" style="color: #d4cad3; font-family: monospace;">₹${Number(computedGstAmount).toLocaleString('en-IN')}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -346,12 +409,22 @@ export async function sendCoursePurchaseInvoiceEmail({
                     <!-- Totals Box -->
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 14px; border-top: 1px solid #331135; padding-top: 10px; font-size: 12px;">
                       <tr>
-                        <td align="right" style="color: #9d8c9b; padding-bottom: 4px;">Course Base Price:</td>
-                        <td align="right" width="120" style="color: #ffffff; font-family: monospace; padding-bottom: 4px;">₹${Number(basePrice).toLocaleString('en-IN')}</td>
+                        <td align="right" style="color: #9d8c9b; padding-bottom: 4px;">Course Subtotal:</td>
+                        <td align="right" width="120" style="color: #ffffff; font-family: monospace; padding-bottom: 4px;">₹${displayBase.toLocaleString('en-IN')}</td>
+                      </tr>
+                      ${hasCoupon ? `
+                      <tr>
+                        <td align="right" style="color: #34d399; padding-bottom: 4px;">Coupon Discount ${cleanCoupon ? `(${cleanCoupon})` : ''}:</td>
+                        <td align="right" width="120" style="color: #34d399; font-family: monospace; padding-bottom: 4px;">-₹${parsedDiscount.toLocaleString('en-IN')}</td>
                       </tr>
                       <tr>
-                        <td align="right" style="color: #9d8c9b; padding-bottom: 4px;">GST Collected:</td>
-                        <td align="right" width="120" style="color: #E3B8DE; font-family: monospace; padding-bottom: 4px;">₹${Number(gstAmount).toLocaleString('en-IN')}</td>
+                        <td align="right" style="color: #9d8c9b; padding-bottom: 4px; font-size: 11px;">Net Taxable Base:</td>
+                        <td align="right" width="120" style="color: #ffffff; font-family: monospace; padding-bottom: 4px; font-size: 11px;">₹${Math.max(0, displayBase - parsedDiscount).toLocaleString('en-IN')}</td>
+                      </tr>
+                      ` : ''}
+                      <tr>
+                        <td align="right" style="color: #9d8c9b; padding-bottom: 4px;">GST Collected (${gstRate}%):</td>
+                        <td align="right" width="120" style="color: #E3B8DE; font-family: monospace; padding-bottom: 4px;">₹${Number(computedGstAmount).toLocaleString('en-IN')}</td>
                       </tr>
                       <tr style="font-size: 16px; font-weight: bold;">
                         <td align="right" style="color: #ffffff; padding-top: 8px; border-top: 1px solid #331135;">Total Revenue Received:</td>
@@ -370,6 +443,12 @@ export async function sendCoursePurchaseInvoiceEmail({
                           <td width="50%" style="padding-top: 6px;"><strong>Order ID:</strong> <span style="color: #ffffff; font-family: monospace;">${orderId || 'N/A'}</span></td>
                           <td width="50%" align="right" style="padding-top: 6px;"><strong>Gateway:</strong> Razorpay Secure</td>
                         </tr>
+                        ${hasCoupon ? `
+                        <tr>
+                          <td width="50%" style="padding-top: 6px; color: #34d399;"><strong>Coupon Code:</strong> <span style="color: #34d399; font-family: monospace; font-weight: bold;">${cleanCoupon}</span></td>
+                          <td width="50%" align="right" style="padding-top: 6px; color: #34d399;"><strong>Discount:</strong> <span style="color: #34d399; font-family: monospace; font-weight: bold;">-₹${parsedDiscount.toLocaleString('en-IN')}</span></td>
+                        </tr>
+                        ` : ''}
                       </table>
                     </div>
                   </td>
@@ -412,7 +491,9 @@ export async function sendCoursePurchaseInvoiceEmail({
     const adminSendPromise = resend.emails.send({
       from: emailSender,
       to: adminEmail,
-      subject: `🎉 New Course Purchase: ${studentName} enrolled in ${courseTitle} (₹${Number(amount).toLocaleString('en-IN')})`,
+      subject: hasCoupon
+        ? `🎉 New Course Purchase: ${studentName} enrolled in ${courseTitle} (₹${Number(amount).toLocaleString('en-IN')} · Coupon: ${cleanCoupon})`
+        : `🎉 New Course Purchase: ${studentName} enrolled in ${courseTitle} (₹${Number(amount).toLocaleString('en-IN')})`,
       html: adminEmailHtml,
     });
 

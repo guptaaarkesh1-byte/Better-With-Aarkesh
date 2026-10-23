@@ -144,7 +144,8 @@ export default function MyCourses() {
 
   const handleLogout = () => {
     clearAllAuth();
-    navigate('/course');
+    navigate('/');
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleBookFreeSession = async () => {

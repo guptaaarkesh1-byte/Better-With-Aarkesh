@@ -34,6 +34,7 @@ import visualSettingsRoutes from './routes/visualSettingsRoutes.js';
 import courseLandingSettingsRoutes from './routes/courseLandingSettingsRoutes.js';
 import courseDetailSettingsRoutes from './routes/courseDetailSettingsRoutes.js';
 import seoSettingsRoutes from './routes/seoSettingsRoutes.js';
+import couponRoutes from './routes/couponRoutes.js';
 
 import http from 'http';
 import { Server } from 'socket.io';
@@ -102,6 +103,7 @@ app.post('/api/verify-payment', (req, res, next) => {
   req.url = '/verify-payment';
   paymentRoutes(req, res, next);
 });
+app.use('/api/coupons', couponRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);

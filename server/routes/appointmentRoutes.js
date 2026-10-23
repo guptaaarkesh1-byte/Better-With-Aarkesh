@@ -19,6 +19,7 @@ import {
 import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
 import { validateEmailFormat } from '../services/emailOtpService.js';
 import { validateQuestionnaireSubmission } from '../services/questionnaireValidator.js';
+import { incrementCouponUsage } from './couponRoutes.js';
 
 const router = express.Router();
 
@@ -113,12 +114,17 @@ const syncAppointmentToCal = async (appointment) => {
       ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198)
       : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
 
+    // NOTE: We intentionally use the admin/noreply email for the Cal.com attendee
+    // because Cal.com automatically sends confirmation emails to attendee.email.
+    // The client receives their official Coaching Agreement separately, only AFTER
+    // the admin reviews and approves via the Admin Dashboard (agreement-send route).
+    const calAttendeeEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM_ADDRESS || 'guptaaarkesh1@gmail.com';
     const payload = {
       eventTypeId: parseInt(eventTypeId),
       start: startISO,
       attendee: {
         name: appointment.name,
-        email: appointment.email,
+        email: calAttendeeEmail,
         timeZone: "Asia/Kolkata",
         language: "en"
       }
@@ -240,6 +246,44 @@ router.post('/check-session-type', optionalAuth, async (req, res) => {
   } catch (error) {
     console.error('Error checking session type:', error);
     res.status(500).json({ message: 'Error checking session type' });
+  }
+});
+
+// @desc    Get Session Fees
+// @route   GET /api/appointments/fees
+// @access  Public
+router.get('/fees', async (req, res) => {
+  try {
+    const feeSettings = await Settings.findOne({ key: 'fees' });
+    const fee60min = Number(feeSettings?.value?.fee60min) || 5000;
+    const fee90min = Number(feeSettings?.value?.fee90min) || 7500;
+    res.json({ fee60min, fee90min });
+  } catch (error) {
+    console.error('Error fetching appointment fees:', error);
+    res.status(500).json({ message: 'Error fetching appointment fees' });
+  }
+});
+
+// @desc    Update Session Fees
+// @route   POST /api/appointments/fees
+// @access  Private/Admin
+router.post('/fees', protect, admin, async (req, res) => {
+  try {
+    const { fee60min, fee90min } = req.body;
+    let settings = await Settings.findOne({ key: 'fees' });
+    if (settings) {
+      settings.value = { fee60min: Number(fee60min), fee90min: Number(fee90min) };
+      await settings.save();
+    } else {
+      await Settings.create({
+        key: 'fees',
+        value: { fee60min: Number(fee60min), fee90min: Number(fee90min) }
+      });
+    }
+    res.json({ message: 'Fees updated successfully', fee60min, fee90min });
+  } catch (error) {
+    console.error('Error updating appointment fees:', error);
+    res.status(500).json({ message: 'Error updating appointment fees' });
   }
 });
 
@@ -511,6 +555,9 @@ router.post('/', optionalAuth, async (req, res) => {
       duration,
       isFirstSession,
       amount: finalAmount,
+      originalAmount: req.body.originalAmount ? Number(req.body.originalAmount) : dynamicAmount,
+      couponCode: req.body.couponCode || '',
+      discountAmount: Number(req.body.discountAmount) || 0,
       paymentId,
       orderId,
       signature
@@ -581,6 +628,10 @@ router.put('/:id/finalize', optionalAuth, async (req, res) => {
     
     const updatedAppointment = await appointment.save();
 
+    if (appointment.couponCode) {
+      incrementCouponUsage(appointment.couponCode).catch(e => console.error('Coupon usage increment error:', e));
+    }
+
     // --- Cal.com Integration ---
     if (process.env.CAL_API_KEY) {
       try {
@@ -591,12 +642,17 @@ router.put('/:id/finalize', optionalAuth, async (req, res) => {
           ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
           : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
 
+        // NOTE: We intentionally use the admin/noreply email for the Cal.com attendee
+        // because Cal.com automatically sends confirmation emails to attendee.email.
+        // The client receives their official Coaching Agreement separately, only AFTER
+        // the admin reviews and approves via the Admin Dashboard (agreement-send route).
+        const calAttendeeEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM_ADDRESS || 'guptaaarkesh1@gmail.com';
         const payload = {
           eventTypeId: parseInt(eventTypeId),
           start: startISO,
           attendee: {
             name: appointment.name,
-            email: appointment.email,
+            email: calAttendeeEmail,
             timeZone: "Asia/Kolkata",
             language: "en"
           }

@@ -10,7 +10,8 @@ import AdminCourseComments from './AdminCourseComments';
 import { API_URL } from '../utils/apiUrl';
 
 const STEPS = [
-  ['basics', 'layout', 'Basics', 'Title, description, status', 'Course page'],
+  ['login', 'lock', 'Login screen', 'Right panel heading & benefits list', 'Course page'],
+  ['basics', 'layout', 'Basics', 'Title, description, status', ''],
   ['visuals', 'img', 'Card image & trailer', 'Thumbnail, theme, preview video', ''],
   ['pricing', 'rupee', 'Pricing & GST', 'What students pay', ''],
   ['landing', 'list', 'Landing page content', 'Roadmap, benefits, story', ''],
@@ -93,7 +94,17 @@ export default function AdminCourseEditor() {
         open: true,
         lessons: [{ id: 'l1', t: 'Lesson 1: The Foundation of Clarity', desc: '', dur: '12:30', free: true, src: null }]
       }
-    ]
+    ],
+    loginScreen: {
+      enabled: true,
+      heading: 'Pick up where you left off.',
+      items: [
+        'Continue your modules from the last video',
+        'Book your private sessions with Aarkesh',
+        'Download your workbooks and frameworks',
+        'Lifetime updates with no recurring fees'
+      ]
+    }
   });
 
   // Accordion state for Landing Page step
@@ -129,6 +140,20 @@ export default function AdminCourseEditor() {
     showViewAllBtn: true,
     viewAllBtnText: 'View All Masterclasses',
     viewAllBtnLink: '/course/all'
+  });
+
+  // Course Coupons Management State
+  const [coupons, setCoupons] = useState([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [savingCoupon, setSavingCoupon] = useState(false);
+  const [editingCouponId, setEditingCouponId] = useState(null);
+  const [couponForm, setCouponForm] = useState({
+    code: '',
+    discountType: 'percentage',
+    discountValue: 20,
+    applicableTo: 'course',
+    isActive: true,
+    description: ''
   });
 
   useEffect(() => {
@@ -649,7 +674,21 @@ export default function AdminCourseEditor() {
           p2: d.storyRoadmapSection?.storyP2 || d.writeup?.p2 || 'Through step-by-step masterclasses, you dismantle reactive habits.',
           take: d.storyRoadmapSection?.storyTakeaway || d.writeup?.distinction || 'Reactive leaders wait for circumstances. Anchored leaders change internal state first.'
         },
-        days: loadedDays.length ? loadedDays : prev.days
+        days: loadedDays.length ? loadedDays : prev.days,
+        loginScreen: {
+          enabled: d.loginScreen?.enabled !== undefined ? d.loginScreen.enabled : (d.loginModal?.enabled !== undefined ? d.loginModal.enabled : true),
+          heading: d.loginScreen?.heading || d.loginModal?.heading || 'Pick up where you left off.',
+          items: (Array.isArray(d.loginScreen?.items) && d.loginScreen.items.length > 0)
+            ? d.loginScreen.items
+            : (Array.isArray(d.loginModal?.items) && d.loginModal.items.length > 0)
+            ? d.loginModal.items
+            : [
+                'Continue your modules from the last video',
+                'Book your private sessions with Aarkesh',
+                'Download your workbooks and frameworks',
+                'Lifetime updates with no recurring fees'
+              ]
+        }
       }));
 
       // Fetch Landing Overview Settings
@@ -679,6 +718,187 @@ export default function AdminCourseEditor() {
   useEffect(() => {
     fetchCoursesAndData();
   }, [fetchCoursesAndData]);
+
+  // Fetch course coupons from API
+  const fetchCoupons = useCallback(async () => {
+    setLoadingCoupons(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/coupons`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCoupons(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to load course coupons:', err);
+    } finally {
+      setLoadingCoupons(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCoupons();
+  }, [fetchCoupons]);
+
+  // Filter coupons applicable to course
+  const courseCouponsList = coupons.filter(
+    (c) => !c.applicableTo || c.applicableTo === 'course' || c.applicableTo === 'all'
+  );
+
+  // Save / Update Coupon Handler
+  const handleSaveCoupon = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const cleanCode = (couponForm.code || '').trim().toUpperCase();
+    if (!cleanCode) {
+      showError('Please enter a coupon code.');
+      return;
+    }
+    const val = Number(couponForm.discountValue);
+    if (!val || val <= 0) {
+      showError('Please enter a valid discount value.');
+      return;
+    }
+    if (couponForm.discountType === 'percentage' && (val <= 0 || val > 100)) {
+      showError('Percentage discount must be between 1% and 100%.');
+      return;
+    }
+
+    setSavingCoupon(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const url = editingCouponId 
+        ? `${API_URL}/api/coupons/${editingCouponId}`
+        : `${API_URL}/api/coupons`;
+      const method = editingCouponId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          code: cleanCode,
+          discountType: couponForm.discountType,
+          discountValue: val,
+          applicableTo: couponForm.applicableTo || 'course',
+          isActive: Boolean(couponForm.isActive),
+          description: (couponForm.description || '').trim()
+        })
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.message || 'Failed to save coupon');
+      }
+
+      showSuccess(editingCouponId ? `Coupon "${cleanCode}" updated!` : `Course Coupon "${cleanCode}" created!`);
+      setEditingCouponId(null);
+      setCouponForm({
+        code: '',
+        discountType: 'percentage',
+        discountValue: 20,
+        applicableTo: 'course',
+        isActive: true,
+        description: ''
+      });
+      fetchCoupons();
+    } catch (err) {
+      showError(err.message || 'Failed to save coupon.');
+    } finally {
+      setSavingCoupon(false);
+    }
+  };
+
+  // Edit Coupon Handler
+  const handleEditCoupon = (cpn) => {
+    setEditingCouponId(cpn._id);
+    setCouponForm({
+      code: cpn.code || '',
+      discountType: cpn.discountType || 'percentage',
+      discountValue: cpn.discountValue || 20,
+      applicableTo: cpn.applicableTo || 'course',
+      isActive: cpn.isActive !== undefined ? cpn.isActive : true,
+      description: cpn.description || ''
+    });
+    const el = document.getElementById('course-coupon-form-card');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  // Toggle Active/Disabled Coupon
+  const handleToggleCouponActive = async (cpn) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/coupons/${cpn._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ isActive: !cpn.isActive })
+      });
+      if (res.ok) {
+        setCoupons(prev => prev.map(c => c._id === cpn._id ? { ...c, isActive: !cpn.isActive } : c));
+        showSuccess(`Coupon "${cpn.code}" is now ${!cpn.isActive ? 'Active' : 'Disabled'}`);
+      } else {
+        throw new Error('Failed to update status');
+      }
+    } catch (err) {
+      showError('Failed to toggle coupon status.');
+    }
+  };
+
+  // Delete Coupon Handler
+  const handleDeleteCoupon = (cpn) => {
+    setModalConfig({
+      isOpen: true,
+      title: 'Delete Course Coupon',
+      message: `Are you sure you want to delete coupon "${cpn.code}"? Students will no longer be able to use it at checkout.`,
+      confirmText: 'Delete Coupon',
+      cancelText: 'Cancel',
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const token = localStorage.getItem('adminToken');
+          const res = await fetch(`${API_URL}/api/coupons/${cpn._id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            showSuccess(`Coupon "${cpn.code}" deleted.`);
+            setModalConfig({ isOpen: false });
+            if (editingCouponId === cpn._id) {
+              setEditingCouponId(null);
+              setCouponForm({
+                code: '',
+                discountType: 'percentage',
+                discountValue: 20,
+                applicableTo: 'course',
+                isActive: true,
+                description: ''
+              });
+            }
+            fetchCoupons();
+          } else {
+            throw new Error('Delete failed');
+          }
+        } catch (err) {
+          showError('Failed to delete coupon.');
+        }
+      },
+      onCancel: () => setModalConfig({ isOpen: false })
+    });
+  };
+
+  // Copy Coupon Code
+  const copyCouponCode = (text) => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      showSuccess(`Copied "${text}" to clipboard`);
+    }
+  };
 
   // Sync selected course status and title with dropdown list in real-time
   useEffect(() => {
@@ -884,6 +1104,16 @@ export default function AdminCourseEditor() {
           storyQuote: courseData.story.quote,
           storyP2: courseData.story.p2,
           storyTakeaway: courseData.story.take
+        },
+        loginScreen: {
+          enabled: courseData.loginScreen?.enabled !== false,
+          heading: courseData.loginScreen?.heading || 'Pick up where you left off.',
+          items: courseData.loginScreen?.items || [
+            'Continue your modules from the last video',
+            'Book your private sessions with Aarkesh',
+            'Download your workbooks and frameworks',
+            'Lifetime updates with no recurring fees'
+          ]
         }
       };
 
@@ -1897,10 +2127,12 @@ export default function AdminCourseEditor() {
                         <div className="bwa-pre">
                           <b>₹</b>
                           <input
-                            type="number"
-                            min={0}
-                            value={courseData.price}
-                            onChange={(e) => updateField('price', Number(e.target.value) || 0)}
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="15000"
+                            value={courseData.price === 0 || courseData.price === '0' || courseData.price === '' ? '' : courseData.price}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => updateField('price', e.target.value.replace(/\D/g, ''))}
                           />
                         </div>
                       </div>
@@ -1909,10 +2141,12 @@ export default function AdminCourseEditor() {
                         <div className="bwa-pre">
                           <b>₹</b>
                           <input
-                            type="number"
-                            min={0}
-                            value={courseData.orig || ''}
-                            onChange={(e) => updateField('orig', Number(e.target.value) || 0)}
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="20000"
+                            value={courseData.orig === 0 || courseData.orig === '0' || courseData.orig === '' ? '' : courseData.orig}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => updateField('orig', e.target.value.replace(/\D/g, ''))}
                           />
                         </div>
                       </div>
@@ -2024,6 +2258,338 @@ export default function AdminCourseEditor() {
                         <span>Student pays</span>
                         <span>{inr(calculated.total)}</span>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Course Discount Coupons & % Off Control Card */}
+                  <div className="bwa-card" id="course-coupon-form-card" style={{ marginTop: '24px' }}>
+                    <div className="bwa-row" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <Icon name="tag" size={20} style={{ color: 'var(--accent)' }} />
+                          <h3 style={{ margin: 0 }}>Course Coupons &amp; % Discount Control</h3>
+                        </div>
+                        <p className="sub" style={{ margin: 0 }}>
+                          Create and manage promo coupon codes with % or flat INR discount for students purchasing this course.
+                        </p>
+                      </div>
+                      {editingCouponId && (
+                        <span className="bwa-pill on" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', fontWeight: 700 }}>
+                          Editing Coupon
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Add / Edit Coupon Form */}
+                    <form onSubmit={handleSaveCoupon} style={{ background: '#fcfbf9', border: '1px solid var(--line)', borderRadius: '14px', padding: '18px 20px', marginTop: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                        <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, color: 'var(--muted)' }}>
+                          {editingCouponId ? `Edit Coupon: ${couponForm.code}` : '+ Add New Course Coupon Code'}
+                        </span>
+                        {editingCouponId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCouponId(null);
+                              setCouponForm({
+                                code: '',
+                                discountType: 'percentage',
+                                discountValue: 20,
+                                applicableTo: 'course',
+                                isActive: true,
+                                description: ''
+                              });
+                            }}
+                            style={{ border: 'none', background: 'transparent', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
+                          >
+                            Cancel Edit
+                          </button>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px' }}>
+                        {/* Coupon Code Input */}
+                        <div className="bwa-f" style={{ maxWidth: 'none' }}>
+                          <label>Coupon Code (e.g. MASTER50)</label>
+                          <input
+                            type="text"
+                            placeholder="ENTER CODE"
+                            style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}
+                            value={couponForm.code}
+                            onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                          />
+                        </div>
+
+                        {/* Discount Value & Type */}
+                        <div className="bwa-f" style={{ maxWidth: 'none' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
+                            <label style={{ margin: 0 }}>Discount {couponForm.discountType === 'percentage' ? '% Off' : 'Flat Off (INR)'}</label>
+                            <div style={{ display: 'inline-flex', gap: '4px', background: 'var(--sand)', padding: '2px', borderRadius: '6px' }}>
+                              <button
+                                type="button"
+                                onClick={() => setCouponForm({ ...couponForm, discountType: 'percentage' })}
+                                style={{
+                                  border: 0,
+                                  background: couponForm.discountType === 'percentage' ? '#ffffff' : 'transparent',
+                                  color: couponForm.discountType === 'percentage' ? 'var(--ink)' : 'var(--muted)',
+                                  fontWeight: 700,
+                                  fontSize: '11px',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                % Off
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCouponForm({ ...couponForm, discountType: 'fixed' })}
+                                style={{
+                                  border: 0,
+                                  background: couponForm.discountType === 'fixed' ? '#ffffff' : 'transparent',
+                                  color: couponForm.discountType === 'fixed' ? 'var(--ink)' : 'var(--muted)',
+                                  fontWeight: 700,
+                                  fontSize: '11px',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Flat INR
+                              </button>
+                            </div>
+                          </div>
+
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              placeholder={couponForm.discountType === 'percentage' ? '50' : '2000'}
+                              value={couponForm.discountValue === 0 || couponForm.discountValue === '0' || couponForm.discountValue === '' || couponForm.discountValue === null || couponForm.discountValue === undefined ? '' : couponForm.discountValue}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '');
+                                setCouponForm({ ...couponForm, discountValue: val });
+                              }}
+                              style={{ paddingRight: '40px', fontWeight: 700, fontSize: '15px' }}
+                            />
+                            <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', fontWeight: 800, color: 'var(--muted)', fontSize: '14px', pointerEvents: 'none' }}>
+                              {couponForm.discountType === 'percentage' ? '%' : 'INR'}
+                            </span>
+                          </div>
+
+                          {/* Quick Percentage Presets */}
+                          {couponForm.discountType === 'percentage' && (
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                              {[10, 20, 30, 50, 75].map((pct) => (
+                                <button
+                                  key={pct}
+                                  type="button"
+                                  onClick={() => setCouponForm({ ...couponForm, discountValue: pct })}
+                                  className={`bwa-pill ${Number(couponForm.discountValue) === pct ? 'on' : ''}`}
+                                  style={{ fontSize: '11px', padding: '3px 8px' }}
+                                >
+                                  {pct}% off
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Scope */}
+                        <div className="bwa-f" style={{ maxWidth: 'none' }}>
+                          <label>Applicable Scope</label>
+                          <select
+                            value={couponForm.applicableTo}
+                            onChange={(e) => setCouponForm({ ...couponForm, applicableTo: e.target.value })}
+                          >
+                            <option value="course">This Course Only</option>
+                            <option value="all">All Courses &amp; Coaching Sessions</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Description / Note */}
+                      <div className="bwa-f" style={{ maxWidth: 'none', marginTop: '14px' }}>
+                        <label>Description / Note (Optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Special 50% discount for inaugural batch"
+                          value={couponForm.description}
+                          onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
+                        />
+                      </div>
+
+                      {/* Active toggle and Submit */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', flexWrap: 'wrap', gap: '12px', borderTop: '1px solid var(--line)', paddingTop: '14px' }}>
+                        <label className="bwa-row" style={{ gap: '10px', cursor: 'pointer', margin: 0, fontWeight: 600, fontSize: '13px' }}>
+                          <input
+                            type="checkbox"
+                            checked={couponForm.isActive}
+                            onChange={(e) => setCouponForm({ ...couponForm, isActive: e.target.checked })}
+                          />
+                          <span>Active coupon (immediately usable by students at checkout)</span>
+                        </label>
+
+                        <button
+                          type="submit"
+                          className="bwa-btn bwa-btn-accent"
+                          disabled={savingCoupon || !couponForm.code.trim()}
+                          style={{ padding: '8px 18px', fontSize: '13px' }}
+                        >
+                          {savingCoupon ? 'Saving...' : (editingCouponId ? 'Save Coupon Changes' : '+ Create Course Coupon')}
+                        </button>
+                      </div>
+                    </form>
+
+                    {/* Existing Course Coupons List */}
+                    <div style={{ marginTop: '24px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <h4 style={{ margin: 0, fontSize: '12px', letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 800 }}>
+                          Active Course Coupons ({courseCouponsList.length})
+                        </h4>
+                        <button
+                          type="button"
+                          className="bwa-btn bwa-btn-line bwa-btn-sm"
+                          onClick={fetchCoupons}
+                          disabled={loadingCoupons}
+                          style={{ fontSize: '11px', padding: '3px 8px' }}
+                        >
+                          {loadingCoupons ? 'Refreshing...' : '↻ Refresh'}
+                        </button>
+                      </div>
+
+                      {courseCouponsList.length === 0 ? (
+                        <div style={{ padding: '28px 16px', textAlign: 'center', background: '#faf8f5', borderRadius: '12px', border: '1px dashed var(--line)' }}>
+                          <p style={{ margin: 0, color: 'var(--muted)', fontSize: '13px' }}>
+                            No course discount coupons created yet. Use the form above to create your first coupon!
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {courseCouponsList.map((cpn) => {
+                            const isPerc = cpn.discountType === 'percentage';
+                            const discountLabel = isPerc ? `${cpn.discountValue}% OFF` : `₹${Number(cpn.discountValue || 0).toLocaleString('en-IN')} OFF`;
+                            const isEditingThis = editingCouponId === cpn._id;
+
+                            return (
+                              <div
+                                key={cpn._id || cpn.code}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '12px 16px',
+                                  background: isEditingThis ? 'rgba(200, 80, 45, 0.05)' : '#ffffff',
+                                  border: isEditingThis ? '1.5px solid var(--accent)' : '1px solid var(--line)',
+                                  borderRadius: '12px',
+                                  gap: '12px',
+                                  flexWrap: 'wrap',
+                                  transition: 'all 0.15s ease'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '200px' }}>
+                                  <span
+                                    style={{
+                                      fontFamily: 'monospace',
+                                      fontSize: '13.5px',
+                                      fontWeight: 800,
+                                      color: 'var(--ink)',
+                                      background: 'var(--sand)',
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      letterSpacing: '0.06em'
+                                    }}
+                                  >
+                                    {cpn.code}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="bwa-copy-btn"
+                                    style={{ padding: '2px 7px', fontSize: '11px' }}
+                                    onClick={() => copyCouponCode(cpn.code)}
+                                  >
+                                    Copy
+                                  </button>
+                                  <span
+                                    className="bwa-pill"
+                                    style={{
+                                      background: cpn.isActive ? '#e8f5e9' : '#f5f5f5',
+                                      color: cpn.isActive ? '#1b5e20' : '#757575',
+                                      border: cpn.isActive ? '1px solid #a5d6a7' : '1px solid #e0e0e0',
+                                      fontWeight: 800,
+                                      fontSize: '11px',
+                                      padding: '2px 8px'
+                                    }}
+                                  >
+                                    {discountLabel}
+                                  </span>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '11.5px', color: 'var(--muted)', background: 'var(--paper)', padding: '2px 8px', borderRadius: '4px' }}>
+                                    {cpn.applicableTo === 'all' ? 'Course & Coaching' : 'Course Only'}
+                                  </span>
+
+                                  {cpn.usedCount !== undefined && (
+                                    <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
+                                      {cpn.usedCount} used
+                                    </span>
+                                  )}
+
+                                  {/* Status Toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCouponActive(cpn)}
+                                    style={{
+                                      border: 0,
+                                      cursor: 'pointer',
+                                      borderRadius: '99px',
+                                      padding: '3px 9px',
+                                      fontSize: '11px',
+                                      fontWeight: 700,
+                                      background: cpn.isActive ? '#dcfce7' : '#fee2e2',
+                                      color: cpn.isActive ? '#15803d' : '#b91c1c'
+                                    }}
+                                    title="Click to toggle active status"
+                                  >
+                                    {cpn.isActive ? '● Active' : '○ Disabled'}
+                                  </button>
+
+                                  {/* Edit */}
+                                  <button
+                                    type="button"
+                                    className="bwa-btn bwa-btn-line bwa-btn-sm"
+                                    onClick={() => handleEditCoupon(cpn)}
+                                    style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                    title="Edit discount or code"
+                                  >
+                                    <Icon name="edit" size={12} />
+                                    <span>Edit</span>
+                                  </button>
+
+                                  {/* Delete */}
+                                  <button
+                                    type="button"
+                                    className="bwa-btn bwa-btn-danger bwa-btn-sm"
+                                    onClick={() => handleDeleteCoupon(cpn)}
+                                    style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                    title="Delete coupon"
+                                  >
+                                    <Icon name="trash" size={12} />
+                                  </button>
+                                </div>
+
+                                {cpn.description && (
+                                  <div style={{ width: '100%', fontSize: '11.5px', color: 'var(--muted)', marginTop: '-2px', paddingLeft: '2px' }}>
+                                    {cpn.description}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2408,6 +2974,317 @@ export default function AdminCourseEditor() {
                           />
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step: Login screen right-panel control */}
+              {step === 'login' && (
+                <div>
+                  <h1>Login screen</h1>
+                  <p className="bwa-lead">
+                    Customize the right-hand panel text, benefits checklist, or visibility that returning students see when logging in.
+                  </p>
+
+                  {/* Card 1: Visibility Toggle */}
+                  <div className="bwa-card">
+                    <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 600 }}>Panel Visibility</h3>
+                    <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--bwa-muted)' }}>
+                      Choose whether to show or hide the encouragement checklist panel on the right side of the login dialog.
+                    </p>
+
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={courseData.loginScreen?.enabled !== false}
+                        onChange={(e) => {
+                          setCourseData(prev => ({
+                            ...prev,
+                            loginScreen: {
+                              ...prev.loginScreen,
+                              enabled: e.target.checked
+                            }
+                          }));
+                          setDirty(true);
+                        }}
+                        style={{ width: '18px', height: '18px', accentColor: 'var(--bwa-accent, #c9542f)', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--bwa-ink)' }}>
+                        {courseData.loginScreen?.enabled !== false ? 'Show right-side benefits panel on login' : 'Hide right-side panel (Keep login minimal)'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Card 2: Heading & Bullet Points */}
+                  <div className="bwa-card" style={{ opacity: courseData.loginScreen?.enabled !== false ? 1 : 0.65 }}>
+                    <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 600 }}>Right-Panel Content</h3>
+                    <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--bwa-muted)' }}>
+                      Edit the title and checklist benefits that display in the frosted card on the right.
+                    </p>
+
+                    <div className="bwa-f" style={{ marginBottom: '18px' }}>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                        Right Panel Heading
+                      </label>
+                      <input
+                        type="text"
+                        value={courseData.loginScreen?.heading ?? 'Pick up where you left off.'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCourseData(prev => ({
+                            ...prev,
+                            loginScreen: {
+                              ...prev.loginScreen,
+                              heading: val
+                            }
+                          }));
+                          setDirty(true);
+                        }}
+                        placeholder="Pick up where you left off."
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--bwa-line, #ddd)', fontSize: '15px' }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '10px' }}>
+                        Checklist Benefits ({courseData.loginScreen?.items?.length || 0} items)
+                      </label>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {(courseData.loginScreen?.items || [
+                          'Continue your modules from the last video',
+                          'Book your private sessions with Aarkesh',
+                          'Download your workbooks and frameworks',
+                          'Lifetime updates with no recurring fees'
+                        ]).map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{
+                              width: '26px',
+                              height: '26px',
+                              borderRadius: '50%',
+                              background: '#f3e8f2',
+                              color: '#8A2E80',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              flexShrink: 0
+                            }}>
+                              {idx + 1}
+                            </span>
+                            <input
+                              type="text"
+                              value={item}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCourseData(prev => {
+                                  const currentItems = [...(prev.loginScreen?.items || [
+                                    'Continue your modules from the last video',
+                                    'Book your private sessions with Aarkesh',
+                                    'Download your workbooks and frameworks',
+                                    'Lifetime updates with no recurring fees'
+                                  ])];
+                                  currentItems[idx] = val;
+                                  return {
+                                    ...prev,
+                                    loginScreen: {
+                                      ...prev.loginScreen,
+                                      items: currentItems
+                                    }
+                                  };
+                                });
+                                setDirty(true);
+                              }}
+                              placeholder={`Benefit point ${idx + 1}`}
+                              style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--bwa-line, #ddd)', fontSize: '14px' }}
+                            />
+                            <button
+                              type="button"
+                              className="bwa-btn danger"
+                              title="Delete point"
+                              onClick={() => {
+                                setCourseData(prev => {
+                                  const currentItems = [...(prev.loginScreen?.items || [
+                                    'Continue your modules from the last video',
+                                    'Book your private sessions with Aarkesh',
+                                    'Download your workbooks and frameworks',
+                                    'Lifetime updates with no recurring fees'
+                                  ])];
+                                  currentItems.splice(idx, 1);
+                                  return {
+                                    ...prev,
+                                    loginScreen: {
+                                      ...prev.loginScreen,
+                                      items: currentItems
+                                    }
+                                  };
+                                });
+                                setDirty(true);
+                              }}
+                              style={{ padding: '8px 10px', borderRadius: '8px', flexShrink: 0 }}
+                            >
+                              <Icon name="trash" size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '14px' }}>
+                        <button
+                          type="button"
+                          className="bwa-btn"
+                          onClick={() => {
+                            setCourseData(prev => {
+                              const currentItems = [...(prev.loginScreen?.items || [
+                                'Continue your modules from the last video',
+                                'Book your private sessions with Aarkesh',
+                                'Download your workbooks and frameworks',
+                                'Lifetime updates with no recurring fees'
+                              ])];
+                              currentItems.push('');
+                              return {
+                                ...prev,
+                                loginScreen: {
+                                  ...prev.loginScreen,
+                                  items: currentItems
+                                }
+                              };
+                            });
+                            setDirty(true);
+                          }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <Icon name="plus" size={14} /> Add checklist item
+                        </button>
+
+                        <button
+                          type="button"
+                          className="bwa-btn"
+                          onClick={() => {
+                            setCourseData(prev => ({
+                              ...prev,
+                              loginScreen: {
+                                enabled: true,
+                                heading: 'Pick up where you left off.',
+                                items: [
+                                  'Continue your modules from the last video',
+                                  'Book your private sessions with Aarkesh',
+                                  'Download your workbooks and frameworks',
+                                  'Lifetime updates with no recurring fees'
+                                ]
+                              }
+                            }));
+                            setDirty(true);
+                            showInfo('Reset to default login screen content');
+                          }}
+                        >
+                          Reset to defaults
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Live Visual Preview */}
+                  <div className="bwa-card">
+                    <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 600 }}>Live Visual Preview</h3>
+                    <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--bwa-muted)' }}>
+                      How this appears to students on the course login popup.
+                    </p>
+
+                    <div style={{
+                      position: 'relative',
+                      borderRadius: '20px',
+                      overflow: 'hidden',
+                      background: 'radial-gradient(circle at 25% 20%, #5A1B54, #3D1A38 55%, #1E0C1C)',
+                      padding: '36px 32px',
+                      color: '#fff',
+                      boxShadow: '0 12px 35px rgba(0,0,0,0.25)',
+                      minHeight: '260px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        right: '-50px',
+                        bottom: '-50px',
+                        width: '200px',
+                        height: '200px',
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle at 32% 30%, #D07AC4, #8A2E80 45%, #5A1B54 78%)',
+                        pointerEvents: 'none',
+                        opacity: 0.8
+                      }} />
+
+                      {courseData.loginScreen?.enabled !== false ? (
+                        <div style={{ position: 'relative', zIndex: 2, maxWidth: '440px' }}>
+                          <h2 style={{
+                            fontFamily: '"Space Grotesk", sans-serif',
+                            fontSize: '26px',
+                            fontWeight: 500,
+                            lineHeight: 1.2,
+                            margin: '0 0 20px',
+                            color: '#fff'
+                          }}>
+                            {courseData.loginScreen?.heading || 'Pick up where you left off.'}
+                          </h2>
+
+                          <div style={{
+                            background: 'rgba(10, 4, 10, 0.45)',
+                            border: '1px solid rgba(255, 255, 255, 0.14)',
+                            borderRadius: '18px',
+                            padding: '20px 22px',
+                            backdropFilter: 'blur(8px)'
+                          }}>
+                            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              {(courseData.loginScreen?.items || [
+                                'Continue your modules from the last video',
+                                'Book your private sessions with Aarkesh',
+                                'Download your workbooks and frameworks',
+                                'Lifetime updates with no recurring fees'
+                              ]).map((pt, idx) => (
+                                <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13.5px', color: '#f3e8f2', lineHeight: 1.4 }}>
+                                  <span style={{
+                                    width: '18px',
+                                    height: '18px',
+                                    borderRadius: '50%',
+                                    background: 'rgba(255, 255, 255, 0.15)',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '11px',
+                                    flexShrink: 0,
+                                    marginTop: '2px'
+                                  }}>
+                                    ✓
+                                  </span>
+                                  <span>{pt || <span style={{ opacity: 0.4, fontStyle: 'italic' }}>Empty bullet point</span>}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '30px 20px' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            background: 'rgba(255, 255, 255, 0.12)',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: '#E3B8DE',
+                            marginBottom: '10px'
+                          }}>
+                            Panel Hidden
+                          </span>
+                          <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
+                            Right-side benefits checklist is turned off. The login screen will display a clean, minimal ambient gradient.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

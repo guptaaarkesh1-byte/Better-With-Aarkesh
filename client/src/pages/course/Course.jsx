@@ -55,7 +55,8 @@ import {
   ArrowCounterClockwise,
   ArrowClockwise,
   SpeakerHigh,
-  SpeakerSlash
+  SpeakerSlash,
+  Tag
 } from '@phosphor-icons/react';
 import Button from '../../components/ui/Button';
 import LessonComments from '../../components/course/LessonComments';
@@ -279,6 +280,7 @@ export default function Course() {
   const [isPlayingInlineTrailer, setIsPlayingInlineTrailer] = useState(false);
   const profileMenuRef = useRef(null);
   const leftColumnRef = useRef(null);
+  const [checkoutThumbnailError, setCheckoutThumbnailError] = useState(false);
 
   const [freeSessionsRemaining, setFreeSessionsRemaining] = useState(() => {
     try {
@@ -1466,7 +1468,11 @@ export default function Course() {
   }, [activeCourse, isGstIncluded]);
 
   const discountAmount = useMemo(() => {
-    return appliedCoupon ? Math.round((activeCourseBasePrice * (appliedCoupon.percent || 0)) / 100) : 0;
+    if (!appliedCoupon) return 0;
+    if (appliedCoupon.discountAmount !== undefined && !isNaN(Number(appliedCoupon.discountAmount))) {
+      return Math.min(activeCourseBasePrice, Math.max(0, Number(appliedCoupon.discountAmount)));
+    }
+    return Math.round((activeCourseBasePrice * (appliedCoupon.percent || 0)) / 100);
   }, [appliedCoupon, activeCourseBasePrice]);
 
   const discountedBasePrice = Math.max(0, activeCourseBasePrice - discountAmount);
@@ -1481,24 +1487,58 @@ export default function Course() {
   const baseBeforeGst = (currentIsGstIncluded && currentGstRate > 0) ? discountedBasePrice - gstAmount : discountedBasePrice;
   const finalPayable = currentIsGstIncluded ? discountedBasePrice : (discountedBasePrice + gstAmount);
 
-  const handleApplyCoupon = (codeToApply) => {
-    const code = (codeToApply || couponCode).trim().toUpperCase();
+  const handleApplyCoupon = async (codeToApply) => {
+    const code = (typeof codeToApply === 'string' ? codeToApply : couponCode || '').trim().toUpperCase();
     if (!code) {
       setCouponMsg({ type: 'error', text: 'Please enter a valid coupon code.' });
       return;
     }
-    if (code === 'AARKESH50' || code === 'CLAIM50' || code === 'SHERY50') {
-      setAppliedCoupon({ code, percent: 50 });
-      setCouponMsg({ type: 'success', text: 'Coupon applied! 50% discount applied successfully.' });
-    } else if (code === 'BETTER20') {
-      setAppliedCoupon({ code, percent: 20 });
-      setCouponMsg({ type: 'success', text: 'Coupon applied! 20% discount applied.' });
-    } else if (code === 'WELCOME10') {
-      setAppliedCoupon({ code, percent: 10 });
-      setCouponMsg({ type: 'success', text: 'Coupon applied! 10% discount applied.' });
-    } else {
-      setCouponMsg({ type: 'error', text: 'Invalid coupon code. Try AARKESH50 or CLAIM50' });
+    try {
+      const res = await fetch(`${API_URL}/api/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          type: 'course',
+          amount: activeCourseBasePrice
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        setCouponMsg({ type: 'error', text: data.message || 'Invalid coupon code.' });
+      } else {
+        setAppliedCoupon({
+          code: data.code,
+          percent: data.discountType === 'percentage' ? data.discountValue : Math.round((data.discountAmount / activeCourseBasePrice) * 100),
+          discountAmount: data.discountAmount,
+          finalAmount: data.finalAmount
+        });
+        setCouponMsg({ type: 'success', text: data.message });
+      }
+    } catch (err) {
+      // Offline fallback
+      if (code === 'AARKESH50' || code === 'CLAIM50' || code === 'SHERY50') {
+        const disc = Math.round(activeCourseBasePrice * 0.5);
+        setAppliedCoupon({ code, percent: 50, discountAmount: disc });
+        setCouponMsg({ type: 'success', text: 'Coupon applied! 50% discount applied successfully.' });
+      } else if (code === 'BETTER20') {
+        const disc = Math.round(activeCourseBasePrice * 0.2);
+        setAppliedCoupon({ code, percent: 20, discountAmount: disc });
+        setCouponMsg({ type: 'success', text: 'Coupon applied! 20% discount applied.' });
+      } else if (code === 'WELCOME10') {
+        const disc = Math.round(activeCourseBasePrice * 0.1);
+        setAppliedCoupon({ code, percent: 10, discountAmount: disc });
+        setCouponMsg({ type: 'success', text: 'Coupon applied! 10% discount applied.' });
+      } else {
+        setCouponMsg({ type: 'error', text: 'Invalid coupon code.' });
+      }
     }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponMsg({ type: '', text: '' });
   };
 
   const courseThemes = {
@@ -1664,7 +1704,8 @@ export default function Course() {
         body: JSON.stringify({ 
           email,
           courseSlug: activeCourse?.slug || 'better-man',
-          amount: finalPayable
+          amount: finalPayable,
+          couponCode: appliedCoupon?.code || ''
         })
       });
       const orderData = await safeJson(orderRes);
@@ -1689,7 +1730,10 @@ export default function Course() {
                 razorpay_signature: response.razorpay_signature,
                 token: token,
                 courseSlug: activeCourse?.slug || 'better-man',
-                amount: finalPayable
+                amount: finalPayable,
+                couponCode: appliedCoupon?.code || '',
+                discountAmount: discountAmount || 0,
+                originalAmount: activeCourseBasePrice
               })
             });
             const verifyData = await safeJson(verifyRes);
@@ -1729,6 +1773,15 @@ export default function Course() {
 
               const invoiceData = verifyData.purchase ? {
                 ...verifyData.purchase,
+                originalAmount: verifyData.purchase.originalAmount || activeCourseBasePrice,
+                couponCode: verifyData.purchase.couponCode || appliedCoupon?.code || '',
+                discountAmount: verifyData.purchase.discountAmount !== undefined ? Number(verifyData.purchase.discountAmount) : (discountAmount || 0),
+                basePrice: activeCourseBasePrice,
+                gstRate: currentGstRate,
+                gstAmount: gstAmount,
+                isGstIncluded: currentIsGstIncluded,
+                finalAmount: finalPayable,
+                amount: finalPayable,
                 freeSessionsGranted: verifyData.purchase.freeSessionsGranted !== undefined ? Number(verifyData.purchase.freeSessionsGranted) : dynamicFreeCount,
                 bonusItemTitle: dynamicFreeCount > 0 ? `${dynamicFreeCount} Private 1-on-1 Executive Coaching Sessions with Aarkesh` : 'Direct Instructor Q&A & Lifetime Updates',
                 bonusItemSubtitle: dynamicFreeCount > 0 ? `Valued at ₹${(dynamicFreeCount * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus` : 'Included with your enrollment'
@@ -1737,7 +1790,10 @@ export default function Course() {
                 transactionId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id,
                 amount: finalPayable,
-                basePrice: baseBeforeGst,
+                originalAmount: activeCourseBasePrice,
+                couponCode: appliedCoupon?.code || '',
+                discountAmount: discountAmount || 0,
+                basePrice: activeCourseBasePrice,
                 gstRate: currentGstRate,
                 gstAmount,
                 isGstIncluded: currentIsGstIncluded,
@@ -1762,6 +1818,8 @@ export default function Course() {
               // Open invoice / success page directly
               setShowDashboard(false);
               setPurchaseSuccessData(invoiceData);
+              setAppliedCoupon(null);
+              setCouponCode('');
             } else {
               setError(verifyData.message || 'Payment verification failed');
             }
@@ -1919,6 +1977,8 @@ export default function Course() {
     setShowProfileMenu(false);
     setSearchParams({});
     showToast('Logged out successfully', 'success');
+    navigate('/');
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   // OTP Handlers
@@ -2720,7 +2780,16 @@ export default function Course() {
                 </button>
 
               {showProfileMenu && (
-                <div className="absolute right-0 mt-3 w-64 max-w-[calc(100vw-32px)] rounded-2xl border border-white/10 bg-[#0E0610]/98 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] py-2 z-[1000] overflow-hidden text-left animate-fadeIn">
+                <div 
+                  className="absolute right-0 mt-3 w-64 max-w-[calc(100vw-32px)] rounded-2xl py-2 z-[1000] overflow-hidden text-left animate-fadeIn"
+                  style={{
+                    backgroundColor: 'rgba(18, 10, 22, 0.88)',
+                    backdropFilter: 'blur(24px)',
+                    WebkitBackdropFilter: 'blur(24px)',
+                    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.85), 0 0 30px rgba(200, 120, 190, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)'
+                  }}
+                >
                   {/* User Email & Name Header */}
                   <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
                     <div className="text-xs font-bold text-white truncate">
@@ -2731,8 +2800,17 @@ export default function Course() {
                     </div>
                   </div>
 
-                  {/* Primary Nav Tabs: Home, Courses, FAQ, Profile */}
+                  {/* Primary Nav Tabs: Profile FIRST, then Home, Courses, FAQ */}
                   <div className="py-1 border-b border-white/5">
+                    <Link
+                      to="/course/profile"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="w-full px-5 py-2.5 text-left text-sm text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center gap-3 font-semibold"
+                    >
+                      <User size={18} className="text-[#C878BE] shrink-0" />
+                      <span>Profile</span>
+                    </Link>
+
                     <Link
                       to="/course"
                       onClick={() => { setShowProfileMenu(false); handleExitToCourseHome(); }}
@@ -2759,18 +2837,9 @@ export default function Course() {
                       <Question size={18} className="text-[#C878BE] shrink-0" />
                       <span className="font-medium">FAQ</span>
                     </a>
-
-                    <Link
-                      to="/course/profile"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="w-full px-5 py-2.5 text-left text-sm text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center gap-3"
-                    >
-                      <User size={18} className="text-[#C878BE] shrink-0" />
-                      <span className="font-medium">Profile</span>
-                    </Link>
                   </div>
 
-                  {/* Secondary: Library, Enrolled Courses */}
+                  {/* Secondary: Library, Enrolled Courses (The Better Man removed) */}
                   <div className="py-1 border-b border-white/5">
                     <Link
                       to="/library"
@@ -2781,7 +2850,7 @@ export default function Course() {
                       <span>Library</span>
                     </Link>
 
-                    {hasAnyCoursePurchased ? (
+                    {hasAnyCoursePurchased && (
                       <Link
                         to="/my-course"
                         onClick={() => setShowProfileMenu(false)}
@@ -2789,15 +2858,6 @@ export default function Course() {
                       >
                         <BookOpen size={18} className="text-[#C878BE] shrink-0" />
                         <span>My Course</span>
-                      </Link>
-                    ) : (
-                      <Link
-                        to="/course/better-man"
-                        onClick={() => setShowProfileMenu(false)}
-                        className="w-full px-5 py-2.5 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3"
-                      >
-                        <BookOpen size={18} className="text-[#C878BE] shrink-0" />
-                        <span>The Better Man</span>
                       </Link>
                     )}
                   </div>
@@ -3770,7 +3830,7 @@ export default function Course() {
                   <div 
                     className="w-full aspect-[16/10] sm:aspect-[16/10.5] rounded-2xl overflow-hidden border border-white/15 relative shadow-2xl flex items-center justify-center select-none bg-black"
                     style={{
-                      background: (activeCourse?.thumbnailUrl || activeCourse?.imageUrl) 
+                      background: ((activeCourse?.thumbnailUrl || activeCourse?.imageUrl) && !checkoutThumbnailError) 
                         ? '#0a050b'
                         : activeCourse?.slug === 'difficult-people'
                         ? 'radial-gradient(circle at 35% 25%, #2a2a2a 0%, #141414 55%, #050505 100%)'
@@ -3787,11 +3847,12 @@ export default function Course() {
                       </span>
                     </div>
 
-                    {(activeCourse?.thumbnailUrl || activeCourse?.imageUrl) ? (
+                    {(activeCourse?.thumbnailUrl || activeCourse?.imageUrl) && !checkoutThumbnailError ? (
                       <img 
                         src={resolveImageUrl(activeCourse?.thumbnailUrl || activeCourse?.imageUrl)} 
                         alt={activeCourse.title} 
                         className="w-full h-full object-cover"
+                        onError={() => setCheckoutThumbnailError(true)}
                       />
                     ) : (
                       <>
@@ -3865,13 +3926,88 @@ export default function Course() {
                 </h3>
 
                 <div className={`rounded-2xl border border-white/10 ${activeTheme.cardBg} p-5 sm:p-6 shadow-xl`}>
+                  
+                  {/* Coupon Code Section (Directly Above Base Price) */}
+                  <div className="mb-4 pb-4 border-b border-white/10">
+                    {appliedCoupon ? (
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-white font-sans text-xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/25 flex items-center justify-center text-emerald-300 shrink-0">
+                            <Tag size={14} weight="bold" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold tracking-wider text-white uppercase text-xs">{appliedCoupon.code}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-200 font-semibold uppercase">Applied</span>
+                            </div>
+                            <span className="text-emerald-300 text-[11px] block mt-0.5">
+                              {appliedCoupon.percent ? `${appliedCoupon.percent}% discount (-₹${discountAmount.toLocaleString('en-IN')})` : `₹${discountAmount.toLocaleString('en-IN')} discount applied`}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-xs text-red-300 hover:text-red-200 uppercase font-semibold tracking-wider transition-colors cursor-pointer shrink-0 ml-2 px-2 py-1 rounded hover:bg-white/5"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <form 
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleApplyCoupon();
+                          }} 
+                          className="flex items-center gap-2"
+                        >
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              value={couponCode || ''}
+                              onChange={(e) => {
+                                setCouponCode(e.target.value.toUpperCase());
+                                if (couponMsg.text) setCouponMsg({ type: '', text: '' });
+                              }}
+                              placeholder="Have a coupon code?"
+                              className="w-full h-9 px-3.5 text-xs font-sans uppercase font-medium bg-white/5 border border-white/15 rounded-xl text-white placeholder:normal-case placeholder:text-white/40 focus:outline-none focus:border-[#C878BE] transition-colors tracking-wider box-border"
+                            />
+                          </div>
+                          <button
+                            type="submit"
+                            disabled={!couponCode || !couponCode.trim()}
+                            className={`h-9 px-4 text-xs font-sans font-bold uppercase tracking-wider text-white ${activeTheme.buttonBg} hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer shrink-0 shadow-sm flex items-center justify-center box-border`}
+                          >
+                            Apply
+                          </button>
+                        </form>
+                        {couponMsg?.text && (
+                          <p className={`text-[0.72rem] font-sans mt-2 ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {couponMsg.text}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-3.5 text-xs sm:text-sm font-sans">
                     
                     {/* Base Price */}
                     <div className="flex items-center justify-between text-white/70">
                       <span>Base Price</span>
-                      <span className="font-semibold text-white">₹{baseBeforeGst.toLocaleString('en-IN')}</span>
+                      <span className="font-semibold text-white">₹{activeCourseBasePrice.toLocaleString('en-IN')}</span>
                     </div>
+
+                    {/* Discount Line Item (if applied) */}
+                    {appliedCoupon && discountAmount > 0 && (
+                      <div className="flex items-center justify-between text-emerald-400 font-medium">
+                        <span className="flex items-center gap-1.5">
+                          <Tag size={13} weight="bold" />
+                          <span>Coupon ({appliedCoupon.code})</span>
+                        </span>
+                        <span className="font-semibold">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
 
                     {/* GST */}
                     {currentGstRate > 0 && (
@@ -4166,6 +4302,7 @@ export default function Course() {
         basePrice={basePrice}
         comparePrice={comparePrice}
         onGoogleSuccess={handleGoogleAuthSuccess}
+        loginScreenSettings={activeCourse?.loginScreen || courseData?.loginScreen || (slug && courseDetailsMap?.[slug]?.loginScreen) || courseDetailsMap?.['better-man']?.loginScreen}
       />
       <CheckoutOverlay
         showCheckout={showCheckout}
@@ -4176,6 +4313,18 @@ export default function Course() {
         isLoading={isLoading}
         error={error}
         courseData={courseData}
+        couponCode={couponCode}
+        setCouponCode={setCouponCode}
+        appliedCoupon={appliedCoupon}
+        onApplyCoupon={handleApplyCoupon}
+        onRemoveCoupon={handleRemoveCoupon}
+        couponMsg={couponMsg}
+        discountAmount={discountAmount}
+        finalPayable={finalPayable}
+        baseBeforeGst={baseBeforeGst}
+        gstAmount={gstAmount}
+        gstRate={currentGstRate}
+        isGstIncluded={currentIsGstIncluded}
         onOpenTerms={() => {
           const termsDoc = courseDocuments.find(d => 
             (d.slug && (d.slug.toLowerCase().includes('term') || d.slug.toLowerCase().includes('condition'))) ||
@@ -4373,7 +4522,16 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
               <User size={17} weight="bold" />
             </button>
             {showProfileMenu && (
-              <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/10 bg-[#0E0610] shadow-2xl py-2 z-[100] overflow-hidden text-left">
+              <div 
+                className="absolute right-0 mt-3 w-56 rounded-2xl py-2 z-[100] overflow-hidden text-left animate-fadeIn"
+                style={{
+                  backgroundColor: 'rgba(18, 10, 22, 0.88)',
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
+                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.85), 0 0 30px rgba(200, 120, 190, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)'
+                }}
+              >
                 {/* User Email & Name Header */}
                 <div className="px-5 py-3 border-b border-white/10 bg-white/[0.03]">
                   <div className="text-xs font-bold text-white truncate">
@@ -4385,6 +4543,15 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
                 </div>
 
                 <Link
+                  to="/course/profile"
+                  onClick={() => setShowProfileMenu(false)}
+                  className="w-full px-5 py-3 text-left text-sm text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 font-semibold"
+                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
+                >
+                  <User size={18} className="text-[#C878BE] shrink-0" />
+                  <span>Profile</span>
+                </Link>
+                <Link
                   to="/library"
                   onClick={() => setShowProfileMenu(false)}
                   className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
@@ -4393,24 +4560,17 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
                   <Books size={18} className="text-[#C878BE] shrink-0" />
                   <span>Library</span>
                 </Link>
-                <Link
-                  to="/my-course"
-                  onClick={() => setShowProfileMenu(false)}
-                  className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
-                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
-                >
-                  <BookOpen size={18} className="text-[#C878BE] shrink-0" />
-                  <span>My Course</span>
-                </Link>
-                <Link
-                  to="/course/profile"
-                  onClick={() => setShowProfileMenu(false)}
-                  className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
-                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
-                >
-                  <User size={18} className="text-[#C878BE] shrink-0" />
-                  <span>Profile</span>
-                </Link>
+                {isPurchased && (
+                  <Link
+                    to="/my-course"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                    style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
+                  >
+                    <BookOpen size={18} className="text-[#C878BE] shrink-0" />
+                    <span>My Course</span>
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -4488,7 +4648,8 @@ function AuthModal({
   coursesList = [],
   basePrice = 15000,
   comparePrice = 25000,
-  onGoogleSuccess
+  onGoogleSuccess,
+  loginScreenSettings
 }) {
   const [activeCourseIdx, setActiveCourseIdx] = useState(0);
   const [isFading, setIsFading] = useState(false);
@@ -4517,12 +4678,24 @@ function AuthModal({
         inside: [
           '8 HD video modules',
           'Downloadable workbooks and frameworks',
-          activeCourseDynamicFreeCount > 0 ? `${activeCourseDynamicFreeCount} private 1-on-1 coaching sessions` : 'Direct instructor Q&A & lifetime updates',
+          '3 private 1-on-1 coaching sessions',
           'Lifetime access with all future updates'
         ],
         price: `₹${basePrice.toLocaleString('en-IN')}`,
         was: `₹${comparePrice.toLocaleString('en-IN')}`
       };
+
+  const loginCfg = loginScreenSettings || currentCourse?.loginScreen || {};
+  const isLoginScreenEnabled = loginCfg.enabled !== false;
+  const loginHeading = loginCfg.heading || 'Pick up where you left off.';
+  const loginItems = (Array.isArray(loginCfg.items) && loginCfg.items.length > 0)
+    ? loginCfg.items
+    : [
+        'Continue your modules from the last video',
+        'Book your private sessions with Aarkesh',
+        'Download your workbooks and frameworks',
+        'Lifetime updates with no recurring fees'
+      ];
 
   return (
     <div className="auth-modal-scope">
@@ -4933,109 +5106,130 @@ function AuthModal({
       </div>
 
       {/* ── Right Column: Aesthetic Summary Card ── */}
-      <div className="auth-r">
+      <div className={`auth-r ${loginMode === 'login' && !isLoginScreenEnabled ? 'auth-r-login-clean' : ''}`}>
         <div className="orb" aria-hidden="true" />
-        <div className="in">
-          <h2>
-            {isForgotPassword
-              ? 'Security & peace of mind.'
-              : loginMode === 'login'
-              ? 'Pick up where you left off.'
-              : 'Your masterclass, ready when you are.'}
-          </h2>
 
-          <div className="sum">
-            {loginMode === 'login' && !isForgotPassword ? (
-              <ul className="ck">
-                <li>Continue your modules from the last video</li>
-                <li>Book your private sessions with Aarkesh</li>
-                <li>Download your workbooks and frameworks</li>
-                <li>Lifetime updates with no recurring fees</li>
-              </ul>
-            ) : isForgotPassword ? (
-              <ul className="ck">
-                <li>Instant 4-digit verification code to your email</li>
-                <li>End-to-end encrypted password restoration</li>
-                <li>Resume your learning seamlessly right after</li>
-              </ul>
-            ) : (
-              <>
-                <div className={`auth-modal-course-card ${isFading ? 'fading-out' : 'fading-in'}`}>
-                  <span
-                    className="sticker"
-                    style={{
-                      background: currentCourse.soon
-                        ? 'rgba(255, 255, 255, 0.18)'
-                        : 'linear-gradient(135deg, #B04FA6, #6E2266)'
-                    }}
-                  >
-                    {currentCourse.soon ? 'Coming soon' : 'Live now'}
-                  </span>
-                  <h3>{currentCourse.title}</h3>
-                  <p className="l">
-                    {currentCourse.lede || currentCourse.d}
-                  </p>
-                  <ul className="ck">
-                    {(currentCourse.inside || [
-                      '8 HD video modules',
-                      'Downloadable workbooks and frameworks',
-                      activeCourseDynamicFreeCount > 0 ? `${activeCourseDynamicFreeCount} private 1-on-1 coaching sessions` : 'Direct instructor Q&A & lifetime updates',
-                      'Lifetime access with all future updates'
-                    ]).map((feat, idx) => (
-                      <li key={idx}>{feat}</li>
-                    ))}
-                  </ul>
-                  <p className="sprice">
-                    Price <b>{currentCourse.price || `₹${basePrice.toLocaleString('en-IN')}`}</b>
-                    <s>{currentCourse.was || `₹${comparePrice.toLocaleString('en-IN')}`}</s>
-                    <small>(+GST)</small>
-                  </p>
-                </div>
+        {/* LOGIN MODE: Admin-Controlled Dynamic Heading & Benefits Checklist */}
+        {loginMode === 'login' && !isForgotPassword && isLoginScreenEnabled && (
+          <div className="in">
+            <h2>{loginHeading}</h2>
 
-                {coursesList && coursesList.length > 1 && (
-                  <div className="auth-course-dots">
-                    {coursesList.map((c, idx) => (
-                      <button
-                        key={c.slug || idx}
-                        type="button"
-                        onClick={() => {
-                          if (idx === activeCourseIdx) return;
-                          setIsFading(true);
-                          setTimeout(() => {
-                            setActiveCourseIdx(idx);
-                            setIsFading(false);
-                          }, 250);
-                        }}
-                        className={`auth-course-dot ${idx === activeCourseIdx ? 'active' : 'inactive'}`}
-                        title={c.title}
-                        aria-label={`Go to ${c.title}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
+            <div className="sum">
+              <ul className="ck">
+                {loginItems.map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* REGISTER MODE: Untouched Course Showcase */}
+        {loginMode !== 'login' && !isForgotPassword && (
+          <div className="in">
+            <h2>Your masterclass, ready when you are.</h2>
+
+            <div className="sum">
+              <div className={`auth-modal-course-card ${isFading ? 'fading-out' : 'fading-in'}`}>
+                <span
+                  className="sticker"
+                  style={{
+                    background: currentCourse.soon
+                      ? 'rgba(255, 255, 255, 0.18)'
+                      : 'linear-gradient(135deg, #B04FA6, #6E2266)'
+                  }}
+                >
+                  {currentCourse.soon ? 'Coming soon' : 'Live now'}
+                </span>
+                <h3>{currentCourse.title}</h3>
+                <p className="l">
+                  {currentCourse.lede || currentCourse.d}
+                </p>
+                <ul className="ck">
+                  {(currentCourse.inside || [
+                    '8 HD video modules',
+                    'Downloadable workbooks and frameworks',
+                    '3 private 1-on-1 coaching sessions',
+                    'Lifetime access with all future updates'
+                  ]).map((feat, idx) => (
+                    <li key={idx}>{feat}</li>
+                  ))}
+                </ul>
+                <p className="sprice">
+                  Price <b>{currentCourse.price || `₹${basePrice.toLocaleString('en-IN')}`}</b>
+                  <s>{currentCourse.was || `₹${comparePrice.toLocaleString('en-IN')}`}</s>
+                  <small>(+GST)</small>
+                </p>
+              </div>
+
+              {coursesList && coursesList.length > 1 && (
+                <div className="auth-course-dots">
+                  {coursesList.map((c, idx) => (
+                    <button
+                      key={c.slug || idx}
+                      type="button"
+                      onClick={() => {
+                        if (idx === activeCourseIdx) return;
+                        setIsFading(true);
+                        setTimeout(() => {
+                          setActiveCourseIdx(idx);
+                          setIsFading(false);
+                        }, 250);
+                      }}
+                      className={`auth-course-dot ${idx === activeCourseIdx ? 'active' : 'inactive'}`}
+                      title={c.title}
+                      aria-label={`Go to ${c.title}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 // ─── CHECKOUT OVERLAY ───────────────────────────────────────────
-function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setCheckoutAgreed, handlePayment, isLoading, error, onOpenTerms, courseData }) {
+function CheckoutOverlay({
+  showCheckout,
+  setShowCheckout,
+  checkoutAgreed,
+  setCheckoutAgreed,
+  handlePayment,
+  isLoading,
+  error,
+  onOpenTerms,
+  courseData,
+  couponCode,
+  setCouponCode,
+  appliedCoupon,
+  onApplyCoupon,
+  onRemoveCoupon,
+  couponMsg,
+  discountAmount = 0,
+  finalPayable: propFinalPayable,
+  baseBeforeGst: propBaseBeforeGst,
+  gstAmount: propGstAmount,
+  gstRate: propGstRate,
+  isGstIncluded: propIsGstIncluded
+}) {
   if (!showCheckout) return null;
 
-  const basePrice = courseData?.price !== undefined ? courseData.price : 15000;
-  const gstRate = courseData?.gstRate !== undefined ? courseData.gstRate : 18;
-  const isGstIncluded = Boolean(courseData?.isGstIncluded);
+  const rawBase = courseData?.price !== undefined ? courseData.price : 15000;
+  const gstRate = propGstRate !== undefined ? propGstRate : (courseData?.gstRate !== undefined ? courseData.gstRate : 18);
+  const isGstIncluded = propIsGstIncluded !== undefined ? propIsGstIncluded : Boolean(courseData?.isGstIncluded);
 
-  const gstAmount = isGstIncluded
-    ? Math.round(basePrice - (basePrice / (1 + (gstRate / 100))))
-    : Math.round((basePrice * gstRate) / 100);
-
-  const baseBeforeGst = isGstIncluded ? basePrice - gstAmount : basePrice;
-  const finalPayable = isGstIncluded ? basePrice : basePrice + gstAmount;
+  const discount = Number(discountAmount) || 0;
+  const discountedBase = Math.max(0, rawBase - discount);
+  const gstAmount = propGstAmount !== undefined ? propGstAmount : (
+    isGstIncluded
+      ? Math.round(discountedBase - (discountedBase / (1 + (gstRate / 100))))
+      : Math.round((discountedBase * gstRate) / 100)
+  );
+  const baseBeforeGst = propBaseBeforeGst !== undefined ? propBaseBeforeGst : (isGstIncluded ? discountedBase - gstAmount : discountedBase);
+  const finalPayable = propFinalPayable !== undefined ? propFinalPayable : (isGstIncluded ? discountedBase : discountedBase + gstAmount);
 
   return (
     <div className="fixed inset-0 z-[110] bg-[#050505] flex flex-col justify-between overflow-y-auto min-h-screen">
@@ -5095,16 +5289,80 @@ function CheckoutOverlay({ showCheckout, setShowCheckout, checkoutAgreed, setChe
               <span className="inline-block px-2 py-0.5 rounded-full bg-[#C878BE]/20 border border-[#C878BE]/40 text-[0.65rem] text-[#E3B8DE] font-medium tracking-wide uppercase mb-1">
                 Full Master Access
               </span>
-              <h3 className="font-sans text-sm font-semibold text-white truncate">The Better Man™</h3>
+              <h3 className="font-sans text-sm font-semibold text-white truncate">{courseData?.title || 'The Better Man™'}</h3>
               <p className="font-sans text-xs text-white/60 truncate">All Modules + 3 Coaching Calls + Community</p>
             </div>
           </div>
 
+          {/* Coupon Code Section */}
+          <div className="py-4 border-b border-white/10">
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-white font-sans text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/25 flex items-center justify-center text-emerald-300">
+                    <Tag size={13} weight="bold" />
+                  </div>
+                  <div>
+                    <span className="font-bold tracking-wider text-white uppercase">{appliedCoupon.code}</span>
+                    <span className="text-emerald-300 ml-2 font-semibold">
+                      ({appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountValue}% OFF` : `₹${appliedCoupon.discountValue} OFF`})
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onRemoveCoupon}
+                  className="text-xs text-red-300 hover:text-red-200 uppercase font-semibold tracking-wider transition-colors cursor-pointer"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div>
+                <form onSubmit={onApplyCoupon} className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={couponCode || ''}
+                      onChange={(e) => setCouponCode?.(e.target.value.toUpperCase())}
+                      placeholder="Enter coupon code"
+                      className="w-full px-3.5 py-2.5 text-xs font-sans uppercase font-medium bg-white/5 border border-white/15 rounded-xl text-white placeholder:normal-case placeholder:text-white/40 focus:outline-none focus:border-[#C878BE] transition-colors tracking-wider"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!couponCode || !couponCode.trim()}
+                    className="px-4 py-2.5 text-xs font-sans font-bold uppercase tracking-wider text-white bg-gradient-to-r from-[#A83B96] to-[#7A2A70] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer shadow-xs shrink-0"
+                  >
+                    Apply
+                  </button>
+                </form>
+                {couponMsg?.text && (
+                  <p className={`text-[0.72rem] font-sans mt-2 ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {couponMsg.text}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Pricing Breakdown */}
           <div className="py-5 space-y-3 border-b border-white/10">
+            {discount > 0 && (
+              <div className="flex justify-between items-center text-xs font-sans text-white/60">
+                <span>Original Price</span>
+                <span className="line-through text-white/50">₹{rawBase.toLocaleString('en-IN')}</span>
+              </div>
+            )}
+            {discount > 0 && (
+              <div className="flex justify-between items-center text-xs font-sans text-emerald-400">
+                <span>Coupon Discount ({appliedCoupon?.code})</span>
+                <span className="font-semibold">-₹{discount.toLocaleString('en-IN')}</span>
+              </div>
+            )}
             {gstRate > 0 && (
               <div className="flex justify-between items-center text-xs font-sans text-white/70">
-                <span>Course Base Fee</span>
+                <span>{discount > 0 ? 'Discounted Base Fee' : 'Course Base Fee'}</span>
                 <span className="font-medium text-white">₹{baseBeforeGst.toLocaleString('en-IN')}</span>
               </div>
             )}
