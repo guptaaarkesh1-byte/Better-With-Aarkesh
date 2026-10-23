@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
+import RoleDetailModal from './RoleDetailModal';
 
 import { CDN_IMAGES } from '../../utils/cdnAssets';
 
@@ -58,6 +59,19 @@ export default function MeetAarkesh() {
   const container = useRef(null);
   const [aboutData, setAboutData] = useState(getInitialAboutData);
   const [isMiddleHovered, setIsMiddleHovered] = useState(false);
+  const [activeRoleKey, setActiveRoleKey] = useState(null);
+  const [activeRoleCardImage, setActiveRoleCardImage] = useState(null);
+  const activeTriggerRef = useRef(null);
+
+  const handleRoleClick = (role, triggerEl) => {
+    activeTriggerRef.current = triggerEl;
+    setActiveRoleKey(role.key);
+    setActiveRoleCardImage(role.bgImg || role.fallbackImg);
+  };
+
+  const handleCloseModal = () => {
+    setActiveRoleKey(null);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -98,6 +112,7 @@ export default function MeetAarkesh() {
 
   const roles = [
     {
+      key: 'pilot',
       title: pilotData.title || 'PILOT',
       icon: AirplaneTilt,
       sub1: pilotData.sub1 || 'Years in the cockpit.',
@@ -108,6 +123,7 @@ export default function MeetAarkesh() {
       imgPos: 'object-center'
     },
     {
+      key: 'coach',
       title: coachData.title || 'COACH',
       icon: Crosshair,
       sub1: coachData.sub1 || 'ICF certified life coach.',
@@ -118,6 +134,7 @@ export default function MeetAarkesh() {
       imgPos: 'object-[center_65%]'
     },
     {
+      key: 'human',
       title: humanData.title || 'HUMAN',
       icon: Heart,
       sub1: humanData.sub1 || 'Flaws. Lessons. Growth.',
@@ -128,6 +145,19 @@ export default function MeetAarkesh() {
       imgPos: 'object-center'
     }
   ];
+
+  useEffect(() => {
+    window.awOpenRole = (key) => {
+      const match = roles.find(r => r.key === key?.toLowerCase());
+      if (match) {
+        setActiveRoleKey(match.key);
+        setActiveRoleCardImage(match.bgImg || match.fallbackImg);
+      }
+    };
+    return () => {
+      delete window.awOpenRole;
+    };
+  }, [roles]);
 
   useEffect(() => {
     const overlay = container.current?.querySelector('.meet-overlay');
@@ -155,6 +185,7 @@ export default function MeetAarkesh() {
       let animationFrame = null;
 
       const setHidden = (y = MEET_OVERLAY_CONFIG.startY) => {
+        overlay.style.pointerEvents = 'none';
         overlay.style.backdropFilter = 'none';
         overlay.style.webkitBackdropFilter = 'none';
         overlay.style.backgroundColor = 'transparent';
@@ -167,6 +198,7 @@ export default function MeetAarkesh() {
       };
 
       const setVisible = (blurVal, opVal, yVal, opacity, blur) => {
+        overlay.style.pointerEvents = 'none';
         overlay.style.backdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
         overlay.style.webkitBackdropFilter = blur > 0.1 ? `blur(${blurVal}px)` : 'none';
         overlay.style.backgroundColor = opacity > 0.01 ? `rgba(245, 241, 232, ${(opacity * 0.42).toFixed(3)})` : 'transparent';
@@ -340,14 +372,21 @@ export default function MeetAarkesh() {
         <div className="flex flex-col gap-4.5 mt-7">
           {roles.map((role, i) => {
             const Icon = role.icon;
-            const isOpen = openCardIndex === i;
             return (
               <article 
                 key={i}
-                onClick={() => toggleMobileCard(i)}
-                className={`role relative rounded-[22px] overflow-hidden aspect-[636/678] bg-[#e9dccb] isolate shadow-[0_18px_40px_-26px_rgba(90,50,20,0.55)] cursor-pointer transition-all duration-300 ${
-                  isOpen ? 'is-open' : ''
-                }`}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${role.title} details`}
+                data-aw-role={role.key}
+                onClick={(e) => handleRoleClick(role, e.currentTarget)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleRoleClick(role, e.currentTarget);
+                  }
+                }}
+                className="role group relative rounded-[22px] overflow-hidden aspect-[636/678] bg-[#e9dccb] isolate shadow-[0_18px_40px_-26px_rgba(90,50,20,0.55)] cursor-pointer transition-all duration-300 focus:outline-none focus-visible:ring-3 focus-visible:ring-[#c4522d] focus-visible:ring-offset-2 active:scale-[0.99] select-none"
               >
                 {/* Background Photo */}
                 <img 
@@ -358,52 +397,39 @@ export default function MeetAarkesh() {
                       e.currentTarget.src = role.fallbackImg;
                     }
                   }}
-                  className="absolute inset-0 w-full h-full object-cover -z-20"
+                  className="absolute inset-0 w-full h-full object-cover -z-20 pointer-events-none transition-transform duration-700 ease-out group-hover:scale-105"
                 />
 
-                {/* Wash Gradient (Fades in on tap/hover) */}
-                <div className={`absolute inset-0 -z-10 transition-opacity duration-350 bg-gradient-to-t from-[rgba(247,242,235,0.97)] from-0% via-[rgba(247,242,235,0.94)] via-38% via-[rgba(247,242,235,0.72)] via-52% to-transparent to-68% ${
-                  isOpen ? 'opacity-100' : 'opacity-0'
-                }`} />
+                {/* Wash Gradient */}
+                <div className="absolute inset-0 -z-10 transition-opacity duration-350 bg-gradient-to-t from-[rgba(247,242,235,0.96)] from-0% via-[rgba(247,242,235,0.88)] via-42% via-[rgba(247,242,235,0.65)] via-56% to-transparent to-72% pointer-events-none opacity-90 group-hover:opacity-100" />
 
                 {/* Top-Right Tap Button */}
-                <div className={`absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 font-sans font-semibold text-[10px] tracking-[0.16em] uppercase text-[#4a4339] shadow-xs pointer-events-none transition-opacity duration-250 ${
-                  isOpen ? 'opacity-0' : 'opacity-100'
-                }`}>
-                  <span className="text-xs font-bold">+</span>
+                <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 font-sans font-semibold text-[10px] tracking-[0.16em] uppercase text-[#4a4339] shadow-xs pointer-events-none transition-transform duration-300 group-hover:scale-105">
+                  <span className="text-xs font-bold text-[#c4522d]">+</span>
                   <span>TAP</span>
                 </div>
 
                 {/* Bottom Content Area */}
-                <div className={`absolute inset-0 flex flex-col justify-end items-center text-center px-4 transition-all duration-350 ${
-                  isOpen ? 'pb-[6%]' : 'pb-[15%]'
-                }`}>
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl mb-2 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.45)] transition-colors duration-300 ${
-                    isOpen ? 'bg-[#c9542f] text-white' : 'bg-white/95 text-[#c9542f]'
-                  }`}>
+                <div className="absolute inset-0 flex flex-col justify-end items-center text-center px-4 pb-[8%] pointer-events-none">
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-xl mb-2 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.45)] bg-white/95 text-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white transition-colors duration-300 pointer-events-none">
                     <Icon size={20} weight="regular" />
                   </div>
 
                   <h3 
-                    className="m-0 font-serif font-bold text-[25px] leading-[1.1] tracking-[0.3em] uppercase pl-[0.3em] text-[#141414] [text-shadow:0_0_9px_rgba(255,255,255,0.95),0_0_3px_rgba(255,255,255,0.95),0_1px_2px_rgba(255,255,255,0.8)]"
+                    className="m-0 font-serif font-bold text-[25px] leading-[1.1] tracking-[0.3em] uppercase pl-[0.3em] text-[#141414] [text-shadow:0_0_9px_rgba(255,255,255,0.95),0_0_3px_rgba(255,255,255,0.95),0_1px_2px_rgba(255,255,255,0.8)] pointer-events-none group-hover:scale-105 transition-transform"
                     style={{ fontFamily: 'Fraunces, Georgia, serif' }}
                   >
                     {role.title}
                   </h3>
 
-                  {/* Expandable Drawer Content */}
-                  <div className={`grid transition-[grid-template-rows,opacity] duration-350 ${
-                    isOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'
-                  }`}>
-                    <div className="overflow-hidden">
-                      <p className="font-sans font-normal text-[14.5px] leading-[1.5] text-[#1c1916] mt-2.5">
-                        {role.sub1}<br />
-                        {role.sub2}
-                      </p>
-                      <em className="block font-serif italic font-medium text-[17px] leading-[1.35] text-[#B3441F] mt-2" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
-                        {role.highlight}
-                      </em>
-                    </div>
+                  <div className="mt-2 pointer-events-none">
+                    <p className="font-sans font-normal text-[14px] leading-[1.4] text-[#1c1916]">
+                      {role.sub1}<br />
+                      {role.sub2}
+                    </p>
+                    <em className="block font-serif italic font-medium text-[16px] leading-[1.3] text-[#B3441F] mt-1.5" style={{ fontFamily: 'Fraunces, Georgia, serif' }}>
+                      {role.highlight}
+                    </em>
                   </div>
                 </div>
               </article>
@@ -421,12 +447,23 @@ export default function MeetAarkesh() {
           return (
             <div 
               key={i} 
-              className="role-pane relative h-full flex-1 min-h-0 flex flex-col items-center justify-end pb-5 sm:pb-6 md:pb-7 lg:pb-8 px-4 sm:px-6 group overflow-hidden border-r border-black/10 last:border-none cursor-pointer bg-[#f5f1e8]"
+              role="button"
+              tabIndex={0}
+              aria-label={`Open ${role.title} details`}
+              data-aw-role={role.key}
+              onClick={(e) => handleRoleClick(role, e.currentTarget)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleRoleClick(role, e.currentTarget);
+                }
+              }}
+              className="role-pane relative h-full flex-1 min-h-0 flex flex-col items-center justify-end pb-5 sm:pb-6 md:pb-7 lg:pb-8 px-4 sm:px-6 group overflow-hidden border-r border-black/10 last:border-none cursor-pointer bg-[#f5f1e8] focus:outline-none focus-visible:ring-3 focus-visible:ring-[#c4522d] focus-visible:ring-offset-[-2px] focus-visible:z-30 transition-all select-none"
               onMouseEnter={() => { if (i === 1) setIsMiddleHovered(true); }}
               onMouseLeave={() => { if (i === 1) setIsMiddleHovered(false); }}
             >
               {/* Background Image - Full Visibility with Automatic Fallback */}
-              <div className="absolute inset-0 z-0 overflow-hidden">
+              <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 <img 
                   src={role.bgImg || role.fallbackImg} 
                   alt={role.title} 
@@ -435,7 +472,7 @@ export default function MeetAarkesh() {
                       e.currentTarget.src = role.fallbackImg;
                     }
                   }}
-                  className={`w-full h-full object-cover ${role.imgPos || 'object-center'} opacity-100 contrast-[1.02] will-change-transform transition-transform duration-[1.2s] ease-out group-hover:scale-105`} 
+                  className={`w-full h-full object-cover ${role.imgPos || 'object-center'} opacity-100 contrast-[1.02] will-change-transform transition-transform duration-[1.2s] ease-out group-hover:scale-105 pointer-events-none`} 
                 />
               </div>
 
@@ -451,7 +488,7 @@ export default function MeetAarkesh() {
                     }`}
                   >
                     <h2 
-                      className="font-serif text-lg sm:text-xl md:text-[1.35rem] lg:text-[1.55rem] font-medium tracking-tight text-white select-none"
+                      className="font-serif text-lg sm:text-xl md:text-[1.35rem] lg:text-[1.55rem] font-medium tracking-tight text-white select-none pointer-events-none"
                       style={{ 
                         fontFamily: 'Fraunces, Georgia, serif',
                         fontSize: aboutData?.headingFontSize ? `${aboutData.headingFontSize}px` : undefined,
@@ -474,7 +511,7 @@ export default function MeetAarkesh() {
                     }}
                   >
                     <p 
-                      className="text-white text-xs md:text-[0.82rem] font-medium tracking-wide max-w-[90%] mx-auto select-none"
+                      className="text-white text-xs md:text-[0.82rem] font-medium tracking-wide max-w-[90%] mx-auto select-none pointer-events-none"
                       style={{ 
                         fontSize: aboutData?.descriptionFontSize ? `${aboutData.descriptionFontSize}px` : undefined,
                         WebkitTextStroke: '0.38px #ff6b35',
@@ -487,13 +524,13 @@ export default function MeetAarkesh() {
                 </>
               )}
 
-              <div className="relative z-10 flex flex-col items-center text-center transition-transform duration-500 ease-out group-hover:-translate-y-2">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#c9542f]/30 bg-white/95 shadow-md flex items-center justify-center mb-2 sm:mb-2.5 group-hover:border-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white transition-colors duration-300">
-                  <Icon className="text-[#c9542f] group-hover:text-white text-xl sm:text-2xl transition-colors duration-300" weight="regular" />
+              <div className="relative z-10 flex flex-col items-center text-center transition-transform duration-500 ease-out group-hover:-translate-y-2 pointer-events-none">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#c9542f]/30 bg-white/95 shadow-md flex items-center justify-center mb-2 sm:mb-2.5 group-hover:border-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white transition-colors duration-300 pointer-events-none">
+                  <Icon className="text-[#c9542f] group-hover:text-white text-xl sm:text-2xl transition-colors duration-300 pointer-events-none" weight="regular" />
                 </div>
                 
                 <h3 
-                  className="font-serif text-xl sm:text-2xl md:text-[1.75rem] lg:text-[1.95rem] tracking-widest font-bold mb-2 sm:mb-2.5 leading-tight transition-all duration-300 select-none group-hover:scale-105"
+                  className="font-serif text-xl sm:text-2xl md:text-[1.75rem] lg:text-[1.95rem] tracking-widest font-bold mb-2 sm:mb-2.5 leading-tight transition-all duration-300 select-none group-hover:scale-105 pointer-events-none"
                   style={{
                     color: '#111010',
                     WebkitTextStroke: '0.45px #ffffff',
@@ -504,7 +541,7 @@ export default function MeetAarkesh() {
                   {role.title}
                 </h3>
                 
-                <div className="flex flex-col items-center gap-1.5 sm:gap-2 opacity-0 transform translate-y-6 transition-all duration-400 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible px-4">
+                <div className="flex flex-col items-center gap-1.5 sm:gap-2 opacity-0 transform translate-y-6 transition-all duration-400 ease-out group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden group-hover:overflow-visible px-4 pointer-events-none">
                   <p className="text-[#111010] font-semibold text-xs sm:text-sm md:text-[0.95rem] leading-snug">{role.sub1}</p>
                   <p className="text-[#2b2723] font-medium text-xs sm:text-sm md:text-[0.9rem] leading-snug mb-1.5">{role.sub2}</p>
                   <p className="text-[#c9542f] font-serif italic text-sm sm:text-base md:text-lg lg:text-[1.1rem] font-bold leading-normal">{role.highlight}</p>
@@ -588,6 +625,15 @@ export default function MeetAarkesh() {
           {aboutData?.overlayTitle || `${MEET_OVERLAY_CONFIG.textMain} ${MEET_OVERLAY_CONFIG.textAccent}`}
         </h2>
       </div>
+
+      {/* ─── ROLE DETAIL POPUP MODAL ─── */}
+      <RoleDetailModal
+        isOpen={Boolean(activeRoleKey)}
+        roleKey={activeRoleKey}
+        cardImage={activeRoleCardImage}
+        onClose={handleCloseModal}
+        triggerRef={activeTriggerRef}
+      />
 
     </section>
   );
