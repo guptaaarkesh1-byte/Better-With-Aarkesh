@@ -19,12 +19,20 @@ import {
   Stack,
   CaretRight,
   DotsThreeVertical,
-  Check
+  Check,
+  ShieldCheck
 } from '@phosphor-icons/react';
 import AdminBreadcrumb from '../components/ui/AdminBreadcrumb';
 import { API_URL } from '../utils/apiUrl';
+import AuthorizedAdminsManager from './AuthorizedAdminsManager';
 
 const SETTING_TABS = [
+  {
+    id: 'admins',
+    label: 'Authorized Admins',
+    subLabel: 'Admin Whitelist & OTP',
+    icon: ShieldCheck
+  },
   {
     id: 'password',
     label: 'Security & Password',
@@ -481,7 +489,7 @@ export default function AdminSettings() {
                       }`}>
                         {seoForm.favicon ? (
                           <img 
-                            src={seoForm.favicon} 
+                            src={seoForm.favicon.startsWith('/') ? `${seoForm.favicon}?v=2` : seoForm.favicon} 
                             alt="Favicon" 
                             className="w-4 h-4 object-contain"
                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -567,7 +575,7 @@ export default function AdminSettings() {
                     <div className="w-20 h-20 rounded-2xl bg-white border-2 border-dashed border-stone-300 flex items-center justify-center p-2 shadow-xs">
                       {seoForm.favicon ? (
                         <img 
-                          src={seoForm.favicon} 
+                          src={seoForm.favicon.startsWith('/') ? `${seoForm.favicon}?v=2` : seoForm.favicon} 
                           alt="Current Favicon" 
                           className="w-10 h-10 object-contain"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -1052,6 +1060,13 @@ export default function AdminSettings() {
                 </div>
               </form>
             </div>
+          )}
+          
+          {/* ============================================================== */}
+          {/* TAB: AUTHORIZED ADMINS (OTP & WHITELIST)                       */}
+          {/* ============================================================== */}
+          {activePill === 'admins' && (
+            <AuthorizedAdminsManager />
           )}
 
         </main>

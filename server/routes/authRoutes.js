@@ -11,6 +11,12 @@ import PastClient from '../models/PastClient.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
 import { validateEmailFormat, sendOtpEmail, verifyOtp, verifyEmailDeliverability } from '../services/emailOtpService.js';
+import {
+  sendAdminOtp,
+  resendAdminOtp,
+  verifyAdminOtp,
+  getPublicAllowedAdminEmails,
+} from '../controllers/adminAuthController.js';
 
 const router = express.Router();
 
@@ -739,8 +745,15 @@ router.post('/forgot-password-reset', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Admin OTP Authentication routes (Public, Whitelist-restricted)
+router.post('/admin/send-otp', sendAdminOtp);
+router.post('/admin/resend-otp', resendAdminOtp);
+router.post('/admin/verify-otp', verifyAdminOtp);
+router.get('/admin/allowed-emails', getPublicAllowedAdminEmails);
+
 // @route   POST /api/auth/admin/login
-// @desc    Admin login, initializes admin if doesn't exist
+// @desc    Admin legacy login, initializes admin if doesn't exist
 // @access  Public
 router.post('/admin/login', async (req, res) => {
   try {

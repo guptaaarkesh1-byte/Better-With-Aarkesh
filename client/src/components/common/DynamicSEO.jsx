@@ -12,11 +12,12 @@ export default function DynamicSEO() {
         const seo = await res.json();
         if (!isMounted || !seo) return;
 
-        // Update document title if present
+        // 1. Update Document Title
         if (seo.metaTitle) {
           document.title = seo.metaTitle;
         }
 
+        // 2. Helper to Update or Create Meta Tags
         const updateMeta = (nameOrProperty, value, isProperty = false) => {
           if (!value) return;
           const selector = isProperty 
@@ -32,10 +33,12 @@ export default function DynamicSEO() {
           el.setAttribute('content', value);
         };
 
+        // Primary Meta Tags
+        updateMeta('title', seo.metaTitle);
         updateMeta('description', seo.metaDescription);
-        updateMeta('keywords', seo.metaKeywords);
-        updateMeta('author', seo.author);
-        updateMeta('robots', seo.robots);
+        if (seo.metaKeywords) updateMeta('keywords', seo.metaKeywords);
+        if (seo.author) updateMeta('author', seo.author);
+        if (seo.robots) updateMeta('robots', seo.robots);
         if (seo.googleSiteVerification) {
           updateMeta('google-site-verification', seo.googleSiteVerification);
         }
@@ -46,6 +49,7 @@ export default function DynamicSEO() {
         if (seo.ogImage) updateMeta('og:image', seo.ogImage, true);
         if (seo.canonicalUrl) updateMeta('og:url', seo.canonicalUrl, true);
         updateMeta('og:type', seo.ogType || 'website', true);
+        updateMeta('og:site_name', seo.siteName || 'Better With Aarkesh', true);
 
         // Twitter Card
         updateMeta('twitter:title', seo.ogTitle || seo.metaTitle);
@@ -65,15 +69,79 @@ export default function DynamicSEO() {
           canonicalLink.setAttribute('href', seo.canonicalUrl);
         }
 
-        // Dynamic Favicon link
+        // 3. Dynamic Favicon Link (supports SVG, PNG, ICO, WebP, and backend uploads)
         if (seo.favicon) {
-          let faviconLink = document.querySelector('link[rel="icon"]');
-          if (faviconLink) {
-            faviconLink.setAttribute('href', seo.favicon);
+          let faviconUrl = seo.favicon;
+          if (faviconUrl.startsWith('/uploads/')) {
+            faviconUrl = `${API_URL}${faviconUrl}`;
           }
+
+          let faviconLink = document.querySelector('link[rel="icon"]');
+          if (!faviconLink) {
+            faviconLink = document.createElement('link');
+            faviconLink.setAttribute('rel', 'icon');
+            document.head.appendChild(faviconLink);
+          }
+          faviconLink.setAttribute('href', faviconUrl);
+
+          if (faviconUrl.endsWith('.svg')) {
+            faviconLink.setAttribute('type', 'image/svg+xml');
+          } else if (faviconUrl.endsWith('.png')) {
+            faviconLink.setAttribute('type', 'image/png');
+          } else if (faviconUrl.endsWith('.ico')) {
+            faviconLink.setAttribute('type', 'image/x-icon');
+          } else {
+            faviconLink.removeAttribute('type');
+          }
+
+          // Also update shortcut icon and apple-touch-icon
+          let shortcutLink = document.querySelector('link[rel="shortcut icon"]');
+          if (shortcutLink) shortcutLink.setAttribute('href', faviconUrl);
+
+          let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
+          if (appleLink) appleLink.setAttribute('href', faviconUrl);
         }
 
-        // Google Analytics 4 (gtag.js) Injection
+        // 4. Update Schema.org JSON-LD structured data dynamically for Google Sitelinks
+        if (seo.sitelinks) {
+          try {
+            let ldJsonScript = document.querySelector('script[type="application/ld+json"]');
+            if (ldJsonScript) {
+              const currentLd = JSON.parse(ldJsonScript.textContent || '{}');
+              if (currentLd['@graph']) {
+                // Update WebSite description and name
+                const websiteObj = currentLd['@graph'].find((item) => item['@type'] === 'WebSite');
+                if (websiteObj) {
+                  websiteObj.name = seo.siteName || websiteObj.name;
+                  websiteObj.description = seo.metaDescription || websiteObj.description;
+                }
+
+                // Update Sitelinks ItemList
+                const sitelinksObj = currentLd['@graph'].find((item) => item['@type'] === 'ItemList');
+                if (sitelinksObj && sitelinksObj.itemListElement) {
+                  const items = [
+                    seo.sitelinks.sitelink1,
+                    seo.sitelinks.sitelink2,
+                    seo.sitelinks.sitelink3,
+                    seo.sitelinks.sitelink4,
+                  ].filter(Boolean);
+
+                  sitelinksObj.itemListElement = items.map((s, idx) => ({
+                    '@type': 'SiteNavigationElement',
+                    position: idx + 1,
+                    name: s.title || `Sitelink ${idx + 1}`,
+                    description: s.description || '',
+                    url: s.url ? (s.url.startsWith('http') ? s.url : `https://aarkeshgupta.com${s.url.startsWith('/') ? '' : '/'}${s.url}`) : 'https://aarkeshgupta.com',
+                  }));
+                }
+
+                ldJsonScript.textContent = JSON.stringify(currentLd, null, 2);
+              }
+            }
+          } catch (_) {}
+        }
+
+        // 5. Google Analytics 4 (gtag.js) Injection
         if (seo.gaMeasurementId && typeof window !== 'undefined') {
           const gaId = seo.gaMeasurementId.trim();
           if (gaId.startsWith('G-')) {

@@ -1,5 +1,11 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import Settings from '../models/Settings.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -109,6 +115,41 @@ router.post('/', async (req, res) => {
       { value: cleanSettings },
       { new: true, upsert: true }
     );
+
+    // Sync static client/index.html on disk for Googlebot and crawlers
+    try {
+      const clientHtmlPath = path.resolve(__dirname, '../../client/index.html');
+      if (fs.existsSync(clientHtmlPath)) {
+        let htmlContent = fs.readFileSync(clientHtmlPath, 'utf8');
+
+        if (cleanSettings.metaTitle) {
+          htmlContent = htmlContent.replace(/<title>.*?<\/title>/s, `<title>${cleanSettings.metaTitle}</title>`);
+          htmlContent = htmlContent.replace(/<meta name="title" content=".*?" \/>/s, `<meta name="title" content="${cleanSettings.metaTitle}" />`);
+          htmlContent = htmlContent.replace(/<meta property="og:title" content=".*?" \/>/s, `<meta property="og:title" content="${cleanSettings.metaTitle}" />`);
+          htmlContent = htmlContent.replace(/<meta name="twitter:title" content=".*?" \/>/s, `<meta name="twitter:title" content="${cleanSettings.metaTitle}" />`);
+        }
+
+        if (cleanSettings.metaDescription) {
+          htmlContent = htmlContent.replace(/<meta name="description" content=".*?" \/>/s, `<meta name="description" content="${cleanSettings.metaDescription}" />`);
+          htmlContent = htmlContent.replace(/<meta property="og:description" content=".*?" \/>/s, `<meta property="og:description" content="${cleanSettings.metaDescription}" />`);
+          htmlContent = htmlContent.replace(/<meta name="twitter:description" content=".*?" \/>/s, `<meta name="twitter:description" content="${cleanSettings.metaDescription}" />`);
+        }
+
+        if (cleanSettings.favicon && cleanSettings.favicon.startsWith('/uploads/')) {
+          const uploadedFilePath = path.resolve(__dirname, '..', cleanSettings.favicon.slice(1));
+          if (fs.existsSync(uploadedFilePath)) {
+            const destSvg = path.resolve(__dirname, '../../client/public/favicon.svg');
+            const destIco = path.resolve(__dirname, '../../client/public/favicon.ico');
+            fs.copyFileSync(uploadedFilePath, destSvg);
+            fs.copyFileSync(uploadedFilePath, destIco);
+          }
+        }
+
+        fs.writeFileSync(clientHtmlPath, htmlContent, 'utf8');
+      }
+    } catch (syncErr) {
+      console.warn('Could not sync to client/index.html:', syncErr.message);
+    }
 
     res.json({
       success: true,
