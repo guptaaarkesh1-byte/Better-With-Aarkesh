@@ -2254,10 +2254,17 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
             <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">General Popup Behavior & Settings</span>
 
             {/* Master Toggle */}
-            <div className="p-4 rounded-xl bg-[#141210] border border-[#c79c6e]/30 flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-white">Enable About Popup on Role Cards</span>
-                <span className="text-xs text-white/50">When enabled, clicking Pilot, Coach, or Human cards opens this About Aarkesh popup.</span>
+            <div 
+              className="p-4 rounded-xl border border-[#c79c6e]/40 flex items-center justify-between"
+              style={{ backgroundColor: '#f5f1e8' }}
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-bold" style={{ color: '#111010' }}>
+                  Enable About Popup on Role Cards
+                </span>
+                <span className="text-xs" style={{ color: '#554e44' }}>
+                  When enabled, clicking Pilot, Coach, or Human cards opens this About Aarkesh popup.
+                </span>
               </div>
               <input
                 type="checkbox"
