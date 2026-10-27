@@ -23,6 +23,7 @@ import {
   VideoCamera,
   FolderOpen,
   PencilSimple,
+  Sparkle,
   Image as ImageIcon
 } from '@phosphor-icons/react';
 import * as UpChunk from '@mux/upchunk';
@@ -1039,28 +1040,10 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               </div>
             )}
 
-            {/* Video Label & Poster Options */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-3 border-t border-white/5">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Video Label / Subtitle</label>
-                <input
-                  type="text"
-                  value={data.popup?.introVideo?.label || ''}
-                  onChange={(e) => setData(prev => ({
-                    ...prev,
-                    popup: {
-                      ...prev.popup,
-                      introVideo: { ...prev.popup.introVideo, label: e.target.value }
-                    }
-                  }))}
-                  placeholder="Meet Aarkesh · 2 min"
-                  className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-xs text-white focus:border-[#c79c6e]"
-                />
-                <span className="text-[11px] text-white/40">Shown at bottom/header of the video player card.</span>
-              </div>
-
+            {/* Poster Image Options */}
+            <div className="pt-3 border-t border-white/5">
               {/* Poster Image */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 max-w-xl">
                 <div className="flex items-center justify-between">
                   <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Video Poster Image</label>
                   <span className="text-[11px] text-[#ffa260] font-semibold">1280 × 720 px (under 200 KB)</span>

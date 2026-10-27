@@ -156,11 +156,7 @@ export default function RoleDetailModal({
     return MEDIA_DATA.ig || [];
   }, [activeData?.media]);
 
-  // Featured "Start here" video on YouTube tab
-  const featuredVideo = useMemo(() => {
-    if (tab !== 'yt') return null;
-    return youtubeList.find(m => m.featured) || null;
-  }, [tab, youtubeList]);
+
 
   // Story (Read More) Content
   const activeStory = activeData?.story || {};
@@ -737,9 +733,115 @@ export default function RoleDetailModal({
           transform: translateX(3px);
         }
 
+        .aw-video-label-badge {
+          position: absolute;
+          bottom: 12px;
+          left: 14px;
+          background: rgba(29, 26, 23, 0.78);
+          color: #fff;
+          padding: 4px 10px;
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 500;
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          z-index: 2;
+          letter-spacing: .02em;
+        }
+        .aw-video-status-overlay {
+          position: absolute;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          background: rgba(0,0,0,0.65);
+          color: #fff;
+          font-size: 13px;
+          font-weight: 500;
+          text-align: center;
+          padding: 20px;
+          z-index: 3;
+        }
+
         /* ---------- MEDIA BROWSER ---------- */
         .aw-media {
           padding: 8px 48px 40px;
+        }
+        .aw-featured-banner {
+          margin: 0 0 20px 0;
+        }
+        .aw-featured-card {
+          width: 100%;
+          display: grid;
+          grid-template-columns: 280px 1fr;
+          gap: 20px;
+          align-items: center;
+          background: var(--bg2);
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          padding: 14px;
+          text-align: left;
+          cursor: pointer;
+          transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+        .aw-featured-card:hover {
+          transform: translateY(-2px);
+          border-color: var(--acc);
+          box-shadow: 0 8px 24px rgba(0,0,0,.08);
+        }
+        .aw-featured-thumb {
+          position: relative;
+          aspect-ratio: 16 / 9;
+          border-radius: 10px;
+          overflow: hidden;
+          background: #000;
+        }
+        .aw-featured-thumb img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .aw-start-badge {
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          background: var(--acc);
+          color: #fff;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: .08em;
+          padding: 4px 8px;
+          border-radius: 6px;
+          text-transform: uppercase;
+        }
+        .aw-featured-info {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .aw-featured-kicker {
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--acc);
+          letter-spacing: .1em;
+          text-transform: uppercase;
+        }
+        .aw-featured-info h4 {
+          font-family: 'Playfair Display', serif;
+          font-size: 18px;
+          color: var(--ink);
+          line-height: 1.35;
+          margin: 0;
+        }
+        .aw-featured-info p {
+          font-size: 13px;
+          color: var(--mute);
+          margin: 0;
+        }
+        @media (max-width: 680px) {
+          .aw-featured-card {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
         }
         .aw-bar {
           position: sticky;
@@ -1330,11 +1432,11 @@ export default function RoleDetailModal({
                 <ArrowLeft size={15} weight="bold" />
                 <span>Back</span>
               </button>
-              <h2 id="awT">ABOUT AARKESH</h2>
+              <h2 id="awT">{popupTitle}</h2>
               <div style={{ width: 44 }} /> {/* Balance flex spacer for centered title */}
             </>
           ) : (
-            <h2 id="awT">ABOUT AARKESH</h2>
+            <h2 id="awT">{popupTitle}</h2>
           )}
         </div>
 
@@ -1346,21 +1448,28 @@ export default function RoleDetailModal({
               <div className="aw-video-card">
                 <div className="aw-video-frame">
                   {isIntroPlaying ? (
-                    introHasRealVideo ? (
-                      INTRO_VIDEO?.videoUrl ? (
+                    activeIntroVideo?.playbackId ? (
+                      <MuxPlayer
+                        playbackId={activeIntroVideo.playbackId}
+                        streamType="on-demand"
+                        autoPlay
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    ) : introHasRealVideo ? (
+                      activeIntroVideo?.videoUrl ? (
                         <video
-                          src={INTRO_VIDEO.videoUrl}
+                          src={activeIntroVideo.videoUrl}
                           controls
                           autoPlay
                           playsInline
                         />
                       ) : (
                         <iframe
-                          src={`https://www.youtube.com/embed/${INTRO_VIDEO.youtubeId}?autoplay=1&rel=0`}
+                          src={`https://www.youtube.com/embed/${activeIntroVideo.youtubeId}?autoplay=1&rel=0`}
                           scrolling="no"
                           allow="autoplay; encrypted-media; fullscreen"
                           allowFullScreen
-                          title={INTRO_VIDEO.title}
+                          title={activeIntroVideo.label || activeIntroVideo.title || 'Meet Aarkesh'}
                         />
                       )
                     ) : (
@@ -1395,10 +1504,10 @@ export default function RoleDetailModal({
                           <Play size={26} weight="fill" />
                         </div>
                         <h4 style={{ font: "700 20px 'Playfair Display', serif", marginBottom: 8 }}>
-                          {INTRO_VIDEO.title}
+                          {activeIntroVideo.label || activeIntroVideo.title || 'Meet Aarkesh · 2 min'}
                         </h4>
                         <p style={{ fontSize: 13.5, color: '#b8aba0', maxWidth: 460, lineHeight: 1.6, marginBottom: 16 }}>
-                          2-minute introduction video. Add a YouTube or video URL in <code>media.js</code> to stream any live video.
+                          2-minute introduction video.
                         </p>
                         <button
                           type="button"
@@ -1430,16 +1539,24 @@ export default function RoleDetailModal({
                       />
                       <div className="aw-video-tint" />
 
-                      <button
-                        type="button"
-                        className="aw-video-play-btn"
-                        onClick={() => setIsIntroPlaying(true)}
-                        aria-label="Play video"
-                      >
-                        <div className="aw-play-circle-lg">
-                          <Play size={28} weight="fill" style={{ marginLeft: 3 }} />
+
+
+                      {!isIntroProcessingOrError ? (
+                        <button
+                          type="button"
+                          className="aw-video-play-btn"
+                          onClick={() => setIsIntroPlaying(true)}
+                          aria-label="Play video"
+                        >
+                          <div className="aw-play-circle-lg">
+                            <Play size={28} weight="fill" style={{ marginLeft: 3 }} />
+                          </div>
+                        </button>
+                      ) : (
+                        <div className="aw-video-status-overlay">
+                          <span>{activeIntroVideo?.status === 'processing' ? 'Processing video stream...' : 'Video not ready'}</span>
                         </div>
-                      </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -1453,39 +1570,43 @@ export default function RoleDetailModal({
                   onClick={handleGoToStory}
                   aria-label="Read full story and written content"
                 >
-                  <span>Read More</span>
+                  <span>{readMoreLabel}</span>
                   <ArrowRight size={14} weight="bold" />
                 </button>
               </div>
             </section>
 
-            {/* Social Media Videos Section (YouTube & Instagram with reduced icon sizes) */}
+            {/* Social Media Videos Section (YouTube & Instagram) */}
             <section className="aw-media">
               <div className="aw-bar">
-                {/* Tabs with reduced size social media icons */}
+                {/* Tabs with live counts */}
                 <div className="aw-tabs" role="tablist">
-                  <button
-                    className="aw-tab"
-                    role="tab"
-                    id="tabYt"
-                    aria-selected={tab === 'yt'}
-                    onClick={() => handleSwitchTab('yt')}
-                  >
-                    <YoutubeLogo size={16} weight="fill" className="aw-tab-icon" />
-                    <span>YouTube</span>
-                    <em>{MEDIA_DATA.yt.length}</em>
-                  </button>
-                  <button
-                    className="aw-tab"
-                    role="tab"
-                    id="tabIg"
-                    aria-selected={tab === 'ig'}
-                    onClick={() => handleSwitchTab('ig')}
-                  >
-                    <InstagramLogo size={16} weight="bold" className="aw-tab-icon" />
-                    <span>Instagram Reels</span>
-                    <em>{MEDIA_DATA.ig.length}</em>
-                  </button>
+                  {showYoutube && (
+                    <button
+                      className="aw-tab"
+                      role="tab"
+                      id="tabYt"
+                      aria-selected={tab === 'yt'}
+                      onClick={() => handleSwitchTab('yt')}
+                    >
+                      <YoutubeLogo size={16} weight="fill" className="aw-tab-icon" />
+                      <span>YouTube</span>
+                      <em>{youtubeList.length}</em>
+                    </button>
+                  )}
+                  {showInstagram && (
+                    <button
+                      className="aw-tab"
+                      role="tab"
+                      id="tabIg"
+                      aria-selected={tab === 'ig'}
+                      onClick={() => handleSwitchTab('ig')}
+                    >
+                      <InstagramLogo size={16} weight="bold" className="aw-tab-icon" />
+                      <span>Instagram Reels</span>
+                      <em>{instagramList.length}</em>
+                    </button>
+                  )}
                 </div>
 
                 {/* Tools: Search + Category Chips */}
@@ -1501,7 +1622,7 @@ export default function RoleDetailModal({
                     onChange={handleSearchChange}
                   />
                   <div className="aw-chips">
-                    {['All', ...CATEGORIES].map((category) => (
+                    {['All', ...activeCategories].map((category) => (
                       <button
                         key={category}
                         className={`aw-chip ${cat === category ? 'on' : ''}`}
@@ -1513,6 +1634,8 @@ export default function RoleDetailModal({
                   </div>
                 </div>
               </div>
+
+
 
               {/* Grid of Items */}
               <div className={`aw-grid ${tab === 'ig' ? 'ig' : ''}`}>
@@ -1579,130 +1702,52 @@ export default function RoleDetailModal({
           </>
         )}
 
-        {/* VIEW 2: READ MORE PAGE (New Editorial Design - 600-Word Story with Square Curated Images without Numbering) */}
+        {/* VIEW 2: READ MORE PAGE (Editorial Story with dynamic sections and square images without numbering) */}
         {view === 'story' && (
           <article className="rm-art">
-            <div className="rm-kick">My story</div>
-            <h3>The Journey Behind the Mission</h3>
-            <p className="rm-lead">
-              From the skies to the soul, here is the story behind why I do what I do.
-            </p>
-            <div className="rm-meta">3 min read</div>
+            <div className="rm-kick">{storyKicker}</div>
+            <h3>{storyTitle}</h3>
+            <p className="rm-lead">{storyLead}</p>
+            <div className="rm-meta">{readTimeEst}</div>
 
-            {/* Section 1 */}
-            <section className="rm-sec right">
-              <div className="rm-txt">
-                <h4>The Sky Taught Me Calm</h4>
-                <p className="dc">
-                  I still remember the first time I took off alone. The runway lights stretched ahead, the city shrank behind me, and for a few seconds everything went quiet. That silence taught me something I had never learned in a classroom: staying calm is not a talent some people are born with. It is a practice.
-                </p>
-                <p>
-                  In the cockpit, decisions are made in seconds. Yet every one of them rests on months of training, a checklist you trust and a team you rely on. Calm is simply what preparation looks like from the outside. I carried that idea with me long after I stepped out of the aircraft, and it slowly became the foundation of everything I believe about growth.
-                </p>
-              </div>
-              <figure className="rm-fig">
+            {storyHero?.url && (
+              <figure className="rm-fig rm-hero">
                 <div className="im">
-                  <img
-                    loading="lazy"
-                    src={CDN_IMAGES.ABOUT_PILOT}
-                    alt="First solo flight"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+                  <img loading="lazy" src={storyHero.url} alt="Story hero" />
                 </div>
               </figure>
-            </section>
+            )}
 
-            {/* Section 2 */}
-            <section className="rm-sec left">
-              <div className="rm-txt">
-                <h4>Pressure Is Not the Enemy</h4>
-                <p>
-                  Years of flying in high-pressure environments showed me a hard truth. Pressure never disappears. Weather changes, schedules collapse, and tired minds make small mistakes. The pilots I admired most were not the ones who avoided stress. They were the ones who understood it.
-                </p>
-                <p>
-                  They named what they felt, slowed their breathing, followed their process and made the next good decision. Nothing dramatic, nothing heroic. Just a steady habit repeated until it became second nature. When I started noticing the same patterns in everyday life, in careers, families and friendships, I realised that these skills were not meant only for pilots. Anyone can learn them. That realisation changed how I work with people, and it is why I never promise a life without pressure, only a calmer way of meeting it.
-                </p>
-                <blockquote>“Calm is a skill. You can train it.”</blockquote>
-              </div>
-              <figure className="rm-fig">
-                <div className="im">
-                  <img
-                    loading="lazy"
-                    src={CDN_IMAGES.THINK_CLEARLY}
-                    alt="Life in the cockpit"
-                    onError={(e) => {
-                      e.currentTarget.src = CDN_IMAGES.HERO_MAIN;
-                    }}
-                  />
-                </div>
-              </figure>
-            </section>
-
-            {/* Section 3 */}
-            <section className="rm-sec none">
-              <div className="rm-txt">
-                <h4>From the Cockpit to Coaching</h4>
-                <p>
-                  Becoming an ICF-certified coach gave my experience a proper shape. I trained in evidence-based methods, learned to listen without judging and to ask the questions that help people hear their own answers. The science mattered to me, but so did something simpler: people do not change because they are told what to do. They change when they feel understood.
-                </p>
-                <p>
-                  So my sessions are built around three things: clarity about where you are, honesty about where you want to go, and small, realistic steps in between. No jargon. No grand promises. Just a clear process that you can follow on your busiest and most uncertain days.
-                </p>
-              </div>
-            </section>
-
-            {/* Section 4 */}
-            <section className="rm-sec right">
-              <div className="rm-txt">
-                <h4>Walking Beside You</h4>
-                <p>
-                  My favourite sentence in coaching is also my promise: I walk beside you, not ahead of you. I am not a guru standing on a mountain top, and I am not here to hand you a perfect plan. You are the expert on your own life. My role is to hold the space, reflect what I hear, challenge you kindly when you need it and celebrate every step forward, even the small and messy ones.
-                </p>
-                <p>
-                  Some of my clients come to me for career decisions. Others arrive carrying stress, doubt or a quiet feeling that life has become too heavy. Whatever brings you here, you will not be rushed, and you will not be judged. I believe the best answers are already inside you; they are just waiting for the right questions and a little patience.
-                </p>
-                <blockquote>“I walk beside you, not ahead of you.”</blockquote>
-              </div>
-              <figure className="rm-fig">
-                <div className="im">
-                  <img
-                    loading="lazy"
-                    src={CDN_IMAGES.COACHING_PROCESS}
-                    alt="A conversation"
-                    onError={(e) => {
-                      e.currentTarget.src = CDN_IMAGES.ABOUT_COACH;
-                    }}
-                  />
-                </div>
-              </figure>
-            </section>
-
-            {/* Section 5 */}
-            <section className="rm-sec left">
-              <div className="rm-txt">
-                <h4>The Human Behind the Roles</h4>
-                <p>
-                  Behind the uniform and the certificates, I am simply a human being. I have doubted myself, felt exhausted and stood at crossroads wondering which way to go. I still love watching the sun go down over the sea, and I still believe that small dreams deserve as much respect as big ones.
-                </p>
-                <p>
-                  That is why I do this work. Someone once walked beside me when I needed it most, and it changed everything. If you have read this far, you have already taken a first step. Whenever you are ready, let us have a real conversation and take the next one together.
-                </p>
-              </div>
-              <figure className="rm-fig">
-                <div className="im">
-                  <img
-                    loading="lazy"
-                    src={CDN_IMAGES.ABOUT_HUMAN}
-                    alt="Sunset by the sea"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                </div>
-              </figure>
-            </section>
+            {storySections.map((sec, sIdx) => {
+              const paragraphs = (sec.text || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+              return (
+                <section className={`rm-sec ${sec.layout || 'none'}`} key={sec.id || sIdx}>
+                  <div className="rm-txt">
+                    {sec.heading && <h4>{sec.heading}</h4>}
+                    {paragraphs.map((p, pIdx) => (
+                      <p key={pIdx} className={sIdx === 0 && pIdx === 0 ? 'dc' : ''}>
+                        {p}
+                      </p>
+                    ))}
+                    {sec.quote && (
+                      <blockquote>“{sec.quote.replace(/^["“]|["”]$/g, '').trim()}”</blockquote>
+                    )}
+                  </div>
+                  {sec.layout && sec.layout !== 'none' && sec.image?.url && (
+                    <figure className="rm-fig">
+                      <div className="im">
+                        <img
+                          loading="lazy"
+                          src={sec.image.url}
+                          alt={sec.heading || ''}
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      </div>
+                    </figure>
+                  )}
+                </section>
+              );
+            })}
 
             {/* Signature & CTAs */}
             <div className="rm-sign">

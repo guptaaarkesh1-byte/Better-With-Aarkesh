@@ -56,6 +56,8 @@ import {
   ArrowDown,
   Faders
 } from '@phosphor-icons/react';
+import AboutAarkeshPopupEditor from '../components/about/AboutAarkeshPopupEditor';
+import RoleDetailModal from '../../../client/src/components/about/RoleDetailModal';
 
 // Exact Default Assets using high-performance Cloudinary CDN URLs (100% reliable across dev & production)
 const defaultHeroImg = 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png';
@@ -808,6 +810,14 @@ export default function AdminHomeEditor() {
 
   const fileInputRef = useRef(null);
 
+  // Meet Aarkesh Tab & About Popup Controls
+  const [meetAarkeshTab, setMeetAarkeshTab] = useState('sectionContent'); // 'sectionContent' | 'aboutPopup'
+  const [hasUnsavedPopupChanges, setHasUnsavedPopupChanges] = useState(false);
+  const aboutPopupEditorRef = useRef(null);
+  const [previewPopupOpen, setPreviewPopupOpen] = useState(false);
+  const [previewPopupData, setPreviewPopupData] = useState(null);
+  const [previewInitialView, setPreviewInitialView] = useState('main');
+
   // Show Toast Helper (routed to global ToastContext)
   const showToast = (message, type = 'success') => {
     if (type === 'error') showError(message);
@@ -1309,8 +1319,38 @@ export default function AdminHomeEditor() {
     }
   };
 
+  // Reload Current Section or Popup Data
+  const handleReloadCurrent = async () => {
+    if (activeTab === 'about' && meetAarkeshTab === 'aboutPopup') {
+      if (hasUnsavedPopupChanges) {
+        if (!window.confirm('You have unsaved changes in About Aarkesh. Discard and reload?')) return;
+      }
+      await aboutPopupEditorRef.current?.reload();
+      setHasUnsavedPopupChanges(false);
+      showToast('About Aarkesh data reloaded from server.');
+      return;
+    }
+    fetchAllHomeSettings();
+  };
+
   // Save Current Section to Database
   const handleSaveSection = async () => {
+    if (activeTab === 'about' && meetAarkeshTab === 'aboutPopup') {
+      try {
+        setIsSaving(true);
+        const ok = await aboutPopupEditorRef.current?.save();
+        if (ok) {
+          setHasUnsavedPopupChanges(false);
+          showToast('About Aarkesh popup settings saved successfully!');
+        }
+      } catch (err) {
+        console.error('Save popup error:', err);
+        showToast('Failed to save About Aarkesh popup settings.', 'error');
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
     if (activeTab === 'masterTypography') {
       return handleApplyMasterTypography();
     }
@@ -1446,8 +1486,24 @@ export default function AdminHomeEditor() {
             <ArrowSquareOut size={13} className="opacity-60" />
           </a>
 
+          {activeTab === 'about' && meetAarkeshTab === 'aboutPopup' && (
+            <button
+              type="button"
+              onClick={() => {
+                const pData = aboutPopupEditorRef.current?.getData();
+                setPreviewPopupData(pData);
+                setPreviewInitialView('main');
+                setPreviewPopupOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#c79c6e]/15 border border-[#c79c6e]/40 text-[#c79c6e] hover:bg-[#c79c6e] hover:text-black text-xs font-semibold transition-all cursor-pointer"
+            >
+              <Eye size={15} />
+              <span>Preview Popup</span>
+            </button>
+          )}
+
           <button
-            onClick={fetchAllHomeSettings}
+            onClick={handleReloadCurrent}
             disabled={isSaving || isSavingMaster}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 text-xs font-medium transition-all cursor-pointer"
           >
@@ -3462,15 +3518,61 @@ export default function AdminHomeEditor() {
              ========================================================= */}
           {activeTab === 'about' && (
             <div className="flex flex-col gap-8 max-w-5xl">
-              <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
-                <h2 className="font-serif text-2xl text-white">Meet Aarkesh: Three Roles</h2>
-                <p className="text-xs text-white/50">
-                  Manage coach bio, 3 role cards (Pilot, Coach, Human) with dimensions <strong className="text-[#c79c6e]">800 × 1200 px (under 200 KB)</strong>, and bottom story bar.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+                <div className="flex flex-col gap-1">
+                  <h2 className="font-serif text-2xl text-white">Meet Aarkesh: Three Roles</h2>
+                  <p className="text-xs text-white/50">
+                    Manage coach bio, 3 role cards (Pilot, Coach, Human) with dimensions <strong className="text-[#c79c6e]">800 × 1200 px (under 200 KB)</strong>, and bottom story bar.
+                  </p>
+                </div>
+
+                {/* Meet Aarkesh Top Tab Bar */}
+                <div className="flex items-center gap-1.5 p-1 bg-[#0a0a0a] border border-white/10 rounded-xl shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (meetAarkeshTab === 'aboutPopup' && hasUnsavedPopupChanges) {
+                        if (!window.confirm('You have unsaved changes in About Aarkesh. Discard and switch?')) return;
+                      }
+                      setMeetAarkeshTab('sectionContent');
+                    }}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer ${
+                      meetAarkeshTab === 'sectionContent'
+                        ? 'bg-[#c79c6e] text-black shadow-md shadow-[#c79c6e]/20'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    Section Content
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMeetAarkeshTab('aboutPopup')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer ${
+                      meetAarkeshTab === 'aboutPopup'
+                        ? 'bg-[#c79c6e] text-black shadow-md shadow-[#c79c6e]/20'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span>About Aarkesh</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      meetAarkeshTab === 'aboutPopup'
+                        ? 'bg-black/20 text-black'
+                        : 'bg-[#c79c6e]/20 text-[#c79c6e]'
+                    }`}>
+                      POPUP CONTROL
+                    </span>
+                    {hasUnsavedPopupChanges && (
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title="Unsaved changes" />
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Header Box */}
-              <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
+              {/* TAB 1: SECTION CONTENT (Everything that exists today, completely unchanged) */}
+              {meetAarkeshTab === 'sectionContent' && (
+                <div className="flex flex-col gap-8">
+                  {/* Header Box */}
+                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Section Header</span>
 
                 <div className="flex flex-col gap-1.5 pt-1">
@@ -3626,6 +3728,22 @@ export default function AdminHomeEditor() {
               />
             </div>
           )}
+
+          {/* TAB 2: ABOUT AARKESH POPUP CONTROL (NEW) */}
+          {meetAarkeshTab === 'aboutPopup' && (
+            <AboutAarkeshPopupEditor
+              ref={aboutPopupEditorRef}
+              onOpenPreview={(previewData, initialView) => {
+                setPreviewPopupData(previewData);
+                setPreviewInitialView(initialView || 'main');
+                setPreviewPopupOpen(true);
+              }}
+              onDirtyChange={(isDirty) => setHasUnsavedPopupChanges(isDirty)}
+              showToast={showToast}
+            />
+          )}
+        </div>
+      )}
 
           {/* =========================================================
               5. TESTIMONIALS
@@ -5173,6 +5291,16 @@ export default function AdminHomeEditor() {
         </main>
 
       </div>
+
+      {/* Real In-Admin Preview Modal */}
+      {previewPopupOpen && (
+        <RoleDetailModal
+          isOpen={previewPopupOpen}
+          previewData={previewPopupData}
+          initialView={previewInitialView}
+          onClose={() => setPreviewPopupOpen(false)}
+        />
+      )}
 
     </div>
   );

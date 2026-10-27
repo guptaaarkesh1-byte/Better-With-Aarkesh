@@ -58,12 +58,15 @@ export const MEET_OVERLAY_CONFIG = {
 export default function MeetAarkesh() {
   const container = useRef(null);
   const [aboutData, setAboutData] = useState(getInitialAboutData);
+  const [aboutPopupData, setAboutPopupData] = useState(null);
   const [isMiddleHovered, setIsMiddleHovered] = useState(false);
   const [activeRoleKey, setActiveRoleKey] = useState(null);
   const [activeRoleCardImage, setActiveRoleCardImage] = useState(null);
   const activeTriggerRef = useRef(null);
 
   const handleRoleClick = (role, triggerEl) => {
+    // If master toggle is disabled, role cards behave as before
+    if (aboutPopupData?.popup?.enabled === false) return;
     activeTriggerRef.current = triggerEl;
     setActiveRoleKey(role.key);
     setActiveRoleCardImage(role.bgImg || role.fallbackImg);
@@ -90,6 +93,15 @@ export default function MeetAarkesh() {
       }
     };
     fetchAboutData();
+
+    // Fetch About Aarkesh Popup data
+    fetch(`${API_URL}/api/about-popup`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && isMounted) setAboutPopupData(data);
+      })
+      .catch(err => console.warn('Failed to load popup data:', err));
+
     return () => { isMounted = false; };
   }, []);
 
@@ -631,6 +643,7 @@ export default function MeetAarkesh() {
         isOpen={Boolean(activeRoleKey)}
         roleKey={activeRoleKey}
         cardImage={activeRoleCardImage}
+        data={aboutPopupData}
         onClose={handleCloseModal}
         triggerRef={activeTriggerRef}
       />
