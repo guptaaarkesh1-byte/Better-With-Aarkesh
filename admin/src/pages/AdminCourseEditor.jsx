@@ -7,7 +7,7 @@ import AdminStickyBar from '../components/common/AdminStickyBar';
 import AdminCourseLandingCatalogEditor from './AdminCourseLandingCatalogEditor';
 import AdminCourseComments from './AdminCourseComments';
 
-import { API_URL } from '../utils/apiUrl';
+import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 
 const STEPS = [
   ['basics', 'layout', 'Basics', 'Title, description, status', 'Course page'],
@@ -1584,7 +1584,7 @@ export default function AdminCourseEditor() {
                 </div>
 
                 <a
-                  href={`/course/${selectedCourseSlug}`}
+                  href={getLiveSiteUrl(`/course/${selectedCourseSlug}`)}
                   target="_blank"
                   rel="noreferrer"
                   className="bwa-btn"

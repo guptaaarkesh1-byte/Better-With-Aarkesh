@@ -1474,10 +1474,15 @@ export default function AdminHomeEditor() {
         {/* Global Actions */}
         <div className="flex items-center gap-3">
           <a
-            href={getLiveSiteUrl('/')}
+            href={
+              activeTab === 'about' 
+                ? (meetAarkeshTab === 'aboutPopup' ? getLiveSiteUrl('/?popup=about') : getLiveSiteUrl('/#meet-aarkesh'))
+                : getLiveSiteUrl('/')
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 text-xs font-medium transition-all"
+            title="Open live website in a new tab"
           >
             <Eye size={15} />
             <span>View Live Site</span>

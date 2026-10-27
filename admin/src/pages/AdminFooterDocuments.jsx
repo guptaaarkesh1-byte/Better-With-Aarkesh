@@ -38,7 +38,7 @@ import {
 import TiptapEditor from '../components/ui/TiptapEditor';
 import { sanitizeDocumentHtml } from '../utils/sanitizeHtml';
 
-import { API_URL } from '../utils/apiUrl';
+import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 
 const DEFAULT_FOOTER_SECTIONS = [
   'QUICK LINKS',
@@ -1138,6 +1138,19 @@ export default function AdminFooterDocuments() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  {docFormData.slug && (
+                    <a
+                      href={getLiveSiteUrl(`/${docFormData.slug}`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-medium transition-colors border border-white/10 flex items-center gap-1.5"
+                      title="Open this live document in a new tab"
+                    >
+                      <Eye size={14} />
+                      <span>View Live Page</span>
+                      <ArrowSquareOut size={12} className="opacity-60" />
+                    </a>
+                  )}
                   {(docFormData.id || docFormData.slug || docFormData.title) && (
                     <button
                       type="button"
@@ -1740,10 +1753,11 @@ export default function AdminFooterDocuments() {
                                   )}
                                 </div>
                                 <a 
-                                  href={`/${doc.slug}`} 
+                                  href={getLiveSiteUrl(`/${doc.slug}`)} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
                                   className="text-xs font-mono text-emerald-400/90 hover:underline inline-flex items-center gap-1 mt-0.5"
+                                  title="Open live document page"
                                 >
                                   /{doc.slug}
                                   <ArrowSquareOut size={11} className="text-emerald-400/60" />

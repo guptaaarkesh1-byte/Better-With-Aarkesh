@@ -49,7 +49,7 @@ import {
 } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 
-import { API_URL } from '../utils/apiUrl';
+import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 
 export const resolveImageUrl = (url) => {
   if (!url) return '';
@@ -1505,7 +1505,7 @@ export default function AdminCourseDetailEditor() {
                         {/* Secondary Actions: View Live & Delete */}
                         <div className="flex items-center justify-between gap-2">
                           <a
-                            href={`https://aarkeshgupta.com/course/${slug}`}
+                            href={getLiveSiteUrl(`/course/${slug}`)}
                             target="_blank"
                             rel="noreferrer"
                             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors ${
@@ -1799,7 +1799,7 @@ export default function AdminCourseDetailEditor() {
         {/* Right Actions */}
         <div className="flex items-center gap-3">
           <a
-            href={`https://aarkeshgupta.com/course/${activeSlug}`}
+            href={getLiveSiteUrl(`/course/${activeSlug}`)}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-medium border border-white/10 transition-colors"

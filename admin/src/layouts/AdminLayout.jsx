@@ -10,8 +10,11 @@ import {
   Books,
   CalendarBlank,
   Sun,
-  Gear
+  Gear,
+  Eye,
+  ArrowSquareOut
 } from '@phosphor-icons/react';
+import { getLiveSiteUrl } from '../utils/apiUrl';
 
 export default function AdminLayout({ children, onLogout }) {
   const location = useLocation();
@@ -52,7 +55,19 @@ export default function AdminLayout({ children, onLogout }) {
           <span>BWA Admin</span>
         </Link>
         
-        <div className="bwa-top-r">
+        <div className="bwa-top-r flex items-center gap-3">
+          <a
+            href={getLiveSiteUrl('/')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bwa-btn-ghost flex items-center gap-1.5 text-xs font-semibold"
+            style={{ textDecoration: 'none' }}
+            title="Open live website in a new tab"
+          >
+            <Eye size={15} />
+            <span>View Live Site</span>
+            <ArrowSquareOut size={13} className="opacity-60" />
+          </a>
           <button 
             type="button"
             onClick={onLogout}

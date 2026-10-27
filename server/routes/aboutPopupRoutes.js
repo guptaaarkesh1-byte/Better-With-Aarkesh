@@ -259,13 +259,73 @@ let publicCache = null;
 let cacheTime = 0;
 const CACHE_TTL_MS = 60 * 1000; // 1 minute
 
+export const syncMuxIntroVideoStatus = async (introVideo) => {
+  if (!introVideo) return introVideo;
+  if (introVideo.status === 'processing' || (introVideo.muxUploadId && !introVideo.playbackId)) {
+    try {
+      const mux = await getMuxClient();
+      let asset = null;
+      if (introVideo.muxUploadId) {
+        try {
+          const upload = await mux.video.uploads.retrieve(introVideo.muxUploadId);
+          if (upload && upload.asset_id) {
+            asset = await mux.video.assets.retrieve(upload.asset_id);
+          }
+        } catch {}
+      }
+      if (!asset && introVideo.muxAssetId) {
+        try {
+          asset = await mux.video.assets.retrieve(introVideo.muxAssetId);
+        } catch {}
+      }
+      if (asset) {
+        const playbackId = asset.playback_ids?.[0]?.id || '';
+        const durationSeconds = asset.duration ? Math.round(asset.duration) : introVideo.durationSeconds || 120;
+        if (asset.status === 'ready' && playbackId) {
+          introVideo.status = 'ready';
+          introVideo.playbackId = playbackId;
+          introVideo.muxAssetId = asset.id;
+          introVideo.durationSeconds = durationSeconds;
+
+          await Settings.updateOne(
+            { key: 'about_popup_settings' },
+            {
+              $set: {
+                'value.popup.introVideo.status': 'ready',
+                'value.popup.introVideo.playbackId': playbackId,
+                'value.popup.introVideo.muxAssetId': asset.id,
+                'value.popup.introVideo.durationSeconds': durationSeconds
+              }
+            }
+          );
+          invalidateAboutPopupCache();
+        } else if (asset.status === 'errored') {
+          introVideo.status = 'errored';
+          await Settings.updateOne(
+            { key: 'about_popup_settings' },
+            { $set: { 'value.popup.introVideo.status': 'errored' } }
+          );
+          invalidateAboutPopupCache();
+        }
+      }
+    } catch (e) {
+      console.warn('Could not auto-sync Mux intro video status:', e?.message);
+    }
+  }
+  return introVideo;
+};
+
 export const getStoredAboutPopup = async () => {
   const doc = await Settings.findOne({ key: 'about_popup_settings' });
   if (!doc || !doc.value) {
     return JSON.parse(JSON.stringify(DEFAULT_ABOUT_POPUP));
   }
+  const popupObj = { ...DEFAULT_ABOUT_POPUP.popup, ...(doc.value.popup || {}) };
+  if (popupObj.introVideo) {
+    await syncMuxIntroVideoStatus(popupObj.introVideo);
+  }
   return {
-    popup: { ...DEFAULT_ABOUT_POPUP.popup, ...(doc.value.popup || {}) },
+    popup: popupObj,
     media: Array.isArray(doc.value.media) ? doc.value.media : DEFAULT_ABOUT_POPUP.media,
     story: {
       ...DEFAULT_ABOUT_POPUP.story,
@@ -442,8 +502,7 @@ router.post('/mux-upload', protect, admin, async (req, res) => {
     const upload = await mux.video.uploads.create({
       new_asset_settings: {
         playback_policy: ['public'],
-        video_quality: 'basic',
-        mp4_support: 'standard'
+        video_quality: 'basic'
       },
       cors_origin: '*'
     });
@@ -494,6 +553,20 @@ router.get('/mux-status/:identifier', protect, admin, async (req, res) => {
     if (asset) {
       const playbackId = asset.playback_ids?.[0]?.id || null;
       const durationSeconds = asset.duration ? Math.round(asset.duration) : 120;
+      if (asset.status === 'ready' && playbackId) {
+        await Settings.updateOne(
+          { key: 'about_popup_settings' },
+          {
+            $set: {
+              'value.popup.introVideo.status': 'ready',
+              'value.popup.introVideo.playbackId': playbackId,
+              'value.popup.introVideo.muxAssetId': asset.id,
+              'value.popup.introVideo.durationSeconds': durationSeconds
+            }
+          }
+        );
+        invalidateAboutPopupCache();
+      }
       return res.json({
         status: asset.status,
         assetId: asset.id,

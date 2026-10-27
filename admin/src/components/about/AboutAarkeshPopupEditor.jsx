@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { 
-  Play, 
   YoutubeLogo, 
   InstagramLogo, 
   ListPlus, 
@@ -11,26 +10,23 @@ import {
   UploadSimple, 
   ArrowUp, 
   ArrowDown, 
-  Star, 
   Check, 
   X, 
   Plus, 
-  MagnifyingGlass, 
   ArrowsClockwise, 
   Copy, 
   WarningCircle, 
   CheckCircle,
   VideoCamera,
-  FolderOpen,
   PencilSimple,
+  ArrowSquareOut,
   Sparkle,
-  Image as ImageIcon,
-  DotsSixVertical
+  DotsSixVertical,
+  Image as ImageIcon
 } from '@phosphor-icons/react';
 import * as UpChunk from '@mux/upchunk';
-import MuxPlayer from '@mux/mux-player-react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import MuxVideoPlayer from '../common/MuxVideoPlayer';
+import { API_URL, getLiveSiteUrl } from '../../utils/apiUrl';
 
 export const parseYouTubeId = (input) => {
   if (!input) return null;
@@ -181,7 +177,46 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
   const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [videoUploadError, setVideoUploadError] = useState('');
+  const [isReplacingVideo, setIsReplacingVideo] = useState(false);
+  const [isCheckingMuxStatus, setIsCheckingMuxStatus] = useState(false);
   const muxPollingRef = useRef(null);
+
+  const handleCheckMuxStatus = async () => {
+    const uploadId = data?.popup?.introVideo?.muxUploadId || data?.popup?.introVideo?.muxAssetId;
+    if (!uploadId) return;
+    try {
+      setIsCheckingMuxStatus(true);
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/about-popup/mux-status/${uploadId}`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      });
+      if (res.ok) {
+        const statusData = await res.json();
+        if (statusData.status === 'ready' && statusData.playbackId) {
+          setData(prev => ({
+            ...prev,
+            popup: {
+              ...prev.popup,
+              introVideo: {
+                ...prev.popup.introVideo,
+                status: 'ready',
+                playbackId: statusData.playbackId,
+                muxAssetId: statusData.assetId || prev.popup.introVideo.muxAssetId,
+                durationSeconds: statusData.durationSeconds || 120
+              }
+            }
+          }));
+          if (showToast) showToast('Video is ready on Mux!');
+        } else {
+          if (showToast) showToast(`Mux status: ${statusData.status || 'processing'}`);
+        }
+      }
+    } catch (e) {
+      if (showToast) showToast('Failed to check Mux status', 'error');
+    } finally {
+      setIsCheckingMuxStatus(false);
+    }
+  };
 
   const startMuxPolling = (identifier) => {
     if (muxPollingRef.current) clearInterval(muxPollingRef.current);
@@ -229,10 +264,15 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
   };
 
   useEffect(() => {
+    const uploadId = data?.popup?.introVideo?.muxUploadId;
+    const isProcessing = data?.popup?.introVideo?.status === 'processing' || (uploadId && !data?.popup?.introVideo?.playbackId);
+    if (isProcessing && uploadId) {
+      startMuxPolling(uploadId);
+    }
     return () => {
       if (muxPollingRef.current) clearInterval(muxPollingRef.current);
     };
-  }, []);
+  }, [data?.popup?.introVideo?.status, data?.popup?.introVideo?.muxUploadId, data?.popup?.introVideo?.playbackId]);
 
   const handleMuxVideoFile = async (e) => {
     const file = e.target.files?.[0];
@@ -354,6 +394,21 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
     }
   };
 
+  const handleRemovePoster = () => {
+    if (!window.confirm('Are you sure you want to remove the video poster image?')) return;
+    setData(prev => ({
+      ...prev,
+      popup: {
+        ...prev.popup,
+        introVideo: {
+          ...prev.popup.introVideo,
+          poster: { url: '', publicId: '' }
+        }
+      }
+    }));
+    if (showToast) showToast('Poster image removed.');
+  };
+
   // -------------------------------------------------------------
   // SUB-PAGE 2: YOUTUBE State & Handlers
   // -------------------------------------------------------------
@@ -365,9 +420,6 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
   });
   const [ytSearch, setYtSearch] = useState('');
   const [ytFilterCat, setYtFilterCat] = useState('All');
-  const [ytBulkOpen, setYtBulkOpen] = useState(false);
-  const [ytBulkText, setYtBulkText] = useState('');
-  const [ytBulkItems, setYtBulkItems] = useState([]);
   const [editingYtId, setEditingYtId] = useState(null);
 
   const parsedYtId = useMemo(() => parseYouTubeId(ytForm.inputUrl), [ytForm.inputUrl]);
@@ -436,49 +488,6 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
     window.scrollTo({ top: 300, behavior: 'smooth' });
   };
 
-  // Bulk YouTube parsing
-  const handleParseYtBulk = () => {
-    const lines = ytBulkText.split('\n').map(l => l.trim()).filter(Boolean);
-    const parsed = lines.map((line, idx) => {
-      const id = parseYouTubeId(line);
-      return {
-        key: `bulk_yt_${idx}`,
-        id: id || '',
-        title: id ? `YouTube Video: ${id}` : line,
-        category: data?.popup?.categories?.[0] || 'Mindset',
-        valid: Boolean(id)
-      };
-    });
-    setYtBulkItems(parsed);
-  };
-
-  const handleApplyYtBulk = () => {
-    const validItems = ytBulkItems.filter(b => b.valid && b.id);
-    if (validItems.length === 0) {
-      if (showToast) showToast('No valid YouTube IDs to add.', 'error');
-      return;
-    }
-    const newMediaItems = validItems.map((item, idx) => ({
-      id: `yt_${Date.now()}_${idx}`,
-      type: 'youtube',
-      externalId: item.id,
-      title: item.title,
-      category: item.category,
-      thumbnail: { url: '', publicId: '' },
-      featured: false,
-      published: true,
-      sortOrder: (data?.media?.length || 0) + idx
-    }));
-    setData(prev => ({
-      ...prev,
-      media: [...newMediaItems, ...prev.media]
-    }));
-    setYtBulkOpen(false);
-    setYtBulkText('');
-    setYtBulkItems([]);
-    if (showToast) showToast(`Added ${newMediaItems.length} YouTube videos!`);
-  };
-
   // -------------------------------------------------------------
   // SUB-PAGE 3: INSTAGRAM REELS State & Handlers
   // -------------------------------------------------------------
@@ -490,9 +499,6 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
   });
   const [igSearch, setIgSearch] = useState('');
   const [igFilterCat, setIgFilterCat] = useState('All');
-  const [igBulkOpen, setIgBulkOpen] = useState(false);
-  const [igBulkText, setIgBulkText] = useState('');
-  const [igBulkItems, setIgBulkItems] = useState([]);
   const [editingIgId, setEditingIgId] = useState(null);
   const [isUploadingIgThumb, setIsUploadingIgThumb] = useState(false);
 
@@ -823,9 +829,9 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
 
   if (loading || !data) {
     return (
-      <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-12 flex flex-col items-center justify-center gap-3">
+      <div className="bg-white border border-stone-200 rounded-2xl p-12 flex flex-col items-center justify-center gap-3 shadow-xs">
         <ArrowsClockwise size={26} className="text-[#c79c6e] animate-spin" />
-        <span className="text-xs uppercase tracking-widest text-white/50">Loading About Aarkesh Control Center...</span>
+        <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Loading About Aarkesh Control Center...</span>
       </div>
     );
   }
@@ -835,20 +841,20 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
     introStatus === 'ready' ? 'bg-emerald-500' :
     introStatus === 'processing' ? 'bg-blue-500 animate-pulse' :
     introStatus === 'uploading' ? 'bg-amber-500 animate-pulse' :
-    'bg-white/30';
+    'bg-stone-300';
 
   return (
     <div className="flex flex-col gap-6 w-full">
       {/* Top Bar with Live Unsaved Changes Warning and Preview Button */}
-      <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-white/10">
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-stone-200">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e] flex items-center gap-1.5">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#a06b3a] flex items-center gap-1.5">
             <Sparkle size={14} weight="fill" />
             <span>Popup Control Center</span>
           </span>
           {hasUnsavedChanges && (
-            <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-semibold flex items-center gap-1.5 animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold flex items-center gap-1.5 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
               <span>Unsaved changes</span>
             </span>
           )}
@@ -858,11 +864,21 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           <button
             type="button"
             onClick={() => onOpenPreview && onOpenPreview(data, 'main')}
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#1a1714] text-[#c79c6e] border border-[#c79c6e]/40 hover:bg-[#c79c6e] hover:text-black transition-all flex items-center gap-2 shadow-sm"
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-white text-[#a06b3a] border border-[#c79c6e]/40 hover:bg-[#c79c6e] hover:text-white transition-all flex items-center gap-2 shadow-xs cursor-pointer"
           >
             <Eye size={15} weight="bold" />
             <span>Preview Popup</span>
           </button>
+          <a
+            href={getLiveSiteUrl('/?popup=about')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200 transition-all flex items-center gap-1.5 shadow-xs"
+            title="Open Live Site Popup in a new tab"
+          >
+            <span>Live Site Popup</span>
+            <ArrowSquareOut size={13} className="opacity-70" />
+          </a>
         </div>
       </div>
 
@@ -874,8 +890,8 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           onClick={() => setSubTab('settings')}
           className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
             subTab === 'settings'
-              ? 'bg-[#c79c6e] text-black font-bold shadow-lg shadow-[#c79c6e]/20'
-              : 'bg-[#0f0f0f] text-white/70 hover:text-white border border-white/10'
+              ? 'bg-[#c79c6e] text-stone-950 font-bold shadow-md shadow-[#c79c6e]/20'
+              : 'bg-white text-stone-700 hover:text-stone-900 border border-stone-200 shadow-xs'
           }`}
         >
           <Gear size={15} weight="bold" />
@@ -888,8 +904,8 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           onClick={() => setSubTab('intro')}
           className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
             subTab === 'intro'
-              ? 'bg-[#c79c6e] text-black font-bold shadow-lg shadow-[#c79c6e]/20'
-              : 'bg-[#0f0f0f] text-white/70 hover:text-white border border-white/10'
+              ? 'bg-[#c79c6e] text-stone-950 font-bold shadow-md shadow-[#c79c6e]/20'
+              : 'bg-white text-stone-700 hover:text-stone-900 border border-stone-200 shadow-xs'
           }`}
         >
           <span className={`w-2 h-2 rounded-full ${introStatusColor}`} />
@@ -903,13 +919,13 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           onClick={() => setSubTab('youtube')}
           className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
             subTab === 'youtube'
-              ? 'bg-[#c79c6e] text-black font-bold shadow-lg shadow-[#c79c6e]/20'
-              : 'bg-[#0f0f0f] text-white/70 hover:text-white border border-white/10'
+              ? 'bg-[#c79c6e] text-stone-950 font-bold shadow-md shadow-[#c79c6e]/20'
+              : 'bg-white text-stone-700 hover:text-stone-900 border border-stone-200 shadow-xs'
           }`}
         >
           <YoutubeLogo size={15} weight="fill" />
           <span>YouTube</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10">
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${subTab === 'youtube' ? 'bg-black/10 text-stone-950 font-bold' : 'bg-stone-100 text-stone-600'}`}>
             {data.media?.filter(m => m.type === 'youtube').length || 0}
           </span>
         </button>
@@ -920,18 +936,16 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           onClick={() => setSubTab('reels')}
           className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
             subTab === 'reels'
-              ? 'bg-[#c79c6e] text-black font-bold shadow-lg shadow-[#c79c6e]/20'
-              : 'bg-[#0f0f0f] text-white/70 hover:text-white border border-white/10'
+              ? 'bg-[#c79c6e] text-stone-950 font-bold shadow-md shadow-[#c79c6e]/20'
+              : 'bg-white text-stone-700 hover:text-stone-900 border border-stone-200 shadow-xs'
           }`}
         >
           <InstagramLogo size={15} weight="bold" />
           <span>Instagram Reels</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10">
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${subTab === 'reels' ? 'bg-black/10 text-stone-950 font-bold' : 'bg-stone-100 text-stone-600'}`}>
             {data.media?.filter(m => m.type === 'instagram').length || 0}
           </span>
         </button>
-
-
 
         {/* 6. Read More Page */}
         <button
@@ -939,13 +953,13 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           onClick={() => setSubTab('story')}
           className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
             subTab === 'story'
-              ? 'bg-[#c79c6e] text-black font-bold shadow-lg shadow-[#c79c6e]/20'
-              : 'bg-[#0f0f0f] text-white/70 hover:text-white border border-white/10'
+              ? 'bg-[#c79c6e] text-stone-950 font-bold shadow-md shadow-[#c79c6e]/20'
+              : 'bg-white text-stone-700 hover:text-stone-900 border border-stone-200 shadow-xs'
           }`}
         >
           <BookOpenText size={15} weight="bold" />
           <span>Read More Page</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10">
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${subTab === 'story' ? 'bg-black/10 text-stone-950 font-bold' : 'bg-stone-100 text-stone-600'}`}>
             {data.story?.sections?.length || 0} sec · {wordCount}w
           </span>
         </button>
@@ -956,140 +970,247 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
       {/* ========================================================================= */}
       {subTab === 'intro' && (
         <div className="flex flex-col gap-6">
-          <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
+          <div className="bg-white border border-stone-200 rounded-2xl p-6 flex flex-col gap-5 shadow-xs">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">2-Minute Introduction Video (Mux Stream)</span>
-                <p className="text-xs text-white/50 mt-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#a06b3a]">2-Minute Introduction Video (Mux Stream)</span>
+                <p className="text-xs text-stone-500 mt-1">
                   Upload your intro video directly to Mux with fast global HLS/MP4 delivery. Ideal length: about 2 minutes.
                 </p>
               </div>
-              <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider ${
-                introStatus === 'ready' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                introStatus === 'processing' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
-                'bg-white/10 text-white/60'
+              <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                introStatus === 'ready' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                introStatus === 'processing' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                'bg-stone-100 text-stone-600 border border-stone-200'
               }`}>
                 Status: {introStatus}
               </span>
             </div>
 
-            {/* Direct Upload Dropzone */}
-            <div className="border-2 border-dashed border-white/15 rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3 bg-[#070707] hover:border-[#c79c6e]/50 transition-colors">
-              <VideoCamera size={34} className="text-[#c79c6e]" />
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-white">Upload New Intro Video</span>
-                <span className="text-xs text-white/50">Accepts MP4, MOV (max 500 MB). Encoded automatically by Mux.</span>
-              </div>
-              <label className="cursor-pointer px-4 py-2 rounded-xl bg-[#c79c6e] text-black text-xs font-bold uppercase tracking-wider hover:bg-[#e0b284] transition-all">
-                <span>Select Video File</span>
-                <input
-                  type="file"
-                  accept="video/mp4,video/quicktime,video/*"
-                  className="hidden"
-                  onChange={handleMuxVideoFile}
-                  disabled={isUploadingVideo}
-                />
-              </label>
-
-              {isUploadingVideo && (
-                <div className="w-full max-w-md flex flex-col gap-1.5 mt-3">
-                  <div className="flex justify-between text-xs text-white/70">
-                    <span>Uploading directly to Mux...</span>
-                    <span>{videoUploadProgress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#c79c6e] transition-all duration-200" style={{ width: `${videoUploadProgress}%` }} />
-                  </div>
-                </div>
-              )}
-
-              {videoUploadError && (
-                <span className="text-xs text-rose-400 mt-1">{videoUploadError}</span>
-              )}
-            </div>
-
-            {/* Video Playback Details & Stream Preview */}
-            {data.popup?.introVideo?.playbackId && (
-              <div className="flex flex-col gap-3 p-4 rounded-xl bg-[#070707] border border-white/10">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* CASE 1: Video is READY and has Playback ID -> PROMINENT ACTIVE VIDEO CARD */}
+            {data.popup?.introVideo?.playbackId ? (
+              <div className="flex flex-col gap-4 p-5 rounded-2xl bg-stone-50/90 border border-emerald-300/80 shadow-xs">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
                   <div className="flex items-center gap-3">
-                    <div className="w-16 h-10 bg-black rounded overflow-hidden shrink-0 border border-white/10 relative">
-                      <img
-                        src={`https://image.mux.com/${data.popup.introVideo.playbackId}/thumbnail.jpg?width=160&height=100&fit_mode=smart`}
-                        alt="Thumbnail"
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100/90 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+                      <CheckCircle size={22} weight="fill" />
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-white">Active Playback ID: <code>{data.popup.introVideo.playbackId}</code></span>
-                      <span className="text-[11px] text-white/40">Duration: ~{Math.round(data.popup.introVideo.durationSeconds || 120)}s · Status: Ready</span>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-bold text-stone-900">Intro Video Uploaded & Ready</span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider border border-emerald-300">
+                          Active Stream
+                        </span>
+                      </div>
+                      <div className="text-xs text-stone-500 mt-0.5 flex items-center gap-3 flex-wrap">
+                        <span>Playback ID: <code className="text-emerald-700 font-mono font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/80">{data.popup.introVideo.playbackId}</code></span>
+                        <span>•</span>
+                        <span>Duration: ~{Math.round(data.popup.introVideo.durationSeconds || 120)}s</span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      onClick={() => setIsReplacingVideo(prev => !prev)}
+                      className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <UploadSimple size={14} />
+                      <span>{isReplacingVideo ? 'Cancel Replace' : 'Replace Video'}</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={handleRemoveVideo}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-2 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 hover:text-rose-800 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
                       <Trash size={14} />
-                      <span>Remove Video</span>
+                      <span>Remove</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Inline Mux Player Stream Preview */}
-                <div className="mt-2 rounded-xl overflow-hidden border border-white/10 bg-black max-w-lg aspect-video">
-                  <MuxPlayer
-                    playbackId={data.popup.introVideo.playbackId}
-                    streamType="on-demand"
-                    style={{ width: '100%', height: '100%' }}
-                  />
+                {/* Inline Mux Player Stream Preview (Centered, balanced presentation) */}
+                <div className="flex flex-col items-center w-full pt-1 pb-2">
+                  <div className="flex items-center justify-between w-full max-w-3xl mb-2 px-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-stone-700">Live Video Preview</span>
+                    <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Ready to Stream</span>
+                    </span>
+                  </div>
+                  <div className="w-full max-w-3xl mx-auto rounded-2xl overflow-hidden border border-stone-300 bg-black aspect-video shadow-md relative">
+                    <MuxVideoPlayer
+                      playbackId={data.popup.introVideo.playbackId}
+                      style={{ width: '100%', height: '100%', display: 'block' }}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Poster Image Options */}
-            <div className="pt-3 border-t border-white/5">
-              {/* Poster Image */}
-              <div className="flex flex-col gap-1.5 max-w-xl">
-                <div className="flex items-center justify-between">
-                  <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Video Poster Image</label>
-                  <span className="text-[11px] text-[#ffa260] font-semibold">1280 × 720 px (under 200 KB)</span>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <label className="cursor-pointer px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition-all flex items-center gap-1.5">
-                    <UploadSimple size={14} />
-                    <span>Upload Poster</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handlePosterUpload} />
-                  </label>
-
-                  {data.popup?.introVideo?.playbackId && (
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-white/70">
+                {/* Replace Video Dropzone if toggled */}
+                {isReplacingVideo && (
+                  <div className="w-full max-w-3xl mx-auto mt-2 p-6 rounded-2xl border-2 border-dashed border-[#c79c6e]/70 bg-stone-100/70 flex flex-col items-center justify-center text-center gap-3 animate-in fade-in duration-300">
+                    <span className="text-xs font-semibold text-stone-800">Select a new video to replace current intro video:</span>
+                    <label className="cursor-pointer px-4 py-2 rounded-xl bg-[#c79c6e] text-stone-900 text-xs font-bold uppercase tracking-wider hover:bg-[#b5885c] transition-all shadow-xs">
+                      <span>Select Replacement File</span>
                       <input
-                        type="checkbox"
-                        checked={Boolean(data.popup?.introVideo?.useMuxThumbnail)}
-                        onChange={(e) => setData(prev => ({
-                          ...prev,
-                          popup: {
-                            ...prev.popup,
-                            introVideo: { ...prev.popup.introVideo, useMuxThumbnail: e.target.checked }
-                          }
-                        }))}
-                        className="rounded accent-[#c79c6e]"
+                        type="file"
+                        accept="video/mp4,video/quicktime,video/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          setIsReplacingVideo(false);
+                          handleMuxVideoFile(e);
+                        }}
+                        disabled={isUploadingVideo}
                       />
-                      <span>Use Mux Auto Thumbnail</span>
                     </label>
-                  )}
-                </div>
-
-                {data.popup?.introVideo?.poster?.url && !data.popup?.introVideo?.useMuxThumbnail && (
-                  <div className="w-32 h-18 rounded overflow-hidden border border-white/15 mt-1 relative">
-                    <img src={data.popup.introVideo.poster.url} alt="Poster preview" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>
+            ) : (
+              /* CASE 2: Video is Processing OR Uploading OR Not Yet Uploaded */
+              <>
+                {/* Processing State Card */}
+                {(introStatus === 'processing' || (data.popup?.introVideo?.muxUploadId && !data.popup?.introVideo?.playbackId)) && (
+                  <div className="p-5 rounded-2xl bg-blue-50/80 border border-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0 animate-spin">
+                        <ArrowsClockwise size={20} />
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                          <span>Video Uploaded · Encoding in Progress</span>
+                          <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+                        </span>
+                        <p className="text-xs text-stone-600 mt-0.5">
+                          Mux is currently encoding your video into an adaptive stream. Usually takes ~15–30 seconds.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCheckMuxStatus}
+                      disabled={isCheckingMuxStatus}
+                      className="px-3.5 py-2 rounded-xl bg-white hover:bg-blue-50 text-blue-700 border border-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-xs"
+                    >
+                      <ArrowsClockwise size={13} className={isCheckingMuxStatus ? 'animate-spin' : ''} />
+                      <span>{isCheckingMuxStatus ? 'Checking...' : 'Check Status Now'}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Direct Upload Dropzone */}
+                <div className="border-2 border-dashed border-stone-300 rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3 bg-stone-50/80 hover:border-[#c79c6e] transition-colors">
+                  <VideoCamera size={34} className="text-[#c79c6e]" />
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-bold text-stone-900">Upload New Intro Video</span>
+                    <span className="text-xs text-stone-500">Accepts MP4, MOV (max 500 MB). Encoded automatically by Mux.</span>
+                  </div>
+                  <label className="cursor-pointer px-4 py-2 rounded-xl bg-[#c79c6e] text-stone-900 text-xs font-bold uppercase tracking-wider hover:bg-[#b5885c] transition-all shadow-xs">
+                    <span>Select Video File</span>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/*"
+                      className="hidden"
+                      onChange={handleMuxVideoFile}
+                      disabled={isUploadingVideo}
+                    />
+                  </label>
+
+                  {isUploadingVideo && (
+                    <div className="w-full max-w-md flex flex-col gap-1.5 mt-3">
+                      <div className="flex justify-between text-xs text-stone-700 font-medium">
+                        <span>Uploading directly to Mux...</span>
+                        <span>{videoUploadProgress}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#c79c6e] transition-all duration-200" style={{ width: `${videoUploadProgress}%` }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {videoUploadError && (
+                    <span className="text-xs text-rose-600 font-medium mt-1">{videoUploadError}</span>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Poster Image Options */}
+            <div className="pt-4 border-t border-stone-200 flex flex-col gap-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-stone-800">Video Poster Image</span>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Custom preview cover displayed before the video starts playing.
+                  </p>
+                </div>
+                <span className="text-[11px] font-semibold text-[#a06b3a] bg-[#fbf5ed] px-2.5 py-1 rounded-full border border-[#c79c6e]/30">
+                  1280 × 720 px • Recommended under 200 KB
+                </span>
+              </div>
+
+              {data.popup?.introVideo?.poster?.url ? (
+                /* When Poster Exists: Preview card with placed action buttons */
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-2xl bg-stone-50/90 border border-stone-200 shadow-xs">
+                  <div className="w-48 sm:w-56 aspect-video rounded-xl overflow-hidden border border-stone-300 bg-stone-100 shadow-xs relative shrink-0">
+                    <img
+                      src={data.popup.introVideo.poster.url}
+                      alt="Video Poster Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-3 flex-1">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider border border-emerald-300 inline-block">
+                          Active Poster
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-stone-900 mt-1 block">Custom Cover Active</span>
+                      <span className="text-[11px] text-stone-500">
+                        This image appears as the preview before the intro video is played.
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                      <label className="cursor-pointer px-3.5 py-2 rounded-xl bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs">
+                        <UploadSimple size={14} weight="bold" />
+                        <span>Change Image</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={handlePosterUpload} />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleRemovePoster}
+                        className="px-3.5 py-2 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 border border-rose-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                      >
+                        <Trash size={14} weight="bold" />
+                        <span>Remove Image</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* When No Poster: Clean Upload Area with Upload Button */
+                <div className="p-5 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50/80 hover:border-[#c79c6e] transition-all flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#fbf5ed] border border-[#c79c6e]/30 flex items-center justify-center text-[#a06b3a] shrink-0">
+                      <ImageIcon size={20} />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-stone-900 block">No Custom Poster Uploaded</span>
+                      <span className="text-[11px] text-stone-500">Upload a 16:9 thumbnail cover (JPG, PNG, WebP).</span>
+                    </div>
+                  </div>
+
+                  <label className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#c79c6e] hover:bg-[#b5885c] text-stone-900 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs shrink-0">
+                    <UploadSimple size={15} weight="bold" />
+                    <span>Upload Poster</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handlePosterUpload} />
+                  </label>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1106,47 +1227,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">
                 {editingYtId ? 'Edit YouTube Video' : 'Add New YouTube Video'}
               </span>
-              <button
-                type="button"
-                onClick={() => setYtBulkOpen(!ytBulkOpen)}
-                className="text-xs text-[#c79c6e] hover:underline flex items-center gap-1"
-              >
-                <Plus size={13} />
-                <span>Bulk Import URLs</span>
-              </button>
             </div>
-
-            {/* Bulk Import drawer */}
-            {ytBulkOpen && (
-              <div className="p-4 bg-[#070707] border border-white/10 rounded-xl flex flex-col gap-3">
-                <span className="text-xs font-semibold text-white">Bulk Add YouTube URLs (1 per line)</span>
-                <textarea
-                  rows={4}
-                  value={ytBulkText}
-                  onChange={(e) => setYtBulkText(e.target.value)}
-                  placeholder="https://www.youtube.com/watch?v=...&#10;https://youtu.be/...&#10;https://youtube.com/shorts/..."
-                  className="w-full bg-[#030303] border border-white/15 rounded-lg p-3 text-xs text-white font-mono"
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleParseYtBulk}
-                    className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20"
-                  >
-                    Parse URLs
-                  </button>
-                  {ytBulkItems.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleApplyYtBulk}
-                      className="px-3 py-1.5 rounded-lg bg-[#c79c6e] text-black text-xs font-bold"
-                    >
-                      Add {ytBulkItems.filter(b => b.valid).length} Videos to List
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
@@ -1433,75 +1514,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">
                 {editingIgId ? 'Edit Instagram Reel' : 'Add New Instagram Reel'}
               </span>
-              <button
-                type="button"
-                onClick={() => setIgBulkOpen(!igBulkOpen)}
-                className="text-xs text-[#c79c6e] hover:underline flex items-center gap-1"
-              >
-                <Plus size={13} />
-                <span>Bulk Import Reels</span>
-              </button>
             </div>
-
-            {/* Bulk Import drawer */}
-            {igBulkOpen && (
-              <div className="p-4 bg-[#070707] border border-white/10 rounded-xl flex flex-col gap-3">
-                <span className="text-xs font-semibold text-white">Bulk Add Instagram Reel URLs (1 per line)</span>
-                <textarea
-                  rows={4}
-                  value={igBulkText}
-                  onChange={(e) => setIgBulkText(e.target.value)}
-                  placeholder="https://www.instagram.com/reel/DMLGaOgTszV/&#10;https://www.instagram.com/p/.../&#10;DMLGaOgTszV"
-                  className="w-full bg-[#030303] border border-white/15 rounded-lg p-3 text-xs text-white font-mono"
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const lines = igBulkText.split('\n').map(l => l.trim()).filter(Boolean);
-                      const parsed = lines.map((l, i) => ({
-                        key: `bulk_ig_${i}`,
-                        code: parseInstagramCode(l) || '',
-                        title: `Instagram Reel ${l}`,
-                        category: data.popup?.categories?.[0] || 'Relationships',
-                        valid: Boolean(parseInstagramCode(l))
-                      }));
-                      setIgBulkItems(parsed);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20"
-                  >
-                    Parse Reel URLs
-                  </button>
-                  {igBulkItems.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const valid = igBulkItems.filter(b => b.valid && b.code);
-                        const newItems = valid.map((item, idx) => ({
-                          id: `ig_${Date.now()}_${idx}`,
-                          type: 'instagram',
-                          externalId: item.code,
-                          title: item.title,
-                          category: item.category,
-                          thumbnail: { url: '', publicId: '' },
-                          featured: false,
-                          published: true,
-                          sortOrder: (data?.media?.length || 0) + idx
-                        }));
-                        setData(prev => ({ ...prev, media: [...newItems, ...prev.media] }));
-                        setIgBulkOpen(false);
-                        setIgBulkText('');
-                        setIgBulkItems([]);
-                        if (showToast) showToast(`Added ${newItems.length} Instagram reels!`);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-[#c79c6e] text-black text-xs font-bold"
-                    >
-                      Add {igBulkItems.filter(b => b.valid).length} Reels to List
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
@@ -2215,35 +2228,35 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           </div>
         </div>
       )}
-      {/* Category Manager Modal with Drag & Drop Reordering */}
+      {/* Category Manager Modal with Drag & Drop Reordering (Clean Light Theme) */}
       {isCatManagerOpen && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           onClick={() => setIsCatManagerOpen(false)}
         >
           <div 
-            className="w-full max-w-lg border border-white/15 rounded-2xl p-6 shadow-2xl flex flex-col gap-4"
-            style={{ backgroundColor: '#141210', color: '#ffffff' }}
+            className="w-full max-w-lg border border-[#e6dccb] rounded-2xl p-6 shadow-2xl flex flex-col gap-4 bg-[#fbf7ee] text-[#1c1917]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e6dccb]">
               <div className="flex items-center gap-2">
-                <ListPlus size={18} className="text-[#c79c6e]" weight="bold" />
-                <span className="text-sm font-bold text-white uppercase tracking-wider">
+                <ListPlus size={18} className="text-[#c8532f]" weight="bold" />
+                <span className="text-sm font-bold text-[#1c1917] uppercase tracking-wider">
                   Manage & Reorder Categories
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCatManagerOpen(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-white/60 hover:text-white"
+                className="p-1 rounded-lg hover:bg-black/5 text-[#7c7468] hover:text-[#1c1917] transition-colors cursor-pointer"
+                aria-label="Close"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <p className="text-xs text-white/60 leading-relaxed">
-              Drag categories using the grip handle <span className="font-mono text-[#c79c6e]">⠿</span> to change their display order. This reorders filter chips on the live popup and in dropdowns.
+            <p className="text-xs text-[#57534e] leading-relaxed">
+              Drag categories using the grip handle <span className="font-mono text-[#c8532f] font-bold">⠿</span> to change their display order. This reorders filter chips on the live popup and in dropdowns.
             </p>
 
             {/* Quick Add Input */}
@@ -2259,12 +2272,12 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                   }
                 }}
                 placeholder="New Category Name (e.g. Leadership, Habits)..."
-                className="flex-1 bg-[#050505] border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white placeholder-white/40 focus:border-[#c79c6e] focus:outline-none"
+                className="flex-1 bg-white border border-[#d6cfc7] rounded-xl px-4 py-2.5 text-xs text-[#1c1917] placeholder-[#a8a29e] focus:border-[#c8532f] focus:ring-1 focus:ring-[#c8532f] focus:outline-none shadow-xs"
               />
               <button
                 type="button"
                 onClick={handleAddCategory}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#c79c6e] text-black hover:bg-[#e0b284] transition-all flex items-center gap-1.5 shrink-0"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#c8532f] text-white hover:bg-[#b04524] transition-all flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer"
               >
                 <Plus size={14} weight="bold" />
                 <span>Add</span>
@@ -2290,20 +2303,20 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                     onDragEnd={handleCatDragEnd}
                     className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 ${
                       isDragging 
-                        ? 'opacity-40 border-dashed border-[#c79c6e] bg-[#c79c6e]/10' 
-                        : 'bg-[#080808] border-white/10 hover:border-white/20'
+                        ? 'opacity-50 border-dashed border-[#c8532f] bg-[#c8532f]/10 shadow-xs' 
+                        : 'bg-white border-[#e6dccb] hover:border-[#c8532f]/40 hover:shadow-xs'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 flex-1 min-w-0">
                       {/* Drag Grip Handle */}
                       <div 
-                        className="cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-[#c79c6e] transition-colors"
+                        className="cursor-grab active:cursor-grabbing p-1 text-[#a8a29e] hover:text-[#c8532f] transition-colors"
                         title="Drag to reorder"
                       >
                         <DotsSixVertical size={16} weight="bold" />
                       </div>
 
-                      <span className="text-[11px] font-mono text-white/30 shrink-0">
+                      <span className="text-[11px] font-mono text-[#a8a29e] shrink-0 font-medium">
                         {String(idx + 1).padStart(2, '0')}
                       </span>
 
@@ -2317,28 +2330,28 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                               if (e.key === 'Enter') handleRenameCategory(cat, editingCat.newVal);
                               if (e.key === 'Escape') setEditingCat({ oldVal: '', newVal: '' });
                             }}
-                            className="bg-[#050505] border border-[#c79c6e] rounded px-2.5 py-1 text-xs text-white flex-1"
+                            className="bg-white border border-[#c8532f] rounded px-2.5 py-1 text-xs text-[#1c1917] flex-1 focus:outline-none"
                             autoFocus
                           />
                           <button
                             type="button"
                             onClick={() => handleRenameCategory(cat, editingCat.newVal)}
-                            className="px-2 py-1 rounded bg-[#c79c6e] text-black text-xs font-bold"
+                            className="px-2.5 py-1 rounded bg-[#c8532f] text-white text-xs font-bold cursor-pointer hover:bg-[#b04524]"
                           >
                             Save
                           </button>
                           <button
                             type="button"
                             onClick={() => setEditingCat({ oldVal: '', newVal: '' })}
-                            className="px-2 py-1 rounded bg-white/10 text-white text-xs"
+                            className="px-2.5 py-1 rounded bg-stone-200 text-stone-700 text-xs cursor-pointer hover:bg-stone-300"
                           >
                             Cancel
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 truncate">
-                          <span className="text-xs font-semibold text-white truncate">{cat}</span>
-                          <span className="text-[10px] text-white/40 shrink-0">
+                          <span className="text-xs font-bold text-[#1c1917] truncate">{cat}</span>
+                          <span className="text-[11px] text-[#78716c] shrink-0">
                             ({totalUsed} items)
                           </span>
                         </div>
@@ -2352,7 +2365,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                           type="button"
                           onClick={() => handleMoveCategory(idx, 'up')}
                           disabled={idx === 0}
-                          className="p-1 rounded bg-white/5 text-white/70 hover:text-white disabled:opacity-20"
+                          className="p-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-stone-900 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                           title="Move Up"
                         >
                           <ArrowUp size={12} />
@@ -2361,7 +2374,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                           type="button"
                           onClick={() => handleMoveCategory(idx, 'down')}
                           disabled={idx === data.popup.categories.length - 1}
-                          className="p-1 rounded bg-white/5 text-white/70 hover:text-white disabled:opacity-20"
+                          className="p-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-stone-900 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                           title="Move Down"
                         >
                           <ArrowDown size={12} />
@@ -2371,7 +2384,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                         <button
                           type="button"
                           onClick={() => setEditingCat({ oldVal: cat, newVal: cat })}
-                          className="p-1 rounded bg-white/5 text-white/70 hover:text-white"
+                          className="p-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-stone-900 cursor-pointer"
                           title="Rename"
                         >
                           <PencilSimple size={12} />
@@ -2381,7 +2394,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                         <button
                           type="button"
                           onClick={() => handleDeleteCategoryPrompt(cat)}
-                          className="p-1 rounded bg-rose-500/10 text-rose-300 hover:bg-rose-500 hover:text-white"
+                          className="p-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 cursor-pointer"
                           title="Delete"
                         >
                           <Trash size={12} />
@@ -2393,11 +2406,11 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               })}
             </div>
 
-            <div className="flex justify-end pt-3 border-t border-white/10">
+            <div className="flex justify-end pt-3 border-t border-[#e6dccb]">
               <button
                 type="button"
                 onClick={() => setIsCatManagerOpen(false)}
-                className="px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#c79c6e] text-black hover:bg-[#e0b284]"
+                className="px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#c8532f] text-white hover:bg-[#b04524] shadow-sm cursor-pointer transition-colors"
               >
                 Done
               </button>
@@ -2408,19 +2421,19 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
 
       {/* Reassign Modal (when deleting a category that has items) */}
       {reassignModal.isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-[#11100f] border border-white/20 rounded-2xl max-w-md w-full p-6 flex flex-col gap-4 text-white">
-            <span className="text-sm font-bold text-amber-400 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#fbf7ee] border border-[#e6dccb] rounded-2xl max-w-md w-full p-6 flex flex-col gap-4 text-[#1c1917] shadow-2xl">
+            <span className="text-sm font-bold text-amber-700 flex items-center gap-2">
               <WarningCircle size={18} weight="fill" />
               <span>Category In Use</span>
             </span>
-            <p className="text-xs text-white/70 leading-relaxed">
+            <p className="text-xs text-[#57534e] leading-relaxed">
               The category <strong>"{reassignModal.catToDelete}"</strong> is currently assigned to videos or reels. Select a new category to reassign these items to:
             </p>
             <select
               value={reassignModal.targetCat}
               onChange={(e) => setReassignModal(prev => ({ ...prev, targetCat: e.target.value }))}
-              className="w-full bg-[#050505] border border-white/15 rounded-lg p-2.5 text-xs text-white"
+              className="w-full bg-white border border-[#d6cfc7] rounded-lg p-2.5 text-xs text-[#1c1917] focus:border-[#c8532f] focus:outline-none"
             >
               {(data.popup?.categories || [])
                 .filter(c => c !== reassignModal.catToDelete)
@@ -2432,14 +2445,14 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               <button
                 type="button"
                 onClick={() => setReassignModal({ isOpen: false, catToDelete: '', targetCat: '' })}
-                className="px-4 py-2 rounded-xl text-xs bg-white/10 text-white"
+                className="px-4 py-2 rounded-xl text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 cursor-pointer font-medium"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmReassignAndDelete}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#c4522d] text-white hover:bg-[#d85c33]"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#c8532f] text-white hover:bg-[#b04524] cursor-pointer shadow-sm"
               >
                 Reassign & Delete
               </button>

@@ -9,7 +9,7 @@ import {
   InstagramLogo, 
   CalendarCheck
 } from '@phosphor-icons/react';
-import MuxPlayer from '@mux/mux-player-react';
+import MuxVideoPlayer from '../ui/MuxVideoPlayer';
 import { MEDIA_DATA, CATEGORIES, GRADIENTS, INTRO_VIDEO } from '../../data/media';
 import { CDN_IMAGES } from '../../utils/cdnAssets';
 
@@ -172,17 +172,6 @@ export default function RoleDetailModal({
     return DEFAULT_SECTIONS;
   }, [activeStory.sections]);
 
-  // Word count & read time calculation
-  const readTimeEst = useMemo(() => {
-    let words = (storyLead || '').split(/\s+/).filter(Boolean).length;
-    storySections.forEach(s => {
-      words += (s.heading || '').split(/\s+/).filter(Boolean).length;
-      words += (s.text || '').split(/\s+/).filter(Boolean).length;
-      words += (s.quote || '').split(/\s+/).filter(Boolean).length;
-    });
-    const mins = Math.max(1, Math.ceil(words / 200));
-    return `${mins} min read`;
-  }, [storyLead, storySections]);
 
   // Intro video state & properties
   const activeIntroVideo = popupSettings.introVideo || INTRO_VIDEO;
@@ -1463,9 +1452,8 @@ export default function RoleDetailModal({
                 <div className="aw-video-frame">
                   {isIntroPlaying ? (
                     activeIntroVideo?.playbackId ? (
-                      <MuxPlayer
+                      <MuxVideoPlayer
                         playbackId={activeIntroVideo.playbackId}
-                        streamType="on-demand"
                         autoPlay
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
@@ -1486,60 +1474,7 @@ export default function RoleDetailModal({
                           title={activeIntroVideo.label || activeIntroVideo.title || 'Meet Aarkesh'}
                         />
                       )
-                    ) : (
-                      /* Demo/Fallback Interactive Video Player */
-                      <div
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '24px',
-                          color: '#fff',
-                          textAlign: 'center',
-                          background: 'radial-gradient(circle at center, #221a14 0%, #0d0a08 100%)'
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 64,
-                            height: 64,
-                            borderRadius: '50%',
-                            background: 'rgba(196,82,45,0.2)',
-                            border: '1px solid #c4522d',
-                            display: 'grid',
-                            placeItems: 'center',
-                            marginBottom: 16,
-                            color: '#ff7b52'
-                          }}
-                        >
-                          <Play size={26} weight="fill" />
-                        </div>
-                        <h4 style={{ font: "700 20px 'Playfair Display', serif", marginBottom: 8 }}>
-                          {activeIntroVideo.label || activeIntroVideo.title || 'Meet Aarkesh · 2 min'}
-                        </h4>
-                        <p style={{ fontSize: 13.5, color: '#b8aba0', maxWidth: 460, lineHeight: 1.6, marginBottom: 16 }}>
-                          2-minute introduction video.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setIsIntroPlaying(false)}
-                          style={{
-                            padding: '7px 18px',
-                            borderRadius: 99,
-                            background: 'rgba(255,255,255,0.15)',
-                            border: '1px solid rgba(255,255,255,0.25)',
-                            color: '#fff',
-                            fontSize: 12.5,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Pause Video
-                        </button>
-                      </div>
-                    )
+                    ) : null
                   ) : (
                     /* Video Thumbnail / Poster state */
                     <>
@@ -1724,7 +1659,6 @@ export default function RoleDetailModal({
             <div className="rm-kick">{storyKicker}</div>
             <h3>{storyTitle}</h3>
             <p className="rm-lead">{storyLead}</p>
-            <div className="rm-meta">{readTimeEst}</div>
 
             {storyHero?.url && (
               <figure className="rm-fig rm-hero">

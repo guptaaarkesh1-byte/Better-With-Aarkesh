@@ -25,7 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 
-import { API_URL } from '../utils/apiUrl';
+import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 
 const SIDEBAR_TABS = [
   { 
@@ -451,7 +451,7 @@ export default function AdminCourseLandingEditor() {
 
         <div className="flex items-center gap-3">
           <a
-            href="https://aarkeshgupta.com/course"
+            href={getLiveSiteUrl('/course')}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white hover:bg-stone-50 text-stone-700 hover:text-black text-xs font-semibold border border-stone-300 transition-colors shadow-xs"
@@ -1079,7 +1079,7 @@ export default function AdminCourseLandingEditor() {
                     Directory Header Content
                   </span>
                   <a
-                    href="https://aarkeshgupta.com/course/all"
+                    href={getLiveSiteUrl('/course/all')}
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-1.5 text-xs text-[#c9542f] hover:underline font-semibold"

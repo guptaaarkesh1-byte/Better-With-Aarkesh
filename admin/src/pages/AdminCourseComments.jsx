@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useToast } from '../context/ToastContext';
-import { API_URL } from '../utils/apiUrl';
+import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 import './AdminCourseComments.css';
 
 // SVG Icons
@@ -837,7 +837,7 @@ export default function AdminCourseComments() {
                 </div>
 
                 <a
-                  href={`/course?learn=true`}
+                  href={getLiveSiteUrl('/course?learn=true')}
                   target="_blank"
                   rel="noreferrer"
                   className="easy-view-lesson-btn"

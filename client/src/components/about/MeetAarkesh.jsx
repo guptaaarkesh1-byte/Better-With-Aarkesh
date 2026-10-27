@@ -166,6 +166,24 @@ export default function MeetAarkesh() {
         setActiveRoleCardImage(match.bgImg || match.fallbackImg);
       }
     };
+
+    // Auto-open if query param exists (e.g. ?popup=about or ?openAbout=true or ?openRole=...)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const shouldOpen = params.get('popup') === 'about' || params.get('openAbout') === 'true' || params.has('openRole');
+      const roleParam = params.get('role') || params.get('openRole');
+      if (shouldOpen || roleParam) {
+        const target = roleParam || 'pilot';
+        const match = roles.find(r => r.key === target?.toLowerCase()) || roles[0];
+        if (match) {
+          setTimeout(() => {
+            setActiveRoleKey(match.key);
+            setActiveRoleCardImage(match.bgImg || match.fallbackImg);
+          }, 350);
+        }
+      }
+    } catch (e) {}
+
     return () => {
       delete window.awOpenRole;
     };
@@ -365,6 +383,7 @@ export default function MeetAarkesh() {
       className="principle-slide-over relative z-20 w-full !min-h-0 h-auto flex flex-col bg-[#f5f1e8] overflow-hidden snap-section"
       style={{ minHeight: 'auto' }}
     >
+      <div id="about" className="absolute -top-10" />
       
       {/* ─── MOBILE VIEW (Matches user's mobile prototype) ─── */}
       <div className="block md:hidden w-full px-5 py-14 border-t border-black/10">

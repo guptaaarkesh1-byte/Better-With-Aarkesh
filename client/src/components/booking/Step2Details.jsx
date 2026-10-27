@@ -259,6 +259,9 @@ export default function Step2Details({
         <div>
           <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
             {settings.nameLabel || 'YOUR NAME'}
+            {!/\*\s*$/.test(settings.nameLabel || '') && (
+              <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
+            )}
           </label>
           <input
             type="text"
@@ -310,6 +313,9 @@ export default function Step2Details({
         <div ref={emailSectionRef}>
           <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
             {settings.emailLabel || 'EMAIL'}
+            {!/\*\s*$/.test(settings.emailLabel || '') && (
+              <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
+            )}
           </label>
           <input
             ref={emailInputRef}
@@ -341,6 +347,9 @@ export default function Step2Details({
           <div>
             <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
               {settings.phoneLabel || 'PHONE NUMBER'}
+              {!/\*\s*$/.test(settings.phoneLabel || '') && (
+                <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
+              )}
             </label>
             <div className={`flex items-center border rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 transition-colors bg-white shadow-xs ${
               phoneError
@@ -399,6 +408,9 @@ export default function Step2Details({
         <div className={isAuthenticated ? "md:col-span-2" : ""}>
           <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
             {settings.reasonLabel || 'WHAT BRINGS YOU HERE?'}
+            {!/\*\s*$/.test(settings.reasonLabel || '') && (
+              <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
+            )}
           </label>
           <div className="relative">
             <textarea
