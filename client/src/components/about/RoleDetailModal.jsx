@@ -99,6 +99,7 @@ export default function RoleDetailModal({
   const readMoreLabel = popupSettings.readMoreLabel || 'Read More';
   const showYoutube = popupSettings.showYoutube !== false;
   const showInstagram = popupSettings.showInstagram !== false;
+  const hasMediaTabs = Boolean(showYoutube || showInstagram);
   const activePageSize = popupSettings.pageSize || PAGE_SIZE;
 
   // Media browser state
@@ -537,20 +538,29 @@ export default function RoleDetailModal({
 
         /* ---------- 2-MINUTE VIDEO SECTION ---------- */
         .aw-video-section {
-          padding: 14px 36px 0;
+          padding: 16px 36px 0;
           display: flex;
           flex-direction: column;
           align-items: center;
         }
+        .aw-video-section.aw-video-solo {
+          padding: 28px 36px 44px;
+        }
         .aw-video-card {
           width: 100%;
-          max-width: 480px;
-          border-radius: 14px;
+          max-width: 680px;
+          border-radius: 16px;
           overflow: hidden;
           background: #110e0c;
           border: 1px solid var(--line);
-          box-shadow: 0 10px 24px -8px rgba(0,0,0,0.18);
+          box-shadow: 0 14px 32px -8px rgba(0,0,0,0.22);
           position: relative;
+          transition: max-width .3s ease;
+        }
+        .aw-video-card.aw-card-solo {
+          max-width: 840px;
+          border-radius: 18px;
+          box-shadow: 0 20px 48px -10px rgba(0,0,0,0.28);
         }
         .aw-video-frame {
           position: relative;
@@ -645,21 +655,21 @@ export default function RoleDetailModal({
           z-index: 3;
         }
         .aw-play-circle-lg {
-          width: 50px;
-          height: 50px;
+          width: 64px;
+          height: 64px;
           border-radius: 50%;
           background: rgba(196, 82, 45, 0.94);
           color: #fff;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 6px 18px rgba(196, 82, 45, 0.45);
+          box-shadow: 0 8px 24px rgba(196, 82, 45, 0.45);
           transition: transform .25s ease, background .25s ease, box-shadow .25s ease;
         }
         .aw-video-play-btn:hover .aw-play-circle-lg {
           transform: scale(1.08);
           background: #d85c33;
-          box-shadow: 0 8px 24px rgba(196, 82, 45, 0.6);
+          box-shadow: 0 10px 30px rgba(196, 82, 45, 0.6);
         }
         .aw-video-caption {
           font: 600 13px/1.3 'Playfair Display', Georgia, serif;
@@ -699,21 +709,25 @@ export default function RoleDetailModal({
           align-items: center;
           justify-content: center;
           gap: 4px;
-          margin-top: 10px;
+          margin-top: 14px;
           margin-bottom: 2px;
           text-align: center;
+        }
+        .aw-video-solo .aw-readmore-row {
+          margin-top: 22px;
+          margin-bottom: 6px;
         }
         .aw-readmore-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          padding: 8px 24px;
+          padding: 9px 26px;
           background: var(--acc);
           color: #fff;
           border: none;
           border-radius: 99px;
-          font: 600 13px/1 Inter, sans-serif;
+          font: 600 13.5px/1 Inter, sans-serif;
           cursor: pointer;
           transition: all .2s ease;
           box-shadow: 0 3px 10px rgba(196, 82, 45, 0.25);
@@ -1444,8 +1458,8 @@ export default function RoleDetailModal({
         {view === 'main' && (
           <>
             {/* 2-Minute Video Section (Replaces the former text block) */}
-            <section className="aw-video-section">
-              <div className="aw-video-card">
+            <section className={`aw-video-section ${!hasMediaTabs ? 'aw-video-solo' : ''}`}>
+              <div className={`aw-video-card ${!hasMediaTabs ? 'aw-card-solo' : ''}`}>
                 <div className="aw-video-frame">
                   {isIntroPlaying ? (
                     activeIntroVideo?.playbackId ? (
@@ -1549,7 +1563,7 @@ export default function RoleDetailModal({
                           aria-label="Play video"
                         >
                           <div className="aw-play-circle-lg">
-                            <Play size={28} weight="fill" style={{ marginLeft: 3 }} />
+                            <Play size={32} weight="fill" style={{ marginLeft: 3 }} />
                           </div>
                         </button>
                       ) : (
@@ -1577,7 +1591,8 @@ export default function RoleDetailModal({
             </section>
 
             {/* Social Media Videos Section (YouTube & Instagram) */}
-            <section className="aw-media">
+            {hasMediaTabs && (
+              <section className="aw-media">
               <div className="aw-bar">
                 {/* Tabs with live counts */}
                 <div className="aw-tabs" role="tablist">
@@ -1698,7 +1713,8 @@ export default function RoleDetailModal({
                   )}
                 </div>
               )}
-            </section>
+              </section>
+            )}
           </>
         )}
 
