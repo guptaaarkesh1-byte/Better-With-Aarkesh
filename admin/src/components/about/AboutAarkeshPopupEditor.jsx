@@ -62,7 +62,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
   ref
 ) {
   // Active sub-page tab
-  const [subTab, setSubTab] = useState('intro'); // 'intro' | 'youtube' | 'reels' | 'categories' | 'story' | 'settings'
+  const [subTab, setSubTab] = useState('settings'); // 'settings' | 'intro' | 'youtube' | 'reels' | 'categories' | 'story'
 
   // Main state
   const [loading, setLoading] = useState(true);
@@ -844,7 +844,21 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
 
       {/* Horizontal Sub-Navigation Pills with Live Status / Counts */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {/* 1. Intro Video */}
+        {/* 1. Popup Settings */}
+        <button
+          type="button"
+          onClick={() => setSubTab('settings')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
+            subTab === 'settings'
+              ? 'bg-[#c79c6e] text-black font-bold shadow-lg shadow-[#c79c6e]/20'
+              : 'bg-[#0f0f0f] text-white/70 hover:text-white border border-white/10'
+          }`}
+        >
+          <Gear size={15} weight="bold" />
+          <span>Popup Settings</span>
+        </button>
+
+        {/* 2. Intro Video */}
         <button
           type="button"
           onClick={() => setSubTab('intro')}
@@ -859,7 +873,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           <span className="text-[10px] opacity-75 capitalize">({introStatus})</span>
         </button>
 
-        {/* 2. YouTube Videos */}
+        {/* 3. YouTube Videos */}
         <button
           type="button"
           onClick={() => setSubTab('youtube')}
@@ -876,7 +890,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           </span>
         </button>
 
-        {/* 3. Instagram Reels */}
+        {/* 4. Instagram Reels */}
         <button
           type="button"
           onClick={() => setSubTab('reels')}
@@ -893,7 +907,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           </span>
         </button>
 
-        {/* 4. Categories */}
+        {/* 5. Categories */}
         <button
           type="button"
           onClick={() => setSubTab('categories')}
@@ -910,7 +924,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           </span>
         </button>
 
-        {/* 5. Read More Page */}
+        {/* 6. Read More Page */}
         <button
           type="button"
           onClick={() => setSubTab('story')}
@@ -925,20 +939,6 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10">
             {data.story?.sections?.length || 0} sec · {wordCount}w
           </span>
-        </button>
-
-        {/* 6. Popup Settings */}
-        <button
-          type="button"
-          onClick={() => setSubTab('settings')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
-            subTab === 'settings'
-              ? 'bg-[#c79c6e] text-black font-bold shadow-lg shadow-[#c79c6e]/20'
-              : 'bg-[#0f0f0f] text-white/70 hover:text-white border border-white/10'
-          }`}
-        >
-          <Gear size={15} weight="bold" />
-          <span>Popup Settings</span>
         </button>
       </div>
 
