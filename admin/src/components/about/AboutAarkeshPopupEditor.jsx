@@ -24,7 +24,8 @@ import {
   FolderOpen,
   PencilSimple,
   Sparkle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  DotsSixVertical
 } from '@phosphor-icons/react';
 import * as UpChunk from '@mux/upchunk';
 import MuxPlayer from '@mux/mux-player-react';
@@ -360,8 +361,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
     inputUrl: '',
     title: '',
     category: '',
-    thumbnailUrl: '',
-    featured: false
+    thumbnailUrl: ''
   });
   const [ytSearch, setYtSearch] = useState('');
   const [ytFilterCat, setYtFilterCat] = useState('All');
@@ -399,8 +399,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           externalId: parsedYtId,
           title: ytForm.title.trim(),
           category: cat,
-          thumbnail: { url: ytForm.thumbnailUrl.trim(), publicId: '' },
-          featured: ytForm.featured
+          thumbnail: { url: ytForm.thumbnailUrl.trim(), publicId: '' }
         } : m)
       }));
       setEditingYtId(null);
@@ -413,7 +412,6 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
         title: ytForm.title.trim(),
         category: cat,
         thumbnail: { url: ytForm.thumbnailUrl.trim(), publicId: '' },
-        featured: ytForm.featured,
         published: true,
         sortOrder: data?.media?.filter(m => m.type === 'youtube').length || 0
       };
@@ -424,7 +422,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
       if (showToast) showToast('YouTube video added!');
     }
 
-    setYtForm({ inputUrl: '', title: '', category: '', thumbnailUrl: '', featured: false });
+    setYtForm({ inputUrl: '', title: '', category: '', thumbnailUrl: '' });
   };
 
   const handleEditYouTube = (item) => {
@@ -433,8 +431,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
       inputUrl: item.externalId,
       title: item.title,
       category: item.category,
-      thumbnailUrl: item.thumbnail?.url || '',
-      featured: Boolean(item.featured)
+      thumbnailUrl: item.thumbnail?.url || ''
     });
     window.scrollTo({ top: 300, behavior: 'smooth' });
   };
@@ -561,14 +558,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
   const handleTogglePublished = (id) => {
     setData(prev => ({
       ...prev,
-      media: prev.media.map(m => m.id === id ? { ...m, published: !m.published } : m)
-    }));
-  };
-
-  const handleToggleFeatured = (id) => {
-    setData(prev => ({
-      ...prev,
-      media: prev.media.map(m => m.id === id ? { ...m, featured: !m.featured } : { ...m, featured: false })
+      media: prev.media.map(m => m.id === id ? { ...m, published: m.published === false ? true : false } : m)
     }));
   };
 
@@ -605,11 +595,45 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
   };
 
   // -------------------------------------------------------------
-  // SUB-PAGE 4: CATEGORIES State & Handlers
+  // CATEGORIES State & Handlers (Managed via Dropdown Modal)
   // -------------------------------------------------------------
   const [newCatInput, setNewCatInput] = useState('');
   const [editingCat, setEditingCat] = useState({ oldVal: '', newVal: '' });
   const [reassignModal, setReassignModal] = useState({ isOpen: false, catToDelete: '', targetCat: '' });
+  const [isCatManagerOpen, setIsCatManagerOpen] = useState(false);
+  const [draggedCatIndex, setDraggedCatIndex] = useState(null);
+
+  const handleCatDragStart = (e, index) => {
+    setDraggedCatIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleCatDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleCatDrop = (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedCatIndex === null || draggedCatIndex === targetIndex) return;
+    setData(prev => {
+      const list = [...(prev.popup?.categories || [])];
+      const [draggedItem] = list.splice(draggedCatIndex, 1);
+      list.splice(targetIndex, 0, draggedItem);
+      return {
+        ...prev,
+        popup: {
+          ...prev.popup,
+          categories: list
+        }
+      };
+    });
+    setDraggedCatIndex(null);
+  };
+
+  const handleCatDragEnd = () => {
+    setDraggedCatIndex(null);
+  };
 
   const handleAddCategory = () => {
     const val = newCatInput.trim();
@@ -907,22 +931,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
           </span>
         </button>
 
-        {/* 5. Categories */}
-        <button
-          type="button"
-          onClick={() => setSubTab('categories')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
-            subTab === 'categories'
-              ? 'bg-[#c79c6e] text-black font-bold shadow-lg shadow-[#c79c6e]/20'
-              : 'bg-[#0f0f0f] text-white/70 hover:text-white border border-white/10'
-          }`}
-        >
-          <ListPlus size={15} weight="bold" />
-          <span>Categories</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10">
-            {data.popup?.categories?.length || 0}
-          </span>
-        </button>
+
 
         {/* 6. Read More Page */}
         <button
@@ -1164,15 +1173,32 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Category</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Category</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCatManagerOpen(true)}
+                    className="text-[11px] text-[#c79c6e] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus size={11} weight="bold" />
+                    <span>Manage / Add Category</span>
+                  </button>
+                </div>
                 <select
                   value={ytForm.category || data.popup?.categories?.[0] || 'Mindset'}
-                  onChange={(e) => setYtForm(prev => ({ ...prev, category: e.target.value }))}
+                  onChange={(e) => {
+                    if (e.target.value === '__ADD_NEW__') {
+                      setIsCatManagerOpen(true);
+                    } else {
+                      setYtForm(prev => ({ ...prev, category: e.target.value }));
+                    }
+                  }}
                   className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-xs text-white focus:border-[#c79c6e]"
                 >
                   {(data.popup?.categories || []).map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
+                  <option value="__ADD_NEW__">＋ Add / Reorder Categories...</option>
                 </select>
               </div>
 
@@ -1243,24 +1269,14 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-2">
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-white/70">
-                <input
-                  type="checkbox"
-                  checked={ytForm.featured}
-                  onChange={(e) => setYtForm(prev => ({ ...prev, featured: e.target.checked }))}
-                  className="rounded accent-[#c79c6e]"
-                />
-                <span>Set as Featured ("Start here" video on YouTube tab)</span>
-              </label>
-
+            <div className="flex items-center justify-end pt-2">
               <div className="flex items-center gap-2">
                 {editingYtId && (
                   <button
                     type="button"
                     onClick={() => {
                       setEditingYtId(null);
-                      setYtForm({ inputUrl: '', title: '', category: '', thumbnailUrl: '', featured: false });
+                      setYtForm({ inputUrl: '', title: '', category: '', thumbnailUrl: '' });
                     }}
                     className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/10 text-white hover:bg-white/20"
                   >
@@ -1325,21 +1341,11 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                           alt=""
                           className="w-full h-full object-cover"
                         />
-                        {item.featured && (
-                          <div className="absolute top-1 left-1 px-1 py-0.5 rounded bg-[#c4522d] text-white text-[9px] font-bold">
-                            STAR
-                          </div>
-                        )}
                       </div>
 
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-semibold text-white truncate">{item.title}</span>
-                          {item.featured && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#c4522d]/20 text-[#ffa260] font-semibold border border-[#c4522d]/40">
-                              Start here
-                            </span>
-                          )}
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-white/40 mt-0.5">
                           <span className="px-1.5 py-0.5 rounded bg-white/5 text-white/70">{item.category}</span>
@@ -1348,32 +1354,28 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Featured Toggle Star */}
-                      <button
-                        type="button"
-                        onClick={() => handleToggleFeatured(item.id)}
-                        title={item.featured ? 'Featured (Start here)' : 'Mark as Featured'}
-                        className={`p-1.5 rounded-lg border transition-all ${
-                          item.featured
-                            ? 'bg-[#c4522d]/20 text-[#ffa260] border-[#c4522d]/50'
-                            : 'bg-white/5 text-white/40 border-white/10 hover:text-white'
-                        }`}
-                      >
-                        <Star size={14} weight={item.featured ? 'fill' : 'regular'} />
-                      </button>
-
-                      {/* Published Toggle */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      {/* Published Toggle Slider */}
                       <button
                         type="button"
                         onClick={() => handleTogglePublished(item.id)}
-                        className={`px-2 py-1 rounded-md text-[11px] font-semibold border transition-all ${
-                          item.published
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                            : 'bg-white/5 text-white/40 border-white/10'
-                        }`}
+                        className="flex items-center gap-2 cursor-pointer py-1 px-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                        title={item.published !== false ? 'Published (Click to hide)' : 'Hidden (Click to publish)'}
                       >
-                        {item.published ? 'Published' : 'Hidden'}
+                        <div 
+                          className={`w-9 h-5 rounded-full transition-colors relative flex items-center p-0.5 ${
+                            item.published !== false ? 'bg-emerald-500' : 'bg-stone-600'
+                          }`}
+                        >
+                          <div 
+                            className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                              item.published !== false ? 'translate-x-4' : 'translate-x-0'
+                            }`} 
+                          />
+                        </div>
+                        <span className={`text-[11px] font-semibold min-w-14 text-left ${item.published !== false ? 'text-emerald-400' : 'text-stone-400'}`}>
+                          {item.published !== false ? 'Published' : 'Hidden'}
+                        </span>
                       </button>
 
                       {/* Reorder Up/Down */}
@@ -1521,15 +1523,32 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Category</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Category</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCatManagerOpen(true)}
+                    className="text-[11px] text-[#c79c6e] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus size={11} weight="bold" />
+                    <span>Manage / Add Category</span>
+                  </button>
+                </div>
                 <select
                   value={igForm.category || data.popup?.categories?.[0] || 'Relationships'}
-                  onChange={(e) => setIgForm(prev => ({ ...prev, category: e.target.value }))}
+                  onChange={(e) => {
+                    if (e.target.value === '__ADD_NEW__') {
+                      setIsCatManagerOpen(true);
+                    } else {
+                      setIgForm(prev => ({ ...prev, category: e.target.value }));
+                    }
+                  }}
                   className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-xs text-white focus:border-[#c79c6e]"
                 >
                   {(data.popup?.categories || []).map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
+                  <option value="__ADD_NEW__">＋ Add / Reorder Categories...</option>
                 </select>
               </div>
 
@@ -1705,18 +1724,28 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Published Toggle */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      {/* Published Toggle Slider */}
                       <button
                         type="button"
                         onClick={() => handleTogglePublished(item.id)}
-                        className={`px-2 py-1 rounded-md text-[11px] font-semibold border transition-all ${
-                          item.published
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                            : 'bg-white/5 text-white/40 border-white/10'
-                        }`}
+                        className="flex items-center gap-2 cursor-pointer py-1 px-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                        title={item.published !== false ? 'Published (Click to hide)' : 'Hidden (Click to publish)'}
                       >
-                        {item.published ? 'Published' : 'Hidden'}
+                        <div 
+                          className={`w-9 h-5 rounded-full transition-colors relative flex items-center p-0.5 ${
+                            item.published !== false ? 'bg-emerald-500' : 'bg-stone-600'
+                          }`}
+                        >
+                          <div 
+                            className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                              item.published !== false ? 'translate-x-4' : 'translate-x-0'
+                            }`} 
+                          />
+                        </div>
+                        <span className={`text-[11px] font-semibold min-w-14 text-left ${item.published !== false ? 'text-emerald-400' : 'text-stone-400'}`}>
+                          {item.published !== false ? 'Published' : 'Hidden'}
+                        </span>
                       </button>
 
                       {/* Reorder Up/Down */}
@@ -1763,175 +1792,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 4. CATEGORIES SUB-PAGE */}
-      {/* ========================================================================= */}
-      {subTab === 'categories' && (
-        <div className="flex flex-col gap-6">
-          <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 flex flex-col gap-5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#c79c6e]">Manage Video Categories</span>
-            <p className="text-xs text-white/50">
-              Shared categories used by both YouTube and Instagram Reels filters. Reorder to change chip order on the public site.
-            </p>
 
-            {/* Add Category Form */}
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value={newCatInput}
-                onChange={(e) => setNewCatInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); }}
-                placeholder="New Category Name (e.g. Leadership, Focus)..."
-                className="flex-1 bg-[#050505] border border-white/10 rounded-lg px-4 py-2.5 text-xs text-white focus:border-[#c79c6e]"
-              />
-              <button
-                type="button"
-                onClick={handleAddCategory}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#c79c6e] text-black hover:bg-[#e0b284] transition-all flex items-center gap-1.5 shrink-0"
-              >
-                <Plus size={14} weight="bold" />
-                <span>Add Category</span>
-              </button>
-            </div>
-
-            {/* Categories List */}
-            <div className="flex flex-col gap-2 mt-2">
-              {(data.popup?.categories || []).map((cat, idx) => {
-                const countYt = data.media?.filter(m => m.type === 'youtube' && m.category === cat).length || 0;
-                const countIg = data.media?.filter(m => m.type === 'instagram' && m.category === cat).length || 0;
-                const totalUsed = countYt + countIg;
-                const isEditing = editingCat.oldVal === cat;
-
-                return (
-                  <div
-                    key={cat}
-                    className="p-3 rounded-xl bg-[#070707] border border-white/10 flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      <span className="text-xs font-mono text-white/30">{String(idx + 1).padStart(2, '0')}</span>
-
-                      {isEditing ? (
-                        <div className="flex items-center gap-2 flex-1">
-                          <input
-                            type="text"
-                            value={editingCat.newVal}
-                            onChange={(e) => setEditingCat(prev => ({ ...prev, newVal: e.target.value }))}
-                            className="bg-[#050505] border border-[#c79c6e] rounded px-3 py-1 text-xs text-white flex-1"
-                            autoFocus
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRenameCategory(cat, editingCat.newVal)}
-                            className="px-2.5 py-1 rounded bg-[#c79c6e] text-black text-xs font-bold"
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingCat({ oldVal: '', newVal: '' })}
-                            className="px-2.5 py-1 rounded bg-white/10 text-white text-xs"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-white">{cat}</span>
-                          <span className="text-[11px] text-white/40">
-                            ({totalUsed} items: {countYt} YT, {countIg} Reels)
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {!isEditing && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Move Up/Down */}
-                        <button
-                          type="button"
-                          onClick={() => handleMoveCategory(idx, 'up')}
-                          disabled={idx === 0}
-                          className="p-1.5 rounded-lg bg-white/5 text-white/70 hover:text-white disabled:opacity-20"
-                        >
-                          <ArrowUp size={13} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMoveCategory(idx, 'down')}
-                          disabled={idx === data.popup.categories.length - 1}
-                          className="p-1.5 rounded-lg bg-white/5 text-white/70 hover:text-white disabled:opacity-20"
-                        >
-                          <ArrowDown size={13} />
-                        </button>
-
-                        {/* Rename */}
-                        <button
-                          type="button"
-                          onClick={() => setEditingCat({ oldVal: cat, newVal: cat })}
-                          className="p-1.5 rounded-lg bg-white/5 text-white/70 hover:text-white"
-                        >
-                          <PencilSimple size={13} />
-                        </button>
-
-                        {/* Delete */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCategoryPrompt(cat)}
-                          className="p-1.5 rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500 hover:text-white"
-                        >
-                          <Trash size={13} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Reassign Modal */}
-          {reassignModal.isOpen && (
-            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-              <div className="bg-[#11100f] border border-white/20 rounded-2xl max-w-md w-full p-6 flex flex-col gap-4 text-white">
-                <span className="text-sm font-bold text-amber-400 flex items-center gap-2">
-                  <WarningCircle size={18} weight="fill" />
-                  <span>Category In Use</span>
-                </span>
-                <p className="text-xs text-white/70 leading-relaxed">
-                  The category <strong>"{reassignModal.catToDelete}"</strong> is currently assigned to videos or reels. Select a new category to reassign these items to:
-                </p>
-                <select
-                  value={reassignModal.targetCat}
-                  onChange={(e) => setReassignModal(prev => ({ ...prev, targetCat: e.target.value }))}
-                  className="w-full bg-[#050505] border border-white/15 rounded-lg p-2.5 text-xs text-white"
-                >
-                  {(data.popup?.categories || [])
-                    .filter(c => c !== reassignModal.catToDelete)
-                    .map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                </select>
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setReassignModal({ isOpen: false, catToDelete: '', targetCat: '' })}
-                    className="px-4 py-2 rounded-xl text-xs bg-white/10 text-white"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmReassignAndDelete}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-[#c4522d] text-white hover:bg-[#d85c33]"
-                  >
-                    Reassign & Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* 5. READ MORE PAGE SUB-PAGE */}
@@ -2350,6 +2211,238 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                   <span>Show Instagram Reels Tab</span>
                 </label>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Category Manager Modal with Drag & Drop Reordering */}
+      {isCatManagerOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+          onClick={() => setIsCatManagerOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg border border-white/15 rounded-2xl p-6 shadow-2xl flex flex-col gap-4"
+            style={{ backgroundColor: '#141210', color: '#ffffff' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <ListPlus size={18} className="text-[#c79c6e]" weight="bold" />
+                <span className="text-sm font-bold text-white uppercase tracking-wider">
+                  Manage & Reorder Categories
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCatManagerOpen(false)}
+                className="p-1 rounded-lg hover:bg-white/10 text-white/60 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-white/60 leading-relaxed">
+              Drag categories using the grip handle <span className="font-mono text-[#c79c6e]">⠿</span> to change their display order. This reorders filter chips on the live popup and in dropdowns.
+            </p>
+
+            {/* Quick Add Input */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newCatInput}
+                onChange={(e) => setNewCatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCategory();
+                  }
+                }}
+                placeholder="New Category Name (e.g. Leadership, Habits)..."
+                className="flex-1 bg-[#050505] border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white placeholder-white/40 focus:border-[#c79c6e] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleAddCategory}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#c79c6e] text-black hover:bg-[#e0b284] transition-all flex items-center gap-1.5 shrink-0"
+              >
+                <Plus size={14} weight="bold" />
+                <span>Add</span>
+              </button>
+            </div>
+
+            {/* Draggable Category List */}
+            <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+              {(data.popup?.categories || []).map((cat, idx) => {
+                const countYt = data.media?.filter(m => m.type === 'youtube' && m.category === cat).length || 0;
+                const countIg = data.media?.filter(m => m.type === 'instagram' && m.category === cat).length || 0;
+                const totalUsed = countYt + countIg;
+                const isEditing = editingCat.oldVal === cat;
+                const isDragging = draggedCatIndex === idx;
+
+                return (
+                  <div
+                    key={cat}
+                    draggable={!isEditing}
+                    onDragStart={(e) => handleCatDragStart(e, idx)}
+                    onDragOver={(e) => handleCatDragOver(e, idx)}
+                    onDrop={(e) => handleCatDrop(e, idx)}
+                    onDragEnd={handleCatDragEnd}
+                    className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 ${
+                      isDragging 
+                        ? 'opacity-40 border-dashed border-[#c79c6e] bg-[#c79c6e]/10' 
+                        : 'bg-[#080808] border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      {/* Drag Grip Handle */}
+                      <div 
+                        className="cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-[#c79c6e] transition-colors"
+                        title="Drag to reorder"
+                      >
+                        <DotsSixVertical size={16} weight="bold" />
+                      </div>
+
+                      <span className="text-[11px] font-mono text-white/30 shrink-0">
+                        {String(idx + 1).padStart(2, '0')}
+                      </span>
+
+                      {isEditing ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <input
+                            type="text"
+                            value={editingCat.newVal}
+                            onChange={(e) => setEditingCat(prev => ({ ...prev, newVal: e.target.value }))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleRenameCategory(cat, editingCat.newVal);
+                              if (e.key === 'Escape') setEditingCat({ oldVal: '', newVal: '' });
+                            }}
+                            className="bg-[#050505] border border-[#c79c6e] rounded px-2.5 py-1 text-xs text-white flex-1"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRenameCategory(cat, editingCat.newVal)}
+                            className="px-2 py-1 rounded bg-[#c79c6e] text-black text-xs font-bold"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingCat({ oldVal: '', newVal: '' })}
+                            className="px-2 py-1 rounded bg-white/10 text-white text-xs"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-xs font-semibold text-white truncate">{cat}</span>
+                          <span className="text-[10px] text-white/40 shrink-0">
+                            ({totalUsed} items)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {!isEditing && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Up / Down Arrow buttons */}
+                        <button
+                          type="button"
+                          onClick={() => handleMoveCategory(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-1 rounded bg-white/5 text-white/70 hover:text-white disabled:opacity-20"
+                          title="Move Up"
+                        >
+                          <ArrowUp size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveCategory(idx, 'down')}
+                          disabled={idx === data.popup.categories.length - 1}
+                          className="p-1 rounded bg-white/5 text-white/70 hover:text-white disabled:opacity-20"
+                          title="Move Down"
+                        >
+                          <ArrowDown size={12} />
+                        </button>
+
+                        {/* Rename */}
+                        <button
+                          type="button"
+                          onClick={() => setEditingCat({ oldVal: cat, newVal: cat })}
+                          className="p-1 rounded bg-white/5 text-white/70 hover:text-white"
+                          title="Rename"
+                        >
+                          <PencilSimple size={12} />
+                        </button>
+
+                        {/* Delete */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategoryPrompt(cat)}
+                          className="p-1 rounded bg-rose-500/10 text-rose-300 hover:bg-rose-500 hover:text-white"
+                          title="Delete"
+                        >
+                          <Trash size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setIsCatManagerOpen(false)}
+                className="px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#c79c6e] text-black hover:bg-[#e0b284]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reassign Modal (when deleting a category that has items) */}
+      {reassignModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-[#11100f] border border-white/20 rounded-2xl max-w-md w-full p-6 flex flex-col gap-4 text-white">
+            <span className="text-sm font-bold text-amber-400 flex items-center gap-2">
+              <WarningCircle size={18} weight="fill" />
+              <span>Category In Use</span>
+            </span>
+            <p className="text-xs text-white/70 leading-relaxed">
+              The category <strong>"{reassignModal.catToDelete}"</strong> is currently assigned to videos or reels. Select a new category to reassign these items to:
+            </p>
+            <select
+              value={reassignModal.targetCat}
+              onChange={(e) => setReassignModal(prev => ({ ...prev, targetCat: e.target.value }))}
+              className="w-full bg-[#050505] border border-white/15 rounded-lg p-2.5 text-xs text-white"
+            >
+              {(data.popup?.categories || [])
+                .filter(c => c !== reassignModal.catToDelete)
+                .map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+            </select>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setReassignModal({ isOpen: false, catToDelete: '', targetCat: '' })}
+                className="px-4 py-2 rounded-xl text-xs bg-white/10 text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReassignAndDelete}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#c4522d] text-white hover:bg-[#d85c33]"
+              >
+                Reassign & Delete
+              </button>
             </div>
           </div>
         </div>
