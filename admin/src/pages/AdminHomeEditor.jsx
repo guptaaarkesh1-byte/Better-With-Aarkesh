@@ -1341,11 +1341,9 @@ export default function AdminHomeEditor() {
         const ok = await aboutPopupEditorRef.current?.save();
         if (ok) {
           setHasUnsavedPopupChanges(false);
-          showToast('About Aarkesh popup settings saved successfully!');
         }
       } catch (err) {
         console.error('Save popup error:', err);
-        showToast('Failed to save About Aarkesh popup settings.', 'error');
       } finally {
         setIsSaving(false);
       }
