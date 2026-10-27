@@ -26,6 +26,16 @@ export const GRADIENTS = [
   '#f4b183,#8a4b3a'
 ];
 
+export const INTRO_VIDEO = {
+  title: 'A Message From Aarkesh: Staying Calm Under Pressure',
+  subtitle: 'A 2-Minute Introduction',
+  duration: '2:00',
+  id: 'DEMO_INTRO',
+  videoUrl: '', // optional direct mp4 url
+  youtubeId: '', // add youtube id here if available e.g. 'DMLGaOgTszV'
+  poster: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png'
+};
+
 export const MEDIA_DATA = {
   yt: [
     {

@@ -23,12 +23,19 @@ import {
   CheckCircle,
   Eye,
   Clock,
-  Users
+  Users,
+  LockKey
 } from '@phosphor-icons/react';
 import { API_URL, getLiveSiteUrl } from '../utils/apiUrl';
 
 // Left Sidebar Sections for Course Landing Page
 export const COURSE_CATALOG_TABS = [
+  {
+    id: 'loginScreen',
+    label: 'Login Screen',
+    icon: <LockKey size={18} />,
+    description: 'Right panel heading & benefits list',
+  },
   {
     id: 'masterTypography',
     label: 'Master Font Studio',
@@ -98,7 +105,7 @@ export const renderCourseHeadline = (text) => {
 
 export default function AdminCourseLandingCatalogEditor() {
   const { addToast } = useToast();
-  const [activeTab, setActiveTab] = useState('masterTypography');
+  const [activeTab, setActiveTab] = useState('loginScreen');
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -245,6 +252,16 @@ export default function AdminCourseLandingCatalogEditor() {
             exploreBtnText: 'Explore Courses',
             buttonSize: 15,
             bgImageUrl: '',
+          },
+          loginScreen: data.loginScreen || {
+            enabled: true,
+            heading: 'Pick up where you left off.',
+            items: [
+              'Continue your modules from the last video',
+              'Book your private sessions with Aarkesh',
+              'Download your workbooks and frameworks',
+              'Lifetime updates with no recurring fees'
+            ]
           },
         });
 
@@ -472,6 +489,20 @@ export default function AdminCourseLandingCatalogEditor() {
           method: 'PUT',
           headers,
           body: JSON.stringify(settings.cta),
+        }),
+        fetch(`${API_URL}/api/courses/landing-settings/loginScreen`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(settings.loginScreen || {
+            enabled: true,
+            heading: 'Pick up where you left off.',
+            items: [
+              'Continue your modules from the last video',
+              'Book your private sessions with Aarkesh',
+              'Download your workbooks and frameworks',
+              'Lifetime updates with no recurring fees'
+            ]
+          }),
         }),
       ]);
 
@@ -2457,6 +2488,285 @@ export default function AdminCourseLandingCatalogEditor() {
                       className="w-full bg-[#fcfbf8] border border-stone-300 rounded-xl px-4 py-2.5 text-sm"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: LOGIN SCREEN */}
+          {activeTab === 'loginScreen' && (
+            <div className="space-y-6">
+              {/* Header Banner */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#c9542f] font-mono">
+                  Catalog Login Modal
+                </span>
+                <h2 className="text-2xl font-serif font-bold text-[#1a1816]">
+                  Login screen
+                </h2>
+                <p className="text-sm text-[#736b63]">
+                  Customize the right-hand panel text, benefits checklist, or visibility that returning students see when logging in.
+                </p>
+              </div>
+
+              {/* Card 1: Visibility Toggle */}
+              <div className="bg-white border border-[#ded7cb] rounded-2xl p-6 shadow-xs space-y-3">
+                <div>
+                  <h3 className="text-base font-bold text-[#1a1816]">Panel Visibility</h3>
+                  <p className="text-xs text-[#736b63] mt-0.5">
+                    Choose whether to show or hide the encouragement checklist panel on the right side of the login dialog.
+                  </p>
+                </div>
+
+                <label className="inline-flex items-center gap-3 cursor-pointer select-none pt-1">
+                  <input
+                    type="checkbox"
+                    checked={settings.loginScreen?.enabled !== false}
+                    onChange={(e) => updateField('loginScreen.enabled', e.target.checked)}
+                    className="w-4 h-4 accent-[#c9542f] rounded cursor-pointer"
+                  />
+                  <span className="text-[14px] font-semibold text-[#1a1816]">
+                    {settings.loginScreen?.enabled !== false
+                      ? 'Show right-side benefits panel on login'
+                      : 'Hide right-side panel (Keep login minimal)'}
+                  </span>
+                </label>
+              </div>
+
+              {/* Card 2: Heading & Bullet Points */}
+              <div
+                className="bg-white border border-[#ded7cb] rounded-2xl p-6 shadow-xs space-y-5"
+                style={{ opacity: settings.loginScreen?.enabled !== false ? 1 : 0.65 }}
+              >
+                <div>
+                  <h3 className="text-base font-bold text-[#1a1816]">Right-Panel Content</h3>
+                  <p className="text-xs text-[#736b63] mt-0.5">
+                    Edit the title and checklist benefits that display in the frosted card on the right.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-[#4a443e] tracking-wide uppercase font-mono">
+                    Right Panel Heading
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.loginScreen?.heading ?? 'Pick up where you left off.'}
+                    onChange={(e) => updateField('loginScreen.heading', e.target.value)}
+                    placeholder="Pick up where you left off."
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#ded7cb] bg-[#faf8f5] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#c9542f]/30 focus:border-[#c9542f] text-sm text-[#1a1816] transition-all font-medium"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold text-[#4a443e] tracking-wide uppercase font-mono">
+                    Checklist Benefits ({settings.loginScreen?.items?.length || 0} items)
+                  </label>
+
+                  <div className="space-y-2.5">
+                    {(settings.loginScreen?.items || [
+                      'Continue your modules from the last video',
+                      'Book your private sessions with Aarkesh',
+                      'Download your workbooks and frameworks',
+                      'Lifetime updates with no recurring fees'
+                    ]).map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-full bg-[#f3e8f2] text-[#8A2E80] flex items-center justify-center text-xs font-bold shrink-0">
+                          {idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={(e) => {
+                            const currentItems = [...(settings.loginScreen?.items || [
+                              'Continue your modules from the last video',
+                              'Book your private sessions with Aarkesh',
+                              'Download your workbooks and frameworks',
+                              'Lifetime updates with no recurring fees'
+                            ])];
+                            currentItems[idx] = e.target.value;
+                            updateField('loginScreen.items', currentItems);
+                          }}
+                          placeholder={`Benefit point ${idx + 1}`}
+                          className="flex-1 px-3.5 py-2 rounded-lg border border-[#ded7cb] bg-[#faf8f5] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#c9542f]/30 text-sm text-[#1a1816] transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentItems = [...(settings.loginScreen?.items || [
+                              'Continue your modules from the last video',
+                              'Book your private sessions with Aarkesh',
+                              'Download your workbooks and frameworks',
+                              'Lifetime updates with no recurring fees'
+                            ])];
+                            currentItems.splice(idx, 1);
+                            updateField('loginScreen.items', currentItems);
+                          }}
+                          className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 border border-rose-200 transition-colors"
+                          title="Delete point"
+                        >
+                          <Trash size={15} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentItems = [...(settings.loginScreen?.items || [
+                          'Continue your modules from the last video',
+                          'Book your private sessions with Aarkesh',
+                          'Download your workbooks and frameworks',
+                          'Lifetime updates with no recurring fees'
+                        ])];
+                        currentItems.push('');
+                        updateField('loginScreen.items', currentItems);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#f0ebe1] hover:bg-[#e6dfd3] text-xs font-bold text-[#1a1816] transition-colors"
+                    >
+                      <Plus size={14} weight="bold" />
+                      <span>Add checklist item</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateField('loginScreen', {
+                          enabled: true,
+                          heading: 'Pick up where you left off.',
+                          items: [
+                            'Continue your modules from the last video',
+                            'Book your private sessions with Aarkesh',
+                            'Download your workbooks and frameworks',
+                            'Lifetime updates with no recurring fees'
+                          ]
+                        });
+                        addToast('Reset to default login screen content', 'info');
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#ded7cb] hover:bg-white text-xs font-semibold text-[#736b63] transition-colors"
+                    >
+                      <ArrowCounterClockwise size={14} />
+                      <span>Reset to defaults</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Live Visual Preview */}
+              <div className="bg-white border border-[#ded7cb] rounded-2xl p-6 shadow-xs space-y-4">
+                <div>
+                  <h3 className="text-base font-bold text-[#1a1816]">Live Visual Preview</h3>
+                  <p className="text-xs text-[#736b63] mt-0.5">
+                    How this appears to students on the course login popup.
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    position: 'relative',
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    background: 'radial-gradient(circle at 25% 20%, #5A1B54, #3D1A38 55%, #1E0C1C)',
+                    padding: '36px 32px',
+                    color: '#fff',
+                    boxShadow: '0 12px 35px rgba(0,0,0,0.25)',
+                    minHeight: '260px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: '-50px',
+                      bottom: '-50px',
+                      width: '200px',
+                      height: '200px',
+                      borderRadius: '50%',
+                      background: 'radial-gradient(circle at 32% 30%, #D07AC4, #8A2E80 45%, #5A1B54 78%)',
+                      pointerEvents: 'none',
+                      opacity: 0.8
+                    }}
+                  />
+
+                  {settings.loginScreen?.enabled !== false ? (
+                    <div style={{ position: 'relative', zIndex: 2, maxWidth: '440px' }}>
+                      <h2
+                        style={{
+                          fontFamily: '"Space Grotesk", sans-serif',
+                          fontSize: '26px',
+                          fontWeight: 500,
+                          lineHeight: 1.2,
+                          margin: '0 0 20px',
+                          color: '#fff'
+                        }}
+                      >
+                        {settings.loginScreen?.heading || 'Pick up where you left off.'}
+                      </h2>
+
+                      <div
+                        style={{
+                          background: 'rgba(10, 4, 10, 0.45)',
+                          border: '1px solid rgba(255, 255, 255, 0.14)',
+                          borderRadius: '18px',
+                          padding: '20px 22px',
+                          backdropFilter: 'blur(8px)'
+                        }}
+                      >
+                        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {(settings.loginScreen?.items || [
+                            'Continue your modules from the last video',
+                            'Book your private sessions with Aarkesh',
+                            'Download your workbooks and frameworks',
+                            'Lifetime updates with no recurring fees'
+                          ]).map((pt, idx) => (
+                            <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13.5px', color: '#f3e8f2', lineHeight: 1.4 }}>
+                              <span
+                                style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  borderRadius: '50%',
+                                  background: 'rgba(255, 255, 255, 0.15)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '11px',
+                                  flexShrink: 0,
+                                  marginTop: '2px'
+                                }}
+                              >
+                                ✓
+                              </span>
+                              <span>{pt || <span style={{ opacity: 0.4, fontStyle: 'italic' }}>Empty bullet point</span>}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '30px 20px' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '6px 14px',
+                          borderRadius: '20px',
+                          background: 'rgba(255, 255, 255, 0.12)',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: '#E3B8DE',
+                          marginBottom: '10px'
+                        }}
+                      >
+                        Panel Hidden
+                      </span>
+                      <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
+                        Right-side benefits checklist is turned off. The login screen will display a clean, minimal ambient gradient.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

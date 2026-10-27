@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mux/mux-player-react": "^3.14.1",
+    "@mux/upchunk": "^3.5.0",
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/postcss": "^4.3.3",
     "@tinymce/tinymce-react": "^6.3.0",

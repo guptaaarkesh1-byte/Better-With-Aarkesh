@@ -10,8 +10,7 @@ import AdminCourseComments from './AdminCourseComments';
 import { API_URL } from '../utils/apiUrl';
 
 const STEPS = [
-  ['login', 'lock', 'Login screen', 'Right panel heading & benefits list', 'Course page'],
-  ['basics', 'layout', 'Basics', 'Title, description, status', ''],
+  ['basics', 'layout', 'Basics', 'Title, description, status', 'Course page'],
   ['visuals', 'img', 'Card image & trailer', 'Thumbnail, theme, preview video', ''],
   ['pricing', 'rupee', 'Pricing & GST', 'What students pay', ''],
   ['landing', 'list', 'Landing page content', 'Roadmap, benefits, story', ''],
@@ -1266,6 +1265,51 @@ export default function AdminCourseEditor() {
     return res;
   };
 
+  // What's Inside Checklist Handlers
+  const handleAddInsideItem = () => {
+    setCourseData(prev => ({
+      ...prev,
+      inside: [...(prev.inside || []), '']
+    }));
+    setDirty(true);
+  };
+
+  const handleUpdateInsideItem = (index, value) => {
+    setCourseData(prev => {
+      const updated = [...(prev.inside || [])];
+      updated[index] = value;
+      return { ...prev, inside: updated };
+    });
+    setDirty(true);
+  };
+
+  const handleRemoveInsideItem = (index) => {
+    setCourseData(prev => ({
+      ...prev,
+      inside: (prev.inside || []).filter((_, i) => i !== index)
+    }));
+    setDirty(true);
+  };
+
+  const handleMoveInsideItem = (index, dir) => {
+    setCourseData(prev => ({
+      ...prev,
+      inside: moveItem(prev.inside || [], index, dir)
+    }));
+    setDirty(true);
+  };
+
+  const handleResetInsideDefaults = () => {
+    const defaultInside = [
+      '6 HD video modules & actionable frameworks',
+      'Downloadable workbooks & mental models',
+      '3 private 1-on-1 coaching sessions with Aarkesh',
+      'Lifetime access with all future updates'
+    ];
+    setCourseData(prev => ({ ...prev, inside: defaultInside }));
+    setDirty(true);
+  };
+
   // Thumbnail upload
   const fileInputRef = useRef(null);
   const handleThumbUpload = async (e) => {
@@ -1843,6 +1887,191 @@ export default function AdminCourseEditor() {
                           />
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* What's Inside Checklist Card */}
+                  <div className="bwa-card">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <h3 style={{ margin: 0 }}>What's inside checklist</h3>
+                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', background: 'rgba(136, 51, 119, 0.1)', color: '#883377', border: '1px solid rgba(136, 51, 119, 0.2)' }}>
+                          {(courseData.inside || []).length} Items
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="bwa-btn sm"
+                        onClick={handleResetInsideDefaults}
+                        title="Reset to default items"
+                        style={{ fontSize: '12px', padding: '4px 10px' }}
+                      >
+                        Reset defaults
+                      </button>
+                    </div>
+                    <p className="sub">
+                      Checklist features and benefits displayed under <strong>"WHAT'S INSIDE"</strong> on the pricing card.
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '14px' }}>
+                      {(courseData.inside || []).map((item, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: '#faf7f2',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid var(--line, #ece3d3)'
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '22px',
+                              height: '22px',
+                              borderRadius: '50%',
+                              background: '#eedcf0',
+                              color: '#883377',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              flexShrink: 0
+                            }}
+                          >
+                            ✓
+                          </span>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleUpdateInsideItem(idx, e.target.value)}
+                            placeholder={`e.g. Item ${idx + 1}`}
+                            style={{
+                              flex: 1,
+                              padding: '8px 12px',
+                              borderRadius: '6px',
+                              border: '1px solid #DDD0BC',
+                              fontSize: '13.5px',
+                              background: '#ffffff'
+                            }}
+                          />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                            <button
+                              type="button"
+                              className="bwa-btn sm"
+                              onClick={() => handleMoveInsideItem(idx, -1)}
+                              disabled={idx === 0}
+                              title="Move up"
+                              style={{ padding: '6px 8px', opacity: idx === 0 ? 0.35 : 1 }}
+                            >
+                              ▲
+                            </button>
+                            <button
+                              type="button"
+                              className="bwa-btn sm"
+                              onClick={() => handleMoveInsideItem(idx, 1)}
+                              disabled={idx === (courseData.inside || []).length - 1}
+                              title="Move down"
+                              style={{ padding: '6px 8px', opacity: idx === (courseData.inside || []).length - 1 ? 0.35 : 1 }}
+                            >
+                              ▼
+                            </button>
+                            <button
+                              type="button"
+                              className="bwa-btn sm danger"
+                              onClick={() => handleRemoveInsideItem(idx)}
+                              title="Delete item"
+                              style={{ padding: '6px 8px' }}
+                            >
+                              <Icon name="trash" size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="bwa-btn"
+                        onClick={handleAddInsideItem}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Icon name="plus" size={14} /> Add checklist item
+                      </button>
+                    </div>
+
+                    {/* Live Preview Box replicating the website pricing card */}
+                    <div
+                      style={{
+                        marginTop: '18px',
+                        padding: '16px 20px',
+                        background: '#ffffff',
+                        border: '1px solid #e7ded2',
+                        borderRadius: '12px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                          color: '#883377',
+                          marginBottom: '10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <span>WHAT'S INSIDE</span>
+                        <span style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'none', letterSpacing: 'normal' }}>
+                          (Live preview on course card)
+                        </span>
+                      </div>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {(courseData.inside || []).length === 0 ? (
+                          <li style={{ fontSize: '13px', color: 'var(--muted)', fontStyle: 'italic' }}>
+                            No items added yet. Click &ldquo;Add checklist item&rdquo; above.
+                          </li>
+                        ) : (
+                          (courseData.inside || []).map((item, idx) => (
+                            <li
+                              key={idx}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                fontSize: '13.5px',
+                                color: 'var(--ink)'
+                              }}
+                            >
+                              <span
+                                style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  borderRadius: '50%',
+                                  background: 'rgba(136, 51, 119, 0.12)',
+                                  color: '#883377',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '11px',
+                                  fontWeight: 'bold',
+                                  flexShrink: 0
+                                }}
+                              >
+                                ✓
+                              </span>
+                              <span>{item || <em style={{ color: 'var(--muted)' }}>Empty item</em>}</span>
+                            </li>
+                          ))
+                        )}
+                      </ul>
                     </div>
                   </div>
 
@@ -2979,316 +3208,7 @@ export default function AdminCourseEditor() {
                 </div>
               )}
 
-              {/* Step: Login screen right-panel control */}
-              {step === 'login' && (
-                <div>
-                  <h1>Login screen</h1>
-                  <p className="bwa-lead">
-                    Customize the right-hand panel text, benefits checklist, or visibility that returning students see when logging in.
-                  </p>
 
-                  {/* Card 1: Visibility Toggle */}
-                  <div className="bwa-card">
-                    <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 600 }}>Panel Visibility</h3>
-                    <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--bwa-muted)' }}>
-                      Choose whether to show or hide the encouragement checklist panel on the right side of the login dialog.
-                    </p>
-
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
-                      <input
-                        type="checkbox"
-                        checked={courseData.loginScreen?.enabled !== false}
-                        onChange={(e) => {
-                          setCourseData(prev => ({
-                            ...prev,
-                            loginScreen: {
-                              ...prev.loginScreen,
-                              enabled: e.target.checked
-                            }
-                          }));
-                          setDirty(true);
-                        }}
-                        style={{ width: '18px', height: '18px', accentColor: 'var(--bwa-accent, #c9542f)', cursor: 'pointer' }}
-                      />
-                      <span style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--bwa-ink)' }}>
-                        {courseData.loginScreen?.enabled !== false ? 'Show right-side benefits panel on login' : 'Hide right-side panel (Keep login minimal)'}
-                      </span>
-                    </label>
-                  </div>
-
-                  {/* Card 2: Heading & Bullet Points */}
-                  <div className="bwa-card" style={{ opacity: courseData.loginScreen?.enabled !== false ? 1 : 0.65 }}>
-                    <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 600 }}>Right-Panel Content</h3>
-                    <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--bwa-muted)' }}>
-                      Edit the title and checklist benefits that display in the frosted card on the right.
-                    </p>
-
-                    <div className="bwa-f" style={{ marginBottom: '18px' }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                        Right Panel Heading
-                      </label>
-                      <input
-                        type="text"
-                        value={courseData.loginScreen?.heading ?? 'Pick up where you left off.'}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setCourseData(prev => ({
-                            ...prev,
-                            loginScreen: {
-                              ...prev.loginScreen,
-                              heading: val
-                            }
-                          }));
-                          setDirty(true);
-                        }}
-                        placeholder="Pick up where you left off."
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--bwa-line, #ddd)', fontSize: '15px' }}
-                      />
-                    </div>
-
-                    <div style={{ marginBottom: '16px' }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '10px' }}>
-                        Checklist Benefits ({courseData.loginScreen?.items?.length || 0} items)
-                      </label>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {(courseData.loginScreen?.items || [
-                          'Continue your modules from the last video',
-                          'Book your private sessions with Aarkesh',
-                          'Download your workbooks and frameworks',
-                          'Lifetime updates with no recurring fees'
-                        ]).map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{
-                              width: '26px',
-                              height: '26px',
-                              borderRadius: '50%',
-                              background: '#f3e8f2',
-                              color: '#8A2E80',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              flexShrink: 0
-                            }}>
-                              {idx + 1}
-                            </span>
-                            <input
-                              type="text"
-                              value={item}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setCourseData(prev => {
-                                  const currentItems = [...(prev.loginScreen?.items || [
-                                    'Continue your modules from the last video',
-                                    'Book your private sessions with Aarkesh',
-                                    'Download your workbooks and frameworks',
-                                    'Lifetime updates with no recurring fees'
-                                  ])];
-                                  currentItems[idx] = val;
-                                  return {
-                                    ...prev,
-                                    loginScreen: {
-                                      ...prev.loginScreen,
-                                      items: currentItems
-                                    }
-                                  };
-                                });
-                                setDirty(true);
-                              }}
-                              placeholder={`Benefit point ${idx + 1}`}
-                              style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--bwa-line, #ddd)', fontSize: '14px' }}
-                            />
-                            <button
-                              type="button"
-                              className="bwa-btn danger"
-                              title="Delete point"
-                              onClick={() => {
-                                setCourseData(prev => {
-                                  const currentItems = [...(prev.loginScreen?.items || [
-                                    'Continue your modules from the last video',
-                                    'Book your private sessions with Aarkesh',
-                                    'Download your workbooks and frameworks',
-                                    'Lifetime updates with no recurring fees'
-                                  ])];
-                                  currentItems.splice(idx, 1);
-                                  return {
-                                    ...prev,
-                                    loginScreen: {
-                                      ...prev.loginScreen,
-                                      items: currentItems
-                                    }
-                                  };
-                                });
-                                setDirty(true);
-                              }}
-                              style={{ padding: '8px 10px', borderRadius: '8px', flexShrink: 0 }}
-                            >
-                              <Icon name="trash" size={14} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '12px', marginTop: '14px' }}>
-                        <button
-                          type="button"
-                          className="bwa-btn"
-                          onClick={() => {
-                            setCourseData(prev => {
-                              const currentItems = [...(prev.loginScreen?.items || [
-                                'Continue your modules from the last video',
-                                'Book your private sessions with Aarkesh',
-                                'Download your workbooks and frameworks',
-                                'Lifetime updates with no recurring fees'
-                              ])];
-                              currentItems.push('');
-                              return {
-                                ...prev,
-                                loginScreen: {
-                                  ...prev.loginScreen,
-                                  items: currentItems
-                                }
-                              };
-                            });
-                            setDirty(true);
-                          }}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                        >
-                          <Icon name="plus" size={14} /> Add checklist item
-                        </button>
-
-                        <button
-                          type="button"
-                          className="bwa-btn"
-                          onClick={() => {
-                            setCourseData(prev => ({
-                              ...prev,
-                              loginScreen: {
-                                enabled: true,
-                                heading: 'Pick up where you left off.',
-                                items: [
-                                  'Continue your modules from the last video',
-                                  'Book your private sessions with Aarkesh',
-                                  'Download your workbooks and frameworks',
-                                  'Lifetime updates with no recurring fees'
-                                ]
-                              }
-                            }));
-                            setDirty(true);
-                            showInfo('Reset to default login screen content');
-                          }}
-                        >
-                          Reset to defaults
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Live Visual Preview */}
-                  <div className="bwa-card">
-                    <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 600 }}>Live Visual Preview</h3>
-                    <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--bwa-muted)' }}>
-                      How this appears to students on the course login popup.
-                    </p>
-
-                    <div style={{
-                      position: 'relative',
-                      borderRadius: '20px',
-                      overflow: 'hidden',
-                      background: 'radial-gradient(circle at 25% 20%, #5A1B54, #3D1A38 55%, #1E0C1C)',
-                      padding: '36px 32px',
-                      color: '#fff',
-                      boxShadow: '0 12px 35px rgba(0,0,0,0.25)',
-                      minHeight: '260px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}>
-                      <div style={{
-                        position: 'absolute',
-                        right: '-50px',
-                        bottom: '-50px',
-                        width: '200px',
-                        height: '200px',
-                        borderRadius: '50%',
-                        background: 'radial-gradient(circle at 32% 30%, #D07AC4, #8A2E80 45%, #5A1B54 78%)',
-                        pointerEvents: 'none',
-                        opacity: 0.8
-                      }} />
-
-                      {courseData.loginScreen?.enabled !== false ? (
-                        <div style={{ position: 'relative', zIndex: 2, maxWidth: '440px' }}>
-                          <h2 style={{
-                            fontFamily: '"Space Grotesk", sans-serif',
-                            fontSize: '26px',
-                            fontWeight: 500,
-                            lineHeight: 1.2,
-                            margin: '0 0 20px',
-                            color: '#fff'
-                          }}>
-                            {courseData.loginScreen?.heading || 'Pick up where you left off.'}
-                          </h2>
-
-                          <div style={{
-                            background: 'rgba(10, 4, 10, 0.45)',
-                            border: '1px solid rgba(255, 255, 255, 0.14)',
-                            borderRadius: '18px',
-                            padding: '20px 22px',
-                            backdropFilter: 'blur(8px)'
-                          }}>
-                            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              {(courseData.loginScreen?.items || [
-                                'Continue your modules from the last video',
-                                'Book your private sessions with Aarkesh',
-                                'Download your workbooks and frameworks',
-                                'Lifetime updates with no recurring fees'
-                              ]).map((pt, idx) => (
-                                <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13.5px', color: '#f3e8f2', lineHeight: 1.4 }}>
-                                  <span style={{
-                                    width: '18px',
-                                    height: '18px',
-                                    borderRadius: '50%',
-                                    background: 'rgba(255, 255, 255, 0.15)',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '11px',
-                                    flexShrink: 0,
-                                    marginTop: '2px'
-                                  }}>
-                                    ✓
-                                  </span>
-                                  <span>{pt || <span style={{ opacity: 0.4, fontStyle: 'italic' }}>Empty bullet point</span>}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '30px 20px' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '6px 14px',
-                            borderRadius: '20px',
-                            background: 'rgba(255, 255, 255, 0.12)',
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            color: '#E3B8DE',
-                            marginBottom: '10px'
-                          }}>
-                            Panel Hidden
-                          </span>
-                          <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
-                            Right-side benefits checklist is turned off. The login screen will display a clean, minimal ambient gradient.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Step 5: Lessons & videos */}
               {step === 'lessons' && (

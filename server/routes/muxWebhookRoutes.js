@@ -35,6 +35,18 @@ router.post('/webhook', express.json({ type: 'application/json' }), async (req, 
           { muxUploadId: uploadId },
           { muxAssetId: assetId, videoStatus: 'processing' }
         );
+
+        // Check About Aarkesh popup intro video
+        try {
+          const aboutDoc = await Settings.findOne({ key: 'about_popup_settings' });
+          if (aboutDoc?.value?.popup?.introVideo?.muxUploadId === uploadId) {
+            aboutDoc.value.popup.introVideo.muxAssetId = assetId;
+            aboutDoc.value.popup.introVideo.status = 'processing';
+            await Settings.updateOne({ key: 'about_popup_settings' }, { $set: { value: aboutDoc.value } });
+          }
+        } catch (aboutErr) {
+          console.warn('Error syncing about popup upload asset:', aboutErr.message);
+        }
       }
     }
 
@@ -67,6 +79,21 @@ router.post('/webhook', express.json({ type: 'application/json' }), async (req, 
           errorMessage: '',
         }
       );
+
+      // Check About Aarkesh popup intro video
+      try {
+        const aboutDoc = await Settings.findOne({ key: 'about_popup_settings' });
+        const intro = aboutDoc?.value?.popup?.introVideo;
+        if (intro && (intro.muxAssetId === assetId || intro.muxUploadId === data.upload_id)) {
+          intro.muxAssetId = assetId;
+          if (playbackId) intro.playbackId = playbackId;
+          intro.status = 'ready';
+          intro.durationSeconds = duration ? Math.round(duration) : 120;
+          await Settings.updateOne({ key: 'about_popup_settings' }, { $set: { value: aboutDoc.value } });
+        }
+      } catch (aboutErr) {
+        console.warn('Error syncing about popup video ready:', aboutErr.message);
+      }
     }
 
     if (type === 'video.asset.errored') {
@@ -80,6 +107,18 @@ router.post('/webhook', express.json({ type: 'application/json' }), async (req, 
           errorMessage: errorMsg,
         }
       );
+
+      // Check About Aarkesh popup intro video
+      try {
+        const aboutDoc = await Settings.findOne({ key: 'about_popup_settings' });
+        const intro = aboutDoc?.value?.popup?.introVideo;
+        if (intro && intro.muxAssetId === assetId) {
+          intro.status = 'errored';
+          await Settings.updateOne({ key: 'about_popup_settings' }, { $set: { value: aboutDoc.value } });
+        }
+      } catch (aboutErr) {
+        console.warn('Error syncing about popup video error:', aboutErr.message);
+      }
     }
 
     if (type === 'video.asset.deleted') {
@@ -92,6 +131,20 @@ router.post('/webhook', express.json({ type: 'application/json' }), async (req, 
           videoStatus: 'none',
         }
       );
+
+      // Check About Aarkesh popup intro video
+      try {
+        const aboutDoc = await Settings.findOne({ key: 'about_popup_settings' });
+        const intro = aboutDoc?.value?.popup?.introVideo;
+        if (intro && intro.muxAssetId === assetId) {
+          intro.muxAssetId = '';
+          intro.playbackId = '';
+          intro.status = 'none';
+          await Settings.updateOne({ key: 'about_popup_settings' }, { $set: { value: aboutDoc.value } });
+        }
+      } catch (aboutErr) {
+        console.warn('Error syncing about popup video deletion:', aboutErr.message);
+      }
     }
 
     res.status(200).json({ received: true });

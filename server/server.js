@@ -36,6 +36,7 @@ import courseLandingSettingsRoutes from './routes/courseLandingSettingsRoutes.js
 import courseDetailSettingsRoutes from './routes/courseDetailSettingsRoutes.js';
 import seoSettingsRoutes from './routes/seoSettingsRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
+import aboutPopupRoutes from './routes/aboutPopupRoutes.js';
 
 import http from 'http';
 import { Server } from 'socket.io';
@@ -126,6 +127,7 @@ app.use('/api/courses/landing-settings', courseLandingSettingsRoutes);
 app.use('/api/course-detail-settings', courseDetailSettingsRoutes);
 app.use('/api/courses/details-settings', courseDetailSettingsRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);
+app.use('/api/about-popup', aboutPopupRoutes);
 
 // Make static folders accessible to client and admin
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

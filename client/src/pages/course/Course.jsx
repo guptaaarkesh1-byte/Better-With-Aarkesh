@@ -808,6 +808,16 @@ export default function Course() {
         exploreBtnText: 'Explore Courses',
         buttonSize: 15,
         bgImageUrl: ''
+      },
+      loginScreen: {
+        enabled: true,
+        heading: 'Pick up where you left off.',
+        items: [
+          'Continue your modules from the last video',
+          'Book your private sessions with Aarkesh',
+          'Download your workbooks and frameworks',
+          'Lifetime updates with no recurring fees'
+        ]
       }
     };
 
@@ -823,6 +833,7 @@ export default function Course() {
           allCoursesPage: { ...defaultSettings.allCoursesPage, ...(parsed?.allCoursesPage || {}) },
           faq: { ...defaultSettings.faq, ...(parsed?.faq || {}) },
           cta: { ...defaultSettings.cta, ...(parsed?.cta || {}) },
+          loginScreen: { ...defaultSettings.loginScreen, ...(parsed?.loginScreen || {}) },
         };
       }
     } catch {}
@@ -1056,6 +1067,7 @@ export default function Course() {
                 allCoursesPage: { ...(prev?.allCoursesPage || {}), ...(data?.allCoursesPage || {}) },
                 faq: { ...(prev?.faq || {}), ...(data?.faq || {}) },
                 cta: { ...(prev?.cta || {}), ...(data?.cta || {}) },
+                loginScreen: { ...(prev?.loginScreen || {}), ...(data?.loginScreen || {}) },
               };
               try {
                 localStorage.setItem('bwa_course_landing_settings_cache', JSON.stringify(updated));
@@ -3280,7 +3292,7 @@ export default function Course() {
                         alignItems: 'center',
                         gap: '10px',
                         padding: '16px 38px',
-                        fontSize: '15px',
+                        fontSize: landingSettings?.moreCourses?.buttonSize ? `${landingSettings.moreCourses.buttonSize}px` : '15px',
                         fontWeight: '600',
                         letterSpacing: '0.06em',
                         textTransform: 'uppercase',
@@ -3289,7 +3301,6 @@ export default function Course() {
                         color: '#ffffff',
                         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                         cursor: 'pointer',
-                        fontSize: landingSettings?.moreCourses?.buttonSize ? `${landingSettings.moreCourses.buttonSize}px` : undefined,
                         transition: 'transform 0.25s ease, box-shadow 0.25s ease'
                       }}
                       onMouseEnter={(e) => {
@@ -4302,7 +4313,7 @@ export default function Course() {
         basePrice={basePrice}
         comparePrice={comparePrice}
         onGoogleSuccess={handleGoogleAuthSuccess}
-        loginScreenSettings={activeCourse?.loginScreen || courseData?.loginScreen || (slug && courseDetailsMap?.[slug]?.loginScreen) || courseDetailsMap?.['better-man']?.loginScreen}
+        loginScreenSettings={landingSettings?.loginScreen || activeCourse?.loginScreen || courseData?.loginScreen || (slug && courseDetailsMap?.[slug]?.loginScreen) || courseDetailsMap?.['better-man']?.loginScreen}
       />
       <CheckoutOverlay
         showCheckout={showCheckout}

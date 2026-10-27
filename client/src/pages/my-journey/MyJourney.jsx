@@ -1139,7 +1139,7 @@ export default function MyJourney() {
                 className="mj-btn h-[42px] px-6 text-[14px] font-semibold bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm transition-all border-0 cursor-pointer"
               >
                 <CalendarBlank size={17} weight="bold" />
-                <span>BOOK SESSION</span>
+                <span>{availableCredits > 0 ? 'BOOK FREE SESSION' : 'BOOK SESSION'}</span>
               </button>
             </div>
           </div>
@@ -1407,7 +1407,7 @@ export default function MyJourney() {
                       className="md:hidden shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-[11px] font-bold tracking-wide uppercase shadow-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap"
                     >
                       <Plus size={11} weight="bold" />
-                      <span>Book</span>
+                      <span>{availableCredits > 0 ? 'Book Free' : 'Book'}</span>
                     </button>
                   </div>
 
@@ -1754,21 +1754,20 @@ export default function MyJourney() {
                                 : `No ${coachFilter} sessions to show.`}
                         </p>
                         <div className="flex items-center justify-center gap-3 mt-4">
-                          {appointmentSort !== 'soonest' ? (
+                          {appointmentSort !== 'soonest' && (
                             <button 
                               onClick={() => setAppointmentSort('soonest')}
                               className="mj-btn mj-btn-line"
                             >
                               Show all
                             </button>
-                          ) : (
-                            <button 
-                              onClick={() => navigate('/book')}
-                              className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
-                            >
-                              BOOK SESSION
-                            </button>
                           )}
+                          <button 
+                            onClick={() => navigate('/book')}
+                            className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
+                          >
+                            {availableCredits > 0 ? 'BOOK FREE SESSION' : 'BOOK SESSION'}
+                          </button>
                         </div>
                       </div>
                     )}

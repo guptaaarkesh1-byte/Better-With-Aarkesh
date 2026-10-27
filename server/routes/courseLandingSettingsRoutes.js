@@ -89,6 +89,16 @@ export const DEFAULT_COURSE_LANDING_SECTIONS = {
     exploreBtnText: 'Explore Courses',
     buttonSize: 15,
     bgImageUrl: ''
+  },
+  loginScreen: {
+    enabled: true,
+    heading: 'Pick up where you left off.',
+    items: [
+      'Continue your modules from the last video',
+      'Book your private sessions with Aarkesh',
+      'Download your workbooks and frameworks',
+      'Lifetime updates with no recurring fees'
+    ]
   }
 };
 
@@ -125,6 +135,7 @@ const mergeWithDefaults = (storedValue) => {
     allCoursesPage: mergeSection(d.allCoursesPage, storedValue?.allCoursesPage),
     faq: mergeSection(d.faq, storedValue?.faq),
     cta: mergeSection(d.cta, storedValue?.cta),
+    loginScreen: mergeSection(d.loginScreen, storedValue?.loginScreen),
   };
 };
 
