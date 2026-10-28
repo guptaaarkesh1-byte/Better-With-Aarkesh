@@ -36,7 +36,7 @@ export async function getDynamicCourseFreeSessions(slug = 'better-man') {
   } catch (err) {
     console.error('Error fetching dynamic course free sessions:', err.message);
   }
-  return 5;
+  return 3;
 }
 
 export async function calculateAndSyncFreeSessions(email) {

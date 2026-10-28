@@ -312,23 +312,31 @@ export default function AdminCourseStudents() {
             className="flex items-center gap-2 px-3.5 py-2 rounded-lg border border-white/10 bg-[#050505] text-white/70 hover:text-white text-xs transition-colors cursor-pointer"
           >
             <span className="text-white/40 uppercase tracking-widest text-[0.62rem] mr-1">Course:</span>
-            <span className="font-medium">{courseFilter === 'All' ? 'All Courses' : 'The Better Man™'}</span>
+            <span className="font-medium">
+              {courseFilter === 'All' ? 'All Courses' : (students.find(s => s.courseSlug === courseFilter)?.courseTitle || courseFilter)}
+            </span>
             <CaretDown size={12} className="ml-1 text-white/40" />
           </button>
           {activeDropdown === 'course' && (
-            <div className="absolute top-full left-0 mt-2 w-48 bg-[#0a0a0a] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
-              {[
-                { label: 'All Courses', val: 'All' },
-                { label: 'The Better Man™', val: 'better-man' }
-              ].map(opt => (
-                <button 
-                  key={opt.val} 
-                  onClick={() => { setCourseFilter(opt.val); setActiveDropdown(null); }} 
-                  className={`px-4 py-2 text-left text-xs transition-colors cursor-pointer ${courseFilter === opt.val ? 'text-[#c79c6e] bg-white/5 font-semibold' : 'text-white/70 hover:text-white hover:bg-white/5'}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="absolute top-full left-0 mt-2 w-52 bg-[#0a0a0a] border border-white/10 rounded-lg shadow-xl flex flex-col py-1 overflow-hidden z-30">
+              {(() => {
+                const map = new Map();
+                map.set('All', 'All Courses');
+                students.forEach(s => {
+                  const slug = s.courseSlug || 'better-man';
+                  const title = s.courseTitle || (slug === 'better-man' ? 'The Better Man™' : slug);
+                  if (!map.has(slug)) map.set(slug, title);
+                });
+                return Array.from(map.entries()).map(([val, label]) => (
+                  <button 
+                    key={val} 
+                    onClick={() => { setCourseFilter(val); setActiveDropdown(null); }} 
+                    className={`px-4 py-2 text-left text-xs transition-colors cursor-pointer ${courseFilter === val ? 'text-[#c79c6e] bg-white/5 font-semibold' : 'text-white/70 hover:text-white hover:bg-white/5'}`}
+                  >
+                    {label}
+                  </button>
+                ));
+              })()}
             </div>
           )}
         </div>
@@ -488,14 +496,22 @@ export default function AdminCourseStudents() {
                 >
                   {/* Name + Avatar */}
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center font-serif text-base shrink-0 ${
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center font-serif text-base shrink-0 overflow-hidden relative ${
                       student.isPurchased 
                         ? 'bg-[#c79c6e]/10 border border-[#c79c6e]/40 text-[#c79c6e]' 
                         : student.hasFailedPayments
                         ? 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
                         : 'bg-white/5 border border-white/10 text-white/50'
                     }`}>
-                      {student.fullName ? student.fullName.charAt(0).toUpperCase() : 'S'}
+                      {student.photoUrl ? (
+                        <img 
+                          src={student.photoUrl} 
+                          alt="" 
+                          className="w-full h-full object-cover absolute inset-0" 
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                        />
+                      ) : null}
+                      <span>{student.fullName ? student.fullName.charAt(0).toUpperCase() : 'S'}</span>
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-white/90 text-sm font-medium truncate">{student.fullName || 'Student'}</span>
@@ -584,13 +600,13 @@ export default function AdminCourseStudents() {
                     )}
                   </div>
 
-                  {/* Free Coaching Sessions (X / 3 Used & Remaining) */}
+                  {/* Free Coaching Sessions (X / Total Used & Remaining) */}
                   <div className="flex flex-col gap-1">
                     {student.isPurchased ? (
                       <>
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs font-medium text-white/90">
-                            {claimed} / 3 Used
+                            {claimed} / {student.freeSessionsTotal || 3} Used
                           </span>
                           {remaining > 0 ? (
                             <span className="px-1.5 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[0.62rem] font-bold">
@@ -603,7 +619,7 @@ export default function AdminCourseStudents() {
                           )}
                         </div>
                         <span className="text-[0.65rem] text-white/40">
-                          {remaining > 0 ? `${remaining} free session${remaining > 1 ? 's' : ''} available` : 'All 3 claimed'}
+                          {remaining > 0 ? `${remaining} free session${remaining > 1 ? 's' : ''} available` : `All ${student.freeSessionsTotal || 3} claimed`}
                         </span>
                       </>
                     ) : (
@@ -652,8 +668,16 @@ export default function AdminCourseStudents() {
               {/* Header */}
               <div className="flex justify-between items-start pb-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/40 flex items-center justify-center font-serif text-xl text-[#c79c6e]">
-                    {selectedStudent.fullName ? selectedStudent.fullName.charAt(0).toUpperCase() : 'S'}
+                  <div className="w-12 h-12 rounded-full bg-[#c79c6e]/10 border border-[#c79c6e]/40 flex items-center justify-center font-serif text-xl text-[#c79c6e] overflow-hidden relative shrink-0">
+                    {selectedStudent.photoUrl ? (
+                      <img 
+                        src={selectedStudent.photoUrl} 
+                        alt="" 
+                        className="w-full h-full object-cover absolute inset-0" 
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                      />
+                    ) : null}
+                    <span>{selectedStudent.fullName ? selectedStudent.fullName.charAt(0).toUpperCase() : 'S'}</span>
                   </div>
                   <div className="flex flex-col">
                     <h2 className="text-xl font-serif text-white">{selectedStudent.fullName}</h2>
@@ -737,27 +761,27 @@ export default function AdminCourseStudents() {
                 {/* Free Sessions Status */}
                 <div className="mt-2 pt-3 border-t border-white/5 flex flex-col gap-2">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-white/60">Complimentary 1-on-1 Sessions (3 Max):</span>
+                    <span className="text-white/60">Complimentary 1-on-1 Sessions ({selectedStudent.freeSessionsTotal || 3} Max):</span>
                     <span className="font-semibold text-white font-mono">
-                      {selectedStudent.freeSessionsClaimed || 0} / 3 Used &nbsp;·&nbsp;
-                      <span className={(selectedStudent.freeSessionsRemaining || (3 - (selectedStudent.freeSessionsClaimed || 0))) > 0 ? 'text-blue-400' : 'text-emerald-400'}>
-                        {(selectedStudent.freeSessionsRemaining !== undefined ? selectedStudent.freeSessionsRemaining : Math.max(0, 3 - (selectedStudent.freeSessionsClaimed || 0)))} Left
+                      {selectedStudent.freeSessionsClaimed || 0} / {selectedStudent.freeSessionsTotal || 3} Used &nbsp;·&nbsp;
+                      <span className={(selectedStudent.freeSessionsRemaining !== undefined ? selectedStudent.freeSessionsRemaining : Math.max(0, (selectedStudent.freeSessionsTotal || 3) - (selectedStudent.freeSessionsClaimed || 0))) > 0 ? 'text-blue-400' : 'text-emerald-400'}>
+                        {(selectedStudent.freeSessionsRemaining !== undefined ? selectedStudent.freeSessionsRemaining : Math.max(0, (selectedStudent.freeSessionsTotal || 3) - (selectedStudent.freeSessionsClaimed || 0)))} Left
                       </span>
                     </span>
                   </div>
                   <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
                     <div 
                       className="bg-[#c79c6e] h-full rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, ((selectedStudent.freeSessionsClaimed || 0) / 3) * 100)}%` }}
+                      style={{ width: `${Math.min(100, ((selectedStudent.freeSessionsClaimed || 0) / (selectedStudent.freeSessionsTotal || 3)) * 100)}%` }}
                     />
                   </div>
                   <div className="flex justify-between items-center text-[0.68rem] text-white/40">
                     <span>
-                      {(selectedStudent.freeSessionsRemaining !== undefined ? selectedStudent.freeSessionsRemaining : Math.max(0, 3 - (selectedStudent.freeSessionsClaimed || 0))) > 0 
-                        ? `${selectedStudent.freeSessionsRemaining !== undefined ? selectedStudent.freeSessionsRemaining : (3 - (selectedStudent.freeSessionsClaimed || 0))} free session(s) available to book`
-                        : 'All 3 complimentary sessions claimed'}
+                      {(selectedStudent.freeSessionsRemaining !== undefined ? selectedStudent.freeSessionsRemaining : Math.max(0, (selectedStudent.freeSessionsTotal || 3) - (selectedStudent.freeSessionsClaimed || 0))) > 0 
+                        ? `${selectedStudent.freeSessionsRemaining !== undefined ? selectedStudent.freeSessionsRemaining : ((selectedStudent.freeSessionsTotal || 3) - (selectedStudent.freeSessionsClaimed || 0))} free session(s) available to book`
+                        : `All ${selectedStudent.freeSessionsTotal || 3} complimentary sessions claimed`}
                     </span>
-                    <span className="text-emerald-400/80 font-mono">3 Total Granted</span>
+                    <span className="text-emerald-400/80 font-mono">{selectedStudent.freeSessionsTotal || 3} Total Granted</span>
                   </div>
                 </div>
               </div>
@@ -789,13 +813,18 @@ export default function AdminCourseStudents() {
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              isPaid 
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                                : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                            }`}>
-                              {isPaid ? 'PAID IN FULL' : 'PAYMENT FAILED'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                isPaid 
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                                  : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              }`}>
+                                {isPaid ? 'PAID IN FULL' : 'PAYMENT FAILED'}
+                              </span>
+                              <span className="text-white font-medium text-xs">
+                                {p.courseTitle || 'The Better Man™'}
+                              </span>
+                            </div>
                             <span className="font-bold text-white text-sm">
                               ₹{(p.amount || 11800).toLocaleString('en-IN')}
                             </span>

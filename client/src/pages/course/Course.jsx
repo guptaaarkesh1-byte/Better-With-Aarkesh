@@ -257,11 +257,17 @@ export default function Course() {
 
   const [showDashboard, setShowDashboard] = useState(() => {
     const isPurchasedStored = localStorage.getItem('isCoursePurchased') === 'true';
-    const hasToken = !!localStorage.getItem('courseToken');
+    const hasToken = Boolean(localStorage.getItem('courseToken') || localStorage.getItem('token'));
     const params = new URLSearchParams(window.location.search);
     const isCheckout = params.get('checkout') === 'true' || sessionStorage.getItem('course_checkout_active') === 'true';
     const isLearn = params.get('learn') === 'true';
-    return isLearn && hasToken && isPurchasedStored && !isCheckout;
+    let userHasPurchased = isPurchasedStored;
+    try {
+      const u = JSON.parse(localStorage.getItem('courseUser') || localStorage.getItem('userInfo') || '{}');
+      if (Array.isArray(u.purchasedCourses) && u.purchasedCourses.length > 0) userHasPurchased = true;
+      if (Array.isArray(u.enrolledCourses) && u.enrolledCourses.length > 0) userHasPurchased = true;
+    } catch {}
+    return isLearn && hasToken && userHasPurchased && !isCheckout;
   });
   const [isLoggedIn, setIsLoggedIn] = useState(() => isAnyUserLoggedIn());
   const [isPurchased, setIsPurchased] = useState(() => isAnyUserLoggedIn() && localStorage.getItem('isCoursePurchased') === 'true');
@@ -486,10 +492,11 @@ export default function Course() {
   });
   const [activeLesson, setActiveLesson] = useState(() => {
     try {
-      const cached = sessionStorage.getItem('bwa_curriculum_cache_' + (slug || 'better-man'));
+      const targetSlug = slug && slug !== 'all' ? slug : 'better-man';
+      const cached = sessionStorage.getItem('bwa_curriculum_cache_' + targetSlug);
       if (cached) {
         const parsed = JSON.parse(cached);
-        const lastId = localStorage.getItem(getUserCourseKey('lastActiveCourseLessonId'));
+        const lastId = localStorage.getItem(`lastActiveCourseLessonId_${targetSlug}`) || localStorage.getItem(getUserCourseKey(`lastActiveCourseLessonId_${targetSlug}`)) || localStorage.getItem(getUserCourseKey('lastActiveCourseLessonId')) || localStorage.getItem('lastActiveCourseLessonId');
         if (Array.isArray(parsed) && parsed.length > 0) {
           if (lastId) {
             for (const mod of parsed) {
@@ -536,7 +543,7 @@ export default function Course() {
       setResumePrompt(null);
       return;
     }
-    const saved = Number(localStorage.getItem(getUserCourseKey(`lesson_progress_${lesId}`))) || 0;
+    const saved = Number(localStorage.getItem(`bwa_lesson_progress_${lesId}`)) || Number(localStorage.getItem(getUserCourseKey(`lesson_progress_${lesId}`))) || 0;
     if (saved > 6) {
       const mins = Math.floor(saved / 60);
       const secs = Math.floor(saved % 60);
@@ -850,7 +857,12 @@ export default function Course() {
   const handleSelectLesson = (lesson, module) => {
     setActiveLesson(lesson);
     if (module) setActiveModuleObj(module);
-    localStorage.setItem('lastActiveCourseLessonId', (lesson._id || lesson.id)?.toString());
+    const targetSlug = slug && slug !== 'all' ? slug : 'better-man';
+    const lId = (lesson._id || lesson.id)?.toString();
+    if (lId) {
+      localStorage.setItem(`lastActiveCourseLessonId_${targetSlug}`, lId);
+      localStorage.setItem('lastActiveCourseLessonId', lId);
+    }
   };
 
   const isComingSoon = Boolean(courseData?.isComingSoon);
@@ -861,12 +873,20 @@ export default function Course() {
 
   useEffect(() => {
     const isLearn = searchParams.get('learn') === 'true';
-    if (isLearn && isLoggedIn && isPurchased) {
+    const hasAuth = isAnyUserLoggedIn();
+    let userHasPurchased = isPurchased || localStorage.getItem('isCoursePurchased') === 'true';
+    try {
+      const u = JSON.parse(localStorage.getItem('courseUser') || localStorage.getItem('userInfo') || '{}');
+      if (Array.isArray(u.purchasedCourses) && u.purchasedCourses.length > 0) userHasPurchased = true;
+      if (Array.isArray(u.enrolledCourses) && u.enrolledCourses.length > 0) userHasPurchased = true;
+    } catch {}
+    const hasPurchasedCurrent = (Array.isArray(purchasedCourses) && purchasedCourses.includes(slug)) || userHasPurchased;
+    if (isLearn && hasAuth && hasPurchasedCurrent) {
       setShowDashboard(true);
     } else if (!isLearn) {
       setShowDashboard(false);
     }
-  }, [searchParams, isLoggedIn, isPurchased]);
+  }, [searchParams, isLoggedIn, isPurchased, purchasedCourses, slug]);
 
   useEffect(() => {
     setShowCourseLogin(false);
@@ -910,7 +930,8 @@ export default function Course() {
             const currentActiveId = (activeLesson?._id || activeLesson?.id)?.toString();
             const isCurrentActiveValid = currentActiveId && allValidLessonIds.has(currentActiveId);
 
-            const savedLessonId = localStorage.getItem('lastActiveCourseLessonId');
+            const courseLessonKey = `lastActiveCourseLessonId_${targetSlug}`;
+            const savedLessonId = localStorage.getItem(courseLessonKey) || localStorage.getItem('lastActiveCourseLessonId');
             let matchedLesson = null;
             let matchedModule = null;
 
@@ -936,6 +957,7 @@ export default function Course() {
               if (mergedModules[0]?.lessons?.length > 0) {
                 const firstRealLesson = mergedModules[0].lessons[0];
                 setActiveLesson(firstRealLesson);
+                localStorage.setItem(courseLessonKey, (firstRealLesson._id || firstRealLesson.id)?.toString());
                 localStorage.setItem('lastActiveCourseLessonId', (firstRealLesson._id || firstRealLesson.id)?.toString());
               }
             }
@@ -1180,15 +1202,17 @@ export default function Course() {
         ],
         hl: [
           ["Build Real Presence", "(Not Just Theory)"],
-          ["5 Private Sessions", "with Aarkesh"]
+          ["3 Private Sessions", "with Aarkesh"]
         ],
         inside: [
           "8 HD video modules & frameworks",
           "Downloadable workbooks and mental models",
-          "5 private 1-on-1 coaching sessions with Aarkesh",
+          "3 private 1-on-1 coaching sessions with Aarkesh",
           "Lifetime access with all future updates"
         ],
-        facts: [["8", "Modules"], ["5 Free", "1-on-1 Sessions"]],
+        facts: [["8", "Modules"], ["3 Free", "1-on-1 Sessions"]],
+        includeFreeSessions: true,
+        freeSessionsCount: 3,
         price: `₹${basePrice.toLocaleString('en-IN')}`,
         was: `₹${comparePrice.toLocaleString('en-IN')}`,
         cta: "Check Course",
@@ -1232,7 +1256,7 @@ export default function Course() {
 
         const freeCount = dynamicCourse.freeSessionsCount !== undefined 
           ? Number(dynamicCourse.freeSessionsCount) 
-          : (dynamicCourse.pricingSection?.freeSessionsCount !== undefined ? Number(dynamicCourse.pricingSection.freeSessionsCount) : 5);
+          : (dynamicCourse.pricingSection?.freeSessionsCount !== undefined ? Number(dynamicCourse.pricingSection.freeSessionsCount) : 3);
 
         const effectiveFreeCount = includeFree ? freeCount : 0;
 
@@ -1288,7 +1312,61 @@ export default function Course() {
     const newCourses = [];
     Object.keys(courseDetailsMap).forEach(slug => {
       if (slug !== 'better-man' && slug !== 'difficult-people' && slug !== 'decisions' && !defaultList.some(item => item.slug === slug)) {
-        newCourses.push(courseDetailsMap[slug]);
+        const rawCourse = courseDetailsMap[slug];
+        if (!rawCourse) return;
+
+        const includeFree = rawCourse.includeFreeSessions !== undefined
+          ? Boolean(rawCourse.includeFreeSessions)
+          : (rawCourse.pricingSection?.includeFreeSessions !== undefined ? Boolean(rawCourse.pricingSection.includeFreeSessions) : true);
+
+        const freeCount = rawCourse.freeSessionsCount !== undefined
+          ? Number(rawCourse.freeSessionsCount)
+          : (rawCourse.pricingSection?.freeSessionsCount !== undefined ? Number(rawCourse.pricingSection.freeSessionsCount) : 3);
+
+        const effectiveFreeCount = includeFree ? freeCount : 0;
+
+        const rawInside = rawCourse.inside || rawCourse.pricingSection?.insideChecklist || [
+          'HD video modules & frameworks',
+          'Downloadable workbooks',
+          `${effectiveFreeCount} private 1-on-1 coaching sessions with Aarkesh`,
+          'Lifetime access'
+        ];
+        const dynamicInside = rawInside.map(str => {
+          if (typeof str === 'string' && str.toLowerCase().includes('private 1-on-1')) {
+            return effectiveFreeCount > 0 
+              ? `${effectiveFreeCount} private 1-on-1 coaching sessions with Aarkesh`
+              : 'Direct instructor Q&A with lifetime updates';
+          }
+          return str;
+        });
+
+        const rawHl = rawCourse.hl || rawCourse.pricingSection?.highlights || [
+          ['Real-World Practical Frameworks', '(Not Just Theory)'],
+          [`${effectiveFreeCount} Private Sessions`, 'with Aarkesh']
+        ];
+        const dynamicHl = rawHl.map(pair => {
+          if (Array.isArray(pair) && pair[0] && typeof pair[0] === 'string' && pair[0].toLowerCase().includes('private session')) {
+            return effectiveFreeCount > 0 
+              ? [`${effectiveFreeCount} Private Session${effectiveFreeCount > 1 ? 's' : ''}`, pair[1] || 'with Aarkesh']
+              : ['Direct Q&A Access', 'with Aarkesh'];
+          }
+          return pair;
+        });
+
+        const dynamicFacts = rawCourse.facts || [
+          ["8", "Modules"],
+          effectiveFreeCount > 0 ? [`${effectiveFreeCount} Free`, "1-on-1 Sessions"] : ["Direct", "Q&A Access"]
+        ];
+
+        newCourses.push({
+          ...rawCourse,
+          slug,
+          includeFreeSessions: includeFree,
+          freeSessionsCount: effectiveFreeCount,
+          inside: dynamicInside,
+          hl: dynamicHl,
+          facts: dynamicFacts
+        });
       }
     });
 
@@ -1318,7 +1396,7 @@ export default function Course() {
 
       const freeCount = dynamicCourse.freeSessionsCount !== undefined 
         ? Number(dynamicCourse.freeSessionsCount) 
-        : (dynamicCourse.pricingSection?.freeSessionsCount !== undefined ? Number(dynamicCourse.pricingSection.freeSessionsCount) : (foundInList?.freeSessionsCount ?? 5));
+        : (dynamicCourse.pricingSection?.freeSessionsCount !== undefined ? Number(dynamicCourse.pricingSection.freeSessionsCount) : (foundInList?.freeSessionsCount ?? 3));
 
       const effectiveFreeCount = includeFree ? freeCount : 0;
 
@@ -1781,7 +1859,7 @@ export default function Course() {
 
               const dynamicFreeCount = activeCourse?.freeSessionsCount !== undefined 
                 ? Number(activeCourse.freeSessionsCount) 
-                : (activeCourse?.pricingSection?.freeSessionsCount !== undefined ? Number(activeCourse.pricingSection.freeSessionsCount) : 5);
+                : (activeCourse?.pricingSection?.freeSessionsCount !== undefined ? Number(activeCourse.pricingSection.freeSessionsCount) : 3);
 
               const invoiceData = verifyData.purchase ? {
                 ...verifyData.purchase,
@@ -2359,15 +2437,15 @@ export default function Course() {
             </button>
 
             <Link
-              to="/my-course"
+              to="/my-journey?tab=course"
               onClick={() => setMobileMenuOpen(false)}
               className="px-4 py-3 rounded-xl bg-[#C878BE]/15 border border-[#C878BE]/40 text-[#E3B8DE] font-bold text-sm tracking-wide flex items-center justify-between transition-all mt-1"
             >
               <div className="flex items-center gap-2">
                 <BookOpen size={16} weight="bold" className="text-[#C878BE]" />
-                <span>MY COURSE</span>
+                <span>MY COURSES</span>
               </div>
-              <span className="text-xs text-[#C878BE]">← Back to Dashboard</span>
+              <span className="text-xs text-[#C878BE]">← Back to My Journey</span>
             </Link>
 
             <Link
@@ -2401,7 +2479,7 @@ export default function Course() {
         {/* ── 2. SUB BAR (Breadcrumb & Progress) ── */}
         <div className="player-sub-bar">
           <div className="player-crumb">
-            <Link to="/my-course">
+            <Link to="/my-journey?tab=course" title="Back to My Journey">
               <ArrowLeft size={16} />
               <span>My Course</span>
             </Link>

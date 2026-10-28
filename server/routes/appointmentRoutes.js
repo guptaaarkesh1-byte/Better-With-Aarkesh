@@ -12,6 +12,7 @@ import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 import { Resend } from 'resend';
 import { 
   sendCoachBookingAlertEmail, 
+  sendClientBookingConfirmationEmail,
   sendClientCoachingAgreementEmail, 
   generateCoachingAgreementPdf,
   generateGoogleMeetLink
@@ -449,6 +450,16 @@ router.post('/', optionalAuth, async (req, res) => {
         console.error("Failed to send coach booking alert email:", emailErr);
       });
 
+      // Send instant booking confirmation & receipt email to the client
+      sendClientBookingConfirmationEmail({
+        appointment: createdFreeAppointment,
+        isFreeSession: true,
+        paymentId: 'COMPLIMENTARY_PERK',
+        orderId: createdFreeAppointment.orderId || 'COURSE_FREE_SESSION'
+      }).catch(emailErr => {
+        console.error("Failed to send client booking confirmation email:", emailErr);
+      });
+
       // Release any temporary hold for this user session since appointment is now confirmed
       const holderIdToClear = req.body.booking_draft_id || questionnaireDraftId || req.body.holderId;
       if (holderIdToClear) {
@@ -705,6 +716,16 @@ router.put('/:id/finalize', optionalAuth, async (req, res) => {
       console.error('Failed to send coach booking alert email:', emailErr);
     });
 
+    // Send instant booking confirmation & receipt email to the client
+    sendClientBookingConfirmationEmail({
+      appointment,
+      isFreeSession: false,
+      paymentId: appointment.paymentId || paymentId,
+      orderId: appointment.orderId
+    }).catch(emailErr => {
+      console.error('Failed to send client booking confirmation email:', emailErr);
+    });
+
     const authData = await getOrCreateBookingUser({
       name: appointment.name,
       email: appointment.email,
@@ -904,20 +925,22 @@ router.put('/:id/link', protect, async (req, res) => {
 router.get('/admin', protect, admin, async (req, res) => {
   try {
     const appointments = await Appointment.find()
-      .populate('userId', 'name fullName email phone phoneNumber createdAt isDeleted deletedAt')
+      .populate('userId', 'name fullName email phone phoneNumber photoUrl createdAt isDeleted deletedAt')
       .sort({ createdAt: -1 });
 
     // Fetch fee settings to ensure accurate fallback
     const feeSettings = await Settings.findOne({ key: 'fees' });
     // Fetch all course purchasers for phone & email lookup
-    const courseUsers = await CourseUser.find().select('email phoneNumber');
+    const courseUsers = await CourseUser.find().select('email phoneNumber photoUrl');
     const coursePurchaserEmails = new Set();
     const courseUserPhoneMap = new Map();
+    const courseUserPhotoMap = new Map();
     courseUsers.forEach(c => {
       const em = (c.email || '').toLowerCase().trim();
       if (em) {
         coursePurchaserEmails.add(em);
         if (c.phoneNumber) courseUserPhoneMap.set(em, c.phoneNumber);
+        if (c.photoUrl) courseUserPhotoMap.set(em, c.photoUrl);
       }
     });
 
@@ -934,6 +957,7 @@ router.get('/admin', protect, admin, async (req, res) => {
       
       const resolvedPhone = appObj.phoneNumber || appObj.phone || (appObj.userId && (appObj.userId.phoneNumber || appObj.userId.phone)) || courseUserPhoneMap.get(appEmail) || '';
       const resolvedCountryCode = appObj.countryCode || (appObj.userId && appObj.userId.countryCode) || '';
+      const resolvedPhotoUrl = appObj.photoUrl || (appObj.userId && appObj.userId.photoUrl) || courseUserPhotoMap.get(appEmail) || '';
 
       let resolvedMeetLink = appObj.meetLink;
       if (!resolvedMeetLink || !resolvedMeetLink.trim()) {
@@ -947,6 +971,7 @@ router.get('/admin', protect, admin, async (req, res) => {
         phoneNumber: resolvedPhone,
         phone: resolvedPhone,
         countryCode: resolvedCountryCode,
+        photoUrl: resolvedPhotoUrl,
         amount: calculatedAmount,
         isCourseMember: isCoursePurchaser || isFree,
         isFreeSession: isFree,

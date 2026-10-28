@@ -528,7 +528,7 @@ router.post('/course-verify', async (req, res) => {
             ).sort({ createdAt: 1 }) || await Course.findOne().sort({ createdAt: 1 });
 
             // Calculate free sessions to grant (if enabled, else 0)
-            let freeSessionsToGrant = 5;
+            let freeSessionsToGrant = 3;
             if (matchedCourse?.includeFreeSessions === false || matchedCourse?.enableFreeSessions === false || primaryCourse?.includeFreeSessions === false) {
               freeSessionsToGrant = 0;
             } else if (matchedCourse?.freeSessionsCount !== undefined) {
@@ -539,6 +539,8 @@ router.post('/course-verify', async (req, res) => {
               freeSessionsToGrant = Math.max(0, Number(primaryCourse.freeSessionsCount));
             } else if (primaryCourse?.pricingSection?.freeSessionsCount !== undefined) {
               freeSessionsToGrant = Math.max(0, Number(primaryCourse.pricingSection.freeSessionsCount));
+            } else {
+              freeSessionsToGrant = 3;
             }
 
             if (!coachingUser.courseSessionsGranted) {

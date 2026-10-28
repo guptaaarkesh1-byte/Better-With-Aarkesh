@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   CalendarBlank, BookmarkSimple, Notebook, Play,
@@ -125,6 +125,25 @@ export default function MyJourney() {
   });
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [selectedCoursePreview, setSelectedCoursePreview] = useState(null);
+  const [coursesMap, setCoursesMap] = useState({});
+
+  useEffect(() => {
+    const fetchCoursesMap = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${API_URL}/api/courses/details-settings`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            setCoursesMap(data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch course details settings in MyJourney:', err);
+      }
+    };
+    fetchCoursesMap();
+  }, []);
 
   // Click outside to close avatar dropdown
   useEffect(() => {
@@ -737,7 +756,6 @@ export default function MyJourney() {
   const inr = (n) => `₹${(Number(n) || 0).toLocaleString('en-IN')}`;
 
   // Free Sessions Calculations
-  const totalCourseCredits = 3;
   const bookedOrUsedFreeCount = appointments.filter(
     a => (a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION') && a.status !== 'CANCELLED' && a.status !== 'CANCELED'
   ).length;
@@ -748,6 +766,35 @@ export default function MyJourney() {
     appointments.some(a => a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION')
   );
 
+  const purchasedCoursesCount = (() => {
+    try {
+      const cu = JSON.parse(localStorage.getItem('courseUser') || '{}');
+      if (Array.isArray(cu.purchasedCourses) && cu.purchasedCourses.length > 0) {
+        return cu.purchasedCourses.length;
+      }
+      const pc = localStorage.getItem('purchasedCourses');
+      if (pc) {
+        const parsed = JSON.parse(pc);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed.length;
+      }
+    } catch {}
+    if (Array.isArray(user?.purchasedCourses) && user.purchasedCourses.length > 0) {
+      return user.purchasedCourses.length;
+    }
+    return 0;
+  })();
+
+  const rawAvailable = hasFreeSessionsBenefit
+    ? (freeSessionsCount > 0 ? freeSessionsCount : Math.max(0, 3 - bookedOrUsedFreeCount))
+    : 0;
+
+  const totalCourseCredits = Math.max(
+    3,
+    user?.freeSessionsTotal || 0,
+    purchasedCoursesCount > 0 ? purchasedCoursesCount * 3 : 0,
+    rawAvailable + bookedOrUsedFreeCount
+  );
+
   const availableCredits = hasFreeSessionsBenefit
     ? (freeSessionsCount > 0 ? freeSessionsCount : Math.max(0, totalCourseCredits - bookedOrUsedFreeCount))
     : 0;
@@ -755,11 +802,9 @@ export default function MyJourney() {
   const usedCredits = Math.min(totalCourseCredits, Math.max(0, totalCourseCredits - availableCredits));
 
   // Build Free Session Credit Cards
-  const freeSessionSlots = [
-    { id: 1, title: 'Free Session 1' },
-    { id: 2, title: 'Free Session 2' },
-    { id: 3, title: 'Free Session 3' }
-  ].map((slot, index) => {
+  const freeSessionSlots = Array.from({ length: totalCourseCredits }, (_, index) => {
+    const slotNum = index + 1;
+    const slot = { id: slotNum, title: `Free Session ${slotNum}` };
     const freeAppts = appointments.filter(
       a => (a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION') && a.status !== 'CANCELLED' && a.status !== 'CANCELED'
     );
@@ -857,19 +902,73 @@ export default function MyJourney() {
     return (n.title || '').toLowerCase().includes(q) || (n.body || '').toLowerCase().includes(q);
   });
 
-  // Course Static & Live List
-  // Single Hosted Course: The Better Man
-  const coursesList = [
-    {
-      id: 'better-man',
-      title: 'The Better Man',
-      kind: isCoursePurchaser ? 'enrolled' : 'live',
-      price: '₹15,000',
-      old: '₹20,000',
-      g: 'mj-g-purple',
-      link: '/course/better-man'
+  // Course Dynamic & Live List
+  const allCourseSlugs = useMemo(() => {
+    const set = new Set(['better-man']);
+    Object.keys(coursesMap || {}).forEach(s => s && set.add(s));
+    if (Array.isArray(user?.purchasedCourses)) {
+      user.purchasedCourses.forEach(s => s && set.add(s));
     }
-  ];
+    if (Array.isArray(user?.enrolledCourses)) {
+      user.enrolledCourses.forEach(c => c?.slug && set.add(c.slug));
+    }
+    try {
+      const cu = JSON.parse(localStorage.getItem('courseUser') || '{}');
+      if (Array.isArray(cu?.purchasedCourses)) {
+        cu.purchasedCourses.forEach(s => s && set.add(s));
+      }
+    } catch {}
+    return Array.from(set);
+  }, [coursesMap, user]);
+
+  const enrolledSlugsSet = useMemo(() => {
+    const set = new Set();
+    if (isCoursePurchaser || user?.courseSessionsGranted || localStorage.getItem('isCoursePurchased') === 'true') {
+      set.add('better-man');
+    }
+    if (Array.isArray(user?.purchasedCourses)) {
+      user.purchasedCourses.forEach(s => s && set.add(s));
+    }
+    if (Array.isArray(user?.enrolledCourses)) {
+      user.enrolledCourses.forEach(c => c?.slug && set.add(c.slug));
+    }
+    try {
+      const cu = JSON.parse(localStorage.getItem('courseUser') || '{}');
+      if (Array.isArray(cu?.purchasedCourses)) {
+        cu.purchasedCourses.forEach(s => s && set.add(s));
+      }
+    } catch {}
+    return set;
+  }, [user, isCoursePurchaser]);
+
+  const gradientList = ['mj-g-purple', 'mj-g-clay', 'mj-g-teal', 'mj-g-blue'];
+
+  const coursesList = useMemo(() => {
+    return allCourseSlugs.map((slug, idx) => {
+      const config = coursesMap[slug] || {};
+      const isEnrolled = enrolledSlugsSet.has(slug);
+      const title = config.title || (slug === 'better-man' ? 'The Better Man' : slug);
+      const rawPrice = config.pricingSection?.currentPrice || config.price || (slug === 'better-man' ? 15000 : 4999);
+      const rawOriginal = config.pricingSection?.originalPrice || (slug === 'better-man' ? 20000 : 10000);
+      const price = typeof rawPrice === 'number' ? `₹${rawPrice.toLocaleString('en-IN')}` : String(rawPrice || '₹15,000');
+      const old = typeof rawOriginal === 'number' ? `₹${rawOriginal.toLocaleString('en-IN')}` : String(rawOriginal || '₹20,000');
+      const g = gradientList[idx % gradientList.length];
+      const rawImg = config.imageUrl || config.thumbnailUrl || config.heroSection?.cardThumbnail || config.cardThumbnail || '';
+      const imageUrl = rawImg ? resolveImageUrl(rawImg) : '';
+
+      return {
+        id: slug,
+        slug,
+        title,
+        kind: isEnrolled ? 'enrolled' : 'live',
+        price,
+        old,
+        g,
+        imageUrl,
+        link: `/course/${slug}`
+      };
+    });
+  }, [allCourseSlugs, coursesMap, enrolledSlugsSet]);
 
   const filteredCourses = coursesList.filter(c => {
     if (courseFilter === 'enrolled' && c.kind !== 'enrolled') return false;
@@ -1046,7 +1145,7 @@ export default function MyJourney() {
               <div className="mj-credit">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="mj-dots shrink-0">
-                    {[0, 1, 2].map((idx) => (
+                    {Array.from({ length: totalCourseCredits }).map((_, idx) => (
                       <i key={idx} className={idx < usedCredits ? 'used' : ''} />
                     ))}
                   </div>
@@ -1993,8 +2092,22 @@ export default function MyJourney() {
                         const isEnrolled = c.kind === 'enrolled';
                         return (
                           <article key={c.id} className="mj-course-card">
-                            <div className={`mj-cthumb ${c.g}`}>
-                              <b>{c.title}</b>
+                            <div 
+                              className={`mj-cthumb ${c.g} cursor-pointer`}
+                              onClick={() => {
+                                const targetUrl = isEnrolled 
+                                  ? (c.slug === 'better-man' ? '/course?learn=true&from=my-journey' : `/course/${c.slug}?learn=true&from=my-journey`)
+                                  : `/course/${c.slug}`;
+                                navigate(targetUrl, { state: { from: 'my-journey' } });
+                              }}
+                              style={c.imageUrl ? {
+                                backgroundImage: `url("${c.imageUrl}")`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                backgroundRepeat: 'no-repeat'
+                              } : {}}
+                            >
+                              {!c.imageUrl && <b>{c.title}</b>}
                               {c.kind !== 'recorded' && (
                                 <span className={`mj-badge ${isEnrolled ? 'enrolled' : ''}`}>
                                   <i></i>
@@ -2003,7 +2116,17 @@ export default function MyJourney() {
                               )}
                             </div>
 
-                            <h3>{c.title}</h3>
+                            <h3 
+                              className="cursor-pointer hover:text-[#C878BE] transition-colors"
+                              onClick={() => {
+                                const targetUrl = isEnrolled 
+                                  ? (c.slug === 'better-man' ? '/course?learn=true&from=my-journey' : `/course/${c.slug}?learn=true&from=my-journey`)
+                                  : `/course/${c.slug}`;
+                                navigate(targetUrl, { state: { from: 'my-journey' } });
+                              }}
+                            >
+                              {c.title}
+                            </h3>
 
                             {isEnrolled ? (
                               <div className="mj-price">
@@ -2019,7 +2142,10 @@ export default function MyJourney() {
 
                             <button 
                               onClick={() => {
-                                navigate('/course/better-man?from=my-journey', { state: { from: 'my-journey' } });
+                                const targetUrl = isEnrolled 
+                                  ? (c.slug === 'better-man' ? '/course?learn=true&from=my-journey' : `/course/${c.slug}?learn=true&from=my-journey`)
+                                  : `/course/${c.slug}`;
+                                navigate(targetUrl, { state: { from: 'my-journey' } });
                               }}
                               className={`mj-cbtn ${isEnrolled ? 'solid' : ''}`}
                             >

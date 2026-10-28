@@ -676,6 +676,226 @@ export async function sendClientCoachingAgreementEmail({ appointment, customData
 }
 
 /**
+ * Send instant confirmation and payment receipt email to the client upon booking.
+ * Informs the client that their session is reserved and that their meeting link
+ * along with their customized Coaching Agreement will be delivered shortly after admin review.
+ */
+export async function sendClientBookingConfirmationEmail({ 
+  appointment, 
+  isFreeSession = false, 
+  paymentId, 
+  orderId 
+}) {
+  if (!appointment || !appointment.email) return;
+
+  try {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      console.warn('⚠️ RESEND_API_KEY not configured. Skipping client booking confirmation email.');
+      return;
+    }
+
+    const resend = new Resend(resendApiKey);
+
+    const clientName = (appointment.name || 'Valued Client').trim();
+    const rawFirstName = clientName.split(' ')[0] || 'Valued Client';
+    const clientFirstName = rawFirstName ? (rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1)) : 'Valued Client';
+    const clientEmail = (appointment.email || '').trim().toLowerCase();
+    const clientPhone = (appointment.countryCode ? appointment.countryCode + ' ' : '') + (appointment.phoneNumber || appointment.phone || '').trim();
+    const cleanDate = (appointment.date || 'Scheduled Date').trim();
+    const cleanTime = (appointment.time || 'Scheduled Time').trim();
+    const duration = appointment.duration || 60;
+    const isFirstSession = appointment.isFirstSession;
+
+    const displayPaymentId = paymentId || appointment.paymentId || (isFreeSession ? 'COMPLIMENTARY_PERK' : 'CONFIRMED');
+    const displayOrderId = orderId || appointment.orderId || 'BWA_SESSION';
+    const amountVal = isFreeSession ? 0 : (appointment.amount !== undefined ? Number(appointment.amount) : 5000);
+    const amountFormatted = isFreeSession 
+      ? '₹0 — 100% Complimentary (Course Perk)' 
+      : `₹${amountVal.toLocaleString('en-IN')}`;
+
+    const clientUrl = process.env.CLIENT_URL || 'https://betterwithaarkesh.com';
+    const myJourneyUrl = `${clientUrl}/my-journey`;
+
+    const emailSubject = isFreeSession
+      ? `Coaching Session Reserved (Complimentary Perk) — Better With Aarkesh`
+      : `Booking Confirmed & Payment Successful — Better With Aarkesh`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${emailSubject}</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #2B2523;">
+        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #FAF8F5; padding: 32px 16px;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; width: 100%; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.06);">
+                
+                <!-- Brand Header -->
+                <tr>
+                  <td style="padding: 32px 36px 24px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td>
+                          <div style="font-size: 24px; font-weight: bold; color: #1A1A1A; letter-spacing: -0.5px; font-family: Georgia, serif;">
+                            BetterWith<span style="color: #C25E38;">Aarkesh</span>
+                          </div>
+                          <div style="font-size: 11px; color: #C25E38; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 700;">
+                            1-on-1 Executive Coaching
+                          </div>
+                        </td>
+                        <td align="right">
+                          <span style="display: inline-block; padding: 6px 14px; background-color: ${isFreeSession ? '#FEF3C7' : '#ECFDF5'}; border: 1px solid ${isFreeSession ? '#F59E0B' : '#10B981'}; color: ${isFreeSession ? '#B45309' : '#047857'}; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border-radius: 9999px;">
+                            ${isFreeSession ? '✨ COMPLIMENTARY PERK' : '✓ PAYMENT SUCCESSFUL'}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Main Content Body -->
+                <tr>
+                  <td style="padding: 32px 36px;">
+                    <h1 style="margin: 0 0 12px; font-size: 22px; color: #1A1A1A; font-weight: 700; font-family: Georgia, serif; line-height: 1.3;">
+                      ${isFreeSession ? 'Your Complimentary Coaching Session is Confirmed!' : 'Booking Confirmed & Payment Received!'}
+                    </h1>
+                    <p style="margin: 0 0 22px; font-size: 14.5px; color: #555047; line-height: 1.6;">
+                      Hi <strong>${clientFirstName}</strong>, thank you for scheduling your session with <strong>Aarkesh Gupta</strong>. Your appointment has been officially registered and your slot is reserved on our calendar.
+                    </p>
+
+                    <!-- REASSURANCE NEXT STEP BOX (Highlighted as requested) -->
+                    <div style="background-color: #FFF8F3; border: 1.5px solid #F3D2C1; border-left: 5px solid #C25E38; border-radius: 12px; padding: 20px 22px; margin-bottom: 26px;">
+                      <div style="font-size: 12px; font-weight: 800; color: #C25E38; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
+                        ⏳ IMPORTANT NEXT STEP · MEETING LINK &amp; COACHING AGREEMENT
+                      </div>
+                      <p style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #1C1714; line-height: 1.5;">
+                        Your personalized Coaching Agreement and Google Meet link will be delivered shortly.
+                      </p>
+                      <p style="margin: 0; font-size: 13.5px; color: #555047; line-height: 1.6;">
+                        Prior to our session, Aarkesh personally reviews your booking and intake responses to tailor the conversation specifically to your goals. You will receive an official email containing your <strong>Google Meet video call link</strong> and your <strong>signed Coaching Agreement PDF</strong> shortly.
+                      </p>
+                    </div>
+
+                    <!-- Payment / Receipt Summary Box -->
+                    <div style="background-color: #FAF7F2; border: 1px solid #EBE4DA; border-radius: 12px; padding: 20px; margin-bottom: 22px;">
+                      <div style="font-size: 11.5px; font-weight: 700; color: #8C827A; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #EAE3D9; padding-bottom: 8px;">
+                        💳 Payment &amp; Transaction Details
+                      </div>
+                      <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13.5px;">
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;" width="150">Payment Status:</td>
+                          <td style="padding: 6px 0; color: #047857; font-weight: 700;">
+                            ${isFreeSession ? '● Complimentary (Course Student Perk)' : '● Paid &amp; Confirmed'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;">Amount Paid:</td>
+                          <td style="padding: 6px 0; color: #1C1714; font-weight: 700; font-size: 14px;">
+                            ${amountFormatted}
+                          </td>
+                        </tr>
+                        ${!isFreeSession && displayPaymentId ? `
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;">Payment ID:</td>
+                          <td style="padding: 6px 0; color: #1C1714; font-family: 'SFMono-Regular', Consolas, monospace; font-weight: 600; font-size: 12.5px;">
+                            ${displayPaymentId}
+                          </td>
+                        </tr>
+                        ` : ''}
+                        ${displayOrderId ? `
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;">Order Reference:</td>
+                          <td style="padding: 6px 0; color: #1C1714; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px;">
+                            ${displayOrderId}
+                          </td>
+                        </tr>
+                        ` : ''}
+                      </table>
+                    </div>
+
+                    <!-- Session Details Box -->
+                    <div style="background-color: #FAF7F2; border: 1px solid #EBE4DA; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                      <div style="font-size: 11.5px; font-weight: 700; color: #8C827A; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #EAE3D9; padding-bottom: 8px;">
+                        🗓️ Session Reservation Details
+                      </div>
+                      <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13.5px;">
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;" width="150">Session Date:</td>
+                          <td style="padding: 6px 0; color: #1C1714; font-weight: 700;">${cleanDate}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;">Time Slot:</td>
+                          <td style="padding: 6px 0; color: #1C1714; font-weight: 700;">${cleanTime} (IST)</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;">Session Duration:</td>
+                          <td style="padding: 6px 0; color: #C25E38; font-weight: 700;">${duration} Minutes (${isFirstSession ? 'First Session' : 'Follow-up Session'})</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;">Client Name:</td>
+                          <td style="padding: 6px 0; color: #1C1714; font-weight: 600;">${clientName}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;">Registered Email:</td>
+                          <td style="padding: 6px 0; color: #1C1714;">${clientEmail}</td>
+                        </tr>
+                        ${clientPhone ? `
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;">Phone Number:</td>
+                          <td style="padding: 6px 0; color: #1C1714;">${clientPhone}</td>
+                        </tr>
+                        ` : ''}
+                      </table>
+                    </div>
+
+                    <!-- Call To Action Button -->
+                    <div style="text-align: center; margin: 30px 0 24px;">
+                      <a href="${myJourneyUrl}" target="_blank" style="display: inline-block; background-color: #1C1714; color: #FFFFFF; font-weight: 700; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; padding: 14px 28px; border-radius: 9999px; box-shadow: 0 4px 14px rgba(0,0,0,0.15);">
+                        View My Journey &amp; Profile →
+                      </a>
+                    </div>
+
+                    <p style="font-size: 13px; color: #716962; line-height: 1.6; margin: 0; text-align: center;">
+                      Have questions or need to update your time? You can reply directly to this email or reach us anytime at <a href="mailto:guptaaarkesh1@gmail.com" style="color: #C25E38; text-decoration: none; font-weight: 600;">guptaaarkesh1@gmail.com</a>.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 24px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11.5px; color: #8C827A; line-height: 1.6;">
+                    <div style="font-weight: 600; color: #1C1714; margin-bottom: 4px;">Better With Aarkesh · Executive Leadership &amp; Gravitas Coaching</div>
+                    <div>Sent with care to ${clientEmail}</div>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
+      to: clientEmail,
+      subject: emailSubject,
+      html: htmlContent,
+    });
+
+    console.log(`✉️ Dispatched client booking confirmation & payment receipt to ${clientEmail} (isFreeSession: ${isFreeSession})`);
+  } catch (err) {
+    console.error('Failed to send client booking confirmation email:', err);
+  }
+}
+
+/**
  * Backwards compatibility wrapper (if called elsewhere)
  */
 export async function sendCoachingBookingConfirmationEmail(params) {

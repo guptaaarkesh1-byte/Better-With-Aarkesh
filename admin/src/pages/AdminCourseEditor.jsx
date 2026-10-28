@@ -931,11 +931,35 @@ export default function AdminCourseEditor() {
         n: String(coursesList.length + 1).padStart(2, '0'),
         slug,
         lede: 'Master the psychology and strategies to elevate your sovereignty and leadership.',
-        chips: ['Mastery', 'Leadership'],
         hl: [['Real-World Practical Frameworks', '(Not Just Theory)'], ['3 Private Sessions', 'with Aarkesh']],
-        inside: ['HD video modules & frameworks', 'Downloadable workbooks', '3 private 1-on-1 sessions', 'Lifetime access'],
+        inside: [
+          'HD video modules & frameworks',
+          'Downloadable workbooks',
+          '3 private 1-on-1 coaching sessions with Aarkesh',
+          'Lifetime access with all future updates'
+        ],
+        facts: [['8', 'Modules'], ['3 Free', '1-on-1 Sessions']],
         price: 4999,
         orig: 9999,
+        includeFreeSessions: true,
+        freeSessionsCount: 3,
+        pricingSection: {
+          currentPrice: 4999,
+          originalPrice: 9999,
+          ctaText: 'Check Course',
+          enableGst: true,
+          gstRate: 18,
+          gstMode: 'exclusive',
+          includeFreeSessions: true,
+          freeSessionsCount: 3,
+          highlights: [['Real-World Practical Frameworks', '(Not Just Theory)'], ['3 Private Sessions', 'with Aarkesh']],
+          insideChecklist: [
+            'HD video modules & frameworks',
+            'Downloadable workbooks',
+            '3 private 1-on-1 coaching sessions with Aarkesh',
+            'Lifetime access with all future updates'
+          ]
+        },
         enableGst: true,
         gstRate: 18,
         isGstIncluded: false,
@@ -2132,8 +2156,16 @@ export default function AdminCourseEditor() {
 
                     {courseData.thumb ? (
                       <div className="bwa-file">
-                        <div className="th" style={{ backgroundImage: `url('${courseData.thumb}')` }} />
-                        <b>{courseData.thumbName || courseData.thumb}</b>
+                        <div 
+                          className="th" 
+                          style={{ 
+                            backgroundImage: `url('${courseData.thumb.startsWith('http') || courseData.thumb.startsWith('data:') || courseData.thumb.startsWith('blob:') ? courseData.thumb : `${API_URL}${courseData.thumb.startsWith('/') ? '' : '/'}${courseData.thumb}`}')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                          }} 
+                        />
+                        <b>{courseData.thumbName || (typeof courseData.thumb === 'string' ? courseData.thumb.split('/').pop().replace(/-\d+(\.[a-zA-Z0-9]+)$/, '$1') : 'Thumbnail image')}</b>
                         <button
                           type="button"
                           className="bwa-btn sm danger"

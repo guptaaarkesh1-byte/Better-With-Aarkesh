@@ -533,7 +533,43 @@ router.get('/me', protect, async (req, res) => {
       await user.save();
     }
 
-    res.json(user);
+    const cleanEmail = (user.email || '').trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+
+    const [courseUser, paidPurchases] = await Promise.all([
+      CourseUser.findOne({ email: emailRegex }),
+      CoursePurchase.find({ studentEmail: emailRegex, paymentStatus: 'Paid' })
+    ]);
+
+    const purchasedSlugs = new Set();
+    if (Array.isArray(courseUser?.purchasedCourses)) {
+      courseUser.purchasedCourses.forEach(s => s && purchasedSlugs.add(s));
+    }
+    paidPurchases.forEach(p => {
+      if (p.courseSlug) purchasedSlugs.add(p.courseSlug);
+    });
+    if (purchasedSlugs.size === 0 && (courseUser?.isPurchased || sessionInfo.isCoursePurchaser || user.courseSessionsGranted)) {
+      purchasedSlugs.add('better-man');
+    }
+
+    const userObj = user.toObject();
+    userObj.purchasedCourses = Array.from(purchasedSlugs);
+    userObj.isPurchased = purchasedSlugs.size > 0 || sessionInfo.isCoursePurchaser;
+    userObj.enrolledCourses = paidPurchases.map(p => ({
+      slug: p.courseSlug || 'better-man',
+      title: p.courseTitle || 'The Better Man™',
+      amount: p.amount,
+      purchaseDate: p.purchaseDate || p.createdAt,
+      transactionId: p.transactionId
+    }));
+
+    if (sessionInfo.isCoursePurchaser) {
+      userObj.freeSessionsTotal = sessionInfo.totalGranted;
+      userObj.freeSessionsClaimed = sessionInfo.claimed;
+      userObj.freeSessions = sessionInfo.remaining;
+    }
+
+    res.json(userObj);
   } catch (error) {
     console.error('Fetch Auth Me Error:', error.message);
     res.status(500).json({ message: 'Server error fetching profile' });

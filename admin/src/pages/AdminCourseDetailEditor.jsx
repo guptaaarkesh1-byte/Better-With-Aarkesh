@@ -1149,15 +1149,21 @@ export default function AdminCourseDetailEditor() {
       ],
       hl: [
         ['Real-World Transformation', '(Not Just Theory)'],
-        ['2 Private Sessions', 'with Aarkesh']
+        ['3 Private Sessions', 'with Aarkesh']
       ],
       inside: [
         '6 HD video modules & actionable frameworks',
         'Downloadable workbooks & mental models',
-        '2 private 1-on-1 coaching sessions with Aarkesh',
+        '3 private 1-on-1 coaching sessions with Aarkesh',
         'Lifetime access with all future updates'
       ],
-      facts: [['6', 'Modules'], ['2 Free', '1-on-1 Sessions']],
+      facts: [['6', 'Modules'], ['3 Free', '1-on-1 Sessions']],
+      includeFreeSessions: true,
+      freeSessionsCount: 3,
+      pricingSection: {
+        includeFreeSessions: true,
+        freeSessionsCount: 3
+      },
       price: '₹4,999',
       was: '₹9,999',
       cta: 'Check Course',

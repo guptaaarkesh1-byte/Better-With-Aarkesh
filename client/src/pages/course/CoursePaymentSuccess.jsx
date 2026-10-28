@@ -40,7 +40,7 @@ export default function CoursePaymentSuccess({
   const courseTitle = purchaseData?.courseTitle || 'The Better Man™';
   const invoiceHeading = purchaseData?.invoiceItemTitle || (purchaseData?.courseTitle ? `${purchaseData.courseTitle} — Masterclass Lifetime Access` : 'The Better Man™ — Masterclass Lifetime Access');
   const invoiceSubtitle = purchaseData?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community';
-  const freeSessionsCount = purchaseData?.freeSessionsGranted !== undefined ? Number(purchaseData.freeSessionsGranted) : 5;
+  const freeSessionsCount = purchaseData?.freeSessionsGranted !== undefined ? Number(purchaseData.freeSessionsGranted) : 3;
   const rawBonusHeading = purchaseData?.bonusItemTitle;
   const bonusHeading = freeSessionsCount > 0 
     ? (rawBonusHeading ? rawBonusHeading.replace(/\b\d+\b/g, String(freeSessionsCount)) : `${freeSessionsCount} Private 1-on-1 Executive Coaching Sessions with Aarkesh`) 

@@ -48,6 +48,7 @@ export default function Navbar() {
 
   const [newCoachNotesCount, setNewCoachNotesCount] = useState(0);
   const [freeSessionsCount, setFreeSessionsCount] = useState(0);
+  const [totalFreeSessions, setTotalFreeSessions] = useState(0);
 
   // Click outside to close user dropdown
   useEffect(() => {
@@ -88,8 +89,10 @@ export default function Navbar() {
     }
 
     const currentEffective = getEffectiveUser();
-    const initialCredits = Number(currentEffective?.freeSessions) || 0;
+    const initialCredits = Number(currentEffective?.freeSessions) || Number(localStorage.getItem('freeSessions')) || 0;
+    const initialTotal = Number(currentEffective?.freeSessionsTotal) || Number(localStorage.getItem('freeSessionsTotal')) || 0;
     setFreeSessionsCount(initialCredits);
+    if (initialTotal > 0) setTotalFreeSessions(initialTotal);
 
     const token = localStorage.getItem('token');
     const courseToken = localStorage.getItem('courseToken');
@@ -115,7 +118,17 @@ export default function Navbar() {
         })
         .then(data => {
           if (data && data.freeSessions !== undefined) {
-            setFreeSessionsCount(Math.max(0, Number(data.freeSessions)));
+            const count = Math.max(0, Number(data.freeSessions));
+            setFreeSessionsCount(count);
+            localStorage.setItem('freeSessions', String(count));
+          }
+          if (data && data.freeSessionsTotal !== undefined) {
+            const tot = Math.max(0, Number(data.freeSessionsTotal));
+            setTotalFreeSessions(tot);
+            localStorage.setItem('freeSessionsTotal', String(tot));
+          }
+          if (data && Array.isArray(data.purchasedCourses)) {
+            localStorage.setItem('purchasedCourses', JSON.stringify(data.purchasedCourses));
           }
         })
         .catch(() => {});
@@ -140,7 +153,65 @@ export default function Navbar() {
         })
         .catch(() => {});
     }
+
+    // Also sync from courseToken if available
+    if (courseToken) {
+      fetch(`${API_URL}/api/course/auth/me`, {
+        headers: { Authorization: `Bearer ${courseToken}` }
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(cData => {
+          const student = cData?.student || cData?.user;
+          if (student) {
+            if (student.freeSessions !== undefined) {
+              const count = Math.max(0, Number(student.freeSessions));
+              setFreeSessionsCount(count);
+              localStorage.setItem('freeSessions', String(count));
+            }
+            if (student.freeSessionsTotal !== undefined) {
+              const tot = Math.max(0, Number(student.freeSessionsTotal));
+              setTotalFreeSessions(tot);
+              localStorage.setItem('freeSessionsTotal', String(tot));
+            }
+            if (Array.isArray(student.purchasedCourses)) {
+              localStorage.setItem('purchasedCourses', JSON.stringify(student.purchasedCourses));
+            }
+          }
+        })
+        .catch(() => {});
+    }
   }, [isLoggedIn, location.pathname]);
+
+  const purchasedCoursesCount = (() => {
+    try {
+      const cu = JSON.parse(localStorage.getItem('courseUser') || '{}');
+      if (Array.isArray(cu?.purchasedCourses) && cu.purchasedCourses.length > 0) {
+        return cu.purchasedCourses.length;
+      }
+      const pc = localStorage.getItem('purchasedCourses');
+      if (pc) {
+        const parsed = JSON.parse(pc);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed.length;
+      }
+    } catch {}
+    if (Array.isArray(effectiveUser?.purchasedCourses) && effectiveUser.purchasedCourses.length > 0) {
+      return effectiveUser.purchasedCourses.length;
+    }
+    if (Array.isArray(effectiveUser?.enrolledCourses) && effectiveUser.enrolledCourses.length > 0) {
+      return effectiveUser.enrolledCourses.length;
+    }
+    return 0;
+  })();
+
+  const totalDots = Math.max(
+    freeSessionsCount,
+    totalFreeSessions || 0,
+    Number(effectiveUser?.freeSessionsTotal) || 0,
+    Number(effectiveUser?.totalFreeSessions) || 0,
+    Number(localStorage.getItem('freeSessionsTotal')) || 0,
+    purchasedCoursesCount > 0 ? purchasedCoursesCount * 3 : 0,
+    freeSessionsCount > 3 ? freeSessionsCount : 3
+  );
 
   // Re-check auth status when route changes or auth event fires
   useEffect(() => {
@@ -393,19 +464,23 @@ export default function Navbar() {
 
                           {/* Sessions Left Dots - only shown if user has free sessions left */}
                           {freeSessionsCount > 0 && (
-                            <div className="flex items-center gap-1.5 text-[12px] text-[#555047] font-medium mb-4">
-                              {Array.from({ length: 3 }).map((_, i) => (
-                                <span
-                                  key={i}
-                                  className={cn(
-                                    "w-2.5 h-2.5 rounded-full transition-all",
-                                    i < freeSessionsCount
-                                      ? "bg-[#c8512d]"
-                                      : "border border-[#c8512d] bg-transparent"
-                                  )}
-                                />
-                              ))}
-                              <span className="ml-1 text-[#716962]">{freeSessionsCount} of 3 free sessions left</span>
+                            <div className="flex items-center gap-1.5 text-[12px] text-[#555047] font-medium mb-4 flex-wrap">
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {Array.from({ length: totalDots }).map((_, i) => (
+                                  <span
+                                    key={i}
+                                    className={cn(
+                                      "w-2.5 h-2.5 rounded-full transition-all shrink-0",
+                                      i < freeSessionsCount
+                                        ? "bg-[#c8512d]"
+                                        : "border border-[#c8512d] bg-transparent"
+                                    )}
+                                  />
+                                ))}
+                              </div>
+                              <span className="ml-1 text-[#716962] whitespace-nowrap">
+                                {freeSessionsCount} of {totalDots} free session{totalDots === 1 ? '' : 's'} left
+                              </span>
                             </div>
                           )}
 

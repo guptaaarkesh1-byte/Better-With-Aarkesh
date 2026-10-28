@@ -155,9 +155,11 @@ router.get('/:slug', async (req, res) => {
       soon: false,
       live: true,
       isPublished: true,
+      includeFreeSessions: true,
+      freeSessionsCount: 3,
       chips: ['Leadership', 'Mastery'],
       hl: [['Real-World Transformation', '(Not Just Theory)'], ['3 Private Sessions', 'with Aarkesh']],
-      inside: ['HD video modules & frameworks', 'Downloadable workbooks', '3 private 1-on-1 sessions', 'Lifetime access']
+      inside: ['HD video modules & frameworks', 'Downloadable workbooks', '3 private 1-on-1 coaching sessions with Aarkesh', 'Lifetime access']
     });
   } catch (err) {
     console.error(`Error fetching course ${req.params.slug}:`, err);
@@ -180,11 +182,27 @@ router.put('/:slug', async (req, res) => {
     const trailerVal = courseData.trailer || courseData.trailerVideo || courseData.heroSection?.trailerVideo || courseData.trailerVideoUrl || '';
     const thumbVal = courseData.imageUrl || courseData.thumbnailUrl || courseData.thumb || courseData.heroSection?.cardThumbnail || '';
 
+    const incFree = courseData.includeFreeSessions !== undefined 
+      ? Boolean(courseData.includeFreeSessions) 
+      : (courseData.pricingSection?.includeFreeSessions !== undefined ? Boolean(courseData.pricingSection.includeFreeSessions) : true);
+
+    const freeCnt = courseData.freeSessionsCount !== undefined 
+      ? Math.max(0, Number(courseData.freeSessionsCount)) 
+      : (courseData.pricingSection?.freeSessionsCount !== undefined ? Math.max(0, Number(courseData.pricingSection.freeSessionsCount)) : 3);
+
     const existingCourse = allCourses[slug] || allCourses[cleanSlug] || {};
     allCourses[slug] = {
       ...(DEFAULT_COURSE_DETAILS_MAP[slug] || {}),
       ...existingCourse,
       ...courseData,
+      includeFreeSessions: incFree,
+      freeSessionsCount: freeCnt,
+      pricingSection: {
+        ...(existingCourse.pricingSection || {}),
+        ...(courseData.pricingSection || {}),
+        includeFreeSessions: incFree,
+        freeSessionsCount: freeCnt
+      },
       createdAt: existingCourse.createdAt || courseData.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       trailer: trailerVal,
@@ -261,6 +279,20 @@ router.put('/:slug', async (req, res) => {
           dbCourse.isGstIncluded = courseData.pricingSection.gstMode === 'included';
         } else if (courseData.gstMode) {
           dbCourse.isGstIncluded = courseData.gstMode === 'included';
+        }
+
+        if (courseData.freeSessionsCount !== undefined) {
+          dbCourse.freeSessionsCount = Number(courseData.freeSessionsCount);
+        } else if (courseData.pricingSection?.freeSessionsCount !== undefined) {
+          dbCourse.freeSessionsCount = Number(courseData.pricingSection.freeSessionsCount);
+        } else if (dbCourse.freeSessionsCount === undefined) {
+          dbCourse.freeSessionsCount = 3;
+        }
+
+        if (courseData.includeFreeSessions !== undefined) {
+          dbCourse.includeFreeSessions = Boolean(courseData.includeFreeSessions);
+        } else if (courseData.pricingSection?.includeFreeSessions !== undefined) {
+          dbCourse.includeFreeSessions = Boolean(courseData.pricingSection.includeFreeSessions);
         }
 
         await dbCourse.save();

@@ -11,6 +11,7 @@ export const clearAllAuth = () => {
   localStorage.removeItem('userInfo');
   localStorage.removeItem('user');
   localStorage.removeItem('freeSessions');
+  localStorage.removeItem('freeSessionsTotal');
 
   // Clear Course Auth
   localStorage.removeItem('courseToken');
@@ -55,6 +56,8 @@ export const syncLoginData = (data = {}) => {
     phoneNumber: data.phoneNumber || '',
     countryCode: data.countryCode || '+91',
     freeSessions: data.freeSessions !== undefined ? Math.max(0, Number(data.freeSessions)) : 0,
+    freeSessionsTotal: data.freeSessionsTotal !== undefined ? Math.max(0, Number(data.freeSessionsTotal)) : undefined,
+    freeSessionsClaimed: data.freeSessionsClaimed !== undefined ? Math.max(0, Number(data.freeSessionsClaimed)) : undefined,
     courseSessionsGranted: data.courseSessionsGranted || false,
     isPurchased: Boolean(data.isPurchased || data.isCoursePurchased),
     purchasedCourses: Array.isArray(data.purchasedCourses) ? data.purchasedCourses : [],
@@ -65,6 +68,9 @@ export const syncLoginData = (data = {}) => {
   localStorage.setItem('userInfo', JSON.stringify(effectiveUserInfo));
   if (effectiveUserInfo.freeSessions !== undefined) {
     localStorage.setItem('freeSessions', String(effectiveUserInfo.freeSessions));
+  }
+  if (effectiveUserInfo.freeSessionsTotal !== undefined) {
+    localStorage.setItem('freeSessionsTotal', String(effectiveUserInfo.freeSessionsTotal));
   }
 
   // 2. Sync Course Token & User
@@ -81,6 +87,10 @@ export const syncLoginData = (data = {}) => {
     fullName: data.fullName || data.name || '',
     email: (data.email || '').toLowerCase().trim(),
     phoneNumber: data.phoneNumber || '',
+    freeSessions: data.freeSessions !== undefined ? Math.max(0, Number(data.freeSessions)) : 0,
+    freeSessionsTotal: data.freeSessionsTotal !== undefined ? Math.max(0, Number(data.freeSessionsTotal)) : undefined,
+    freeSessionsClaimed: data.freeSessionsClaimed !== undefined ? Math.max(0, Number(data.freeSessionsClaimed)) : undefined,
+    courseSessionsGranted: data.courseSessionsGranted || false,
     isPurchased: Boolean(data.isPurchased || data.isCoursePurchased),
     purchasedCourses: Array.isArray(data.purchasedCourses) ? data.purchasedCourses : [],
     authProvider: data.authProvider || 'local',

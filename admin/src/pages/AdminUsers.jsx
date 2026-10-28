@@ -138,12 +138,16 @@ export default function AdminUsers() {
               name: (app.userId && (app.userId.fullName || app.userId.name)) ? (app.userId.fullName || app.userId.name) : app.name || 'Unknown Client',
               email: (app.userId && app.userId.email) ? app.userId.email : app.email || 'No Email',
               phone: (app.userId && (app.userId.phoneNumber || app.userId.phone)) ? (app.userId.phoneNumber || app.userId.phone) : app.phone || '',
+              photoUrl: (app.userId && app.userId.photoUrl) ? app.userId.photoUrl : app.photoUrl || '',
               joined: parseDateObj((app.userId && app.userId.createdAt) ? app.userId.createdAt : (app.createdAt || Date.now())),
               course: isCourseMember,
               appts: []
             };
           } else {
             if (isCourseMember) userMap[uId].course = true;
+            if (!userMap[uId].photoUrl && ((app.userId && app.userId.photoUrl) || app.photoUrl)) {
+              userMap[uId].photoUrl = (app.userId && app.userId.photoUrl) || app.photoUrl;
+            }
           }
 
           const appDateObj = parseDateObj(app.date, app.time);
@@ -950,7 +954,17 @@ export default function AdminUsers() {
                         >
                           <td>
                             <div className="bwa-who">
-                              <div className="bwa-av">{c.name?.[0]?.toUpperCase() || 'U'}</div>
+                              <div className="bwa-av" style={{ overflow: 'hidden', position: 'relative' }}>
+                                {c.photoUrl ? (
+                                  <img 
+                                    src={c.photoUrl} 
+                                    alt="" 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} 
+                                    onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                                  />
+                                ) : null}
+                                <span>{c.name?.[0]?.toUpperCase() || 'U'}</span>
+                              </div>
                               <div>
                                 <div className="bwa-nm">{c.name}</div>
                                 {c.course && <div className="bwa-mem">Course member</div>}
@@ -1073,8 +1087,16 @@ export default function AdminUsers() {
                             >
                               <td>
                                 <div className="bwa-who">
-                                  <div className="bwa-av" style={{ width: '34px', height: '34px', fontSize: '13px' }}>
-                                    {c.name?.[0]?.toUpperCase() || 'U'}
+                                  <div className="bwa-av" style={{ width: '34px', height: '34px', fontSize: '13px', overflow: 'hidden', position: 'relative' }}>
+                                    {c.photoUrl ? (
+                                      <img 
+                                        src={c.photoUrl} 
+                                        alt="" 
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} 
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                                      />
+                                    ) : null}
+                                    <span>{c.name?.[0]?.toUpperCase() || 'U'}</span>
                                   </div>
                                   <div>
                                     <div className="bwa-nm">{c.name}</div>
@@ -1642,8 +1664,16 @@ export default function AdminUsers() {
                 </div>
 
                 <div className="bwa-who" style={{ paddingBottom: '16px' }}>
-                  <div className="bwa-av" style={{ width: '56px', height: '56px', fontSize: '22px' }}>
-                    {selectedClient.name?.[0]?.toUpperCase() || 'U'}
+                  <div className="bwa-av" style={{ width: '56px', height: '56px', fontSize: '22px', overflow: 'hidden', position: 'relative' }}>
+                    {selectedClient.photoUrl ? (
+                      <img 
+                        src={selectedClient.photoUrl} 
+                        alt="" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} 
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                      />
+                    ) : null}
+                    <span>{selectedClient.name?.[0]?.toUpperCase() || 'U'}</span>
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: 'var(--bwa-serif)', fontSize: '24px', color: 'var(--bwa-ink)' }}>

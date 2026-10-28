@@ -283,11 +283,51 @@ export default function AdminAppointmentsView() {
       const email = (stu.email || '').toLowerCase().trim();
       if (!email) return;
 
-      const primaryPurchase = (stu.purchases && stu.purchases.length > 0)
-        ? stu.purchases.find(p => p.paymentStatus === 'Paid') || stu.purchases[0]
-        : null;
+      const paidPurchases = (stu.purchases || []).filter(p => p.paymentStatus === 'Paid');
+      const failedPurchases = (stu.purchases || []).filter(p => p.paymentStatus === 'Failed');
+      const latestPaid = paidPurchases[0] || null;
+      const primaryPurchase = latestPaid || (stu.purchases && stu.purchases[0]) || null;
 
-      const isEnrolled = stu.isPurchased || (primaryPurchase && primaryPurchase.paymentStatus === 'Paid');
+      const isEnrolled = Boolean(stu.isPurchased || paidPurchases.length > 0);
+
+      // Collect all paid courses list
+      const coursesList = paidPurchases.map(p => ({
+        name: (p.courseTitle || stu.courseTitle || COURSE_NAME).trim(),
+        slug: p.courseSlug || 'better-man',
+        amount: Number(p.amount) || 0,
+        paidAt: p.purchaseDate || p.createdAt || new Date().toISOString(),
+        txn: p.transactionId || p.razorpayPaymentId || 'pay_CourseEnrolled',
+        order: p.razorpayOrderId || '—',
+        freeSessionsGranted: Number(p.freeSessionsGranted) || 3
+      }));
+
+      // If enrolled but no paid purchases recorded in array (e.g. legacy/direct enrollment)
+      if (isEnrolled && coursesList.length === 0) {
+        coursesList.push({
+          name: (stu.courseTitle || COURSE_NAME).trim(),
+          slug: stu.courseSlug || 'better-man',
+          amount: Number(stu.revenue) || primaryPurchase?.amount || COURSE_PRICE,
+          paidAt: primaryPurchase?.purchaseDate || stu.purchaseDate || stu.createdAt || new Date().toISOString(),
+          txn: primaryPurchase?.transactionId || primaryPurchase?.razorpayPaymentId || 'pay_CourseEnrolled',
+          order: primaryPurchase?.razorpayOrderId || '—',
+          freeSessionsGranted: 3
+        });
+      }
+
+      const uniqueCourseTitles = Array.from(new Set(coursesList.map(c => c.name).filter(Boolean)));
+      const combinedCourseName = uniqueCourseTitles.join(', ') || stu.courseTitle || COURSE_NAME;
+      const totalPaidCourseAmount = isEnrolled
+        ? (coursesList.reduce((sum, c) => sum + (Number(c.amount) || 0), 0) || Number(stu.revenue) || COURSE_PRICE)
+        : 0;
+
+      const totalFreeGrantedFromPurchases = coursesList.reduce((sum, c) => sum + (Number(c.freeSessionsGranted) || 3), 0);
+      const studentTotalFree = (stu.freeSessionsTotal !== undefined && Number(stu.freeSessionsTotal) > 0)
+        ? Number(stu.freeSessionsTotal)
+        : (totalFreeGrantedFromPurchases > 0 ? totalFreeGrantedFromPurchases : ((Number(stu.freeSessionsRemaining) || 0) + (Number(stu.freeSessionsClaimed) || 0) || (isEnrolled ? 3 : 0)));
+
+      const studentFreeRemaining = stu.freeSessionsRemaining !== undefined
+        ? Number(stu.freeSessionsRemaining)
+        : Math.max(0, studentTotalFree - (Number(stu.freeSessionsClaimed) || 0));
 
       map.set(email, {
         id: stu._id || email,
@@ -295,35 +335,29 @@ export default function AdminAppointmentsView() {
         name: stu.name || stu.fullName || 'Student Client',
         email,
         phone: stu.phone || stu.phoneNumber || '',
+        photoUrl: stu.photoUrl || '',
         joined: stu.purchaseDate || stu.createdAt || new Date().toISOString(),
         isPurchased: Boolean(isEnrolled),
         isDeleted: Boolean(stu.isDeleted),
         deletedAt: stu.deletedAt || null,
-        hasFailedPayments: Boolean(stu.hasFailedPayments || (stu.purchases && stu.purchases.some(p => p.paymentStatus === 'Failed'))),
+        hasFailedPayments: Boolean(stu.hasFailedPayments || failedPurchases.length > 0),
         purchases: stu.purchases || [],
+        coursesList,
         course: isEnrolled
           ? {
-              name: stu.courseTitle || primaryPurchase?.courseTitle || COURSE_NAME,
-              amount: primaryPurchase?.amount || COURSE_PRICE,
+              name: combinedCourseName,
+              amount: totalPaidCourseAmount,
               txn: primaryPurchase?.transactionId || primaryPurchase?.razorpayPaymentId || 'pay_CourseEnrolled',
               order: primaryPurchase?.razorpayOrderId || '—',
               paidAt: primaryPurchase?.purchaseDate || stu.purchaseDate || stu.createdAt || new Date().toISOString(),
-              freeSessionsTotal: stu.freeSessionsTotal !== undefined && Number(stu.freeSessionsTotal) > 0
-                ? Number(stu.freeSessionsTotal)
-                : (primaryPurchase?.freeSessionsGranted !== undefined && Number(primaryPurchase.freeSessionsGranted) > 0
-                    ? Number(primaryPurchase.freeSessionsGranted)
-                    : ((Number(stu.freeSessionsRemaining) || 0) + (Number(stu.freeSessionsClaimed) || 0) || 3))
+              freeSessionsTotal: studentTotalFree
             }
           : null,
-        freeSessionsTotal: stu.freeSessionsTotal !== undefined && Number(stu.freeSessionsTotal) > 0
-          ? Number(stu.freeSessionsTotal)
-          : ((Number(stu.freeSessionsRemaining) || 0) + (Number(stu.freeSessionsClaimed) || 0) || (isEnrolled ? 3 : 0)),
-        freeSessionsRemaining: stu.freeSessionsRemaining !== undefined
-          ? Number(stu.freeSessionsRemaining)
-          : (isEnrolled ? Math.max(0, 3 - (stu.freeSessionsClaimed || 0)) : 0),
+        freeSessionsTotal: studentTotalFree,
+        freeSessionsRemaining: studentFreeRemaining,
         freeSessionsClaimed: stu.freeSessionsClaimed || 0,
         appointments: [],
-        totalPaid: isEnrolled ? (primaryPurchase?.amount || COURSE_PRICE) : 0
+        totalPaid: isEnrolled ? totalPaidCourseAmount : 0
       });
     });
 
@@ -337,6 +371,7 @@ export default function AdminAppointmentsView() {
           name: app.name || app.userId?.name || 'Client',
           email,
           phone: app.phoneNumber ? `${app.countryCode || ''} ${app.phoneNumber}`.trim() : (app.phone || app.userId?.phone || ''),
+          photoUrl: app.photoUrl || app.userId?.photoUrl || '',
           joined: app.createdAt || app.date || new Date().toISOString(),
           isPurchased: false,
           isDeleted: Boolean(app.userId?.isDeleted || app.isUserDeleted),
@@ -352,6 +387,9 @@ export default function AdminAppointmentsView() {
       }
 
       const client = map.get(email);
+      if (!client.photoUrl && (app.photoUrl || app.userId?.photoUrl)) {
+        client.photoUrl = app.photoUrl || app.userId?.photoUrl;
+      }
       if (app.userId?.isDeleted || app.isUserDeleted) {
         client.isDeleted = true;
         if (app.userDeletedAt || app.userId?.deletedAt) {
@@ -372,6 +410,9 @@ export default function AdminAppointmentsView() {
     const email = (app.email || app.userId?.email || '').toLowerCase().trim();
     const found = clientsDirectory.find((c) => c.email === email);
     if (found) {
+      if (!found.photoUrl && (app.photoUrl || app.userId?.photoUrl)) {
+        found.photoUrl = app.photoUrl || app.userId?.photoUrl;
+      }
       if (app.userId?.isDeleted || app.isUserDeleted) found.isDeleted = true;
       return found;
     }
@@ -382,6 +423,7 @@ export default function AdminAppointmentsView() {
       name: app.name || 'Anonymous Client',
       email: app.email || '—',
       phone: app.phoneNumber ? `${app.countryCode || ''} ${app.phoneNumber}`.trim() : (app.phone || ''),
+      photoUrl: app.photoUrl || app.userId?.photoUrl || '',
       joined: app.createdAt || app.date,
       isDeleted: Boolean(app.userId?.isDeleted || app.isUserDeleted),
       course: (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') ? { name: COURSE_NAME, amount: COURSE_PRICE, paidAt: app.date } : null,
@@ -398,14 +440,60 @@ export default function AdminAppointmentsView() {
   };
 
   const getClientTotalFree = (client) => {
-    if (!client) return 5;
+    if (!client) return 3;
     const fromCourse = client.course?.freeSessionsTotal;
     if (fromCourse !== undefined && fromCourse > 0) return Number(fromCourse);
     const fromClient = client.freeSessionsTotal;
     if (fromClient !== undefined && fromClient > 0) return Number(fromClient);
     const calculated = (client.freeSessionsRemaining || 0) + getClientFreeUsed(client);
-    return calculated > 0 ? calculated : 5;
+    return calculated > 0 ? calculated : 3;
   };
+
+  const renderClientAvatar = (client, defaultInitial = 'C', style = {}) => {
+    const initial = (client?.name || client?.fullName || defaultInitial)?.[0]?.toUpperCase() || defaultInitial;
+    return (
+      <span 
+        className="bwa-av" 
+        style={{ 
+          overflow: 'hidden', 
+          position: 'relative', 
+          flexShrink: 0, 
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...style 
+        }}
+      >
+        {client?.photoUrl ? (
+          <img 
+            src={client.photoUrl} 
+            alt={client?.name || ''} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} 
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+        ) : null}
+        <span>{initial}</span>
+      </span>
+    );
+  };
+
+  // Distinct courses for filter dropdown
+  const uniqueCourses = useMemo(() => {
+    const set = new Set();
+    clientsDirectory.forEach((c) => {
+      if (c.coursesList && c.coursesList.length > 0) {
+        c.coursesList.forEach((item) => {
+          if (item.name) set.add(item.name.trim());
+        });
+      } else if (c.course?.name) {
+        c.course.name.split(',').forEach((part) => {
+          const trimmed = part.trim();
+          if (trimmed) set.add(trimmed);
+        });
+      }
+    });
+    return Array.from(set);
+  }, [clientsDirectory]);
 
   // Stats Calculations
   const stats = useMemo(() => {
@@ -466,7 +554,11 @@ export default function AdminAppointmentsView() {
   const matchesCourseFilter = (client) => {
     if (courseFilter === 'all') return true;
     if (courseFilter === 'none') return !client.course;
-    return client.course && client.course.name.toLowerCase().includes(courseFilter.toLowerCase());
+    const filterLower = courseFilter.toLowerCase().trim();
+    if (client.coursesList && client.coursesList.length > 0) {
+      return client.coursesList.some(item => (item.name || '').toLowerCase().includes(filterLower));
+    }
+    return client.course && client.course.name.toLowerCase().includes(filterLower);
   };
 
   // Filtered Sessions (Appointments view)
@@ -587,8 +679,9 @@ export default function AdminAppointmentsView() {
       // Must be a course purchaser / student
       if (!client.course && !client.isPurchased) return false;
 
+      const totalFree = getClientTotalFree(client);
       const used = getClientFreeUsed(client);
-      const left = Math.max(0, COURSE_FREE_TOTAL - used);
+      const left = Math.max(0, totalFree - used);
 
       // Course tab filter
       if (courseTab === 'free_left' && left === 0) return false;
@@ -1690,7 +1783,7 @@ export default function AdminAppointmentsView() {
                     <div className="k">Course sales</div>
                     <div className="big">{inr(stats.courseRevenue)}</div>
                     <div className="det">
-                      {stats.enrolledCount} student{stats.enrolledCount === 1 ? '' : 's'} × {inr(COURSE_PRICE)}
+                      {stats.enrolledCount} enrolled student{stats.enrolledCount === 1 ? '' : 's'}
                     </div>
                   </div>
                   <div className="bwa-rev-col">
@@ -1714,7 +1807,6 @@ export default function AdminAppointmentsView() {
               <div className="bwa-stat-card b">
                 <div className="lab">Course students</div>
                 <div className="big">{stats.enrolledCount}</div>
-                <div className="det">{COURSE_NAME}</div>
               </div>
 
               {/* Free Sessions Used */}
@@ -1799,12 +1891,12 @@ export default function AdminAppointmentsView() {
                     [
                       'free_left',
                       'Free sessions left',
-                      clientsDirectory.filter((c) => (c.course || c.isPurchased) && COURSE_FREE_TOTAL - getClientFreeUsed(c) > 0).length
+                      clientsDirectory.filter((c) => (c.course || c.isPurchased) && getClientTotalFree(c) - getClientFreeUsed(c) > 0).length
                     ],
                     [
                       'free_done',
                       'All free used',
-                      clientsDirectory.filter((c) => (c.course || c.isPurchased) && COURSE_FREE_TOTAL - getClientFreeUsed(c) <= 0).length
+                      clientsDirectory.filter((c) => (c.course || c.isPurchased) && getClientTotalFree(c) - getClientFreeUsed(c) <= 0).length
                     ],
                     [
                       'failed',
@@ -1888,7 +1980,9 @@ export default function AdminAppointmentsView() {
                 <label>Course bought</label>
                 <select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}>
                   <option value="all">Any / no course</option>
-                  <option value={COURSE_NAME}>{COURSE_NAME}</option>
+                  {uniqueCourses.map((cName) => (
+                    <option key={cName} value={cName}>{cName}</option>
+                  ))}
                   <option value="none">No course bought</option>
                 </select>
               </div>
@@ -1973,7 +2067,7 @@ export default function AdminAppointmentsView() {
                       return (
                         <div key={app._id} className={`bwa-table-row sess ${needsAct ? 'warn' : ''}`}>
                           <div className="bwa-who">
-                            <span className="bwa-av">{client.name?.[0]?.toUpperCase() || 'C'}</span>
+                            {renderClientAvatar(client, 'C')}
                             <div style={{ minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                 <b>{client.name}</b>
@@ -2058,8 +2152,9 @@ export default function AdminAppointmentsView() {
                       <div></div>
                     </div>
                     {sortedCourseStudents.map((client) => {
+                      const totalFree = getClientTotalFree(client);
                       const used = getClientFreeUsed(client);
-                      const left = Math.max(0, COURSE_FREE_TOTAL - used);
+                      const left = Math.max(0, totalFree - used);
                       const nextAppt = client.appointments
                         .filter((s) => (s.status || '').toUpperCase() === 'UPCOMING')
                         .sort((a, b) => parseDate(`${a.date} ${a.time}`) - parseDate(`${b.date} ${b.time}`))[0];
@@ -2067,7 +2162,7 @@ export default function AdminAppointmentsView() {
                       return (
                         <div key={client.id} className="bwa-table-row stu">
                           <div className="bwa-who">
-                            <span className="bwa-av">{client.name?.[0]?.toUpperCase() || 'S'}</span>
+                            {renderClientAvatar(client, 'S')}
                             <div style={{ minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                 <b>{client.name}</b>
@@ -2084,12 +2179,25 @@ export default function AdminAppointmentsView() {
 
                           <div className="bwa-cell" data-label="Course bought">
                             {client.course ? (
-                              <>
-                                <b>{client.course.name}</b>
-                                <span className="s">
-                                  {formatDateShort(client.course.paidAt)}
-                                </span>
-                              </>
+                              client.coursesList && client.coursesList.length > 1 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  {client.coursesList.map((cItem, cIdx) => (
+                                    <div key={cIdx} style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25 }}>
+                                      <b style={{ color: '#1c1917' }}>{cItem.name}</b>
+                                      <span className="s" style={{ fontSize: '11px', color: '#78716c' }}>
+                                        {formatDateShort(cItem.paidAt)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <>
+                                  <b>{client.course.name}</b>
+                                  <span className="s">
+                                    {formatDateShort(client.course.paidAt)}
+                                  </span>
+                                </>
+                              )
                             ) : (
                               <span className="none">No course bought</span>
                             )}
@@ -2099,14 +2207,14 @@ export default function AdminAppointmentsView() {
                             {client.course ? (
                               <>
                                 <div className="bwa-bars">
-                                  {Array.from({ length: Math.max(1, getClientTotalFree(client)) }).map((_, i) => (
+                                  {Array.from({ length: Math.max(1, totalFree) }).map((_, i) => (
                                     <i key={i} className={i < used ? 'on' : ''} />
                                   ))}
                                 </div>
                                 <b>
-                                  {used} of {getClientTotalFree(client)} used
+                                  {used} of {totalFree} used
                                 </b>
-                                <span className="s">{Math.max(0, getClientTotalFree(client) - used)} left to book</span>
+                                <span className="s">{left} left to book</span>
                               </>
                             ) : (
                               <span className="none">Not applicable</span>
@@ -2117,9 +2225,15 @@ export default function AdminAppointmentsView() {
                             {client.course ? (
                               <>
                                 <span className="bwa-pill p-paid">{inr(client.course.amount)} paid</span>
-                                <span className="s bwa-mono" style={{ marginTop: '4px' }}>
-                                  {client.course.txn}
-                                </span>
+                                {client.coursesList && client.coursesList.length > 1 ? (
+                                  <span className="s bwa-mono" style={{ marginTop: '4px', fontSize: '11px', color: '#78716c' }}>
+                                    {client.coursesList.length} courses enrolled
+                                  </span>
+                                ) : (
+                                  <span className="s bwa-mono" style={{ marginTop: '4px' }}>
+                                    {client.course.txn}
+                                  </span>
+                                )}
                               </>
                             ) : (
                               <span className="none">—</span>
@@ -2174,7 +2288,7 @@ export default function AdminAppointmentsView() {
                       return (
                         <div key={client.id} className="bwa-table-row stu">
                           <div className="bwa-who">
-                            <span className="bwa-av">{client.name?.[0]?.toUpperCase() || 'C'}</span>
+                            {renderClientAvatar(client, 'C')}
                             <div style={{ minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                 <b>{client.name}</b>
@@ -2194,7 +2308,7 @@ export default function AdminAppointmentsView() {
                               <>
                                 <b>{client.course?.name || COURSE_NAME}</b>
                                 <span className="s">
-                                  {usedFree}/{COURSE_FREE_TOTAL} free perks used
+                                  {usedFree}/{getClientTotalFree(client)} free perks used
                                 </span>
                               </>
                             ) : (
@@ -2271,7 +2385,7 @@ export default function AdminAppointmentsView() {
                 return (
                   <div key={client.id} className="bwa-table-row stu">
                     <div className="bwa-who">
-                      <span className="bwa-av">{client.name?.[0]?.toUpperCase() || 'C'}</span>
+                      {renderClientAvatar(client, 'C')}
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                           <b>{client.name}</b>
@@ -2301,7 +2415,7 @@ export default function AdminAppointmentsView() {
                         <>
                           <b>{client.course.name}</b>
                           <span className="s">
-                            {usedFree}/{COURSE_FREE_TOTAL} free perks used
+                            {usedFree}/{getClientTotalFree(client)} free perks used
                           </span>
                         </>
                       ) : (
@@ -3786,7 +3900,7 @@ export default function AdminAppointmentsView() {
               /* ================= CLIENT PROFILE DRAWER ================= */
               <>
                 <div className="bwa-d-head">
-                  <span className="bwa-av">{selectedClient.name?.[0]?.toUpperCase() || 'C'}</span>
+                  {renderClientAvatar(selectedClient, 'C')}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                       <h3 style={{ margin: 0 }}>{selectedClient.name}</h3>
@@ -3861,20 +3975,64 @@ export default function AdminAppointmentsView() {
                       <h4>
                         Course purchase <span className="bwa-pill p-done">Enrolled</span>
                       </h4>
+
+                      {selectedClient.coursesList && selectedClient.coursesList.length > 1 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '10px 0 14px' }}>
+                          <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#888', fontWeight: 700 }}>
+                            Enrolled Courses ({selectedClient.coursesList.length})
+                          </span>
+                          {selectedClient.coursesList.map((cItem, cIdx) => (
+                            <div
+                              key={cIdx}
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '10px 14px',
+                                background: '#fcfaf7',
+                                borderRadius: '8px',
+                                border: '1px solid #eae2d6'
+                              }}
+                            >
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <b style={{ fontSize: '0.88rem', color: '#1c1917' }}>{cItem.name}</b>
+                                <span className="s" style={{ fontSize: '0.75rem', color: '#78716c' }}>
+                                  Bought on: {formatDateShort(cItem.paidAt)} · {formatTime(cItem.paidAt)}
+                                </span>
+                                <span style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 600 }}>
+                                  +{cItem.freeSessionsGranted || 3} free coaching sessions
+                                </span>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <b style={{ fontSize: '0.95rem', color: '#166534', display: 'block' }}>
+                                  {inr(cItem.amount)}
+                                </b>
+                                <span className="bwa-pill p-done" style={{ fontSize: '0.65rem', padding: '1px 6px' }}>
+                                  Paid
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="bwa-line-row">
+                            <span>Course</span>
+                            <b>{selectedClient.course.name}</b>
+                          </div>
+                          <div className="bwa-line-row">
+                            <span>Bought on</span>
+                            <b>
+                              {formatDateShort(selectedClient.course.paidAt)},{' '}
+                              {formatTime(selectedClient.course.paidAt)}
+                            </b>
+                          </div>
+                        </>
+                      )}
+
                       <div className="bwa-line-row">
-                        <span>Course</span>
-                        <b>{selectedClient.course.name}</b>
-                      </div>
-                      <div className="bwa-line-row">
-                        <span>Bought on</span>
-                        <b>
-                          {formatDateShort(selectedClient.course.paidAt)},{' '}
-                          {formatTime(selectedClient.course.paidAt)}
-                        </b>
-                      </div>
-                      <div className="bwa-line-row">
-                        <span>Amount paid</span>
-                        <b>{inr(selectedClient.course.amount)}</b>
+                        <span>Total amount paid</span>
+                        <b>{inr(selectedClient.totalPaid || selectedClient.course.amount)}</b>
                       </div>
                       <div className="bwa-line-row">
                         <span>Free 1-on-1 sessions</span>
@@ -3948,33 +4106,63 @@ export default function AdminAppointmentsView() {
                   {/* Payments Box */}
                   <div className="bwa-box">
                     <h4>Payment history</h4>
-                    {selectedClient.course && (
-                      <div className="bwa-pay-card">
-                        <div className="t">
-                          <span className="bwa-tag">PAID</span>
-                          <span className="amt">{inr(selectedClient.course.amount)}</span>
-                        </div>
-                        <span className="s" style={{ marginBottom: '6px' }}>
-                          {selectedClient.course.name} (Course enrollment)
-                        </span>
-                        <div className="bwa-line-row bwa-mono" style={{ padding: '2px 0' }}>
-                          <span>Txn ID</span>
-                          <span>
-                            {selectedClient.course.txn}
-                            <button
-                              className="bwa-copy-btn"
-                              onClick={() => copyToClipboard(selectedClient.course.txn)}
-                            >
-                              Copy
-                            </button>
+
+                    {/* Paid Course Purchases */}
+                    {(() => {
+                      const paidPurchasesList = (selectedClient.purchases || []).filter(p => p.paymentStatus === 'Paid');
+                      const displayList = paidPurchasesList.length > 0
+                        ? paidPurchasesList
+                        : (selectedClient.coursesList && selectedClient.coursesList.length > 0 ? selectedClient.coursesList : (selectedClient.course ? [selectedClient.course] : []));
+
+                      return displayList.map((p, idx) => (
+                        <div key={`paid-course-${p._id || idx}`} className="bwa-pay-card" style={{ marginBottom: '10px' }}>
+                          <div className="t">
+                            <span className="bwa-tag">PAID</span>
+                            <span className="amt">{inr(p.amount || COURSE_PRICE)}</span>
+                          </div>
+                          <span className="s" style={{ marginBottom: '6px', fontWeight: 600, color: '#1c1917' }}>
+                            {p.courseTitle || p.name || COURSE_NAME} (Course enrollment)
                           </span>
+                          {(p.transactionId || p.txn || p.razorpayPaymentId) && (
+                            <div className="bwa-line-row bwa-mono" style={{ padding: '2px 0' }}>
+                              <span>Txn ID</span>
+                              <span>
+                                {p.transactionId || p.txn || p.razorpayPaymentId}
+                                <button
+                                  className="bwa-copy-btn"
+                                  onClick={() => copyToClipboard(p.transactionId || p.txn || p.razorpayPaymentId)}
+                                >
+                                  Copy
+                                </button>
+                              </span>
+                            </div>
+                          )}
+                          {(p.razorpayOrderId || p.order) && (p.razorpayOrderId !== '—' && p.order !== '—') && (
+                            <div className="bwa-line-row bwa-mono" style={{ padding: '2px 0' }}>
+                              <span>Order ID</span>
+                              <span>
+                                {p.razorpayOrderId || p.order}
+                                <button
+                                  className="bwa-copy-btn"
+                                  onClick={() => copyToClipboard(p.razorpayOrderId || p.order)}
+                                >
+                                  Copy
+                                </button>
+                              </span>
+                            </div>
+                          )}
+                          <div className="bwa-line-row bwa-mono" style={{ padding: '2px 0' }}>
+                            <span>Date</span>
+                            <span>
+                              {formatDateShort(p.purchaseDate || p.paidAt || p.createdAt)}{' '}
+                              <span style={{ color: '#888', fontWeight: 'normal' }}>
+                                ({formatTime(p.purchaseDate || p.paidAt || p.createdAt)})
+                              </span>
+                            </span>
+                          </div>
                         </div>
-                        <div className="bwa-line-row bwa-mono" style={{ padding: '2px 0' }}>
-                          <span>Date</span>
-                          <span>{formatDateShort(selectedClient.course.paidAt)}</span>
-                        </div>
-                      </div>
-                    )}
+                      ));
+                    })()}
 
                     {selectedClient.purchases && selectedClient.purchases.filter(p => p.paymentStatus === 'Failed').map((p, idx) => (
                       <div key={`failed-${idx}`} className="bwa-pay-card ref">

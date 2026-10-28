@@ -11,6 +11,7 @@ import Note from '../models/Note.js';
 import PastClient from '../models/PastClient.js';
 import CourseUser from '../models/CourseUser.js';
 import CoursePurchase from '../models/CoursePurchase.js';
+import { calculateAndSyncFreeSessions } from '../services/freeSessionService.js';
 
 const router = express.Router();
 
@@ -773,6 +774,43 @@ router.get('/profile', protect, async (req, res) => {
       }
     }
 
+    let totalGranted = user.courseSessionsGranted ? 3 : 0;
+    let claimed = 0;
+    let remaining = user.freeSessions || 0;
+    let purchasedCourses = [];
+
+    if (user.email) {
+      try {
+        const sessionInfo = await calculateAndSyncFreeSessions(user.email);
+        if (sessionInfo.isCoursePurchaser) {
+          totalGranted = sessionInfo.totalGranted;
+          claimed = sessionInfo.claimed;
+          remaining = sessionInfo.remaining;
+          user.freeSessions = remaining;
+          user.courseSessionsGranted = true;
+          await user.save();
+        }
+      } catch (e) {
+        console.error('Error calculating sessionInfo in /profile:', e);
+      }
+
+      try {
+        const emailRegex = new RegExp(`^${user.email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        const [courseUserDoc, paidPurchases] = await Promise.all([
+          CourseUser.findOne({ email: emailRegex }),
+          CoursePurchase.find({ studentEmail: emailRegex, paymentStatus: 'Paid' })
+        ]);
+        const slugs = new Set();
+        if (Array.isArray(courseUserDoc?.purchasedCourses)) {
+          courseUserDoc.purchasedCourses.forEach(s => s && slugs.add(s));
+        }
+        paidPurchases.forEach(p => {
+          if (p.courseSlug) slugs.add(p.courseSlug);
+        });
+        purchasedCourses = Array.from(slugs);
+      } catch (e) {}
+    }
+
     res.json({
       _id: user._id,
       fullName: user.fullName || '',
@@ -781,8 +819,11 @@ router.get('/profile', protect, async (req, res) => {
       phoneNumber: phoneNumber,
       dob: user.dob || '',
       gender: user.gender || 'Prefer not to say',
-      freeSessions: user.freeSessions || 0,
+      freeSessions: remaining,
+      freeSessionsTotal: totalGranted,
+      freeSessionsClaimed: claimed,
       courseSessionsGranted: user.courseSessionsGranted || false,
+      purchasedCourses: purchasedCourses,
       photoUrl: user.photoUrl || '',
       authProvider: user.authProvider || 'local',
       googleId: user.googleId || '',

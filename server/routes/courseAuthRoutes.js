@@ -704,6 +704,8 @@ router.get('/me', protectCourse, async (req, res) => {
       // Calculate dynamic free sessions balance & sync
       const sessionInfo = await calculateAndSyncFreeSessions(email);
       courseUserObj.freeSessions = sessionInfo.remaining;
+      courseUserObj.freeSessionsTotal = sessionInfo.totalGranted;
+      courseUserObj.freeSessionsClaimed = sessionInfo.claimed;
       courseUserObj.courseSessionsGranted = sessionInfo.isCoursePurchaser;
 
       // Primary course doc
@@ -924,8 +926,19 @@ router.get('/admin/students', protect, admin, async (req, res) => {
       }
       const totalAppointments = appointments.length;
 
-      const mainCourseTitle = latestPaid?.courseTitle || (student.isPurchased ? 'The Better Man™' : (latestFailed?.courseTitle || '—'));
-      const mainCourseSlug = latestPaid?.courseSlug || (student.isPurchased ? 'better-man' : '');
+      const paidCourseTitles = Array.from(new Set(paidPurchases.slice().reverse().map(p => (p.courseTitle || '').trim()).filter(Boolean)));
+      const paidCourseSlugs = Array.from(new Set(paidPurchases.map(p => (p.courseSlug || '').trim()).filter(Boolean)));
+
+      if (paidCourseTitles.length === 0 && student.isPurchased) {
+        paidCourseTitles.push('The Better Man™');
+      }
+
+      const mainCourseTitle = paidCourseTitles.length > 0
+        ? paidCourseTitles.join(', ')
+        : (latestPaid?.courseTitle || (student.isPurchased ? 'The Better Man™' : (latestFailed?.courseTitle || '—')));
+      const mainCourseSlug = paidCourseSlugs.length > 0
+        ? paidCourseSlugs[0]
+        : (latestPaid?.courseSlug || (student.isPurchased ? 'better-man' : ''));
       const mainPurchaseDate = latestPaid?.purchaseDate || latestPaid?.createdAt || (student.isPurchased ? student.createdAt : null);
 
       const matchedCourseConfig = multiSettings[mainCourseSlug] || multiSettings['better-man'];
@@ -935,28 +948,54 @@ router.get('/admin/students', protect, admin, async (req, res) => {
             ? Number(matchedCourseConfig.pricingSection.freeSessionsCount)
             : (primaryCourse?.freeSessionsCount !== undefined && Number(primaryCourse.freeSessionsCount) > 0 ? Number(primaryCourse.freeSessionsCount) : 3));
 
+      const purchasesGrantedSum = paidPurchases.reduce((sum, p) => {
+        const g = Number(p.freeSessionsGranted);
+        return sum + (g > 0 ? g : 3);
+      }, 0);
+
+      const courseCount = Math.max(
+        paidPurchases.length,
+        (Array.isArray(student.purchasedCourses) ? student.purchasedCourses.length : (student.isPurchased ? 1 : 0))
+      );
+
+      const userFreeInDb = coachingUser?.freeSessions !== undefined && coachingUser?.freeSessions !== null
+        ? Number(coachingUser.freeSessions)
+        : (student.freeSessions !== undefined && student.freeSessions !== null ? Number(student.freeSessions) : null);
+
       let totalGranted = 0;
       if (student.isPurchased || paidPurchases.length > 0) {
-        if (latestPaid?.freeSessionsGranted !== undefined && Number(latestPaid.freeSessionsGranted) > 0) {
-          totalGranted = Number(latestPaid.freeSessionsGranted);
-        } else if (coachingUser && coachingUser.freeSessions !== undefined && Number(coachingUser.freeSessions) > 0) {
-          totalGranted = Number(coachingUser.freeSessions) + freeSessionsClaimed;
+        if (purchasesGrantedSum > 0) {
+          totalGranted = purchasesGrantedSum;
+        } else if (userFreeInDb !== null && userFreeInDb > 0) {
+          totalGranted = userFreeInDb + freeSessionsClaimed;
         } else if (defaultCourseFree > 0) {
-          totalGranted = defaultCourseFree;
+          totalGranted = Math.max(defaultCourseFree, courseCount * defaultCourseFree);
         } else {
-          totalGranted = 3;
+          totalGranted = Math.max(3, courseCount * 3);
+        }
+
+        // If user already has a higher balance in DB, respect it
+        if (userFreeInDb !== null && (userFreeInDb + freeSessionsClaimed) > totalGranted) {
+          totalGranted = userFreeInDb + freeSessionsClaimed;
         }
       }
 
-      const freeSessionsRemaining = coachingUser?.freeSessions !== undefined
-        ? Number(coachingUser.freeSessions)
+      const freeSessionsRemaining = userFreeInDb !== null
+        ? userFreeInDb
         : (student.isPurchased ? Math.max(0, totalGranted - freeSessionsClaimed) : 0);
+
+      const allPurchasedSlugs = Array.from(new Set([
+        ...(student.purchasedCourses || []),
+        ...paidCourseSlugs,
+        ...(student.isPurchased ? ['better-man'] : [])
+      ]));
 
       return {
         _id: student._id,
         fullName: student.fullName,
         email: student.email,
         phoneNumber: student.phoneNumber || (coachingUser ? coachingUser.phoneNumber : ''),
+        photoUrl: student.photoUrl || coachingUser?.photoUrl || '',
         isPurchased: student.isPurchased,
         isDeleted: Boolean(student.isDeleted || coachingUser?.isDeleted),
         deletedAt: student.deletedAt || coachingUser?.deletedAt || null,
@@ -964,9 +1003,10 @@ router.get('/admin/students', protect, admin, async (req, res) => {
         updatedAt: student.updatedAt,
         coachingRegistered: !!coachingUser,
         courseTitle: mainCourseTitle,
+        courseTitles: paidCourseTitles,
         courseSlug: mainCourseSlug,
         purchaseDate: mainPurchaseDate,
-        purchasedCourses: student.purchasedCourses || (student.isPurchased ? ['better-man'] : []),
+        purchasedCourses: allPurchasedSlugs,
         freeSessionsTotal: totalGranted,
         freeSessionsRemaining,
         freeSessionsClaimed,
@@ -1025,21 +1065,30 @@ router.get('/admin/students', protect, admin, async (req, res) => {
       const latestPaid = paidPurchases[0] || null;
       const latestFailed = failedPurchases[0] || null;
       const totalPaidAmount = paidPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const paidCourseTitles = Array.from(new Set(paidPurchases.slice().reverse().map(p => (p.courseTitle || '').trim()).filter(Boolean)));
+      const paidCourseSlugs = Array.from(new Set(paidPurchases.map(p => (p.courseSlug || '').trim()).filter(Boolean)));
+      const purchasesGrantedSum = paidPurchases.reduce((sum, p) => sum + (Number(p.freeSessionsGranted) > 0 ? Number(p.freeSessionsGranted) : 3), 0);
+      const totalFree = paidPurchases.length > 0 ? (purchasesGrantedSum || paidPurchases.length * 3) : 0;
+
+      const linkedCoachingUser = allCoachingUsers.find(u => (u.email || '').toLowerCase() === email);
 
       enrichedStudents.push({
         _id: purchases[0]._id,
         fullName: purchases[0].studentName || email.split('@')[0] || 'Guest Lead',
         email: email,
-        phoneNumber: '',
+        phoneNumber: purchases[0].studentPhone || '',
+        photoUrl: linkedCoachingUser?.photoUrl || '',
         isPurchased: paidPurchases.length > 0,
         createdAt: purchases[0].createdAt || purchases[0].purchaseDate || new Date(),
         updatedAt: purchases[0].updatedAt || new Date(),
-        coachingRegistered: false,
-        courseTitle: latestPaid?.courseTitle || latestFailed?.courseTitle || 'The Better Man™',
-        courseSlug: latestPaid?.courseSlug || latestFailed?.courseSlug || 'better-man',
+        coachingRegistered: !!linkedCoachingUser,
+        courseTitle: paidCourseTitles.length > 0 ? paidCourseTitles.join(', ') : (latestPaid?.courseTitle || latestFailed?.courseTitle || 'The Better Man™'),
+        courseTitles: paidCourseTitles,
+        courseSlug: paidCourseSlugs.length > 0 ? paidCourseSlugs[0] : (latestPaid?.courseSlug || latestFailed?.courseSlug || 'better-man'),
         purchaseDate: latestPaid?.purchaseDate || latestPaid?.createdAt || purchases[0].createdAt,
-        purchasedCourses: paidPurchases.length > 0 ? ['better-man'] : [],
-        freeSessionsRemaining: paidPurchases.length > 0 ? 3 : 0,
+        purchasedCourses: paidCourseSlugs.length > 0 ? paidCourseSlugs : (paidPurchases.length > 0 ? ['better-man'] : []),
+        freeSessionsTotal: totalFree,
+        freeSessionsRemaining: totalFree,
         freeSessionsClaimed: 0,
         totalAppointments: 0,
         purchases: purchases.map(p => ({
