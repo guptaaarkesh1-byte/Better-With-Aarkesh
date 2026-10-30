@@ -732,7 +732,7 @@ export default function AdminSettings() {
                     <Stack size={22} />
                   </div>
                   <div>
-                    <h3 className="font-serif text-xl font-bold text-stone-900">The 4 Google Sitelinks (Naukri Style)</h3>
+                    <h3 className="font-serif text-xl font-bold text-stone-900">The 4 Google Sitelinks</h3>
                     <p className="text-xs text-stone-500 mt-0.5">
                       Customize the title and snippet for 1-on-1 Sessions, Masterclasses, Principles Library, and About Page.
                     </p>
