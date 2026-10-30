@@ -16,8 +16,6 @@ import {
   Image as ImageIcon,
   UploadSimple,
   Trash,
-  Stack,
-  CaretRight,
   DotsThreeVertical,
   Check,
   ShieldCheck
@@ -279,19 +277,6 @@ export default function AdminSettings() {
     }));
   };
 
-  const handleSitelinkChange = (sitelinkKey, prop, value) => {
-    setSeoForm(prev => ({
-      ...prev,
-      sitelinks: {
-        ...prev.sitelinks,
-        [sitelinkKey]: {
-          ...prev.sitelinks[sitelinkKey],
-          [prop]: value
-        }
-      }
-    }));
-  };
-
   const handleFaviconUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -346,7 +331,7 @@ export default function AdminSettings() {
       });
 
       if (res.ok) {
-        showSuccess('SEO settings saved! Google search metadata & sitelinks are updated.');
+        showSuccess('SEO settings saved! Google search metadata is updated.');
       } else {
         showError('Failed to save SEO settings.');
       }
@@ -527,29 +512,6 @@ export default function AdminSettings() {
                     {seoForm.metaDescription || 'Transform your mindset, communication, and executive presence with Aarkesh Gupta. Explore 1-on-1 life coaching, executive mentorship, and masterclasses.'}
                   </p>
 
-                  {/* The 4 Sitelinks (Vertical Naukri Style List with Chevrons) */}
-                  <div className={`mt-3 pt-3 flex flex-col divide-y ${
-                    googlePreviewTheme === 'dark' ? 'divide-white/10' : 'divide-stone-100'
-                  }`}>
-                    {Object.entries(seoForm.sitelinks || {}).map(([key, item]) => (
-                      <div key={key} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between group cursor-pointer">
-                        <div className="flex flex-col gap-0.5">
-                          <span className={`text-base font-normal leading-tight group-hover:underline ${
-                            googlePreviewTheme === 'dark' ? 'text-[#c58af9]' : 'text-[#1a0dab]'
-                          }`}>
-                            {item.title}
-                          </span>
-                          <span className={`text-xs line-clamp-1 ${
-                            googlePreviewTheme === 'dark' ? 'text-[#9aa0a6]' : 'text-stone-500'
-                          }`}>
-                            {item.description}
-                          </span>
-                        </div>
-                        <CaretRight size={14} className={googlePreviewTheme === 'dark' ? 'text-[#9aa0a6]' : 'text-stone-400'} />
-                      </div>
-                    ))}
-                  </div>
-
                 </div>
 
               </div>
@@ -725,81 +687,6 @@ export default function AdminSettings() {
 
               </div>
 
-              {/* CARD 4: THE 4 GOOGLE SITELINKS (NAUKRI STYLE 2x2 GRID) */}
-              <div className="bg-white border border-stone-200/80 rounded-2xl p-6 md:p-8 shadow-xs flex flex-col gap-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#fef3ee] text-[#c8532f] flex items-center justify-center shrink-0">
-                    <Stack size={22} />
-                  </div>
-                  <div>
-                    <h3 className="font-serif text-xl font-bold text-stone-900">The 4 Google Sitelinks</h3>
-                    <p className="text-xs text-stone-500 mt-0.5">
-                      Customize the title and snippet for 1-on-1 Sessions, Masterclasses, Principles Library, and About Page.
-                    </p>
-                  </div>
-                </div>
-
-                {/* 2x2 Grid of Sitelinks */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {Object.entries(seoForm.sitelinks || {}).map(([key, item], idx) => {
-                    const badgeStyles = [
-                      { bg: 'bg-purple-100 text-purple-800 border border-purple-200', note: 'Direct Link' },
-                      { bg: 'bg-blue-100 text-blue-800 border border-blue-200', note: 'Course Page' },
-                      { bg: 'bg-[#fef3ee] text-[#c8532f] border border-[#fbd4c2]', note: 'Library Content' },
-                      { bg: 'bg-amber-100 text-amber-900 border border-amber-200', note: 'About / Contact' }
-                    ][idx] || { bg: 'bg-[#fef3ee] text-[#c8532f] border border-[#fbd4c2]', note: 'Direct Link' };
-
-                    return (
-                      <div key={key} className="p-5 rounded-2xl bg-stone-50/70 border border-stone-200 flex flex-col gap-3.5">
-                        
-                        {/* Sitelink Header Badge */}
-                        <div className="flex items-center justify-between pb-1 border-b border-stone-200/60">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeStyles.bg}`}>
-                            {item.badge}
-                          </span>
-                          <span className="text-[11px] text-stone-400 font-medium">{badgeStyles.note}</span>
-                        </div>
-
-                        {/* Title */}
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[11px] font-bold text-stone-600 uppercase tracking-wider">Title</label>
-                          <input 
-                            type="text"
-                            value={item.title}
-                            onChange={(e) => handleSitelinkChange(key, 'title', e.target.value)}
-                            className="w-full bg-white border border-stone-200 rounded-xl px-3.5 py-2 text-stone-900 text-sm focus:outline-none focus:border-[#c8532f]"
-                          />
-                        </div>
-
-                        {/* Description Snippet */}
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[11px] font-bold text-stone-600 uppercase tracking-wider">Description Snippet</label>
-                          <input 
-                            type="text"
-                            value={item.description}
-                            onChange={(e) => handleSitelinkChange(key, 'description', e.target.value)}
-                            className="w-full bg-white border border-stone-200 rounded-xl px-3.5 py-2 text-stone-900 text-xs focus:outline-none focus:border-[#c8532f]"
-                          />
-                        </div>
-
-                        {/* URL Path */}
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[11px] font-bold text-stone-600 uppercase tracking-wider">URL Path</label>
-                          <input 
-                            type="text"
-                            value={item.url}
-                            onChange={(e) => handleSitelinkChange(key, 'url', e.target.value)}
-                            className="w-full bg-white border border-stone-200 rounded-xl px-3.5 py-2 text-stone-900 text-xs font-mono focus:outline-none focus:border-[#c8532f]"
-                          />
-                        </div>
-
-                      </div>
-                    );
-                  })}
-                </div>
-
-              </div>
-
               {/* SAVE ACTION BAR (ORANGE ADMIN THEME) */}
               <div className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 sticky bottom-4 z-10">
                 <div className="flex items-center gap-2 text-xs text-stone-600">
@@ -811,7 +698,7 @@ export default function AdminSettings() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm('Reset all SEO & sitelinks to recommended defaults?')) {
+                      if (window.confirm('Reset all SEO to recommended defaults?')) {
                         setSeoForm(DEFAULT_SEO);
                         showSuccess('Reset to defaults.');
                       }
