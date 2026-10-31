@@ -1188,3 +1188,164 @@
     font-size: 28px;
   }
 }
+
+/* ==========================================================================
+   RESCHEDULE ACTION ANIMATION (Loading -> Approved)
+   ========================================================================== */
+@keyframes bwa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes bwa-card-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bwa-check-bounce {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.22);
+  }
+  75% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bwa-check-draw {
+  0% {
+    stroke-dashoffset: 40;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes bwa-progress-glow {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes bwa-pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+.bwa-reschedule-anim-card {
+  animation: bwa-card-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border-radius: 10px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 10px;
+}
+
+.bwa-reschedule-anim-card.loading {
+  background: linear-gradient(135deg, #fffdfa 0%, #fff7ed 100%);
+  border: 1.5px solid #fed7aa;
+  box-shadow: 0 4px 16px rgba(200, 80, 45, 0.08);
+}
+
+.bwa-reschedule-anim-card.loading::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #fed7aa, #ea580c, #c8502d, #fed7aa);
+  background-size: 200% 100%;
+  animation: bwa-progress-glow 1.4s infinite linear;
+}
+
+.bwa-reschedule-anim-card.success {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1.5px solid #86efac;
+  box-shadow: 0 4px 18px rgba(22, 163, 74, 0.15);
+  animation: bwa-card-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.bwa-reschedule-anim-card.error {
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.08);
+}
+
+.bwa-reschedule-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(200, 80, 45, 0.22);
+  border-top-color: var(--accent, #c8502d);
+  border-right-color: var(--accent, #c8502d);
+  border-radius: 50%;
+  animation: bwa-spin 0.75s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  flex-shrink: 0;
+}
+
+.bwa-mini-spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(200, 80, 45, 0.3);
+  border-top-color: var(--accent, #c8502d);
+  border-radius: 50%;
+  animation: bwa-spin 0.75s linear infinite;
+  vertical-align: middle;
+}
+
+.bwa-reschedule-check-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: bwa-check-bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+}
+
+.bwa-reschedule-check-svg {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: bwa-check-draw 0.45s cubic-bezier(0.65, 0, 0.45, 1) 0.18s forwards;
+}
+
+.bwa-reschedule-pulse-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, #c8502d);
+  animation: bwa-pulse-dot 1.2s infinite ease-in-out;
+}
+

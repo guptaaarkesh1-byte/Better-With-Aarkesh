@@ -120,6 +120,14 @@ export default function AdminAppointmentsView() {
   const [drawerTab, setDrawerTab] = useState('overview'); // 'overview' | 'reschedule' | 'answers' | 'notes'
   const [refundConfirmId, setRefundConfirmId] = useState(null);
 
+  // Reschedule Action Animation State (Loading -> Approved)
+  const [rescheduleActionState, setRescheduleActionState] = useState({
+    appId: null,
+    status: 'idle', // 'idle' | 'loading' | 'success' | 'error'
+    action: null, // 'approve' | 'decline'
+    message: ''
+  });
+
   // Coach Notes Autosave state
   const [coachNotesText, setCoachNotesText] = useState('');
   const [notesSaveStatus, setNotesSaveStatus] = useState('saved'); // 'saved' | 'saving' | 'dirty'
@@ -987,8 +995,21 @@ export default function AdminAppointmentsView() {
     }
   };
 
-  // Reschedule Action Handler
+  // Reschedule Action Handler with Loading & Approved Animation
   const handleRescheduleAction = async (appId, action) => {
+    if (rescheduleActionState.status === 'loading') return;
+
+    setRescheduleActionState({
+      appId,
+      status: 'loading',
+      action,
+      message: action === 'approve'
+        ? 'Approving reschedule & updating Google Meet slot...'
+        : 'Declining reschedule request...'
+    });
+
+    const startTime = Date.now();
+
     try {
       const token = localStorage.getItem('adminToken');
       const res = await fetch(`${API_URL}/api/appointments/${appId}/reschedule-admin`, {
@@ -999,8 +1020,31 @@ export default function AdminAppointmentsView() {
         },
         body: JSON.stringify({ action }) // 'approve' | 'decline'
       });
-      if (!res.ok) throw new Error('Reschedule action failed');
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || 'Reschedule action failed');
+      }
       const updatedAppt = await res.json();
+
+      // Ensure smooth, visible loading animation (at least 600ms)
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 600) {
+        await new Promise((resolve) => setTimeout(resolve, 600 - elapsed));
+      }
+
+      // Transition to Approved/Success animation
+      setRescheduleActionState({
+        appId,
+        status: 'success',
+        action,
+        message: action === 'approve'
+          ? 'Reschedule Approved & Confirmed!'
+          : 'Request Declined · Original Time Kept'
+      });
+
+      // Keep the Approved celebration animation visible for ~1.6s so admin sees the confirmation
+      await new Promise((resolve) => setTimeout(resolve, 1600));
+
       showSuccess(`Reschedule request ${action === 'approve' ? 'approved' : 'declined'} successfully`);
       fetchData();
       if (selectedAppt?._id === appId) {
@@ -1013,8 +1057,18 @@ export default function AdminAppointmentsView() {
           }
         } : prev)));
       }
+      setRescheduleActionState({ appId: null, status: 'idle', action: null, message: '' });
     } catch (err) {
-      showError(`Failed to ${action} reschedule request.`);
+      setRescheduleActionState({
+        appId,
+        status: 'error',
+        action,
+        message: err.message || `Failed to ${action} reschedule request.`
+      });
+      showError(err.message || `Failed to ${action} reschedule request.`);
+      setTimeout(() => {
+        setRescheduleActionState({ appId: null, status: 'idle', action: null, message: '' });
+      }, 3000);
     }
   };
 
@@ -1508,14 +1562,20 @@ export default function AdminAppointmentsView() {
     const feePaid = req?.rescheduleFeePaid === true || (Number(req?.rescheduleAmount) > 0);
     const feeAmount = Number(req?.rescheduleAmount) || 5000;
 
+    const isCurrentActionActive = rescheduleActionState.appId === appt._id && rescheduleActionState.status !== 'idle';
+    const isCurrentSuccess = rescheduleActionState.appId === appt._id && rescheduleActionState.status === 'success';
+    const isCurrentLoading = rescheduleActionState.appId === appt._id && rescheduleActionState.status === 'loading';
+    const isApprovedOrSuccess = status === 'APPROVED' || isCurrentSuccess;
+
     return (
       <div
         className="bwa-box"
         style={{
-          borderLeft: status === 'PENDING' ? '4px solid #d97706' : status === 'APPROVED' ? '4px solid #16a34a' : '4px solid #dc2626',
-          background: status === 'PENDING' ? '#fffdfa' : '#ffffff',
+          borderLeft: isApprovedOrSuccess ? '4px solid #16a34a' : status === 'PENDING' ? '4px solid #d97706' : '4px solid #dc2626',
+          background: isCurrentSuccess ? '#fafffb' : status === 'PENDING' ? '#fffdfa' : '#ffffff',
           marginBottom: isOverview ? '20px' : '16px',
-          boxShadow: status === 'PENDING' ? '0 2px 10px rgba(217, 119, 6, 0.08)' : 'none'
+          boxShadow: isCurrentSuccess ? '0 4px 18px rgba(22, 163, 74, 0.14)' : status === 'PENDING' ? '0 2px 10px rgba(217, 119, 6, 0.08)' : 'none',
+          transition: 'all 0.3s ease'
         }}
       >
         {/* Header with Title and Status */}
@@ -1525,21 +1585,23 @@ export default function AdminAppointmentsView() {
               <h4 className="big" style={{ margin: 0, color: '#111010' }}>
                 Reschedule Request Details
               </h4>
-              {status === 'PENDING' && (
-                <span className="bwa-pill p-re" style={{ background: '#fef3c7', color: '#92400e', fontWeight: 700, fontSize: '0.72rem' }}>
-                  ⏳ Pending Coach Approval
+              {isCurrentLoading ? (
+                <span className="bwa-pill" style={{ background: '#ffedd5', color: '#c2410c', fontWeight: 700, fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="bwa-mini-spin" /> {rescheduleActionState.action === 'approve' ? 'Approving...' : 'Declining...'}
                 </span>
-              )}
-              {status === 'APPROVED' && (
+              ) : isApprovedOrSuccess ? (
                 <span className="bwa-pill p-done" style={{ background: '#dcfce7', color: '#166534', fontWeight: 700, fontSize: '0.72rem' }}>
                   ✓ Approved &amp; Confirmed
                 </span>
-              )}
-              {(status === 'REJECTED' || status === 'DECLINED') && (
+              ) : status === 'PENDING' ? (
+                <span className="bwa-pill p-re" style={{ background: '#fef3c7', color: '#92400e', fontWeight: 700, fontSize: '0.72rem' }}>
+                  ⏳ Pending Coach Approval
+                </span>
+              ) : (status === 'REJECTED' || status === 'DECLINED') ? (
                 <span className="bwa-pill p-cx" style={{ background: '#fee2e2', color: '#991b1b', fontWeight: 700, fontSize: '0.72rem' }}>
                   ✕ Declined · Original Time Kept
                 </span>
-              )}
+              ) : null}
             </div>
             <p className="hint" style={{ margin: '3px 0 0', fontSize: '0.78rem' }}>
               {(() => {
@@ -1568,7 +1630,7 @@ export default function AdminAppointmentsView() {
             <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#888', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
               📅 Previous / Original Slot
             </span>
-            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#443d39', textDecoration: status === 'APPROVED' ? 'line-through' : 'none' }}>
+            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#443d39', textDecoration: isApprovedOrSuccess ? 'line-through' : 'none' }}>
               {formatDate(originalDate)}
             </div>
             <div style={{ fontSize: '0.84rem', color: '#666', marginTop: '2px' }}>
@@ -1578,13 +1640,26 @@ export default function AdminAppointmentsView() {
 
           {/* Requested New Slot */}
           <div>
-            <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent, #c9542f)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-              👉 Requested New Slot
+            <span style={{
+              fontSize: '0.68rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: isApprovedOrSuccess ? '#15803d' : 'var(--accent, #c9542f)',
+              fontWeight: 700,
+              display: 'block',
+              marginBottom: '4px'
+            }}>
+              {isApprovedOrSuccess ? '✅ Confirmed New Slot' : '👉 Requested New Slot'}
             </span>
             <div style={{ fontSize: '0.96rem', fontWeight: 700, color: '#111010' }}>
               {requestedDate ? formatDate(requestedDate) : 'Not specified'}
             </div>
-            <div style={{ fontSize: '0.84rem', color: 'var(--accent, #c9542f)', fontWeight: 600, marginTop: '2px' }}>
+            <div style={{
+              fontSize: '0.84rem',
+              color: isApprovedOrSuccess ? '#15803d' : 'var(--accent, #c9542f)',
+              fontWeight: 600,
+              marginTop: '2px'
+            }}>
               Time: <b>{requestedTime ? formatTime(requestedTime) : 'Not specified'}</b>
             </div>
           </div>
@@ -1694,57 +1769,137 @@ export default function AdminAppointmentsView() {
           </div>
         </div>
 
-        {/* Action Buttons for Pending Requests */}
+        {/* Action Buttons & Loading / Approved Animation for Pending Requests */}
         {status === 'PENDING' && (
-          <div style={{
-            paddingTop: '12px',
-            borderTop: '1px solid #eee5dc',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '10px',
-            flexWrap: 'wrap'
-          }}>
-            <span style={{ fontSize: '0.74rem', color: '#666', maxWidth: '320px' }}>
-              {usedCredit
-                ? 'Declining will keep original slot and automatically refund 1 session credit back to client.'
-                : feePaid
-                ? `Declining will keep original slot and initiate refund of the ${inr(feeAmount)} reschedule fee.`
-                : 'Approve to officially confirm new time and update Google Meet invite.'}
-            </span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                type="button"
-                className="bwa-btn bwa-btn-sm"
-                style={{
-                  background: 'var(--accent, #c9542f)',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  fontSize: '0.78rem',
-                  padding: '6px 14px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-                onClick={() => handleRescheduleAction(appt._id, 'approve')}
-              >
-                ✓ Approve new time
-              </button>
-              <button
-                type="button"
-                className="bwa-btn bwa-btn-line bwa-btn-sm"
-                style={{
-                  fontSize: '0.78rem',
-                  padding: '6px 14px',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => handleRescheduleAction(appt._id, 'decline')}
-              >
-                ✕ Keep old time
-              </button>
+          isCurrentActionActive ? (
+            <div
+              className={`bwa-reschedule-anim-card ${rescheduleActionState.status}`}
+              role="status"
+              aria-live="polite"
+            >
+              {rescheduleActionState.status === 'loading' && (
+                <>
+                  <div className="bwa-reschedule-spinner" aria-hidden="true" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#1c1816', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>{rescheduleActionState.action === 'approve' ? 'Approving Reschedule...' : 'Declining Reschedule...'}</span>
+                      <span className="bwa-reschedule-pulse-dot" />
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#6f665f', marginTop: '2px', lineHeight: 1.4 }}>
+                      {rescheduleActionState.action === 'approve'
+                        ? 'Syncing Google Meet calendar event, updating session slot & notifying client...'
+                        : 'Reverting to original scheduled slot and restoring credit/refund...'}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {rescheduleActionState.status === 'success' && (
+                <>
+                  <div className="bwa-reschedule-check-badge" aria-hidden="true">
+                    <svg
+                      className="bwa-reschedule-check-svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ffffff"
+                      strokeWidth="3.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.94rem', fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{rescheduleActionState.action === 'approve' ? 'Reschedule Approved & Confirmed!' : 'Request Declined · Original Kept'}</span>
+                      <span style={{ fontSize: '1rem' }}>🎉</span>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#15803d', marginTop: '2px', lineHeight: 1.4 }}>
+                      {rescheduleActionState.action === 'approve'
+                        ? `Session confirmed for ${requestedDate ? formatDate(requestedDate) : ''} at ${requestedTime ? formatTime(requestedTime) : ''}. Calendar & email updated.`
+                        : 'Original session slot retained.'}
+                    </div>
+                  </div>
+                  <div className="bwa-pill" style={{ background: '#dcfce7', color: '#166534', fontWeight: 700, fontSize: '0.75rem', padding: '4px 10px', flexShrink: 0 }}>
+                    ✓ Confirmed
+                  </div>
+                </>
+              )}
+
+              {rescheduleActionState.status === 'error' && (
+                <>
+                  <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>
+                    ✕
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#991b1b' }}>
+                      Action Failed
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#b91c1c', marginTop: '2px' }}>
+                      {rescheduleActionState.message || 'Something went wrong. Please try again.'}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-          </div>
+          ) : (
+            <div style={{
+              paddingTop: '12px',
+              borderTop: '1px solid #eee5dc',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              flexWrap: 'wrap'
+            }}>
+              <span style={{ fontSize: '0.74rem', color: '#666', maxWidth: '320px' }}>
+                {usedCredit
+                  ? 'Declining will keep original slot and automatically refund 1 session credit back to client.'
+                  : feePaid
+                  ? `Declining will keep original slot and initiate refund of the ${inr(feeAmount)} reschedule fee.`
+                  : 'Approve to officially confirm new time and update Google Meet invite.'}
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="bwa-btn bwa-btn-sm"
+                  style={{
+                    background: 'var(--accent, #c9542f)',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '0.78rem',
+                    padding: '7px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 6px rgba(200, 80, 45, 0.25)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={() => handleRescheduleAction(appt._id, 'approve')}
+                >
+                  <span style={{ fontSize: '0.88rem' }}>✓</span> Approve new time
+                </button>
+                <button
+                  type="button"
+                  className="bwa-btn bwa-btn-line bwa-btn-sm"
+                  style={{
+                    fontSize: '0.78rem',
+                    padding: '7px 14px',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => handleRescheduleAction(appt._id, 'decline')}
+                >
+                  ✕ Keep old time
+                </button>
+              </div>
+            </div>
+          )
         )}
       </div>
     );
