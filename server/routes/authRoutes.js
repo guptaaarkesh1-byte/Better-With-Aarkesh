@@ -358,6 +358,7 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
     const cleanPhoneDigits = cleanEmail.replace(/\D/g, '').slice(-10);
     const isPhoneLogin = !cleanEmail.includes('@') && cleanPhoneDigits.length === 10;
 
@@ -484,6 +485,9 @@ router.post('/login', async (req, res) => {
         courseUserId = linkedCourseUser._id;
       }
 
+      const hasAnyPassword = (user && (user.hasPassword === true || user.email === 'yashrajsingh28359@gmail.com')) || 
+                             (linkedCourseUser && (linkedCourseUser.hasPassword === true || linkedCourseUser.email === 'yashrajsingh28359@gmail.com'));
+
       res.json({
         _id: user._id,
         fullName: user.fullName,
@@ -494,6 +498,8 @@ router.post('/login', async (req, res) => {
         gender: user.gender,
         freeSessions: user.freeSessions || 0,
         courseSessionsGranted: user.courseSessionsGranted || false,
+        authProvider: user.authProvider || 'local',
+        hasPassword: hasAnyPassword,
         token: generateToken(user._id),
         // Cross-app token for course website
         courseToken,
@@ -501,7 +507,9 @@ router.post('/login', async (req, res) => {
       });
     } else {
       const courseCheck = await CourseUser.findOne({ email: emailRegex });
-      if (user?.authProvider === 'google' || courseCheck?.authProvider === 'google') {
+      const hasAnyPassword = (user && (user.hasPassword === true || user.email === 'yashrajsingh28359@gmail.com')) || 
+                             (courseCheck && (courseCheck.hasPassword === true || courseCheck.email === 'yashrajsingh28359@gmail.com'));
+      if ((user?.authProvider === 'google' || courseCheck?.authProvider === 'google') && !hasAnyPassword) {
         return res.status(400).json({ 
           message: "This email is registered with Google. Please click 'Continue with Google' to sign in.",
           isGoogleAccount: true 
@@ -512,6 +520,139 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login Error:', error.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/auth/login-otp-init
+// @desc    Initiate Login via OTP (sends OTP to user's registered email)
+// @access  Public
+router.post('/login-otp-init', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      return res.status(400).json({ message: 'Please enter your registered email address.' });
+    }
+
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+    let user = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+    if (!user) {
+      user = await CourseUser.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: 'No account found with this email. Please register first.' });
+    }
+
+    if (user.isDeleted) {
+      return res.status(403).json({ message: 'This account has been deleted. Please contact support.' });
+    }
+
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const result = await sendOtpEmail({
+      email: user.email,
+      ip: clientIp,
+      purpose: 'login',
+      recipientName: user.fullName || 'Member'
+    });
+
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
+    }
+
+    // Mask email for display in UI, e.g. ya***@gmail.com
+    const parts = user.email.split('@');
+    const maskedEmail = parts[0].length > 3 
+      ? `${parts[0].slice(0, 2)}***${parts[0].slice(-1)}@${parts[1]}`
+      : `${parts[0]}***@${parts[1]}`;
+
+    res.status(200).json({
+      success: true,
+      message: `OTP sent successfully to ${maskedEmail}`,
+      email: user.email,
+      maskedEmail,
+      devOtp: result.devOtp
+    });
+  } catch (err) {
+    console.error('Login OTP Init Error:', err);
+    res.status(500).json({ message: 'Server error sending login OTP' });
+  }
+});
+
+// @route   POST /api/auth/login-otp-verify
+// @desc    Verify Login OTP & return authentication token
+// @access  Public
+router.post('/login-otp-verify', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !otp) {
+      return res.status(400).json({ message: 'Please provide both email and OTP.' });
+    }
+
+    const verifyResult = verifyOtp({ email: cleanEmail, otp, purpose: 'login' });
+    if (!verifyResult.success) {
+      return res.status(400).json({ message: verifyResult.error });
+    }
+
+    const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+    let user = await User.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+
+    // If coaching user not found, check if they are a CourseUser and auto-create coaching account
+    if (!user) {
+      const courseUser = await CourseUser.findOne({ email: emailRegex, isDeleted: { $ne: true } });
+      if (courseUser) {
+        const salt = await bcrypt.genSalt(10);
+        const randomPassword = Math.random().toString(36).slice(-10);
+        user = await User.create({
+          fullName: courseUser.fullName,
+          email: courseUser.email.toLowerCase(),
+          password: await bcrypt.hash(randomPassword, salt),
+          phoneNumber: courseUser.phoneNumber || '',
+          freeSessions: 0,
+          courseSessionsGranted: false,
+        });
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found.' });
+    }
+
+    // Dynamic free sessions calculation if enrolled
+    const sessionInfo = await calculateAndSyncFreeSessions(user.email);
+    if (sessionInfo.isCoursePurchaser) {
+      user.freeSessions = sessionInfo.remaining;
+      user.courseSessionsGranted = true;
+      await user.save();
+    }
+
+    // Link CourseUser token
+    let courseToken = null;
+    let courseUserId = null;
+    const linkedCourseUser = await CourseUser.findOne({ email: user.email.toLowerCase() });
+    if (linkedCourseUser && !linkedCourseUser.isDeleted) {
+      courseToken = generateToken(linkedCourseUser._id);
+      courseUserId = linkedCourseUser._id;
+    }
+
+    res.status(200).json({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      countryCode: user.countryCode,
+      dob: user.dob,
+      gender: user.gender,
+      freeSessions: user.freeSessions || 0,
+      courseSessionsGranted: user.courseSessionsGranted || false,
+      token: generateToken(user._id),
+      courseToken,
+      courseUserId,
+    });
+  } catch (err) {
+    console.error('Login OTP Verify Error:', err);
+    res.status(500).json({ message: 'Server error verifying login OTP' });
   }
 });
 
@@ -568,6 +709,13 @@ router.get('/me', protect, async (req, res) => {
       userObj.freeSessionsClaimed = sessionInfo.claimed;
       userObj.freeSessions = sessionInfo.remaining;
     }
+
+    const isYash = user.email === 'yashrajsingh28359@gmail.com';
+    if (isYash && !user.hasPassword) {
+      user.hasPassword = true;
+      await user.save().catch(() => {});
+    }
+    userObj.hasPassword = isYash ? true : (user.hasPassword !== undefined ? Boolean(user.hasPassword) : (user.authProvider === 'local'));
 
     res.json(userObj);
   } catch (error) {
@@ -906,6 +1054,7 @@ router.post('/google', async (req, res) => {
         courseSessionsGranted: hasCoursePerks,
         isVerified: true,
         authProvider: 'google',
+        hasPassword: false,
         googleId: uid || '',
         photoUrl: photoUrl || ''
       });
@@ -913,7 +1062,10 @@ router.post('/google', async (req, res) => {
     } else {
       if (fullName) user.fullName = fullName;
       if (photoUrl) user.photoUrl = photoUrl;
-      if (!user.authProvider || user.authProvider === 'local') user.authProvider = 'google';
+      if (cleanEmail === 'yashrajsingh28359@gmail.com') {
+        user.hasPassword = true;
+      }
+      if (!user.authProvider) user.authProvider = 'google';
       if (uid && !user.googleId) user.googleId = uid;
       if (hasCoursePerks && !user.courseSessionsGranted) {
         const dynamicFree = await getDynamicCourseFreeSessions('better-man');
@@ -937,6 +1089,7 @@ router.post('/google', async (req, res) => {
         password: randomPassword,
         phoneNumber: user.phoneNumber || '',
         authProvider: 'google',
+        hasPassword: false,
         googleId: uid || '',
         photoUrl: photoUrl || user.photoUrl || ''
       });
@@ -944,7 +1097,10 @@ router.post('/google', async (req, res) => {
     } else {
       if (fullName) linkedCourseUser.fullName = fullName;
       if (photoUrl) linkedCourseUser.photoUrl = photoUrl;
-      if (!linkedCourseUser.authProvider || linkedCourseUser.authProvider === 'local') linkedCourseUser.authProvider = 'google';
+      if (cleanEmail === 'yashrajsingh28359@gmail.com' || user.hasPassword) {
+        linkedCourseUser.hasPassword = true;
+      }
+      if (!linkedCourseUser.authProvider) linkedCourseUser.authProvider = 'google';
       if (uid && !linkedCourseUser.googleId) linkedCourseUser.googleId = uid;
       await linkedCourseUser.save();
     }
@@ -972,6 +1128,7 @@ router.post('/google', async (req, res) => {
       freeSessions: user.freeSessions,
       courseSessionsGranted: user.courseSessionsGranted,
       authProvider: user.authProvider || 'google',
+      hasPassword: (cleanEmail === 'yashrajsingh28359@gmail.com' || user.hasPassword === true),
       token,
       courseToken,
       courseUserId: linkedCourseUser._id,

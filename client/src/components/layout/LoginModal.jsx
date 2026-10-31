@@ -21,6 +21,10 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isForgotOtpStep, setIsForgotOtpStep] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [isOtpLogin, setIsOtpLogin] = useState(false);
+  const [isLoginOtpStep, setIsLoginOtpStep] = useState(false);
+  const [loginOtpTargetEmail, setLoginOtpTargetEmail] = useState('');
+  const [maskedLoginEmail, setMaskedLoginEmail] = useState('');
   
   const otpRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
@@ -51,6 +55,10 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
       setOtpValues(['', '', '', '']);
       setIsForgotPassword(false);
       setIsForgotOtpStep(false);
+      setIsOtpLogin(false);
+      setIsLoginOtpStep(false);
+      setLoginOtpTargetEmail('');
+      setMaskedLoginEmail('');
       setResendCooldown(0);
     }
   }, [isOpen, defaultMode, defaultEmail, defaultFullName, defaultCountryCode, defaultPhoneNumber]);
@@ -61,7 +69,24 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
     e.preventDefault();
     setError('');
 
-    if (!isLogin && !isForgotPassword) {
+    if (isOtpLogin) {
+      if (!isLoginOtpStep) {
+        if (!email.trim()) {
+          setError('Please enter your registered email address');
+          return;
+        }
+        const rfcEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+        if (!rfcEmailRegex.test(email.trim().toLowerCase())) {
+          setError('Please enter a valid email address.');
+          return;
+        }
+      } else {
+        if (otpValues.join('').length !== 4) {
+          setError('Please enter the 4-digit OTP');
+          return;
+        }
+      }
+    } else if (!isLogin && !isForgotPassword) {
       if (!isOtpStep) {
         if (!fullName.trim()) {
           setError('Please enter your full name');
@@ -115,7 +140,15 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
       let endpoint = `${API_URL}/api/auth/login`;
       let body = { email, password };
 
-      if (isForgotPassword) {
+      if (isOtpLogin) {
+        if (!isLoginOtpStep) {
+          endpoint = `${API_URL}/api/auth/login-otp-init`;
+          body = { email: email.trim() };
+        } else {
+          endpoint = `${API_URL}/api/auth/login-otp-verify`;
+          body = { email: loginOtpTargetEmail || email.trim(), otp: otpValues.join('') };
+        }
+      } else if (isForgotPassword) {
         if (!isForgotOtpStep) {
           if (!email.trim()) {
             setError('Please enter your email address');
@@ -151,7 +184,40 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
       const data = await res.json();
 
       if (res.ok) {
-        if (isForgotPassword) {
+        if (isOtpLogin) {
+          if (!isLoginOtpStep) {
+            setIsLoginOtpStep(true);
+            setLoginOtpTargetEmail(data.email || email.trim());
+            setMaskedLoginEmail(data.maskedEmail || '');
+            setOtpValues(['', '', '', '']);
+            setResendCooldown(45);
+            setError('');
+          } else {
+            // Login with OTP succeeded
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('userInfo', JSON.stringify({ 
+              fullName: data.fullName, 
+              email: data.email,
+              phoneNumber: data.phoneNumber,
+              countryCode: data.countryCode,
+              dob: data.dob,
+              gender: data.gender,
+              freeSessions: data.freeSessions,
+              courseSessionsGranted: data.courseSessionsGranted
+            }));
+            if (data.courseToken) {
+              localStorage.setItem('courseToken', data.courseToken);
+              localStorage.setItem('courseUser', JSON.stringify({
+                _id: data.courseUserId || data._id,
+                fullName: data.fullName,
+                email: data.email,
+                phoneNumber: data.phoneNumber || '',
+              }));
+            }
+            window.dispatchEvent(new Event('auth-change'));
+            onSuccess({ ...data, isRegister: false });
+          }
+        } else if (isForgotPassword) {
           if (!isForgotOtpStep) {
             setIsForgotOtpStep(true);
             setError('');
@@ -260,6 +326,10 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
 
   const handleToggleMode = () => {
     setIsLogin(!isLogin);
+    setIsOtpLogin(false);
+    setIsLoginOtpStep(false);
+    setLoginOtpTargetEmail('');
+    setMaskedLoginEmail('');
     setIsOtpStep(false);
     setIsForgotPassword(false);
     setIsForgotOtpStep(false);
@@ -295,8 +365,14 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
       >
         <button 
           onClick={() => {
-            if (isOtpStep) {
+            if (isLoginOtpStep) {
+              setIsLoginOtpStep(false);
+            } else if (isOtpStep) {
               setIsOtpStep(false);
+            } else if (isForgotOtpStep) {
+              setIsForgotOtpStep(false);
+            } else if (isOtpLogin) {
+              setIsOtpLogin(false);
             } else {
               onClose();
             }
@@ -309,18 +385,22 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
         <div className="flex items-center gap-3 mb-2">
           <div className="h-[1.5px] w-5 bg-[#c9542f]" />
           <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#c9542f]">
-            {isLogin ? 'ACCOUNT ACCESS' : 'MEMBER ONBOARDING'}
+            {isLogin ? (isOtpLogin ? 'OTP ACCESS' : 'ACCOUNT ACCESS') : 'MEMBER ONBOARDING'}
           </span>
         </div>
 
         <h2 className="font-serif text-3xl sm:text-[2rem] font-medium text-[#111010] tracking-tight mb-1.5">
           {isForgotPassword 
             ? (isForgotOtpStep ? 'Reset Password' : 'Forgot Password')
+            : isOtpLogin
+            ? (isLoginOtpStep ? 'Verify OTP' : 'Sign In with OTP')
             : (!isOtpStep ? (isLogin ? 'Welcome Back' : 'Begin Your Journey') : 'Verify Email')}
         </h2>
         <p className="text-[#555047] font-sans text-xs tracking-wide mb-6">
           {isForgotPassword
             ? (isForgotOtpStep ? `Enter the 4-digit OTP sent to ${email} and your new password` : 'Enter your email address to reset your password')
+            : isOtpLogin
+            ? (isLoginOtpStep ? `Enter the 4-digit OTP sent to ${maskedLoginEmail || loginOtpTargetEmail || email}` : 'Enter your registered email to receive a secure OTP')
             : (!isOtpStep 
               ? (isLogin ? 'Enter your details to continue' : 'Create an account to access exclusive content')
               : `Enter the 4-digit OTP sent to ${email}`)
@@ -343,7 +423,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isOtpStep && !isForgotOtpStep ? (
+          {!isOtpStep && !isForgotOtpStep && !isLoginOtpStep ? (
             <>
               {(!isLogin && !isForgotPassword) && (
                 <div>
@@ -363,15 +443,15 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
 
               <div>
                 <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
-                  {isLogin ? 'Email Address or Mobile' : 'Email Address'}
+                  {isOtpLogin ? 'Email Address' : (isLogin ? 'Email Address or Mobile' : 'Email Address')}
                 </label>
                 <input 
-                  type={isLogin ? 'text' : 'email'} 
+                  type={isOtpLogin ? 'email' : (isLogin ? 'text' : 'email')} 
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-white/80 border border-black/10 focus:border-[#c9542f] rounded-xl px-4 py-2.5 text-[#111010] font-sans focus:outline-none focus:bg-white transition-all placeholder:text-[#7a756b]/40 shadow-2xs"
-                  placeholder={isLogin ? "Email or 10-digit mobile number" : "john@example.com"}
+                  placeholder={isOtpLogin ? "name@example.com" : (isLogin ? "Email or 10-digit mobile number" : "john@example.com")}
                 />
               </div>
 
@@ -406,7 +486,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                 </div>
               )}
 
-              {!isForgotPassword && (
+              {!isForgotPassword && !isOtpLogin && (
                 <div>
                   <label className="block font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1.5">
                     Password
@@ -428,6 +508,20 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                       {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  {isLogin && (
+                    <div className="flex justify-end mt-1.5">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(true);
+                          setError('');
+                        }}
+                        className="font-sans text-[0.65rem] uppercase tracking-[0.16em] font-bold text-[#7a756b] hover:text-[#c9542f] transition-colors cursor-pointer"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -531,23 +625,61 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
             </div>
           )}
 
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col gap-2.5">
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full justify-center bg-[#c9542f] hover:bg-[#6b1f60] disabled:bg-[#c9542f]/60 text-white py-3.5 rounded-full font-sans text-xs uppercase tracking-[0.2em] font-bold transition-all shadow-[0_4px_16px_rgba(201, 84, 47,0.25)] hover:shadow-[0_6px_20px_rgba(201, 84, 47,0.35)] cursor-pointer"
+              className="w-full justify-center bg-[#c9542f] hover:bg-[#a94326] disabled:bg-[#c9542f]/60 text-white py-3.5 rounded-full font-sans text-xs uppercase tracking-[0.2em] font-bold transition-all shadow-[0_4px_16px_rgba(201,84,47,0.25)] hover:shadow-[0_6px_20px_rgba(201,84,47,0.35)] cursor-pointer"
             >
-              {isLoading ? 'PLEASE WAIT...' : (isForgotPassword ? (isForgotOtpStep ? 'RESET PASSWORD' : 'SEND OTP') : (isOtpStep ? 'VERIFY OTP' : (isLogin ? 'SIGN IN' : 'CREATE ACCOUNT')))}
+              {isLoading 
+                ? 'PLEASE WAIT...' 
+                : (isForgotPassword 
+                  ? (isForgotOtpStep ? 'RESET PASSWORD' : 'SEND OTP') 
+                  : (isOtpLogin 
+                    ? (isLoginOtpStep ? 'VERIFY & SIGN IN' : 'REQUEST OTP') 
+                    : (isOtpStep ? 'VERIFY OTP' : (isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'))))}
             </button>
+
+            {isLogin && !isForgotPassword && !isLoginOtpStep && (
+              !isOtpLogin ? (
+                <button 
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => {
+                    setIsOtpLogin(true);
+                    setIsLoginOtpStep(false);
+                    setError('');
+                  }}
+                  className="w-full justify-center bg-white/90 hover:bg-white border border-black/15 hover:border-[#c9542f] text-[#111010] hover:text-[#c9542f] py-3.5 rounded-full font-sans text-xs uppercase tracking-[0.2em] font-bold transition-all shadow-2xs cursor-pointer"
+                >
+                  LOGIN WITH OTP
+                </button>
+              ) : (
+                <button 
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => {
+                    setIsOtpLogin(false);
+                    setIsLoginOtpStep(false);
+                    setError('');
+                  }}
+                  className="w-full justify-center bg-white/90 hover:bg-white border border-black/15 hover:border-[#c9542f] text-[#111010] hover:text-[#c9542f] py-3.5 rounded-full font-sans text-xs uppercase tracking-[0.2em] font-bold transition-all shadow-2xs cursor-pointer"
+                >
+                  LOGIN WITH PASSWORD
+                </button>
+              )
+            )}
           </div>
         </form>
 
-        {(isOtpStep || isForgotOtpStep) && (
+        {(isOtpStep || isForgotOtpStep || isLoginOtpStep) && (
           <div className="mt-4 flex items-center justify-between text-center pt-2">
             <button 
               type="button"
               onClick={() => {
-                if (isForgotOtpStep) {
+                if (isLoginOtpStep) {
+                  setIsLoginOtpStep(false);
+                } else if (isForgotOtpStep) {
                   setIsForgotOtpStep(false);
                 } else {
                   setIsOtpStep(false);
@@ -567,12 +699,17 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
                   setIsLoading(true);
                   setError('');
                   const API_URL = import.meta.env.VITE_API_URL || '';
-                  const endpoint = isForgotOtpStep 
-                    ? `${API_URL}/api/auth/forgot-password-init`
-                    : `${API_URL}/api/auth/register-init`;
-                  const body = isForgotOtpStep
-                    ? { email }
-                    : { fullName, email, password, countryCode, phoneNumber };
+                  let endpoint, body;
+                  if (isLoginOtpStep) {
+                    endpoint = `${API_URL}/api/auth/login-otp-init`;
+                    body = { email: loginOtpTargetEmail || email };
+                  } else if (isForgotOtpStep) {
+                    endpoint = `${API_URL}/api/auth/forgot-password-init`;
+                    body = { email };
+                  } else {
+                    endpoint = `${API_URL}/api/auth/register-init`;
+                    body = { fullName, email, password, countryCode, phoneNumber };
+                  }
 
                   const res = await fetch(endpoint, {
                     method: 'POST',
@@ -604,22 +741,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
           </div>
         )}
 
-        {isLogin && !isForgotPassword && (
-          <div className="mt-3.5 text-center">
-            <button 
-              type="button"
-              onClick={() => {
-                setIsForgotPassword(true);
-                setError('');
-              }}
-              className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] hover:text-[#111010] transition-colors cursor-pointer"
-            >
-              Forgot Password?
-            </button>
-          </div>
-        )}
-
-        {(!isOtpStep && !isForgotOtpStep) && (
+        {(!isOtpStep && !isForgotOtpStep && !isLoginOtpStep) && (
           <>
             <div className="flex items-center my-4 gap-3">
               <div className="flex-1 h-[1px] bg-black/10" />
@@ -641,7 +763,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess, defaultMode = '
           </>
         )}
 
-        {(!isOtpStep && !isForgotOtpStep) && (
+        {(!isOtpStep && !isForgotOtpStep && !isLoginOtpStep) && (
           <div className="mt-5 text-center pt-3 border-t border-black/8">
             <button 
               type="button"

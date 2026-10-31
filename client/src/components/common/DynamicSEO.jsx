@@ -76,30 +76,36 @@ export default function DynamicSEO() {
             faviconUrl = `${API_URL}${faviconUrl}`;
           }
 
-          let faviconLink = document.querySelector('link[rel="icon"]');
-          if (!faviconLink) {
-            faviconLink = document.createElement('link');
-            faviconLink.setAttribute('rel', 'icon');
-            document.head.appendChild(faviconLink);
+          const versionedUrl = faviconUrl.includes('?') ? faviconUrl : `${faviconUrl}?v=${Date.now()}`;
+
+          const iconSelectors = [
+            'link[rel="icon"]',
+            'link[rel="shortcut icon"]',
+            'link[rel="alternate icon"]',
+            'link[rel="apple-touch-icon"]'
+          ];
+
+          iconSelectors.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+              el.setAttribute('href', versionedUrl);
+              if (faviconUrl.includes('.svg')) {
+                el.setAttribute('type', 'image/svg+xml');
+              } else if (faviconUrl.includes('.png')) {
+                el.setAttribute('type', 'image/png');
+              } else if (faviconUrl.includes('.ico')) {
+                el.setAttribute('type', 'image/x-icon');
+              }
+            });
+          });
+
+          // Ensure at least one primary icon element exists
+          let primaryIcon = document.querySelector('link[rel="icon"]');
+          if (!primaryIcon) {
+            primaryIcon = document.createElement('link');
+            primaryIcon.setAttribute('rel', 'icon');
+            primaryIcon.setAttribute('href', versionedUrl);
+            document.head.appendChild(primaryIcon);
           }
-          faviconLink.setAttribute('href', faviconUrl);
-
-          if (faviconUrl.endsWith('.svg')) {
-            faviconLink.setAttribute('type', 'image/svg+xml');
-          } else if (faviconUrl.endsWith('.png')) {
-            faviconLink.setAttribute('type', 'image/png');
-          } else if (faviconUrl.endsWith('.ico')) {
-            faviconLink.setAttribute('type', 'image/x-icon');
-          } else {
-            faviconLink.removeAttribute('type');
-          }
-
-          // Also update shortcut icon and apple-touch-icon
-          let shortcutLink = document.querySelector('link[rel="shortcut icon"]');
-          if (shortcutLink) shortcutLink.setAttribute('href', faviconUrl);
-
-          let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
-          if (appleLink) appleLink.setAttribute('href', faviconUrl);
         }
 
         // 4. Update Schema.org JSON-LD structured data dynamically for Google Sitelinks

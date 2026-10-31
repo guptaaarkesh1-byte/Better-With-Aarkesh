@@ -45,8 +45,10 @@ export default function AdminOverview() {
   }, []);
 
   const totalClientsCount = new Set(appointments.map(a => a.email || a.userId?.email).filter(Boolean)).size;
-  const coachingRevenue = appointments.filter(a => !a.isFreeSession && a.paymentStatus === 'Paid').length * 5000;
-  const totalCombinedRevenue = (courseStats.totalRevenue || 0) + coachingRevenue;
+  const paidSessions = appointments.filter(a => a.paymentStatus === 'Paid' && !a.isFreeSession && a.orderId !== 'COURSE_FREE_SESSION');
+  const coachingRevenue = paidSessions.reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+  const courseRevenue = Number(courseStats.totalRevenue) || 0;
+  const totalCombinedRevenue = courseRevenue + coachingRevenue;
   const upcomingCount = appointments.filter(a => {
     const s = String(a.status || '').toUpperCase();
     return s !== 'COMPLETED' && s !== 'REFUNDED' && s !== 'CANCELLED';
@@ -58,21 +60,21 @@ export default function AdminOverview() {
       value: courseStats.totalPurchased || 0,
       icon: 'user',
       trend: `${courseStats.totalRegistered || 0} registered total`,
-      link: '/course?tab=students'
+      link: '/appointments?view=courses&scroll=courses'
     },
     {
       label: 'Coaching Clients',
       value: totalClientsCount || appointments.length,
       icon: 'user',
       trend: 'Active coaching roster',
-      link: '/appointments'
+      link: '/appointments?subnav=clients'
     },
     {
       label: 'Upcoming Sessions',
       value: upcomingCount,
       icon: 'layout',
       trend: 'Scheduled bookings',
-      link: '/appointments'
+      link: '/appointments?tab=upcoming&scroll=table'
     },
     {
       label: 'Total Revenue',

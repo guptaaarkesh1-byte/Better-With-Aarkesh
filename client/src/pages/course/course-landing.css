@@ -3121,6 +3121,13 @@
   display: none;
 }
 
+.auth-modal-scope .fbox .btn {
+  padding: 11px 22px;
+  font-size: 14.5px;
+  border-radius: 11px;
+  min-height: 44px;
+}
+
 .auth-modal-scope .alt {
   text-align: center;
   margin: 22px 0 0;

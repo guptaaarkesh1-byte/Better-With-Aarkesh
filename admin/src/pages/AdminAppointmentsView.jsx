@@ -44,15 +44,31 @@ const formatQuestionnaireAnswers = (qa) => {
 export default function AdminAppointmentsView() {
   const { showSuccess, showError, showInfo } = useToast();
 
-  // Primary top subnav: 'merged' (Clients & Sessions) | 'clients' (By client) | 'fees' (Fee settings)
-  const [subnavTab, setSubnavTab] = useState('merged');
-
-  // 3-Way Segmented View: 'sessions' (Appointments) | 'courses' (Course students) | 'all_clients' (All students & clients)
-  const [view, setView] = useState('sessions');
-
   const [searchParams] = useSearchParams();
   const urlApptId = searchParams.get('apptId');
   const urlTab = searchParams.get('tab');
+  const urlView = searchParams.get('view');
+  const urlSubnav = searchParams.get('subnav');
+
+  const getInitialSubnav = () => {
+    const s = (urlSubnav || urlView || urlTab || '').toLowerCase();
+    if (s === 'clients' || s === 'by_client' || s === 'by-client' || s === 'client_roster' || s === 'roster') return 'clients';
+    if (s === 'fees' || s === 'fee_settings') return 'fees';
+    return 'merged';
+  };
+
+  // Primary top subnav: 'merged' (Clients & Sessions) | 'clients' (By client) | 'fees' (Fee settings)
+  const [subnavTab, setSubnavTab] = useState(getInitialSubnav);
+
+  const getInitialView = () => {
+    const param = (urlView || urlTab || '').toLowerCase();
+    if (param === 'courses' || param === 'students' || param === 'course_students') return 'courses';
+    if (param === 'all_clients' || param === 'directory') return 'all_clients';
+    return 'sessions';
+  };
+
+  // 3-Way Segmented View: 'sessions' (Appointments) | 'courses' (Course students) | 'all_clients' (All students & clients)
+  const [view, setView] = useState(getInitialView);
 
   // Filter Tabs per view
   const [sessionTab, setSessionTab] = useState(urlTab || 'all'); // all, needs, today, upcoming, completed, rescheduled, cancelled, refunded
@@ -180,10 +196,65 @@ export default function AdminAppointmentsView() {
   }, []);
 
   useEffect(() => {
-    if (urlTab) {
+    const s = (urlSubnav || urlView || urlTab || '').toLowerCase();
+    if (s === 'clients' || s === 'by_client' || s === 'by-client' || s === 'client_roster' || s === 'roster') {
+      setSubnavTab('clients');
+      return;
+    }
+    if (s === 'fees' || s === 'fee_settings') {
+      setSubnavTab('fees');
+      return;
+    }
+
+    const param = (urlView || urlTab || '').toLowerCase();
+    if (param === 'courses' || param === 'students' || param === 'course_students') {
+      setView('courses');
+      setSubnavTab('merged');
+      setSortBy('new');
+    } else if (param === 'all_clients' || param === 'directory') {
+      setView('all_clients');
+      setSubnavTab('merged');
+      setSortBy('new');
+    } else if (urlTab) {
+      setView('sessions');
+      setSubnavTab('merged');
       setSessionTab(urlTab);
     }
-  }, [urlTab]);
+  }, [urlSubnav, urlView, urlTab]);
+
+  const scrollToMergedHead = () => {
+    setTimeout(() => {
+      const el = document.getElementById('bwa-merged-head') || document.getElementById('course-students-head');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+  };
+
+  useEffect(() => {
+    const shouldScrollTable = urlTab === 'upcoming' || searchParams.get('scroll') === 'table' || searchParams.get('scrollTo') === 'appointments';
+    const shouldScrollHead = (urlView === 'courses' || urlView === 'all_clients' || searchParams.get('scroll') === 'courses' || searchParams.get('scroll') === 'all' || searchParams.get('scroll') === 'head');
+
+    if (!loading) {
+      if (shouldScrollTable) {
+        const timer = setTimeout(() => {
+          const el = document.getElementById('appointments-filter-section');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 150);
+        return () => clearTimeout(timer);
+      } else if (shouldScrollHead) {
+        const timer = setTimeout(() => {
+          const el = document.getElementById('bwa-merged-head') || document.getElementById('course-students-head');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [urlTab, urlView, view, loading, searchParams]);
 
   // Format Helpers
   const parseDate = (dStr) => {
@@ -1717,7 +1788,7 @@ export default function AdminAppointmentsView() {
         {subnavTab === 'merged' && (
           <>
             {/* Header with Title & 3-Way Segmented Toggle */}
-            <div className="bwa-head">
+            <div id="bwa-merged-head" style={{ scrollMarginTop: '16px' }} className="bwa-head">
               <div>
                 <h1>
                   {view === 'sessions'
@@ -1742,6 +1813,7 @@ export default function AdminAppointmentsView() {
                   onClick={() => {
                     setView('sessions');
                     setSortBy('smart');
+                    scrollToMergedHead();
                   }}
                 >
                   Appointments
@@ -1753,6 +1825,7 @@ export default function AdminAppointmentsView() {
                   onClick={() => {
                     setView('courses');
                     setSortBy('new');
+                    scrollToMergedHead();
                   }}
                 >
                   Course students
@@ -1764,6 +1837,7 @@ export default function AdminAppointmentsView() {
                   onClick={() => {
                     setView('all_clients');
                     setSortBy('new');
+                    scrollToMergedHead();
                   }}
                 >
                   All students &amp; clients
@@ -1827,7 +1901,7 @@ export default function AdminAppointmentsView() {
             </div>
 
             {/* Filter Tabs */}
-            <div className="bwa-tabs" role="tablist">
+            <div id="appointments-filter-section" style={{ scrollMarginTop: '16px' }} className="bwa-tabs" role="tablist">
               {view === 'sessions' && (
                 <>
                   {[

@@ -393,11 +393,25 @@ export default function Course() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // OTP & Forgot Password State
+  // OTP, Login with OTP & Forgot Password State
   const [isOtpStep, setIsOtpStep] = useState(false);
   const [otpValues, setOtpValues] = useState(['', '', '', '']);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isForgotOtpStep, setIsForgotOtpStep] = useState(false);
+  const [isOtpLogin, setIsOtpLogin] = useState(false);
+  const [isLoginOtpStep, setIsLoginOtpStep] = useState(false);
+  const [maskedLoginEmail, setMaskedLoginEmail] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const otpRef0 = useRef(null);
   const otpRef1 = useRef(null);
@@ -1382,7 +1396,18 @@ export default function Course() {
     // New courses go to the LEFT, baseline/older courses (The Better Man) go to the RIGHT
     const fullList = [...newCourses, ...mergedList];
 
-    return fullList.filter(item => item && item.hidden !== true && item.isPublished !== false && item.slug !== 'difficult-people' && item.slug !== 'decisions');
+    return fullList.filter(item => {
+      if (!item) return false;
+      if (item.slug === 'difficult-people' || item.slug === 'decisions') return false;
+
+      // Draft / Hidden courses must NEVER be displayed on the public website!
+      const isDraft = item.status === 'draft' || (item.hidden === true && !item.soon) || (!item.live && !item.soon && item.isPublished === false);
+      if (isDraft) return false;
+
+      // Only Live or Coming Soon courses are shown
+      const isLiveOrSoon = item.status === 'live' || item.status === 'soon' || item.live === true || item.soon === true || item.isPublished === true;
+      return isLiveOrSoon;
+    });
   }, [basePrice, comparePrice, courseDetailsMap]);
 
   const activeCourse = useMemo(() => {
@@ -1390,6 +1415,14 @@ export default function Course() {
     const foundInList = coursesList.find((c) => c.slug === slug);
     if (courseDetailsMap && courseDetailsMap[slug]) {
       const dynamicCourse = courseDetailsMap[slug];
+
+      // Draft protection: If course is in draft, only logged in admin or enrolled student can view it
+      const isDraft = dynamicCourse.status === 'draft' || (dynamicCourse.hidden === true && !dynamicCourse.soon) || (!dynamicCourse.live && !dynamicCourse.soon && dynamicCourse.isPublished === false);
+      const isAdmin = Boolean(localStorage.getItem('adminToken'));
+      const isPurchasedThis = Array.isArray(purchasedCourses) && purchasedCourses.includes(slug);
+      if (isDraft && !isAdmin && !isPurchasedThis) {
+        return coursesList[0] || null;
+      }
       const includeFree = dynamicCourse.includeFreeSessions !== undefined 
         ? Boolean(dynamicCourse.includeFreeSessions) 
         : (dynamicCourse.pricingSection?.includeFreeSessions !== undefined ? Boolean(dynamicCourse.pricingSection.includeFreeSessions) : true);
@@ -1460,7 +1493,7 @@ export default function Course() {
       inside: [],
       syllabus: []
     };
-  }, [coursesList, courseDetailsMap, slug]);
+  }, [coursesList, courseDetailsMap, slug, purchasedCourses]);
 
   const isThisCoursePurchased = useMemo(() => {
     if (!isLoggedIn) return false;
@@ -1759,8 +1792,6 @@ export default function Course() {
   const handlePayment = async () => {
     setIsLoading(true);
     setError('');
-
-    const API_URL = import.meta.env.VITE_API_URL || '';
 
     const safeJson = async (res) => {
       const text = await res.text();
@@ -2093,6 +2124,9 @@ export default function Course() {
     setIsOtpStep(false);
     setIsForgotPassword(false);
     setIsForgotOtpStep(false);
+    setIsOtpLogin(false);
+    setIsLoginOtpStep(false);
+    setMaskedLoginEmail('');
     setOtpValues(['', '', '', '']);
     setError('');
     setFieldErrors({});
@@ -2104,6 +2138,31 @@ export default function Course() {
     setPhoneNumber('');
   };
 
+  const handleResendCourseLoginOtp = async () => {
+    if (resendCooldown > 0 || isLoading) return;
+    try {
+      setIsLoading(true);
+      setError('');
+      const res = await fetch(`${API_URL}/api/course-auth/login-otp-init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOtpValues(['', '', '', '']);
+        setResendCooldown(45);
+        setError('New OTP sent to your email.');
+      } else {
+        setError(data.message || 'Failed to resend OTP');
+      }
+    } catch (err) {
+      setError('Network error, please try again');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Auth Submit
   const handleAuthSubmit = async (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -2113,7 +2172,23 @@ export default function Course() {
     const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val || '').trim());
     const errs = {};
 
-    if (loginMode === 'register' && !isForgotPassword) {
+    if (loginMode === 'login' && isOtpLogin && !isForgotPassword) {
+      if (!isLoginOtpStep) {
+        if (!email.trim() || !isValidEmail(email)) {
+          errs.email = true;
+          setFieldErrors(errs);
+          setError(!email.trim() ? 'Please enter your registered email address' : 'Please enter a valid email address');
+          return;
+        }
+      } else {
+        if (otpValues.join('').length !== 4) {
+          errs.otp = true;
+          setFieldErrors(errs);
+          setError('Please enter the 4-digit OTP');
+          return;
+        }
+      }
+    } else if (loginMode === 'register' && !isForgotPassword) {
       if (!isOtpStep) {
         if (!fullName.trim()) errs.fullName = true;
         if (!email.trim() || !isValidEmail(email)) errs.email = true;
@@ -2180,11 +2255,18 @@ export default function Course() {
 
     setIsLoading(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || '';
       let endpoint = `${API_URL}/api/course-auth/login`;
       let body = { email, password };
 
-      if (isForgotPassword) {
+      if (isOtpLogin) {
+        if (!isLoginOtpStep) {
+          endpoint = `${API_URL}/api/course-auth/login-otp-init`;
+          body = { email: email.trim() };
+        } else {
+          endpoint = `${API_URL}/api/course-auth/login-otp-verify`;
+          body = { email: email.trim(), otp: otpValues.join('') };
+        }
+      } else if (isForgotPassword) {
         if (!isForgotOtpStep) {
           endpoint = `${API_URL}/api/course-auth/forgot-password-init`;
           body = { email };
@@ -2211,7 +2293,43 @@ export default function Course() {
       const data = await res.json();
 
       if (res.ok) {
-        if (isForgotPassword) {
+        if (isOtpLogin) {
+          if (!isLoginOtpStep) {
+            setIsLoginOtpStep(true);
+            setMaskedLoginEmail(data.maskedEmail || '');
+            setOtpValues(['', '', '', '']);
+            setResendCooldown(45);
+            setError('');
+          } else {
+            syncLoginData(data);
+            if (data.freeSessions !== undefined) {
+              const count = Math.max(0, Number(data.freeSessions));
+              setFreeSessionsRemaining(count);
+            }
+            const isPurchasedVal = Boolean(data.isPurchased || data.isCoursePurchased);
+            const userSlugs = Array.isArray(data.purchasedCourses) && data.purchasedCourses.length > 0
+              ? data.purchasedCourses
+              : (isPurchasedVal ? ['better-man'] : []);
+            setPurchasedCourses(userSlugs);
+            if (isPurchasedVal && !isComingSoon) {
+              setIsPurchased(true);
+              localStorage.setItem('isCoursePurchased', 'true');
+            } else {
+              setIsPurchased(false);
+              localStorage.removeItem('isCoursePurchased');
+              localStorage.removeItem('purchasedCourses');
+            }
+            setShowDashboard(false);
+            setShowCheckout(false);
+            setShowPricingModal(false);
+            setShowCourseLogin(false);
+            setIsLoggedIn(true);
+            setIsOtpLogin(false);
+            setIsLoginOtpStep(false);
+
+            showToast('Login successfully', 'success');
+          }
+        } else if (isForgotPassword) {
           if (!isForgotOtpStep) {
             setIsForgotOtpStep(true);
             setError('');
@@ -4359,6 +4477,13 @@ export default function Course() {
         isForgotPassword={isForgotPassword}
         setIsForgotPassword={setIsForgotPassword}
         isForgotOtpStep={isForgotOtpStep}
+        isOtpLogin={isOtpLogin}
+        setIsOtpLogin={setIsOtpLogin}
+        isLoginOtpStep={isLoginOtpStep}
+        setIsLoginOtpStep={setIsLoginOtpStep}
+        maskedLoginEmail={maskedLoginEmail}
+        resendCooldown={resendCooldown}
+        handleResendCourseLoginOtp={handleResendCourseLoginOtp}
         handleAuthSubmit={handleAuthSubmit}
         isOtpStep={isOtpStep}
         loginMode={loginMode}
@@ -4706,6 +4831,13 @@ function AuthModal({
   isForgotPassword,
   setIsForgotPassword,
   isForgotOtpStep,
+  isOtpLogin,
+  setIsOtpLogin,
+  isLoginOtpStep,
+  setIsLoginOtpStep,
+  maskedLoginEmail,
+  resendCooldown,
+  handleResendCourseLoginOtp,
   handleAuthSubmit,
   isOtpStep,
   loginMode,
@@ -4814,11 +4946,13 @@ function AuthModal({
             >
               ← Back to sign in
             </button>
-          ) : isOtpStep ? (
+          ) : (isOtpStep || isLoginOtpStep) ? (
             <button
               type="button"
               className="back"
               onClick={() => {
+                if (isLoginOtpStep) setIsLoginOtpStep(false);
+                else setIsOtpStep(false);
                 setError('');
               }}
             >
@@ -4828,7 +4962,11 @@ function AuthModal({
             <button
               type="button"
               className="back"
-              onClick={() => setShowCourseLogin(false)}
+              onClick={() => {
+                setShowCourseLogin(false);
+                setIsOtpLogin(false);
+                setIsLoginOtpStep(false);
+              }}
             >
               ← Back to course
             </button>
@@ -4840,6 +4978,10 @@ function AuthModal({
               ? isForgotOtpStep
                 ? 'Set new password'
                 : 'Reset your password'
+              : isOtpLogin
+              ? isLoginOtpStep
+                ? 'Verify OTP'
+                : 'Sign in with OTP'
               : isOtpStep
               ? 'Verify your email'
               : loginMode === 'login'
@@ -4851,6 +4993,10 @@ function AuthModal({
               ? isForgotOtpStep
                 ? 'Enter the 4-digit code and your new password.'
                 : 'Enter your registered email to receive a reset code.'
+              : isOtpLogin
+              ? isLoginOtpStep
+                ? `Enter the 4-digit code sent to ${maskedLoginEmail || email}`
+                : 'Enter your registered email to receive a secure OTP.'
               : isOtpStep
               ? `Enter the 4-digit code sent to ${email}`
               : loginMode === 'login'
@@ -4863,7 +5009,7 @@ function AuthModal({
 
           {/* Form */}
           <form onSubmit={handleAuthSubmit} noValidate>
-            {!isOtpStep && !isForgotOtpStep ? (
+            {!isOtpStep && !isForgotOtpStep && !isLoginOtpStep ? (
               <>
                 {/* Full Name for Register */}
                 {!isForgotPassword && loginMode === 'register' && (
@@ -4955,7 +5101,7 @@ function AuthModal({
                 )}
 
                 {/* Password Field */}
-                {!isForgotPassword && (
+                {!isForgotPassword && !isOtpLogin && (
                   <div className="fld">
                     <label htmlFor="auth-password">Password</label>
                     <div className="pw">
@@ -5012,15 +5158,22 @@ function AuthModal({
                   </div>
                 )}
 
-                {/* Remember Me & Forgot Password for Login */}
-                {!isForgotPassword && loginMode === 'login' && (
-                  <div className="row">
-                    <label className="chk" style={{ margin: 0 }}>
-                      <input type="checkbox" defaultChecked />
-                      <span>Keep me signed in</span>
-                    </label>
+                {/* Forgot Password for Login */}
+                {!isForgotPassword && !isOtpLogin && loginMode === 'login' && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px', marginBottom: '14px' }}>
                     <button
                       type="button"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9d8a9e',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontFamily: 'inherit',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#c9542f'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9d8a9e'}
                       onClick={() => {
                         setIsForgotPassword(true);
                         setError('');
@@ -5031,24 +5184,88 @@ function AuthModal({
                   </div>
                 )}
 
-
-
                 {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={isLoading}
                   className="btn block"
-                  style={{ width: '100%' }}
+                  style={{
+                    width: '100%',
+                    padding: '11px 20px',
+                    fontSize: '14.5px',
+                    minHeight: '44px',
+                    borderRadius: '11px',
+                    cursor: 'pointer'
+                  }}
                 >
                   {isLoading
                     ? 'Please wait...'
                     : isForgotPassword
                     ? 'Send Reset Code'
+                    : isOtpLogin
+                    ? 'Request OTP'
                     : loginMode === 'login'
                     ? 'Sign In'
                     : 'Create Account'}{' '}
                   <span aria-hidden="true">→</span>
                 </button>
+
+                {/* Secondary Login Mode Button */}
+                {!isForgotPassword && loginMode === 'login' && (
+                  !isOtpLogin ? (
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => {
+                        setIsOtpLogin(true);
+                        setIsLoginOtpStep(false);
+                        setError('');
+                      }}
+                      className="btn block"
+                      style={{
+                        width: '100%',
+                        marginTop: '10px',
+                        padding: '11px 20px',
+                        fontSize: '14.5px',
+                        minHeight: '44px',
+                        borderRadius: '11px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        fontWeight: 600
+                      }}
+                    >
+                      Login with OTP
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => {
+                        setIsOtpLogin(false);
+                        setIsLoginOtpStep(false);
+                        setError('');
+                      }}
+                      className="btn block"
+                      style={{
+                        width: '100%',
+                        marginTop: '10px',
+                        padding: '11px 20px',
+                        fontSize: '14.5px',
+                        minHeight: '44px',
+                        borderRadius: '11px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        fontWeight: 600
+                      }}
+                    >
+                      Login with Password
+                    </button>
+                  )
+                )}
 
                 {/* Google Login Option */}
                 {!isForgotPassword && (
@@ -5101,6 +5318,44 @@ function AuthModal({
                   ))}
                 </div>
 
+                {isLoginOtpStep && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLoginOtpStep(false);
+                        setError('');
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9d8a9e',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        padding: 0
+                      }}
+                    >
+                      ← Edit email
+                    </button>
+                    <button
+                      type="button"
+                      disabled={resendCooldown > 0 || isLoading}
+                      onClick={handleResendCourseLoginOtp}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : '#b04fa6',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+                        padding: 0
+                      }}
+                    >
+                      {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
+                    </button>
+                  </div>
+                )}
+
                 {isForgotPassword && isForgotOtpStep && (
                   <>
                     <div className="fld">
@@ -5149,12 +5404,22 @@ function AuthModal({
                   type="submit"
                   disabled={isLoading}
                   className="btn block"
-                  style={{ width: '100%', marginTop: '8px' }}
+                  style={{
+                    width: '100%',
+                    marginTop: '8px',
+                    padding: '11px 20px',
+                    fontSize: '14.5px',
+                    minHeight: '44px',
+                    borderRadius: '11px',
+                    cursor: 'pointer'
+                  }}
                 >
                   {isLoading
                     ? 'Verifying...'
                     : isForgotPassword
                     ? 'Reset Password'
+                    : isLoginOtpStep
+                    ? 'Verify & Sign In'
                     : 'Verify Code'}{' '}
                   <span aria-hidden="true">→</span>
                 </button>
@@ -5170,6 +5435,8 @@ function AuthModal({
                 onClick={() => {
                   setIsForgotPassword(false);
                   setIsForgotOtpStep(false);
+                  setIsOtpLogin(false);
+                  setIsLoginOtpStep(false);
                   setError('');
                 }}
               >

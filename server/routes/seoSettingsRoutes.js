@@ -116,10 +116,15 @@ router.post('/', async (req, res) => {
       { new: true, upsert: true }
     );
 
-    // Sync static client/index.html on disk for Googlebot and crawlers
+    // Sync static HTML on disk (both source and production dist) for Googlebot and crawlers
     try {
-      const clientHtmlPath = path.resolve(__dirname, '../../client/index.html');
-      if (fs.existsSync(clientHtmlPath)) {
+      const htmlPaths = [
+        path.resolve(__dirname, '../../client/index.html'),
+        path.resolve(__dirname, '../../client/dist/index.html')
+      ];
+
+      for (const clientHtmlPath of htmlPaths) {
+        if (!fs.existsSync(clientHtmlPath)) continue;
         let htmlContent = fs.readFileSync(clientHtmlPath, 'utf8');
 
         if (cleanSettings.metaTitle) {
@@ -133,6 +138,13 @@ router.post('/', async (req, res) => {
           htmlContent = htmlContent.replace(/<meta name="description" content=".*?" \/>/s, `<meta name="description" content="${cleanSettings.metaDescription}" />`);
           htmlContent = htmlContent.replace(/<meta property="og:description" content=".*?" \/>/s, `<meta property="og:description" content="${cleanSettings.metaDescription}" />`);
           htmlContent = htmlContent.replace(/<meta name="twitter:description" content=".*?" \/>/s, `<meta name="twitter:description" content="${cleanSettings.metaDescription}" />`);
+        }
+
+        if (cleanSettings.favicon) {
+          const fav = cleanSettings.favicon;
+          htmlContent = htmlContent.replace(/<link rel="icon" type="image\/x-icon" href=".*?" \/>/s, `<link rel="icon" type="image/x-icon" href="${fav}" />`);
+          htmlContent = htmlContent.replace(/<link rel="shortcut icon" href=".*?" \/>/s, `<link rel="shortcut icon" href="${fav}" />`);
+          htmlContent = htmlContent.replace(/<link rel="apple-touch-icon" sizes="180x180" href=".*?" \/>/s, `<link rel="apple-touch-icon" sizes="180x180" href="${fav}" />`);
         }
 
         if (cleanSettings.favicon && cleanSettings.favicon.startsWith('/uploads/')) {

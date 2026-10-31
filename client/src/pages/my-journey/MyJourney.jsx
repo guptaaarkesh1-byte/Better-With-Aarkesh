@@ -944,9 +944,47 @@ export default function MyJourney() {
   const gradientList = ['mj-g-purple', 'mj-g-clay', 'mj-g-teal', 'mj-g-blue'];
 
   const coursesList = useMemo(() => {
-    return allCourseSlugs.map((slug, idx) => {
+    const rawFiltered = allCourseSlugs
+      .filter((slug) => {
+        if (!slug || slug === 'difficult-people' || slug === 'decisions') return false;
+        const config = coursesMap[slug] || {};
+        const isEnrolled = enrolledSlugsSet.has(slug);
+        if (isEnrolled) return true; // Always allow enrolled students to access their course
+
+        // Draft / Hidden courses must NOT show in My Journey!
+        const isDraft = config.status === 'draft' || (config.hidden === true && !config.soon) || (!config.live && !config.soon && config.isPublished === false);
+        if (isDraft) return false;
+
+        // If it is 'better-man' without custom config, default is live
+        if (slug === 'better-man') return true;
+
+        // Only show if it is Live or Coming Soon
+        const isLiveOrSoon = config.status === 'live' || config.status === 'soon' || config.live === true || config.soon === true || config.isPublished === true;
+        return isLiveOrSoon;
+      });
+
+    // Split into newly created courses vs baseline (The Better Man)
+    const newCoursesSlugs = rawFiltered.filter(s => s !== 'better-man');
+    const baseCourseSlugs = rawFiltered.filter(s => s === 'better-man');
+
+    // Sort newest courses first (reverse chronological) so new courses appear on the LEFT
+    newCoursesSlugs.reverse();
+    newCoursesSlugs.sort((slugA, slugB) => {
+      const configA = coursesMap[slugA] || {};
+      const configB = coursesMap[slugB] || {};
+      const dateA = new Date(configA?.createdAt || 0).getTime();
+      const dateB = new Date(configB?.createdAt || 0).getTime();
+      if (dateA && dateB && dateA !== dateB) return dateB - dateA;
+      return 0;
+    });
+
+    // New courses go to the LEFT, baseline/older courses (The Better Man) go to the RIGHT
+    const orderedSlugs = [...newCoursesSlugs, ...baseCourseSlugs];
+
+    return orderedSlugs.map((slug, idx) => {
       const config = coursesMap[slug] || {};
       const isEnrolled = enrolledSlugsSet.has(slug);
+      const isSoon = !isEnrolled && (config.status === 'soon' || config.soon === true);
       const title = config.title || (slug === 'better-man' ? 'The Better Man' : slug);
       const rawPrice = config.pricingSection?.currentPrice || config.price || (slug === 'better-man' ? 15000 : 4999);
       const rawOriginal = config.pricingSection?.originalPrice || (slug === 'better-man' ? 20000 : 10000);
@@ -960,7 +998,7 @@ export default function MyJourney() {
         id: slug,
         slug,
         title,
-        kind: isEnrolled ? 'enrolled' : 'live',
+        kind: isEnrolled ? 'enrolled' : (isSoon ? 'soon' : 'live'),
         price,
         old,
         g,
@@ -1203,15 +1241,6 @@ export default function MyJourney() {
               >
                 <Play size={17} weight={activeTab === 'course' ? 'fill' : 'regular'} />
                 <span>Course</span>
-              </button>
-
-              {/* Mobile-friendly Profile & Settings Tab */}
-              <button 
-                className={`mj-tab md:hidden ${activeTab === 'profile' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('profile'); setSearchQuery(''); }}
-              >
-                <User size={17} weight={activeTab === 'profile' ? 'bold' : 'regular'} />
-                <span>Profile</span>
               </button>
             </nav>
 
@@ -2109,9 +2138,9 @@ export default function MyJourney() {
                             >
                               {!c.imageUrl && <b>{c.title}</b>}
                               {c.kind !== 'recorded' && (
-                                <span className={`mj-badge ${isEnrolled ? 'enrolled' : ''}`}>
+                                <span className={`mj-badge ${isEnrolled ? 'enrolled' : (c.kind === 'soon' ? 'soon' : '')}`}>
                                   <i></i>
-                                  {isEnrolled ? 'Enrolled' : 'Live'}
+                                  {isEnrolled ? 'Enrolled' : (c.kind === 'soon' ? 'Coming Soon' : 'Live')}
                                 </span>
                               )}
                             </div>
@@ -2147,9 +2176,9 @@ export default function MyJourney() {
                                   : `/course/${c.slug}`;
                                 navigate(targetUrl, { state: { from: 'my-journey' } });
                               }}
-                              className={`mj-cbtn ${isEnrolled ? 'solid' : ''}`}
+                              className={`mj-cbtn ${isEnrolled ? 'solid' : (c.kind === 'soon' ? 'soon' : '')}`}
                             >
-                              {isEnrolled ? 'Continue course →' : 'Check Course →'}
+                              {isEnrolled ? 'Continue course →' : (c.kind === 'soon' ? 'Preview Course →' : 'Check Course →')}
                             </button>
                           </article>
                         );

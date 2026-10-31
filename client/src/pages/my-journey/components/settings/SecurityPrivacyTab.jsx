@@ -39,7 +39,18 @@ export default function SecurityPrivacyTab() {
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const [hasPassword, setHasPassword] = useState(() => {
+    try {
+      const saved = localStorage.getItem('userInfo');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.email === 'yashrajsingh28359@gmail.com') return true;
+        if (parsed.hasPassword !== undefined) return Boolean(parsed.hasPassword);
+        return parsed.authProvider !== 'google';
+      }
+    } catch (e) {}
+    return true;
+  });
 
   useEffect(() => {
     const checkUser = async () => {
@@ -48,9 +59,9 @@ export default function SecurityPrivacyTab() {
         try {
           const parsed = JSON.parse(saved);
           setUserEmail(parsed.email || '');
-          if (parsed.authProvider === 'google') {
-            setIsGoogleUser(true);
-          }
+          const isYash = parsed.email === 'yashrajsingh28359@gmail.com';
+          const hasPass = isYash ? true : (parsed.hasPassword !== undefined ? Boolean(parsed.hasPassword) : (parsed.authProvider !== 'google'));
+          setHasPassword(hasPass);
         } catch (e) {}
       }
 
@@ -62,10 +73,15 @@ export default function SecurityPrivacyTab() {
           });
           if (res.ok) {
             const data = await res.json();
-            const isG = data.authProvider === 'google';
-            setIsGoogleUser(isG);
+            const isYash = data.email === 'yashrajsingh28359@gmail.com';
+            const hasPass = isYash ? true : (data.hasPassword !== undefined ? Boolean(data.hasPassword) : (data.authProvider !== 'google'));
+            setHasPassword(hasPass);
             const savedInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-            localStorage.setItem('userInfo', JSON.stringify({ ...savedInfo, authProvider: data.authProvider || 'local' }));
+            localStorage.setItem('userInfo', JSON.stringify({ 
+              ...savedInfo, 
+              authProvider: data.authProvider || 'local',
+              hasPassword: hasPass 
+            }));
           }
         }
       } catch (err) {}
@@ -248,8 +264,8 @@ export default function SecurityPrivacyTab() {
       setIsSubmitting(true);
       setPasswordStatus({ type: '', message: '' });
       const token = localStorage.getItem('token');
-      const endpoint = isGoogleUser ? `${API_URL}/api/users/set-password` : `${API_URL}/api/users/change-password`;
-      const body = isGoogleUser ? { newPassword } : { currentPassword, newPassword };
+      const endpoint = !hasPassword ? `${API_URL}/api/users/set-password` : `${API_URL}/api/users/change-password`;
+      const body = !hasPassword ? { newPassword } : { currentPassword, newPassword };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -263,12 +279,12 @@ export default function SecurityPrivacyTab() {
       const data = await response.json();
 
       if (response.ok) {
-        const msg = isGoogleUser ? 'Password created successfully! You can now also log in with email and password.' : 'Password updated successfully';
+        const msg = !hasPassword ? 'Password created successfully! You can now also log in with email and password.' : 'Password updated successfully';
         setPasswordStatus({ type: 'success', message: msg });
-        setIsGoogleUser(false);
+        setHasPassword(true);
         try {
           const savedInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-          localStorage.setItem('userInfo', JSON.stringify({ ...savedInfo, authProvider: 'local' }));
+          localStorage.setItem('userInfo', JSON.stringify({ ...savedInfo, hasPassword: true }));
         } catch (e) {}
 
         setTimeout(() => {
@@ -303,17 +319,17 @@ export default function SecurityPrivacyTab() {
             <>
               <div className="flex flex-col gap-1.5">
                 <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f]">
-                  {isGoogleUser ? 'CREATE PASSWORD' : 'PASSWORD'}
+                  {!hasPassword ? 'CREATE PASSWORD' : 'PASSWORD'}
                 </span>
                 <span className="font-sans text-xs text-[#555047] font-normal mt-0.5">
-                  {isGoogleUser ? 'Signed in via Google • Set a password to also log in with email' : <span className="font-mono text-[#111010] tracking-widest">•••••••••••••••</span>}
+                  {!hasPassword ? 'Signed in via Google • Set a password to also log in with email' : <span className="font-mono text-[#111010] tracking-widest">•••••••••••••••</span>}
                 </span>
               </div>
               <button 
                 onClick={() => setIsEditingPassword(true)}
                 className="mt-4 md:mt-0 font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] flex items-center gap-2 cursor-pointer hover:text-[#a64117]"
               >
-                {isGoogleUser ? 'CREATE PASSWORD' : 'CHANGE PASSWORD'} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                {!hasPassword ? 'CREATE PASSWORD' : 'CHANGE PASSWORD'} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </>
           ) : (
@@ -321,9 +337,9 @@ export default function SecurityPrivacyTab() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <span className="font-sans text-[0.65rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block">
-                    {isGoogleUser ? 'CREATE PASSWORD' : 'CHANGE PASSWORD'}
+                    {!hasPassword ? 'CREATE PASSWORD' : 'CHANGE PASSWORD'}
                   </span>
-                  {isGoogleUser && (
+                  {!hasPassword && (
                     <p className="text-[0.72rem] text-[#7a756b] font-sans mt-0.5">
                       Create a password to enable direct email &amp; password sign-in alongside your Google login.
                     </p>
@@ -343,7 +359,7 @@ export default function SecurityPrivacyTab() {
                 </button>
               </div>
               <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
-                {!isGoogleUser && (
+                {hasPassword && (
                   <div className="relative">
                     <input 
                       type={showCurrentPassword ? "text" : "password"} 
@@ -351,7 +367,7 @@ export default function SecurityPrivacyTab() {
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       className="w-full bg-white border border-black/10 rounded-xl px-4 py-3 pr-11 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
-                      required
+                      required={hasPassword}
                     />
                     <button
                       type="button"
@@ -366,7 +382,7 @@ export default function SecurityPrivacyTab() {
                 <div className="relative">
                   <input 
                     type={showNewPassword ? "text" : "password"} 
-                    placeholder={isGoogleUser ? "Enter New Password (min 4 characters)" : "New Password (min 4 characters)"} 
+                    placeholder={!hasPassword ? "Enter New Password (min 4 characters)" : "New Password (min 4 characters)"} 
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full bg-white border border-black/10 rounded-xl px-4 py-3 pr-11 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] font-sans placeholder-[#7a756b]/40"
@@ -421,7 +437,7 @@ export default function SecurityPrivacyTab() {
                   disabled={isSubmitting}
                   className="mt-2 bg-[#c9542f] text-white font-bold text-[0.7rem] tracking-[0.2em] uppercase py-3.5 rounded-xl hover:bg-[#a64117] transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer shadow-md"
                 >
-                  {isSubmitting ? <SpinnerGap size={16} className="animate-spin" /> : (isGoogleUser ? 'CREATE PASSWORD' : 'SAVE PASSWORD')}
+                  {isSubmitting ? <SpinnerGap size={16} className="animate-spin" /> : (!hasPassword ? 'CREATE PASSWORD' : 'SAVE PASSWORD')}
                 </button>
               </form>
             </div>

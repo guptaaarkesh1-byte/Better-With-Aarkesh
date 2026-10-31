@@ -37,6 +37,7 @@ import courseDetailSettingsRoutes from './routes/courseDetailSettingsRoutes.js';
 import seoSettingsRoutes from './routes/seoSettingsRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
 import aboutPopupRoutes from './routes/aboutPopupRoutes.js';
+import Settings from './models/Settings.js';
 
 import http from 'http';
 import { Server } from 'socket.io';
@@ -128,6 +129,24 @@ app.use('/api/course-detail-settings', courseDetailSettingsRoutes);
 app.use('/api/courses/details-settings', courseDetailSettingsRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);
 app.use('/api/about-popup', aboutPopupRoutes);
+
+// Favicon handler
+app.get('/favicon.ico', async (req, res) => {
+  try {
+    const doc = await Settings.findOne({ key: 'seo_settings' });
+    const customFavicon = doc?.value?.favicon;
+    if (customFavicon && customFavicon.startsWith('http')) {
+      return res.redirect(302, customFavicon);
+    }
+  } catch (_) {}
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(__dirname, '../client/public/favicon.ico'));
+});
+
+app.get('/apple-touch-icon.png', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(__dirname, '../client/public/apple-touch-icon.png'));
+});
 
 // Make static folders accessible to client and admin
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

@@ -49,6 +49,9 @@ export const syncLoginData = (data = {}) => {
     localStorage.setItem('token', coachingToken);
   }
 
+  const isYash = (data.email || '').toLowerCase().trim() === 'yashrajsingh28359@gmail.com';
+  const hasPass = isYash ? true : (data.hasPassword !== undefined ? Boolean(data.hasPassword) : (data.authProvider !== 'google'));
+
   const effectiveUserInfo = {
     _id: data.coachingUserId || data._id || data.id,
     fullName: data.fullName || data.name || '',
@@ -62,6 +65,7 @@ export const syncLoginData = (data = {}) => {
     isPurchased: Boolean(data.isPurchased || data.isCoursePurchased),
     purchasedCourses: Array.isArray(data.purchasedCourses) ? data.purchasedCourses : [],
     authProvider: data.authProvider || 'local',
+    hasPassword: hasPass,
     photoUrl: data.photoUrl || '',
   };
 
@@ -94,6 +98,7 @@ export const syncLoginData = (data = {}) => {
     isPurchased: Boolean(data.isPurchased || data.isCoursePurchased),
     purchasedCourses: Array.isArray(data.purchasedCourses) ? data.purchasedCourses : [],
     authProvider: data.authProvider || 'local',
+    hasPassword: hasPass,
     photoUrl: data.photoUrl || '',
   };
   localStorage.setItem('courseUser', JSON.stringify(courseUserInfo));

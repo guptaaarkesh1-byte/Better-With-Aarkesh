@@ -178,13 +178,23 @@ export const sendOtpEmail = async ({ email, ip, purpose = 'register', recipientN
 
   // 6. Send via Resend
   const isBooking = purpose === 'booking';
+  const isLogin = purpose === 'login';
   const subject = isBooking
     ? 'Verify your email for Session Booking - Better With Aarkesh'
+    : isLogin
+    ? 'Your Login Verification Code - Better With Aarkesh'
     : 'Verify your email - Better With Aarkesh';
 
-  const headingText = isBooking ? 'Confirm Your Coaching Session' : 'Welcome to Better With Aarkesh! ✨';
+  const headingText = isBooking 
+    ? 'Confirm Your Coaching Session' 
+    : isLogin 
+    ? 'Login Verification Code 🔐' 
+    : 'Welcome to Better With Aarkesh! ✨';
+
   const subtext = isBooking
     ? `Hi ${recipientName || 'there'}, please enter the One-Time Password (OTP) below to verify your email address and continue with your session booking:`
+    : isLogin
+    ? `Hi ${recipientName || 'there'}, use the One-Time Password (OTP) below to securely log in to your Better With Aarkesh account:`
     : `Hi ${recipientName || 'there'}, thank you for beginning your coaching journey. Please use the One-Time Password (OTP) below to verify your email address:`;
 
   const emailHtml = `

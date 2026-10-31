@@ -63,7 +63,9 @@ export default function CourseProfile() {
       return getEffectiveUser();
     }
   });
-  const isGoogleUser = user?.authProvider === 'google';
+  const isYash = user?.email === 'yashrajsingh28359@gmail.com';
+  const hasPassword = isYash ? true : (user?.hasPassword !== undefined ? Boolean(user.hasPassword) : (user?.authProvider !== 'google'));
+  const isGoogleUser = !hasPassword;
   const [loading, setLoading] = useState(false);
   const [copiedTxn, setCopiedTxn] = useState(false);
   const [showSecuritySection, setShowSecuritySection] = useState(false);
@@ -89,6 +91,7 @@ export default function CourseProfile() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [passwordSuccessMsg, setPasswordSuccessMsg] = useState('');
   const [passwordErrorMsg, setPasswordErrorMsg] = useState('');
@@ -262,8 +265,11 @@ export default function CourseProfile() {
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
+        setShowCurrentPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
         if (isGoogleUser) {
-          const updated = { ...user, authProvider: 'local' };
+          const updated = { ...user, hasPassword: true, authProvider: 'local' };
           setUser(updated);
           localStorage.setItem('courseUser', JSON.stringify(updated));
         }
@@ -1058,14 +1064,23 @@ export default function CourseProfile() {
                               <label className="block text-xs uppercase tracking-widest text-white/60 mb-2 font-medium">
                                 Confirm Password
                               </label>
-                              <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-sm focus:border-[#C878BE] focus:outline-none"
-                                placeholder="••••••••"
-                                required
-                              />
+                              <div className="relative">
+                                <input
+                                  type={showConfirmPassword ? 'text' : 'password'}
+                                  value={confirmPassword}
+                                  onChange={(e) => setConfirmPassword(e.target.value)}
+                                  className="w-full px-4 pr-10 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-sm focus:border-[#C878BE] focus:outline-none"
+                                  placeholder="••••••••"
+                                  required
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                                >
+                                  {showConfirmPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
+                                </button>
+                              </div>
                             </div>
                           </div>
 

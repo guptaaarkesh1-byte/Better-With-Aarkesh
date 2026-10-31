@@ -241,7 +241,13 @@ router.put('/:slug', async (req, res) => {
         dbCourse.thumbnailUrl = thumbVal || dbCourse.thumbnailUrl;
         dbCourse.trailerVideoUrl = trailerVal;
         dbCourse.trailerMuxPlaybackId = trailerVal;
-        dbCourse.isPublished = courseData.isPublished ?? courseData.live ?? true;
+        const isLive = courseData.status ? courseData.status === 'live' : (courseData.isPublished ?? courseData.live ?? true);
+        const isSoon = courseData.status ? courseData.status === 'soon' : Boolean(courseData.soon);
+        const isDraft = courseData.status ? courseData.status === 'draft' : (Boolean(courseData.hidden) || (!isLive && !isSoon));
+        dbCourse.isPublished = isLive;
+        dbCourse.status = courseData.status || (isLive ? 'live' : (isSoon ? 'soon' : 'draft'));
+        dbCourse.soon = isSoon;
+        dbCourse.hidden = isDraft;
 
         const parsedPrice = typeof courseData.price === 'number' 
           ? courseData.price 

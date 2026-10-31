@@ -915,6 +915,15 @@
   background: #1f9d62;
 }
 
+.mj-badge.soon {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.mj-badge.soon i {
+  background: #f59e0b;
+}
+
 .mj-course-card h3 {
   font-size: 21px;
   font-weight: 700;

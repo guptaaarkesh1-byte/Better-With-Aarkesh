@@ -33,6 +33,10 @@ const courseUserSchema = new mongoose.Schema({
     type: String,
     default: 'local', // 'local' | 'google'
   },
+  hasPassword: {
+    type: Boolean,
+    default: true,
+  },
   googleId: {
     type: String,
     default: '',

@@ -398,7 +398,7 @@ router.post('/change-password', protect, async (req, res) => {
     }
 
     // If user signed up via Google and has no manual password yet
-    if (user.authProvider === 'google') {
+    if (user.authProvider === 'google' && !user.hasPassword && user.email !== 'yashrajsingh28359@gmail.com') {
       if (!newPassword || newPassword.length < 4) {
         return res.status(400).json({ message: 'Password must be at least 4 characters long' });
       }
@@ -406,19 +406,19 @@ router.post('/change-password', protect, async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(newPassword, salt);
       user.password = hashedPassword;
-      user.authProvider = 'local';
+      user.hasPassword = true;
       await user.save();
 
       if (user.email) {
         const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-        await CourseUser.updateMany({ email: emailRegex }, { password: hashedPassword, authProvider: 'local' });
+        await CourseUser.updateMany({ email: emailRegex }, { password: hashedPassword, hasPassword: true });
         console.log(`🔄 Synced created password to CourseUser for: ${user.email}`);
       }
 
-      return res.json({ message: 'Password created successfully', authProvider: 'local' });
+      return res.json({ message: 'Password created successfully', hasPassword: true });
     }
 
-    // Verify current password for standard local users
+    // Verify current password for standard users with password
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Incorrect current password' });
@@ -433,16 +433,17 @@ router.post('/change-password', protect, async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
     user.password = hashedPassword;
+    user.hasPassword = true;
     await user.save();
 
     // Also sync to CourseUser if exists
     if (user.email) {
       const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-      await CourseUser.updateMany({ email: emailRegex }, { password: hashedPassword });
+      await CourseUser.updateMany({ email: emailRegex }, { password: hashedPassword, hasPassword: true });
       console.log(`🔄 Synced user change-password to CourseUser for: ${user.email}`);
     }
 
-    res.json({ message: 'Password updated successfully' });
+    res.json({ message: 'Password updated successfully', hasPassword: true });
   } catch (error) {
     console.error('Error changing password:', error);
     res.status(500).json({ message: 'Server error' });
@@ -467,16 +468,16 @@ router.post('/set-password', protect, async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
     user.password = hashedPassword;
-    user.authProvider = 'local';
+    user.hasPassword = true;
     await user.save();
 
     if (user.email) {
       const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-      await CourseUser.updateMany({ email: emailRegex }, { password: hashedPassword, authProvider: 'local' });
+      await CourseUser.updateMany({ email: emailRegex }, { password: hashedPassword, hasPassword: true });
       console.log(`🔄 Synced created password to CourseUser for: ${user.email}`);
     }
 
-    res.json({ message: 'Password created successfully', authProvider: 'local' });
+    res.json({ message: 'Password created successfully', hasPassword: true });
   } catch (error) {
     console.error('Error creating password:', error);
     res.status(500).json({ message: 'Server error' });
@@ -826,6 +827,7 @@ router.get('/profile', protect, async (req, res) => {
       purchasedCourses: purchasedCourses,
       photoUrl: user.photoUrl || '',
       authProvider: user.authProvider || 'local',
+      hasPassword: (user.email === 'yashrajsingh28359@gmail.com' || user.hasPassword === true || (user.hasPassword === undefined && user.authProvider === 'local')),
       googleId: user.googleId || '',
     });
   } catch (error) {

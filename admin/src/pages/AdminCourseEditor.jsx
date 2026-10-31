@@ -540,9 +540,9 @@ export default function AdminCourseEditor() {
       Object.entries(allDetailsMap).forEach(([slug, val]) => {
         const slugKey = normalizeSlug(slug, val?.title || val?.heroSection?.title);
         const existing = combinedMap.get(slugKey);
-        const isLive = val?.live !== undefined ? val.live : (val?.isPublished !== undefined ? val.isPublished : !val?.soon);
-        const isSoon = val?.soon === true;
-        const status = isLive ? 'live' : (isSoon ? 'soon' : 'draft');
+        const status = val?.status ? val.status : (
+          val?.hidden ? 'draft' : (val?.soon ? 'soon' : (val?.live !== false && val?.isPublished !== false ? 'live' : 'draft'))
+        );
 
         combinedMap.set(slugKey, {
           _id: existing?._id || slugKey,
@@ -652,8 +652,10 @@ export default function AdminCourseEditor() {
         thumb: d.heroSection?.cardThumbnail || d.imageUrl || matchedCourse?.thumbnailUrl || '',
         thumbName: '',
         trailer: d.heroSection?.trailerVideo || matchedCourse?.trailerVideoUrl || '',
-        live: d.live !== undefined ? d.live : (matchedCourse ? (matchedCourse.isPublished ?? true) : !d.soon),
-        soon: d.soon === true,
+        status: d.status || (d.hidden ? 'draft' : (d.soon ? 'soon' : (d.live !== false && d.isPublished !== false ? 'live' : 'draft'))),
+        live: d.status ? d.status === 'live' : (d.live !== undefined ? d.live : (matchedCourse ? (matchedCourse.isPublished ?? true) : !d.soon && !d.hidden)),
+        soon: d.status ? d.status === 'soon' : (d.soon === true && !d.hidden),
+        hidden: d.status ? d.status === 'draft' : (d.hidden === true || (!d.live && !d.soon && d.isPublished === false)),
         road: {
           title: d.storyRoadmapSection?.roadmapTitle || d.syllabusTitle || 'Step-By-Step Roadmap',
           sub: d.storyRoadmapSection?.roadmapSubtitle || d.syllabusSubtitle || 'A structured breakdown of core principles and actionable tools.',
@@ -901,14 +903,14 @@ export default function AdminCourseEditor() {
 
   // Sync selected course status and title with dropdown list in real-time
   useEffect(() => {
-    const currentStatus = courseData.live ? 'live' : (courseData.soon ? 'soon' : 'draft');
+    const currentStatus = courseData.status || (courseData.live ? 'live' : (courseData.soon ? 'soon' : 'draft'));
     setCoursesList(prev => prev.map(c => {
       if (c.slug === selectedCourseSlug) {
         return { ...c, status: currentStatus, title: courseData.title || c.title };
       }
       return c;
     }));
-  }, [courseData.live, courseData.soon, courseData.title, selectedCourseSlug]);
+  }, [courseData.status, courseData.live, courseData.soon, courseData.title, selectedCourseSlug]);
 
   // Create New Course
   const handleCreateCourse = async () => {
@@ -964,7 +966,11 @@ export default function AdminCourseEditor() {
         gstRate: 18,
         isGstIncluded: false,
         cta: 'Check Course',
+        status: 'draft',
         soon: false,
+        hidden: true,
+        live: false,
+        isPublished: false,
         syllabusTitle: 'Complete Step-By-Step Roadmap',
         syllabusSubtitle: 'A structured breakdown of core principles and actionable tools.',
         syllabus: [
@@ -1087,10 +1093,11 @@ export default function AdminCourseEditor() {
         trailerVideo: courseData.trailer,
         trailerVideoUrl: courseData.trailer,
         trailerMuxPlaybackId: courseData.trailer,
-        soon: !courseData.live,
-        hidden: !courseData.live,
-        isPublished: courseData.live,
-        live: courseData.live,
+        status: courseStatus,
+        soon: courseStatus === 'soon',
+        hidden: courseStatus === 'draft',
+        isPublished: courseStatus === 'live',
+        live: courseStatus === 'live',
         theme: courseData.theme,
         cardTheme: courseData.theme,
         cls: courseData.theme === 'roy' ? 'v2' : courseData.theme === 'obs' ? 'v3' : '',
@@ -1147,6 +1154,9 @@ export default function AdminCourseEditor() {
       });
 
       if (!res.ok) throw new Error('Failed to update course details');
+
+      // Update local course list status immediately
+      setCoursesList(prev => prev.map(c => c.slug === selectedCourseSlug ? { ...c, status: courseStatus, title: courseData.title || c.title } : c));
 
       // 2. Save landing overview settings (including View All Masterclasses button visibility)
       try {
@@ -1216,7 +1226,7 @@ export default function AdminCourseEditor() {
   const completedCount = requiredChecks.filter(c => c.ok).length;
   const issues = requiredChecks.filter(c => !c.ok);
 
-  const courseStatus = courseData.live ? 'live' : (courseData.soon ? 'soon' : 'draft');
+  const courseStatus = courseData.status || (courseData.live ? 'live' : (courseData.soon ? 'soon' : 'draft'));
 
   const handleStatusChange = (newStatus) => {
     if (newStatus === courseStatus) return;
@@ -1238,7 +1248,8 @@ export default function AdminCourseEditor() {
           cancelText: 'Fix these first',
           isDanger: true,
           onConfirm: () => {
-            setCourseData(prev => ({ ...prev, live: true, soon: false, hidden: false }));
+            setCourseData(prev => ({ ...prev, status: 'live', live: true, soon: false, hidden: false, isPublished: true }));
+            setCoursesList(prev => prev.map(c => c.slug === selectedCourseSlug ? { ...c, status: 'live' } : c));
             setDirty(true);
             setModalConfig({ isOpen: false });
             showSuccess('Course is now Live & Public');
@@ -1250,15 +1261,18 @@ export default function AdminCourseEditor() {
         });
         return;
       }
-      setCourseData(prev => ({ ...prev, live: true, soon: false, hidden: false }));
+      setCourseData(prev => ({ ...prev, status: 'live', live: true, soon: false, hidden: false, isPublished: true }));
+      setCoursesList(prev => prev.map(c => c.slug === selectedCourseSlug ? { ...c, status: 'live' } : c));
       setDirty(true);
       showSuccess('Course is now Live & Public');
     } else if (newStatus === 'soon') {
-      setCourseData(prev => ({ ...prev, live: false, soon: true, hidden: false }));
+      setCourseData(prev => ({ ...prev, status: 'soon', live: false, soon: true, hidden: false, isPublished: false }));
+      setCoursesList(prev => prev.map(c => c.slug === selectedCourseSlug ? { ...c, status: 'soon' } : c));
       setDirty(true);
       showSuccess('Course is marked as Coming Soon');
     } else {
-      setCourseData(prev => ({ ...prev, live: false, soon: false, hidden: true }));
+      setCourseData(prev => ({ ...prev, status: 'draft', live: false, soon: false, hidden: true, isPublished: false }));
+      setCoursesList(prev => prev.map(c => c.slug === selectedCourseSlug ? { ...c, status: 'draft' } : c));
       setDirty(true);
       showSuccess('Course moved to Draft (Hidden from catalog)');
     }

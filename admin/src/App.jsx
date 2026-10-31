@@ -74,13 +74,15 @@ function AdminDashboard() {
   }, []);
 
   const totalClientsCount = new Set(appointments.map(a => a.email || (a.userId && a.userId.email))).size;
-  const coachingRevenue = appointments.filter(a => !a.isFreeSession && a.paymentStatus === 'Paid').length * 5000;
-  const totalCombinedRevenue = (courseStats.totalRevenue || 0) + coachingRevenue;
+  const paidSessions = appointments.filter(a => a.paymentStatus === 'Paid' && !a.isFreeSession && a.orderId !== 'COURSE_FREE_SESSION');
+  const coachingRevenue = paidSessions.reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+  const courseRevenue = Number(courseStats.totalRevenue) || 0;
+  const totalCombinedRevenue = courseRevenue + coachingRevenue;
 
   const stats = [
-    { label: 'Course Students', value: courseStats.totalPurchased || '0', icon: <GraduationCap size={24} />, trend: `${courseStats.totalRegistered || 0} registered total`, link: '/course-students' },
-    { label: 'Coaching Clients', value: totalClientsCount || appointments.length, icon: <Users size={24} />, trend: 'Active clients', link: '/appointments' },
-    { label: 'Upcoming Sessions', value: appointments.filter(a => a.status !== 'Completed').length || '0', icon: <CalendarBlank size={24} />, trend: 'Based on bookings', link: '/appointments' },
+    { label: 'Course Students', value: courseStats.totalPurchased || '0', icon: <GraduationCap size={24} />, trend: `${courseStats.totalRegistered || 0} registered total`, link: '/appointments?view=courses&scroll=courses' },
+    { label: 'Coaching Clients', value: totalClientsCount || appointments.length, icon: <Users size={24} />, trend: 'Active clients', link: '/appointments?subnav=clients' },
+    { label: 'Upcoming Sessions', value: appointments.filter(a => a.status !== 'Completed').length || '0', icon: <CalendarBlank size={24} />, trend: 'Based on bookings', link: '/appointments?tab=upcoming&scroll=table' },
     { label: 'Total Revenue', value: `₹${totalCombinedRevenue.toLocaleString('en-IN')}`, icon: <CurrencyInr size={24} />, trend: `₹${(courseStats.totalRevenue || 0).toLocaleString('en-IN')} from Course` },
   ];
 
@@ -285,7 +287,7 @@ function App() {
             <Route path="/upload-videos" element={<AdminCourse />} />
             <Route path="/course-curriculum" element={<AdminCourse />} />
             <Route path="/admin/courses" element={<AdminCourse />} />
-            <Route path="/course-students" element={<AdminCourse />} />
+            <Route path="/course-students" element={<Navigate to="/appointments?view=courses" replace />} />
             <Route path="/footer-documents" element={<AdminFooterDocuments />} />
           </Route>
         </Routes>
