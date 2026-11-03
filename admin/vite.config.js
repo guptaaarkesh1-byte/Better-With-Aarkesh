@@ -13,6 +13,14 @@ export default defineConfig({
       {
         find: /^react-router-dom$/,
         replacement: resolve(adminRoot, 'node_modules/react-router-dom/dist/index.mjs')
+      },
+      {
+        find: /^@phosphor-icons\/react$/,
+        replacement: resolve(adminRoot, 'node_modules/@phosphor-icons/react')
+      },
+      {
+        find: /^@mux\/mux-player$/,
+        replacement: resolve(adminRoot, 'node_modules/@mux/mux-player')
       }
     ],
     dedupe: ['react', 'react-dom']
