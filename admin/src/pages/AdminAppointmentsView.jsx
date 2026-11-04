@@ -1460,10 +1460,11 @@ export default function AdminAppointmentsView() {
 
       showSuccess(`✓ Agreement approved & review link sent to ${agreementForm.clientEmail}!`);
       
-      const updatedAppt = data.appointment || {
+      const updatedAppt = {
         ...selectedAppt,
+        ...(data.appointment || {}),
         agreementStatus: 'sent',
-        agreementSentAt: new Date(),
+        agreementSentAt: data.appointment?.agreementSentAt || new Date().toISOString(),
         agreementData: agreementForm
       };
 
@@ -1500,10 +1501,11 @@ export default function AdminAppointmentsView() {
 
       showSuccess(`✓ Fresh agreement review link sent to ${agreementForm.clientEmail}!`);
       
-      const updatedAppt = data.appointment || {
+      const updatedAppt = {
         ...selectedAppt,
+        ...(data.appointment || {}),
         agreementStatus: 'sent',
-        agreementSentAt: new Date(),
+        agreementSentAt: data.appointment?.agreementSentAt || new Date().toISOString(),
         agreementData: agreementForm
       };
 
@@ -3525,7 +3527,7 @@ export default function AdminAppointmentsView() {
                         </div>
                       )}
 
-                      {(selectedClient.isDeleted || selectedAppt.isUserDeleted) && (
+                      {Boolean((client?.isDeleted ?? selectedClient?.isDeleted) || selectedAppt?.isUserDeleted) && (
                         <div
                           style={{
                             backgroundColor: '#fef2f2',
@@ -3853,10 +3855,10 @@ export default function AdminAppointmentsView() {
                       <div className="bwa-box">
                         <h4>More from this client</h4>
                         <p className="hint" style={{ margin: '0 0 12px' }}>
-                          {selectedClient.appointments.length > 1
-                            ? `${selectedClient.appointments.length - 1} other appointment(s) · `
+                          {(client?.appointments?.length || selectedClient?.appointments?.length || 0) > 1
+                            ? `${(client?.appointments?.length || selectedClient?.appointments?.length) - 1} other appointment(s) · `
                             : 'No other appointments · '}
-                          {selectedClient.course ? 'course purchase and payment history.' : 'payment history.'}
+                          {(client?.course || selectedClient?.course) ? 'course purchase and payment history.' : 'payment history.'}
                         </p>
                         <button
                           className="bwa-btn bwa-btn-line bwa-btn-sm"
