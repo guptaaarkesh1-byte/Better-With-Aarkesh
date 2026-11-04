@@ -159,11 +159,30 @@ app.get('/', (req, res) => {
 });
 
 // Database connection
+const backfillAgreementStatuses = async () => {
+  try {
+    const AppointmentModel = mongoose.models.Appointment;
+    if (AppointmentModel) {
+      await AppointmentModel.updateMany(
+        { agreementStatus: 'APPROVED_SENT' },
+        { $set: { agreementStatus: 'sent' } }
+      );
+      await AppointmentModel.updateMany(
+        { agreementStatus: 'PENDING_REVIEW' },
+        { $set: { agreementStatus: 'pending' } }
+      );
+    }
+  } catch (err) {
+    console.warn('Agreement migration notice:', err.message);
+  }
+};
+
 const connectDB = async () => {
   try {
     if (process.env.MONGO_URI) {
       await mongoose.connect(process.env.MONGO_URI);
       console.log('MongoDB connected successfully');
+      backfillAgreementStatuses();
     } else {
       console.log('MONGO_URI is not defined in .env file. Skipping MongoDB connection.');
     }

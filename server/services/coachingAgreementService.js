@@ -1,5 +1,22 @@
 import PDFDocument from 'pdfkit';
 import { Resend } from 'resend';
+import crypto from 'crypto';
+
+/**
+ * Generate a cryptographically random, unguessable token for agreement review & acceptance.
+ */
+export function generateAgreementToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * Calculate agreement token expiration date (default: 7 days from generation).
+ */
+export function getAgreementTokenExpiry(days = 7) {
+  const expiry = new Date();
+  expiry.setDate(expiry.getDate() + days);
+  return expiry;
+}
 
 /**
  * Generate a realistic Google Meet link fallback (e.g., https://meet.google.com/abc-defg-hij)
@@ -255,28 +272,7 @@ export async function generateCoachingAgreementPdf(data = {}) {
       doc.moveDown(0.6);
 
       doc.font(fontRegular).fontSize(10.5).lineGap(3.5);
-      doc.text('By signing below, both parties confirm that the information above accurately reflects the coaching arrangement agreed between them.');
-      doc.moveDown(0.9);
-
-      // Client Signature Block (Identical to original template)
-      doc.font(fontBold).fontSize(11.5).text('Client');
-      doc.moveDown(0.6);
-      doc.font(fontRegular).fontSize(10.5).text(`Name: ${clientName || '___________________________________________'}`);
-      doc.moveDown(0.6);
-      doc.text('Signature: ______________________________________');
-      doc.moveDown(0.6);
-      doc.text(`Date: ${agreementDate || '___________________________________________'}`);
-      doc.moveDown(1.1);
-
-      // Coach Signature Block (Identical to original template)
-      doc.font(fontBold).fontSize(11.5).text('Coach');
-      doc.moveDown(0.4);
-      doc.font(fontRegular).fontSize(10.5).text('Aarkesh Gupta');
-      doc.text('BetterWithAarkesh');
-      doc.moveDown(0.6);
-      doc.text('Signature: ______________________________________');
-      doc.moveDown(0.6);
-      doc.text(`Date: ${agreementDate || '___________________________________________'}`);
+      doc.text('Both parties confirm that the information above accurately reflects the coaching arrangement agreed between them.');
       doc.moveDown(1.0);
 
       drawDivider(doc.y);
@@ -294,6 +290,36 @@ export async function generateCoachingAgreementPdf(data = {}) {
         doc.text('_________________________________________________________________________________');
         doc.moveDown(0.4);
         doc.text('_________________________________________________________________________________');
+        doc.fillColor('#000000');
+      }
+
+      // Digital Acceptance Audit Footer (generated only after client acceptance)
+      if (data.isAccepted || data.acceptedAt) {
+        doc.moveDown(1.3);
+        drawDivider(doc.y);
+        doc.moveDown(0.9);
+        doc.font(fontBold).fontSize(9.5).fillColor('#15803d');
+        const acceptedDateStr = data.acceptedAt
+          ? new Date(data.acceptedAt).toLocaleString('en-IN', {
+              timeZone: 'Asia/Kolkata',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            })
+          : new Date().toLocaleString('en-IN', {
+              timeZone: 'Asia/Kolkata',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            });
+
+        doc.text(`✓ Accepted digitally on ${acceptedDateStr} (IST) by ${clientName || 'Client'}${data.acceptedIp ? ` (IP: ${data.acceptedIp})` : ''}`);
         doc.fillColor('#000000');
       }
 
@@ -475,8 +501,10 @@ export async function sendCoachBookingAlertEmail({ appointment, isFreeSession = 
 
 /**
  * Send Coaching Agreement & Official Confirmation to the client once approved by Aarkesh sir.
+ * NOTE: As per digital agreement requirements, NO PDF IS ATTACHED.
+ * The email includes a secure, tokenized CTA button leading to /agreement/:token.
  */
-export async function sendClientCoachingAgreementEmail({ appointment, customData = {} }) {
+export async function sendClientCoachingAgreementEmail({ appointment, customData = {}, agreementUrl = '', isResend = false }) {
   if (!appointment || !appointment.email) return;
 
   try {
@@ -491,7 +519,6 @@ export async function sendClientCoachingAgreementEmail({ appointment, customData
     // Merge appointment defaults with any custom overrides made by Aarkesh sir
     const clientName = (customData.clientName || appointment.name || 'Valued Client').trim();
     const clientEmail = (customData.clientEmail || appointment.email).trim().toLowerCase();
-    const clientPhone = (customData.clientPhone || appointment.phoneNumber || appointment.phone || '').trim();
     const cleanDate = (customData.sessionDate || appointment.date || 'Scheduled Date').trim();
     const cleanTime = (customData.sessionTime || appointment.time || 'Scheduled Time').trim();
     const duration = customData.duration || appointment.duration || 60;
@@ -503,29 +530,10 @@ export async function sendClientCoachingAgreementEmail({ appointment, customData
       appointment.save().catch(() => {});
     }
     const modeOfCoaching = (customData.modeOfCoaching || 'Online Video (Google Meet)').trim();
-    const betweenSessionSupport = customData.betweenSessionSupport || appointment.agreementData?.betweenSessionSupport || '';
-    const additionalAgreedTerms = customData.additionalAgreedTerms || appointment.agreementData?.additionalAgreedTerms || '';
 
-    // Generate exact replica PDF Buffer with any customized fields
-    const pdfBuffer = await generateCoachingAgreementPdf({
-      clientName,
-      clientEmail,
-      clientPhone,
-      sessionDate: cleanDate,
-      sessionTime: cleanTime,
-      agreementDate: customData.agreementDate || new Date().toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      }),
-      isPackage: appointment.isFreeSession || Boolean(appointment.isCoursePackage),
-      modeOfCoaching,
-      meetLink,
-      betweenSessionSupport,
-      additionalAgreedTerms
-    });
-
-    const safeFilename = `Coaching_Agreement_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    // Determine secure review URL
+    const clientBaseUrl = (process.env.CLIENT_URL || 'https://aarkeshgupta.com').replace(/\/+$/, '');
+    const finalAgreementUrl = agreementUrl || `${clientBaseUrl}/agreement/${appointment.agreementToken || ''}`;
 
     const clientEmailHtml = `
       <!DOCTYPE html>
@@ -533,7 +541,7 @@ export async function sendClientCoachingAgreementEmail({ appointment, customData
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Coaching Session Confirmed</title>
+        <title>Coaching Session Confirmed & Agreement Ready</title>
       </head>
       <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
         <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #FAF8F5; padding: 30px 15px;">
@@ -556,7 +564,7 @@ export async function sendClientCoachingAgreementEmail({ appointment, customData
                         </td>
                         <td align="right">
                           <span style="display: inline-block; padding: 5px 12px; background-color: rgba(194, 94, 56, 0.1); border: 1px solid rgba(194, 94, 56, 0.3); color: #C25E38; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">
-                            CONFIRMED
+                            ${isResend ? 'REMINDER' : 'ACTION REQUIRED'}
                           </span>
                         </td>
                       </tr>
@@ -568,11 +576,32 @@ export async function sendClientCoachingAgreementEmail({ appointment, customData
                 <tr>
                   <td style="padding: 28px 36px;">
                     <h2 style="margin: 0 0 10px; font-size: 20px; color: #1A1A1A; font-weight: 600;">
-                      Session Confirmed, ${clientName}!
+                      Session Confirmed & Agreement Ready, ${clientName}!
                     </h2>
                     <p style="margin: 0 0 20px; font-size: 14px; color: #555555; line-height: 1.6;">
-                      Your private 1-on-1 coaching session with Aarkesh Gupta has been confirmed. Your official <strong>Coaching Agreement</strong> has been reviewed, prepared, and attached below.
+                      Your private 1-on-1 coaching session with Aarkesh Gupta has been confirmed. Prior to our call, please review and digitally accept your official <strong>Coaching Agreement</strong>.
                     </p>
+
+                    <!-- Digital Agreement CTA Card -->
+                    <div style="background-color: #FAF4EE; border: 1.5px solid #C25E38; border-radius: 14px; padding: 24px 22px; margin-bottom: 24px; text-align: center;">
+                      <div style="font-size: 11px; font-weight: 700; color: #C25E38; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">
+                        📝 Action Required Prior to Session
+                      </div>
+                      <div style="font-size: 17px; font-weight: 700; color: #1A1A1A; margin-bottom: 8px; font-family: Georgia, serif;">
+                        Review &amp; Accept Your Coaching Agreement
+                      </div>
+                      <div style="font-size: 13.5px; color: #555555; line-height: 1.6; margin-bottom: 18px; max-width: 480px; margin-left: auto; margin-right: auto;">
+                        Aarkesh has prepared your personalized agreement. Please click the button below to review the terms and complete your digital acceptance with a single click.
+                      </div>
+                      <div style="margin-bottom: 16px;">
+                        <a href="${finalAgreementUrl}" target="_blank" style="display: inline-block; background-color: #C25E38; color: #FFFFFF; font-size: 13.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.8px; padding: 13px 30px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 14px rgba(194, 94, 56, 0.35);">
+                          Review &amp; Accept Coaching Agreement &rarr;
+                        </a>
+                      </div>
+                      <div style="font-size: 11px; color: #777777; line-height: 1.5; word-break: break-all; border-top: 1px solid #EBE2D7; padding-top: 12px; margin-top: 14px;">
+                        Direct link: <a href="${finalAgreementUrl}" target="_blank" style="color: #C25E38; text-decoration: underline;">${finalAgreementUrl}</a>
+                      </div>
+                    </div>
 
                     <!-- Session Details Box -->
                     <div style="background-color: #FAF7F2; border: 1px solid #EBE4DA; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
@@ -621,16 +650,6 @@ export async function sendClientCoachingAgreementEmail({ appointment, customData
                       </div>
                     </div>
 
-                    <!-- PDF Attachment Callout -->
-                    <div style="background-color: #FDF9F5; border: 1px dashed #C25E38; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
-                      <div style="font-size: 13px; font-weight: 600; color: #C25E38; margin-bottom: 4px;">
-                        📄 Attached: Coaching Agreement
-                      </div>
-                      <div style="font-size: 12px; color: #666666; line-height: 1.5;">
-                        Your personalized <strong>Coaching Agreement (${safeFilename})</strong> is attached to this email for your reference and records.
-                      </div>
-                    </div>
-
                     <p style="font-size: 13px; color: #777777; line-height: 1.6; margin: 0;">
                       Please be in a quiet space with stable internet 5 minutes before your scheduled start time. If you need to reschedule, please ensure at least 48 hours notice as per the Coaching Agreement.
                     </p>
@@ -653,25 +672,94 @@ export async function sendClientCoachingAgreementEmail({ appointment, customData
       </html>
     `;
 
-    const attachments = [
-      {
-        filename: safeFilename,
-        content: pdfBuffer,
-      }
-    ];
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
+      to: clientEmail,
+      subject: `${isResend ? 'Reminder: ' : 'Action Required: '}Review & Accept Your Coaching Agreement — ${cleanDate}`,
+      html: clientEmailHtml,
+    });
+
+    console.log(`✉️ Successfully delivered Digital Agreement link to ${clientEmail} (${finalAgreementUrl})`);
+  } catch (err) {
+    console.error('Failed to send client agreement review email:', err);
+    throw err;
+  }
+}
+
+/**
+ * Send confirmation email after client successfully accepts digital agreement.
+ */
+export async function sendClientAgreementAcceptedConfirmationEmail({ appointment }) {
+  if (!appointment || !appointment.email) return;
+
+  try {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) return;
+
+    const resend = new Resend(resendApiKey);
+    const clientName = (appointment.name || 'Valued Client').trim();
+    const clientEmail = appointment.email.trim().toLowerCase();
+    const cleanDate = (appointment.date || 'Scheduled Date').trim();
+    const cleanTime = (appointment.time || 'Scheduled Time').trim();
+    const meetLink = appointment.meetLink || '';
+    const clientBaseUrl = (process.env.CLIENT_URL || 'https://aarkeshgupta.com').replace(/\/+$/, '');
+    const agreementUrl = `${clientBaseUrl}/agreement/${appointment.agreementToken || ''}`;
+
+    const acceptedDateStr = appointment.agreementAcceptedAt
+      ? new Date(appointment.agreementAcceptedAt).toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        })
+      : new Date().toLocaleDateString('en-IN');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"></head>
+      <body style="margin:0;padding:24px;background-color:#FAF8F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333;">
+        <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:14px;border:1px solid #EAE3D9;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.05);">
+          <div style="padding:28px 32px;background:#FAF7F2;border-bottom:1px solid #EAE3D9;">
+            <div style="font-size:20px;font-weight:bold;color:#1A1A1A;font-family:Georgia,serif;">BetterWith<span style="color:#C25E38;">Aarkesh</span></div>
+            <div style="font-size:11px;color:#15803D;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;">✓ Coaching Agreement Confirmed &amp; Recorded</div>
+          </div>
+          <div style="padding:28px 32px;">
+            <h2 style="font-size:19px;color:#1A1A1A;margin:0 0 10px;">Agreement Accepted, ${clientName}</h2>
+            <p style="font-size:14px;color:#555;line-height:1.6;margin:0 0 18px;">
+              Thank you for reviewing and accepting your Coaching Agreement on <strong>${acceptedDateStr} (IST)</strong>. Your digital acceptance has been securely logged and your official PDF document has been archived for our records.
+            </p>
+            <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+              <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;">Session Schedule</div>
+              <div style="font-size:14px;color:#1A1A1A;font-weight:600;">${cleanDate} at ${cleanTime} (IST)</div>
+              ${meetLink ? `<div style="margin-top:8px;font-size:13px;"><a href="${meetLink}" target="_blank" style="color:#15803D;font-weight:700;text-decoration:underline;">Join Google Meet: ${meetLink}</a></div>` : ''}
+            </div>
+            <div style="text-align:center;margin:22px 0;">
+              <a href="${agreementUrl}" target="_blank" style="display:inline-block;padding:11px 24px;background:#1c1714;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:0.5px;">
+                View Accepted Agreement &amp; Download PDF &rarr;
+              </a>
+            </div>
+          </div>
+          <div style="padding:16px 32px;background:#FAF7F2;border-top:1px solid #EAE3D9;text-align:center;font-size:11px;color:#777;">
+            Better With Aarkesh · Executive Leadership &amp; Personal Coaching
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
     await resend.emails.send({
       from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
       to: clientEmail,
-      subject: `Coaching Session Confirmed + Coaching Agreement — ${cleanDate}`,
-      html: clientEmailHtml,
-      attachments,
+      subject: `✓ Coaching Agreement Accepted — See You on ${cleanDate}`,
+      html,
     });
-
-    console.log(`✉️ Successfully delivered approved Coaching Agreement PDF to ${clientEmail}`);
+    console.log(`✉️ Delivered agreement acceptance confirmation to ${clientEmail}`);
   } catch (err) {
-    console.error('Failed to send approved client agreement email:', err);
-    throw err;
+    console.warn('Could not send agreement acceptance confirmation email:', err?.message);
   }
 }
 

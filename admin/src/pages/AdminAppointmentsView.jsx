@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import Icon from '../components/common/AdminIcons';
-import { API_URL } from '../utils/apiUrl';
+import { API_URL, CLIENT_URL, getLiveSiteUrl } from '../utils/apiUrl';
 import AdminQuestionnaireViewer from '../components/AdminQuestionnaireViewer';
 import './AdminAppointments.css';
 
@@ -77,6 +77,7 @@ export default function AdminAppointmentsView() {
 
   // Dropdown & Search Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [agreementFilter, setAgreementFilter] = useState('all'); // all, pending, sent, accepted, expired
   const [sessionTypeFilter, setSessionTypeFilter] = useState('all'); // all, course_free, standard
   const [courseFilter, setCourseFilter] = useState('all'); // all, The Better Man™, none
   const [dateRangeFilter, setDateRangeFilter] = useState('all'); // all, today, week, month, past30
@@ -316,11 +317,52 @@ export default function AdminAppointmentsView() {
     );
   };
 
+  // Helper to determine agreement review status info
+  const getAgreementStatusInfo = (app) => {
+    if (!app) return { key: 'pending', label: 'Pending', pillClass: 'p-none', style: { background: '#f5f3f0', color: '#6b635b' } };
+    const raw = (app.agreementStatus || '').toLowerCase();
+    const isAccepted = raw === 'accepted' || Boolean(app.agreementAcceptedAt);
+    const isSent = raw === 'sent' || raw === 'approved_sent';
+    const isExpired = raw === 'expired' || (isSent && app.agreementTokenExpiresAt && new Date(app.agreementTokenExpiresAt) < new Date() && !isAccepted);
+
+    if (isAccepted) {
+      return {
+        key: 'accepted',
+        label: 'Reviewed ✓',
+        pillClass: 'p-done',
+        style: { background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 700 },
+        acceptedAt: app.agreementAcceptedAt
+      };
+    }
+    if (isExpired) {
+      return {
+        key: 'expired',
+        label: 'Expired',
+        pillClass: 'p-cx',
+        style: { background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', fontWeight: 600 }
+      };
+    }
+    if (isSent) {
+      return {
+        key: 'sent',
+        label: 'Sent – Awaiting client',
+        pillClass: 'p-re',
+        style: { background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontWeight: 600 }
+      };
+    }
+    return {
+      key: 'pending',
+      label: 'Pending',
+      pillClass: 'p-none',
+      style: { background: '#f5f3f0', color: '#6b635b', border: '1px solid #e7e3dc', fontWeight: 600 }
+    };
+  };
+
   // Helper to determine if appointment needs action
   const isNeedsAction = (app) => {
     const s = (app.status || '').toUpperCase();
     if (s === 'COMPLETED' || s === 'REFUNDED' || s === 'CANCELLED') return false;
-    if (app.agreementStatus === 'PENDING_REVIEW') return true;
+    if (getAgreementStatusInfo(app).key === 'pending') return true;
     if (app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'pending') return true;
     if (app.paymentStatus === 'Pending' && !app.isFreeSession) return true;
 
@@ -665,6 +707,10 @@ export default function AdminAppointmentsView() {
       if (sessionTab === 'refunded' && app.paymentStatus !== 'Refunded' && s !== 'REFUNDED') return false;
 
       // Dropdown filters
+      if (agreementFilter !== 'all') {
+        const agInfo = getAgreementStatusInfo(app);
+        if (agInfo.key !== agreementFilter) return false;
+      }
       if (sessionTypeFilter === 'course_free' && !isFree) return false;
       if (sessionTypeFilter === 'standard' && isFree) return false;
 
@@ -727,7 +773,7 @@ export default function AdminAppointmentsView() {
 
       return true;
     });
-  }, [appointments, sessionTab, sessionTypeFilter, courseFilter, dateRangeFilter, searchQuery, clientsDirectory]);
+  }, [appointments, sessionTab, agreementFilter, sessionTypeFilter, courseFilter, dateRangeFilter, searchQuery, clientsDirectory]);
 
   // Sorted Sessions
   const sortedSessions = useMemo(() => {
@@ -923,7 +969,7 @@ export default function AdminAppointmentsView() {
     setSelectedAppt(appt);
     setSelectedClient(client);
     setDrawerMode('appt');
-    setDrawerTab(initialTab || (appt.agreementStatus === 'PENDING_REVIEW' ? 'agreement' : 'overview'));
+    setDrawerTab(initialTab || (getAgreementStatusInfo(appt).key === 'pending' ? 'agreement' : 'overview'));
     setCoachNotesText(appt.coachNotes || appt.notes || '');
     setNotesSaveStatus('saved');
     setRefundConfirmId(null);
@@ -1412,11 +1458,11 @@ export default function AdminAppointmentsView() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to send agreement');
 
-      showSuccess(`✓ Agreement approved & sent to ${agreementForm.clientEmail}!`);
+      showSuccess(`✓ Agreement approved & review link sent to ${agreementForm.clientEmail}!`);
       
       const updatedAppt = data.appointment || {
         ...selectedAppt,
-        agreementStatus: 'APPROVED_SENT',
+        agreementStatus: 'sent',
         agreementSentAt: new Date(),
         agreementData: agreementForm
       };
@@ -1431,10 +1477,51 @@ export default function AdminAppointmentsView() {
     }
   };
 
+  // Resend agreement review link
+  const handleResendAgreementLink = async () => {
+    if (!selectedAppt?._id) return;
+    if (!agreementForm.clientEmail) {
+      showError('Client email is required.');
+      return;
+    }
+    setIsResendingAgreement(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/api/appointments/${selectedAppt._id}/agreement-resend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(agreementForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to resend agreement');
+
+      showSuccess(`✓ Fresh agreement review link sent to ${agreementForm.clientEmail}!`);
+      
+      const updatedAppt = data.appointment || {
+        ...selectedAppt,
+        agreementStatus: 'sent',
+        agreementSentAt: new Date(),
+        agreementData: agreementForm
+      };
+
+      setSelectedAppt(updatedAppt);
+      setAppointments((prev) => prev.map((a) => (a._id === selectedAppt._id ? updatedAppt : a)));
+      fetchData();
+    } catch (err) {
+      showError(err.message || 'Failed to resend agreement link.');
+    } finally {
+      setIsResendingAgreement(false);
+    }
+  };
+
   // Clear Filters
   const handleClearFilters = () => {
     setSearchQuery('');
     setSessionTab('all');
+    setAgreementFilter('all');
     setCourseTab('all');
     setAllClientTab('all');
     setSessionTypeFilter('all');
@@ -1446,6 +1533,7 @@ export default function AdminAppointmentsView() {
   const isFilterActive =
     Boolean(searchQuery.trim()) ||
     sessionTab !== 'all' ||
+    agreementFilter !== 'all' ||
     courseTab !== 'all' ||
     allClientTab !== 'all' ||
     sessionTypeFilter !== 'all' ||
@@ -1462,7 +1550,9 @@ export default function AdminAppointmentsView() {
     if (s === 'COMPLETED') return <span className="bwa-pill p-done">Completed</span>;
     if (s === 'REFUNDED') return <span className="bwa-pill p-cx">Refunded</span>;
     if (hasPendingReschedule) return <span className="bwa-pill p-re">Wants to reschedule</span>;
-    if (app.agreementStatus === 'PENDING_REVIEW') {
+    
+    const agInfo = getAgreementStatusInfo(app);
+    if (agInfo.key === 'pending') {
       return (
         <button
           type="button"
@@ -1503,6 +1593,54 @@ export default function AdminAppointmentsView() {
 
     if (isApprovedReschedule) return <span className="bwa-pill p-re">Rescheduled</span>;
     return <span className="bwa-pill p-up">Upcoming</span>;
+  };
+
+  const renderAgreementReviewedPill = (app) => {
+    const info = getAgreementStatusInfo(app);
+    const acceptedTooltip = info.acceptedAt
+      ? `Accepted on ${formatDate(info.acceptedAt)} at ${formatTime(null, info.acceptedAt)}`
+      : '';
+
+    return (
+      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            openApptDrawer(app, 'agreement');
+          }}
+          className="bwa-pill"
+          style={{
+            ...info.style,
+            cursor: 'pointer',
+            padding: '3px 10px',
+            borderRadius: '99px',
+            fontSize: '11.5px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.15s ease'
+          }}
+          title={acceptedTooltip || `Agreement status: ${info.label}. Click to open Agreement.`}
+        >
+          <span>{info.label}</span>
+        </button>
+        {Boolean(info.acceptedAt) && (
+          <span
+            style={{
+              fontSize: '0.68rem',
+              color: '#059669',
+              fontWeight: 600,
+              marginTop: '2px',
+              letterSpacing: '0.01em'
+            }}
+            title={acceptedTooltip}
+          >
+            {formatDateShort(info.acceptedAt)}, {formatTime(null, info.acceptedAt)}
+          </span>
+        )}
+      </div>
+    );
   };
 
   const renderPaymentPill = (app) => {
@@ -1905,6 +2043,8 @@ export default function AdminAppointmentsView() {
     );
   };
 
+  const selectedApptAgStatus = selectedAppt ? getAgreementStatusInfo(selectedAppt) : null;
+
   return (
     <div className="bwa-appts-page">
       <div className="bwa-shell">
@@ -2195,14 +2335,27 @@ export default function AdminAppointmentsView() {
               </div>
 
               {view === 'sessions' && (
-                <div className="bwa-f">
-                  <label>Session type</label>
-                  <select value={sessionTypeFilter} onChange={(e) => setSessionTypeFilter(e.target.value)}>
-                    <option value="all">All types</option>
-                    <option value="course_free">Free session (course perk)</option>
-                    <option value="standard">Paid 1-on-1 session</option>
-                  </select>
-                </div>
+                <>
+                  <div className="bwa-f">
+                    <label>Session type</label>
+                    <select value={sessionTypeFilter} onChange={(e) => setSessionTypeFilter(e.target.value)}>
+                      <option value="all">All types</option>
+                      <option value="course_free">Free session (course perk)</option>
+                      <option value="standard">Paid 1-on-1 session</option>
+                    </select>
+                  </div>
+
+                  <div className="bwa-f">
+                    <label>Agreement</label>
+                    <select value={agreementFilter} onChange={(e) => setAgreementFilter(e.target.value)}>
+                      <option value="all">All agreements</option>
+                      <option value="pending">Pending</option>
+                      <option value="sent">Sent – Awaiting client</option>
+                      <option value="accepted">Reviewed ✓</option>
+                      <option value="expired">Expired</option>
+                    </select>
+                  </div>
+                </>
               )}
 
               <div className="bwa-f">
@@ -2285,6 +2438,7 @@ export default function AdminAppointmentsView() {
                       <div>Date &amp; time</div>
                       <div>Session</div>
                       <div>Status</div>
+                      <div>Agreement Reviewed</div>
                       <div>Payment</div>
                       <div></div>
                     </div>
@@ -2339,6 +2493,10 @@ export default function AdminAppointmentsView() {
 
                           <div className="bwa-cell" data-label="Status">
                             {renderStatusPill(app)}
+                          </div>
+
+                          <div className="bwa-cell" data-label="Agreement Reviewed">
+                            {renderAgreementReviewedPill(app)}
                           </div>
 
                           <div className="bwa-cell" data-label="Payment">
@@ -3287,10 +3445,10 @@ export default function AdminAppointmentsView() {
                       role="tab"
                       className={drawerTab === 'agreement' ? 'on' : ''}
                       onClick={() => setDrawerTab('agreement')}
-                      style={selectedAppt.agreementStatus === 'PENDING_REVIEW' ? { color: '#92400e', fontWeight: 700 } : {}}
+                      style={selectedApptAgStatus?.key === 'pending' ? { color: '#92400e', fontWeight: 700 } : {}}
                     >
                       Agreement
-                      {selectedAppt.agreementStatus === 'PENDING_REVIEW' && (
+                      {selectedApptAgStatus?.key === 'pending' && (
                         <span style={{
                           display: 'inline-block',
                           marginLeft: '5px',
@@ -3331,7 +3489,7 @@ export default function AdminAppointmentsView() {
                   {/* TAB 1: OVERVIEW */}
                   {drawerTab === 'overview' && (
                     <>
-                      {selectedAppt.agreementStatus === 'PENDING_REVIEW' && (
+                      {selectedApptAgStatus?.key === 'pending' && (
                         <div
                           style={{
                             background: '#fffbeb',
@@ -3353,7 +3511,7 @@ export default function AdminAppointmentsView() {
                                 Agreement Pending Review
                               </strong>
                               <span style={{ color: '#78350f', fontSize: '0.78rem' }}>
-                                Client has not received confirmation email or agreement PDF yet.
+                                Client has not received digital agreement review link yet.
                               </span>
                             </div>
                           </div>
@@ -3714,7 +3872,216 @@ export default function AdminAppointmentsView() {
                   {drawerTab === 'agreement' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {/* Status Callout Banner */}
-                      {selectedAppt.agreementStatus === 'PENDING_REVIEW' ? (
+                      {selectedApptAgStatus?.key === 'accepted' ? (
+                        <div
+                          style={{
+                            background: '#ecfdf5',
+                            border: '1px solid #a7f3d0',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>✅</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                              <h4 style={{ margin: '0 0 4px', color: '#047857', fontSize: '0.95rem', fontWeight: 700 }}>
+                                Coaching Agreement Accepted Digitally
+                              </h4>
+                              <span className="bwa-pill p-done" style={{ fontSize: '0.72rem', fontWeight: 700 }}>
+                                Reviewed ✓
+                              </span>
+                            </div>
+                            <p style={{ margin: '0 0 8px', color: '#065f46', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                              Accepted by <strong>{selectedAppt.agreementSnapshot?.clientName || selectedAppt.name || 'Client'}</strong> on{' '}
+                              <strong>
+                                {selectedAppt.agreementAcceptedAt
+                                  ? `${formatDate(selectedAppt.agreementAcceptedAt)} at ${formatTime(null, selectedAppt.agreementAcceptedAt)}`
+                                  : 'file'}
+                              </strong>
+                              {selectedAppt.agreementAcceptedIp ? ` · IP: ${selectedAppt.agreementAcceptedIp}` : ''}.
+                            </p>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                              <a
+                                href={selectedAppt.agreementPdfUrl || `${API_URL}/api/appointments/${selectedAppt._id}/agreement-pdf`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bwa-btn bwa-btn-sm"
+                                style={{
+                                  background: '#059669',
+                                  color: '#fff',
+                                  fontWeight: 600,
+                                  textDecoration: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  borderRadius: '6px',
+                                  padding: '6px 14px'
+                                }}
+                              >
+                                <span>📄</span> Download / View Agreement PDF
+                              </a>
+                              {selectedAppt.agreementToken && (
+                                <a
+                                  href={`${CLIENT_URL}/agreement/${selectedAppt.agreementToken}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bwa-btn bwa-btn-line bwa-btn-sm"
+                                  style={{
+                                    background: '#fff',
+                                    borderColor: '#a7f3d0',
+                                    color: '#065f46',
+                                    fontWeight: 600,
+                                    textDecoration: 'none',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    borderRadius: '6px',
+                                    padding: '6px 14px'
+                                  }}
+                                >
+                                  <span>🔗</span> View Digital Acceptance Page
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : selectedApptAgStatus?.key === 'expired' ? (
+                        <div
+                          style={{
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>⚠️</span>
+                          <div style={{ flex: 1 }}>
+                            <h4 style={{ margin: '0 0 4px', color: '#991b1b', fontSize: '0.95rem', fontWeight: 700 }}>
+                              Agreement Review Link Expired
+                            </h4>
+                            <p style={{ margin: '0 0 10px', color: '#b91c1c', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                              The review link previously sent to <strong>{agreementForm.clientEmail || selectedAppt.email}</strong> has expired without acceptance. You can generate a fresh secure link and re-send it now.
+                            </p>
+                            <button
+                              type="button"
+                              className="bwa-btn bwa-btn-sm"
+                              disabled={isResendingAgreement}
+                              onClick={handleResendAgreementLink}
+                              style={{
+                                background: '#dc2626',
+                                color: '#fff',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                borderRadius: '6px',
+                                padding: '6px 14px',
+                                border: 'none',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <span>🔄</span> {isResendingAgreement ? 'Sending fresh link...' : 'Generate Fresh Link & Resend'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : selectedApptAgStatus?.key === 'sent' ? (
+                        <div
+                          style={{
+                            background: '#fffbeb',
+                            border: '1px solid #fde68a',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>✉️</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                              <h4 style={{ margin: '0 0 4px', color: '#92400e', fontSize: '0.95rem', fontWeight: 700 }}>
+                                Agreement Sent · Awaiting Client Acceptance
+                              </h4>
+                              <span className="bwa-pill" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', fontSize: '0.72rem', fontWeight: 600 }}>
+                                Awaiting Client Checkbox
+                              </span>
+                            </div>
+                            <p style={{ margin: '0 0 8px', color: '#78350f', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                              Review email sent to <strong>{agreementForm.clientEmail || selectedAppt.email}</strong> on{' '}
+                              {selectedAppt.agreementSentAt
+                                ? `${formatDate(selectedAppt.agreementSentAt)} at ${formatTime(null, selectedAppt.agreementSentAt)}`
+                                : 'file'}. The client accepts by ticking the checkbox on the secure link.
+                              {selectedAppt.agreementTokenExpiresAt && (
+                                <span> · Link valid until <strong>{formatDate(selectedAppt.agreementTokenExpiresAt)}</strong></span>
+                              )}
+                            </p>
+
+                            {selectedAppt.agreementToken && (
+                              <div style={{
+                                marginTop: '8px',
+                                background: '#ffffff',
+                                border: '1px solid #fde68a',
+                                borderRadius: '6px',
+                                padding: '6px 10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '8px',
+                                flexWrap: 'wrap'
+                              }}>
+                                <div style={{ fontSize: '0.75rem', color: '#92400e', wordBreak: 'break-all' }}>
+                                  <strong>Client Review Link:</strong>{' '}
+                                  <a
+                                    href={`${CLIENT_URL}/agreement/${selectedAppt.agreementToken}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: '#c9542f', textDecoration: 'underline' }}
+                                  >
+                                    {CLIENT_URL}/agreement/{selectedAppt.agreementToken}
+                                  </a>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="bwa-copy-btn"
+                                  style={{ fontSize: '0.72rem', padding: '3px 8px' }}
+                                  onClick={() => copyToClipboard(`${CLIENT_URL}/agreement/${selectedAppt.agreementToken}`)}
+                                >
+                                  Copy Link
+                                </button>
+                              </div>
+                            )}
+
+                            <div style={{ marginTop: '10px' }}>
+                              <button
+                                type="button"
+                                className="bwa-btn bwa-btn-line bwa-btn-sm"
+                                disabled={isResendingAgreement}
+                                onClick={handleResendAgreementLink}
+                                style={{
+                                  background: '#fff',
+                                  borderColor: '#f59e0b',
+                                  color: '#92400e',
+                                  fontWeight: 600,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  borderRadius: '6px',
+                                  padding: '6px 14px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <span>🔄</span> {isResendingAgreement ? 'Resending Link...' : 'Resend Agreement Link'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
                         <div
                           style={{
                             background: '#fffbeb',
@@ -3732,33 +4099,8 @@ export default function AdminAppointmentsView() {
                               Action Required: Review &amp; Approve Coaching Agreement
                             </h4>
                             <p style={{ margin: 0, color: '#78350f', fontSize: '0.82rem', lineHeight: 1.5 }}>
-                              The client has booked this session, but the confirmation email with the official Coaching Agreement has <strong>NOT</strong> been sent yet.
-                              Review the details below, customize the coaching focus or communication support notes, preview the exact PDF replica, and click <strong>"Approve &amp; Send Agreement"</strong> to deliver it to the client.
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          style={{
-                            background: '#f0fdf4',
-                            border: '1px solid #bbf7d0',
-                            borderRadius: '12px',
-                            padding: '16px',
-                            display: 'flex',
-                            gap: '12px',
-                            alignItems: 'flex-start'
-                          }}
-                        >
-                          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>✅</span>
-                          <div>
-                            <h4 style={{ margin: '0 0 4px', color: '#166534', fontSize: '0.95rem', fontWeight: 700 }}>
-                              Coaching Agreement Approved &amp; Sent
-                            </h4>
-                            <p style={{ margin: 0, color: '#15803d', fontSize: '0.82rem', lineHeight: 1.5 }}>
-                              Delivered to <strong>{agreementForm.clientEmail || selectedAppt.email}</strong> on{' '}
-                              {selectedAppt.agreementSentAt
-                                ? `${formatDate(selectedAppt.agreementSentAt)} at ${formatTime(null, selectedAppt.agreementSentAt)}`
-                                : 'file'}. You can preview the PDF or re-send with updated details anytime.
+                              The client has booked this session, but the digital agreement review link has <strong>NOT</strong> been sent yet.
+                              Review the details below, customize the coaching focus or communication support notes, preview the exact PDF replica, and click <strong>"Approve &amp; Send Agreement"</strong> to deliver the secure link to the client.
                             </p>
                           </div>
                         </div>
@@ -3960,19 +4302,60 @@ export default function AdminAppointmentsView() {
                             {isSavingAgreement ? 'Saving Draft...' : '💾 Save Draft'}
                           </button>
 
-                          <button
-                            type="button"
-                            className="bwa-btn bwa-btn-accent"
-                            style={{ background: '#c9542f', color: '#fff', fontWeight: 700, padding: '9px 20px', borderRadius: '8px' }}
-                            disabled={isSavingAgreement || isSendingAgreement}
-                            onClick={handleSendAgreementToClient}
-                          >
-                            {isSendingAgreement
-                              ? 'Delivering Agreement...'
-                              : selectedAppt.agreementStatus === 'APPROVED_SENT'
-                              ? '✓ Re-send Agreement to Client'
-                              : '🚀 Approve & Send Agreement to Client'}
-                          </button>
+                          {selectedApptAgStatus?.key === 'accepted' ? (
+                            <a
+                              href={selectedAppt.agreementPdfUrl || `${API_URL}/api/appointments/${selectedAppt._id}/agreement-pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bwa-btn bwa-btn-accent"
+                              style={{ background: '#059669', color: '#fff', fontWeight: 700, padding: '9px 20px', borderRadius: '8px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                            >
+                              <span>📄</span> Download Accepted PDF
+                            </a>
+                          ) : selectedApptAgStatus?.key === 'sent' ? (
+                            <>
+                              <button
+                                type="button"
+                                className="bwa-btn bwa-btn-line"
+                                style={{ borderColor: '#f59e0b', color: '#92400e', fontWeight: 600 }}
+                                disabled={isResendingAgreement}
+                                onClick={handleResendAgreementLink}
+                              >
+                                {isResendingAgreement ? 'Resending Link...' : '🔄 Resend Agreement Link'}
+                              </button>
+                              <button
+                                type="button"
+                                className="bwa-btn bwa-btn-accent"
+                                style={{ background: '#c9542f', color: '#fff', fontWeight: 700, padding: '9px 20px', borderRadius: '8px' }}
+                                disabled={isSavingAgreement || isSendingAgreement}
+                                onClick={handleSendAgreementToClient}
+                              >
+                                {isSendingAgreement ? 'Delivering Agreement...' : '🚀 Re-send Updated Agreement'}
+                              </button>
+                            </>
+                          ) : selectedApptAgStatus?.key === 'expired' ? (
+                            <button
+                              type="button"
+                              className="bwa-btn bwa-btn-accent"
+                              style={{ background: '#dc2626', color: '#fff', fontWeight: 700, padding: '9px 20px', borderRadius: '8px' }}
+                              disabled={isResendingAgreement}
+                              onClick={handleResendAgreementLink}
+                            >
+                              {isResendingAgreement ? 'Sending fresh link...' : '🔄 Resend Fresh Link'}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="bwa-btn bwa-btn-accent"
+                              style={{ background: '#c9542f', color: '#fff', fontWeight: 700, padding: '9px 20px', borderRadius: '8px' }}
+                              disabled={isSavingAgreement || isSendingAgreement}
+                              onClick={handleSendAgreementToClient}
+                            >
+                              {isSendingAgreement
+                                ? 'Delivering Agreement...'
+                                : '🚀 Approve & Send Agreement to Client'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -4095,7 +4478,7 @@ export default function AdminAppointmentsView() {
                 </div>
 
                 <div className="bwa-d-foot">
-                  {selectedAppt.agreementStatus === 'PENDING_REVIEW' && drawerTab !== 'agreement' && (
+                  {selectedApptAgStatus?.key === 'pending' && drawerTab !== 'agreement' && (
                     <button
                       className="bwa-btn bwa-btn-accent"
                       style={{ background: '#d97706', color: '#fff', border: 'none' }}

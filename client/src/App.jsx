@@ -17,6 +17,7 @@ import MyCourses from './pages/course/MyCourses';
 import Footer from './components/layout/Footer';
 import FooterDocumentView from './pages/FooterDocumentView';
 import ContactUs from './pages/ContactUs';
+import DigitalAgreement from './pages/DigitalAgreement';
 
 import { BookingProvider } from './context/BookingContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -50,6 +51,9 @@ function App() {
             <Route path="/my-course" element={<MyCourses />} />
             <Route path="/my-courses" element={<MyCourses />} />
             <Route path="/classroom" element={<MyCourses />} />
+
+            {/* Digital Agreement Route */}
+            <Route path="/agreement/:token" element={<DigitalAgreement />} />
 
             {/* Direct Static & Policy Pages */}
             <Route path="/about-us" element={<FooterDocumentView slug="about-us" />} />

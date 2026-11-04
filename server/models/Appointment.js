@@ -109,12 +109,41 @@ const appointmentSchema = new mongoose.Schema({
   },
   agreementStatus: {
     type: String,
-    enum: ['PENDING_REVIEW', 'APPROVED_SENT'],
-    default: 'PENDING_REVIEW',
+    enum: ['pending', 'sent', 'accepted', 'expired', 'PENDING_REVIEW', 'APPROVED_SENT'],
+    default: 'pending',
+  },
+  agreementToken: {
+    type: String,
+    index: true,
+    default: null,
+  },
+  agreementTokenExpiresAt: {
+    type: Date,
+    default: null,
   },
   agreementSentAt: {
     type: Date,
     default: null,
+  },
+  agreementAcceptedAt: {
+    type: Date,
+    default: null,
+  },
+  agreementAcceptedIp: {
+    type: String,
+    default: '',
+  },
+  agreementAcceptedUserAgent: {
+    type: String,
+    default: '',
+  },
+  agreementSnapshot: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
+  },
+  agreementPdfUrl: {
+    type: String,
+    default: '',
   },
   agreementData: {
     type: mongoose.Schema.Types.Mixed,

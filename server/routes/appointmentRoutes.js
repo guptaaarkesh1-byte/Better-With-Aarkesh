@@ -1,6 +1,9 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import Appointment from '../models/Appointment.js';
 import User from '../models/User.js';
 import CourseUser from '../models/CourseUser.js';
@@ -14,13 +17,19 @@ import {
   sendCoachBookingAlertEmail, 
   sendClientBookingConfirmationEmail,
   sendClientCoachingAgreementEmail, 
+  sendClientAgreementAcceptedConfirmationEmail,
   generateCoachingAgreementPdf,
-  generateGoogleMeetLink
+  generateGoogleMeetLink,
+  generateAgreementToken,
+  getAgreementTokenExpiry
 } from '../services/coachingAgreementService.js';
 import { calculateAndSyncFreeSessions, getDynamicCourseFreeSessions } from '../services/freeSessionService.js';
 import { validateEmailFormat } from '../services/emailOtpService.js';
 import { validateQuestionnaireSubmission } from '../services/questionnaireValidator.js';
 import { incrementCouponUsage } from './couponRoutes.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -802,27 +811,264 @@ router.post('/:id/questionnaire-retry', optionalAuth, async (req, res) => {
   }
 });
 
+// In-memory rate limiting map for agreement acceptance (max 10 accepts/min per IP)
+const acceptRateLimitMap = new Map();
+const checkAcceptRateLimit = (ip) => {
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxRequests = 10;
+  const record = acceptRateLimitMap.get(ip) || [];
+  const recent = record.filter(time => now - time < windowMs);
+  if (recent.length >= maxRequests) {
+    return false;
+  }
+  recent.push(now);
+  acceptRateLimitMap.set(ip, recent);
+  return true;
+};
+
+// @route   GET /api/appointments/agreement-by-token/:token
+// @desc    Get agreement content for digital review (Public)
+// @access  Public
+router.get('/agreement-by-token/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    if (!token || typeof token !== 'string' || token.length < 20) {
+      return res.status(404).json({ message: 'Invalid agreement link.' });
+    }
+
+    const appointment = await Appointment.findOne({ agreementToken: token });
+    if (!appointment) {
+      return res.status(404).json({ message: 'Agreement not found or link has expired.' });
+    }
+
+    const isAccepted = Boolean(appointment.agreementStatus === 'accepted' || appointment.agreementAcceptedAt);
+    const isExpired = Boolean(
+      appointment.agreementTokenExpiresAt && 
+      new Date() > new Date(appointment.agreementTokenExpiresAt) && 
+      !isAccepted
+    );
+
+    const customData = appointment.agreementData || {};
+    const clientName = (customData.clientName || appointment.name || 'Valued Client').trim();
+    const clientEmail = (customData.clientEmail || appointment.email || '').trim();
+    const clientPhone = (customData.clientPhone || appointment.phoneNumber || appointment.phone || '').trim();
+    const sessionDate = (customData.sessionDate || appointment.date || '').trim();
+    const sessionTime = (customData.sessionTime || appointment.time || '').trim();
+    const duration = customData.duration || appointment.duration || 60;
+    const modeOfCoaching = customData.modeOfCoaching || 'Online Video (Google Meet)';
+    const meetLink = customData.meetLink || appointment.meetLink || '';
+    const betweenSessionSupport = customData.betweenSessionSupport || '';
+    const additionalAgreedTerms = customData.additionalAgreedTerms || '';
+    const agreementDate = customData.agreementDate || new Date(appointment.agreementSentAt || appointment.createdAt || Date.now()).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const isPackage = Boolean(appointment.isFreeSession || appointment.isCoursePackage);
+
+    res.json({
+      status: isAccepted ? 'accepted' : (isExpired ? 'expired' : 'pending'),
+      isAccepted,
+      isExpired,
+      acceptedAt: appointment.agreementAcceptedAt,
+      appointmentId: appointment._id,
+      clientName,
+      clientEmail,
+      clientPhone,
+      sessionDate,
+      sessionTime,
+      duration,
+      modeOfCoaching,
+      meetLink,
+      betweenSessionSupport,
+      additionalAgreedTerms,
+      agreementDate,
+      isPackage,
+      pdfUrl: appointment.agreementPdfUrl || `/api/appointments/agreement-pdf-by-token/${token}`
+    });
+  } catch (error) {
+    console.error('Error fetching agreement by token:', error);
+    res.status(500).json({ message: 'Server error loading agreement details.' });
+  }
+});
+
+// @route   POST /api/appointments/agreement-accept/:token
+// @desc    Client digitally accepts coaching agreement via checkbox
+// @access  Public
+router.post('/agreement-accept/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { accepted } = req.body || {};
+
+    if (!token || typeof token !== 'string' || token.length < 20) {
+      return res.status(400).json({ message: 'Invalid agreement link.' });
+    }
+
+    const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+    if (!checkAcceptRateLimit(clientIp)) {
+      return res.status(429).json({ message: 'Too many requests. Please wait a moment.' });
+    }
+
+    if (accepted !== true) {
+      return res.status(400).json({ message: 'You must check the agreement confirmation checkbox to proceed.' });
+    }
+
+    const appointment = await Appointment.findOne({ agreementToken: token });
+    if (!appointment) {
+      return res.status(404).json({ message: 'Agreement record not found.' });
+    }
+
+    if (appointment.agreementStatus === 'accepted' || appointment.agreementAcceptedAt) {
+      return res.json({
+        success: true,
+        alreadyAccepted: true,
+        message: 'This agreement has already been accepted.',
+        acceptedAt: appointment.agreementAcceptedAt,
+        pdfUrl: appointment.agreementPdfUrl || `/api/appointments/agreement-pdf-by-token/${token}`
+      });
+    }
+
+    if (appointment.agreementTokenExpiresAt && new Date() > new Date(appointment.agreementTokenExpiresAt)) {
+      return res.status(400).json({ message: 'This agreement link has expired. Please contact Aarkesh for a fresh link.' });
+    }
+
+    const userAgent = (req.headers['user-agent'] || '').slice(0, 500);
+    const acceptedAt = new Date();
+
+    appointment.agreementStatus = 'accepted';
+    appointment.agreementAcceptedAt = acceptedAt;
+    appointment.agreementAcceptedIp = clientIp;
+    appointment.agreementAcceptedUserAgent = userAgent;
+    appointment.agreementSnapshot = JSON.parse(JSON.stringify(appointment.agreementData || {}));
+
+    // Generate PDF with the acceptance footer & archive to server/uploads/agreements
+    const customData = appointment.agreementData || {};
+    const clientName = (customData.clientName || appointment.name || 'Client').trim();
+
+    try {
+      const pdfBuffer = await generateCoachingAgreementPdf({
+        clientName,
+        clientEmail: (customData.clientEmail || appointment.email || '').trim(),
+        clientPhone: (customData.clientPhone || appointment.phoneNumber || appointment.phone || '').trim(),
+        sessionDate: customData.sessionDate || appointment.date,
+        sessionTime: customData.sessionTime || appointment.time,
+        agreementDate: customData.agreementDate || new Date(appointment.agreementSentAt || Date.now()).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }),
+        isPackage: Boolean(appointment.isFreeSession || appointment.isCoursePackage),
+        modeOfCoaching: customData.modeOfCoaching || 'Online Video (Google Meet)',
+        meetLink: customData.meetLink || appointment.meetLink,
+        betweenSessionSupport: customData.betweenSessionSupport || '',
+        additionalAgreedTerms: customData.additionalAgreedTerms || '',
+        isAccepted: true,
+        acceptedAt,
+        acceptedIp: clientIp
+      });
+
+      const agreementsDir = path.join(__dirname, '../uploads/agreements');
+      await fs.promises.mkdir(agreementsDir, { recursive: true });
+      const safeName = clientName.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `Coaching_Agreement_${safeName}_${appointment._id}.pdf`;
+      const fullPath = path.join(agreementsDir, filename);
+      await fs.promises.writeFile(fullPath, pdfBuffer);
+      appointment.agreementPdfUrl = `/uploads/agreements/${filename}`;
+    } catch (pdfErr) {
+      console.warn('Could not archive agreement PDF on accept:', pdfErr.message);
+    }
+
+    await appointment.save();
+
+    // Send confirmation email asynchronously
+    sendClientAgreementAcceptedConfirmationEmail({ appointment }).catch(() => {});
+
+    res.json({
+      success: true,
+      message: 'Thank you! Your Coaching Agreement has been accepted and recorded.',
+      acceptedAt,
+      pdfUrl: appointment.agreementPdfUrl || `/api/appointments/agreement-pdf-by-token/${token}`
+    });
+  } catch (error) {
+    console.error('Error accepting agreement:', error);
+    res.status(500).json({ message: 'Server error processing agreement acceptance.' });
+  }
+});
+
+// @route   GET /api/appointments/agreement-pdf-by-token/:token
+// @desc    Download / view accepted agreement PDF by token
+// @access  Public
+router.get('/agreement-pdf-by-token/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const appointment = await Appointment.findOne({ agreementToken: token });
+    if (!appointment) return res.status(404).json({ message: 'Agreement not found' });
+
+    const customData = appointment.agreementData || {};
+    const clientName = (customData.clientName || appointment.name || 'Client').trim();
+    const isAccepted = Boolean(appointment.agreementStatus === 'accepted' || appointment.agreementAcceptedAt);
+
+    const pdfBuffer = await generateCoachingAgreementPdf({
+      clientName,
+      clientEmail: customData.clientEmail || appointment.email,
+      clientPhone: customData.clientPhone || appointment.phoneNumber || appointment.phone || '',
+      sessionDate: customData.sessionDate || appointment.date,
+      sessionTime: customData.sessionTime || appointment.time,
+      agreementDate: customData.agreementDate || new Date(appointment.createdAt || Date.now()).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }),
+      isPackage: Boolean(appointment.isFreeSession || appointment.isCoursePackage),
+      modeOfCoaching: customData.modeOfCoaching || 'Online Video (Google Meet)',
+      meetLink: customData.meetLink || appointment.meetLink,
+      betweenSessionSupport: customData.betweenSessionSupport || '',
+      additionalAgreedTerms: customData.additionalAgreedTerms || '',
+      isAccepted,
+      acceptedAt: appointment.agreementAcceptedAt,
+      acceptedIp: appointment.agreementAcceptedIp,
+    });
+
+    const safeFilename = `Coaching_Agreement_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Error streaming agreement PDF by token:', err);
+    res.status(500).json({ message: 'Failed to generate Coaching Agreement PDF' });
+  }
+});
+
 // GET /api/appointments/:id/agreement-pdf - Download the official signed Coaching Agreement PDF
 router.get('/:id/agreement-pdf', optionalAuth, async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
-    const clientName = (appointment.name || 'Client').trim();
+    const customData = appointment.agreementData || {};
+    const clientName = (customData.clientName || appointment.name || 'Client').trim();
+    const isAccepted = Boolean(appointment.agreementStatus === 'accepted' || appointment.agreementAcceptedAt);
+
     const pdfBuffer = await generateCoachingAgreementPdf({
       clientName,
-      clientEmail: appointment.email,
-      clientPhone: appointment.phoneNumber || appointment.phone || '',
-      sessionDate: appointment.date,
-      sessionTime: appointment.time,
-      agreementDate: new Date(appointment.createdAt || Date.now()).toLocaleDateString('en-IN', {
+      clientEmail: customData.clientEmail || appointment.email,
+      clientPhone: customData.clientPhone || appointment.phoneNumber || appointment.phone || '',
+      sessionDate: customData.sessionDate || appointment.date,
+      sessionTime: customData.sessionTime || appointment.time,
+      agreementDate: customData.agreementDate || new Date(appointment.createdAt || Date.now()).toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
       }),
       isPackage: Boolean(appointment.isFreeSession || appointment.isCoursePackage),
-      modeOfCoaching: 'Online 1-on-1 Video Session (Google Meet)',
-      meetLink: appointment.meetLink,
+      modeOfCoaching: customData.modeOfCoaching || 'Online Video (Google Meet)',
+      meetLink: customData.meetLink || appointment.meetLink,
+      betweenSessionSupport: customData.betweenSessionSupport || '',
+      additionalAgreedTerms: customData.additionalAgreedTerms || '',
+      isAccepted,
+      acceptedAt: appointment.agreementAcceptedAt,
+      acceptedIp: appointment.agreementAcceptedIp,
     });
 
     const safeFilename = `Coaching_Agreement_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
@@ -1905,7 +2151,7 @@ router.put('/:id/agreement-data', protect, admin, async (req, res) => {
 });
 
 // @route   POST /api/appointments/:id/agreement-send
-// @desc    Approve and send Coaching Agreement to client
+// @desc    Approve and send Coaching Agreement review link to client (NO PDF ATTACHED)
 // @access  Private/Admin
 router.post('/:id/agreement-send', protect, admin, async (req, res) => {
   try {
@@ -1919,10 +2165,19 @@ router.post('/:id/agreement-send', protect, admin, async (req, res) => {
       ...(req.body || {})
     };
 
-    // Send confirmation email with PDF to client
-    await sendClientCoachingAgreementEmail({ appointment, customData });
+    // Generate or reuse crypto token (32 bytes = 64 hex chars)
+    if (!appointment.agreementToken) {
+      appointment.agreementToken = generateAgreementToken();
+    }
+    appointment.agreementTokenExpiresAt = getAgreementTokenExpiry(7);
 
-    appointment.agreementStatus = 'APPROVED_SENT';
+    const clientBaseUrl = (process.env.CLIENT_URL || 'https://aarkeshgupta.com').replace(/\/+$/, '');
+    const agreementUrl = `${clientBaseUrl}/agreement/${appointment.agreementToken}`;
+
+    // Send notification email with CTA button leading to digital agreement page (NO PDF ATTACHED)
+    await sendClientCoachingAgreementEmail({ appointment, customData, agreementUrl, isResend: false });
+
+    appointment.agreementStatus = 'sent';
     appointment.agreementSentAt = new Date();
     appointment.agreementData = customData;
 
@@ -1930,12 +2185,61 @@ router.post('/:id/agreement-send', protect, admin, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Coaching agreement approved and successfully sent to client!',
-      appointment: saved
+      message: 'Coaching agreement approved and review link successfully delivered to client!',
+      appointment: saved,
+      agreementUrl
     });
   } catch (error) {
     console.error('Failed to approve and send agreement:', error);
     res.status(500).json({ message: error.message || 'Server error sending agreement to client' });
+  }
+});
+
+// @route   POST /api/appointments/:id/agreement-resend
+// @desc    Invalidate old token, issue fresh token, and resend agreement email to client
+// @access  Private/Admin
+router.post('/:id/agreement-resend', protect, admin, async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    if (appointment.agreementStatus === 'accepted') {
+      return res.status(400).json({ message: 'Agreement has already been accepted by client and cannot be resent.' });
+    }
+
+    const customData = {
+      ...(appointment.agreementData || {}),
+      ...(req.body || {})
+    };
+
+    // Generate fresh token (invalidates old one)
+    const freshToken = generateAgreementToken();
+    appointment.agreementToken = freshToken;
+    appointment.agreementTokenExpiresAt = getAgreementTokenExpiry(7);
+
+    const clientBaseUrl = (process.env.CLIENT_URL || 'https://aarkeshgupta.com').replace(/\/+$/, '');
+    const agreementUrl = `${clientBaseUrl}/agreement/${freshToken}`;
+
+    // Send email with fresh token
+    await sendClientCoachingAgreementEmail({ appointment, customData, agreementUrl, isResend: true });
+
+    appointment.agreementStatus = 'sent';
+    appointment.agreementSentAt = new Date();
+    appointment.agreementData = customData;
+
+    const saved = await appointment.save();
+
+    res.json({
+      success: true,
+      message: 'Fresh agreement link generated and delivered to client!',
+      appointment: saved,
+      agreementUrl
+    });
+  } catch (error) {
+    console.error('Failed to resend agreement:', error);
+    res.status(500).json({ message: error.message || 'Server error resending agreement' });
   }
 });
 
