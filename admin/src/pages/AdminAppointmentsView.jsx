@@ -149,10 +149,11 @@ export default function AdminAppointmentsView() {
   });
   const [isSavingAgreement, setIsSavingAgreement] = useState(false);
   const [isSendingAgreement, setIsSendingAgreement] = useState(false);
+  const [agreementSentSuccess, setAgreementSentSuccess] = useState(false);
 
   // Fetch all initial data
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const token = localStorage.getItem('adminToken');
       const headers = { Authorization: `Bearer ${token}` };
@@ -168,6 +169,11 @@ export default function AdminAppointmentsView() {
       if (appRes.ok) {
         const appData = await appRes.json();
         setAppointments(appData);
+        setSelectedAppt((prev) => {
+          if (!prev?._id) return prev;
+          const fresh = appData.find((a) => a._id === prev._id);
+          return fresh ? { ...prev, ...fresh } : prev;
+        });
       }
 
       if (stuRes.ok) {
@@ -194,9 +200,9 @@ export default function AdminAppointmentsView() {
       }
     } catch (err) {
       console.error('Error fetching admin data:', err);
-      showError('Failed to load dashboard data.');
+      if (!silent) showError('Failed to load dashboard data.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -973,6 +979,7 @@ export default function AdminAppointmentsView() {
     setCoachNotesText(appt.coachNotes || appt.notes || '');
     setNotesSaveStatus('saved');
     setRefundConfirmId(null);
+    setAgreementSentSuccess(false);
 
     const custom = appt.agreementData || {};
     const chars = 'abcdefghijklmnopqrstuvwxyz';
@@ -1459,6 +1466,7 @@ export default function AdminAppointmentsView() {
       if (!res.ok) throw new Error(data.message || 'Failed to send agreement');
 
       showSuccess(`✓ Agreement approved & review link sent to ${agreementForm.clientEmail}!`);
+      setAgreementSentSuccess(true);
       
       const updatedAppt = {
         ...selectedAppt,
@@ -1470,7 +1478,7 @@ export default function AdminAppointmentsView() {
 
       setSelectedAppt(updatedAppt);
       setAppointments((prev) => prev.map((a) => (a._id === selectedAppt._id ? updatedAppt : a)));
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showError(err.message || 'Failed to dispatch agreement to client.');
     } finally {
@@ -1604,29 +1612,25 @@ export default function AdminAppointmentsView() {
       : '';
 
     return (
-      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            openApptDrawer(app, 'agreement');
-          }}
+      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '100%' }}>
+        <span
           className="bwa-pill"
           style={{
             ...info.style,
-            cursor: 'pointer',
+            cursor: 'default',
+            userSelect: 'none',
             padding: '3px 10px',
             borderRadius: '99px',
             fontSize: '11.5px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '4px',
-            transition: 'all 0.15s ease'
+            whiteSpace: 'nowrap'
           }}
-          title={acceptedTooltip || `Agreement status: ${info.label}. Click to open Agreement.`}
+          title={acceptedTooltip || `Agreement status: ${info.label}`}
         >
           <span>{info.label}</span>
-        </button>
+        </span>
         {Boolean(info.acceptedAt) && (
           <span
             style={{
@@ -1634,7 +1638,8 @@ export default function AdminAppointmentsView() {
               color: '#059669',
               fontWeight: 600,
               marginTop: '2px',
-              letterSpacing: '0.01em'
+              letterSpacing: '0.01em',
+              whiteSpace: 'nowrap'
             }}
             title={acceptedTooltip}
           >
@@ -3873,6 +3878,40 @@ export default function AdminAppointmentsView() {
                   {/* TAB 2: AGREEMENT */}
                   {drawerTab === 'agreement' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* Immediate Sent Success In-Place Alert */}
+                      {agreementSentSuccess && (
+                        <div style={{
+                          background: '#ecfdf5',
+                          border: '1.5px solid #10b981',
+                          borderRadius: '12px',
+                          padding: '14px 18px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          boxShadow: '0 2px 10px rgba(16, 185, 129, 0.12)'
+                        }}>
+                          <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>🎉</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <h4 style={{ margin: 0, color: '#047857', fontSize: '0.94rem', fontWeight: 700 }}>
+                                Agreement Sent Successfully!
+                              </h4>
+                              <button
+                                type="button"
+                                onClick={() => setAgreementSentSuccess(false)}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#047857', padding: '0 4px', lineHeight: 1 }}
+                                title="Dismiss"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <p style={{ margin: '4px 0 0', color: '#065f46', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                              Review email with the agreement link was delivered to <strong>{agreementForm.clientEmail || selectedAppt.email}</strong>. Client can now accept via checkbox.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Status Callout Banner */}
                       {selectedApptAgStatus?.key === 'accepted' ? (
                         <div
@@ -4510,15 +4549,15 @@ export default function AdminAppointmentsView() {
                   </button>
                 </div>
               </>
-            ) : (
+            ) : selectedClient ? (
               /* ================= CLIENT PROFILE DRAWER ================= */
               <>
                 <div className="bwa-d-head">
                   {renderClientAvatar(selectedClient, 'C')}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <h3 style={{ margin: 0 }}>{selectedClient.name}</h3>
-                      {selectedClient.isDeleted && (
+                      <h3 style={{ margin: 0 }}>{selectedClient?.name || 'Client'}</h3>
+                      {Boolean(selectedClient?.isDeleted) && (
                         <span
                           className="bwa-pill p-cancel"
                           style={{
@@ -4863,7 +4902,7 @@ export default function AdminAppointmentsView() {
                   </button>
                 </div>
               </>
-            )}
+            ) : null}
           </>
         );
       })()}
