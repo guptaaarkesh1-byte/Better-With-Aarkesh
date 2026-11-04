@@ -160,22 +160,48 @@ export default function DigitalAgreement() {
   } = agreement;
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-[#2b2723] py-12 md:py-16 px-4 sm:px-6">
-      <div className="max-w-[760px] mx-auto">
-        
-        {/* Top Branding Header */}
-        <header className="text-center mb-8">
-          <Link to="/" className="inline-block group mb-3">
-            <span className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-[#111010]">
-              BetterWith<span className="text-[#c9542f]">Aarkesh</span>
-            </span>
-          </Link>
-          <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.22em] font-bold text-[#c9542f]">
-            <span>1-on-1 Executive Coaching</span>
-            <span>·</span>
-            <span>Digital Agreement</span>
-          </div>
-        </header>
+    <div className="min-h-screen bg-[#faf8f5] text-[#2b2723]" style={{ fontFamily: 'inherit' }}>
+      {/* Minimal top bar — only "Back to My Journey" */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        background: '#faf8f5',
+        borderBottom: '1px solid #e8e2d9',
+        padding: '12px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <Link
+          to="/my-journey"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '7px',
+            color: '#c9542f',
+            fontWeight: 700,
+            fontSize: '0.82rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            textDecoration: 'none',
+            padding: '7px 16px',
+            borderRadius: '999px',
+            border: '1.5px solid #c9542f',
+            transition: 'background 0.18s, color 0.18s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#c9542f'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#c9542f'; }}
+        >
+          <span style={{ fontSize: '1rem', lineHeight: 1 }}>←</span>
+          Back to My Journey
+        </Link>
+        <span style={{ fontSize: '0.72rem', color: '#a08c78', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600 }}>
+          Coaching Agreement
+        </span>
+      </div>
+
+      <div className="max-w-[760px] mx-auto px-4 sm:px-6 py-10 md:py-14">
 
         {/* Accepted Success Banner */}
         {acceptedSuccess && (

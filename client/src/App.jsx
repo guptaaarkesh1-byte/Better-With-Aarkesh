@@ -30,50 +30,55 @@ function App() {
       <BookingProvider>
         <DynamicSEO />
         <Router>
-          <MainLayout>
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/book" element={<Booking />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/testimonials" element={<TestimonialsPage />} />
-            <Route path="/stories" element={<Stories />} />
-            <Route path="/my-journey" element={<MyJourney />} />
-            <Route path="/my-journey/settings" element={<Navigate to="/my-journey?tab=profile" replace />} />
-            <Route path="/my-journey/notes" element={<Notes />} />
-            <Route path="/prepare" element={<Prepare />} />
-            <Route path="/articles" element={<Articles />} />
-            <Route path="/course/profile" element={<CourseProfile />} />
-            <Route path="/course-profile" element={<CourseProfile />} />
-            <Route path="/course" element={<Course />} />
-            <Route path="/course/:slug" element={<Course />} />
-            <Route path="/courses" element={<Course />} />
-            <Route path="/courses/:slug" element={<Course />} />
-            <Route path="/my-course" element={<MyCourses />} />
-            <Route path="/my-courses" element={<MyCourses />} />
-            <Route path="/classroom" element={<MyCourses />} />
-
-            {/* Digital Agreement Route */}
+            {/* Digital Agreement - completely standalone, no navbar/footer */}
             <Route path="/agreement/:token" element={<DigitalAgreement />} />
 
-            {/* Direct Static & Policy Pages */}
-            <Route path="/about-us" element={<FooterDocumentView slug="about-us" />} />
-            <Route path="/about" element={<FooterDocumentView slug="about-us" />} />
-            <Route path="/contact-us" element={<ContactUs />} />
-            <Route path="/contact" element={<ContactUs />} />
-            <Route path="/terms-and-conditions" element={<FooterDocumentView slug="terms-and-conditions" />} />
-            <Route path="/privacy-policy" element={<FooterDocumentView slug="privacy-policy" />} />
-            <Route path="/refund-and-cancellation" element={<FooterDocumentView slug="refund-and-cancellation" />} />
-            <Route path="/refund-policy" element={<FooterDocumentView slug="refund-and-cancellation" />} />
-            <Route path="/rescheduling-policy" element={<FooterDocumentView slug="rescheduling-policy" />} />
+            {/* All other pages wrapped in MainLayout (navbar + footer) */}
+            <Route path="/*" element={
+              <MainLayout>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/book" element={<Booking />} />
+                  <Route path="/library" element={<Library />} />
+                  <Route path="/testimonials" element={<TestimonialsPage />} />
+                  <Route path="/stories" element={<Stories />} />
+                  <Route path="/my-journey" element={<MyJourney />} />
+                  <Route path="/my-journey/settings" element={<Navigate to="/my-journey?tab=profile" replace />} />
+                  <Route path="/my-journey/notes" element={<Notes />} />
+                  <Route path="/prepare" element={<Prepare />} />
+                  <Route path="/articles" element={<Articles />} />
+                  <Route path="/course/profile" element={<CourseProfile />} />
+                  <Route path="/course-profile" element={<CourseProfile />} />
+                  <Route path="/course" element={<Course />} />
+                  <Route path="/course/:slug" element={<Course />} />
+                  <Route path="/courses" element={<Course />} />
+                  <Route path="/courses/:slug" element={<Course />} />
+                  <Route path="/my-course" element={<MyCourses />} />
+                  <Route path="/my-courses" element={<MyCourses />} />
+                  <Route path="/classroom" element={<MyCourses />} />
 
-            {/* Dynamic Pages & Legal Document Route */}
-            <Route path="/page/:slug" element={<FooterDocumentView />} />
-            <Route path="/legal/:slug" element={<FooterDocumentView />} />
+                  {/* Direct Static & Policy Pages */}
+                  <Route path="/about-us" element={<FooterDocumentView slug="about-us" />} />
+                  <Route path="/about" element={<FooterDocumentView slug="about-us" />} />
+                  <Route path="/contact-us" element={<ContactUs />} />
+                  <Route path="/contact" element={<ContactUs />} />
+                  <Route path="/terms-and-conditions" element={<FooterDocumentView slug="terms-and-conditions" />} />
+                  <Route path="/privacy-policy" element={<FooterDocumentView slug="privacy-policy" />} />
+                  <Route path="/refund-and-cancellation" element={<FooterDocumentView slug="refund-and-cancellation" />} />
+                  <Route path="/refund-policy" element={<FooterDocumentView slug="refund-and-cancellation" />} />
+                  <Route path="/rescheduling-policy" element={<FooterDocumentView slug="rescheduling-policy" />} />
+
+                  {/* Dynamic Pages & Legal Document Route */}
+                  <Route path="/page/:slug" element={<FooterDocumentView />} />
+                  <Route path="/legal/:slug" element={<FooterDocumentView />} />
+                </Routes>
+                <Footer />
+              </MainLayout>
+            } />
           </Routes>
-          <Footer />
-        </MainLayout>
-        <BookingModal />
-      </Router>
+          <BookingModal />
+        </Router>
     </BookingProvider>
   </ThemeProvider>
   )
