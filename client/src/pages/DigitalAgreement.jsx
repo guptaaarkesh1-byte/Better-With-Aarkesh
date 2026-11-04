@@ -412,12 +412,14 @@ export default function DigitalAgreement() {
             <p className="text-sm text-[#3b3631] mb-2">
               Unless otherwise agreed, communication between sessions is primarily for scheduling, administration and brief follow-up.
             </p>
-            <p className="text-sm text-[#3b3631]">
-              <strong>Additional agreed support:</strong>{' '}
-              <span className="italic text-[#555047]">
-                {betweenSessionSupport && betweenSessionSupport.trim() ? betweenSessionSupport : 'Standard administrative coordination and brief scheduling check-ins.'}
-              </span>
-            </p>
+            {Boolean(betweenSessionSupport && betweenSessionSupport.trim()) && (
+              <p className="text-sm text-[#3b3631]">
+                <strong>Additional agreed support:</strong>{' '}
+                <span className="italic text-[#555047]">
+                  {betweenSessionSupport.trim()}
+                </span>
+              </p>
+            )}
           </section>
 
           <hr className="border-[#eae3d9] my-6" />

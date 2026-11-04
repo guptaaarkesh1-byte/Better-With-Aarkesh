@@ -207,17 +207,12 @@ export async function generateCoachingAgreementPdf(data = {}) {
 
       doc.font(fontRegular).fontSize(10.5).lineGap(3.5);
       doc.text('Unless otherwise agreed, communication between sessions is primarily for scheduling, administration and brief follow-up.');
-      doc.moveDown(0.6);
-      doc.text('Any additional between-session support agreed for this engagement:');
-      doc.moveDown(0.6);
       if (data.betweenSessionSupport && String(data.betweenSessionSupport).trim()) {
+        doc.moveDown(0.6);
+        doc.text('Any additional between-session support agreed for this engagement:');
+        doc.moveDown(0.6);
         doc.font(fontItalic).text(String(data.betweenSessionSupport).trim());
         doc.font(fontRegular);
-      } else {
-        doc.font(fontRegular).fillColor('#999999').text('_________________________________________________________________________________');
-        doc.moveDown(0.4);
-        doc.text('_________________________________________________________________________________');
-        doc.fillColor('#000000');
       }
       doc.moveDown(1.0);
 
@@ -279,18 +274,12 @@ export async function generateCoachingAgreementPdf(data = {}) {
       doc.moveDown(1.1);
 
       // Additional Agreed Terms
-      doc.font(fontBold).fontSize(11.5).text('Additional Agreed Terms, if any');
-      doc.moveDown(0.8);
       if (data.additionalAgreedTerms && String(data.additionalAgreedTerms).trim()) {
+        doc.font(fontBold).fontSize(11.5).text('Additional Agreed Terms, if any');
+        doc.moveDown(0.8);
         doc.font(fontItalic).fontSize(10.5).lineGap(3.5).text(String(data.additionalAgreedTerms).trim());
         doc.font(fontRegular);
-      } else {
-        doc.font(fontRegular).fillColor('#999999').text('_________________________________________________________________________________');
-        doc.moveDown(0.4);
-        doc.text('_________________________________________________________________________________');
-        doc.moveDown(0.4);
-        doc.text('_________________________________________________________________________________');
-        doc.fillColor('#000000');
+        doc.moveDown(1.0);
       }
 
       // Digital Acceptance Audit Footer (generated only after client acceptance)

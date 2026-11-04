@@ -351,9 +351,9 @@ export default function AdminAppointmentsView() {
     if (isSent) {
       return {
         key: 'sent',
-        label: 'Sent – Awaiting client',
-        pillClass: 'p-re',
-        style: { background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontWeight: 600 }
+        label: 'Sent ✓',
+        pillClass: 'p-done',
+        style: { background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 700 }
       };
     }
     return {
@@ -1465,20 +1465,19 @@ export default function AdminAppointmentsView() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to send agreement');
 
-      showSuccess(`✓ Agreement approved & review link sent to ${agreementForm.clientEmail}!`);
+      showSuccess(`✓ Agreement approved & sent to ${agreementForm.clientEmail}!`);
       setAgreementSentSuccess(true);
       
       const updatedAppt = {
         ...selectedAppt,
-        ...(data.appointment || {}),
         agreementStatus: 'sent',
-        agreementSentAt: data.appointment?.agreementSentAt || new Date().toISOString(),
-        agreementData: agreementForm
+        agreementSentAt: data?.appointment?.agreementSentAt || new Date().toISOString(),
+        agreementToken: data?.appointment?.agreementToken || selectedAppt.agreementToken,
+        agreementData: { ...(selectedAppt.agreementData || {}), ...agreementForm }
       };
 
       setSelectedAppt(updatedAppt);
       setAppointments((prev) => prev.map((a) => (a._id === selectedAppt._id ? updatedAppt : a)));
-      fetchData(true);
     } catch (err) {
       showError(err.message || 'Failed to dispatch agreement to client.');
     } finally {
@@ -4034,92 +4033,28 @@ export default function AdminAppointmentsView() {
                       ) : selectedApptAgStatus?.key === 'sent' ? (
                         <div
                           style={{
-                            background: '#fffbeb',
-                            border: '1px solid #fde68a',
+                            background: '#ecfdf5',
+                            border: '1.5px solid #10b981',
                             borderRadius: '12px',
-                            padding: '16px',
+                            padding: '16px 20px',
                             display: 'flex',
                             gap: '12px',
-                            alignItems: 'flex-start'
+                            alignItems: 'center'
                           }}
                         >
-                          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>✉️</span>
+                          <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>✅</span>
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-                              <h4 style={{ margin: '0 0 4px', color: '#92400e', fontSize: '0.95rem', fontWeight: 700 }}>
-                                Agreement Sent · Awaiting Client Acceptance
+                              <h4 style={{ margin: 0, color: '#047857', fontSize: '0.96rem', fontWeight: 700 }}>
+                                Agreement Sent
                               </h4>
-                              <span className="bwa-pill" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', fontSize: '0.72rem', fontWeight: 600 }}>
-                                Awaiting Client Checkbox
+                              <span className="bwa-pill p-done" style={{ fontSize: '0.72rem', fontWeight: 700 }}>
+                                Sent ✓
                               </span>
                             </div>
-                            <p style={{ margin: '0 0 8px', color: '#78350f', fontSize: '0.82rem', lineHeight: 1.5 }}>
-                              Review email sent to <strong>{agreementForm.clientEmail || selectedAppt.email}</strong> on{' '}
-                              {selectedAppt.agreementSentAt
-                                ? `${formatDate(selectedAppt.agreementSentAt)} at ${formatTime(null, selectedAppt.agreementSentAt)}`
-                                : 'file'}. The client accepts by ticking the checkbox on the secure link.
-                              {selectedAppt.agreementTokenExpiresAt && (
-                                <span> · Link valid until <strong>{formatDate(selectedAppt.agreementTokenExpiresAt)}</strong></span>
-                              )}
+                            <p style={{ margin: '4px 0 0', color: '#065f46', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                              Agreement has been sent to client (<strong>{agreementForm.clientEmail || selectedAppt.email}</strong>).
                             </p>
-
-                            {selectedAppt.agreementToken && (
-                              <div style={{
-                                marginTop: '8px',
-                                background: '#ffffff',
-                                border: '1px solid #fde68a',
-                                borderRadius: '6px',
-                                padding: '6px 10px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: '8px',
-                                flexWrap: 'wrap'
-                              }}>
-                                <div style={{ fontSize: '0.75rem', color: '#92400e', wordBreak: 'break-all' }}>
-                                  <strong>Client Review Link:</strong>{' '}
-                                  <a
-                                    href={`${CLIENT_URL}/agreement/${selectedAppt.agreementToken}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{ color: '#c9542f', textDecoration: 'underline' }}
-                                  >
-                                    {CLIENT_URL}/agreement/{selectedAppt.agreementToken}
-                                  </a>
-                                </div>
-                                <button
-                                  type="button"
-                                  className="bwa-copy-btn"
-                                  style={{ fontSize: '0.72rem', padding: '3px 8px' }}
-                                  onClick={() => copyToClipboard(`${CLIENT_URL}/agreement/${selectedAppt.agreementToken}`)}
-                                >
-                                  Copy Link
-                                </button>
-                              </div>
-                            )}
-
-                            <div style={{ marginTop: '10px' }}>
-                              <button
-                                type="button"
-                                className="bwa-btn bwa-btn-line bwa-btn-sm"
-                                disabled={isResendingAgreement}
-                                onClick={handleResendAgreementLink}
-                                style={{
-                                  background: '#fff',
-                                  borderColor: '#f59e0b',
-                                  color: '#92400e',
-                                  fontWeight: 600,
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  borderRadius: '6px',
-                                  padding: '6px 14px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <span>🔄</span> {isResendingAgreement ? 'Resending Link...' : 'Resend Agreement Link'}
-                              </button>
-                            </div>
                           </div>
                         </div>
                       ) : (
@@ -4354,26 +4289,22 @@ export default function AdminAppointmentsView() {
                               <span>📄</span> Download Accepted PDF
                             </a>
                           ) : selectedApptAgStatus?.key === 'sent' ? (
-                            <>
-                              <button
-                                type="button"
-                                className="bwa-btn bwa-btn-line"
-                                style={{ borderColor: '#f59e0b', color: '#92400e', fontWeight: 600 }}
-                                disabled={isResendingAgreement}
-                                onClick={handleResendAgreementLink}
-                              >
-                                {isResendingAgreement ? 'Resending Link...' : '🔄 Resend Agreement Link'}
-                              </button>
-                              <button
-                                type="button"
-                                className="bwa-btn bwa-btn-accent"
-                                style={{ background: '#c9542f', color: '#fff', fontWeight: 700, padding: '9px 20px', borderRadius: '8px' }}
-                                disabled={isSavingAgreement || isSendingAgreement}
-                                onClick={handleSendAgreementToClient}
-                              >
-                                {isSendingAgreement ? 'Delivering Agreement...' : '🚀 Re-send Updated Agreement'}
-                              </button>
-                            </>
+                            <span
+                              style={{
+                                background: '#ecfdf5',
+                                color: '#047857',
+                                border: '1.5px solid #a7f3d0',
+                                padding: '9px 20px',
+                                borderRadius: '8px',
+                                fontWeight: 700,
+                                fontSize: '0.88rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              <span>✓</span> Agreement Sent
+                            </span>
                           ) : selectedApptAgStatus?.key === 'expired' ? (
                             <button
                               type="button"

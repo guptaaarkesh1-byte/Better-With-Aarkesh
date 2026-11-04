@@ -2182,6 +2182,9 @@ router.post('/:id/agreement-send', protect, admin, async (req, res) => {
     appointment.agreementData = customData;
 
     const saved = await appointment.save();
+    try {
+      await saved.populate('userId', 'name email phoneNumber phone photoUrl isDeleted deletedAt');
+    } catch (e) {}
 
     res.json({
       success: true,
