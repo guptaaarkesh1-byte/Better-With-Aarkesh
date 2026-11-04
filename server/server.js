@@ -23,6 +23,7 @@ import coursePublicRoutes from './routes/coursePublicRoutes.js';
 import courseCardRoutes from './routes/courseCardRoutes.js';
 import courseFaqRoutes from './routes/courseFaqRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
+import packageRoutes from './routes/packageRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import calRoutes from './routes/calRoutes.js';
 import contactSettingsRoutes from './routes/contactSettingsRoutes.js';
@@ -90,6 +91,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/api/admin/auth', adminAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/course-auth', courseAuthRoutes);
+app.use('/api/course/auth', courseAuthRoutes);
 app.use('/api/admin/courses', courseAdminRoutes);
 app.use('/api/courses/cards', courseCardRoutes);
 app.use('/api/courses/faqs', courseFaqRoutes);
@@ -97,6 +99,7 @@ app.use('/api/mux', muxWebhookRoutes);
 app.use('/api/courses', coursePublicRoutes);
 app.use('/api/cal', calRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/packages', packageRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/payment', paymentRoutes);
 app.post('/api/create-order', (req, res, next) => {
@@ -197,3 +200,4 @@ connectDB();
 server.listen(PORT, () => {
   console.log(`Server is running with Socket.io on port ${PORT}`);
 });
+

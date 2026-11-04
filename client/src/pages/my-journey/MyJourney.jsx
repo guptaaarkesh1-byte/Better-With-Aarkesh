@@ -5,7 +5,7 @@ import {
   VideoCamera, CheckCircle, Plus, LockKey, MagnifyingGlass,
   X, SignOut, User, Lock, CaretRight, ArrowsClockwise, ArrowLeft,
   CaretDown, CaretUp, Bell, ArrowRight, Trash, Clock, NotePencil,
-  DotsThreeVertical
+  DotsThreeVertical, Package
 } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 import './my-journey.css';
@@ -351,7 +351,7 @@ export default function MyJourney() {
       });
       if (res.ok) {
         const data = await res.json();
-        setAppointments(data || []);
+        setAppointments(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error('Failed to fetch appointments:', err);
@@ -836,7 +836,8 @@ export default function MyJourney() {
 
   // Filter Appointments
   const q = searchQuery.toLowerCase().trim();
-  const filteredAppointments = appointments
+  const safeAppointmentsList = Array.isArray(appointments) ? appointments.filter(Boolean) : [];
+  const filteredAppointments = safeAppointmentsList
     .filter(a => {
       const matchesSearch = !q || 
         (a.name && a.name.toLowerCase().includes(q)) || 
@@ -854,6 +855,8 @@ export default function MyJourney() {
         if (!isRescheduledSession(a)) return false;
       } else if (coachFilter === 'canceled') {
         if (!(a.status === 'CANCELLED' || a.status === 'CANCELED')) return false;
+      } else if (coachFilter === 'packages') {
+        if (!a.packageId) return false;
       }
 
       if (appointmentSort === 'free') {
@@ -1017,10 +1020,64 @@ export default function MyJourney() {
   const showSidebar = activeTab !== 'notes' && activeTab !== 'profile';
 
   // Counts for Sidebar Badges
-  const upcomingCount = appointments.filter(a => a.status === 'UPCOMING' || !a.status).length;
-  const completedCount = appointments.filter(a => a.status === 'COMPLETED').length;
-  const rescheduledCount = appointments.filter(isRescheduledSession).length;
-  const canceledCount = appointments.filter(a => a.status === 'CANCELLED' || a.status === 'CANCELED').length;
+  const safeAppts = Array.isArray(appointments) ? appointments.filter(Boolean) : [];
+  const upcomingCount = safeAppts.filter(a => a.status === 'UPCOMING' || !a.status).length;
+  const completedCount = safeAppts.filter(a => a.status === 'COMPLETED').length;
+  const rescheduledCount = safeAppts.filter(isRescheduledSession).length;
+  const canceledCount = safeAppts.filter(a => a.status === 'CANCELLED' || a.status === 'CANCELED').length;
+
+  // Grouped Packages Map & Count
+  const packageGroupsMap = useMemo(() => {
+    const map = {};
+    if (!Array.isArray(appointments)) return map;
+    appointments.forEach(a => {
+      if (!a) return;
+      if (a.packageId) {
+        const pkgId = String(typeof a.packageId === 'object' ? (a.packageId._id || a.packageId.id) : a.packageId);
+        const packageDoc = typeof a.packageId === 'object' ? a.packageId : null;
+        if (!map[pkgId]) {
+          map[pkgId] = {
+            id: pkgId,
+            packageDoc,
+            totalSessions: a.totalSessionsInPackage || packageDoc?.totalSessions || 0,
+            agreementStatus: packageDoc?.agreementStatus || a.agreementStatus || 'pending',
+            agreementToken: packageDoc?.agreementToken || a.agreementToken || null,
+            agreementPdfUrl: packageDoc?.agreementPdfUrl || a.agreementPdfUrl || null,
+            totalAmount: packageDoc?.totalAmount || 0,
+            createdAt: packageDoc?.createdAt || a.createdAt,
+            appointments: []
+          };
+        }
+        map[pkgId].appointments.push(a);
+      }
+    });
+    Object.values(map).forEach(pkg => {
+      pkg.appointments.sort((x, y) => (x.sessionNumber || 0) - (y.sessionNumber || 0));
+      if (!pkg.totalSessions) pkg.totalSessions = pkg.appointments.length;
+      if (!pkg.totalAmount) {
+        pkg.totalAmount = pkg.appointments.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+      }
+      // Cross-session package sync: if ANY session or packageDoc has accepted status, mark entire package and all sessions accepted
+      const isAnyAccepted = (pkg.packageDoc?.agreementStatus || '').toLowerCase() === 'accepted' ||
+        Boolean(pkg.packageDoc?.agreementAcceptedAt) ||
+        pkg.appointments.some(s => (s.agreementStatus || '').toLowerCase() === 'accepted' || Boolean(s.agreementAcceptedAt));
+      if (isAnyAccepted) {
+        pkg.agreementStatus = 'accepted';
+        const acceptedAtTime = pkg.packageDoc?.agreementAcceptedAt || pkg.appointments.find(s => s.agreementAcceptedAt)?.agreementAcceptedAt || new Date();
+        const pdfUrl = pkg.packageDoc?.agreementPdfUrl || pkg.appointments.find(s => s.agreementPdfUrl)?.agreementPdfUrl || null;
+        if (pdfUrl) pkg.agreementPdfUrl = pdfUrl;
+        pkg.appointments.forEach(s => {
+          s.agreementStatus = 'accepted';
+          if (!s.agreementAcceptedAt) s.agreementAcceptedAt = acceptedAtTime;
+          if (!s.agreementPdfUrl && pdfUrl) s.agreementPdfUrl = pdfUrl;
+        });
+      }
+    });
+    return map;
+  }, [appointments]);
+
+  const packagesList = useMemo(() => Object.values(packageGroupsMap), [packageGroupsMap]);
+  const packagesCount = packagesList.length;
 
   const savedCount = savedArticles.length + savedVideos.length;
   const finishedCount = completedArticles.length + completedVideos.length;
@@ -1032,7 +1089,21 @@ export default function MyJourney() {
     activeTab === 'notes' ? 'Search your notes' : 'Search courses';
 
   if (!isAnyUserLoggedIn()) {
-    return null;
+    return (
+      <div className="min-h-screen bg-[#f5f1e8] flex items-center justify-center p-6 text-center">
+        <div className="bg-white p-8 rounded-2xl border border-black/10 shadow-sm max-w-md w-full">
+          <h3 className="font-serif text-xl font-medium mb-2 text-[#111010]">Access Your Coaching Portal</h3>
+          <p className="text-xs text-[#7a756b] mb-5">Please log in to view your appointments, coaching packages, and journey notes.</p>
+          <button 
+            type="button"
+            onClick={() => navigate('/?login=true')} 
+            className="w-full py-3 rounded-xl bg-[#c8512d] hover:bg-[#b3461f] text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+          >
+            Log In
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1349,6 +1420,14 @@ export default function MyJourney() {
                           <span>Canceled</span>
                           <span className="mj-chip-badge">{canceledCount}</span>
                         </button>
+                        <button 
+                          type="button"
+                          onClick={() => setCoachFilter('packages')}
+                          className={cn("mj-mobile-chip", coachFilter === 'packages' && "active")}
+                        >
+                          <span>Packages</span>
+                          <span className="mj-chip-badge">{packagesCount}</span>
+                        </button>
                       </div>
 
                       {/* Desktop Radio Filters */}
@@ -1396,6 +1475,17 @@ export default function MyJourney() {
                           <span className="mj-box"></span>
                           Canceled
                           <em>{canceledCount}</em>
+                        </label>
+                        <label className="mj-opt radio">
+                          <input 
+                            type="radio" 
+                            name="coachFilter" 
+                            checked={coachFilter === 'packages'}
+                            onChange={() => setCoachFilter('packages')}
+                          />
+                          <span className="mj-box"></span>
+                          Packages
+                          <em>{packagesCount}</em>
                         </label>
                       </div>
                     </div>
@@ -1525,9 +1615,12 @@ export default function MyJourney() {
                       <h2 className="truncate font-serif text-[18px] sm:text-[20px] font-semibold text-[#1c1714]">
                         {coachFilter === 'upcoming' ? 'Appointments' :
                          coachFilter === 'completed' ? 'Completed' :
-                         coachFilter === 'rescheduled' ? 'Rescheduled' : 'Canceled'}
+                         coachFilter === 'rescheduled' ? 'Rescheduled' :
+                         coachFilter === 'packages' ? 'Packages' : 'Canceled'}
                       </h2>
-                      <span className="mj-count shrink-0 text-xs px-2.5 py-0.5">{filteredAppointments.length}</span>
+                      <span className="mj-count shrink-0 text-xs px-2.5 py-0.5">
+                        {coachFilter === 'packages' ? packagesCount : filteredAppointments.length}
+                      </span>
                     </div>
 
                     <button
@@ -1597,7 +1690,168 @@ export default function MyJourney() {
 
                 <div className="mj-grid-scroll" onWheel={handleGridWheel} data-lenis-prevent="true">
                   <div className="mj-grid">
-                    {filteredAppointments.length > 0 ? (
+                    {coachFilter === 'packages' ? (
+                      packagesList.length > 0 ? (
+                        packagesList.map((pkg, pIdx) => {
+                          const completedCount = pkg.appointments.filter(a => a.status === 'COMPLETED').length;
+                          const progressPct = pkg.totalSessions ? Math.round((completedCount / pkg.totalSessions) * 100) : 0;
+                          const isReviewed = (pkg.agreementStatus || '').toLowerCase() === 'accepted';
+                          const isSent = (pkg.agreementStatus || '').toLowerCase() === 'sent';
+
+                          return (
+                            <article 
+                              key={pkg.id || pIdx} 
+                              className="col-span-full bg-white rounded-2xl border border-black/10 overflow-hidden shadow-xs hover:shadow-md transition-all p-5 sm:p-6 mb-4"
+                            >
+                              {/* Top Bar */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-black/5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#c8512d]/10 text-[#c8512d] border border-[#c8512d]/20">
+                                    <Package size={14} weight="bold" />
+                                    <span>{pkg.totalSessions}-Session Package</span>
+                                  </span>
+                                  <span className="mj-pill">
+                                    {inr(pkg.totalAmount)} paid
+                                  </span>
+                                  {isReviewed && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      <CheckCircle size={13} weight="bold" />
+                                      <span>Agreement Reviewed ✓</span>
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="text-xs text-[#7a7269] font-medium">
+                                  {completedCount} of {pkg.totalSessions} sessions completed ({progressPct}%)
+                                </div>
+                              </div>
+
+                              {/* Progress Track */}
+                              <div className="w-full bg-[#ede9e4] h-2 rounded-full overflow-hidden my-4">
+                                <div 
+                                  className="bg-[#c8512d] h-full transition-all duration-300"
+                                  style={{ width: `${progressPct}%` }}
+                                />
+                              </div>
+
+                              {/* Sessions List */}
+                              <div className="mt-4">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-[#7a7269] mb-3">
+                                  Included Sessions ({pkg.appointments.length})
+                                </h4>
+                                <div className="flex flex-col gap-2.5">
+                                  {pkg.appointments.map((session, sIdx) => {
+                                    const sCompleted = session.status === 'COMPLETED';
+                                    const sCancelled = session.status === 'CANCELLED' || session.status === 'CANCELED';
+                                    const sRescheduled = session.status === 'RESCHEDULED';
+                                    const sUpcoming = !sCompleted && !sCancelled;
+
+                                    return (
+                                      <div 
+                                        key={session._id || sIdx}
+                                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5 hover:border-black/10 transition-colors"
+                                      >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <div className="w-8 h-8 rounded-full bg-[#1c1714] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                                            {session.sessionNumber || (sIdx + 1)}
+                                          </div>
+                                          <div className="min-w-0">
+                                            <div className="font-serif text-[14.5px] font-semibold text-[#1c1714] truncate">
+                                              {formatPillDate(session.date)} at {formatSessionTime(session.time)}
+                                            </div>
+                                            <div className="text-xs text-[#7a7269] flex items-center gap-2 mt-0.5">
+                                              <span>{session.duration || 90} mins</span>
+                                              <span>•</span>
+                                              <span>Google Meet</span>
+                                              <span className={cn(
+                                                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
+                                                sCompleted && "bg-emerald-100 text-emerald-800",
+                                                sCancelled && "bg-rose-100 text-rose-800",
+                                                sRescheduled && "bg-sky-100 text-sky-800",
+                                                sUpcoming && !sRescheduled && "bg-amber-100 text-amber-800"
+                                              )}>
+                                                {sCompleted ? 'Completed' : sCancelled ? 'Cancelled' : sRescheduled ? 'Rescheduled' : 'Upcoming'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          {sUpcoming && (
+                                            <a 
+                                              href={session.meetLink || 'https://meet.google.com'}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="px-3 py-1.5 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-xs font-bold inline-flex items-center gap-1 shadow-xs transition-colors"
+                                            >
+                                              <VideoCamera size={13} weight="bold" />
+                                              <span>Join</span>
+                                            </a>
+                                          )}
+                                          {(session.coachNotes || session.notes) && (
+                                            <button 
+                                              type="button"
+                                              onClick={() => {
+                                                markCoachNoteAsRead(session._id);
+                                                setSelectedSession(session);
+                                                setSessionModalTab('notes');
+                                              }}
+                                              className={cn(
+                                                "px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer",
+                                                !readCoachNotes.includes(String(session._id))
+                                                  ? "bg-[#0284c7] hover:bg-[#0369a1] text-white"
+                                                  : "bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd] hover:bg-[#e0f2fe]"
+                                              )}
+                                              title="View notes from coach"
+                                            >
+                                              <NotePencil size={13} weight="bold" />
+                                              <span>Coach note</span>
+                                            </button>
+                                          )}
+                                          {sUpcoming && (
+                                            <button 
+                                              type="button"
+                                              onClick={() => setRescheduleSession(session)}
+                                              className="px-3 py-1.5 rounded-full bg-white hover:bg-black/5 text-[#1c1714] border border-black/10 text-xs font-semibold cursor-pointer transition-colors"
+                                            >
+                                              Reschedule
+                                            </button>
+                                          )}
+                                          <button 
+                                            type="button"
+                                            onClick={() => {
+                                              setSelectedSession(session);
+                                              setSessionModalTab('details');
+                                            }}
+                                            className="px-3 py-1.5 rounded-full bg-white hover:bg-black/5 text-[#1c1714] border border-black/10 text-xs font-semibold cursor-pointer transition-colors"
+                                          >
+                                            Details
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </article>
+                          );
+                        })
+                      ) : (
+                        <div className="mj-empty col-span-full">
+                          <h3>No coaching packages found</h3>
+                          <p>You haven't booked any coaching packages yet. Choose a package to schedule multiple coaching sessions in advance.</p>
+                          <div className="mt-4">
+                            <button 
+                              onClick={() => navigate('/book')}
+                              className="mj-btn bg-[#c8512d] hover:bg-[#b3461f] text-white shadow-sm border-0"
+                            >
+                              BOOK A PACKAGE
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    ) : filteredAppointments.length > 0 ? (
                       filteredAppointments.map((appt, idx) => {
                         const isFree = Boolean(appt.isFreeSession || appt.orderId === 'COURSE_FREE_SESSION');
                         const isPendingReschedule = Boolean(
@@ -1642,6 +1896,12 @@ export default function MyJourney() {
                                   <span className="mj-pill">
                                     {isFree ? 'Free session' : `${inr(appt.amount || (appt.duration === 90 ? 7500 : 5000))} paid`}
                                   </span>
+                                  {appt.packageId && (
+                                    <span className="mj-pill !bg-[#ffedd5] !text-[#c2410c] !border-[#fed7aa] font-semibold flex items-center gap-1">
+                                      <Package size={11} weight="bold" />
+                                      <span>Package {appt.sessionNumber || '?'}/{appt.totalSessionsInPackage || (typeof appt.packageId === 'object' ? appt.packageId.totalSessions : '?')}</span>
+                                    </span>
+                                  )}
                                 </div>
 
                                 {/* 3-Dots Action Menu (Cancel Session) */}
@@ -2349,7 +2609,7 @@ export default function MyJourney() {
                   )}
 
                   {/* Top Action Buttons (Join, Reschedule, Cancel) */}
-                  {(selectedSession.status === 'UPCOMING' || !selectedSession.status) && (
+                  {selectedSession.status !== 'COMPLETED' && selectedSession.status !== 'CANCELLED' && selectedSession.status !== 'CANCELED' && selectedSession.status !== 'REFUNDED' && (
                     <div className="flex items-center gap-2 mb-4 flex-wrap">
                       <a 
                         href={selectedSession.meetLink || 'https://meet.google.com'}
@@ -2404,6 +2664,14 @@ export default function MyJourney() {
                   )}
 
                   <div className="mj-rows">
+                    {selectedSession.packageId && (
+                      <div>
+                        <span>Package</span>
+                        <b className="text-[#c8512d] font-semibold">
+                          Session {selectedSession.sessionNumber} of {selectedSession.totalSessionsInPackage || (typeof selectedSession.packageId === 'object' ? selectedSession.packageId.totalSessions : '')}
+                        </b>
+                      </div>
+                    )}
                     <div>
                       <span>Date</span>
                       <b>{formatFullDate(selectedSession.date)}</b>
@@ -2461,7 +2729,7 @@ export default function MyJourney() {
                         </div>
                       </>
                     )}
-                    {selectedSession.meetLink && (
+                    {selectedSession.meetLink ? (
                       <div>
                         <span>Meeting Link</span>
                         <a 
@@ -2473,7 +2741,14 @@ export default function MyJourney() {
                           Join Google Meet
                         </a>
                       </div>
-                    )}
+                    ) : selectedSession.packageId && (selectedSession.agreementStatus !== 'accepted') ? (
+                      <div>
+                        <span>Meeting Details</span>
+                        <span className="text-[#7a7269] text-xs font-medium">
+                          Shared with Coaching Agreement shortly
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
 
                   {/* Fee breakdown */}

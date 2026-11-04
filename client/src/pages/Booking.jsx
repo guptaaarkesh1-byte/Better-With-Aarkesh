@@ -345,28 +345,35 @@ export default function Booking() {
   useEffect(() => {
     if (step > 3 || bookingCompletedRef.current) return;
     const currentData = bookingDataRef.current;
-    if (!currentData?.time || !currentData?.dateKey) return;
 
-    // Send immediate heartbeat on mount / step change if slot is already selected
-    heartbeatSlot({
-      holderId: draftId,
-      dateKey: currentData.dateKey,
-      time: currentData.time
-    });
-
-    const interval = setInterval(() => {
+    const pingSlots = () => {
       const activeData = bookingDataRef.current;
-      if (!bookingCompletedRef.current && activeData?.time && activeData?.dateKey) {
+      if (!activeData || bookingCompletedRef.current) return;
+      if (activeData.time && activeData.dateKey) {
         heartbeatSlot({
           holderId: draftId,
           dateKey: activeData.dateKey,
           time: activeData.time
         });
       }
-    }, 2 * 60 * 1000); // refresh hold every 2 minutes
+      if (activeData.isPackage && Array.isArray(activeData.packageSlots)) {
+        activeData.packageSlots.forEach(slot => {
+          if (slot?.dateKey && slot?.time) {
+            heartbeatSlot({
+              holderId: draftId,
+              dateKey: slot.dateKey,
+              time: slot.time
+            });
+          }
+        });
+      }
+    };
+
+    pingSlots();
+    const interval = setInterval(pingSlots, 2 * 60 * 1000); // refresh hold every 2 minutes
 
     return () => clearInterval(interval);
-  }, [bookingData.dateKey, bookingData.time, draftId, step]);
+  }, [bookingData.dateKey, bookingData.time, bookingData.packageSlots, draftId, step]);
 
   // -------------------------------------------------------------
   // Slot Hold Lifecycle: Release slot if user navigates away
@@ -375,14 +382,7 @@ export default function Booking() {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (!bookingCompletedRef.current && draftId) {
-        const activeData = bookingDataRef.current;
-        if (activeData?.time && activeData?.dateKey) {
-          releaseSlotBeacon({
-            holderId: draftId,
-            dateKey: activeData.dateKey,
-            time: activeData.time
-          });
-        }
+        releaseSlotBeacon({ holderId: draftId });
       }
     };
 
@@ -390,17 +390,8 @@ export default function Booking() {
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      // If user navigates away from Book a Session to another page (Home, Courses, etc.)
-      // and has NOT completed booking, immediately release the held slot so others can book it!
       if (!bookingCompletedRef.current && draftId) {
-        const activeData = bookingDataRef.current;
-        if (activeData?.time && activeData?.dateKey) {
-          releaseSlot({
-            holderId: draftId,
-            dateKey: activeData.dateKey,
-            time: activeData.time
-          });
-        }
+        releaseSlot({ holderId: draftId });
       }
     };
   }, [draftId]);
@@ -569,6 +560,140 @@ export default function Booking() {
         throw new Error('Payment gateway not configured.');
       }
 
+      // --- Package Booking Flow via Razorpay ---
+      if (bookingData.isPackage && Array.isArray(bookingData.packageSlots) && bookingData.packageSlots.length > 0) {
+        const orderRes = await fetch(`${import.meta.env.VITE_API_URL}/api/packages/create-order`, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({
+            email: bookingData.email,
+            phoneNumber: bookingData.phoneNumber,
+            countryCode: bookingData.countryCode || '+91',
+            totalSessions: bookingData.totalSessions || bookingData.packageSlots.length,
+            sessionDuration: bookingData.sessionDuration || 60,
+            sessions: bookingData.packageSlots,
+            couponCode: couponInfo?.code || '',
+            holderId: draftId
+          })
+        });
+
+        const orderData = await orderRes.json();
+        if (!orderRes.ok) {
+          if (orderRes.status === 409 || orderData.conflict) {
+            setError(orderData.message || 'One of the selected slots was just booked. Please pick another time.');
+            setStep(1);
+            setIsLoading(false);
+            return;
+          }
+          throw new Error(orderData.message || 'Failed to create package order');
+        }
+
+        const options = {
+          key: keyData.keyId,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: 'Better With Aarkesh',
+          description: `${bookingData.totalSessions || bookingData.packageSlots.length}-Session Coaching Package`,
+          order_id: orderData.id,
+          handler: async function (response) {
+            try {
+              const finalRes = await fetch(`${import.meta.env.VITE_API_URL}/api/packages/finalize`, {
+                method: 'POST',
+                headers: authHeaders,
+                body: JSON.stringify({
+                  orderId: orderData.id,
+                  paymentId: response.razorpay_payment_id,
+                  signature: response.razorpay_signature,
+                  clientName: bookingData.name,
+                  clientEmail: bookingData.email,
+                  countryCode: bookingData.countryCode,
+                  phoneNumber: bookingData.phoneNumber,
+                  totalSessions: bookingData.totalSessions || bookingData.packageSlots.length,
+                  sessionDuration: bookingData.sessionDuration || 60,
+                  sessions: bookingData.packageSlots,
+                  source: finalSource,
+                  reason: bookingData.reason || '',
+                  extra: bookingData.extra || '',
+                  questionnaireAnswers: questionnairePayload,
+                  bookingDraftId: draftId,
+                  couponCode: couponInfo?.code || ''
+                })
+              });
+
+              if (finalRes.ok) {
+                bookingCompletedRef.current = true;
+                const finalData = await finalRes.json();
+                handleAutoLoginOnBooking(finalData);
+                updateData({
+                  packageId: finalData.package?._id,
+                  isPackage: true,
+                  totalSessions: finalData.package?.totalSessions || bookingData.totalSessions,
+                  paidAmount: finalData.package?.totalAmount,
+                  pricePerSession: finalData.package?.pricePerSession,
+                  couponCode: finalData.package?.couponCode || couponInfo?.code || '',
+                  discountAmount: finalData.package?.discountAmount || 0,
+                  orderId: finalData.package?.orderId || orderData.id,
+                  paymentId: response.razorpay_payment_id,
+                  appointments: finalData.appointments || [],
+                  packageSlots: (finalData.appointments && finalData.appointments.length > 0)
+                    ? finalData.appointments.map(a => ({
+                        date: a.date,
+                        time: a.time,
+                        meetLink: a.meetLink,
+                        sessionNumber: a.sessionNumber
+                      }))
+                    : (bookingData.packageSlots || [])
+                });
+                clearQuestionnaireDraft(draftId);
+                sessionStorage.removeItem('bwa_booking_draft_id');
+                sessionStorage.removeItem('bookingStep');
+                sessionStorage.removeItem('bookingData');
+                setQuestionnaireDraft({
+                  booking_draft_id: `bwa_draft_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+                  questionnaire_id: config.questionnaire_id || 'bwa_optional_coaching',
+                  content_version: config.content_version || '2026-10-16-v1',
+                  opened: false,
+                  last_screen: 'intro',
+                  answers: {}
+                });
+                setIsLoading(false);
+                nextStep();
+              } else {
+                const data = await finalRes.json();
+                setError(data.message || 'Failed to finalize package booking');
+                setIsLoading(false);
+              }
+            } catch (err) {
+              console.error('Package finalization error:', err);
+              setError('Error confirming package booking.');
+              setIsLoading(false);
+            }
+          },
+          prefill: {
+            name: bookingData.name,
+            email: bookingData.email,
+          },
+          theme: {
+            color: '#c79c6e'
+          },
+          modal: {
+            ondismiss: function() {
+              setStep(5);
+              setIsLoading(false);
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function () {
+          setError('Payment failed or was cancelled.');
+          setStep(5);
+          setIsLoading(false);
+        });
+        rzp.open();
+        return;
+      }
+
       // 3. Create an order (passing optional couponCode)
       const orderRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/create-order`, {
         method: 'POST',
@@ -735,7 +860,7 @@ export default function Booking() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8]/30 via-transparent to-[#f5f1e8]/60" />
       </div>
 
-      <div className="relative z-10 px-3 sm:px-6 md:px-8 w-full max-w-5xl mx-auto">
+      <div className={`relative z-10 px-3 sm:px-6 md:px-8 w-full ${step === 1 && (bookingData.bookingMode === 'package' || bookingData.isPackage) ? 'max-w-7xl' : 'max-w-5xl'} mx-auto transition-all duration-300`}>
         
         {/* Top Left Back Button */}
         {step <= 3 && (
@@ -846,6 +971,7 @@ export default function Booking() {
                   freeSessionInfo={freeSessionInfo}
                   settings={bookingSettings.step1}
                   draftId={draftId}
+                  fees={fees}
                 />
               )}
               {step === 2 && (

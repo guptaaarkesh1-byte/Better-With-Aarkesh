@@ -326,10 +326,32 @@ export default function AdminAppointmentsView() {
   // Helper to determine agreement review status info
   const getAgreementStatusInfo = (app) => {
     if (!app) return { key: 'pending', label: 'Pending', pillClass: 'p-none', style: { background: '#f5f3f0', color: '#6b635b' } };
-    const raw = (app.agreementStatus || '').toLowerCase();
-    const isAccepted = raw === 'accepted' || Boolean(app.agreementAcceptedAt);
+    const pkg = (app.packageId && typeof app.packageId === 'object') ? app.packageId : null;
+    let raw = (pkg?.agreementStatus || app.agreementStatus || '').toLowerCase();
+    let acceptedAt = pkg?.agreementAcceptedAt || app.agreementAcceptedAt;
+
+    // Cross-appointment package sync: If any session of the same package was accepted, consider all sessions accepted
+    if (app.packageId && raw !== 'accepted' && !acceptedAt && Array.isArray(appointments)) {
+      const pkgIdStr = String(typeof app.packageId === 'object' ? (app.packageId._id || app.packageId.id) : app.packageId);
+      if (pkgIdStr) {
+        const acceptedSibling = appointments.find(sib => {
+          if (!sib || !sib.packageId) return false;
+          const sibPkgIdStr = String(typeof sib.packageId === 'object' ? (sib.packageId._id || sib.packageId.id) : sib.packageId);
+          if (sibPkgIdStr !== pkgIdStr) return false;
+          const sibRaw = (sib.agreementStatus || (typeof sib.packageId === 'object' ? sib.packageId.agreementStatus : '') || '').toLowerCase();
+          return sibRaw === 'accepted' || Boolean(sib.agreementAcceptedAt) || (typeof sib.packageId === 'object' && Boolean(sib.packageId?.agreementAcceptedAt));
+        });
+        if (acceptedSibling) {
+          raw = 'accepted';
+          acceptedAt = acceptedSibling.agreementAcceptedAt || (typeof acceptedSibling.packageId === 'object' && acceptedSibling.packageId?.agreementAcceptedAt) || null;
+        }
+      }
+    }
+
+    const isAccepted = raw === 'accepted' || Boolean(acceptedAt);
     const isSent = raw === 'sent' || raw === 'approved_sent';
-    const isExpired = raw === 'expired' || (isSent && app.agreementTokenExpiresAt && new Date(app.agreementTokenExpiresAt) < new Date() && !isAccepted);
+    const expiresAt = pkg?.agreementTokenExpiresAt || app.agreementTokenExpiresAt;
+    const isExpired = raw === 'expired' || (isSent && expiresAt && new Date(expiresAt) < new Date() && !isAccepted);
 
     if (isAccepted) {
       return {
@@ -337,7 +359,7 @@ export default function AdminAppointmentsView() {
         label: 'Reviewed ✓',
         pillClass: 'p-done',
         style: { background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 700 },
-        acceptedAt: app.agreementAcceptedAt
+        acceptedAt
       };
     }
     if (isExpired) {
@@ -719,6 +741,8 @@ export default function AdminAppointmentsView() {
       }
       if (sessionTypeFilter === 'course_free' && !isFree) return false;
       if (sessionTypeFilter === 'standard' && isFree) return false;
+      if (sessionTypeFilter === 'package' && !app.packageId) return false;
+      if (sessionTypeFilter === 'single' && (app.packageId || isFree)) return false;
 
       if (!matchesCourseFilter(client)) return false;
       if (!matchesDateRange(`${app.date} ${app.time || ''}`)) return false;
@@ -1655,6 +1679,19 @@ export default function AdminAppointmentsView() {
     if (app.paymentStatus === 'Refunded' || (app.status || '').toUpperCase() === 'REFUNDED') {
       return <span className="bwa-pill p-cx">{inr(app.amount || 5000)} refunded</span>;
     }
+    if (app.packageId) {
+      const pkgTotal = typeof app.packageId === 'object' ? app.packageId.totalAmount : null;
+      return (
+        <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+          <span className="bwa-pill p-paid">{inr(app.amount || 5000)} paid</span>
+          {pkgTotal && (
+            <span style={{ fontSize: '0.68rem', color: '#7a7269', fontWeight: 600 }}>
+              (Package: {inr(pkgTotal)})
+            </span>
+          )}
+        </div>
+      );
+    }
     return <span className="bwa-pill p-paid">{inr(app.amount || 5000)} paid</span>;
   };
 
@@ -2348,6 +2385,8 @@ export default function AdminAppointmentsView() {
                       <option value="all">All types</option>
                       <option value="course_free">Free session (course perk)</option>
                       <option value="standard">Paid 1-on-1 session</option>
+                      <option value="package">Package sessions</option>
+                      <option value="single">Single sessions</option>
                     </select>
                   </div>
 
@@ -2490,6 +2529,27 @@ export default function AdminAppointmentsView() {
 
                           <div className="bwa-cell" data-label="Session">
                             <b>{isFree ? 'Free session (course perk)' : 'Paid 1-on-1 session'}</b>
+                            {app.packageId && (
+                              <span 
+                                className="bwa-pill" 
+                                style={{
+                                  background: '#ffedd5',
+                                  color: '#c2410c',
+                                  border: '1px solid #fed7aa',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  padding: '2px 8px',
+                                  borderRadius: '99px',
+                                  marginTop: '3px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  width: 'fit-content'
+                                }}
+                              >
+                                📦 Package {app.sessionNumber || '?'}/{app.totalSessionsInPackage || (typeof app.packageId === 'object' ? app.packageId.totalSessions : '?')}
+                              </span>
+                            )}
                             {client.course ? (
                               <span className="s ctag">Course: {client.course.name}</span>
                             ) : (
@@ -3561,6 +3621,85 @@ export default function AdminAppointmentsView() {
                         </span>
                       </div>
 
+                      {/* Package Sessions Overview Box */}
+                      {selectedAppt.packageId && (() => {
+                        const pkgIdStr = String(typeof selectedAppt.packageId === 'object' ? (selectedAppt.packageId._id || selectedAppt.packageId.id) : selectedAppt.packageId);
+                        const siblingSessions = appointments.filter(a => {
+                          const aPkgId = a.packageId ? String(typeof a.packageId === 'object' ? (a.packageId._id || a.packageId.id) : a.packageId) : null;
+                          return aPkgId === pkgIdStr;
+                        }).sort((x, y) => (x.sessionNumber || 0) - (y.sessionNumber || 0));
+
+                        const pkgDoc = typeof selectedAppt.packageId === 'object' ? selectedAppt.packageId : null;
+                        const totalSess = selectedAppt.totalSessionsInPackage || pkgDoc?.totalSessions || siblingSessions.length;
+
+                        return (
+                          <div 
+                            className="bwa-box" 
+                            style={{ 
+                              borderLeft: '3px solid #ea580c', 
+                              background: '#fffaf5',
+                              marginTop: '14px',
+                              marginBottom: '14px' 
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
+                              <div>
+                                <h4 className="big" style={{ margin: 0, color: '#9a3412', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>📦</span> Part of {totalSess}-Session Coaching Package
+                                </h4>
+                                <p className="hint" style={{ margin: '2px 0 10px', color: '#c2410c' }}>
+                                  Currently viewing Session {selectedAppt.sessionNumber} of {totalSess}. Single agreement covers all {totalSess} sessions.
+                                </p>
+                              </div>
+                              {pkgDoc?.totalAmount && (
+                                <span className="bwa-pill" style={{ background: '#ffedd5', color: '#9a3412', fontWeight: 700, fontSize: '0.75rem' }}>
+                                  Total Paid: {inr(pkgDoc.totalAmount)}
+                                </span>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6c635b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Package Schedule ({siblingSessions.length} Sessions)
+                              </span>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+                                {siblingSessions.map((s) => {
+                                  const isCurrent = String(s._id) === String(selectedAppt._id);
+                                  return (
+                                    <div
+                                      key={s._id}
+                                      onClick={() => setSelectedAppt(s)}
+                                      style={{
+                                        padding: '8px 12px',
+                                        borderRadius: '8px',
+                                        border: isCurrent ? '2px solid #ea580c' : '1px solid #fed7aa',
+                                        background: isCurrent ? '#fff' : '#fff7ed',
+                                        cursor: isCurrent ? 'default' : 'pointer',
+                                        boxShadow: isCurrent ? '0 2px 6px rgba(234, 88, 12, 0.15)' : 'none',
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                      title={isCurrent ? 'Current Session' : 'Click to view details for this session'}
+                                    >
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <b style={{ fontSize: '0.78rem', color: isCurrent ? '#ea580c' : '#431407' }}>
+                                          Session {s.sessionNumber || '?'} {isCurrent && '· (Viewing)'}
+                                        </b>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: s.status === 'COMPLETED' ? '#166534' : s.status === 'CANCELLED' ? '#991b1b' : '#c2410c' }}>
+                                          {s.status === 'COMPLETED' ? '✓ Done' : s.status === 'CANCELLED' ? '✕ Cancelled' : 'Upcoming'}
+                                        </span>
+                                      </div>
+                                      <div style={{ fontSize: '0.74rem', color: '#7a7269', marginTop: '2px' }}>
+                                        {formatDateShort(s.date)} · {formatTime(s.time, s.date)}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {/* Reschedule Alert Note */}
                       {(selectedAppt.rescheduleRequested ||
                         selectedAppt.rescheduleRequest?.status === 'PENDING') && (
@@ -3945,7 +4084,7 @@ export default function AdminAppointmentsView() {
                             </p>
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
                               <a
-                                href={selectedAppt.agreementPdfUrl || `${API_URL}/api/appointments/${selectedAppt._id}/agreement-pdf`}
+                                href={selectedAppt.agreementPdfUrl || selectedAppt.packageId?.agreementPdfUrl || `${API_URL}/api/appointments/${selectedAppt._id}/agreement-pdf`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="bwa-btn bwa-btn-sm"
@@ -3963,9 +4102,9 @@ export default function AdminAppointmentsView() {
                               >
                                 <span>📄</span> Download / View Agreement PDF
                               </a>
-                              {selectedAppt.agreementToken && (
+                              {(selectedAppt.agreementToken || selectedAppt.packageId?.agreementToken) && (
                                 <a
-                                  href={`${CLIENT_URL}/agreement/${selectedAppt.agreementToken}`}
+                                  href={`${CLIENT_URL}/agreement/${selectedAppt.agreementToken || selectedAppt.packageId?.agreementToken}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="bwa-btn bwa-btn-line bwa-btn-sm"
@@ -4082,6 +4221,32 @@ export default function AdminAppointmentsView() {
                         </div>
                       )}
 
+                      {/* Package Agreement Note */}
+                      {selectedAppt.packageId && (
+                        <div
+                          style={{
+                            background: '#ffedd5',
+                            border: '1.5px solid #fed7aa',
+                            borderRadius: '12px',
+                            padding: '14px 18px',
+                            marginBottom: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.4rem' }}>📦</span>
+                          <div>
+                            <strong style={{ color: '#9a3412', fontSize: '0.9rem', display: 'block' }}>
+                              Coaching Package Agreement ({selectedAppt.totalSessionsInPackage || (typeof selectedAppt.packageId === 'object' ? selectedAppt.packageId.totalSessions : '')} Sessions)
+                            </strong>
+                            <span style={{ color: '#c2410c', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                              This agreement legally covers all sessions of this package. Approving and sending here creates one master agreement and delivers the review link to the client.
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Agreement Editor Card */}
                       <div className="bwa-box">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
@@ -4155,72 +4320,110 @@ export default function AdminAppointmentsView() {
                         </div>
 
                         {/* Session Schedule Fields */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '14px', background: '#faf8f5', padding: '12px', borderRadius: '8px', border: '1px solid #ede7df' }}>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
-                              Session Date
+                        {selectedAppt.packageId ? (
+                          <div style={{ marginBottom: '14px', background: '#faf8f5', padding: '12px', borderRadius: '8px', border: '1px solid #ede7df' }}>
+                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#c2410c', marginBottom: '8px' }}>
+                              Package Sessions Schedule (Included in Agreement)
                             </label>
-                            <input
-                              type="text"
-                              className="bwa-input"
-                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
-                              value={agreementForm.sessionDate}
-                              onChange={(e) => setAgreementForm({ ...agreementForm, sessionDate: e.target.value })}
-                            />
-                          </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px', marginBottom: '12px' }}>
+                              {(() => {
+                                const pkgIdStr = String(typeof selectedAppt.packageId === 'object' ? (selectedAppt.packageId._id || selectedAppt.packageId.id) : selectedAppt.packageId);
+                                const siblings = appointments.filter(a => {
+                                  const aPkgId = a.packageId ? String(typeof a.packageId === 'object' ? (a.packageId._id || a.packageId.id) : a.packageId) : null;
+                                  return aPkgId === pkgIdStr;
+                                }).sort((x, y) => (x.sessionNumber || 0) - (y.sessionNumber || 0));
 
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
-                              Session Time
-                            </label>
-                            <input
-                              type="text"
-                              className="bwa-input"
-                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
-                              value={agreementForm.sessionTime}
-                              onChange={(e) => setAgreementForm({ ...agreementForm, sessionTime: e.target.value })}
-                            />
-                          </div>
-
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
-                              Mode of Coaching
-                            </label>
-                            <input
-                              type="text"
-                              className="bwa-input"
-                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
-                              value={agreementForm.modeOfCoaching}
-                              onChange={(e) => setAgreementForm({ ...agreementForm, modeOfCoaching: e.target.value })}
-                            />
-                          </div>
-
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                              <label style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', margin: 0 }}>
-                                Google Meet Link
-                              </label>
-                              {agreementForm.meetLink && (
-                                <a
-                                  href={agreementForm.meetLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  style={{ fontSize: '0.72rem', color: '#c9542f', fontWeight: 600, textDecoration: 'underline' }}
-                                >
-                                  Test Link ↗
-                                </a>
-                              )}
+                                return siblings.map((s, idx) => (
+                                  <div key={s._id} style={{ background: '#fff', border: '1px solid #e2d9cf', borderRadius: '6px', padding: '6px 10px', fontSize: '0.78rem' }}>
+                                    <strong style={{ color: '#1c1714', display: 'block' }}>Session {s.sessionNumber || (idx + 1)}:</strong>
+                                    <span style={{ color: '#66615b' }}>{formatDateShort(s.date)} · {formatTime(s.time, s.date)}</span>
+                                  </div>
+                                ));
+                              })()}
                             </div>
-                            <input
-                              type="text"
-                              className="bwa-input"
-                              placeholder="https://meet.google.com/..."
-                              style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
-                              value={agreementForm.meetLink}
-                              onChange={(e) => setAgreementForm({ ...agreementForm, meetLink: e.target.value })}
-                            />
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                                  Mode of Coaching
+                                </label>
+                                <input
+                                  type="text"
+                                  className="bwa-input"
+                                  style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                                  value={agreementForm.modeOfCoaching}
+                                  onChange={(e) => setAgreementForm({ ...agreementForm, modeOfCoaching: e.target.value })}
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '14px', background: '#faf8f5', padding: '12px', borderRadius: '8px', border: '1px solid #ede7df' }}>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                                Session Date
+                              </label>
+                              <input
+                                type="text"
+                                className="bwa-input"
+                                style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                                value={agreementForm.sessionDate}
+                                onChange={(e) => setAgreementForm({ ...agreementForm, sessionDate: e.target.value })}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                                Session Time
+                              </label>
+                              <input
+                                type="text"
+                                className="bwa-input"
+                                style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                                value={agreementForm.sessionTime}
+                                onChange={(e) => setAgreementForm({ ...agreementForm, sessionTime: e.target.value })}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', marginBottom: '4px' }}>
+                                Mode of Coaching
+                              </label>
+                              <input
+                                type="text"
+                                className="bwa-input"
+                                style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                                value={agreementForm.modeOfCoaching}
+                                onChange={(e) => setAgreementForm({ ...agreementForm, modeOfCoaching: e.target.value })}
+                              />
+                            </div>
+
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                <label style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: '#666', margin: 0 }}>
+                                  Google Meet Link
+                                </label>
+                                {agreementForm.meetLink && (
+                                  <a
+                                    href={agreementForm.meetLink}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ fontSize: '0.72rem', color: '#c9542f', fontWeight: 600, textDecoration: 'underline' }}
+                                  >
+                                    Test Link ↗
+                                  </a>
+                                )}
+                              </div>
+                              <input
+                                type="text"
+                                className="bwa-input"
+                                placeholder="https://meet.google.com/..."
+                                style={{ width: '100%', padding: '8px 10px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid #d6cfc7', background: '#fff' }}
+                                value={agreementForm.meetLink}
+                                onChange={(e) => setAgreementForm({ ...agreementForm, meetLink: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                        )}
 
                         {/* Section 6: Between-Session Support */}
                         <div style={{ marginBottom: '14px' }}>
@@ -4280,7 +4483,7 @@ export default function AdminAppointmentsView() {
 
                           {selectedApptAgStatus?.key === 'accepted' ? (
                             <a
-                              href={selectedAppt.agreementPdfUrl || `${API_URL}/api/appointments/${selectedAppt._id}/agreement-pdf`}
+                              href={selectedAppt.agreementPdfUrl || selectedAppt.packageId?.agreementPdfUrl || `${API_URL}/api/appointments/${selectedAppt._id}/agreement-pdf`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="bwa-btn bwa-btn-accent"

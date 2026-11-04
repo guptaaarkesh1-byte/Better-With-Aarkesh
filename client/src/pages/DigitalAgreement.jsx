@@ -155,9 +155,15 @@ export default function DigitalAgreement() {
     betweenSessionSupport,
     additionalAgreedTerms,
     agreementDate,
-    isPackage,
     isExpired
   } = agreement;
+
+  const isPackage = Boolean(
+    agreement.isPackage || 
+    agreement.packageId || 
+    (agreement.packageSessions && agreement.packageSessions.length > 0) || 
+    (agreement.totalSessions && agreement.totalSessions > 1)
+  );
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#2b2723]" style={{ fontFamily: 'inherit' }}>
@@ -310,10 +316,43 @@ export default function DigitalAgreement() {
                   <span className="w-3.5 h-3.5 rounded-xs border border-[#111010] flex items-center justify-center text-[10px] font-bold">
                     {isPackage ? '✓' : ''}
                   </span>
-                  Package
+                  Package {agreement?.totalSessions ? `(${agreement.totalSessions} Sessions)` : ''}
                 </span>
               </div>
-              <p><strong>Scheduled Time:</strong> {sessionDate} at {sessionTime} (IST) · {duration} Minutes</p>
+              {isPackage ? (
+                <div className="pt-2">
+                  <p className="font-semibold mb-2 text-sm text-[#111010]">
+                    Package Session Schedule ({agreement.totalSessions || agreement.packageSessions?.length || 'Multiple'} Sessions):
+                  </p>
+                  {agreement.packageSessions && agreement.packageSessions.length > 0 ? (
+                    <div className="space-y-2 pl-3 border-l-2 border-[#c9542f]/40 py-1 bg-[#faf8f5] rounded-r-lg p-3">
+                      {agreement.packageSessions.map((s, idx) => (
+                        <div key={idx} className="text-xs sm:text-sm text-[#3b3631] flex flex-wrap items-center justify-between gap-2">
+                          <span>
+                            <strong>Session {s.sessionNumber || idx + 1}:</strong> {s.date} at {s.time} (IST)
+                          </span>
+                          {s.meetLink && (
+                            <a href={s.meetLink} target="_blank" rel="noopener noreferrer" className="text-[#c9542f] text-xs underline font-medium">
+                              Google Meet
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[#7a7269]">
+                      First Session: {sessionDate} at {sessionTime} (IST) · {duration} Minutes
+                    </p>
+                  )}
+                  {agreement.totalAmount && (
+                    <p className="mt-3 text-xs sm:text-sm text-[#555047]">
+                      <strong>Total Package Fee Paid:</strong> ₹{Number(agreement.totalAmount).toLocaleString('en-IN')}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p><strong>Scheduled Time:</strong> {sessionDate} at {sessionTime} (IST) · {duration} Minutes</p>
+              )}
               <p><strong>Mode of Coaching:</strong> {modeOfCoaching}</p>
               {meetLink && (
                 <p>

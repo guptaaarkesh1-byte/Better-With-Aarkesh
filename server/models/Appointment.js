@@ -187,6 +187,20 @@ const appointmentSchema = new mongoose.Schema({
     rescheduleAmount: Number,
     paidAt: Date,
   },
+  packageId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Package',
+    default: null,
+    index: true,
+  },
+  sessionNumber: {
+    type: Number,
+    default: null,
+  },
+  totalSessionsInPackage: {
+    type: Number,
+    default: null,
+  },
   isArchived: {
     type: Boolean,
     default: false,

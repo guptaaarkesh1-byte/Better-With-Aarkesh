@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Appointment from '../models/Appointment.js';
+import Package from '../models/Package.js';
 import User from '../models/User.js';
 import CourseUser from '../models/CourseUser.js';
 import CoursePurchase from '../models/CoursePurchase.js';
@@ -18,6 +19,8 @@ import {
   sendClientBookingConfirmationEmail,
   sendClientCoachingAgreementEmail, 
   sendClientAgreementAcceptedConfirmationEmail,
+  sendClientPackageAgreementEmail,
+  sendClientPackageAgreementAcceptedConfirmationEmail,
   generateCoachingAgreementPdf,
   generateGoogleMeetLink,
   generateAgreementToken,
@@ -865,7 +868,26 @@ router.get('/agreement-by-token/:token', async (req, res) => {
       month: 'long',
       year: 'numeric'
     });
-    const isPackage = Boolean(appointment.isFreeSession || appointment.isCoursePackage);
+    let isPackage = Boolean(appointment.packageId || appointment.isFreeSession || appointment.isCoursePackage);
+    let totalSessions = 1;
+    let packageSessions = [];
+    let packageDoc = null;
+
+    if (appointment.packageId) {
+      packageDoc = await Package.findById(appointment.packageId);
+      if (packageDoc) {
+        isPackage = true;
+        totalSessions = packageDoc.totalSessions || 1;
+      }
+      const siblings = await Appointment.find({ packageId: appointment.packageId }).sort({ sessionNumber: 1 });
+      packageSessions = siblings.map((s, idx) => ({
+        sessionNumber: s.sessionNumber || idx + 1,
+        date: s.date,
+        time: s.time,
+        meetLink: s.meetLink,
+        status: s.status
+      }));
+    }
 
     res.json({
       status: isAccepted ? 'accepted' : (isExpired ? 'expired' : 'pending'),
@@ -873,6 +895,10 @@ router.get('/agreement-by-token/:token', async (req, res) => {
       isExpired,
       acceptedAt: appointment.agreementAcceptedAt,
       appointmentId: appointment._id,
+      packageId: appointment.packageId,
+      totalSessions,
+      packageSessions,
+      totalAmount: packageDoc ? packageDoc.totalAmount : appointment.amount,
       clientName,
       clientEmail,
       clientPhone,
@@ -920,6 +946,28 @@ router.post('/agreement-accept/:token', async (req, res) => {
     }
 
     if (appointment.agreementStatus === 'accepted' || appointment.agreementAcceptedAt) {
+      if (appointment.packageId) {
+        const pkgId = appointment.packageId;
+        const acceptedTime = appointment.agreementAcceptedAt || new Date();
+        const pdfUrl = appointment.agreementPdfUrl || `/api/appointments/agreement-pdf-by-token/${token}`;
+        await Package.findByIdAndUpdate(pkgId, {
+          $set: {
+            agreementStatus: 'accepted',
+            agreementAcceptedAt: acceptedTime,
+            agreementPdfUrl: pdfUrl
+          }
+        }).catch(() => {});
+        await Appointment.updateMany(
+          { packageId: pkgId },
+          {
+            $set: {
+              agreementStatus: 'accepted',
+              agreementAcceptedAt: acceptedTime,
+              agreementPdfUrl: pdfUrl
+            }
+          }
+        ).catch(() => {});
+      }
       return res.json({
         success: true,
         alreadyAccepted: true,
@@ -946,6 +994,13 @@ router.post('/agreement-accept/:token', async (req, res) => {
     const customData = appointment.agreementData || {};
     const clientName = (customData.clientName || appointment.name || 'Client').trim();
 
+    let packageDoc = null;
+    let siblingAppointments = [];
+    if (appointment.packageId) {
+      packageDoc = await Package.findById(appointment.packageId);
+      siblingAppointments = await Appointment.find({ packageId: appointment.packageId }).sort({ sessionNumber: 1 });
+    }
+
     try {
       const pdfBuffer = await generateCoachingAgreementPdf({
         clientName,
@@ -958,7 +1013,15 @@ router.post('/agreement-accept/:token', async (req, res) => {
           month: 'long',
           year: 'numeric'
         }),
-        isPackage: Boolean(appointment.isFreeSession || appointment.isCoursePackage),
+        isPackage: Boolean(appointment.packageId || appointment.isFreeSession || appointment.isCoursePackage),
+        totalSessions: packageDoc ? packageDoc.totalSessions : (siblingAppointments.length || 1),
+        sessionsList: siblingAppointments.map((s, idx) => ({
+          sessionNumber: s.sessionNumber || idx + 1,
+          date: s.date,
+          time: s.time,
+          meetLink: s.meetLink
+        })),
+        totalAmount: packageDoc ? packageDoc.totalAmount : appointment.amount,
         modeOfCoaching: customData.modeOfCoaching || 'Online Video (Google Meet)',
         meetLink: customData.meetLink || appointment.meetLink,
         betweenSessionSupport: customData.betweenSessionSupport || '',
@@ -981,8 +1044,42 @@ router.post('/agreement-accept/:token', async (req, res) => {
 
     await appointment.save();
 
-    // Send confirmation email asynchronously
-    sendClientAgreementAcceptedConfirmationEmail({ appointment }).catch(() => {});
+    if (appointment.packageId || packageDoc) {
+      const pkgId = appointment.packageId || packageDoc?._id;
+      if (pkgId) {
+        await Package.findByIdAndUpdate(pkgId, {
+          $set: {
+            agreementStatus: 'accepted',
+            agreementAcceptedAt: acceptedAt,
+            agreementAcceptedIp: clientIp,
+            agreementAcceptedUserAgent: userAgent,
+            agreementPdfUrl: appointment.agreementPdfUrl
+          }
+        }).catch(() => {});
+
+        await Appointment.updateMany(
+          { packageId: pkgId },
+          {
+            $set: {
+              agreementStatus: 'accepted',
+              agreementAcceptedAt: acceptedAt,
+              agreementAcceptedIp: clientIp,
+              agreementAcceptedUserAgent: userAgent,
+              agreementPdfUrl: appointment.agreementPdfUrl
+            }
+          }
+        ).catch(() => {});
+      }
+
+      if (packageDoc) {
+        packageDoc.agreementStatus = 'accepted';
+        packageDoc.agreementAcceptedAt = acceptedAt;
+        packageDoc.agreementPdfUrl = appointment.agreementPdfUrl;
+        sendClientPackageAgreementAcceptedConfirmationEmail({ packageDoc, appointments: siblingAppointments }).catch(() => {});
+      }
+    } else {
+      sendClientAgreementAcceptedConfirmationEmail({ appointment }).catch(() => {});
+    }
 
     res.json({
       success: true,
@@ -1002,12 +1099,33 @@ router.post('/agreement-accept/:token', async (req, res) => {
 router.get('/agreement-pdf-by-token/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    const appointment = await Appointment.findOne({ agreementToken: token });
+    let appointment = await Appointment.findOne({ agreementToken: token });
+    let packageDoc = null;
+    if (!appointment) {
+      packageDoc = await Package.findOne({ agreementToken: token });
+      if (packageDoc) {
+        appointment = await Appointment.findOne({ packageId: packageDoc._id }).sort({ sessionNumber: 1 });
+      }
+    }
     if (!appointment) return res.status(404).json({ message: 'Agreement not found' });
+
+    let siblingAppointments = [];
+    if (appointment.packageId) {
+      if (!packageDoc) packageDoc = await Package.findById(appointment.packageId);
+      siblingAppointments = await Appointment.find({ packageId: appointment.packageId }).sort({ sessionNumber: 1 });
+    }
 
     const customData = appointment.agreementData || {};
     const clientName = (customData.clientName || appointment.name || 'Client').trim();
     const isAccepted = Boolean(appointment.agreementStatus === 'accepted' || appointment.agreementAcceptedAt);
+    const isPackage = Boolean(appointment.packageId || appointment.isFreeSession || appointment.isCoursePackage);
+    const totalSessions = packageDoc ? packageDoc.totalSessions : (siblingAppointments.length || 1);
+    const sessionsList = siblingAppointments.map((s, idx) => ({
+      sessionNumber: s.sessionNumber || idx + 1,
+      date: s.date,
+      time: s.time,
+      meetLink: s.meetLink
+    }));
 
     const pdfBuffer = await generateCoachingAgreementPdf({
       clientName,
@@ -1020,7 +1138,10 @@ router.get('/agreement-pdf-by-token/:token', async (req, res) => {
         month: 'long',
         year: 'numeric'
       }),
-      isPackage: Boolean(appointment.isFreeSession || appointment.isCoursePackage),
+      isPackage,
+      totalSessions,
+      sessionsList,
+      totalAmount: packageDoc ? packageDoc.totalAmount : appointment.amount,
       modeOfCoaching: customData.modeOfCoaching || 'Online Video (Google Meet)',
       meetLink: customData.meetLink || appointment.meetLink,
       betweenSessionSupport: customData.betweenSessionSupport || '',
@@ -1046,9 +1167,24 @@ router.get('/:id/agreement-pdf', optionalAuth, async (req, res) => {
     const appointment = await Appointment.findById(req.params.id);
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
+    let packageDoc = null;
+    let siblingAppointments = [];
+    if (appointment.packageId) {
+      packageDoc = await Package.findById(appointment.packageId);
+      siblingAppointments = await Appointment.find({ packageId: appointment.packageId }).sort({ sessionNumber: 1 });
+    }
+
     const customData = appointment.agreementData || {};
     const clientName = (customData.clientName || appointment.name || 'Client').trim();
     const isAccepted = Boolean(appointment.agreementStatus === 'accepted' || appointment.agreementAcceptedAt);
+    const isPackage = Boolean(appointment.packageId || appointment.isFreeSession || appointment.isCoursePackage);
+    const totalSessions = packageDoc ? packageDoc.totalSessions : (siblingAppointments.length || 1);
+    const sessionsList = siblingAppointments.map((s, idx) => ({
+      sessionNumber: s.sessionNumber || idx + 1,
+      date: s.date,
+      time: s.time,
+      meetLink: s.meetLink
+    }));
 
     const pdfBuffer = await generateCoachingAgreementPdf({
       clientName,
@@ -1061,7 +1197,10 @@ router.get('/:id/agreement-pdf', optionalAuth, async (req, res) => {
         month: 'long',
         year: 'numeric'
       }),
-      isPackage: Boolean(appointment.isFreeSession || appointment.isCoursePackage),
+      isPackage,
+      totalSessions,
+      sessionsList,
+      totalAmount: packageDoc ? packageDoc.totalAmount : appointment.amount,
       modeOfCoaching: customData.modeOfCoaching || 'Online Video (Google Meet)',
       meetLink: customData.meetLink || appointment.meetLink,
       betweenSessionSupport: customData.betweenSessionSupport || '',
@@ -1112,7 +1251,7 @@ router.get('/', protect, async (req, res) => {
       ],
       isArchived: { $ne: true },
       isUserDeleted: { $ne: true }
-    }).sort({ createdAt: -1 });
+    }).populate('packageId').sort({ createdAt: -1 });
 
     // Deduplicate by _id (in case both userId and email matched)
     const seen = new Set();
@@ -1128,6 +1267,24 @@ router.get('/', protect, async (req, res) => {
     const fee60 = feeSettings?.value?.fee60min || 1000;
     const fee90 = feeSettings?.value?.fee90min || 1500;
 
+    // Detect accepted packages so all sibling sessions show reviewed/accepted
+    const acceptedPkgMap = new Map();
+    unique.forEach(a => {
+      if (a.packageId) {
+        const pkgIdStr = String(a.packageId._id || a.packageId);
+        const isPkgAccepted = (a.packageId?.agreementStatus || '').toLowerCase() === 'accepted' || Boolean(a.packageId?.agreementAcceptedAt);
+        const isAppAccepted = (a.agreementStatus || '').toLowerCase() === 'accepted' || Boolean(a.agreementAcceptedAt);
+        if (isPkgAccepted || isAppAccepted) {
+          if (!acceptedPkgMap.has(pkgIdStr)) {
+            acceptedPkgMap.set(pkgIdStr, {
+              acceptedAt: a.agreementAcceptedAt || a.packageId?.agreementAcceptedAt || new Date(),
+              pdfUrl: a.agreementPdfUrl || a.packageId?.agreementPdfUrl || ''
+            });
+          }
+        }
+      }
+    });
+
     const enriched = unique.map(a => {
       const appObj = a.toObject();
       const isFree = Boolean(appObj.isFreeSession || appObj.orderId === 'COURSE_FREE_SESSION');
@@ -1136,6 +1293,21 @@ router.get('/', protect, async (req, res) => {
         : (appObj.amount !== undefined && appObj.amount !== null 
             ? appObj.amount 
             : (appObj.duration === 90 ? fee90 : fee60));
+
+      if (appObj.packageId) {
+        const pkgIdStr = String(appObj.packageId._id || appObj.packageId);
+        if (acceptedPkgMap.has(pkgIdStr)) {
+          const syncInfo = acceptedPkgMap.get(pkgIdStr);
+          appObj.agreementStatus = 'accepted';
+          appObj.agreementAcceptedAt = appObj.agreementAcceptedAt || syncInfo.acceptedAt;
+          appObj.agreementPdfUrl = appObj.agreementPdfUrl || syncInfo.pdfUrl;
+          if (appObj.packageId && typeof appObj.packageId === 'object') {
+            appObj.packageId.agreementStatus = 'accepted';
+            appObj.packageId.agreementAcceptedAt = appObj.packageId.agreementAcceptedAt || syncInfo.acceptedAt;
+            appObj.packageId.agreementPdfUrl = appObj.packageId.agreementPdfUrl || syncInfo.pdfUrl;
+          }
+        }
+      }
 
       return {
         ...appObj,
@@ -1172,6 +1344,7 @@ router.get('/admin', protect, admin, async (req, res) => {
   try {
     const appointments = await Appointment.find()
       .populate('userId', 'name fullName email phone phoneNumber photoUrl createdAt isDeleted deletedAt')
+      .populate('packageId')
       .sort({ createdAt: -1 });
 
     // Fetch fee settings to ensure accurate fallback
@@ -1187,6 +1360,24 @@ router.get('/admin', protect, admin, async (req, res) => {
         coursePurchaserEmails.add(em);
         if (c.phoneNumber) courseUserPhoneMap.set(em, c.phoneNumber);
         if (c.photoUrl) courseUserPhotoMap.set(em, c.photoUrl);
+      }
+    });
+
+    // Detect accepted packages so all sibling sessions show reviewed/accepted
+    const acceptedPkgMap = new Map();
+    appointments.forEach(a => {
+      if (a.packageId) {
+        const pkgIdStr = String(a.packageId._id || a.packageId);
+        const isPkgAccepted = (a.packageId?.agreementStatus || '').toLowerCase() === 'accepted' || Boolean(a.packageId?.agreementAcceptedAt);
+        const isAppAccepted = (a.agreementStatus || '').toLowerCase() === 'accepted' || Boolean(a.agreementAcceptedAt);
+        if (isPkgAccepted || isAppAccepted) {
+          if (!acceptedPkgMap.has(pkgIdStr)) {
+            acceptedPkgMap.set(pkgIdStr, {
+              acceptedAt: a.agreementAcceptedAt || a.packageId?.agreementAcceptedAt || new Date(),
+              pdfUrl: a.agreementPdfUrl || a.packageId?.agreementPdfUrl || ''
+            });
+          }
+        }
       }
     });
 
@@ -1209,6 +1400,21 @@ router.get('/admin', protect, admin, async (req, res) => {
       if (!resolvedMeetLink || !resolvedMeetLink.trim()) {
         resolvedMeetLink = generateGoogleMeetLink();
         Appointment.updateOne({ _id: app._id }, { $set: { meetLink: resolvedMeetLink } }).catch(() => {});
+      }
+
+      if (appObj.packageId) {
+        const pkgIdStr = String(appObj.packageId._id || appObj.packageId);
+        if (acceptedPkgMap.has(pkgIdStr)) {
+          const syncInfo = acceptedPkgMap.get(pkgIdStr);
+          appObj.agreementStatus = 'accepted';
+          appObj.agreementAcceptedAt = appObj.agreementAcceptedAt || syncInfo.acceptedAt;
+          appObj.agreementPdfUrl = appObj.agreementPdfUrl || syncInfo.pdfUrl;
+          if (appObj.packageId && typeof appObj.packageId === 'object') {
+            appObj.packageId.agreementStatus = 'accepted';
+            appObj.packageId.agreementAcceptedAt = appObj.packageId.agreementAcceptedAt || syncInfo.acceptedAt;
+            appObj.packageId.agreementPdfUrl = appObj.packageId.agreementPdfUrl || syncInfo.pdfUrl;
+          }
+        }
       }
 
       return {
@@ -2096,6 +2302,25 @@ router.get('/:id/agreement-preview', protect, admin, async (req, res) => {
     const betweenSessionSupport = customData.betweenSessionSupport || '';
     const additionalAgreedTerms = customData.additionalAgreedTerms || '';
 
+    let isPackage = appointment.isFreeSession || Boolean(appointment.isCoursePackage);
+    let totalSessions = 1;
+    let sessionsList = null;
+    let totalAmount = appointment.amount;
+
+    if (appointment.packageId) {
+      isPackage = true;
+      const packageDoc = await Package.findById(appointment.packageId);
+      const siblingAppointments = await Appointment.find({ packageId: appointment.packageId }).sort({ sessionNumber: 1 });
+      totalSessions = packageDoc ? packageDoc.totalSessions : siblingAppointments.length;
+      totalAmount = packageDoc ? packageDoc.totalAmount : (appointment.amount * totalSessions);
+      sessionsList = siblingAppointments.map((s, idx) => ({
+        sessionNumber: s.sessionNumber || idx + 1,
+        date: s.date,
+        time: s.time,
+        meetLink: s.meetLink
+      }));
+    }
+
     const pdfBuffer = await generateCoachingAgreementPdf({
       clientName,
       clientEmail,
@@ -2107,7 +2332,10 @@ router.get('/:id/agreement-preview', protect, admin, async (req, res) => {
         month: 'long',
         year: 'numeric'
       }),
-      isPackage: appointment.isFreeSession || Boolean(appointment.isCoursePackage),
+      isPackage,
+      totalSessions,
+      sessionsList,
+      totalAmount,
       modeOfCoaching,
       meetLink,
       betweenSessionSupport,
@@ -2139,6 +2367,15 @@ router.put('/:id/agreement-data', protect, admin, async (req, res) => {
     };
 
     const updated = await appointment.save();
+
+    if (appointment.packageId) {
+      await Package.findByIdAndUpdate(appointment.packageId, { $set: { agreementData: appointment.agreementData } });
+      await Appointment.updateMany(
+        { packageId: appointment.packageId },
+        { $set: { agreementData: appointment.agreementData } }
+      );
+    }
+
     res.json({
       success: true,
       message: 'Agreement details updated successfully',
@@ -2174,8 +2411,48 @@ router.post('/:id/agreement-send', protect, admin, async (req, res) => {
     const clientBaseUrl = (process.env.CLIENT_URL || 'https://aarkeshgupta.com').replace(/\/+$/, '');
     const agreementUrl = `${clientBaseUrl}/agreement/${appointment.agreementToken}`;
 
-    // Send notification email with CTA button leading to digital agreement page (NO PDF ATTACHED)
-    await sendClientCoachingAgreementEmail({ appointment, customData, agreementUrl, isResend: false });
+    if (appointment.packageId) {
+      const packageDoc = await Package.findById(appointment.packageId);
+      const siblingAppointments = await Appointment.find({ packageId: appointment.packageId }).sort({ sessionNumber: 1 });
+
+      if (packageDoc) {
+        packageDoc.agreementToken = appointment.agreementToken;
+        packageDoc.agreementTokenExpiresAt = appointment.agreementTokenExpiresAt;
+        packageDoc.agreementStatus = 'sent';
+        packageDoc.agreementSentAt = new Date();
+        packageDoc.agreementData = customData;
+        await packageDoc.save();
+      }
+
+      await Appointment.updateMany(
+        { packageId: appointment.packageId },
+        {
+          $set: {
+            agreementToken: appointment.agreementToken,
+            agreementTokenExpiresAt: appointment.agreementTokenExpiresAt,
+            agreementStatus: 'sent',
+            agreementSentAt: new Date(),
+            agreementData: customData
+          }
+        }
+      );
+
+      await sendClientPackageAgreementEmail({
+        packageDoc: packageDoc || {
+          clientName: appointment.name,
+          clientEmail: appointment.email,
+          totalSessions: siblingAppointments.length,
+          agreementToken: appointment.agreementToken
+        },
+        appointments: siblingAppointments,
+        customData,
+        agreementUrl,
+        isResend: false
+      });
+    } else {
+      // Send notification email with CTA button leading to digital agreement page (NO PDF ATTACHED)
+      await sendClientCoachingAgreementEmail({ appointment, customData, agreementUrl, isResend: false });
+    }
 
     appointment.agreementStatus = 'sent';
     appointment.agreementSentAt = new Date();
@@ -2225,8 +2502,48 @@ router.post('/:id/agreement-resend', protect, admin, async (req, res) => {
     const clientBaseUrl = (process.env.CLIENT_URL || 'https://aarkeshgupta.com').replace(/\/+$/, '');
     const agreementUrl = `${clientBaseUrl}/agreement/${freshToken}`;
 
-    // Send email with fresh token
-    await sendClientCoachingAgreementEmail({ appointment, customData, agreementUrl, isResend: true });
+    if (appointment.packageId) {
+      const packageDoc = await Package.findById(appointment.packageId);
+      const siblingAppointments = await Appointment.find({ packageId: appointment.packageId }).sort({ sessionNumber: 1 });
+
+      if (packageDoc) {
+        packageDoc.agreementToken = freshToken;
+        packageDoc.agreementTokenExpiresAt = appointment.agreementTokenExpiresAt;
+        packageDoc.agreementStatus = 'sent';
+        packageDoc.agreementSentAt = new Date();
+        packageDoc.agreementData = customData;
+        await packageDoc.save();
+      }
+
+      await Appointment.updateMany(
+        { packageId: appointment.packageId },
+        {
+          $set: {
+            agreementToken: freshToken,
+            agreementTokenExpiresAt: appointment.agreementTokenExpiresAt,
+            agreementStatus: 'sent',
+            agreementSentAt: new Date(),
+            agreementData: customData
+          }
+        }
+      );
+
+      await sendClientPackageAgreementEmail({
+        packageDoc: packageDoc || {
+          clientName: appointment.name,
+          clientEmail: appointment.email,
+          totalSessions: siblingAppointments.length,
+          agreementToken: freshToken
+        },
+        appointments: siblingAppointments,
+        customData,
+        agreementUrl,
+        isResend: true
+      });
+    } else {
+      // Send email with fresh token
+      await sendClientCoachingAgreementEmail({ appointment, customData, agreementUrl, isResend: true });
+    }
 
     appointment.agreementStatus = 'sent';
     appointment.agreementSentAt = new Date();

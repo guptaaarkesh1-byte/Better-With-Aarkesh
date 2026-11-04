@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Check, CalendarBlank, Clock, User, VideoCamera, 
-  EnvelopeSimple, House, Quotes, ChatCenteredText, BookOpen, ArrowLeft
+  EnvelopeSimple, Quotes, ChatCenteredText, BookOpen, ArrowLeft,
+  Package, Tag, CheckCircle
 } from '@phosphor-icons/react';
 import { Link, useNavigate } from 'react-router-dom';
 import bookingBg from '../../assets/images/booking_bg_lamp.png';
-import defaultHeroImg from '../../assets/hero.webp';
 import LoginModal from '../layout/LoginModal';
 import PolicyModal from '../ui/PolicyModal';
 import { generateGoogleCalendarLink } from '../../utils/calendar';
 
-export default function BookingSuccess({ data, fee, settings = {}, generalSettings = {} }) {
+export default function BookingSuccess({ data = {}, fee, settings = {}, generalSettings = {} }) {
   const navigate = useNavigate();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
@@ -19,15 +19,15 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
   const nextStepIcons = [EnvelopeSimple, CalendarBlank, VideoCamera, User];
 
   useEffect(() => {
-    if (!isAuthenticated && data.appointmentId) {
+    if (!isAuthenticated && data?.appointmentId) {
       setIsLoginModalOpen(true);
     }
-  }, [isAuthenticated, data.appointmentId]);
+  }, [isAuthenticated, data?.appointmentId]);
 
   const handleRegistrationSuccess = async (userData) => {
     try {
       const token = localStorage.getItem('token');
-      if (token && data.appointmentId) {
+      if (token && data?.appointmentId) {
         await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${data.appointmentId}/link`, {
           method: 'PUT',
           headers: {
@@ -39,9 +39,47 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
       navigate('/my-journey');
     } catch (err) {
       console.error('Error linking appointment:', err);
-      // Still navigate since registration succeeded
       navigate('/my-journey');
     }
+  };
+
+  const isPackage = Boolean(data.isPackage);
+  const totalSessions = isPackage ? (data.totalSessions || data.packageSlots?.length || 1) : 1;
+  const duration = Number(data.sessionDuration) || 60;
+
+  // All package slots
+  const allSlots = Array.isArray(data.packageSlots) && data.packageSlots.length > 0 
+    ? data.packageSlots 
+    : (Array.isArray(data.appointments) ? data.appointments : []);
+
+  const paidAmount = Number(data.paidAmount ?? fee ?? 0);
+  const discountAmount = Number(data.discountAmount) || 0;
+  const pricePerSession = Number(data.pricePerSession) || (totalSessions > 0 ? Math.round((paidAmount + discountAmount) / totalSessions) : paidAmount);
+  const couponCode = data.couponCode || '';
+
+  const formatSingleSessionTime = (timeStr, dur) => {
+    if (!timeStr) return '10:30 AM – 11:30 AM IST';
+    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return `${timeStr} IST`;
+    
+    let [_, hours, minutes, ampm] = match;
+    hours = parseInt(hours, 10);
+    minutes = parseInt(minutes, 10);
+    
+    if (ampm.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+    if (ampm.toUpperCase() === 'AM' && hours === 12) hours = 0;
+    
+    const d = dur || 60;
+    minutes += d;
+    hours += Math.floor(minutes / 60);
+    minutes = minutes % 60;
+    
+    const endAmpm = (hours >= 12 && hours < 24) ? 'PM' : 'AM';
+    let endHours = hours % 12;
+    if (endHours === 0) endHours = 12;
+    
+    const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${endAmpm}`;
+    return `${timeStr} – ${endTime} IST`;
   };
 
   return (
@@ -54,7 +92,6 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
           alt="Warm desk lamp coaching atmosphere" 
           className="w-full h-full object-cover object-left md:object-left-top opacity-85 transition-opacity duration-700"
         />
-        {/* Soft edge washes to blend seamlessly with theme while keeping lamp crystal clear */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f5f1e8]/20 to-[#f5f1e8]/70" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8]/30 via-transparent to-[#f5f1e8]/60" />
       </div>
@@ -78,7 +115,7 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
             <Check className="text-[#c9542f] text-xl" weight="bold" />
           </div>
           <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] block mb-2 sm:mb-3">
-            {settings.badgeTag || 'YOUR SESSION IS RESERVED'}
+            {isPackage ? 'YOUR COACHING PACKAGE IS CONFIRMED' : (settings.badgeTag || 'YOUR SESSION IS RESERVED')}
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight leading-[1.15] text-[#111010] mb-3 sm:mb-4 max-w-2xl mx-auto">
             {settings.titleLine1 || 'Thank you for trusting me'}<br/>{settings.titleLine2 || 'with a part of your story.'}
@@ -97,65 +134,49 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
           </p>
         </div>
 
-        {/* Appointment Card - Centered, Image Removed */}
+        {/* Appointment / Package Card */}
         <div className="max-w-2xl mx-auto bg-white/95 backdrop-blur-sm border border-black/10 rounded-2xl md:rounded-3xl p-6 sm:p-8 md:p-9 mb-10 shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
           
           <div className="flex items-start gap-3.5 sm:gap-4 mb-6 pb-6 border-b border-black/10">
             <div className="w-12 h-12 rounded-2xl bg-[#fbf0eb] border border-[#e8c4e2] flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs">
-              <CalendarBlank className="text-2xl" weight="light" />
+              {isPackage ? <Package className="text-2xl" weight="bold" /> : <CalendarBlank className="text-2xl" weight="light" />}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-sans text-[0.62rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1">
-                {settings.appointmentCardBadge || 'YOUR APPOINTMENT'}
+                {isPackage ? 'COACHING PACKAGE CONFIRMED' : (settings.appointmentCardBadge || 'YOUR APPOINTMENT')}
               </p>
               <h3 className="text-[#111010] text-xl sm:text-2xl font-serif font-medium leading-snug">
-                {data.date || 'Friday, October 4, 2024'}
+                {isPackage 
+                  ? `${totalSessions}-Session Coaching Package` 
+                  : (data.date || 'Friday, October 4, 2024')}
               </h3>
               <p className="text-[#555047] text-sm font-normal mt-1">
-                {data.time ? (
-                  (() => {
-                    const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
-                    if (!match) return `${data.time}`;
-                    
-                    let [_, hours, minutes, ampm] = match;
-                    hours = parseInt(hours, 10);
-                    minutes = parseInt(minutes, 10);
-                    
-                    if (ampm === 'PM' && hours !== 12) hours += 12;
-                    if (ampm === 'AM' && hours === 12) hours = 0;
-                    
-                    const duration = data.sessionDuration || 60;
-                    minutes += duration;
-                    hours += Math.floor(minutes / 60);
-                    minutes = minutes % 60;
-                    
-                    const endAmpm = (hours >= 12 && hours < 24) ? 'PM' : 'AM';
-                    let endHours = hours % 12;
-                    if (endHours === 0) endHours = 12;
-                    
-                    const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${endAmpm}`;
-                    return `${data.time} – ${endTime} IST`;
-                  })()
-                ) : '10:30 AM – 11:30 AM IST'}
+                {isPackage 
+                  ? `All ${totalSessions} sessions scheduled · ${duration} minutes each (${totalSessions * duration} mins total)`
+                  : formatSingleSessionTime(data.time, data.sessionDuration)}
               </p>
             </div>
           </div>
 
+          {/* 4 Overview Grid Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+            {/* Session Type */}
             <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
               <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs">
-                <User className="text-lg" weight="light" />
+                {isPackage ? <Package className="text-lg" weight="bold" /> : <User className="text-lg" weight="light" />}
               </div>
               <div>
                 <p className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Session Type</p>
                 <p className="text-[#111010] text-sm font-semibold">
-                  {data.sessionDuration === 90 || data.isFirstSession === false
+                  {isPackage ? `${totalSessions}-Session Coaching Package` : (data.sessionDuration === 90 || data.isFirstSession === false
                     ? '1-on-1 Follow-up Coaching Session'
-                    : '1-on-1 First Coaching Session'}
+                    : '1-on-1 First Coaching Session')}
                 </p>
+                {isPackage && <p className="text-[#7a756b] text-xs font-normal">1-on-1 Personalized Coaching</p>}
               </div>
             </div>
 
+            {/* Duration */}
             <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
               <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs">
                 <Clock className="text-lg" weight="light" />
@@ -163,11 +184,17 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
               <div>
                 <p className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Duration</p>
                 <p className="text-[#111010] text-sm font-semibold">
-                  {data.sessionDuration || (data.isFirstSession === false ? 90 : 60)} minutes
+                  {duration} minutes {isPackage ? 'each' : ''}
                 </p>
+                {isPackage && (
+                  <p className="text-[#7a756b] text-xs font-normal">
+                    {totalSessions * duration} mins total coaching
+                  </p>
+                )}
               </div>
             </div>
 
+            {/* Total Paid */}
             <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
               <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs font-serif font-bold text-base">
                 ₹
@@ -179,11 +206,17 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
                     ₹0 <span className="text-[#7a756b] text-xs font-normal">(Course Bonus • {data.freeSessionsRemaining ?? 0} credits left)</span>
                   </p>
                 ) : (
-                  <p className="text-[#111010] text-sm font-bold">₹{(data.paidAmount ?? fee ?? 5000).toLocaleString('en-IN')}</p>
+                  <>
+                    <p className="text-[#111010] text-sm font-bold">₹{paidAmount.toLocaleString('en-IN')}</p>
+                    <p className="text-emerald-700 text-xs font-medium flex items-center gap-1 mt-0.5">
+                      <CheckCircle size={11} weight="fill" /> Paid in full via Razorpay
+                    </p>
+                  </>
                 )}
               </div>
             </div>
 
+            {/* Where */}
             <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5">
               <div className="w-9 h-9 rounded-xl bg-white border border-black/5 flex items-center justify-center text-[#c9542f] shrink-0 shadow-xs">
                 <VideoCamera className="text-lg" weight="light" />
@@ -191,10 +224,110 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
               <div>
                 <p className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Where</p>
                 <p className="text-[#111010] text-sm font-semibold">{settings.whereValue || 'Google Meet'}</p>
-                <p className="text-[#7a756b] text-xs font-normal">{settings.whereNote || '(Link shared in confirmation email)'}</p>
+                <p className="text-[#7a756b] text-xs font-normal">
+                  {isPackage ? 'Coaching agreement & meeting details will be shared with you shortly' : (settings.whereNote || '(Link shared in confirmation email)')}
+                </p>
               </div>
             </div>
           </div>
+
+          {/* PACKAGE SCHEDULE: List of all sessions with Date, Time, Duration & Meet link */}
+          {isPackage && allSlots.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-black/10">
+              <div className="flex items-center justify-between mb-3.5">
+                <h4 className="font-sans text-[0.68rem] uppercase tracking-[0.18em] font-bold text-[#c9542f]">
+                  PACKAGE SCHEDULE ({allSlots.length} SESSIONS)
+                </h4>
+                <span className="font-sans text-[0.65rem] text-[#7a756b] font-semibold">
+                  {duration} Mins Each
+                </span>
+              </div>
+
+              {/* Notice callout */}
+              <div className="mb-4 p-3.5 rounded-xl bg-[#fff8f3] border border-[#f3d2c1] text-xs text-[#555047] flex items-start gap-2.5">
+                <Clock size={16} className="text-[#c9542f] shrink-0 mt-0.5" weight="bold" />
+                <div className="leading-relaxed">
+                  <strong className="text-[#1c1714]">Next Step:</strong> Coach Aarkesh will review your intake details to prepare your personalized Coaching Agreement. Your official <strong>Coaching Agreement</strong> and <strong>Google Meet meeting details</strong> will be shared with you via email shortly.
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                {allSlots.map((slot, idx) => (
+                  <div 
+                    key={idx}
+                    className="p-3.5 sm:p-4 rounded-xl bg-[#faf8f5] border border-black/8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 transition-all hover:border-[#c9542f]/30"
+                  >
+                    <div className="flex items-start sm:items-center gap-3 min-w-0">
+                      <span className="w-7 h-7 rounded-full bg-[#c9542f] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 sm:mt-0 shadow-2xs">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-serif font-medium text-sm sm:text-base text-[#111010]">
+                            {slot.date}
+                          </p>
+                          <span className="text-[0.62rem] uppercase tracking-wider bg-[#fbf0eb] text-[#c9542f] font-bold px-2 py-0.5 rounded border border-[#e8c4e2]">
+                            Session {idx + 1}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-[#7a756b] mt-0.5">
+                          <Clock size={13} className="text-[#c9542f]" />
+                          <span className="font-medium text-[#111010]">{slot.time} IST</span>
+                          <span>•</span>
+                          <span>{duration} minutes</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-black/5">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-black/8 text-[0.72rem] text-[#7a756b] font-medium shadow-2xs">
+                        <VideoCamera size={13} className="text-[#c9542f]" weight="light" />
+                        <span>Link shared with Agreement</span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Detailed Receipt Breakdown */}
+          {isPackage && (
+            <div className="mt-6 pt-5 border-t border-black/10">
+              <div className="p-4 rounded-xl bg-[#faf8f5] border border-black/8 flex flex-col gap-2">
+                <div className="flex items-center justify-between text-xs text-[#7a756b]">
+                  <span>Package Rate ({totalSessions} Sessions × ₹{pricePerSession.toLocaleString('en-IN')})</span>
+                  <span className="font-medium text-[#111010]">₹{(pricePerSession * totalSessions).toLocaleString('en-IN')}</span>
+                </div>
+
+                {discountAmount > 0 && (
+                  <div className="flex items-center justify-between text-xs text-emerald-700 font-medium">
+                    <span className="flex items-center gap-1">
+                      <Tag size={13} weight="bold" />
+                      Coupon Discount {couponCode ? `(${couponCode})` : ''}
+                    </span>
+                    <span>-₹{discountAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-black/8 flex items-center justify-between text-sm sm:text-base font-bold text-[#111010]">
+                  <span>Total Amount Paid</span>
+                  <span className="text-[#c9542f] text-base sm:text-lg">
+                    ₹{paidAmount.toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                {(data.paymentId || data.orderId) && (
+                  <div className="pt-2 border-t border-black/5 flex flex-wrap items-center justify-between gap-2 text-[0.68rem] text-[#7a756b]">
+                    {data.paymentId && <span>Payment ID: <code className="text-[#111010] font-mono">{data.paymentId}</code></span>}
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                      <CheckCircle size={12} weight="fill" /> Paid in full via Razorpay
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
         </div>
 
@@ -225,15 +358,19 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-          {/* Add to Google Calendar */}
+          {/* Add to Google Calendar (Single session or first session of package) */}
           <a 
-            href={generateGoogleCalendarLink(data.date, data.time, data.sessionDuration || 60)}
+            href={generateGoogleCalendarLink(
+              isPackage && allSlots.length > 0 ? allSlots[0].date : data.date, 
+              isPackage && allSlots.length > 0 ? allSlots[0].time : data.time, 
+              duration
+            )}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-black/15 font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-[#111010] hover:bg-black/5 transition-all w-full sm:w-auto text-center cursor-pointer shadow-xs"
           >
             <CalendarBlank className="text-lg text-[#c9542f]" />
-            {settings.addToCalendarButtonText || 'ADD TO CALENDAR'}
+            {isPackage ? 'ADD SESSION 1 TO CALENDAR' : (settings.addToCalendarButtonText || 'ADD TO CALENDAR')}
           </a>
           
           {isAuthenticated ? (
@@ -278,38 +415,27 @@ export default function BookingSuccess({ data, fee, settings = {}, generalSettin
             </span>
           </div>
           <span className="font-sans text-xs text-[#555047]">
-            {settings.changeText || 'You can reschedule or cancel up to 48 hours before the session.'}
+            {settings.changeNote || 'You can reschedule or cancel with 48 hours notice via your confirmation email.'}
           </span>
-          <button 
-            type="button"
-            onClick={() => setIsPolicyModalOpen(true)} 
-            className="font-sans text-xs text-[#c9542f] font-semibold underline hover:text-[#111010] transition-colors mt-1 cursor-pointer"
-          >
-            {settings.changePolicyLinkText || 'View Rescheduling Policy →'}
-          </button>
         </div>
 
       </div>
 
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)}
+        onSuccess={handleRegistrationSuccess}
+        defaultEmail={data.email}
+        defaultFullName={data.name}
+        defaultPhoneNumber={data.phoneNumber}
+        title="Create Your Account"
+        subtitle="Set up your account to access your coaching materials, session notes, and manage your appointments."
+      />
+
       <PolicyModal 
         isOpen={isPolicyModalOpen}
         onClose={() => setIsPolicyModalOpen(false)}
-        slug="rescheduling-policy"
-        title="Rescheduling Policy"
-        showActions={false}
-        theme="light"
-      />
-
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)} 
-        onSuccess={handleRegistrationSuccess}
-        defaultMode="register"
-        defaultFullName={data.name || ''}
-        defaultEmail={data.email || ''}
-        defaultCountryCode={data.countryCode || '+91'}
-        defaultPhoneNumber={data.phoneNumber || ''}
-        courseNotice={false}
+        type="rescheduling"
       />
     </div>
   );

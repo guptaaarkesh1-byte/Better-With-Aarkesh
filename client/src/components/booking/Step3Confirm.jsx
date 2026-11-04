@@ -18,6 +18,11 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
   const [couponSuccess, setCouponSuccess] = useState('');
 
   const isFreeSession = freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0;
+  const isPackage = Boolean(data.isPackage && data.packageSlots && data.packageSlots.length > 0);
+  const totalSessions = isPackage ? (data.totalSessions || data.packageSlots.length) : 1;
+  const pricePerSession = fee;
+  const packageSubtotal = pricePerSession * totalSessions;
+  const effectiveBaseFee = isPackage ? packageSubtotal : fee;
 
   const handleApplyCoupon = async (e) => {
     if (e) e.preventDefault();
@@ -39,7 +44,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
         body: JSON.stringify({
           code,
           type: 'session',
-          amount: fee
+          amount: effectiveBaseFee
         })
       });
 
@@ -56,16 +61,16 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
       // Offline fallback: check known standard coupons
       const c = code.toUpperCase();
       if (c === 'AARKESH50' || c === 'CLAIM50' || c === 'SHERY50') {
-        const discountAmount = Math.round(fee * 0.5);
-        setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 50, discountAmount, finalAmount: fee - discountAmount });
+        const discountAmount = Math.round(effectiveBaseFee * 0.5);
+        setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 50, discountAmount, finalAmount: effectiveBaseFee - discountAmount });
         setCouponSuccess('Coupon applied! 50% discount applied successfully.');
       } else if (c === 'BETTER20') {
-        const discountAmount = Math.round(fee * 0.2);
-        setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 20, discountAmount, finalAmount: fee - discountAmount });
+        const discountAmount = Math.round(effectiveBaseFee * 0.2);
+        setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 20, discountAmount, finalAmount: effectiveBaseFee - discountAmount });
         setCouponSuccess('Coupon applied! 20% discount applied successfully.');
       } else if (c === 'WELCOME10') {
-        const discountAmount = Math.round(fee * 0.1);
-        setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 10, discountAmount, finalAmount: fee - discountAmount });
+        const discountAmount = Math.round(effectiveBaseFee * 0.1);
+        setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 10, discountAmount, finalAmount: effectiveBaseFee - discountAmount });
         setCouponSuccess('Coupon applied! 10% discount applied successfully.');
       } else {
         setCouponError('Invalid coupon code. Try AARKESH50 or BETTER20');
@@ -82,7 +87,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
     setCouponSuccess('');
   };
 
-  const finalFee = appliedCoupon ? appliedCoupon.finalAmount : fee;
+  const finalFee = appliedCoupon ? appliedCoupon.finalAmount : effectiveBaseFee;
   const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
 
   const nextStepIcons = [EnvelopeSimple, CalendarBlank, Lock, User];
@@ -100,69 +105,91 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
           
           <div className="bg-white/90 border border-black/10 rounded-2xl p-5 sm:p-7 md:p-8 flex flex-col gap-5 sm:gap-6 shadow-xs">
             
-            <div className="flex items-start gap-3 sm:gap-4">
-              <CalendarBlank className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-              <div>
-                <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.dateLabel || 'Date'}</p>
-                <p className="text-[#111010] text-base sm:text-lg font-medium">{data.date || 'Friday, October 4, 2024'}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 sm:gap-4">
-              <Clock className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-              <div>
-                <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.timeLabel || 'Time'}</p>
-                <p className="text-[#111010] text-base sm:text-lg font-medium">
-                  {data.time ? (
-                    (() => {
-                      const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
-                      if (!match) return `${data.time}`;
-                      
-                      let [_, hours, minutes, ampm] = match;
-                      hours = parseInt(hours, 10);
-                      minutes = parseInt(minutes, 10);
-                      
-                      // Convert to 24h for easier math
-                      if (ampm === 'PM' && hours !== 12) hours += 12;
-                      if (ampm === 'AM' && hours === 12) hours = 0;
-                      
-                      // Add duration
-                      const duration = data.sessionDuration || 60;
-                      minutes += duration;
-                      hours += Math.floor(minutes / 60);
-                      minutes = minutes % 60;
-                      
-                      // Convert back to 12h format
-                      const endAmpm = (hours >= 12 && hours < 24) ? 'PM' : 'AM';
-                      let endHours = hours % 12;
-                      if (endHours === 0) endHours = 12;
-                      
-                      const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${endAmpm}`;
-                      return `${data.time} – ${endTime} IST`;
-                    })()
-                  ) : '10:30 AM – 11:30 AM IST'}
-                </p>
-              </div>
-            </div>
-
+            {/* Session Type */}
             <div className="flex items-start gap-3 sm:gap-4">
               <User className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div>
                 <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.sessionTypeLabel || 'Session Type'}</p>
                 <p className="text-[#111010] text-base sm:text-lg font-medium">
-                  {data.sessionDuration === 90 || data.isFirstSession === false 
-                    ? '1-on-1 Follow-up Coaching Session' 
-                    : '1-on-1 First Coaching Session'}
+                  {isPackage 
+                    ? `${totalSessions}-Session Coaching Package`
+                    : (data.sessionDuration === 90 || data.isFirstSession === false 
+                        ? '1-on-1 Follow-up Coaching Session' 
+                        : '1-on-1 First Coaching Session')}
                 </p>
               </div>
             </div>
+
+            {/* Date & Time (Single vs Package) */}
+            {isPackage ? (
+              <div className="flex items-start gap-3 sm:gap-4">
+                <CalendarBlank className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
+                <div className="w-full">
+                  <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-1.5">
+                    Package Schedule ({totalSessions} Sessions)
+                  </p>
+                  <div className="space-y-1.5 max-h-44 overflow-y-auto custom-scrollbar pr-1">
+                    {data.packageSlots?.map((slot, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-[#faf8f5] border border-black/8 text-xs text-[#111010]">
+                        <span className="font-bold text-[#c9542f]">Session {idx + 1}</span>
+                        <span className="font-medium">{slot.date} · {slot.time}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <CalendarBlank className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
+                  <div>
+                    <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.dateLabel || 'Date'}</p>
+                    <p className="text-[#111010] text-base sm:text-lg font-medium">{data.date || 'Friday, October 4, 2024'}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <Clock className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
+                  <div>
+                    <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.timeLabel || 'Time'}</p>
+                    <p className="text-[#111010] text-base sm:text-lg font-medium">
+                      {data.time ? (
+                        (() => {
+                          const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
+                          if (!match) return `${data.time}`;
+                          
+                          let [_, hours, minutes, ampm] = match;
+                          hours = parseInt(hours, 10);
+                          minutes = parseInt(minutes, 10);
+                          
+                          if (ampm === 'PM' && hours !== 12) hours += 12;
+                          if (ampm === 'AM' && hours === 12) hours = 0;
+                          
+                          const duration = data.sessionDuration || 60;
+                          minutes += duration;
+                          hours += Math.floor(minutes / 60);
+                          minutes = minutes % 60;
+                          
+                          const endAmpm = (hours >= 12 && hours < 24) ? 'PM' : 'AM';
+                          let endHours = hours % 12;
+                          if (endHours === 0) endHours = 12;
+                          
+                          const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${endAmpm}`;
+                          return `${data.time} – ${endTime} IST`;
+                        })()
+                      ) : '10:30 AM – 11:30 AM IST'}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="flex items-start gap-3 sm:gap-4">
               <Clock className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
               <div>
                 <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.durationLabel || 'Duration'}</p>
                 <p className="text-[#111010] text-base sm:text-lg font-medium">
-                  {data.sessionDuration || (data.isFirstSession === false ? 90 : 60)} minutes
+                  {data.sessionDuration || (data.isFirstSession === false ? 90 : 60)} minutes {isPackage ? 'per session' : ''}
                 </p>
               </div>
             </div>
@@ -177,7 +204,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
 
             <div className="flex items-start gap-3 sm:gap-4 pt-2 border-t border-black/10">
               <Receipt className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-              <div className="flex flex-col gap-1 w-full">
+              <div className="flex flex-col gap-1.5 w-full">
                 <span className="font-sans text-[0.65rem] uppercase tracking-widest text-[#7a756b] font-bold">{settings.totalAmountLabel || 'Total Amount'}</span>
                 {isFreeSession ? (
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -186,6 +213,27 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
                     <span className="px-2 py-0.5 rounded bg-[#fbf0eb] text-[#c9542f] text-[0.65rem] font-bold border border-[#e8c4e2]">
                       Course Benefit ({freeSessionInfo.freeSessions} Left)
                     </span>
+                  </div>
+                ) : isPackage ? (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex flex-wrap items-baseline gap-2.5">
+                      <span className="font-serif text-2xl sm:text-3xl font-bold text-[#111010]">
+                        ₹{finalFee.toLocaleString('en-IN')}
+                      </span>
+                      {appliedCoupon && discountAmount > 0 && (
+                        <>
+                          <span className="font-sans text-sm line-through text-[#7a756b]">
+                            ₹{packageSubtotal.toLocaleString('en-IN')}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-[#e8f5e9] text-[#2e7d32] border border-[#a5d6a7] text-[0.68rem] font-bold tracking-wide">
+                            COUPON APPLIED: SAVE ₹{discountAmount.toLocaleString('en-IN')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <div className="text-[0.72rem] text-[#7a756b]">
+                      Package of {totalSessions} sessions · ₹{pricePerSession.toLocaleString('en-IN')} per session
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -360,8 +408,14 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
             >
               <span>
                 {isLoading 
-                  ? (isFreeSession ? 'RESERVING SESSION...' : 'BOOKING...') 
-                  : (isFreeSession ? (settings.confirmFreeButtonText || 'CONFIRM FREE SESSION') : (settings.confirmButtonText || 'CONFIRM & BOOK'))
+                  ? (isFreeSession ? 'RESERVING SESSION...' : (isPackage ? 'PROCESSING PACKAGE...' : 'BOOKING...')) 
+                  : (isFreeSession 
+                      ? (settings.confirmFreeButtonText || 'CONFIRM FREE SESSION') 
+                      : (isPackage 
+                          ? `PAY ₹${finalFee.toLocaleString('en-IN')} & SECURE PACKAGE` 
+                          : (settings.confirmButtonText || 'CONFIRM & BOOK')
+                        )
+                    )
                 }
               </span>
               {!isLoading && <LockKey className="text-base sm:text-lg shrink-0" weight="bold" />}

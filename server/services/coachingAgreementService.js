@@ -110,14 +110,31 @@ export async function generateCoachingAgreementPdf(data = {}) {
       doc.moveDown(0.6);
 
       doc.font(fontRegular).fontSize(10.5);
-      doc.text(`Sessions: ${isSingle ? '[X]' : '[  ]'} Single     ${isPackage ? '[X]' : '[  ]'} Package`);
+      const packageLabel = data.totalSessions ? ` Package (${data.totalSessions} Sessions)` : ' Package';
+      doc.text(`Sessions: ${isSingle ? '[X]' : '[  ]'} Single     ${isPackage ? '[X]' : '[  ]'}${packageLabel}`);
       doc.moveDown(0.6);
-      doc.text(`Start Date: ${startDateTime || '_______________________________________'}`);
-      doc.moveDown(0.6);
+      
+      if (data.sessionsList && Array.isArray(data.sessionsList) && data.sessionsList.length > 0) {
+        doc.font(fontBold).text('Session Schedule:');
+        doc.font(fontRegular);
+        data.sessionsList.forEach((s, idx) => {
+          doc.moveDown(0.25);
+          doc.text(`   • Session ${idx + 1}: ${s.date || s} at ${s.time || ''} (IST)`);
+        });
+        doc.moveDown(0.5);
+      } else {
+        doc.text(`Start Date: ${startDateTime || '_______________________________________'}`);
+        doc.moveDown(0.6);
+      }
+      
       doc.text(`Mode of Coaching: ${modeOfCoaching || 'Online Video (Google Meet)'}`);
       if (data.meetLink) {
         doc.moveDown(0.5);
         doc.text(`Meeting Link: ${data.meetLink}`);
+      }
+      if (data.totalAmount) {
+        doc.moveDown(0.5);
+        doc.text(`Package Fee Paid: Rs. ${Number(data.totalAmount).toLocaleString('en-IN')}`);
       }
       doc.moveDown(1.0);
 
@@ -971,6 +988,477 @@ export async function sendClientBookingConfirmationEmail({
     console.error('Failed to send client booking confirmation email:', err);
   }
 }
+
+/**
+ * Send Multi-Session Package Booking Confirmation & Receipt Email to Client
+ */
+export async function sendClientPackageBookingConfirmationEmail({ packageDoc, appointments = [], paymentId, orderId }) {
+  if (!packageDoc) return;
+
+  try {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      console.warn('⚠️ RESEND_API_KEY not configured. Skipping package booking confirmation email.');
+      return;
+    }
+
+    const resend = new Resend(resendApiKey);
+    const clientName = packageDoc.clientName || 'Valued Client';
+    const clientEmail = (packageDoc.clientEmail || '').trim().toLowerCase();
+    const totalSessions = packageDoc.totalSessions || appointments.length || 0;
+    const totalPaid = Number(packageDoc.totalAmount || 0).toLocaleString('en-IN');
+    const transactionId = paymentId || packageDoc.paymentId || 'Completed';
+
+    const sessionsRowsHtml = appointments.map((app, idx) => {
+      return `
+        <div style="padding: 14px 18px; margin-bottom: 12px; background: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 12px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="font-size: 13px; font-weight: 700; color: #C25E38; text-transform: uppercase; letter-spacing: 0.5px;">
+                Session ${idx + 1} of ${totalSessions}
+              </td>
+              <td align="right" style="font-size: 11px; color: #8C827A; text-transform: uppercase; font-weight: 600;">
+                ${app.duration || packageDoc.sessionDuration || 60} Mins
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top: 6px; font-size: 15px; font-weight: 600; color: #1C1714;">
+                ${app.date} · ${app.time} (IST)
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top: 8px;">
+                <span style="display: inline-block; font-size: 11.5px; color: #7A756B; background: #FAF7F2; border: 1px solid #EAE3D9; padding: 5px 10px; border-radius: 6px; font-weight: 500;">
+                  📹 Google Meet · Meeting details &amp; link will be shared along with your Coaching Agreement
+                </span>
+              </td>
+            </tr>
+          </table>
+        </div>
+      `;
+    }).join('');
+
+    const emailSubject = `Booking Confirmed: Your ${totalSessions}-Session Coaching Package with Aarkesh`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Coaching Package Confirmed</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
+        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="padding: 30px 15px;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="padding: 32px 36px 24px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
+                    <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; font-family: Georgia, serif;">
+                      BetterWith<span style="color: #C25E38;">Aarkesh</span>
+                    </div>
+                    <div style="font-size: 11px; color: #C25E38; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 700;">
+                      ✓ COACHING PACKAGE CONFIRMED
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 36px;">
+                    <h2 style="font-size: 22px; color: #1C1714; font-family: Georgia, serif; margin: 0 0 14px 0; font-weight: normal;">
+                      Welcome to your coaching journey, ${clientName}.
+                    </h2>
+                    <p style="font-size: 15px; line-height: 1.6; color: #555047; margin: 0 0 24px 0;">
+                      Your <strong>${totalSessions}-session coaching package</strong> is fully booked and confirmed. Each session has been reserved specifically for you.
+                    </p>
+
+                    <!-- REASSURANCE NEXT STEP BOX -->
+                    <div style="background-color: #FFF8F3; border: 1.5px solid #F3D2C1; border-left: 5px solid #C25E38; border-radius: 12px; padding: 20px 22px; margin-bottom: 26px;">
+                      <div style="font-size: 12px; font-weight: 800; color: #C25E38; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
+                        ⏳ IMPORTANT NEXT STEP · COACHING AGREEMENT &amp; MEETING DETAILS
+                      </div>
+                      <p style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #1C1714; line-height: 1.5;">
+                        Your personalized Coaching Agreement and Google Meet details will be shared with you shortly.
+                      </p>
+                      <p style="margin: 0; font-size: 13.5px; color: #555047; line-height: 1.6;">
+                        Prior to our sessions, Coach Aarkesh personally reviews your intake responses and booking details to tailor your coaching plan. You will receive an official email containing your <strong>Coaching Agreement</strong> along with your <strong>Google Meet video call links</strong> shortly before your scheduled sessions.
+                      </p>
+                    </div>
+
+                    <!-- Receipt Summary -->
+                    <div style="background-color: #FAF7F2; border: 1px solid #EAE3D9; border-radius: 12px; padding: 18px 20px; margin-bottom: 28px;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="font-size: 13px; color: #7A756B;">Total Sessions</td>
+                          <td align="right" style="font-size: 14px; font-weight: 600; color: #1C1714;">${totalSessions} 1-on-1 Sessions</td>
+                        </tr>
+                        <tr>
+                          <td style="padding-top: 8px; font-size: 13px; color: #7A756B;">Total Amount Paid</td>
+                          <td align="right" style="padding-top: 8px; font-size: 16px; font-weight: 700; color: #2E7D32;">₹${totalPaid}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding-top: 8px; font-size: 12px; color: #7A756B;">Payment ID</td>
+                          <td align="right" style="padding-top: 8px; font-size: 12px; color: #555047; font-family: monospace;">${transactionId}</td>
+                        </tr>
+                      </table>
+                    </div>
+
+                    <!-- Sessions Schedule -->
+                    <div style="font-size: 13px; font-weight: 700; color: #1C1714; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;">
+                      Your Session Schedule
+                    </div>
+                    ${sessionsRowsHtml}
+
+                    <!-- Notice / Reschedule Policy -->
+                    <div style="margin-top: 24px; padding: 16px; background: #FAF7F2; border-radius: 10px; font-size: 12.5px; color: #7A756B; line-height: 1.6;">
+                      <strong style="color: #1C1714;">Rescheduling Policy:</strong> You can reschedule any individual session with at least 48 hours notice directly from your client dashboard.
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 24px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11.5px; color: #8C827A; line-height: 1.6;">
+                    <div style="font-weight: 600; color: #1C1714; margin-bottom: 4px;">Better With Aarkesh · 1-on-1 Coaching with Aarkesh</div>
+                    <div>Sent with care to ${clientEmail}</div>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
+      to: clientEmail,
+      subject: emailSubject,
+      html: htmlContent,
+    });
+
+    console.log(`✉️ Dispatched client package booking confirmation to ${clientEmail}`);
+  } catch (err) {
+    console.error('Failed to send client package booking confirmation email:', err);
+  }
+}
+
+/**
+ * Send Coach (Aarkesh) Alert when a New Package is Booked
+ */
+export async function sendCoachPackageBookingAlertEmail({ packageDoc, appointments = [] }) {
+  if (!packageDoc) return;
+
+  try {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      console.warn('⚠️ RESEND_API_KEY not configured. Skipping coach package alert email.');
+      return;
+    }
+
+    const resend = new Resend(resendApiKey);
+    const clientName = packageDoc.clientName || 'Valued Client';
+    const clientEmail = (packageDoc.clientEmail || '').trim().toLowerCase();
+    const clientPhone = packageDoc.phoneNumber ? `${packageDoc.countryCode || '+91'} ${packageDoc.phoneNumber}` : 'Not provided';
+    const totalSessions = packageDoc.totalSessions || appointments.length || 0;
+    const totalAmount = Number(packageDoc.totalAmount || 0).toLocaleString('en-IN');
+    const adminUrl = process.env.ADMIN_URL || 'http://localhost:5174';
+
+    const scheduleListHtml = appointments.map((app, idx) => `
+      <li style="margin-bottom: 6px; font-size: 13.5px; color: #333333;">
+        <strong>Session ${idx + 1}:</strong> ${app.date} at ${app.time} (IST)
+      </li>
+    `).join('');
+
+    const emailSubject = `🚨 NEW PACKAGE BOOKING: ${clientName} (${totalSessions} Sessions - ₹${totalAmount})`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Coaching Package Booking</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
+        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="padding: 30px 15px;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
+                
+                <tr>
+                  <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
+                    <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; font-family: Georgia, serif;">
+                      BetterWith<span style="color: #C25E38;">Aarkesh</span>
+                    </div>
+                    <div style="font-size: 11px; color: #C25E38; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 700;">
+                      🚨 ACTION REQUIRED · REVIEW COACHING PACKAGE AGREEMENT
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 36px;">
+                    <h2 style="font-size: 22px; color: #1C1714; font-family: Georgia, serif; margin: 0 0 14px 0;">
+                      New Package Booking Alert
+                    </h2>
+                    <p style="font-size: 15px; color: #555047; line-height: 1.6; margin: 0 0 24px 0;">
+                      <strong>${clientName}</strong> has just booked a <strong>${totalSessions}-session coaching package</strong> for <strong>₹${totalAmount}</strong>.
+                    </p>
+
+                    <div style="background-color: #FAF7F2; border: 1px solid #EAE3D9; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                      <div style="font-size: 13px; font-weight: 700; color: #1C1714; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
+                        Client Contact Details
+                      </div>
+                      <div style="font-size: 14px; margin-bottom: 6px;"><strong>Email:</strong> ${clientEmail}</div>
+                      <div style="font-size: 14px; margin-bottom: 6px;"><strong>Phone:</strong> ${clientPhone}</div>
+                      ${packageDoc.reason ? `<div style="font-size: 14px; margin-top: 8px;"><strong>Focus / Goal:</strong> ${packageDoc.reason}</div>` : ''}
+                    </div>
+
+                    <div style="font-size: 13px; font-weight: 700; color: #1C1714; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
+                      Scheduled Sessions (${totalSessions} Total)
+                    </div>
+                    <ul style="padding-left: 20px; margin: 0 0 28px 0; line-height: 1.8;">
+                      ${scheduleListHtml}
+                    </ul>
+
+                    <div style="text-align: center; margin: 32px 0 16px;">
+                      <a href="${adminUrl}/appointments" style="display: inline-block; background-color: #C25E38; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 10px; letter-spacing: 0.5px;">
+                        Review &amp; Send Package Agreement &rarr;
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 24px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11.5px; color: #8C827A;">
+                    Better With Aarkesh Admin Notification System
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM_ADDRESS || 'guptaaarkesh1@gmail.com';
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
+      to: adminEmail,
+      subject: emailSubject,
+      html: htmlContent,
+    });
+
+    console.log(`✉️ Dispatched coach package booking alert to ${adminEmail}`);
+  } catch (err) {
+    console.error('Failed to send coach package alert email:', err);
+  }
+}
+
+/**
+ * Send Client Coaching Package Agreement for Review & Digital Acceptance
+ */
+export async function sendClientPackageAgreementEmail({ packageDoc, appointments = [], customData = {}, agreementUrl = '', isResend = false }) {
+  if (!packageDoc) return;
+
+  try {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      console.warn('⚠️ RESEND_API_KEY not configured. Skipping package agreement email.');
+      return;
+    }
+
+    const resend = new Resend(resendApiKey);
+    const clientName = packageDoc.clientName || 'Valued Client';
+    const clientEmail = (packageDoc.clientEmail || '').trim().toLowerCase();
+    const totalSessions = packageDoc.totalSessions || appointments.length || 0;
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const finalAgreementUrl = agreementUrl || `${clientUrl}/agreement/${packageDoc.agreementToken}`;
+
+    const scheduleListHtml = appointments.map((app, idx) => `
+      <li style="margin-bottom: 6px; font-size: 13.5px; color: #333333;">
+        <strong>Session ${idx + 1}:</strong> ${app.date} at ${app.time} (IST)
+      </li>
+    `).join('');
+
+    const emailSubject = `${isResend ? '[Reminder] ' : ''}Action Required: Review & Accept Your Coaching Package Agreement`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Coaching Package Agreement</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
+        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="padding: 30px 15px;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
+                
+                <tr>
+                  <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
+                    <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; font-family: Georgia, serif;">
+                      BetterWith<span style="color: #C25E38;">Aarkesh</span>
+                    </div>
+                    <div style="font-size: 11px; color: #C25E38; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 700;">
+                      COACHING AGREEMENT · ${totalSessions}-SESSION PACKAGE
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 36px;">
+                    <h2 style="font-size: 22px; color: #1C1714; font-family: Georgia, serif; margin: 0 0 14px 0;">
+                      Hello ${clientName},
+                    </h2>
+                    <p style="font-size: 15px; color: #555047; line-height: 1.6; margin: 0 0 20px 0;">
+                      Aarkesh has prepared your <strong>Coaching Agreement</strong> covering all <strong>${totalSessions} sessions</strong> of your coaching package.
+                    </p>
+                    <p style="font-size: 14.5px; color: #555047; line-height: 1.6; margin: 0 0 24px 0;">
+                      Please take a moment to review the agreement and digitally accept it before your first session.
+                    </p>
+
+                    <div style="background-color: #FAF7F2; border: 1px solid #EAE3D9; border-radius: 12px; padding: 20px; margin-bottom: 28px;">
+                      <div style="font-size: 13px; font-weight: 700; color: #1C1714; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
+                        Package Session Schedule
+                      </div>
+                      <ul style="padding-left: 20px; margin: 0; line-height: 1.8;">
+                        ${scheduleListHtml}
+                      </ul>
+                    </div>
+
+                    <div style="text-align: center; margin: 32px 0 20px;">
+                      <a href="${finalAgreementUrl}" style="display: inline-block; background-color: #C25E38; color: #FFFFFF; font-size: 14.5px; font-weight: 600; text-decoration: none; padding: 15px 36px; border-radius: 10px; letter-spacing: 0.5px; box-shadow: 0 4px 14px rgba(194, 94, 56, 0.25);">
+                        Review &amp; Accept Package Agreement &rarr;
+                      </a>
+                    </div>
+
+                    <div style="font-size: 12px; color: #8C827A; text-align: center; word-break: break-all; margin-top: 14px;">
+                      Direct link: <a href="${finalAgreementUrl}" style="color: #C25E38;">${finalAgreementUrl}</a>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 24px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11.5px; color: #8C827A;">
+                    Better With Aarkesh · 1-on-1 Coaching
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
+      to: clientEmail,
+      subject: emailSubject,
+      html: htmlContent,
+    });
+
+    console.log(`✉️ Dispatched client package agreement email to ${clientEmail}`);
+  } catch (err) {
+    console.error('Failed to send client package agreement email:', err);
+  }
+}
+
+/**
+ * Send Client Confirmation after Package Agreement has been Accepted
+ */
+export async function sendClientPackageAgreementAcceptedConfirmationEmail({ packageDoc, appointments = [] }) {
+  if (!packageDoc) return;
+
+  try {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) return;
+
+    const resend = new Resend(resendApiKey);
+    const clientName = packageDoc.clientName || 'Valued Client';
+    const clientEmail = (packageDoc.clientEmail || '').trim().toLowerCase();
+    const totalSessions = packageDoc.totalSessions || appointments.length || 0;
+
+    const emailSubject = `Confirmed: Your Signed Coaching Package Agreement`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Agreement Signed</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
+        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="padding: 30px 15px;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
+                <tr>
+                  <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
+                    <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; font-family: Georgia, serif;">
+                      BetterWith<span style="color: #C25E38;">Aarkesh</span>
+                    </div>
+                    <div style="font-size: 11px; color: #2E7D32; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 700;">
+                      ✓ AGREEMENT DIGITALLY ACCEPTED
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 36px;">
+                    <h2 style="font-size: 22px; color: #1C1714; font-family: Georgia, serif; margin: 0 0 14px 0;">
+                      Thank you, ${clientName}.
+                    </h2>
+                    <p style="font-size: 15px; color: #555047; line-height: 1.6; margin: 0 0 20px 0;">
+                      Your Coaching Agreement for your <strong>${totalSessions}-session coaching package</strong> is now active and on file.
+                    </p>
+                    ${packageDoc.agreementPdfUrl ? `
+                    <div style="text-align: center; margin: 28px 0;">
+                      <a href="${packageDoc.agreementPdfUrl}" style="display: inline-block; background-color: #1C1714; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none; padding: 13px 28px; border-radius: 10px;">
+                        📄 Download Signed Agreement PDF &rarr;
+                      </a>
+                    </div>
+                    ` : ''}
+                    <p style="font-size: 14px; color: #7A756B; line-height: 1.6; margin-top: 20px;">
+                      We look forward to partnering with you on this transformational coaching engagement.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 24px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11.5px; color: #8C827A;">
+                    Better With Aarkesh · 1-on-1 Coaching
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
+      to: clientEmail,
+      subject: emailSubject,
+      html: htmlContent,
+    });
+
+    console.log(`✉️ Dispatched client signed package agreement confirmation to ${clientEmail}`);
+  } catch (err) {
+    console.error('Failed to send signed package agreement confirmation email:', err);
+  }
+}
+
 
 /**
  * Backwards compatibility wrapper (if called elsewhere)
