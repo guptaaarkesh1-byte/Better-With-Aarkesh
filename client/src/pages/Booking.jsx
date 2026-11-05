@@ -324,10 +324,18 @@ export default function Booking() {
 
   // Save to sessionStorage whenever step or bookingData changes
   useEffect(() => {
+    if (bookingCompletedRef.current) {
+      sessionStorage.removeItem('bookingStep');
+      return;
+    }
     sessionStorage.setItem('bookingStep', step.toString());
   }, [step]);
 
   useEffect(() => {
+    if (bookingCompletedRef.current) {
+      sessionStorage.removeItem('bookingData');
+      return;
+    }
     sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
   }, [bookingData]);
 

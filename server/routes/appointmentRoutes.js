@@ -18,9 +18,7 @@ import {
   sendCoachBookingAlertEmail, 
   sendClientBookingConfirmationEmail,
   sendClientCoachingAgreementEmail, 
-  sendClientAgreementAcceptedConfirmationEmail,
   sendClientPackageAgreementEmail,
-  sendClientPackageAgreementAcceptedConfirmationEmail,
   generateCoachingAgreementPdf,
   generateGoogleMeetLink,
   generateAgreementToken,
@@ -1071,14 +1069,6 @@ router.post('/agreement-accept/:token', async (req, res) => {
         ).catch(() => {});
       }
 
-      if (packageDoc) {
-        packageDoc.agreementStatus = 'accepted';
-        packageDoc.agreementAcceptedAt = acceptedAt;
-        packageDoc.agreementPdfUrl = appointment.agreementPdfUrl;
-        sendClientPackageAgreementAcceptedConfirmationEmail({ packageDoc, appointments: siblingAppointments }).catch(() => {});
-      }
-    } else {
-      sendClientAgreementAcceptedConfirmationEmail({ appointment }).catch(() => {});
     }
 
     res.json({

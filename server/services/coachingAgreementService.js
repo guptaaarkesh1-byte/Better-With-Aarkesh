@@ -2,6 +2,31 @@ import PDFDocument from 'pdfkit';
 import { Resend } from 'resend';
 import crypto from 'crypto';
 
+function renderMeetingLink(meetLink) {
+  const rawLink = String(meetLink || '').trim();
+  let url;
+
+  try {
+    url = new URL(rawLink);
+  } catch {
+    return '<span style="color: #7A756B;">Meeting link will be shared shortly.</span>';
+  }
+
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    return '<span style="color: #7A756B;">Meeting link will be shared shortly.</span>';
+  }
+
+  const safeLink = url.href.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character]);
+
+  return `<a href="${safeLink}" target="_blank" rel="noopener noreferrer" style="color: #C25E38; font-weight: 700; text-decoration: none;">Join Google Meet</a>`;
+}
+
 /**
  * Generate a cryptographically random, unguessable token for agreement review & acceptance.
  */
@@ -771,8 +796,6 @@ export async function sendClientAgreementAcceptedConfirmationEmail({ appointment
 
 /**
  * Send instant confirmation and payment receipt email to the client upon booking.
- * Informs the client that their session is reserved and that their meeting link
- * along with their customized Coaching Agreement will be delivered shortly after admin review.
  */
 export async function sendClientBookingConfirmationEmail({ 
   appointment, 
@@ -800,6 +823,7 @@ export async function sendClientBookingConfirmationEmail({
     const cleanTime = (appointment.time || 'Scheduled Time').trim();
     const duration = appointment.duration || 60;
     const isFirstSession = appointment.isFirstSession;
+    const meetingLinkHtml = renderMeetingLink(appointment.meetLink);
 
     const displayPaymentId = paymentId || appointment.paymentId || (isFreeSession ? 'COMPLIMENTARY_PERK' : 'CONFIRMED');
     const displayOrderId = orderId || appointment.orderId || 'BWA_SESSION';
@@ -865,13 +889,13 @@ export async function sendClientBookingConfirmationEmail({
                     <!-- REASSURANCE NEXT STEP BOX (Highlighted as requested) -->
                     <div style="background-color: #FFF8F3; border: 1.5px solid #F3D2C1; border-left: 5px solid #C25E38; border-radius: 12px; padding: 20px 22px; margin-bottom: 26px;">
                       <div style="font-size: 12px; font-weight: 800; color: #C25E38; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
-                        ⏳ IMPORTANT NEXT STEP · MEETING LINK &amp; COACHING AGREEMENT
+                        ⏳ IMPORTANT NEXT STEP · COACHING AGREEMENT
                       </div>
                       <p style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #1C1714; line-height: 1.5;">
-                        Your personalized Coaching Agreement and Google Meet link will be delivered shortly.
+                        Your Google Meet link is included below. Your personalized Coaching Agreement will be sent after review.
                       </p>
                       <p style="margin: 0; font-size: 13.5px; color: #555047; line-height: 1.6;">
-                        Prior to our session, Aarkesh personally reviews your booking and intake responses to tailor the conversation specifically to your goals. You will receive an official email containing your <strong>Google Meet video call link</strong> and your <strong>signed Coaching Agreement PDF</strong> shortly.
+                        Prior to our session, Aarkesh personally reviews your booking and intake responses to tailor the conversation specifically to your goals. You will receive a separate email with your Coaching Agreement after it has been approved.
                       </p>
                     </div>
 
@@ -929,6 +953,10 @@ export async function sendClientBookingConfirmationEmail({
                         <tr>
                           <td style="padding: 6px 0; color: #716962;">Session Duration:</td>
                           <td style="padding: 6px 0; color: #C25E38; font-weight: 700;">${duration} Minutes (${isFirstSession ? 'First Session' : 'Follow-up Session'})</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #716962;">Google Meet:</td>
+                          <td style="padding: 6px 0;">${meetingLinkHtml}</td>
                         </tr>
                         <tr>
                           <td style="padding: 6px 0; color: #716962;">Client Name:</td>
@@ -1010,6 +1038,7 @@ export async function sendClientPackageBookingConfirmationEmail({ packageDoc, ap
     const transactionId = paymentId || packageDoc.paymentId || 'Completed';
 
     const sessionsRowsHtml = appointments.map((app, idx) => {
+      const meetingLinkHtml = renderMeetingLink(app.meetLink);
       return `
         <div style="padding: 14px 18px; margin-bottom: 12px; background: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 12px;">
           <table width="100%" cellpadding="0" cellspacing="0">
@@ -1029,7 +1058,7 @@ export async function sendClientPackageBookingConfirmationEmail({ packageDoc, ap
             <tr>
               <td colspan="2" style="padding-top: 8px;">
                 <span style="display: inline-block; font-size: 11.5px; color: #7A756B; background: #FAF7F2; border: 1px solid #EAE3D9; padding: 5px 10px; border-radius: 6px; font-weight: 500;">
-                  📹 Google Meet · Meeting details &amp; link will be shared along with your Coaching Agreement
+                  📹 Google Meet · ${meetingLinkHtml}
                 </span>
               </td>
             </tr>
@@ -1078,13 +1107,13 @@ export async function sendClientPackageBookingConfirmationEmail({ packageDoc, ap
                     <!-- REASSURANCE NEXT STEP BOX -->
                     <div style="background-color: #FFF8F3; border: 1.5px solid #F3D2C1; border-left: 5px solid #C25E38; border-radius: 12px; padding: 20px 22px; margin-bottom: 26px;">
                       <div style="font-size: 12px; font-weight: 800; color: #C25E38; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
-                        ⏳ IMPORTANT NEXT STEP · COACHING AGREEMENT &amp; MEETING DETAILS
+                        ⏳ IMPORTANT NEXT STEP · COACHING AGREEMENT
                       </div>
                       <p style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #1C1714; line-height: 1.5;">
-                        Your personalized Coaching Agreement and Google Meet details will be shared with you shortly.
+                        Google Meet links for all sessions are included in your schedule below. Your Coaching Agreement will be sent after review.
                       </p>
                       <p style="margin: 0; font-size: 13.5px; color: #555047; line-height: 1.6;">
-                        Prior to our sessions, Coach Aarkesh personally reviews your intake responses and booking details to tailor your coaching plan. You will receive an official email containing your <strong>Coaching Agreement</strong> along with your <strong>Google Meet video call links</strong> shortly before your scheduled sessions.
+                        Prior to our sessions, Coach Aarkesh personally reviews your intake responses and booking details to tailor your coaching plan. You will receive a separate email with your Coaching Agreement after it has been approved.
                       </p>
                     </div>
 

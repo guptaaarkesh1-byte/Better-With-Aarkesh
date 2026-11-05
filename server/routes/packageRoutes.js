@@ -20,7 +20,6 @@ import {
   sendClientPackageBookingConfirmationEmail,
   sendCoachPackageBookingAlertEmail,
   sendClientPackageAgreementEmail,
-  sendClientPackageAgreementAcceptedConfirmationEmail,
   generateCoachingAgreementPdf,
   generateGoogleMeetLink,
   generateAgreementToken,
@@ -841,12 +840,6 @@ router.post('/agreement-accept/:token', async (req, res) => {
         }
       }
     );
-
-    // Send Acceptance Confirmation Email to Client
-    sendClientPackageAgreementAcceptedConfirmationEmail({
-      packageDoc,
-      appointments
-    }).catch(e => console.error('Error sending package agreement accepted email:', e));
 
     res.json({
       success: true,

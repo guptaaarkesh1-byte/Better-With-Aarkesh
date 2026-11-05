@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, DownloadSimple, ArrowSquareOut, Clock, Calendar, VideoCamera, ShieldCheck, WarningCircle } from '@phosphor-icons/react';
+import { CheckCircle, DownloadSimple, ShieldCheck, WarningCircle } from '@phosphor-icons/react';
 import { API_URL } from '../utils/apiUrl';
 
 export default function DigitalAgreement() {
@@ -231,17 +231,6 @@ export default function DigitalAgreement() {
                 <DownloadSimple size={15} weight="bold" />
                 <span>Download / View Agreement PDF</span>
               </a>
-              {meetLink && (
-                <a
-                  href={meetLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white border border-emerald-300 text-emerald-900 text-xs uppercase tracking-wider font-bold hover:bg-emerald-50 transition-all shadow-xs"
-                >
-                  <VideoCamera size={15} weight="bold" />
-                  <span>Google Meet Room</span>
-                </a>
-              )}
             </div>
           </div>
         )}
@@ -580,4 +569,3 @@ export default function DigitalAgreement() {
     </div>
   );
 }
-
