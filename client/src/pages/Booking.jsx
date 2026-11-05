@@ -75,6 +75,7 @@ export default function Booking() {
       extra: '',
     };
   });
+  const [successBookingData, setSuccessBookingData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [fees, setFees] = useState({ fee60min: 5000, fee90min: 7500 });
@@ -632,7 +633,8 @@ export default function Booking() {
                 bookingCompletedRef.current = true;
                 const finalData = await finalRes.json();
                 handleAutoLoginOnBooking(finalData);
-                updateData({
+                const confirmedPackageData = {
+                  ...bookingData,
                   packageId: finalData.package?._id,
                   isPackage: true,
                   totalSessions: finalData.package?.totalSessions || bookingData.totalSessions,
@@ -651,7 +653,18 @@ export default function Booking() {
                         sessionNumber: a.sessionNumber
                       }))
                     : (bookingData.packageSlots || [])
-                });
+                };
+                setSuccessBookingData(confirmedPackageData);
+                setBookingData(prev => ({
+                  ...prev,
+                  date: null,
+                  dateKey: null,
+                  time: null,
+                  bookingMode: 'single',
+                  isPackage: false,
+                  totalSessions: 1,
+                  packageSlots: []
+                }));
                 clearQuestionnaireDraft(draftId);
                 sessionStorage.removeItem('bwa_booking_draft_id');
                 sessionStorage.removeItem('bookingStep');
@@ -845,7 +858,7 @@ export default function Booking() {
 
   // Step 4 is the success screen
   if (step === 4) {
-    return <BookingSuccess data={bookingData} fee={currentFee} settings={bookingSettings.success} generalSettings={bookingSettings.general} />;
+    return <BookingSuccess data={successBookingData || bookingData} fee={currentFee} settings={bookingSettings.success} generalSettings={bookingSettings.general} />;
   }
 
   // Step 5 is the cancelled screen
