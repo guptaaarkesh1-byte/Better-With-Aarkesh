@@ -7,6 +7,7 @@ import {
   Crown,
   BookOpen,
   Books,
+  Compass,
   ArrowRight,
   ArrowLeft,
   Sparkle,
@@ -402,6 +403,19 @@ export default function MyCourses() {
           {isAnyUserLoggedIn() ? (
             <>
               <Link
+                to="/my-journey?tab=course&from=course"
+                state={{ from: '/course' }}
+                onClick={() => {
+                  try { sessionStorage.setItem('mj_referrer', '/course'); } catch {}
+                }}
+                className="course-nav-journey-btn hidden sm:inline-flex"
+                title="My Journey Dashboard"
+              >
+                <Compass size={16} weight="bold" />
+                <span>MY JOURNEY</span>
+              </Link>
+
+              <Link
                 to="/my-course"
                 className="course-nav-mycourse-btn active hidden sm:inline-flex"
                 title="My Enrolled Courses"
@@ -452,13 +466,17 @@ export default function MyCourses() {
                       <span>My Course</span>
                     </Link>
                     <Link
-                      to="/course/profile"
-                      onClick={() => setProfileDropdownOpen(false)}
-                      className="w-full px-5 py-3 text-left text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5"
+                      to="/my-journey?tab=course&from=course"
+                      state={{ from: '/course' }}
+                      onClick={() => {
+                        try { sessionStorage.setItem('mj_referrer', '/course'); } catch {}
+                        setProfileDropdownOpen(false);
+                      }}
+                      className="w-full px-5 py-3 text-left text-sm text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 font-semibold"
                       style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                     >
-                      <User size={18} className="text-[#C878BE] shrink-0" />
-                      <span>Profile</span>
+                      <Compass size={18} className="text-[#C878BE] shrink-0" />
+                      <span>My Journey</span>
                     </Link>
                     <button
                       type="button"
@@ -503,25 +521,29 @@ export default function MyCourses() {
           mobileMenuOpen ? 'opacity-100 translate-y-0 visible pointer-events-auto' : 'opacity-0 -translate-y-3 invisible pointer-events-none'
         }`}
       >
-        {/* Top Item: PROFILE */}
+        {/* Top Item: MY JOURNEY */}
         {isAnyUserLoggedIn() ? (
           <Link
-            to="/course/profile"
-            onClick={() => setMobileMenuOpen(false)}
+            to="/my-journey?tab=course&from=course"
+            state={{ from: '/course' }}
+            onClick={() => {
+              try { sessionStorage.setItem('mj_referrer', '/course'); } catch {}
+              setMobileMenuOpen(false);
+            }}
             className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-[#C878BE]/40 flex items-center gap-3 transition-colors mb-3"
           >
             <div className="w-10 h-10 rounded-full bg-[#120613] border border-[#C878BE]/50 flex items-center justify-center text-[#E3B8DE] font-bold text-sm shrink-0">
-              <User size={18} weight="bold" />
+              <Compass size={18} weight="bold" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-sm font-bold text-white truncate">
                 {displayName}
               </div>
               <div className="text-xs text-[#E3B8DE] truncate">
-                {effectiveUser?.email || 'View Profile'}
+                {effectiveUser?.email || 'Dashboard & Appointments'}
               </div>
             </div>
-            <span className="text-xs text-white/40">Profile →</span>
+            <span className="text-xs text-white/40">My Journey →</span>
           </Link>
         ) : (
           <Link

@@ -24,9 +24,9 @@ export const clearAllAuth = () => {
   sessionStorage.removeItem('bookingStep');
   sessionStorage.removeItem('bookingData');
 
-  // Clear player progress & active lesson
-  localStorage.removeItem('lastActiveCourseLessonId');
-  localStorage.removeItem('course_completed_lessons');
+  // Clear cached coaching appointments & notes
+  localStorage.removeItem('bwa_cached_appointments');
+  localStorage.removeItem('bwa_read_coach_notes');
   try {
     Object.keys(localStorage).forEach(k => {
       if (k.startsWith('bwa_lesson_progress_') || k.startsWith('bwa_u_')) {

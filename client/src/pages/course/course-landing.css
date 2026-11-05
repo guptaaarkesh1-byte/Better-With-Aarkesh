@@ -175,6 +175,32 @@
   color: #FFFFFF;
 }
 
+.course-landing-scope .course-nav-journey-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgba(200, 120, 190, 0.14);
+  border: 1px solid rgba(200, 120, 190, 0.45);
+  color: #E3B8DE;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.course-landing-scope .course-nav-journey-btn:hover {
+  color: #FFFFFF;
+  background: rgba(200, 120, 190, 0.28);
+  border-color: #C878BE;
+  box-shadow: 0 0 20px rgba(200, 120, 190, 0.35);
+  transform: translateY(-1px);
+}
+
 .course-landing-scope .course-nav-library-btn {
   display: inline-flex;
   align-items: center;
@@ -4818,6 +4844,7 @@
   .course-landing-scope .player-avt,
   .course-landing-scope .player-nav,
   .course-landing-scope .course-nav-library-btn,
+  .course-landing-scope .course-nav-journey-btn,
   .course-landing-scope .course-nav-mycourse-btn,
   .course-landing-scope .course-profile-btn,
   .course-landing-scope .course-nav-links {

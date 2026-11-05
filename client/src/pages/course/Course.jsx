@@ -22,6 +22,7 @@ import {
   Sparkle,
   BookOpen,
   Books,
+  Compass,
   Users,
   House,
   Question,
@@ -2508,24 +2509,28 @@ export default function Course() {
             mobileMenuOpen ? 'opacity-100 translate-y-0 visible pointer-events-auto' : 'opacity-0 -translate-y-3 invisible pointer-events-none'
           }`}
         >
-          {/* Top Item: PROFILE */}
+          {/* Top Item: MY JOURNEY */}
           <Link
-            to="/course/profile"
-            onClick={() => setMobileMenuOpen(false)}
+            to="/my-journey?tab=course&from=course"
+            state={{ from: '/course' }}
+            onClick={() => {
+              try { sessionStorage.setItem('mj_referrer', '/course'); } catch {}
+              setMobileMenuOpen(false);
+            }}
             className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-[#C878BE]/40 flex items-center gap-3 transition-colors mb-3"
           >
             <div className="w-10 h-10 rounded-full bg-[#120613] border border-[#C878BE]/50 flex items-center justify-center text-[#E3B8DE] font-bold text-sm shrink-0">
-              <User size={18} weight="bold" />
+              <Compass size={18} weight="bold" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-sm font-bold text-white truncate">
-                {(() => { const u = getEffectiveUser(); return u?.fullName || 'Profile'; })()}
+                {(() => { const u = getEffectiveUser(); return u?.fullName || 'My Journey'; })()}
               </div>
               <div className="text-xs text-[#E3B8DE] truncate">
-                {(() => { const u = getEffectiveUser(); return u?.email || 'View Profile'; })()}
+                {(() => { const u = getEffectiveUser(); return u?.email || 'Dashboard & Appointments'; })()}
               </div>
             </div>
-            <span className="text-xs text-white/40">Profile →</span>
+            <span className="text-xs text-white/40">My Journey →</span>
           </Link>
 
           {/* Clean Nav Links */}
@@ -2966,6 +2971,19 @@ export default function Course() {
 
           {isLoggedIn ? (
             <>
+              <Link
+                to="/my-journey?tab=course&from=course"
+                state={{ from: '/course' }}
+                onClick={() => {
+                  try { sessionStorage.setItem('mj_referrer', '/course'); } catch {}
+                }}
+                className="course-nav-journey-btn"
+                title="My Journey Dashboard"
+              >
+                <Compass size={16} weight="bold" />
+                <span>MY JOURNEY</span>
+              </Link>
+
               {hasAnyCoursePurchased && (
                 <Link
                   to="/my-course"
@@ -2982,7 +3000,7 @@ export default function Course() {
                   type="button"
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="course-profile-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#C878BE]/50 bg-[#120613] flex items-center justify-center text-[#E3B8DE] hover:bg-[#C878BE] hover:text-black transition-all shadow-[0_0_20px_rgba(200,120,190,0.25)] shrink-0 cursor-pointer"
-                  title="Menu & Profile"
+                  title="Menu & My Journey"
                 >
                   <User size={17} weight="bold" />
                 </button>
@@ -3008,15 +3026,19 @@ export default function Course() {
                     </div>
                   </div>
 
-                  {/* Primary Nav Tabs: Profile FIRST, then Home, Courses, FAQ */}
+                  {/* Primary Nav Tabs: My Journey FIRST, then Home, Courses, FAQ */}
                   <div className="py-1 border-b border-white/5">
                     <Link
-                      to="/course/profile"
-                      onClick={() => setShowProfileMenu(false)}
+                      to="/my-journey?tab=course&from=course"
+                      state={{ from: '/course' }}
+                      onClick={() => {
+                        try { sessionStorage.setItem('mj_referrer', '/course'); } catch {}
+                        setShowProfileMenu(false);
+                      }}
                       className="w-full px-5 py-2.5 text-left text-sm text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center gap-3 font-semibold"
                     >
-                      <User size={18} className="text-[#C878BE] shrink-0" />
-                      <span>Profile</span>
+                      <Compass size={18} className="text-[#C878BE] shrink-0" />
+                      <span>My Journey</span>
                     </Link>
 
                     <Link
@@ -3122,25 +3144,29 @@ export default function Course() {
           mobileMenuOpen ? 'opacity-100 translate-y-0 visible pointer-events-auto' : 'opacity-0 -translate-y-3 invisible pointer-events-none'
         }`}
       >
-        {/* Top Item: PROFILE */}
+        {/* Top Item: MY JOURNEY */}
         {isLoggedIn ? (
           <Link
-            to="/course/profile"
-            onClick={() => setMobileMenuOpen(false)}
+            to="/my-journey?tab=course&from=course"
+            state={{ from: '/course' }}
+            onClick={() => {
+              try { sessionStorage.setItem('mj_referrer', '/course'); } catch {}
+              setMobileMenuOpen(false);
+            }}
             className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-[#C878BE]/40 flex items-center gap-3 transition-colors mb-3"
           >
             <div className="w-10 h-10 rounded-full bg-[#120613] border border-[#C878BE]/50 flex items-center justify-center text-[#E3B8DE] font-bold text-sm shrink-0">
-              <User size={18} weight="bold" />
+              <Compass size={18} weight="bold" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-sm font-bold text-white truncate">
-                {(() => { const u = getEffectiveUser(); return u?.fullName || 'Profile'; })()}
+                {(() => { const u = getEffectiveUser(); return u?.fullName || 'My Journey'; })()}
               </div>
               <div className="text-xs text-[#E3B8DE] truncate">
-                {(() => { const u = getEffectiveUser(); return u?.email || 'View Profile'; })()}
+                {(() => { const u = getEffectiveUser(); return u?.email || 'Dashboard & Appointments'; })()}
               </div>
             </div>
-            <span className="text-xs text-white/40">Profile →</span>
+            <span className="text-xs text-white/40">My Journey →</span>
           </Link>
         ) : (
           <button
@@ -4716,6 +4742,21 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
           <span>LIBRARY</span>
         </Link>
 
+        {isLoggedIn && (
+          <Link
+            to="/my-journey?tab=course&from=course"
+            state={{ from: '/course' }}
+            onClick={() => {
+              try { sessionStorage.setItem('mj_referrer', '/course'); } catch {}
+            }}
+            className="course-nav-journey-btn"
+            title="My Journey Dashboard"
+          >
+            <Compass size={16} weight="bold" />
+            <span>MY JOURNEY</span>
+          </Link>
+        )}
+
         <Link
           to="/my-course"
           className="course-nav-mycourse-btn"
@@ -4731,7 +4772,7 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
               type="button"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="course-profile-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#C878BE]/50 bg-[#120613] flex items-center justify-center text-[#E3B8DE] hover:bg-[#C878BE] hover:text-black transition-all shadow-[0_0_20px_rgba(200,120,190,0.25)] shrink-0 cursor-pointer"
-              title="Student Profile"
+              title="Menu & My Journey"
             >
               <User size={17} weight="bold" />
             </button>
@@ -4757,13 +4798,17 @@ function CourseNavbar({ isLoggedIn, isPurchased, showDashboard, setShowDashboard
                 </div>
 
                 <Link
-                  to="/course/profile"
-                  onClick={() => setShowProfileMenu(false)}
+                  to="/my-journey?tab=course&from=course"
+                  state={{ from: '/course' }}
+                  onClick={() => {
+                    try { sessionStorage.setItem('mj_referrer', '/course'); } catch {}
+                    setShowProfileMenu(false);
+                  }}
                   className="w-full px-5 py-3 text-left text-sm text-white/90 hover:text-[#C878BE] hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 font-semibold"
                   style={{ fontSize: '14px', fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, sans-serif)' }}
                 >
-                  <User size={18} className="text-[#C878BE] shrink-0" />
-                  <span>Profile</span>
+                  <Compass size={18} className="text-[#C878BE] shrink-0" />
+                  <span>My Journey</span>
                 </Link>
                 <Link
                   to="/library"

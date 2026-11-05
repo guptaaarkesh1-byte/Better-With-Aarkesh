@@ -719,79 +719,11 @@ export async function sendClientCoachingAgreementEmail({ appointment, customData
 
 /**
  * Send confirmation email after client successfully accepts digital agreement.
+ * (Disabled as requested: signed PDF email is not sent to client after agreement acceptance)
  */
 export async function sendClientAgreementAcceptedConfirmationEmail({ appointment }) {
-  if (!appointment || !appointment.email) return;
-
-  try {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey) return;
-
-    const resend = new Resend(resendApiKey);
-    const clientName = (appointment.name || 'Valued Client').trim();
-    const clientEmail = appointment.email.trim().toLowerCase();
-    const cleanDate = (appointment.date || 'Scheduled Date').trim();
-    const cleanTime = (appointment.time || 'Scheduled Time').trim();
-    const meetLink = appointment.meetLink || '';
-    const clientBaseUrl = (process.env.CLIENT_URL || 'https://aarkeshgupta.com').replace(/\/+$/, '');
-    const agreementUrl = `${clientBaseUrl}/agreement/${appointment.agreementToken || ''}`;
-
-    const acceptedDateStr = appointment.agreementAcceptedAt
-      ? new Date(appointment.agreementAcceptedAt).toLocaleString('en-IN', {
-          timeZone: 'Asia/Kolkata',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        })
-      : new Date().toLocaleDateString('en-IN');
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head><meta charset="utf-8"></head>
-      <body style="margin:0;padding:24px;background-color:#FAF8F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333;">
-        <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:14px;border:1px solid #EAE3D9;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.05);">
-          <div style="padding:28px 32px;background:#FAF7F2;border-bottom:1px solid #EAE3D9;">
-            <div style="font-size:20px;font-weight:bold;color:#1A1A1A;font-family:Georgia,serif;">BetterWith<span style="color:#C25E38;">Aarkesh</span></div>
-            <div style="font-size:11px;color:#15803D;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;">✓ Coaching Agreement Confirmed &amp; Recorded</div>
-          </div>
-          <div style="padding:28px 32px;">
-            <h2 style="font-size:19px;color:#1A1A1A;margin:0 0 10px;">Agreement Accepted, ${clientName}</h2>
-            <p style="font-size:14px;color:#555;line-height:1.6;margin:0 0 18px;">
-              Thank you for reviewing and accepting your Coaching Agreement on <strong>${acceptedDateStr} (IST)</strong>. Your digital acceptance has been securely logged and your official PDF document has been archived for our records.
-            </p>
-            <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:16px 20px;margin-bottom:20px;">
-              <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;">Session Schedule</div>
-              <div style="font-size:14px;color:#1A1A1A;font-weight:600;">${cleanDate} at ${cleanTime} (IST)</div>
-              ${meetLink ? `<div style="margin-top:8px;font-size:13px;"><a href="${meetLink}" target="_blank" style="color:#15803D;font-weight:700;text-decoration:underline;">Join Google Meet: ${meetLink}</a></div>` : ''}
-            </div>
-            <div style="text-align:center;margin:22px 0;">
-              <a href="${agreementUrl}" target="_blank" style="display:inline-block;padding:11px 24px;background:#1c1714;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:0.5px;">
-                View Accepted Agreement &amp; Download PDF &rarr;
-              </a>
-            </div>
-          </div>
-          <div style="padding:16px 32px;background:#FAF7F2;border-top:1px solid #EAE3D9;text-align:center;font-size:11px;color:#777;">
-            Better With Aarkesh · Executive Leadership &amp; Personal Coaching
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
-      to: clientEmail,
-      subject: `✓ Coaching Agreement Accepted — See You on ${cleanDate}`,
-      html,
-    });
-    console.log(`✉️ Delivered agreement acceptance confirmation to ${clientEmail}`);
-  } catch (err) {
-    console.warn('Could not send agreement acceptance confirmation email:', err?.message);
-  }
+  // Disabled: signed agreement confirmation email is not sent to client after agreement acceptance
+  return;
 }
 
 /**
@@ -1405,87 +1337,11 @@ export async function sendClientPackageAgreementEmail({ packageDoc, appointments
 
 /**
  * Send Client Confirmation after Package Agreement has been Accepted
+ * (Disabled as requested: signed PDF email is not sent to client after package agreement acceptance)
  */
 export async function sendClientPackageAgreementAcceptedConfirmationEmail({ packageDoc, appointments = [] }) {
-  if (!packageDoc) return;
-
-  try {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey) return;
-
-    const resend = new Resend(resendApiKey);
-    const clientName = packageDoc.clientName || 'Valued Client';
-    const clientEmail = (packageDoc.clientEmail || '').trim().toLowerCase();
-    const totalSessions = packageDoc.totalSessions || appointments.length || 0;
-
-    const emailSubject = `Confirmed: Your Signed Coaching Package Agreement`;
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Agreement Signed</title>
-      </head>
-      <body style="margin: 0; padding: 0; background-color: #FAF8F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
-        <table width="100%" bgcolor="#FAF8F5" cellpadding="0" cellspacing="0" style="padding: 30px 15px;">
-          <tr>
-            <td align="center">
-              <table width="100%" max-width="640" cellpadding="0" cellspacing="0" style="max-width: 640px; background-color: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 36px rgba(40, 30, 20, 0.05);">
-                <tr>
-                  <td style="padding: 32px 36px 22px; background: #FAF7F2; border-bottom: 1px solid #EAE3D9;">
-                    <div style="font-size: 22px; font-weight: bold; color: #1A1A1A; font-family: Georgia, serif;">
-                      BetterWith<span style="color: #C25E38;">Aarkesh</span>
-                    </div>
-                    <div style="font-size: 11px; color: #2E7D32; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 700;">
-                      ✓ AGREEMENT DIGITALLY ACCEPTED
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 36px;">
-                    <h2 style="font-size: 22px; color: #1C1714; font-family: Georgia, serif; margin: 0 0 14px 0;">
-                      Thank you, ${clientName}.
-                    </h2>
-                    <p style="font-size: 15px; color: #555047; line-height: 1.6; margin: 0 0 20px 0;">
-                      Your Coaching Agreement for your <strong>${totalSessions}-session coaching package</strong> is now active and on file.
-                    </p>
-                    ${packageDoc.agreementPdfUrl ? `
-                    <div style="text-align: center; margin: 28px 0;">
-                      <a href="${packageDoc.agreementPdfUrl}" style="display: inline-block; background-color: #1C1714; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none; padding: 13px 28px; border-radius: 10px;">
-                        📄 Download Signed Agreement PDF &rarr;
-                      </a>
-                    </div>
-                    ` : ''}
-                    <p style="font-size: 14px; color: #7A756B; line-height: 1.6; margin-top: 20px;">
-                      We look forward to partnering with you on this transformational coaching engagement.
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 24px 36px; background-color: #FAF7F2; border-top: 1px solid #EAE3D9; text-align: center; font-size: 11.5px; color: #8C827A;">
-                    Better With Aarkesh · 1-on-1 Coaching
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
-
-    await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'Better With Aarkesh <noreply@aarkeshgupta.com>',
-      to: clientEmail,
-      subject: emailSubject,
-      html: htmlContent,
-    });
-
-    console.log(`✉️ Dispatched client signed package agreement confirmation to ${clientEmail}`);
-  } catch (err) {
-    console.error('Failed to send signed package agreement confirmation email:', err);
-  }
+  // Disabled: signed agreement confirmation email is not sent to client after agreement acceptance
+  return;
 }
 
 

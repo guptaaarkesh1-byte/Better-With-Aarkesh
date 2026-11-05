@@ -18,6 +18,12 @@ import NotificationsTab from './components/settings/NotificationsTab';
 import SecurityPrivacyTab from './components/settings/SecurityPrivacyTab';
 import { getEffectiveUser, clearAllAuth, isAnyUserLoggedIn } from '../../utils/authSync';
 
+const PACKAGE_THEMES = [
+  { stripe: '#E07A5F', bgLight: '#FDF0EB', dot: '#E07A5F' }, // Warm Terracotta
+  { stripe: '#9D71A8', bgLight: '#F6EDF8', dot: '#9D71A8' }, // Soft Lavender
+  { stripe: '#4E9B78', bgLight: '#EDF7F1', dot: '#4E9B78' }  // Sage Green
+];
+
 export default function MyJourney() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,9 +125,26 @@ export default function MyJourney() {
   });
   const [isCoursePurchaser, setIsCoursePurchaser] = useState(() => {
     const cachedUser = getEffectiveUser();
-    const isPurchased = localStorage.getItem('isCoursePurchased') === 'true';
-    const purchasedCourses = localStorage.getItem('purchasedCourses');
-    return isPurchased || !!purchasedCourses || !!cachedUser?.courseSessionsGranted || (Array.isArray(cachedUser?.purchasedCourses) && cachedUser.purchasedCourses.length > 0);
+    let hasStoredCourses = false;
+    try {
+      const pc = localStorage.getItem('purchasedCourses');
+      if (pc) {
+        const parsed = JSON.parse(pc);
+        hasStoredCourses = Array.isArray(parsed) && parsed.length > 0;
+      }
+    } catch {}
+    const hasUserCourses = Array.isArray(cachedUser?.purchasedCourses) && cachedUser.purchasedCourses.length > 0;
+    const isGranted = Boolean(cachedUser?.courseSessionsGranted);
+    const isPurchasedFlag = localStorage.getItem('isCoursePurchased') === 'true';
+
+    const isRealPurchaser = Boolean((isPurchasedFlag && (hasStoredCourses || isGranted || hasUserCourses)) || isGranted || hasUserCourses || hasStoredCourses);
+    if (!isRealPurchaser) {
+      try {
+        localStorage.removeItem('isCoursePurchased');
+        if (!hasStoredCourses) localStorage.removeItem('purchasedCourses');
+      } catch {}
+    }
+    return isRealPurchaser;
   });
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [selectedCoursePreview, setSelectedCoursePreview] = useState(null);
@@ -161,7 +184,14 @@ export default function MyJourney() {
   }, [avatarMenuOpen]);
 
   // Data States
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState(() => {
+    try {
+      const cached = localStorage.getItem('bwa_cached_appointments');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [savedArticles, setSavedArticles] = useState([]);
   const [savedVideos, setSavedVideos] = useState([]);
   const [completedArticles, setCompletedArticles] = useState([]);
@@ -177,6 +207,7 @@ export default function MyJourney() {
   const [cancelModalAppt, setCancelModalAppt] = useState(null);
   const [isCancellingSession, setIsCancellingSession] = useState(false);
   const [openCardMenuId, setOpenCardMenuId] = useState(null);
+  const [expandedPackageId, setExpandedPackageId] = useState(null);
 
   // Close card menu on outside click
   useEffect(() => {
@@ -351,7 +382,11 @@ export default function MyJourney() {
       });
       if (res.ok) {
         const data = await res.json();
-        setAppointments(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+        setAppointments(list);
+        try {
+          localStorage.setItem('bwa_cached_appointments', JSON.stringify(list));
+        } catch {}
       }
     } catch (err) {
       console.error('Failed to fetch appointments:', err);
@@ -590,6 +625,20 @@ export default function MyJourney() {
       .replace('December', 'Dec');
   };
 
+  // Helper to format short date (e.g. "Fri, Nov 6")
+  const formatShortDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = parseAnyDate(dateStr);
+    if (d) {
+      return d.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+    return formatPillDate(dateStr).split(',').slice(0, 2).join(',');
+  };
+
   // Helper to format full date for modal (e.g. "Friday, October 16, 2026")
   const formatFullDate = (dateStr) => {
     if (!dateStr) return '';
@@ -761,9 +810,10 @@ export default function MyJourney() {
   ).length;
 
   const hasFreeSessionsBenefit = Boolean(
-    isCoursePurchaser || 
-    freeSessionsCount > 0 || 
-    appointments.some(a => a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION')
+    isCoursePurchaser && (
+      freeSessionsCount > 0 || 
+      appointments.some(a => (a.isFreeSession || a.orderId === 'COURSE_FREE_SESSION') && a.status !== 'CANCELLED' && a.status !== 'CANCELED')
+    )
   );
 
   const purchasedCoursesCount = (() => {
@@ -785,18 +835,18 @@ export default function MyJourney() {
   })();
 
   const rawAvailable = hasFreeSessionsBenefit
-    ? (freeSessionsCount > 0 ? freeSessionsCount : Math.max(0, 3 - bookedOrUsedFreeCount))
+    ? Math.max(0, Number(freeSessionsCount) || 0)
     : 0;
 
   const totalCourseCredits = Math.max(
-    3,
     user?.freeSessionsTotal || 0,
     purchasedCoursesCount > 0 ? purchasedCoursesCount * 3 : 0,
-    rawAvailable + bookedOrUsedFreeCount
+    rawAvailable + bookedOrUsedFreeCount,
+    hasFreeSessionsBenefit ? 3 : 0
   );
 
   const availableCredits = hasFreeSessionsBenefit
-    ? (freeSessionsCount > 0 ? freeSessionsCount : Math.max(0, totalCourseCredits - bookedOrUsedFreeCount))
+    ? Math.max(0, Number(freeSessionsCount) || 0)
     : 0;
 
   const usedCredits = Math.min(totalCourseCredits, Math.max(0, totalCourseCredits - availableCredits));
@@ -1079,6 +1129,12 @@ export default function MyJourney() {
   const packagesList = useMemo(() => Object.values(packageGroupsMap), [packageGroupsMap]);
   const packagesCount = packagesList.length;
 
+  useEffect(() => {
+    if (expandedPackageId === null && packagesList.length > 0) {
+      setExpandedPackageId(String(packagesList[0]?.id ?? 0));
+    }
+  }, [packagesList]);
+
   const savedCount = savedArticles.length + savedVideos.length;
   const finishedCount = completedArticles.length + completedVideos.length;
 
@@ -1087,6 +1143,25 @@ export default function MyJourney() {
     activeTab === 'coaching' ? 'Search appointments' :
     activeTab === 'library' ? 'Search your library' :
     activeTab === 'notes' ? 'Search your notes' : 'Search courses';
+
+  // Dynamic Back navigation (returns to Course if user arrived from Course page, else Home)
+  const isFromCourse = Boolean(
+    new URLSearchParams(location.search).get('from') === 'course' ||
+    location.state?.from === '/course' ||
+    location.state?.from === 'course' ||
+    sessionStorage.getItem('mj_referrer') === '/course' ||
+    activeTab === 'course'
+  );
+
+  const handleTopBackClick = (e) => {
+    e.preventDefault();
+    if (isFromCourse) {
+      sessionStorage.removeItem('mj_referrer');
+      navigate('/course');
+    } else {
+      navigate('/');
+    }
+  };
 
   if (!isAnyUserLoggedIn()) {
     return (
@@ -1115,14 +1190,15 @@ export default function MyJourney() {
           <div className="mj-top-inner">
             <div className="mj-bar">
               <div className="flex items-center gap-3 sm:gap-4">
-                <Link 
-                  to="/" 
+                <button 
+                  type="button"
+                  onClick={handleTopBackClick}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-[#f5f1e8] text-xs font-semibold tracking-wide border border-white/15 transition-all cursor-pointer shadow-xs"
-                  title="Back to Home"
+                  title={isFromCourse ? "Back to Course" : "Back to Home"}
                 >
                   <ArrowLeft size={14} weight="bold" />
-                  <span>Home</span>
-                </Link>
+                  <span>{isFromCourse ? 'Course' : 'Home'}</span>
+                </button>
 
                 <Link to="/" className="mj-logo">
                   BetterWith<span>Aarkesh</span>
@@ -1609,10 +1685,10 @@ export default function MyJourney() {
             {/* 1. APPOINTMENTS VIEW */}
             {activeTab === 'coaching' && (
               <div>
-                <div className="mj-head">
-                  <div className="mj-head-left flex items-center justify-between gap-2 w-full">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <h2 className="truncate font-serif text-[18px] sm:text-[20px] font-semibold text-[#1c1714]">
+                <div className="mj-head flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="mj-head-left flex flex-col items-start gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <h2 className="truncate font-serif text-[22px] sm:text-[26px] font-semibold text-[#1c1714]">
                         {coachFilter === 'upcoming' ? 'Appointments' :
                          coachFilter === 'completed' ? 'Completed' :
                          coachFilter === 'rescheduled' ? 'Rescheduled' :
@@ -1622,221 +1698,380 @@ export default function MyJourney() {
                         {coachFilter === 'packages' ? packagesCount : filteredAppointments.length}
                       </span>
                     </div>
-
-                    <button
-                      onClick={() => navigate('/book')}
-                      className="md:hidden shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-[11px] font-bold tracking-wide uppercase shadow-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-                    >
-                      <Plus size={11} weight="bold" />
-                      <span>{availableCredits > 0 ? 'Book Free' : 'Book'}</span>
-                    </button>
+                    {coachFilter === 'packages' && (
+                      <p className="text-xs sm:text-sm text-[#7a7269] mt-0.5 mb-1 font-normal">
+                        Tap a package to see its sessions.
+                      </p>
+                    )}
                   </div>
+
+                  <button
+                    onClick={() => navigate('/book')}
+                    className="md:hidden shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-[11px] font-bold tracking-wide uppercase shadow-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    <Plus size={11} weight="bold" />
+                    <span>{availableCredits > 0 ? 'Book Free' : 'Book'}</span>
+                  </button>
 
                   {/* Right-aligned Sort By Controls */}
-                  <div className="mj-sort">
-                    <span className="text-xs font-semibold text-[#7a7269] hidden md:inline">Sort:</span>
-                    <div className="mj-sort-options flex items-center gap-1 p-1 bg-[#ede9e4] rounded-full border border-black/5 shadow-inner">
-                      <button
-                        onClick={() => setAppointmentSort('soonest')}
-                        className={cn(
-                          "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
-                          appointmentSort === 'soonest'
-                            ? "bg-[#1c1714] text-white shadow-sm"
-                            : "text-[#5f5750] hover:text-[#1c1714]"
+                  {coachFilter !== 'packages' && (
+                    <div className="mj-sort">
+                      <span className="text-xs font-semibold text-[#7a7269] hidden md:inline">Sort:</span>
+                      <div className="mj-sort-options flex items-center gap-1 p-1 bg-[#ede9e4] rounded-full border border-black/5 shadow-inner">
+                        <button
+                          onClick={() => setAppointmentSort('soonest')}
+                          className={cn(
+                            "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
+                            appointmentSort === 'soonest'
+                              ? "bg-[#1c1714] text-white shadow-sm"
+                              : "text-[#5f5750] hover:text-[#1c1714]"
+                          )}
+                          title="Jo appointment sabse jaldi aane wala hai"
+                        >
+                          Soonest date
+                        </button>
+                        <button
+                          onClick={() => setAppointmentSort('today')}
+                          className={cn(
+                            "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
+                            appointmentSort === 'today'
+                              ? "bg-[#1c1714] text-white shadow-sm"
+                              : "text-[#5f5750] hover:text-[#1c1714]"
+                          )}
+                          title="Today's appointments"
+                        >
+                          Today
+                        </button>
+                        <button
+                          onClick={() => setAppointmentSort('newest_booked')}
+                          className={cn(
+                            "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
+                            appointmentSort === 'newest_booked'
+                              ? "bg-[#1c1714] text-white shadow-sm"
+                              : "text-[#5f5750] hover:text-[#1c1714]"
+                          )}
+                          title="Recently booked"
+                        >
+                          Recently booked
+                        </button>
+                        {hasFreeSessionsBenefit && (
+                          <button
+                            onClick={() => setAppointmentSort('free')}
+                            className={cn(
+                              "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
+                              appointmentSort === 'free'
+                                ? "bg-[#1c1714] text-white shadow-sm"
+                                : "text-[#5f5750] hover:text-[#1c1714]"
+                            )}
+                            title="Free course sessions"
+                          >
+                            Free sessions
+                          </button>
                         )}
-                        title="Jo appointment sabse jaldi aane wala hai"
-                      >
-                        Soonest date
-                      </button>
-                      <button
-                        onClick={() => setAppointmentSort('today')}
-                        className={cn(
-                          "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
-                          appointmentSort === 'today'
-                            ? "bg-[#1c1714] text-white shadow-sm"
-                            : "text-[#5f5750] hover:text-[#1c1714]"
-                        )}
-                        title="Today's appointments"
-                      >
-                        Today
-                      </button>
-                      <button
-                        onClick={() => setAppointmentSort('newest_booked')}
-                        className={cn(
-                          "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
-                          appointmentSort === 'newest_booked'
-                            ? "bg-[#1c1714] text-white shadow-sm"
-                            : "text-[#5f5750] hover:text-[#1c1714]"
-                        )}
-                        title="Recently booked"
-                      >
-                        Recently booked
-                      </button>
-                      <button
-                        onClick={() => setAppointmentSort('free')}
-                        className={cn(
-                          "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
-                          appointmentSort === 'free'
-                            ? "bg-[#1c1714] text-white shadow-sm"
-                            : "text-[#5f5750] hover:text-[#1c1714]"
-                        )}
-                        title="Free course sessions"
-                      >
-                        Free sessions
-                      </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="mj-grid-scroll" onWheel={handleGridWheel} data-lenis-prevent="true">
                   <div className="mj-grid">
                     {coachFilter === 'packages' ? (
-                      packagesList.length > 0 ? (
-                        packagesList.map((pkg, pIdx) => {
-                          const completedCount = pkg.appointments.filter(a => a.status === 'COMPLETED').length;
-                          const progressPct = pkg.totalSessions ? Math.round((completedCount / pkg.totalSessions) * 100) : 0;
-                          const isReviewed = (pkg.agreementStatus || '').toLowerCase() === 'accepted';
-                          const isSent = (pkg.agreementStatus || '').toLowerCase() === 'sent';
+                      loading && packagesList.length === 0 ? (
+                        <div className="col-span-full space-y-4">
+                          <div className="bg-[#ede9e4]/60 animate-pulse rounded-2xl h-24 border border-black/5" />
+                          <div className="bg-[#ede9e4]/60 animate-pulse rounded-2xl h-24 border border-black/5" />
+                          <div className="bg-[#ede9e4]/60 animate-pulse rounded-2xl h-24 border border-black/5" />
+                        </div>
+                      ) : packagesList.length > 0 ? (
+                        <div className="col-span-full flex flex-col gap-4">
+                          {packagesList.map((pkg, pIdx) => {
+                            const theme = PACKAGE_THEMES[pIdx % PACKAGE_THEMES.length];
+                            const packageKey = String(pkg.id ?? pIdx);
+                            const isExpanded = String(expandedPackageId) === packageKey;
+                            const completedCount = pkg.appointments.filter(a => a.status === 'COMPLETED').length;
+                            const totalSessions = pkg.totalSessions || pkg.appointments.length || 3;
+                            const isReviewed = (pkg.agreementStatus || '').toLowerCase() === 'accepted';
+                            const isSent = (pkg.agreementStatus || '').toLowerCase() === 'sent';
 
-                          return (
-                            <article 
-                              key={pkg.id || pIdx} 
-                              className="col-span-full bg-white rounded-2xl border border-black/10 overflow-hidden shadow-xs hover:shadow-md transition-all p-5 sm:p-6 mb-4"
-                            >
-                              {/* Top Bar */}
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-black/5">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#c8512d]/10 text-[#c8512d] border border-[#c8512d]/20">
-                                    <Package size={14} weight="bold" />
-                                    <span>{pkg.totalSessions}-Session Package</span>
-                                  </span>
-                                  <span className="mj-pill">
-                                    {inr(pkg.totalAmount)} paid
-                                  </span>
-                                  {isReviewed && (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                      <CheckCircle size={13} weight="bold" />
-                                      <span>Agreement Reviewed ✓</span>
-                                    </span>
-                                  )}
-                                </div>
+                            const upcomingSessions = pkg.appointments.filter(a => a.status !== 'COMPLETED' && a.status !== 'CANCELLED' && a.status !== 'CANCELED');
+                            const nextSession = upcomingSessions.length > 0 ? upcomingSessions[0] : null;
 
-                                <div className="text-xs text-[#7a7269] font-medium">
-                                  {completedCount} of {pkg.totalSessions} sessions completed ({progressPct}%)
-                                </div>
-                              </div>
-
-                              {/* Progress Track */}
-                              <div className="w-full bg-[#ede9e4] h-2 rounded-full overflow-hidden my-4">
+                            return (
+                              <article 
+                                key={packageKey} 
+                                className="w-full bg-white rounded-[22px] border border-[#e8e4dd] overflow-hidden transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
+                                style={{ borderLeft: `6px solid ${theme.stripe}` }}
+                              >
+                                {/* Header Row (Always Visible) */}
                                 <div 
-                                  className="bg-[#c8512d] h-full transition-all duration-300"
-                                  style={{ width: `${progressPct}%` }}
-                                />
-                              </div>
-
-                              {/* Sessions List */}
-                              <div className="mt-4">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-[#7a7269] mb-3">
-                                  Included Sessions ({pkg.appointments.length})
-                                </h4>
-                                <div className="flex flex-col gap-2.5">
-                                  {pkg.appointments.map((session, sIdx) => {
-                                    const sCompleted = session.status === 'COMPLETED';
-                                    const sCancelled = session.status === 'CANCELLED' || session.status === 'CANCELED';
-                                    const sRescheduled = session.status === 'RESCHEDULED';
-                                    const sUpcoming = !sCompleted && !sCancelled;
-
-                                    return (
-                                      <div 
-                                        key={session._id || sIdx}
-                                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-black/5 hover:border-black/10 transition-colors"
-                                      >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                          <div className="w-8 h-8 rounded-full bg-[#1c1714] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                                            {session.sessionNumber || (sIdx + 1)}
-                                          </div>
-                                          <div className="min-w-0">
-                                            <div className="font-serif text-[14.5px] font-semibold text-[#1c1714] truncate">
-                                              {formatPillDate(session.date)} at {formatSessionTime(session.time)}
-                                            </div>
-                                            <div className="text-xs text-[#7a7269] flex items-center gap-2 mt-0.5">
-                                              <span>{session.duration || 90} mins</span>
-                                              <span>•</span>
-                                              <span>Google Meet</span>
-                                              <span className={cn(
-                                                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
-                                                sCompleted && "bg-emerald-100 text-emerald-800",
-                                                sCancelled && "bg-rose-100 text-rose-800",
-                                                sRescheduled && "bg-sky-100 text-sky-800",
-                                                sUpcoming && !sRescheduled && "bg-amber-100 text-amber-800"
-                                              )}>
-                                                {sCompleted ? 'Completed' : sCancelled ? 'Cancelled' : sRescheduled ? 'Rescheduled' : 'Upcoming'}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div className="flex items-center gap-2 shrink-0">
-                                          {sUpcoming && (
-                                            <a 
-                                              href={session.meetLink || 'https://meet.google.com'}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="px-3 py-1.5 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-xs font-bold inline-flex items-center gap-1 shadow-xs transition-colors"
-                                            >
-                                              <VideoCamera size={13} weight="bold" />
-                                              <span>Join</span>
-                                            </a>
-                                          )}
-                                          {(session.coachNotes || session.notes) && (
-                                            <button 
-                                              type="button"
-                                              onClick={() => {
-                                                markCoachNoteAsRead(session._id);
-                                                setSelectedSession(session);
-                                                setSessionModalTab('notes');
+                                  onClick={() => setExpandedPackageId(prev => (String(prev) === packageKey ? null : packageKey))}
+                                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 cursor-pointer select-none hover:bg-black/[0.015] transition-colors"
+                                >
+                                  <div className="flex items-center gap-3.5 min-w-0">
+                                    <div 
+                                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-xs"
+                                      style={{ backgroundColor: theme.bgLight }}
+                                    >
+                                      📦
+                                    </div>
+                                    <div className="min-w-0">
+                                      <h3 className="font-serif text-[17px] sm:text-[18px] font-bold text-[#1c1714] leading-tight truncate">
+                                        {totalSessions}-Session Package
+                                      </h3>
+                                      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-[#7a7269] mt-1 font-normal">
+                                        <span className="inline-flex items-center gap-1.5 mr-0.5">
+                                          {Array.from({ length: totalSessions }).map((_, dIdx) => (
+                                            <span
+                                              key={dIdx}
+                                              className="w-2.5 h-2.5 rounded-full transition-colors"
+                                              style={{
+                                                backgroundColor: dIdx < completedCount ? theme.dot : '#D1CBC5'
                                               }}
-                                              className={cn(
-                                                "px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer",
-                                                !readCoachNotes.includes(String(session._id))
-                                                  ? "bg-[#0284c7] hover:bg-[#0369a1] text-white"
-                                                  : "bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd] hover:bg-[#e0f2fe]"
-                                              )}
-                                              title="View notes from coach"
-                                            >
-                                              <NotePencil size={13} weight="bold" />
-                                              <span>Coach note</span>
-                                            </button>
-                                          )}
-                                          {sUpcoming && (
-                                            <button 
-                                              type="button"
-                                              onClick={() => setRescheduleSession(session)}
-                                              className="px-3 py-1.5 rounded-full bg-white hover:bg-black/5 text-[#1c1714] border border-black/10 text-xs font-semibold cursor-pointer transition-colors"
-                                            >
-                                              Reschedule
-                                            </button>
-                                          )}
-                                          <button 
-                                            type="button"
-                                            onClick={() => {
-                                              setSelectedSession(session);
-                                              setSessionModalTab('details');
-                                            }}
-                                            className="px-3 py-1.5 rounded-full bg-white hover:bg-black/5 text-[#1c1714] border border-black/10 text-xs font-semibold cursor-pointer transition-colors"
-                                          >
-                                            Details
-                                          </button>
-                                        </div>
+                                            />
+                                          ))}
+                                        </span>
+                                        <span className="font-medium text-[#5f5750]">{completedCount}/{totalSessions} done</span>
+                                        <span className="font-medium text-[#5f5750]">{inr(pkg.totalAmount)} paid</span>
+                                        {nextSession && (
+                                          <span className="text-[#3d3731]">
+                                            Next: <strong className="font-semibold text-[#1c1714]">{formatShortDate(nextSession.date)} · {formatSessionTime(nextSession.time)}</strong>
+                                          </span>
+                                        )}
                                       </div>
-                                    );
-                                  })}
+                                    </div>
+                                  </div>
+
+                                  {/* Header Right Actions */}
+                                  <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                                    {nextSession && (
+                                      <a
+                                        href={nextSession.meetLink || 'https://meet.google.com'}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="px-5 sm:px-6 py-2 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-xs sm:text-sm font-semibold tracking-wide shadow-xs active:scale-95 transition-all inline-flex items-center justify-center cursor-pointer"
+                                      >
+                                        Join
+                                      </a>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedPackageId(prev => (String(prev) === packageKey ? null : packageKey));
+                                      }}
+                                      className="w-8 h-8 rounded-full flex items-center justify-center text-[#7a7269] hover:text-[#1c1714] hover:bg-black/5 transition-colors cursor-pointer"
+                                      aria-label={isExpanded ? 'Collapse package' : 'Expand package'}
+                                    >
+                                      {isExpanded ? (
+                                        <CaretUp size={16} weight="bold" />
+                                      ) : (
+                                        <CaretDown size={16} weight="bold" />
+                                      )}
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            </article>
-                          );
-                        })
+
+                                {/* Expanded Content */}
+                                {isExpanded && (
+                                  <div className="animate-in fade-in duration-200">
+                                    <div className="border-t border-[#ede8e1] mx-4 sm:mx-6" />
+                                    <div className="p-4 sm:p-6 pt-3 sm:pt-4">
+                                      {/* Sub-header row */}
+                                      <div className="flex items-center justify-between pb-2.5 text-xs sm:text-[13px] text-[#7a7269]">
+                                        <span className="font-normal">{pkg.appointments.length} sessions</span>
+                                        {isReviewed ? (
+                                          <span className="inline-flex items-center gap-1 font-medium text-[#2a8758]">
+                                            <span>✓ Agreement reviewed</span>
+                                          </span>
+                                        ) : isSent ? (
+                                          <Link
+                                            to={`/coaching-agreement/${pkg.agreementToken || pkg.packageDoc?.agreementToken || ''}`}
+                                            className="inline-flex items-center gap-1 font-semibold text-amber-700 hover:underline"
+                                          >
+                                            <span>Review Agreement →</span>
+                                          </Link>
+                                        ) : (
+                                          <span className="font-normal text-[#7a7269]">Agreement pending</span>
+                                        )}
+                                      </div>
+
+                                      {/* Sessions List */}
+                                      <div>
+                                        {pkg.appointments.map((session, sIdx) => {
+                                          const isFirstOrNewDate = sIdx === 0 || formatShortDate(session.date) !== formatShortDate(pkg.appointments[sIdx - 1]?.date);
+                                          const sCompleted = session.status === 'COMPLETED';
+                                          const sCancelled = session.status === 'CANCELLED' || session.status === 'CANCELED';
+                                          const sRescheduled = session.status === 'RESCHEDULED';
+                                          const sUpcoming = !sCompleted && !sCancelled;
+                                          const hasCoachNote = Boolean(session.coachNotes || session.notes);
+                                          const isNoteUnread = hasCoachNote && !readCoachNotes.includes(String(session._id));
+
+                                          return (
+                                            <React.Fragment key={session._id || sIdx}>
+                                              {isFirstOrNewDate && (
+                                                <div className="text-xs sm:text-[13px] font-semibold text-[#5f5750] mt-3 mb-2 px-1">
+                                                  {formatShortDate(session.date)}
+                                                </div>
+                                              )}
+                                              <div className="flex items-center justify-between gap-3 p-2.5 sm:p-3 rounded-[16px] bg-[#faf8f5] border border-black/5 hover:border-black/10 transition-all mb-2">
+                                                {/* Left Info */}
+                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                  <div className="w-6 h-6 rounded-full bg-[#1c1714] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-xs">
+                                                    {session.sessionNumber || (sIdx + 1)}
+                                                  </div>
+                                                  <div className="flex items-center flex-wrap gap-x-3 gap-y-1 min-w-0">
+                                                    <span className="font-bold text-sm sm:text-[14.5px] text-[#1c1714] tracking-tight">
+                                                      {formatSessionTime(session.time)}
+                                                    </span>
+                                                    <span className="text-xs text-[#7a7269] flex items-center gap-1.5 font-normal">
+                                                      <span>{session.duration || 90} min</span>
+                                                      <span>·</span>
+                                                      <span>Google Meet</span>
+                                                    </span>
+
+                                                    {/* Status Badges */}
+                                                    {sCompleted && (
+                                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase tracking-wide">
+                                                        Completed
+                                                      </span>
+                                                    )}
+                                                    {sRescheduled && (
+                                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 uppercase tracking-wide">
+                                                        Rescheduled
+                                                      </span>
+                                                    )}
+                                                    {sCancelled && (
+                                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 uppercase tracking-wide">
+                                                        Cancelled
+                                                      </span>
+                                                    )}
+                                                    {sUpcoming && !sRescheduled && (
+                                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/80 text-amber-900 uppercase tracking-wide">
+                                                        Upcoming
+                                                      </span>
+                                                    )}
+
+                                                    {/* Coach Note Button */}
+                                                    {hasCoachNote && (
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          markCoachNoteAsRead(session._id);
+                                                          setSelectedSession(session);
+                                                          setSessionModalTab('notes');
+                                                        }}
+                                                        className={cn(
+                                                          "px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer",
+                                                          isNoteUnread
+                                                            ? "bg-[#0284c7] hover:bg-[#0369a1] text-white shadow-xs"
+                                                            : "bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd] hover:bg-[#e0f2fe]"
+                                                        )}
+                                                        title="View coach note"
+                                                      >
+                                                        <NotePencil size={12} weight="bold" />
+                                                        <span>Coach note</span>
+                                                      </button>
+                                                    )}
+                                                  </div>
+                                                </div>
+
+                                                {/* Right: Join + 3 dots */}
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                  {sUpcoming && (
+                                                    <a
+                                                      href={session.meetLink || 'https://meet.google.com'}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      className="px-5 py-1.5 rounded-full bg-[#c8512d] hover:bg-[#b3461f] text-white text-xs font-semibold tracking-wide shadow-xs active:scale-95 transition-all inline-flex items-center justify-center cursor-pointer"
+                                                    >
+                                                      Join
+                                                    </a>
+                                                  )}
+
+                                                  {/* 3-dots Menu */}
+                                                  <div className="relative mj-card-dots-wrap shrink-0">
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOpenCardMenuId(openCardMenuId === session._id ? null : session._id);
+                                                      }}
+                                                      className="w-8 h-8 rounded-full bg-white hover:bg-black/5 text-[#5f5750] hover:text-[#1c1714] border border-black/10 flex items-center justify-center shadow-xs transition-colors cursor-pointer"
+                                                      title="Session actions"
+                                                    >
+                                                      <DotsThreeVertical size={16} weight="bold" />
+                                                    </button>
+
+                                                    {openCardMenuId === session._id && (
+                                                      <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-xl border border-black/10 py-1.5 min-w-[150px] animate-in fade-in zoom-in-95 duration-150">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            setOpenCardMenuId(null);
+                                                            setSelectedSession(session);
+                                                            setSessionModalTab('details');
+                                                          }}
+                                                          className="w-full text-left px-3.5 py-2 text-xs font-medium text-[#1c1714] hover:bg-black/5 flex items-center gap-2 cursor-pointer transition-colors"
+                                                        >
+                                                          <span>View details</span>
+                                                        </button>
+                                                        {hasCoachNote && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                              setOpenCardMenuId(null);
+                                                              markCoachNoteAsRead(session._id);
+                                                              setSelectedSession(session);
+                                                              setSessionModalTab('notes');
+                                                            }}
+                                                            className="w-full text-left px-3.5 py-2 text-xs font-medium text-[#0284c7] hover:bg-sky-50 flex items-center gap-2 cursor-pointer transition-colors"
+                                                          >
+                                                            <NotePencil size={13} weight="bold" />
+                                                            <span>Coach note</span>
+                                                          </button>
+                                                        )}
+                                                        {sUpcoming && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                              setOpenCardMenuId(null);
+                                                              setRescheduleSession(session);
+                                                            }}
+                                                            className="w-full text-left px-3.5 py-2 text-xs font-medium text-[#1c1714] hover:bg-black/5 flex items-center gap-2 cursor-pointer transition-colors"
+                                                          >
+                                                            <span>Reschedule</span>
+                                                          </button>
+                                                        )}
+                                                        {sUpcoming && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                              setOpenCardMenuId(null);
+                                                              setCancelModalAppt(session);
+                                                            }}
+                                                            className="w-full text-left px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
+                                                          >
+                                                            <Trash size={13} weight="bold" />
+                                                            <span>Cancel session</span>
+                                                          </button>
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </React.Fragment>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </article>
+                            );
+                          })}
+                        </div>
                       ) : (
                         <div className="mj-empty col-span-full">
                           <h3>No coaching packages found</h3>
@@ -1851,6 +2086,12 @@ export default function MyJourney() {
                           </div>
                         </div>
                       )
+                    ) : loading && safeAppointmentsList.length === 0 ? (
+                      <div className="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="bg-[#ede9e4]/60 animate-pulse rounded-2xl h-64 border border-black/5" />
+                        <div className="bg-[#ede9e4]/60 animate-pulse rounded-2xl h-64 border border-black/5" />
+                        <div className="bg-[#ede9e4]/60 animate-pulse rounded-2xl h-64 border border-black/5" />
+                      </div>
                     ) : filteredAppointments.length > 0 ? (
                       filteredAppointments.map((appt, idx) => {
                         const isFree = Boolean(appt.isFreeSession || appt.orderId === 'COURSE_FREE_SESSION');

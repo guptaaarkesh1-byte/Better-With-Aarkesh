@@ -48,8 +48,8 @@ function App() {
                   <Route path="/my-journey/notes" element={<Notes />} />
                   <Route path="/prepare" element={<Prepare />} />
                   <Route path="/articles" element={<Articles />} />
-                  <Route path="/course/profile" element={<CourseProfile />} />
-                  <Route path="/course-profile" element={<CourseProfile />} />
+                  <Route path="/course/profile" element={<Navigate to="/my-journey?tab=course" replace />} />
+                  <Route path="/course-profile" element={<Navigate to="/my-journey?tab=course" replace />} />
                   <Route path="/course" element={<Course />} />
                   <Route path="/course/:slug" element={<Course />} />
                   <Route path="/courses" element={<Course />} />
