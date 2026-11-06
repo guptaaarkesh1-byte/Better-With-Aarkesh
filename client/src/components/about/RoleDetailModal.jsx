@@ -144,17 +144,63 @@ export default function RoleDetailModal({
   }, [activeData?.media]);
 
   const instagramList = useMemo(() => {
+    const reels = MEDIA_DATA.ig || [];
     if (activeData?.media && Array.isArray(activeData.media)) {
-      return activeData.media
-        .filter(m => m.type === 'instagram' && m.published !== false)
-        .map(m => ({
-          id: m.externalId || m.id,
-          t: m.title,
-          c: m.category,
-          img: m.thumbnail?.url
-        }));
+      const configuredReels = activeData.media.filter(m => m.type === 'instagram');
+      const disabledIds = new Set(
+        configuredReels
+          .filter(m => m.published === false)
+          .map(m => m.externalId || m.id)
+      );
+      const reelById = new Map(reels.map(reel => [reel.id, reel]));
+      const configured = configuredReels
+        .filter(m => {
+          const id = m.externalId || m.id;
+          return m.published !== false
+            && m.title?.trim().toLowerCase() !== 'test'
+            && !id?.startsWith('DEMO')
+            && !id?.startsWith('PLACEHOLDER');
+        })
+        .map(m => {
+          const id = m.externalId || m.id;
+          const reel = reelById.get(id);
+          return {
+            id,
+            t: m.title || reel?.t,
+            c: m.category || reel?.c,
+            img: m.thumbnail?.url || reel?.img
+          };
+        });
+      const seenIds = new Set();
+      const seenImages = new Set();
+      const seenTitles = new Set();
+      const normalizeTitle = title => title?.trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ');
+      const uniqueConfigured = configured.filter(reel => {
+        const title = normalizeTitle(reel.t);
+        if (seenIds.has(reel.id) || (reel.img && seenImages.has(reel.img)) || (title && seenTitles.has(title))) {
+          return false;
+        }
+        seenIds.add(reel.id);
+        if (reel.img) seenImages.add(reel.img);
+        if (title) seenTitles.add(title);
+        return true;
+      });
+      const configuredIds = new Set(uniqueConfigured.map(reel => reel.id));
+      return [
+        ...uniqueConfigured,
+        ...reels.filter(reel => {
+          const title = normalizeTitle(reel.t);
+          if (configuredIds.has(reel.id) || disabledIds.has(reel.id)
+            || seenIds.has(reel.id) || (reel.img && seenImages.has(reel.img))
+            || (title && seenTitles.has(title))) return false;
+          seenIds.add(reel.id);
+          if (reel.img) seenImages.add(reel.img);
+          if (title) seenTitles.add(title);
+          return true;
+        })
+      ];
     }
-    return MEDIA_DATA.ig || [];
+    return reels;
   }, [activeData?.media]);
 
 

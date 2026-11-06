@@ -496,7 +496,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
         
         {/* Left Column - Calendar */}
         <div 
-          className={`${bookingMode === 'package' ? 'w-full lg:w-[310px] xl:w-[325px] shrink-0' : 'flex-1'} min-w-0`} 
+          className={`${bookingMode === 'package' ? 'w-full lg:w-[310px] xl:w-[325px] shrink-0' : 'w-full lg:flex-1'} min-w-0`}
           onClick={(e) => e.stopPropagation()}
         >
           <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-3">
@@ -652,7 +652,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
         </div>
 
         {/* Right Column - Times & Package Summary */}
-        <div className="flex-1 mt-4 sm:mt-6 lg:mt-0 flex flex-col">
+        <div className="w-full lg:flex-1 min-w-0 mt-4 sm:mt-6 lg:mt-0 flex flex-col">
           
           {/* Segmented Mode Toggle: [ Single session | Book a Package ] */}
           <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/5 border border-black/8 mb-4">
