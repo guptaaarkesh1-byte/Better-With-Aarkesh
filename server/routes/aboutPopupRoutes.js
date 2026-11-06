@@ -8,6 +8,43 @@ dotenv.config();
 
 const router = express.Router();
 
+export const ABOUT_POPUP_CATEGORIES = [
+  'Aviation',
+  'Relationships',
+  'Self',
+  'Change',
+  'Decisions',
+  'Difficult People',
+  'Communication'
+];
+
+const LEGACY_MEDIA_CATEGORIES = {
+  mindset: 'Decisions',
+  habits: 'Self',
+  career: 'Self'
+};
+
+const normalizeMediaCategory = (category) => {
+  const value = String(category || '').trim();
+  return LEGACY_MEDIA_CATEGORIES[value.toLowerCase()] || value;
+};
+
+const normalizePopupCategories = (categories) => {
+  const values = Array.isArray(categories)
+    ? categories.map(normalizeMediaCategory).filter(Boolean)
+    : [];
+  const hasLegacyCategory = Array.isArray(categories) && categories.some((category) =>
+    Object.hasOwn(LEGACY_MEDIA_CATEGORIES, String(category).trim().toLowerCase())
+  );
+  if (hasLegacyCategory) {
+    return [...new Set([
+      ...ABOUT_POPUP_CATEGORIES,
+      ...values.filter((category) => !ABOUT_POPUP_CATEGORIES.includes(category))
+    ])];
+  }
+  return [...new Set(values.length ? values : ABOUT_POPUP_CATEGORIES)];
+};
+
 // Helper to get Mux client from env or Settings
 const getMuxClient = async () => {
   dotenv.config();
@@ -50,7 +87,7 @@ export const DEFAULT_ABOUT_POPUP = {
       },
       useMuxThumbnail: false
     },
-    categories: ['Mindset', 'Aviation', 'Relationships', 'Habits', 'Career'],
+    categories: ABOUT_POPUP_CATEGORIES,
     status: 'published',
     updatedAt: new Date()
   },
@@ -60,7 +97,7 @@ export const DEFAULT_ABOUT_POPUP = {
       type: 'youtube',
       externalId: 'DEMO_YT_1',
       title: 'Mastering Calm Under Extreme Pressure: The Cockpit Framework',
-      category: 'Mindset',
+      category: 'Decisions',
       thumbnail: { url: '', publicId: '' },
       featured: true,
       published: true,
@@ -93,7 +130,7 @@ export const DEFAULT_ABOUT_POPUP = {
       type: 'youtube',
       externalId: 'DEMO_YT_4',
       title: 'The Daily Disciplines That Prevent Executive Burnout',
-      category: 'Habits',
+      category: 'Self',
       thumbnail: { url: '', publicId: '' },
       featured: false,
       published: true,
@@ -115,7 +152,7 @@ export const DEFAULT_ABOUT_POPUP = {
       type: 'instagram',
       externalId: 'DEMO_IG_1',
       title: 'Why calmness is a trained skill, not an innate talent',
-      category: 'Mindset',
+      category: 'Decisions',
       thumbnail: { url: '', publicId: '' },
       featured: false,
       published: true,
@@ -137,7 +174,7 @@ export const DEFAULT_ABOUT_POPUP = {
       type: 'instagram',
       externalId: 'DEMO_IG_3',
       title: 'How to stop reacting and start choosing consciously',
-      category: 'Mindset',
+      category: 'Decisions',
       thumbnail: { url: '', publicId: '' },
       featured: false,
       published: true,
@@ -159,7 +196,7 @@ export const DEFAULT_ABOUT_POPUP = {
       type: 'instagram',
       externalId: 'DEMO_IG_5',
       title: 'The morning checklist that sets high-performance tone',
-      category: 'Habits',
+      category: 'Self',
       thumbnail: { url: '', publicId: '' },
       featured: false,
       published: true,
@@ -170,7 +207,7 @@ export const DEFAULT_ABOUT_POPUP = {
       type: 'instagram',
       externalId: 'DEMO_IG_6',
       title: 'Navigating career crossroads when stakes feel high',
-      category: 'Career',
+      category: 'Self',
       thumbnail: { url: '', publicId: '' },
       featured: false,
       published: true,
@@ -318,15 +355,25 @@ export const syncMuxIntroVideoStatus = async (introVideo) => {
 export const getStoredAboutPopup = async () => {
   const doc = await Settings.findOne({ key: 'about_popup_settings' });
   if (!doc || !doc.value) {
-    return JSON.parse(JSON.stringify(DEFAULT_ABOUT_POPUP));
+    const defaults = JSON.parse(JSON.stringify(DEFAULT_ABOUT_POPUP));
+    return {
+      ...defaults,
+      popup: { ...defaults.popup, categories: ABOUT_POPUP_CATEGORIES },
+      media: defaults.media.map((item) => ({
+        ...item,
+        category: normalizeMediaCategory(item.category)
+      }))
+    };
   }
   const popupObj = { ...DEFAULT_ABOUT_POPUP.popup, ...(doc.value.popup || {}) };
   if (popupObj.introVideo) {
     await syncMuxIntroVideoStatus(popupObj.introVideo);
   }
+  popupObj.categories = normalizePopupCategories(popupObj.categories);
   return {
     popup: popupObj,
-    media: Array.isArray(doc.value.media) ? doc.value.media : DEFAULT_ABOUT_POPUP.media,
+    media: (Array.isArray(doc.value.media) ? doc.value.media : DEFAULT_ABOUT_POPUP.media)
+      .map((item) => ({ ...item, category: normalizeMediaCategory(item.category) })),
     story: {
       ...DEFAULT_ABOUT_POPUP.story,
       ...(doc.value.story || {}),
@@ -418,9 +465,7 @@ router.put('/admin', protect, admin, async (req, res) => {
         },
         useMuxThumbnail: Boolean(popup.introVideo?.useMuxThumbnail)
       },
-      categories: Array.isArray(popup.categories) && popup.categories.length > 0
-        ? popup.categories.map((c) => String(c).trim().slice(0, 40)).filter(Boolean)
-        : DEFAULT_ABOUT_POPUP.popup.categories,
+      categories: normalizePopupCategories(popup.categories),
       status: 'published',
       updatedAt: new Date()
     };
@@ -431,7 +476,7 @@ router.put('/admin', protect, admin, async (req, res) => {
           type: item.type === 'instagram' ? 'instagram' : 'youtube',
           externalId: String(item.externalId || '').trim(),
           title: String(item.title || '').trim().slice(0, 200),
-          category: String(item.category || cleanPopup.categories[0] || 'Mindset').trim(),
+          category: normalizeMediaCategory(item.category || cleanPopup.categories[0]),
           thumbnail: {
             url: String(item.thumbnail?.url || '').trim(),
             publicId: String(item.thumbnail?.publicId || '').trim()
@@ -440,7 +485,10 @@ router.put('/admin', protect, admin, async (req, res) => {
           published: Boolean(item.published !== false),
           sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : idx
         }))
-      : DEFAULT_ABOUT_POPUP.media;
+      : DEFAULT_ABOUT_POPUP.media.map((item) => ({
+          ...item,
+          category: normalizeMediaCategory(item.category)
+        }));
 
     const cleanStory = {
       kicker: String(story?.kicker || 'My story').trim().slice(0, 60),

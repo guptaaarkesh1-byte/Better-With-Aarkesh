@@ -697,7 +697,7 @@ export default function Library() {
           }
         }
 
-        /* ---------- MARQUEE STRIP (CLASSIC BLACK WITH COLORFUL DIAMOND SPARKLES) ---------- */
+        /* ---------- TRANSLUCENT CATEGORY MARQUEE STRIP ---------- */
         @keyframes marqueeScroll {
           0% {
             transform: translate3d(0, 0, 0);
@@ -708,14 +708,16 @@ export default function Library() {
         }
 
         .library-root .marquee {
-          background: #111010;
+          background: rgba(245, 241, 232, 0.72);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
           overflow: hidden;
           width: 100%;
           height: var(--marquee-height, 52px);
           display: flex;
           align-items: center;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          border-top: 1px solid rgba(17, 16, 16, 0.12);
+          border-bottom: 1px solid rgba(17, 16, 16, 0.12);
           position: relative;
           z-index: 10;
           user-select: none;
@@ -738,7 +740,7 @@ export default function Library() {
           gap: 28px;
           padding: 0 20px;
           background: transparent;
-          color: #ffffff;
+          color: #111010;
           border: none;
           outline: none;
           font-family: 'Archivo Black', sans-serif;
@@ -2108,7 +2110,7 @@ export default function Library() {
             </button>,
             <button key={`self-${setIdx}`} type="button" onClick={() => handleScrollTo('self')} className="marquee-item">
               <span>SELF</span>
-              <span className="marquee-sparkle" style={{ color: '#ffffff' }}>✦</span>
+              <span className="marquee-sparkle" style={{ color: '#111010' }}>✦</span>
             </button>,
             <button key={`change-${setIdx}`} type="button" onClick={() => handleScrollTo('change')} className="marquee-item">
               <span>CHANGE</span>
@@ -2275,6 +2277,8 @@ export default function Library() {
         );
       })()}
 
+      <div className="hidden lg:block h-[150vh]" aria-hidden="true" />
+
       {/* ---------- SELF (SPHERE LEFT, WORD RIGHT) ---------- */}
       {(() => {
         const catArticles = getCategoryArticles('self', 'Self');
@@ -2311,6 +2315,8 @@ export default function Library() {
           </section>
         );
       })()}
+
+      <div className="hidden lg:block h-[150vh]" aria-hidden="true" />
 
       {/* ---------- CHANGE (WORD LEFT, SPHERE RIGHT) ---------- */}
       {(() => {
@@ -2349,6 +2355,8 @@ export default function Library() {
         );
       })()}
 
+      <div className="hidden lg:block h-[150vh]" aria-hidden="true" />
+
       {/* ---------- DECISIONS (SPHERE LEFT, WORD RIGHT) ---------- */}
       {(() => {
         const catArticles = getCategoryArticles('decisions', 'Decisions');
@@ -2386,6 +2394,8 @@ export default function Library() {
         );
       })()}
 
+      <div className="hidden lg:block h-[150vh]" aria-hidden="true" />
+
       {/* ---------- DIFFICULT PEOPLE (WORD LEFT, SPHERE RIGHT) ---------- */}
       {(() => {
         const catArticles = getCategoryArticles('difficult-people', 'Difficult People');
@@ -2422,6 +2432,8 @@ export default function Library() {
           </section>
         );
       })()}
+
+      <div className="hidden lg:block h-[150vh]" aria-hidden="true" />
 
       {/* ---------- COMMUNICATION (SPHERE LEFT, WORD RIGHT) ---------- */}
       {(() => {

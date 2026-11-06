@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { v2 as cloudinary } from 'cloudinary';
+import { protect, admin } from '../middleware/authMiddleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,6 +60,17 @@ const upload = multer({
       return cb(new Error('Only image files (JPEG, PNG, WebP, GIF, SVG, AVIF) are allowed!'));
     }
   },
+});
+
+const cloudinaryMemoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter(req, file, cb) {
+    if (file.mimetype.startsWith('image/')) {
+      return cb(null, true);
+    }
+    return cb(new Error('Only image files are allowed.'));
+  }
 });
 
 // Middleware to handle multer execution and capture errors cleanly
@@ -137,5 +149,56 @@ const handleUpload = async (req, res) => {
 router.post('/', uploadMiddleware, handleUpload);
 router.post('/image', uploadMiddleware, handleUpload);
 router.post('/single', uploadMiddleware, handleUpload);
+router.post('/cloudinary', protect, admin, cloudinaryMemoryUpload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No image file provided in request.' });
+  }
+
+  const isCloudinaryConfigured = (
+    process.env.CLOUDINARY_URL
+    || (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)
+  );
+  if (!isCloudinaryConfigured) {
+    return res.status(503).json({ message: 'Cloudinary is not configured. Image was not uploaded.' });
+  }
+
+  const requestedFolder = String(req.body.folder || 'better_with_aarkesh/about/reel-thumbnails').trim();
+  if (!/^[a-zA-Z0-9/_-]+$/.test(requestedFolder)) {
+    return res.status(400).json({ message: 'Invalid Cloudinary folder.' });
+  }
+  const folder = requestedFolder.startsWith('better_with_aarkesh/')
+    ? requestedFolder
+    : `better_with_aarkesh/${requestedFolder}`;
+
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder, resource_type: 'image' },
+        (error, uploadResult) => {
+          if (error) reject(error);
+          else resolve(uploadResult);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+
+    if (!result?.secure_url || !result.public_id) {
+      throw new Error('Cloudinary returned an incomplete upload result.');
+    }
+
+    return res.json({
+      message: 'Image uploaded to Cloudinary successfully.',
+      imageUrl: result.secure_url,
+      url: result.secure_url,
+      publicId: result.public_id,
+      format: result.format,
+      bytes: result.bytes,
+      originalName: req.file.originalname
+    });
+  } catch (error) {
+    console.error('Direct Cloudinary image upload failed:', error);
+    return res.status(502).json({ message: 'Cloudinary image upload failed. No local copy was created.' });
+  }
+});
 
 export default router;

@@ -42,6 +42,7 @@ const DEFAULT_SECTIONS = {
       overlayTitle: 'MY IDEOLOGY',
       highlight: 'Clarity is the bridge between intention and action.',
       description: 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.',
+      descriptionPrefix: '....',
       buttonText: 'SCROLL FOR NEXT PRINCIPLE',
       eyebrowFontSize: 14,
       headingFontSize: 64,
@@ -55,6 +56,7 @@ const DEFAULT_SECTIONS = {
       subtitle: 'Heal deeply.',
       highlight: 'What you resist persists.\nWhat you feel fully dissolves.',
       description: 'Emotions are signals, not dictators. Learn to sit with discomfort, process anxiety, and convert emotional turbulence into fuel for conscious growth.',
+      descriptionPrefix: '....',
       buttonText: '',
       eyebrowFontSize: 14,
       headingFontSize: 64,
@@ -244,7 +246,13 @@ router.get('/', async (req, res) => {
     const result = {
       hero: { ...DEFAULT_SECTIONS.hero, ...(doc.value?.hero || {}) },
       problem: { ...DEFAULT_SECTIONS.problem, ...(doc.value?.problem || {}) },
-      principles: { ...DEFAULT_SECTIONS.principles, ...(doc.value?.principles || {}) },
+      principles: {
+        ...DEFAULT_SECTIONS.principles,
+        ...(doc.value?.principles || {}),
+        think: { ...DEFAULT_SECTIONS.principles.think, ...(doc.value?.principles?.think || {}) },
+        feel: { ...DEFAULT_SECTIONS.principles.feel, ...(doc.value?.principles?.feel || {}) },
+        decide: { ...DEFAULT_SECTIONS.principles.decide, ...(doc.value?.principles?.decide || {}) }
+      },
       coachingProcess: { ...DEFAULT_SECTIONS.coachingProcess, ...(doc.value?.coachingProcess || {}) },
       coachingJourney: { ...DEFAULT_SECTIONS.coachingJourney, ...(doc.value?.coachingJourney || {}) },
       about: { ...DEFAULT_SECTIONS.about, ...(doc.value?.about || {}) },
@@ -279,6 +287,11 @@ router.get('/:section', async (req, res) => {
     }
     
     const secResult = { ...defaultSectionData, ...doc.value[section] };
+    if (section === 'principles') {
+      secResult.think = { ...DEFAULT_SECTIONS.principles.think, ...(doc.value.principles?.think || {}) };
+      secResult.feel = { ...DEFAULT_SECTIONS.principles.feel, ...(doc.value.principles?.feel || {}) };
+      secResult.decide = { ...DEFAULT_SECTIONS.principles.decide, ...(doc.value.principles?.decide || {}) };
+    }
     if (section === 'cta' && !secResult.bgImg) secResult.bgImg = DEFAULT_SECTIONS.cta.bgImg;
     if (section === 'problem' && !secResult.transBgImg) secResult.transBgImg = DEFAULT_SECTIONS.problem.transBgImg;
     if (section === 'coachingJourney' && !secResult.bgImg) secResult.bgImg = DEFAULT_SECTIONS.coachingJourney.bgImg;

@@ -27,6 +27,7 @@ import {
 import * as UpChunk from '@mux/upchunk';
 import MuxVideoPlayer from '../common/MuxVideoPlayer';
 import { API_URL, getLiveSiteUrl } from '../../utils/apiUrl';
+import { MEDIA_DATA } from '../../../../client/src/data/media';
 
 export const parseYouTubeId = (input) => {
   if (!input) return null;
@@ -53,6 +54,75 @@ export const countWords = (sections = []) => {
     .split(/\s+/)
     .filter(Boolean).length;
 };
+
+const CURRENT_ABOUT_CATEGORIES = [
+  'Aviation',
+  'Relationships',
+  'Self',
+  'Change',
+  'Decisions',
+  'Difficult People',
+  'Communication'
+];
+
+const LEGACY_ABOUT_CATEGORY_MAP = {
+  mindset: 'Decisions',
+  habits: 'Self',
+  career: 'Self'
+};
+
+const normalizeAboutCategory = (category) => {
+  const label = String(category || '').trim();
+  return LEGACY_ABOUT_CATEGORY_MAP[label.toLowerCase()] || label;
+};
+
+const normalizeAboutPopupData = (value) => {
+  const categories = Array.isArray(value?.popup?.categories)
+    ? value.popup.categories.map(normalizeAboutCategory).filter(Boolean)
+    : [];
+  const currentCategories = [
+    ...CURRENT_ABOUT_CATEGORIES,
+    ...categories.filter((category) => !CURRENT_ABOUT_CATEGORIES.includes(category))
+  ];
+
+  const media = (Array.isArray(value?.media) ? value.media : []).map((item) => {
+    const category = normalizeAboutCategory(item.category);
+    return {
+      ...item,
+      category: category || CURRENT_ABOUT_CATEGORIES[0]
+    };
+  });
+  const configuredReelIds = new Set(
+    media.filter((item) => item.type === 'instagram').map((item) => item.externalId)
+  );
+  const fallbackReels = (MEDIA_DATA.ig || [])
+    .filter((reel) => !configuredReelIds.has(reel.id))
+    .map((reel, index) => ({
+      id: `ig_fallback_${reel.id}`,
+      type: 'instagram',
+      externalId: reel.id,
+      title: reel.t,
+      category: normalizeAboutCategory(reel.c) || CURRENT_ABOUT_CATEGORIES[0],
+      thumbnail: { url: '', publicId: '' },
+      published: true,
+      sortOrder: media.filter((item) => item.type === 'instagram').length + index
+    }));
+
+  return {
+    ...value,
+    popup: {
+      ...value?.popup,
+      categories: [...new Set(currentCategories)]
+    },
+    media: [...media, ...fallbackReels]
+  };
+};
+
+const getFallbackReelThumbnail = (reelId) => (
+  MEDIA_DATA.ig?.some((reel) => reel.id === reelId)
+    ? `https://res.cloudinary.com/vcotf5ps/image/upload/better_with_aarkesh/about/reel-thumbnails/${reelId}.jpg`
+    : ''
+);
 
 const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
   { onOpenPreview, showToast },
@@ -95,7 +165,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
       });
       if (!res.ok) throw new Error('Failed to load About Popup data');
-      const result = await res.json();
+      const result = normalizeAboutPopupData(await res.json());
       setData(result);
       setInitialDataJson(JSON.stringify(result));
     } catch (err) {
@@ -129,8 +199,9 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
         throw new Error(errJson.message || 'Failed to save About Popup settings');
       }
       const savedRes = await res.json();
-      setData(savedRes.data || data);
-      setInitialDataJson(JSON.stringify(savedRes.data || data));
+      const savedData = normalizeAboutPopupData(savedRes.data || data);
+      setData(savedData);
+      setInitialDataJson(JSON.stringify(savedData));
       if (showToast) showToast('About Aarkesh settings saved successfully!');
       return true;
     } catch (err) {
@@ -169,6 +240,32 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
     if (!res.ok) throw new Error('Image upload failed');
     const result = await res.json();
     return result.imageUrl?.startsWith('http') ? result.imageUrl : `${API_URL}${result.imageUrl}`;
+  };
+
+  const uploadInstagramThumbnail = async (file) => {
+    if (!file) return null;
+    if (file.size > 2 * 1024 * 1024) {
+      if (showToast) showToast('Image must be under 2 MB. Please compress it.', 'error');
+      return null;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('folder', 'about/reel-thumbnails');
+    const token = localStorage.getItem('adminToken');
+    const res = await fetch(`${API_URL}/api/upload/cloudinary`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(result.message || 'Cloudinary upload failed.');
+    }
+    if (!result.imageUrl?.startsWith('https://res.cloudinary.com/')) {
+      throw new Error('Upload did not return a Cloudinary image URL.');
+    }
+    return result.imageUrl;
   };
 
   // -------------------------------------------------------------
@@ -441,7 +538,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
       if (showToast) showToast('Please enter a title for the video.', 'error');
       return;
     }
-    const cat = ytForm.category || data?.popup?.categories?.[0] || 'Mindset';
+    const cat = ytForm.category || data?.popup?.categories?.[0] || 'Aviation';
 
     if (editingYtId) {
       setData(prev => ({
@@ -503,6 +600,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
   const [isUploadingIgThumb, setIsUploadingIgThumb] = useState(false);
 
   const parsedIgCode = useMemo(() => parseInstagramCode(igForm.inputUrl), [igForm.inputUrl]);
+  const igPreviewThumbnail = igForm.thumbnailUrl || getFallbackReelThumbnail(parsedIgCode);
 
   const handleAddInstagram = () => {
     if (!parsedIgCode) {
@@ -513,7 +611,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
       if (showToast) showToast('Please enter a title for the reel.', 'error');
       return;
     }
-    const cat = igForm.category || data?.popup?.categories?.[0] || 'Relationships';
+    const cat = igForm.category || data?.popup?.categories?.[0] || 'Aviation';
 
     if (editingIgId) {
       setData(prev => ({
@@ -572,9 +670,11 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
     if (!window.confirm('Delete this item?')) return;
     setData(prev => ({
       ...prev,
-      media: prev.media.filter(m => m.id !== id)
+      media: id.startsWith('ig_fallback_')
+        ? prev.media.map(m => m.id === id ? { ...m, published: false } : m)
+        : prev.media.filter(m => m.id !== id)
     }));
-    if (showToast) showToast('Item deleted.');
+    if (showToast) showToast(id.startsWith('ig_fallback_') ? 'Reel hidden from the site.' : 'Item deleted.');
   };
 
   const handleMoveMedia = (id, direction, type) => {
@@ -684,7 +784,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
       setReassignModal({
         isOpen: true,
         catToDelete: cat,
-        targetCat: remainingCats[0] || 'Mindset'
+        targetCat: remainingCats[0] || 'Aviation'
       });
     } else {
       if (window.confirm(`Delete category "${cat}"?`)) {
@@ -1266,7 +1366,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                   </button>
                 </div>
                 <select
-                  value={ytForm.category || data.popup?.categories?.[0] || 'Mindset'}
+                  value={ytForm.category || data.popup?.categories?.[0] || 'Aviation'}
                   onChange={(e) => {
                     if (e.target.value === '__ADD_NEW__') {
                       setIsCatManagerOpen(true);
@@ -1345,7 +1445,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold text-white">{ytForm.title || 'Untitled Video'}</span>
-                  <span className="text-[11px] text-white/50">{ytForm.category || 'Mindset'} · YouTube ID: <code>{parsedYtId}</code></span>
+                  <span className="text-[11px] text-white/50">{ytForm.category || 'Aviation'} · YouTube ID: <code>{parsedYtId}</code></span>
                 </div>
               </div>
             )}
@@ -1548,7 +1648,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                   </button>
                 </div>
                 <select
-                  value={igForm.category || data.popup?.categories?.[0] || 'Relationships'}
+                  value={igForm.category || data.popup?.categories?.[0] || 'Aviation'}
                   onChange={(e) => {
                     if (e.target.value === '__ADD_NEW__') {
                       setIsCatManagerOpen(true);
@@ -1599,8 +1699,10 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                         if (file) {
                           try {
                             setIsUploadingIgThumb(true);
-                            const url = await uploadImage(file, 'aarkesh/about/thumbnails');
+                            const url = await uploadInstagramThumbnail(file);
                             if (url) setIgForm(prev => ({ ...prev, thumbnailUrl: url }));
+                          } catch (error) {
+                            if (showToast) showToast(error.message || 'Cloudinary upload failed.', 'error');
                           } finally {
                             setIsUploadingIgThumb(false);
                           }
@@ -1620,7 +1722,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                   )}
                 </div>
                 <span className="text-[11px] text-white/40">
-                  Instagram requires login to serve automatic thumbnails. Items without an uploaded thumbnail use the elegant warm gradient placeholder tile on the site.
+                  Selected image uploads directly to Cloudinary. Existing catalog thumbnails are already served from Cloudinary.
                 </span>
               </div>
             </div>
@@ -1630,8 +1732,8 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               <div className="w-18 h-28 rounded-lg overflow-hidden shrink-0 border border-white/10 relative" style={{
                 background: 'linear-gradient(135deg, #f9c98f, #e98b5b)'
               }}>
-                {igForm.thumbnailUrl ? (
-                  <img src={igForm.thumbnailUrl} alt="Reel preview" className="w-full h-full object-cover" />
+                {igPreviewThumbnail ? (
+                  <img src={igPreviewThumbnail} alt="Reel preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full grid place-items-center text-white/50 text-[10px]">9:14</div>
                 )}
@@ -1641,8 +1743,11 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               <div className="flex flex-col">
                 <span className="text-xs font-semibold text-white">{igForm.title || 'Untitled Reel'}</span>
                 <span className="text-[11px] text-white/50">{igForm.category || 'Relationships'} · Code: <code>{parsedIgCode || 'Pending'}</code></span>
-                {!igForm.thumbnailUrl && (
+                {!igPreviewThumbnail && (
                   <span className="text-[10px] text-amber-400 mt-1 font-semibold">Will use gradient placeholder tile</span>
+                )}
+                {igPreviewThumbnail && !igForm.thumbnailUrl && (
+                  <span className="text-[10px] text-white/40 mt-1">Using existing site thumbnail; upload to replace with Cloudinary.</span>
                 )}
               </div>
             </div>
@@ -1705,7 +1810,13 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {reelsList.map((item, idx) => (
+                {reelsList.map((item, idx) => {
+                  const fallbackThumbnail = getFallbackReelThumbnail(item.externalId);
+                  const thumbnailUrl = item.thumbnail?.url || fallbackThumbnail;
+                  const thumbnailSource = thumbnailUrl
+                    ? (thumbnailUrl.includes('res.cloudinary.com') ? 'Cloudinary' : 'Custom URL')
+                    : 'No thumbnail';
+                  return (
                   <div
                     key={item.id}
                     className="p-3 rounded-xl bg-[#070707] border border-white/10 flex items-center justify-between gap-3 hover:border-white/20 transition-all"
@@ -1714,8 +1825,8 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                       <div className="w-12 h-18 rounded overflow-hidden shrink-0 relative border border-white/10" style={{
                         background: 'linear-gradient(135deg, #f9c98f, #e98b5b)'
                       }}>
-                        {item.thumbnail?.url ? (
-                          <img src={item.thumbnail.url} alt="" className="w-full h-full object-cover" />
+                        {thumbnailUrl ? (
+                          <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full grid place-items-center text-white/70 text-xs">▶</div>
                         )}
@@ -1724,11 +1835,13 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-semibold text-white truncate">{item.title}</span>
-                          {!item.thumbnail?.url && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-white/10 text-white/60 font-mono">
-                              No thumbnail
-                            </span>
-                          )}
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                            thumbnailSource === 'Cloudinary'
+                              ? 'bg-emerald-500/10 text-emerald-300'
+                              : 'bg-white/10 text-white/60'
+                          }`}>
+                            {thumbnailSource}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-white/40 mt-0.5">
                           <span className="px-1.5 py-0.5 rounded bg-white/5 text-white/70">{item.category}</span>
@@ -1798,7 +1911,8 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -2271,7 +2385,7 @@ const AboutAarkeshPopupEditor = forwardRef(function AboutAarkeshPopupEditor(
                     handleAddCategory();
                   }
                 }}
-                placeholder="New Category Name (e.g. Leadership, Habits)..."
+                placeholder="New Category Name (e.g. Difficult People, Communication)..."
                 className="flex-1 bg-white border border-[#d6cfc7] rounded-xl px-4 py-2.5 text-xs text-[#1c1917] placeholder-[#a8a29e] focus:border-[#c8532f] focus:ring-1 focus:ring-[#c8532f] focus:outline-none shadow-xs"
               />
               <button

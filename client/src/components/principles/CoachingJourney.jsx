@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import Container from '../ui/Container';
 import { CDN_IMAGES } from '../../utils/cdnAssets';
@@ -23,8 +22,6 @@ import {
 } from '@phosphor-icons/react';
 
 const defaultBgImg = CDN_IMAGES.COACHING_JOURNEY;
-
-gsap.registerPlugin(ScrollTrigger);
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 
@@ -278,7 +275,7 @@ export default function CoachingJourney() {
   const resolvedJourneySrc = resolveImageUrl(data.bgImg, defaultBgImg);
 
   return (
-    <section ref={container} id="coaching-journey" className="principle-panel sticky top-0 z-10 w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-[#f5f1e8]">
+    <section ref={container} id="coaching-journey" className="principle-panel relative z-10 w-full h-auto lg:h-screen min-h-screen flex flex-col overflow-hidden bg-[#f5f1e8]">
       
       {/* Background Image (Desktop Only) */}
       <div className="absolute inset-0 z-0 pointer-events-none pt-8 hidden lg:block overflow-hidden">
@@ -407,13 +404,10 @@ export default function CoachingJourney() {
                   <div className="absolute left-[28%] top-0 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,251,244,0.94)] border border-white/95 text-[#c9542f] shadow-[0_0_0_6px_rgba(255,255,255,0.26),0_8px_20px_-6px_rgba(255,150,60,0.6)]">
                     <Compass size={20} weight="regular" />
                   </div>
-                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 p-2.5 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
+                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 px-2.5 py-2 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
                     <h3 className="font-sans font-bold text-[11px] leading-tight tracking-[0.2em] uppercase text-[#1c1916]">
                       <i className="not-italic text-[#B3441F] mr-1.5">01</i>CLARIFYING
                     </h3>
-                    <p className="font-sans font-medium text-[12.5px] leading-snug text-[#3b352e] mt-1">
-                      Root cause clarity. Real understanding.
-                    </p>
                   </div>
                 </div>
 
@@ -422,13 +416,10 @@ export default function CoachingJourney() {
                   <div className="absolute left-[28%] top-0 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,251,244,0.94)] border border-white/95 text-[#c9542f] shadow-[0_0_0_6px_rgba(255,255,255,0.26),0_8px_20px_-6px_rgba(255,150,60,0.6)]">
                     <Heart size={20} weight="regular" />
                   </div>
-                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 p-2.5 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
+                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 px-2.5 py-2 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
                     <h3 className="font-sans font-bold text-[11px] leading-tight tracking-[0.2em] uppercase text-[#1c1916]">
                       <i className="not-italic text-[#B3441F] mr-1.5">02</i>CONNECT
                     </h3>
-                    <p className="font-sans font-medium text-[12.5px] leading-snug text-[#3b352e] mt-1">
-                      Emotional honesty. Values alignment.
-                    </p>
                   </div>
                 </div>
 
@@ -437,13 +428,10 @@ export default function CoachingJourney() {
                   <div className="absolute left-[28%] top-0 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,251,244,0.94)] border border-white/95 text-[#c9542f] shadow-[0_0_0_6px_rgba(255,255,255,0.26),0_8px_20px_-6px_rgba(255,150,60,0.6)]">
                     <GitFork size={20} weight="regular" />
                   </div>
-                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 p-2.5 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
+                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 px-2.5 py-2 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
                     <h3 className="font-sans font-bold text-[11px] leading-tight tracking-[0.2em] uppercase text-[#1c1916]">
                       <i className="not-italic text-[#B3441F] mr-1.5">03</i>CREATE
                     </h3>
-                    <p className="font-sans font-medium text-[12.5px] leading-snug text-[#3b352e] mt-1">
-                      Aligned decisions. Intentional life.
-                    </p>
                   </div>
                 </div>
 
@@ -452,13 +440,10 @@ export default function CoachingJourney() {
                   <div className="absolute left-[28%] top-0 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,251,244,0.94)] border border-white/95 text-[#c9542f] shadow-[0_0_0_6px_rgba(255,255,255,0.26),0_8px_20px_-6px_rgba(255,150,60,0.6)]">
                     <Mountains size={20} weight="regular" />
                   </div>
-                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 p-2.5 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
+                  <div className="absolute left-[35%] w-[58%] top-0 -translate-y-1/2 px-2.5 py-2 bg-[rgba(255,251,244,0.88)] backdrop-blur-md border border-white/90 rounded-2xl shadow-[0_10px_26px_-16px_rgba(120,70,20,0.5)]">
                     <h3 className="font-sans font-bold text-[11px] leading-tight tracking-[0.2em] uppercase text-[#1c1916]">
                       <i className="not-italic text-[#B3441F] mr-1.5">04</i>COMMIT
                     </h3>
-                    <p className="font-sans font-medium text-[12.5px] leading-snug text-[#3b352e] mt-1">
-                      Sustained action. Lasting change.
-                    </p>
                   </div>
                 </div>
               </div>
@@ -544,9 +529,6 @@ export default function CoachingJourney() {
                     </>
                   )}
                 </div>
-                <p className={`text-[#2b2723] text-xs sm:text-[0.84rem] font-semibold leading-snug whitespace-pre-line ${node.flip ? 'text-right' : 'text-left'}`}>
-                  {node.text}
-                </p>
               </div>
             </div>
           );

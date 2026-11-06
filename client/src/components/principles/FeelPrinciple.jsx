@@ -10,6 +10,7 @@ const DEFAULT_FEEL_DATA = {
   subtitle: 'Heal deeply.',
   highlight: "What you resist persists.\nWhat you feel fully dissolves.",
   description: 'Emotions are signals, not dictators. Learn to sit with discomfort, process anxiety, and convert emotional turbulence into fuel for conscious growth.',
+  descriptionPrefix: '....',
   buttonText: '',
   bgImg: ''
 };
@@ -32,7 +33,10 @@ export default function FeelPrinciple() {
   const formattedDescription = rawDescription.includes('\n')
     ? rawDescription.replace(/\n/g, '<br />')
     : rawDescription;
-  const descText = formattedDescription.startsWith('....') ? formattedDescription : '....' + formattedDescription;
+  const descriptionPrefix = data.descriptionPrefix ?? '....';
+  const descText = formattedDescription.startsWith(descriptionPrefix)
+    ? formattedDescription
+    : `${descriptionPrefix}${formattedDescription}`;
 
   const paragraphs = [
     `<span class='italic font-serif leading-relaxed text-[#111010] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${formattedHighlight}</span>`,

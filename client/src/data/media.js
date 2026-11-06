@@ -8,7 +8,8 @@
  * - Instagram reel: { id: 'REEL_CODE',  t: 'English Title', c: 'Category', img: 'optional-cover.jpg' }
  * 
  * Categories available:
- * 'Mindset' | 'Aviation' | 'Relationships' | 'Habits' | 'Career'
+ * 'Aviation' | 'Relationships' | 'Self' | 'Change' | 'Decisions' |
+ * 'Difficult People' | 'Communication'
  * 
  * Notes:
  * - YouTube thumbnails automatically resolve to: https://img.youtube.com/vi/{id}/mqdefault.jpg
@@ -16,7 +17,15 @@
  * - Items starting with 'DEMO' or 'PLACEHOLDER' display a friendly demo banner in the player.
  */
 
-export const CATEGORIES = ['Mindset', 'Aviation', 'Relationships', 'Habits', 'Career'];
+export const CATEGORIES = [
+  'Aviation',
+  'Relationships',
+  'Self',
+  'Change',
+  'Decisions',
+  'Difficult People',
+  'Communication'
+];
 
 export const GRADIENTS = [
   '#f9c98f,#e98b5b',
@@ -36,7 +45,9 @@ export const INTRO_VIDEO = {
   poster: 'https://res.cloudinary.com/vcotf5ps/image/upload/v1791627191/better_with_aarkesh/hero/hero_portrait_aarkesh.png'
 };
 
-const reelThumbnail = (id) => `${import.meta.env.BASE_URL}images/about-reels/${id}.jpg`;
+const reelThumbnail = (id) => (
+  `https://res.cloudinary.com/vcotf5ps/image/upload/better_with_aarkesh/about/reel-thumbnails/${id}.jpg`
+);
 
 export const MEDIA_DATA = {
   yt: [

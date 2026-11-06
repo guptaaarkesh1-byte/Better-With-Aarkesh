@@ -9,6 +9,8 @@ const silhouetteImg = CDN_IMAGES.PROBLEM_SILHOUETTE;
 // =========================================================================
 // • top / left   : Desktop Position in % (e.g., top: '20%', left: '70%')
 // • mTop / mLeft : Mobile Position in %
+// • moveX / moveY : Extra desktop movement in px (+ right/down, - left/up)
+// • mMoveX / mMoveY : Extra mobile movement in px (+ right/down, - left/up)
 // • size         : Font size in px (e.g., 18)
 // • color        : Hex color code (e.g., '#c9542f')
 // • opacity      : Tailwind opacity class (e.g., 'opacity-90')
@@ -22,7 +24,7 @@ export const WORDS = [
   
   // --- UPPER-MID SECTION (Scattered around shoulders / upper torso) ---
   { text: 'Guilt',            top: '24%',  left: '54%', mTop: '25%',  mLeft: '14%', size: 13,   color: '#854d0e', opacity: 'opacity-90' },
-  { text: 'What if?',         top: '29%',  left: '72%', mTop: '27%',  mLeft: '75%', size: 16,   color: '#5b67ca', opacity: 'opacity-75' },
+  { text: 'What if?',         top: '29%',  left: '69%', mTop: '27%',  mLeft: '75%', size: 16,   color: '#5b67ca', opacity: 'opacity-75' },
   { text: 'Career pressure',  top: '36%',  left: '57%', mTop: '34%',  mLeft: '3%',  size: 18,   color: '#d97706', opacity: 'opacity-90' },
   { text: 'Family',           top: '33%',  left: '87%', mTop: '37%',  mLeft: '68%', size: 15.5, color: '#047857', opacity: 'opacity-85' },
 
@@ -38,7 +40,21 @@ export const WORDS = [
   { text: 'Comparison',       top: '80%',  left: '58%', mTop: '79%',  mLeft: '3%',  size: 16,   color: '#4f46e5', opacity: 'opacity-80' },
   { text: 'People pleasing',  top: '81%',  left: '72%', mTop: '83%',  mLeft: '62%', size: 15,   color: '#c026d3', opacity: 'opacity-85' },
   { text: 'Financial stress', top: '86%',  left: '87%', mTop: '91%',  mLeft: '18%', size: 18,   color: '#15803d', opacity: 'opacity-85' },
+
+  // --- ADDITIONAL WORDS (Kept to the right of the figure) ---
+  { text: 'Anxiety',              top: '22%', left: '81%', mTop: '21%', mLeft: '62%', moveX: '0px', moveY: '0px', size: 16,   color: '#7c3aed', opacity: 'opacity-80' },
+  { text: 'Expectations',         top: '26%', left: '91%', mTop: '28%', mLeft: '73%', moveX: '0px', moveY: '0px', size: 15,   color: '#b45309', opacity: 'opacity-80' },
+  { text: 'Fear of failure',      top: '39%', left: '75%', mTop: '39%', mLeft: '54%', moveX: '0px', moveY: '0px', size: 15.5, color: '#be123c', opacity: 'opacity-80' },
+  { text: 'Old wounds',           top: '47%', left: '90%', mTop: '49%', mLeft: '70%', moveX: '0px', moveY: '0px', size: 15,   color: '#475569', opacity: 'opacity-80' },
+  { text: 'Pressure',             top: '52%', left: '73%', mTop: '53%', mLeft: '55%', moveX: '0px', moveY: '0px', size: 16,   color: '#c2410c', opacity: 'opacity-80' },
+  { text: 'Shame',                top: '60%', left: '89%', mTop: '62%', mLeft: '73%', moveX: '0px', moveY: '0px', size: 16,   color: '#9d174d', opacity: 'opacity-80' },
+  { text: 'Doubt',                top: '72%', left: '80%', mTop: '74%', mLeft: '62%', moveX: '0px', moveY: '0px', size: 16,   color: '#4338ca', opacity: 'opacity-80' },
+  { text: 'Burnout',              top: '77%', left: '91%', mTop: '80%', mLeft: '73%', moveX: '0px', moveY: '0px', size: 16,   color: '#047857', opacity: 'opacity-80' },
+  { text: 'Control',              top: '87%', left: '80%', mTop: '94%', mLeft: '56%', moveX: '0px', moveY: '0px', size: 15,   color: '#a16207', opacity: 'opacity-80' },
+  { text: 'Unanswered questions', top: '94%', left: '68%', mTop: '97%', mLeft: '52%', moveX: '0px', moveY: '0px', size: 14,   color: '#5b67ca', opacity: 'opacity-80' },
 ];
+
+const getPosition = (position, offset = '0px') => `calc(${position} + ${offset})`;
 
 export default function WordCloud({ customImg = '', wordColor = '', wordFontSize = 18 }) {
   const container = useRef(null);
@@ -99,15 +115,15 @@ export default function WordCloud({ customImg = '', wordColor = '', wordFontSize
           const delay = (-1.2 * (i + 1)).toFixed(1) + 's';
           return `
           .word-pos-${i} {
-            top: ${w.mTop || w.top};
-            left: ${w.mLeft || w.left};
+            top: ${getPosition(w.mTop || w.top, w.mMoveY || w.moveY)};
+            left: ${getPosition(w.mLeft || w.left, w.mMoveX || w.moveX)};
             animation: ${animName} ${duration} ease-in-out infinite alternate;
             animation-delay: ${delay};
           }
           @media (min-width: 1024px) {
             .word-pos-${i} {
-              top: ${w.top};
-              left: ${w.left};
+              top: ${getPosition(w.top, w.moveY)};
+              left: ${getPosition(w.left, w.moveX)};
             }
           }
         `;}).join('')}

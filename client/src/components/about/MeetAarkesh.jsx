@@ -7,9 +7,6 @@ import {
   AirplaneTilt, 
   Crosshair, 
   Heart, 
-  Compass, 
-  Brain, 
-  Users,
   ArrowRight,
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
@@ -59,7 +56,7 @@ export default function MeetAarkesh() {
   const container = useRef(null);
   const [aboutData, setAboutData] = useState(getInitialAboutData);
   const [aboutPopupData, setAboutPopupData] = useState(null);
-  const [isMiddleHovered, setIsMiddleHovered] = useState(false);
+  const [isRoleGridHovered, setIsRoleGridHovered] = useState(false);
   const [activeRoleKey, setActiveRoleKey] = useState(null);
   const [activeRoleCardImage, setActiveRoleCardImage] = useState(null);
   const activeTriggerRef = useRef(null);
@@ -110,11 +107,12 @@ export default function MeetAarkesh() {
     : 'MEET AARKESH';
   const eyebrowText = rawEyebrow;
   const headingLine = aboutData?.headingLine || 'Three roles. One purpose.';
+  const configuredHeadingFontSize = Number(aboutData?.headingFontSize);
+  const responsiveHeadingFontSize = Number.isFinite(configuredHeadingFontSize) && configuredHeadingFontSize > 0
+    ? `clamp(2rem, 6vw, ${configuredHeadingFontSize}px)`
+    : undefined;
   const rawSubheading = aboutData?.subheading || 'Different lenses. Same mission your growth.';
   const subheading = rawSubheading.replace(/—\s*|--\s*/g, ' ');
-  const missionHeading = aboutData?.missionHeading || 'The journey that shaped the mission.';
-  const rawMissionDescription = aboutData?.missionDescription || "From the skies to the soul, here's the story behind why I do what I do.";
-  const missionDescription = rawMissionDescription.replace(/—\s*|--\s*/g, ', ').replace(/,\s*,/g, ',');
   const storyBtnText = aboutData?.storyBtnText || 'READ MY STORY';
   const storyBtnLink = aboutData?.storyBtnLink || '/about-us';
 
@@ -471,7 +469,11 @@ export default function MeetAarkesh() {
 
       {/* ─── DESKTOP VIEW ─── */}
       {/* 🎛️ Desktop Grid Panes - Change height here: e.g. lg:h-[540px], lg:h-[580px], lg:h-[600px] */}
-      <div className="hidden md:flex w-full h-[450px] sm:h-[480px] md:h-[510px] lg:h-[540px] flex-row border-t border-black/10 relative shrink-0">
+      <div
+        className="hidden md:flex w-full h-[450px] sm:h-[480px] md:h-[510px] lg:h-[540px] flex-row border-t border-black/10 relative shrink-0"
+        onMouseEnter={() => setIsRoleGridHovered(true)}
+        onMouseLeave={() => setIsRoleGridHovered(false)}
+      >
         
         {roles.map((role, i) => {
           const Icon = role.icon;
@@ -490,8 +492,6 @@ export default function MeetAarkesh() {
                 }
               }}
               className="role-pane relative h-full flex-1 min-h-0 flex flex-col items-center justify-end pb-5 sm:pb-6 md:pb-7 lg:pb-8 px-4 sm:px-6 group overflow-hidden border-r border-black/10 last:border-none cursor-pointer bg-[#f5f1e8] focus:outline-none focus-visible:ring-3 focus-visible:ring-[#c4522d] focus-visible:ring-offset-[-2px] focus-visible:z-30 transition-all select-none"
-              onMouseEnter={() => { if (i === 1) setIsMiddleHovered(true); }}
-              onMouseLeave={() => { if (i === 1) setIsMiddleHovered(false); }}
             >
               {/* Background Image - Full Visibility with Automatic Fallback */}
               <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -509,51 +509,6 @@ export default function MeetAarkesh() {
 
               {/* Clean bottom gradient only on hover for legible text */}
               <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-[#f5f1e8] via-[#f5f1e8]/70 to-transparent opacity-0 group-hover:opacity-100 z-0 pointer-events-none transition-opacity duration-300 ease-out" />
-
-              {/* Three roles. One purpose. Heading inside the middle column image */}
-              {i === 1 && (
-                <>
-                  <div 
-                    className={`flex absolute top-3 sm:top-4 md:top-5 inset-x-0 flex-col items-center justify-center text-center z-20 px-4 sm:px-6 transition-all duration-300 ease-out pointer-events-none ${
-                      isMiddleHovered ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'
-                    }`}
-                  >
-                    <h2 
-                      className="font-serif text-lg sm:text-xl md:text-[1.35rem] lg:text-[1.55rem] font-medium tracking-tight text-white select-none pointer-events-none"
-                      style={{ 
-                        fontFamily: 'Fraunces, Georgia, serif',
-                        fontSize: aboutData?.headingFontSize ? `${aboutData.headingFontSize}px` : undefined,
-                        WebkitTextStroke: '0.55px #ff6b35',
-                        textShadow: '0 0 6px rgba(255, 107, 53, 0.95), 0 0 14px rgba(255, 122, 61, 0.75), 0 0 22px rgba(255, 87, 34, 0.5), 0 2px 4px rgba(0, 0, 0, 0.75)'
-                      }}
-                    >
-                      {headingLine}
-                    </h2>
-                  </div>
-
-                  {/* 🎛️ "Different lenses..." Position - Responsive percentage from top (e.g. '56%', '58%', '60%') */}
-                  <div 
-                    className={`flex absolute inset-x-0 flex-col items-center justify-center text-center z-20 px-4 transition-all duration-300 ease-out pointer-events-none ${
-                      isMiddleHovered ? 'opacity-0 -translate-y-4' : 'opacity-100'
-                    }`}
-                    style={{ 
-                      top: '58%',
-                      transform: isMiddleHovered ? 'translateY(-1rem)' : 'translateY(-50%)' 
-                    }}
-                  >
-                    <p 
-                      className="text-white text-xs md:text-[0.82rem] font-medium tracking-wide max-w-[90%] mx-auto select-none pointer-events-none"
-                      style={{ 
-                        fontSize: aboutData?.descriptionFontSize ? `${aboutData.descriptionFontSize}px` : undefined,
-                        WebkitTextStroke: '0.38px #ff6b35',
-                        textShadow: '0 0 5px rgba(255, 107, 53, 0.9), 0 0 10px rgba(255, 122, 61, 0.65), 0 1px 3px rgba(0, 0, 0, 0.75)'
-                      }}
-                    >
-                      {subheading}
-                    </p>
-                  </div>
-                </>
-              )}
 
               <div className="relative z-10 flex flex-col items-center text-center transition-transform duration-500 ease-out group-hover:-translate-y-2 pointer-events-none">
                 <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-[#c9542f]/30 bg-white/95 shadow-md flex items-center justify-center mb-2 sm:mb-2.5 group-hover:border-[#c9542f] group-hover:bg-[#c9542f] group-hover:text-white transition-colors duration-300 pointer-events-none">
@@ -581,63 +536,36 @@ export default function MeetAarkesh() {
             </div>
           );
         })}
+        <div
+          className={`absolute inset-x-0 top-[12%] z-30 flex -translate-y-1/2 justify-center px-4 text-center pointer-events-none transition-opacity duration-300 ${
+            isRoleGridHovered ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <p
+            className="m-0 max-w-[90%] font-sans text-xs md:text-[0.82rem] font-medium tracking-wide text-white select-none"
+            style={{
+              fontSize: aboutData?.descriptionFontSize ? `${aboutData.descriptionFontSize}px` : undefined,
+              WebkitTextStroke: '0.38px #ff6b35',
+              textShadow: '0 0 5px rgba(255, 107, 53, 0.9), 0 0 10px rgba(255, 122, 61, 0.65), 0 1px 3px rgba(0, 0, 0, 0.75)'
+            }}
+          >
+            {subheading}
+          </p>
+        </div>
       </div>
 
       {/* Bottom Banner */}
       <div className="w-full bg-[#ede7d8] border-t border-b border-black/10 meet-footer shrink-0">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-2.5 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-6 lg:gap-8">
-          
-          {/* Left Side: Mission */}
-          <div className="shrink-0 flex flex-col items-start w-full md:w-auto max-w-lg">
-            <div className="flex items-center gap-2 mb-0.5">
-              <div className="h-[1.5px] w-4 bg-[#c9542f] origin-left" />
-              <span className="font-sans text-[10px] sm:text-[11px] uppercase tracking-[0.22em] font-bold text-[#c9542f]">
-                {aboutData?.missionEyebrow || 'BEYOND THE ROLES'}
-              </span>
-            </div>
-            
-            <h3 className="font-serif text-base sm:text-lg md:text-[1.25rem] text-[#111010] tracking-tight leading-tight mb-0.5">
-              {missionHeading}
-            </h3>
-            
-            <p className="text-[#555047] font-light text-[10.5px] sm:text-[11.5px] max-w-lg leading-snug">
-              {missionDescription}
-            </p>
-          </div>
-
-          {/* Right Side: Features */}
-          <div className="flex flex-row items-center gap-3 sm:gap-4 lg:gap-6 shrink-0 md:border-l border-black/10 md:pl-5 lg:pl-6">
-            <div className="flex items-center gap-2 sm:gap-2.5 group">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
-                <Compass size={15} className="text-[#c9542f]" weight="regular" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-sans text-[11px] sm:text-[12.5px] font-semibold text-[#111010] leading-tight mb-0.5">Real experience</span>
-                <span className="text-[#555047] text-[9px] sm:text-[10px] font-light leading-tight">Life in high-pressure<br/>environments.</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-2.5 group">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
-                <Brain size={15} className="text-[#c9542f]" weight="regular" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-sans text-[11px] sm:text-[12.5px] font-semibold text-[#111010] leading-tight mb-0.5">Deep training</span>
-                <span className="text-[#555047] text-[9px] sm:text-[10px] font-light leading-tight">Backed by science.<br/>Rooted in empathy.</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-2.5 group">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#c9542f]/30 flex items-center justify-center shrink-0 transition-colors group-hover:border-[#c9542f] group-hover:bg-[#fbf0eb] bg-white shadow-xs">
-                <Users size={15} className="text-[#c9542f]" weight="regular" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-sans text-[11px] sm:text-[12.5px] font-semibold text-[#111010] leading-tight mb-0.5">Relatable approach</span>
-                <span className="text-[#555047] text-[9px] sm:text-[10px] font-light leading-tight">No jargon. No masks.<br/>Just real conversations.</span>
-              </div>
-            </div>
-          </div>
-
+        <div className="w-full px-4 sm:px-6 [padding-block:clamp(1.25rem,2vw,2rem)] text-center overflow-visible">
+          <h2
+            className="m-0 max-w-[min(100%,1400px)] mx-auto font-serif text-lg sm:text-xl md:text-[1.35rem] lg:text-[1.55rem] font-medium tracking-tight leading-[1.12] text-[#111010] break-words"
+            style={{
+              fontFamily: 'Fraunces, Georgia, serif',
+              fontSize: responsiveHeadingFontSize,
+            }}
+          >
+            {headingLine}
+          </h2>
         </div>
       </div>
 

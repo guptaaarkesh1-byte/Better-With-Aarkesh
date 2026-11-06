@@ -277,6 +277,8 @@ function TypographyControllerCard({
   defaultEyebrowSize = 14,
   defaultHeadingSize = 64,
   defaultDescriptionSize = 20,
+  maxDescriptionSize = 36,
+  descriptionSizePresets = [14, 16, 18, 20, 22, 24],
   defaultWordSize = 18,
   defaultButtonSize = 14,
   onEyebrowSizeChange,
@@ -502,7 +504,7 @@ function TypographyControllerCard({
             <input
               type="range"
               min={12}
-              max={36}
+              max={maxDescriptionSize}
               step={1}
               value={currentDescription}
               onChange={(e) => onDescriptionSizeChange && onDescriptionSizeChange(Number(e.target.value))}
@@ -511,7 +513,7 @@ function TypographyControllerCard({
 
             <button
               type="button"
-              onClick={() => onDescriptionSizeChange && onDescriptionSizeChange(Math.min(36, currentDescription + 1))}
+              onClick={() => onDescriptionSizeChange && onDescriptionSizeChange(Math.min(maxDescriptionSize, currentDescription + 1))}
               className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#c79c6e]/20 border border-white/10 hover:border-[#c79c6e]/40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
               title="Increase 1px"
             >
@@ -521,7 +523,7 @@ function TypographyControllerCard({
 
           {/* Quick Presets */}
           <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
-            {[14, 16, 18, 20, 22, 24].map((size) => (
+            {descriptionSizePresets.map((size) => (
               <button
                 key={size}
                 type="button"
@@ -2654,6 +2656,18 @@ export default function AdminHomeEditor() {
                       </div>
 
                       <div className="flex flex-col gap-1.5">
+                        <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Description Prefix (Optional)</label>
+                        <input
+                          type="text"
+                          value={p.descriptionPrefix ?? '....'}
+                          onChange={(e) => handlePrincipleChange('think', 'descriptionPrefix', e.target.value)}
+                          placeholder="...."
+                          className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
+                        />
+                        <span className="text-[0.65rem] text-white/40">Clear this field to remove the dots before the description.</span>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
                         <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Description Paragraph</label>
                         <textarea
                           rows={4}
@@ -2809,6 +2823,18 @@ export default function AdminHomeEditor() {
                       </div>
 
                       <div className="flex flex-col gap-1.5">
+                        <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Description Prefix (Optional)</label>
+                        <input
+                          type="text"
+                          value={p.descriptionPrefix ?? '....'}
+                          onChange={(e) => handlePrincipleChange('feel', 'descriptionPrefix', e.target.value)}
+                          placeholder="...."
+                          className="w-full bg-[#050505] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-[#c79c6e]"
+                        />
+                        <span className="text-[0.65rem] text-white/40">Clear this field to remove the dots before the description.</span>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
                         <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/60">Description Paragraph</label>
                         <textarea
                           rows={4}
@@ -2950,11 +2976,12 @@ export default function AdminHomeEditor() {
                         <label className="text-[0.7rem] font-semibold uppercase tracking-widest text-[#c79c6e]">Closing Line (Gold Accent)</label>
                         <input
                           type="text"
-                          value={p.closingLine || ''}
+                          value={p.closingLine ?? '....Then we help you walk it.'}
                           onChange={(e) => handlePrincipleChange('decide', 'closingLine', e.target.value)}
                           placeholder="....Then we help you walk it."
                           className="w-full bg-[#050505] border border-[#c79c6e]/30 rounded-lg px-4 py-3 text-sm text-[#c79c6e] italic font-serif focus:border-[#c79c6e]"
                         />
+                        <span className="text-[0.65rem] text-white/40">Edit or remove the leading dots here.</span>
                       </div>
                     </div>
                   </div>
@@ -3721,6 +3748,8 @@ export default function AdminHomeEditor() {
                 defaultEyebrowSize={14}
                 defaultHeadingSize={40}
                 defaultDescriptionSize={16}
+                maxDescriptionSize={72}
+                descriptionSizePresets={[16, 20, 24, 28, 32, 36, 44, 52, 60, 72]}
                 onEyebrowSizeChange={(val) => handleSectionChange('eyebrowFontSize', val)}
                 onHeadingSizeChange={(val) => handleSectionChange('headingFontSize', val)}
                 onDescriptionSizeChange={(val) => handleSectionChange('descriptionFontSize', val)}

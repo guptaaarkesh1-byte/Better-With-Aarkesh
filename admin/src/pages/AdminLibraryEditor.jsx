@@ -180,6 +180,22 @@ const DEFAULT_EDITORIAL_BLOCKS = [
   }
 ];
 
+const DEFAULT_LIBRARY_TYPOGRAPHY = {
+  heroHeadingSize: 54,
+  heroShiftY: -35,
+  searchFontSize: 13,
+  searchMaxWidth: 260,
+  searchShiftY: -10,
+  marqueeFontSize: 16,
+  marqueeHeight: 52,
+  categoryWordSize: 110,
+  viewAllFontSize: 12,
+  articleTitleSize: 17,
+  articleMetaSize: 10,
+  articleCountSize: 11,
+  sphereSize: 320,
+};
+
 export default function AdminLibraryEditor() {
   const { addToast } = useToast();
 
@@ -232,21 +248,8 @@ export default function AdminLibraryEditor() {
   const [deleteConfirmArticle, setDeleteConfirmArticle] = useState(null);
 
   // Universal Typography Studio State
-  const [typographySettings, setTypographySettings] = useState({
-    heroHeadingSize: 54,
-    heroShiftY: -35,
-    searchFontSize: 13,
-    searchMaxWidth: 260,
-    searchShiftY: -10,
-    marqueeFontSize: 16,
-    marqueeHeight: 52,
-    categoryWordSize: 110,
-    viewAllFontSize: 12,
-    articleTitleSize: 17,
-    articleMetaSize: 10,
-    articleCountSize: 11,
-    sphereSize: 320,
-  });
+  const [typographySettings, setTypographySettings] = useState(DEFAULT_LIBRARY_TYPOGRAPHY);
+  const [savedTypographySettings, setSavedTypographySettings] = useState(null);
   const [savingTypography, setSavingTypography] = useState(false);
 
   // Fetch Hero & Typography Settings
@@ -261,23 +264,12 @@ export default function AdminLibraryEditor() {
             searchPlaceholder: data.hero.searchPlaceholder || "Describe what you're navigating...",
           });
         }
-        if (data.typography) {
-          setTypographySettings({
-            heroHeadingSize: data.typography.heroHeadingSize ?? 54,
-            heroShiftY: data.typography.heroShiftY ?? -35,
-            searchFontSize: data.typography.searchFontSize ?? 13,
-            searchMaxWidth: data.typography.searchMaxWidth ?? 260,
-            searchShiftY: data.typography.searchShiftY ?? -10,
-            marqueeFontSize: data.typography.marqueeFontSize ?? 16,
-            marqueeHeight: data.typography.marqueeHeight ?? 52,
-            categoryWordSize: data.typography.categoryWordSize ?? 110,
-            viewAllFontSize: data.typography.viewAllFontSize ?? 12,
-            articleTitleSize: data.typography.articleTitleSize ?? 17,
-            articleMetaSize: data.typography.articleMetaSize ?? 10,
-            articleCountSize: data.typography.articleCountSize ?? 11,
-            sphereSize: data.typography.sphereSize ?? 320,
-          });
-        }
+        const loadedTypography = {
+          ...DEFAULT_LIBRARY_TYPOGRAPHY,
+          ...(data.typography || {}),
+        };
+        setTypographySettings(loadedTypography);
+        setSavedTypographySettings(loadedTypography);
       }
     } catch (err) {
       console.error('Failed to fetch library settings', err);
@@ -286,7 +278,11 @@ export default function AdminLibraryEditor() {
 
   // One-Click Typography Presets
   const applyTypographyPreset = (preset) => {
-    if (preset === 'compact') {
+    if (preset === 'current') {
+      if (!savedTypographySettings) return;
+      setTypographySettings({ ...savedTypographySettings });
+      addToast('Applied Current Saved Preset', 'info');
+    } else if (preset === 'compact') {
       setTypographySettings({
         heroHeadingSize: 42,
         heroShiftY: -20,
@@ -371,6 +367,7 @@ export default function AdminLibraryEditor() {
         body: JSON.stringify(typographySettings),
       });
       if (res.ok) {
+        setSavedTypographySettings({ ...typographySettings });
         addToast('⚡ Library Typography settings saved successfully!', 'success');
       } else {
         addToast('Failed to save typography settings', 'error');
@@ -1093,6 +1090,15 @@ export default function AdminLibraryEditor() {
                   <span>One-Click Presets:</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => applyTypographyPreset('current')}
+                    disabled={!savedTypographySettings}
+                    className="px-3 py-1.5 rounded-lg bg-[#c9542f]/10 border border-[#c9542f]/40 text-[#c9542f] text-xs font-semibold hover:bg-[#c9542f]/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    title="Restore the last saved Library typography settings"
+                  >
+                    Current (Saved)
+                  </button>
                   <button
                     type="button"
                     onClick={() => applyTypographyPreset('compact')}

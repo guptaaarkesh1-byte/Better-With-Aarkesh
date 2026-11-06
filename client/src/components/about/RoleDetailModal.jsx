@@ -10,11 +10,30 @@ import {
   CalendarCheck
 } from '@phosphor-icons/react';
 import MuxVideoPlayer from '../ui/MuxVideoPlayer';
-import { MEDIA_DATA, CATEGORIES, GRADIENTS, INTRO_VIDEO } from '../../data/media';
+import { MEDIA_DATA, GRADIENTS, INTRO_VIDEO } from '../../data/media';
 import { CDN_IMAGES } from '../../utils/cdnAssets';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aarkeshgupta.com';
 const PAGE_SIZE = 12;
+const VIDEO_FILTER_CATEGORIES = [
+  'Aviation',
+  'Relationships',
+  'Self',
+  'Change',
+  'Decisions',
+  'Difficult People',
+  'Communication',
+];
+
+const normalizeMediaCategory = (category) => {
+  const value = String(category || '').trim();
+  const legacyCategories = {
+    mindset: 'Decisions',
+    habits: 'Self',
+    career: 'Self'
+  };
+  return legacyCategories[value.toLowerCase()] || value;
+};
 
 const DEFAULT_SECTIONS = [
   {
@@ -101,6 +120,9 @@ export default function RoleDetailModal({
   const showInstagram = popupSettings.showInstagram !== false;
   const hasMediaTabs = Boolean(showYoutube || showInstagram);
   const activePageSize = popupSettings.pageSize || PAGE_SIZE;
+  const videoFilterCategories = Array.isArray(popupSettings.categories) && popupSettings.categories.length
+    ? popupSettings.categories
+    : VIDEO_FILTER_CATEGORIES;
 
   // Media browser state
   const [tab, setTab] = useState('yt'); // 'yt' | 'ig'
@@ -118,15 +140,6 @@ export default function RoleDetailModal({
     }
   }, [showYoutube, showInstagram, tab]);
 
-  // Categories list
-  const activeCategories = useMemo(() => {
-    const customCats = activeData?.categories || popupSettings.categories;
-    if (customCats && Array.isArray(customCats) && customCats.length > 0) {
-      return customCats;
-    }
-    return CATEGORIES;
-  }, [activeData?.categories, popupSettings.categories]);
-
   // Dynamic media items
   const youtubeList = useMemo(() => {
     if (activeData?.media && Array.isArray(activeData.media)) {
@@ -135,16 +148,22 @@ export default function RoleDetailModal({
         .map(m => ({
           id: m.externalId || m.id,
           t: m.title,
-          c: m.category,
+          c: normalizeMediaCategory(m.category),
           img: m.thumbnail?.url,
           featured: Boolean(m.featured)
         }));
     }
-    return MEDIA_DATA.yt || [];
+    return (MEDIA_DATA.yt || []).map((item) => ({
+      ...item,
+      c: normalizeMediaCategory(item.c)
+    }));
   }, [activeData?.media]);
 
   const instagramList = useMemo(() => {
-    const reels = MEDIA_DATA.ig || [];
+    const reels = (MEDIA_DATA.ig || []).map((reel) => ({
+      ...reel,
+      c: normalizeMediaCategory(reel.c)
+    }));
     if (activeData?.media && Array.isArray(activeData.media)) {
       const configuredReels = activeData.media.filter(m => m.type === 'instagram');
       const disabledIds = new Set(
@@ -167,7 +186,7 @@ export default function RoleDetailModal({
           return {
             id,
             t: m.title || reel?.t,
-            c: m.category || reel?.c,
+            c: normalizeMediaCategory(m.category || reel?.c),
             img: m.thumbnail?.url || reel?.img
           };
         });
@@ -1618,7 +1637,7 @@ export default function RoleDetailModal({
                     onChange={handleSearchChange}
                   />
                   <div className="aw-chips">
-                    {['All', ...activeCategories].map((category) => (
+                    {['All', ...videoFilterCategories].map((category) => (
                       <button
                         key={category}
                         className={`aw-chip ${cat === category ? 'on' : ''}`}

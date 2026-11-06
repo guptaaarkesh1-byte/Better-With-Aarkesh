@@ -22,7 +22,6 @@ export default function PrinciplesContainer({ children }) {
       'decide-principle',
       'coaching',
       'coaching-journey',
-      'meet-aarkesh',
       'testimonials'
     ];
 
@@ -31,11 +30,8 @@ export default function PrinciplesContainer({ children }) {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const id = entry.target.id;
-            if (id === 'meet-aarkesh') {
-              setIsProgressVisible(false);
-            } else if (stepMap[id] !== undefined) {
+            if (stepMap[id] !== undefined) {
               setActiveStep(stepMap[id]);
-              setIsProgressVisible(true);
             }
           }
         });
@@ -54,6 +50,29 @@ export default function PrinciplesContainer({ children }) {
     return () => {
       observer.disconnect();
     };
+  }, []);
+
+  useEffect(() => {
+    const meetSection = document.getElementById('meet-aarkesh');
+    const testimonialsSection = document.getElementById('testimonials');
+    if (!meetSection || !testimonialsSection) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.target === meetSection) {
+            setIsProgressVisible(!entry.isIntersecting);
+          } else if (entry.target === testimonialsSection && entry.isIntersecting) {
+            setIsProgressVisible(true);
+          }
+        });
+      },
+      { threshold: 0 }
+    );
+
+    observer.observe(meetSection);
+    observer.observe(testimonialsSection);
+    return () => observer.disconnect();
   }, []);
 
   return (

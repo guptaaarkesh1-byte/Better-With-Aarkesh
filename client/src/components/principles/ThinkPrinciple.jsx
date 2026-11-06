@@ -11,6 +11,7 @@ const DEFAULT_THINK_DATA = {
   overlayTitle: 'MY IDEOLOGY',
   highlight: 'Clarity is the bridge between intention and action.',
   description: 'Your mind creates stories. Some empower you, most hold you back. We dismantle unhelpful thinking patterns, dissolve mental clutter, and build sharp, intentional clarity.',
+  descriptionPrefix: '....',
   buttonText: 'SCROLL FOR NEXT PRINCIPLE',
   bgImg: ''
 };
@@ -32,7 +33,10 @@ export default function ThinkPrinciple() {
   const formattedDescription = rawDescription.includes('\n')
     ? rawDescription.replace(/\n/g, '<br />')
     : rawDescription;
-  const descText = formattedDescription.startsWith('....') ? formattedDescription : '....' + formattedDescription;
+  const descriptionPrefix = data.descriptionPrefix ?? '....';
+  const descText = formattedDescription.startsWith(descriptionPrefix)
+    ? formattedDescription
+    : `${descriptionPrefix}${formattedDescription}`;
 
   const paragraphs = [
     `<span class='italic font-serif leading-relaxed text-[#111010] block hyphens-none' style='font-family: Fraunces, Georgia, serif;'>${formattedHighlight}</span>`,
