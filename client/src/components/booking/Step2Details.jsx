@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Clock, ArrowLeft, ArrowRight, ArrowUpRight, Sparkle, CheckCircle, WarningCircle, Trash } from '@phosphor-icons/react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { Clock, ArrowLeft, ArrowRight, ArrowUpRight, Sparkle, CheckCircle, WarningCircle, Trash, X, PencilSimple } from '@phosphor-icons/react';
 import { COUNTRY_CODES } from '../../utils/countryCodes';
 import QuestionnaireModal from './QuestionnaireModal';
 import config from '../../data/questionnaireConfig.json';
@@ -17,6 +18,8 @@ export default function Step2Details({
   onNext, 
   onBack, 
   isAuthenticated, 
+  hasExistingSavedProfile = false,
+  onProfileSaved,
   freeSessionInfo, 
   settings = {},
   questionnaireDraft: parentDraft,
@@ -26,7 +29,222 @@ export default function Step2Details({
 }) {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    source: '',
+    otherSource: '',
+    reason: '',
+    extra: ''
+  });
+  const [editErrors, setEditErrors] = useState({});
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const [isSavedProfileView, setIsSavedProfileView] = useState(() => Boolean(hasExistingSavedProfile));
+  const [savedIntake, setSavedIntake] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || localStorage.getItem('userInfo') || '{}');
+      return u?.intakeProfile || {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (hasExistingSavedProfile) {
+      setIsSavedProfileView(true);
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || localStorage.getItem('userInfo') || '{}');
+        if (u?.intakeProfile) {
+          setSavedIntake(u.intakeProfile);
+        }
+      } catch (e) {}
+    }
+  }, [hasExistingSavedProfile]);
+
+  const handleOpenEditModal = () => {
+    setEditFormData({
+      name: data.name || '',
+      email: data.email || '',
+      source: data.source || savedIntake.source || '',
+      otherSource: data.otherSource || savedIntake.otherSource || '',
+      reason: data.reason || savedIntake.reason || '',
+      extra: data.extra || savedIntake.extra || ''
+    });
+    setEditErrors({});
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditErrors({});
+  };
+
+  const handleSaveEditModal = async () => {
+    const errors = {};
+    if (!editFormData.name?.trim()) errors.name = 'Please enter your name.';
+    if (!editFormData.email?.trim()) {
+      errors.email = 'Please enter your email address.';
+    } else if (!isValidEmailFormat(editFormData.email)) {
+      errors.email = 'Please enter a valid email address.';
+    }
+    if (!editFormData.reason?.trim()) errors.reason = 'Please share what brings you here.';
+
+    if (Object.keys(errors).length > 0) {
+      setEditErrors(errors);
+      return;
+    }
+
+    try {
+      setIsSavingEdit(true);
+      updateData({
+        name: editFormData.name.trim(),
+        email: editFormData.email.trim(),
+        source: editFormData.source,
+        otherSource: editFormData.otherSource,
+        reason: editFormData.reason.trim(),
+        extra: editFormData.extra.trim()
+      });
+
+      setSavedIntake({
+        source: editFormData.source,
+        otherSource: editFormData.otherSource,
+        reason: editFormData.reason.trim(),
+        extra: editFormData.extra.trim()
+      });
+
+      await syncProfileIntake(editFormData);
+      if (onProfileSaved) onProfileSaved();
+
+      setShowEditModal(false);
+    } catch (err) {
+      console.error('Error saving edited profile:', err);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  // Scroll lock background and Lenis smooth scroll when edit modal is open
+  useEffect(() => {
+    if (!showEditModal) return;
+
+    try {
+      window.lenis?.stop();
+    } catch (e) {}
+
+    const scrollY = window.scrollY;
+    const originalBodyPosition = document.body.style.position;
+    const originalBodyTop = document.body.style.top;
+    const originalBodyWidth = document.body.style.width;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleCloseEditModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.position = originalBodyPosition;
+      document.body.style.top = originalBodyTop;
+      document.body.style.width = originalBodyWidth;
+      document.body.style.overflow = originalBodyOverflow;
+      window.scrollTo(0, scrollY);
+      try {
+        window.lenis?.start();
+      } catch (e) {}
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showEditModal]);
+
+  const editModalRef = useRef(null);
+  const editModalScrollRef = useRef(null);
+
+  // Forward trackpad/mouse wheel scrolling into the modal form body
+  useEffect(() => {
+    if (!showEditModal || !editModalRef.current) return;
+    const modalEl = editModalRef.current;
+
+    const handleWheel = (e) => {
+      const scrollEl = editModalScrollRef.current;
+      if (!scrollEl) return;
+      if (!scrollEl.contains(e.target)) {
+        scrollEl.scrollTop += e.deltaY;
+      }
+    };
+
+    modalEl.addEventListener('wheel', handleWheel, { passive: true });
+    return () => modalEl.removeEventListener('wheel', handleWheel);
+  }, [showEditModal]);
+
   const openQuestionnaireBtnRef = useRef(null);
+
+  const SOURCE_DISPLAY_MAP = {
+    social: 'Social Media',
+    instagram: 'Instagram',
+    youtube: 'YouTube',
+    referral: 'Referral',
+    search: 'Search Engine',
+    other: 'Other'
+  };
+
+  const savedReason = savedIntake.reason || '';
+  const rawSource = savedIntake.source || '';
+  const rawOther = savedIntake.otherSource || '';
+  const savedSource = rawSource;
+  const savedExtra = savedIntake.extra || '';
+
+  const displaySource = rawOther?.trim() 
+    ? rawOther 
+    : (SOURCE_DISPLAY_MAP[rawSource] || rawSource || '');
+  const avatarLetter = (data.name?.trim()?.[0] || 'Y').toUpperCase();
+
+  const syncProfileIntake = async (intakeData = {}) => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('courseToken');
+      if (!token) return;
+      await fetch(`${import.meta.env.VITE_API_URL}/api/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fullName: intakeData.name || data.name,
+          intakeProfile: {
+            source: intakeData.source !== undefined ? intakeData.source : data.source,
+            otherSource: intakeData.otherSource !== undefined ? intakeData.otherSource : data.otherSource,
+            reason: intakeData.reason !== undefined ? intakeData.reason : data.reason,
+            extra: intakeData.extra !== undefined ? intakeData.extra : data.extra,
+          }
+        })
+      });
+
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        if (intakeData.name || data.name) u.fullName = intakeData.name || data.name;
+        u.intakeProfile = {
+          source: intakeData.source !== undefined ? intakeData.source : data.source,
+          otherSource: intakeData.otherSource !== undefined ? intakeData.otherSource : data.otherSource,
+          reason: intakeData.reason !== undefined ? intakeData.reason : data.reason,
+          extra: intakeData.extra !== undefined ? intakeData.extra : data.extra,
+        };
+        localStorage.setItem('user', JSON.stringify(u));
+      } catch (e) {}
+    } catch (err) {
+      console.error('Failed to sync profile intake:', err);
+    }
+  };
 
   const fallbackDraftId = useRef(getOrCreateBookingDraftId()).current;
   const activeDraftId = parentDraftId || fallbackDraftId;
@@ -71,6 +289,32 @@ export default function Step2Details({
   };
 
   const answeredCount = countAnsweredQuestions(activeDraft);
+
+  // Check if questionnaire is completed: ONLY hide for users who have truly reached 45 questions!
+  const isQuestionnaireCompleted = useMemo(() => {
+    // 1. Check verified questionnaire answers from user's backend profile / bookingData
+    const contractResponses = data?.questionnaireAnswers?.responses;
+    if (Array.isArray(contractResponses) && contractResponses.length >= 45) {
+      const resolvedCount = contractResponses.filter(
+        (r) => r && (r.state === 'answered' || r.state === 'skipped')
+      ).length;
+      if (resolvedCount >= 45) return true;
+    }
+
+    // 2. Check active draft in this booking flow:
+    // User must have processed all 45 questions (answered or skipped >= 45)
+    const answersMap = activeDraft?.answers || {};
+    const answeredOrSkippedCount = Object.values(answersMap).filter(
+      (a) => a && (a.state === 'answered' || a.state === 'skipped')
+    ).length;
+    if (answeredOrSkippedCount >= 45) return true;
+
+    // 3. Or answeredCount alone >= 45
+    if (countAnsweredQuestions(activeDraft) >= 45) return true;
+
+    // Default for all other users: questionnaire option remains visible!
+    return false;
+  }, [activeDraft, data?.questionnaireAnswers]);
 
   const [emailError, setEmailError] = useState('');
   const [isValidatingEmail, setIsValidatingEmail] = useState(false);
@@ -201,7 +445,19 @@ export default function Step2Details({
         return;
       }
 
-      // Email is verified valid by backend! Continue directly to next step without OTP
+      // Email is verified valid by backend!
+      // ONLY NOW save to User profile on Continue (not while typing):
+      if (isAuthenticated) {
+        await syncProfileIntake(data);
+        setSavedIntake({
+          source: data.source,
+          otherSource: data.otherSource,
+          reason: data.reason,
+          extra: data.extra
+        });
+        setIsSavedProfileView(true);
+        if (onProfileSaved) onProfileSaved();
+      }
       onNext();
     } catch (err) {
       console.error('Email validation error:', err);
@@ -213,7 +469,7 @@ export default function Step2Details({
   };
 
   return (
-    <div className="flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="flex flex-col max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
       <style>{`
         input:-webkit-autofill,
         input:-webkit-autofill:hover, 
@@ -227,6 +483,27 @@ export default function Step2Details({
           color: #111010 !important;
           caret-color: #111010 !important;
           transition: background-color 5000s ease-in-out 0s;
+        }
+        .custom-orange-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #c9542f rgba(0, 0, 0, 0.05);
+          -webkit-overflow-scrolling: touch;
+        }
+        .custom-orange-scrollbar::-webkit-scrollbar {
+          width: 7px;
+          height: 7px;
+        }
+        .custom-orange-scrollbar::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.04);
+          border-radius: 9999px;
+          margin: 6px 0;
+        }
+        .custom-orange-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #c9542f;
+          border-radius: 9999px;
+        }
+        .custom-orange-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: #a83f1d;
         }
       `}</style>
       
@@ -253,294 +530,461 @@ export default function Step2Details({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-8 gap-y-5 sm:gap-y-6 md:gap-y-8">
-        
-        {/* Name */}
-        <div>
-          <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
-            {settings.nameLabel || 'YOUR NAME'}
-            {!/\*\s*$/.test(settings.nameLabel || '') && (
-              <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
-            )}
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={data.name}
-            onChange={handleInputChange}
-            placeholder={settings.namePlaceholder || "What should I call you?"}
-            className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors"
-          />
-        </div>
-
-        {/* Source */}
-        <div>
-          <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
-            {settings.sourceLabel || 'HOW DID YOU HEAR ABOUT ME? (OPTIONAL)'}
-          </label>
-          <div className="flex flex-col gap-2.5">
-            <select
-              name="source"
-              value={data.source}
-              onChange={handleInputChange}
-              className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors appearance-none cursor-pointer"
-              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23802673%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.2rem top 50%', backgroundSize: '0.65rem auto' }}
-            >
-              <option value="" disabled className="bg-white text-[#7a756b]">{settings.sourcePlaceholder || 'Select an option'}</option>
-              <option value="social" className="bg-white">Social Media</option>
-              <option value="referral" className="bg-white">Referral</option>
-              <option value="search" className="bg-white">Search Engine</option>
-              <option value="other" className="bg-white">Other</option>
-            </select>
-
-            {data.source === 'other' && (
-              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <input
-                  type="text"
-                  name="otherSource"
-                  value={data.otherSource || ''}
-                  onChange={handleInputChange}
-                  placeholder={settings.otherSourcePlaceholder || "Please specify (e.g. YouTube, Podcast, Friend, Book...)"}
-                  className="w-full bg-white border border-[#c9542f] rounded-xl px-4 sm:px-5 py-3 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors"
-                  autoFocus
-                />
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* CASE A: SAVED PROFILE SUMMARY VIEW (BALANCED 2-COL LAYOUT)    */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {isSavedProfileView ? (
+        <div className="space-y-6">
+          
+          {/* Main Saved Details Box */}
+          <div className="bg-[#faf8f5] border border-[#e8e2d5] rounded-2xl p-5 sm:p-7 shadow-xs">
+            {/* Top row: Avatar + Name + Email + Saved Profile Badge + EDIT button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 sm:pb-6 border-b border-[#e8e2d5]">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#c9542f] text-white flex items-center justify-center font-bold text-lg font-serif shrink-0 shadow-2xs">
+                  {avatarLetter}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-base sm:text-lg text-[#111010] leading-snug truncate">
+                      {data.name || 'Your Name'}
+                    </h3>
+                    <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[0.65rem] font-bold uppercase tracking-wider">
+                      <CheckCircle size={12} weight="fill" className="text-emerald-600" />
+                      Saved Profile
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#7a756b] font-normal truncate mt-0.5">
+                    {data.email}
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Email */}
-        <div ref={emailSectionRef}>
-          <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
-            {settings.emailLabel || 'EMAIL'}
-            {!/\*\s*$/.test(settings.emailLabel || '') && (
-              <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
-            )}
-          </label>
-          <input
-            ref={emailInputRef}
-            type="email"
-            name="email"
-            value={data.email}
-            onChange={handleEmailChange}
-            onBlur={() => {
-              if (data.email && !isValidEmailFormat(data.email)) {
-                setEmailError('Please enter a valid email address.');
-              }
-            }}
-            placeholder={settings.emailPlaceholder || "your.email@example.com"}
-            className={`w-full bg-white border rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none shadow-xs transition-colors ${
-              emailError
-                ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500 bg-red-50/15'
-                : 'border-black/15 focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f]'
-            }`}
-          />
-          {emailError && (
-            <p className="text-xs text-red-600 font-sans mt-1.5 flex items-center gap-1 font-medium animate-in fade-in duration-200">
-              {emailError}
-            </p>
-          )}
-        </div>
-
-        {/* Phone Number (Guest Only) */}
-        {!isAuthenticated && (
-          <div>
-            <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
-              {settings.phoneLabel || 'PHONE NUMBER'}
-              {!/\*\s*$/.test(settings.phoneLabel || '') && (
-                <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
-              )}
-            </label>
-            <div className={`flex items-center border rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 transition-colors bg-white shadow-xs ${
-              phoneError
-                ? 'border-red-500 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 bg-red-50/15'
-                : 'border-black/15 focus-within:border-[#c9542f] focus-within:ring-1 focus-within:ring-[#c9542f]'
-            }`}>
-              <select 
-                name="countryCode"
-                className="bg-transparent text-[#111010] font-sans text-sm focus:outline-none appearance-none pr-2 cursor-pointer outline-none font-medium"
-                value={data.countryCode}
-                onChange={handleInputChange}
+              <button
+                type="button"
+                onClick={handleOpenEditModal}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full border border-[#c9542f] text-[#c9542f] hover:bg-[#c9542f] hover:text-white font-sans text-xs font-bold tracking-wider uppercase transition-all shadow-2xs cursor-pointer self-start sm:self-auto shrink-0"
               >
-                {COUNTRY_CODES.map((country, index) => (
-                  <option key={`${country.code}-${index}`} value={country.code} className="bg-white text-[#111010]">
-                    {country.label}
-                  </option>
-                ))}
-              </select>
-              <div className="w-[1px] h-4 bg-black/20 mx-3"></div>
-              <input 
-                type="tel" 
-                name="phoneNumber"
-                value={data.phoneNumber}
-                onChange={(e) => updateData({ phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                maxLength={10}
-                className="w-full bg-transparent text-[#111010] font-sans text-sm focus:outline-none placeholder-[#9c9689]"
-                placeholder={settings.phonePlaceholder || "0000000000"}
+                <PencilSimple size={13} weight="bold" />
+                <span>EDIT</span>
+              </button>
+            </div>
+
+            {/* Content Grid: 2 Columns on desktop to fully utilize space cleanly */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 pt-5 sm:pt-6">
+              {/* WHAT BRINGS YOU HERE */}
+              {savedReason?.trim() && (
+                <div className={`bg-white/80 border border-[#e8e2d5] rounded-xl p-4 sm:p-5 flex flex-col justify-between shadow-2xs ${
+                  savedSource?.trim() || savedExtra?.trim() ? 'md:col-span-7' : 'md:col-span-12'
+                }`}>
+                  <div>
+                    <span className="font-sans text-[0.65rem] uppercase tracking-[0.18em] font-bold text-[#c9542f] block mb-2">
+                      WHAT BRINGS YOU HERE
+                    </span>
+                    <p className="text-sm text-[#111010] font-normal leading-relaxed whitespace-pre-wrap">
+                      {savedReason}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Right Column: Source and/or Extra */}
+              {(savedSource?.trim() || savedExtra?.trim()) && (
+                <div className={`space-y-4 ${
+                  savedReason?.trim() ? 'md:col-span-5' : 'md:col-span-12'
+                }`}>
+                  {/* HEARD ABOUT ME VIA */}
+                  {savedSource?.trim() && (
+                    <div className="bg-white/80 border border-[#e8e2d5] rounded-xl p-4 sm:p-5 shadow-2xs">
+                      <span className="font-sans text-[0.65rem] uppercase tracking-[0.18em] font-bold text-[#c9542f] block mb-2">
+                        HEARD ABOUT ME VIA
+                      </span>
+                      <p className="text-sm text-[#111010] font-medium">
+                        {displaySource}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ANYTHING ELSE I SHOULD KNOW */}
+                  {savedExtra?.trim() && (
+                    <div className="bg-white/80 border border-[#e8e2d5] rounded-xl p-4 sm:p-5 shadow-2xs">
+                      <span className="font-sans text-[0.65rem] uppercase tracking-[0.18em] font-bold text-[#c9542f] block mb-2">
+                        ANYTHING ELSE I SHOULD KNOW?
+                      </span>
+                      <p className="text-sm text-[#111010] font-normal leading-relaxed whitespace-pre-wrap">
+                        {savedExtra}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Missing Optional Fields (Source and/or Extra) - 2 Column Grid */}
+          {(!savedSource?.trim() || !savedExtra?.trim()) && (
+            <div className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in fade-in duration-300">
+              {/* Missing Source */}
+              {!savedSource?.trim() && (
+                <div className={!savedExtra?.trim() ? '' : 'md:col-span-2'}>
+                  <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
+                    {settings.sourceLabel || 'HOW DID YOU HEAR ABOUT ME? (OPTIONAL)'}
+                  </label>
+                  <div className="flex flex-col gap-2.5">
+                    <select
+                      name="source"
+                      value={data.source}
+                      onChange={handleInputChange}
+                      className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors appearance-none cursor-pointer"
+                      style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23802673%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.2rem top 50%', backgroundSize: '0.65rem auto' }}
+                    >
+                      <option value="" disabled className="bg-white text-[#7a756b]">{settings.sourcePlaceholder || 'Select an option'}</option>
+                      <option value="social" className="bg-white">Social Media</option>
+                      <option value="referral" className="bg-white">Referral</option>
+                      <option value="search" className="bg-white">Search Engine</option>
+                      <option value="other" className="bg-white">Other</option>
+                    </select>
+
+                    {data.source === 'other' && (
+                      <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <input
+                          type="text"
+                          name="otherSource"
+                          value={data.otherSource || ''}
+                          onChange={handleInputChange}
+                          placeholder={settings.otherSourcePlaceholder || "Please specify (e.g. YouTube, Podcast, Friend, Book...)"}
+                          className="w-full bg-white border border-[#c9542f] rounded-xl px-4 sm:px-5 py-3 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors"
+                          autoFocus
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Missing Extra */}
+              {!savedExtra?.trim() && (
+                <div className={!savedSource?.trim() ? '' : 'md:col-span-2'}>
+                  <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
+                    {settings.extraLabel || 'ANYTHING ELSE I SHOULD KNOW? (OPTIONAL)'}
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      name="extra"
+                      value={data.extra}
+                      onChange={handleInputChange}
+                      placeholder={settings.extraPlaceholder || "Any specific questions, concerns, or background context..."}
+                      rows={3}
+                      maxLength={500}
+                      className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors resize-none"
+                    />
+                    <div className="text-[0.68rem] text-[#7a756b] text-right mt-1">
+                      {data.extra.length} / 500
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+      ) : (
+        /* ──────────────────────────────────────────────────────────── */
+        /* CASE B: INTERACTIVE FORM VIEW (FOR EDITING OR FIRST-TIME)    */
+        /* ──────────────────────────────────────────────────────────── */
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-8 gap-y-5 sm:gap-y-6 md:gap-y-8">
+            
+            {/* Name */}
+            <div>
+              <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
+                {settings.nameLabel || 'YOUR NAME'}
+                {!/\*\s*$/.test(settings.nameLabel || '') && (
+                  <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
+                )}
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={data.name}
+                onChange={handleInputChange}
+                placeholder={settings.namePlaceholder || "What should I call you?"}
+                className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors"
               />
             </div>
-            {phoneError && (
-              <div className="mt-1.5 space-y-1 animate-in fade-in duration-200">
-                <p className="text-xs text-red-600 font-sans flex items-center gap-1 font-medium">
-                  {phoneError}
+
+            {/* Source */}
+            <div>
+              <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
+                {settings.sourceLabel || 'HOW DID YOU HEAR ABOUT ME? (OPTIONAL)'}
+              </label>
+              <div className="flex flex-col gap-2.5">
+                <select
+                  name="source"
+                  value={data.source}
+                  onChange={handleInputChange}
+                  className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors appearance-none cursor-pointer"
+                  style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23802673%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.2rem top 50%', backgroundSize: '0.65rem auto' }}
+                >
+                  <option value="" disabled className="bg-white text-[#7a756b]">{settings.sourcePlaceholder || 'Select an option'}</option>
+                  <option value="social" className="bg-white">Social Media</option>
+                  <option value="referral" className="bg-white">Referral</option>
+                  <option value="search" className="bg-white">Search Engine</option>
+                  <option value="other" className="bg-white">Other</option>
+                </select>
+
+                {data.source === 'other' && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <input
+                      type="text"
+                      name="otherSource"
+                      value={data.otherSource || ''}
+                      onChange={handleInputChange}
+                      placeholder={settings.otherSourcePlaceholder || "Please specify (e.g. YouTube, Podcast, Friend, Book...)"}
+                      className="w-full bg-white border border-[#c9542f] rounded-xl px-4 sm:px-5 py-3 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors"
+                      autoFocus
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Email */}
+            <div ref={emailSectionRef}>
+              <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
+                {settings.emailLabel || 'EMAIL'}
+                {!/\*\s*$/.test(settings.emailLabel || '') && (
+                  <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
+                )}
+              </label>
+              <input
+                ref={emailInputRef}
+                type="email"
+                name="email"
+                value={data.email}
+                onChange={handleEmailChange}
+                onBlur={() => {
+                  if (data.email && !isValidEmailFormat(data.email)) {
+                    setEmailError('Please enter a valid email address.');
+                  }
+                }}
+                placeholder={settings.emailPlaceholder || "your.email@example.com"}
+                className={`w-full bg-white border rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none shadow-xs transition-colors ${
+                  emailError
+                    ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500 bg-red-50/15'
+                    : 'border-black/15 focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f]'
+                }`}
+              />
+              {emailError && (
+                <p className="text-xs text-red-600 font-sans mt-1.5 flex items-center gap-1 font-medium animate-in fade-in duration-200">
+                  {emailError}
                 </p>
-                <p className="text-xs text-[#555047] font-sans">
-                  Please{' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onOpenLogin) {
-                        onOpenLogin(data.phoneNumber, data.email);
-                      }
-                    }}
-                    className="text-[#c9542f] font-semibold underline underline-offset-2 hover:text-[#9e3a1b] cursor-pointer transition-colors"
+              )}
+            </div>
+
+            {/* Phone Number (Guest Only) */}
+            {!isAuthenticated && (
+              <div>
+                <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
+                  {settings.phoneLabel || 'PHONE NUMBER'}
+                  {!/\*\s*$/.test(settings.phoneLabel || '') && (
+                    <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
+                  )}
+                </label>
+                <div className={`flex items-center border rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 transition-colors bg-white shadow-xs ${
+                  phoneError
+                    ? 'border-red-500 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 bg-red-50/15'
+                    : 'border-black/15 focus-within:border-[#c9542f] focus-within:ring-1 focus-within:ring-[#c9542f]'
+                }`}>
+                  <select 
+                    name="countryCode"
+                    className="bg-transparent text-[#111010] font-sans text-sm focus:outline-none appearance-none pr-2 cursor-pointer outline-none font-medium"
+                    value={data.countryCode}
+                    onChange={handleInputChange}
                   >
-                    login
-                  </button>{' '}
-                  with registered account.
-                </p>
+                    {COUNTRY_CODES.map((country, index) => (
+                      <option key={`${country.code}-${index}`} value={country.code} className="bg-white text-[#111010]">
+                        {country.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="w-[1px] h-4 bg-black/20 mx-3"></div>
+                  <input 
+                    type="tel" 
+                    name="phoneNumber"
+                    value={data.phoneNumber}
+                    onChange={(e) => updateData({ phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    maxLength={10}
+                    className="w-full bg-transparent text-[#111010] font-sans text-sm focus:outline-none placeholder-[#9c9689]"
+                    placeholder={settings.phonePlaceholder || "0000000000"}
+                  />
+                </div>
+                {phoneError && (
+                  <div className="mt-1.5 space-y-1 animate-in fade-in duration-200">
+                    <p className="text-xs text-red-600 font-sans flex items-center gap-1 font-medium">
+                      {phoneError}
+                    </p>
+                    <p className="text-xs text-[#555047] font-sans">
+                      Please{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenLogin) {
+                            onOpenLogin(data.phoneNumber, data.email);
+                          }
+                        }}
+                        className="text-[#c9542f] font-semibold underline underline-offset-2 hover:text-[#9e3a1b] cursor-pointer transition-colors"
+                      >
+                        login
+                      </button>{' '}
+                      with registered account.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* Reason */}
-        <div className={isAuthenticated ? "md:col-span-2" : ""}>
-          <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
-            {settings.reasonLabel || 'WHAT BRINGS YOU HERE?'}
-            {!/\*\s*$/.test(settings.reasonLabel || '') && (
-              <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
-            )}
-          </label>
-          <div className="relative">
-            <textarea
-              name="reason"
-              value={data.reason}
-              onChange={handleInputChange}
-              placeholder={settings.reasonPlaceholder || "A few words are enough."}
-              rows={4}
-              maxLength={500}
-              className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors resize-none"
-            />
-            <div className="text-[0.68rem] text-[#7a756b] text-right mt-1">
-              {data.reason.length} / 500
+            {/* Reason */}
+            <div className={isAuthenticated ? "md:col-span-2" : ""}>
+              <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
+                {settings.reasonLabel || 'WHAT BRINGS YOU HERE?'}
+                {!/\*\s*$/.test(settings.reasonLabel || '') && (
+                  <span className="text-red-500 font-bold ml-1" aria-hidden="true">*</span>
+                )}
+              </label>
+              <div className="relative">
+                <textarea
+                  name="reason"
+                  value={data.reason}
+                  onChange={handleInputChange}
+                  placeholder={settings.reasonPlaceholder || "A few words are enough."}
+                  rows={4}
+                  maxLength={500}
+                  className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors resize-none"
+                />
+                <div className="text-[0.68rem] text-[#7a756b] text-right mt-1">
+                  {data.reason.length} / 500
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Extra Textarea */}
+          <div className="mt-5 sm:mt-6">
+            <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
+              {settings.extraLabel || 'ANYTHING ELSE I SHOULD KNOW? (OPTIONAL)'}
+            </label>
+            <div className="relative">
+              <textarea
+                name="extra"
+                value={data.extra}
+                onChange={handleInputChange}
+                placeholder={settings.extraPlaceholder || "Share anything that feels important."}
+                rows={3}
+                maxLength={500}
+                className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors resize-none"
+              />
+              <div className="text-[0.68rem] text-[#7a756b] text-right mt-1">
+                {data.extra.length} / 500
+              </div>
             </div>
           </div>
         </div>
+      )}
 
-      </div>
-
-      {/* Extra Textarea */}
-      <div className="mt-5 sm:mt-6">
-        <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-2 sm:mb-2.5">
-          {settings.extraLabel || 'ANYTHING ELSE I SHOULD KNOW? (OPTIONAL)'}
-        </label>
-        <div className="relative">
-          <textarea
-            name="extra"
-            value={data.extra}
-            onChange={handleInputChange}
-            placeholder={settings.extraPlaceholder || "Share anything that feels important."}
-            rows={3}
-            maxLength={500}
-            className="w-full bg-white border border-black/15 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm text-[#111010] placeholder-[#9c9689] font-normal focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors resize-none"
-          />
-          <div className="text-[0.68rem] text-[#7a756b] text-right mt-1">
-            {data.extra.length} / 500
-          </div>
-        </div>
-      </div>
-
-      {/* Questionnaire Card (Optional 45-Question Coaching Questionnaire) */}
-      <div
-        className={`mt-6 sm:mt-8 border rounded-2xl p-4 sm:p-6 lg:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 transition-all duration-300 shadow-xs ${
-          answeredCount > 0
-            ? 'border-[#e8c4e2] bg-[#fbf0eb]'
-            : 'border-black/10 bg-white/95'
-        }`}
-      >
-        <div className="flex flex-col sm:flex-row gap-3.5 sm:gap-4 items-start flex-1 min-w-0">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 shadow-xs ${
-              answeredCount > 0 ? 'border-[#e8c4e2] bg-white' : 'border-black/10 bg-[#faf7f2]'
-            }`}>
-              {answeredCount > 0
-                ? <CheckCircle className="text-[#c9542f]" size={20} weight="fill" />
-                : <Sparkle className="text-[#c9542f] text-lg sm:text-xl" weight="fill" />
-              }
-            </div>
-            <div className="sm:hidden flex-1 min-w-0">
-              <h4 className="text-[#111010] font-serif font-medium text-base leading-tight">
-                {config.copy?.card_title || 'Want to go deeper?'}
-              </h4>
-            </div>
-          </div>
-
-          <div className="space-y-2 flex-1 min-w-0">
-            <div className="hidden sm:flex flex-wrap items-center gap-2">
-              <h4 className="text-[#111010] font-serif font-medium text-base sm:text-lg">
-                {config.copy?.card_title || 'Want to go deeper?'}
-              </h4>
-              <span className="font-sans text-[0.65rem] uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
-                Optional • 45 Questions • ~25–35 mins
-              </span>
+      {/* Questionnaire Card (Optional 45-Question Coaching Questionnaire) - Hidden once user completes or reaches 45 */}
+      {!isQuestionnaireCompleted && (
+        <div
+          className={`mt-6 sm:mt-8 border rounded-2xl p-4 sm:p-6 lg:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 transition-all duration-300 shadow-xs ${
+            answeredCount > 0
+              ? 'border-[#e8c4e2] bg-[#fbf0eb]'
+              : 'border-black/10 bg-white/95'
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row gap-3.5 sm:gap-4 items-start flex-1 min-w-0">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 shadow-xs ${
+                answeredCount > 0 ? 'border-[#e8c4e2] bg-white' : 'border-black/10 bg-[#faf7f2]'
+              }`}>
+                {answeredCount > 0
+                  ? <CheckCircle className="text-[#c9542f]" size={20} weight="fill" />
+                  : <Sparkle className="text-[#c9542f] text-lg sm:text-xl" weight="fill" />
+                }
+              </div>
+              <div className="sm:hidden flex-1 min-w-0">
+                <h4 className="text-[#111010] font-serif font-medium text-base leading-tight">
+                  {config.copy?.card_title || 'Want to go deeper?'}
+                </h4>
+              </div>
             </div>
 
-            <div className="sm:hidden flex flex-wrap gap-1.5 pt-0.5">
-              <span className="font-sans text-[0.62rem] uppercase tracking-wide font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
-                Optional
-              </span>
-              <span className="font-sans text-[0.62rem] uppercase tracking-wide font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
-                45 Questions
-              </span>
-              <span className="font-sans text-[0.62rem] uppercase tracking-wide font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
-                ~25–35 mins
-              </span>
-            </div>
+            <div className="space-y-2 flex-1 min-w-0">
+              <div className="hidden sm:flex flex-wrap items-center gap-2">
+                <h4 className="text-[#111010] font-serif font-medium text-base sm:text-lg">
+                  {config.copy?.card_title || 'Want to go deeper?'}
+                </h4>
+                <span className="font-sans text-[0.65rem] uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
+                  Optional • 45 Questions • ~25–35 mins
+                </span>
+              </div>
 
-            <p className="text-[#555047] text-xs sm:text-sm font-light leading-relaxed">
-              {config.copy?.card_description ||
-                'An optional questionnaire to help me prepare for our conversation. There are 45 questions, and every question can be skipped. Allow around 25–35 minutes if you choose to answer them all.'}
-            </p>
+              <div className="sm:hidden flex-wrap gap-1.5 pt-0.5 hidden">
+                <span className="font-sans text-[0.62rem] uppercase tracking-wide font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
+                  Optional
+                </span>
+                <span className="font-sans text-[0.62rem] uppercase tracking-wide font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
+                  45 Questions
+                </span>
+                <span className="font-sans text-[0.62rem] uppercase tracking-wide font-bold px-2.5 py-0.5 rounded-full bg-black/5 text-[#7a756b]">
+                  ~25–35 mins
+                </span>
+              </div>
 
-            {answeredCount > 0 && (
-              <p className="text-xs font-semibold text-[#c9542f]">
-                ✓ {answeredCount} of 45 answers currently saved in this tab.
+              <p className="text-[#555047] text-xs sm:text-sm font-light leading-relaxed">
+                {config.copy?.card_description ||
+                  'An optional questionnaire to help me prepare for our conversation. There are 45 questions, and every question can be skipped. Allow around 25–35 minutes if you choose to answer them all.'}
               </p>
+
+              {answeredCount > 0 && (
+                <p className="text-xs font-semibold text-[#c9542f]">
+                  ✓ {answeredCount} of 45 answers currently saved in this tab.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto pt-1 sm:pt-0">
+            <button
+              ref={openQuestionnaireBtnRef}
+              type="button"
+              onClick={() => setShowQuestionnaire(true)}
+              className="flex items-center justify-center gap-2 px-5 py-3.5 sm:py-3 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white font-sans text-xs tracking-wider font-bold uppercase transition-all shadow-xs cursor-pointer w-full sm:w-auto"
+            >
+              <span>
+                {activeDraft?.last_screen === 'review'
+                  ? (config.copy?.review_button || 'Review answers')
+                  : answeredCount > 0
+                  ? `${config.copy?.resume_button || 'Continue questionnaire'} (${answeredCount} answered)`
+                  : activeDraft?.opened
+                  ? (config.copy?.resume_button || 'Continue questionnaire')
+                  : (config.copy?.start_button || 'Start optional questionnaire')}
+              </span>
+              <ArrowUpRight size={15} weight="bold" />
+            </button>
+
+            {(answeredCount > 0 || activeDraft?.opened) && (
+              <button
+                type="button"
+                onClick={() => setShowRemoveConfirm(true)}
+                className="text-[0.72rem] text-[#7a756b] hover:text-red-700 underline font-medium self-center sm:self-end transition-colors cursor-pointer"
+              >
+                {config.copy?.remove_answers_button || 'Remove questionnaire answers'}
+              </button>
             )}
           </div>
         </div>
-
-        <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto pt-1 sm:pt-0">
-          <button
-            ref={openQuestionnaireBtnRef}
-            type="button"
-            onClick={() => setShowQuestionnaire(true)}
-            className="flex items-center justify-center gap-2 px-5 py-3.5 sm:py-3 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white font-sans text-xs tracking-wider font-bold uppercase transition-all shadow-xs cursor-pointer w-full sm:w-auto"
-          >
-            <span>
-              {activeDraft?.last_screen === 'review'
-                ? (config.copy?.review_button || 'Review answers')
-                : answeredCount > 0
-                ? `${config.copy?.resume_button || 'Continue questionnaire'} (${answeredCount} answered)`
-                : activeDraft?.opened
-                ? (config.copy?.resume_button || 'Continue questionnaire')
-                : (config.copy?.start_button || 'Start optional questionnaire')}
-            </span>
-            <ArrowUpRight size={15} weight="bold" />
-          </button>
-
-          {(answeredCount > 0 || activeDraft?.opened) && (
-            <button
-              type="button"
-              onClick={() => setShowRemoveConfirm(true)}
-              className="text-[0.72rem] text-[#7a756b] hover:text-red-700 underline font-medium self-center sm:self-end transition-colors cursor-pointer"
-            >
-              {config.copy?.remove_answers_button || 'Remove questionnaire answers'}
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Confirmation Modal for Remove Questionnaire Answers */}
       {showRemoveConfirm && (
@@ -580,6 +1024,194 @@ export default function Step2Details({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* EDIT DETAILS POPUP MODAL WITH SAVE BUTTON                    */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {showEditModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          data-lenis-prevent="true"
+          className="fixed inset-0 z-[9999999] flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200 w-screen h-[100dvh]"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div 
+            ref={editModalRef}
+            data-lenis-prevent="true"
+            className="bg-[#faf8f5] border border-[#e8e2d5] rounded-2xl sm:rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[82vh] animate-in zoom-in-95 duration-200 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="shrink-0 px-5 sm:px-7 py-4 sm:py-5 border-b border-[#e8e2d5] flex items-center justify-between gap-4 bg-white/70">
+              <div>
+                <h3 
+                  className="font-serif text-lg sm:text-xl font-medium text-[#111010]"
+                  style={{ fontFamily: 'Fraunces, Georgia, serif' }}
+                >
+                  Edit Your Details
+                </h3>
+                <p className="text-xs text-[#7a756b] mt-0.5">
+                  Update your details. Changes will be saved to your profile for this and future sessions.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseEditModal}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[#7a756b] hover:text-[#111010] hover:bg-black/5 transition-colors cursor-pointer shrink-0"
+                aria-label="Close"
+              >
+                <X size={18} weight="bold" />
+              </button>
+            </div>
+
+            {/* Modal Form Body - SCROLLABLE with Custom Orange Scrollbar */}
+            <div 
+              ref={editModalScrollRef}
+              data-lenis-prevent="true"
+              className="flex-1 min-h-0 overflow-y-auto custom-orange-scrollbar pl-5 sm:pl-7 pr-3 sm:pr-4 py-5 sm:py-6 space-y-4 sm:space-y-5"
+              style={{ overscrollBehavior: 'contain' }}
+            >
+              {/* Name & Email Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-1.5">
+                    YOUR NAME <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Your Full Name"
+                    className="w-full bg-white border border-black/15 rounded-xl px-4 py-2.5 text-sm text-[#111010] placeholder-[#9c9689] focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors"
+                  />
+                  {editErrors.name && (
+                    <p className="text-xs text-red-600 mt-1">{editErrors.name}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-1.5">
+                    EMAIL <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={editFormData.email}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="your.email@example.com"
+                    className="w-full bg-white border border-black/15 rounded-xl px-4 py-2.5 text-sm text-[#111010] placeholder-[#9c9689] focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors"
+                  />
+                  {editErrors.email && (
+                    <p className="text-xs text-red-600 mt-1">{editErrors.email}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Source */}
+              <div>
+                <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-1.5">
+                  HOW DID YOU HEAR ABOUT ME? (OPTIONAL)
+                </label>
+                <div className="flex flex-col gap-2">
+                  <select
+                    value={editFormData.source}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, source: e.target.value }))}
+                    className="w-full bg-white border border-black/15 rounded-xl px-4 py-2.5 text-sm text-[#111010] focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors appearance-none cursor-pointer"
+                    style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23802673%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.2rem top 50%', backgroundSize: '0.65rem auto' }}
+                  >
+                    <option value="" disabled className="bg-white text-[#7a756b]">Select an option</option>
+                    <option value="social" className="bg-white">Social Media</option>
+                    <option value="referral" className="bg-white">Referral</option>
+                    <option value="search" className="bg-white">Search Engine</option>
+                    <option value="other" className="bg-white">Other</option>
+                  </select>
+
+                  {editFormData.source === 'other' && (
+                    <input
+                      type="text"
+                      value={editFormData.otherSource || ''}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, otherSource: e.target.value }))}
+                      placeholder="Please specify (e.g. YouTube, Podcast, Friend, Book...)"
+                      className="w-full bg-white border border-[#c9542f] rounded-xl px-4 py-2.5 text-sm text-[#111010] placeholder-[#9c9689] focus:outline-none focus:ring-1 focus:ring-[#c9542f] shadow-xs"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* What brings you here */}
+              <div>
+                <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-1.5">
+                  WHAT BRINGS YOU HERE? <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <textarea
+                    rows={4}
+                    maxLength={500}
+                    value={editFormData.reason}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, reason: e.target.value }))}
+                    placeholder="A few words are enough."
+                    className="w-full bg-white border border-black/15 rounded-xl px-4 py-3 text-sm text-[#111010] placeholder-[#9c9689] focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors resize-none"
+                  />
+                  <div className="text-[0.68rem] text-[#7a756b] text-right mt-1">
+                    {editFormData.reason.length} / 500
+                  </div>
+                </div>
+                {editErrors.reason && (
+                  <p className="text-xs text-red-600 mt-1">{editErrors.reason}</p>
+                )}
+              </div>
+
+              {/* Anything else I should know */}
+              <div>
+                <label className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] block mb-1.5">
+                  ANYTHING ELSE I SHOULD KNOW? (OPTIONAL)
+                </label>
+                <div className="relative">
+                  <textarea
+                    rows={3}
+                    maxLength={500}
+                    value={editFormData.extra}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, extra: e.target.value }))}
+                    placeholder="Any specific questions, concerns, or background context..."
+                    className="w-full bg-white border border-black/15 rounded-xl px-4 py-3 text-sm text-[#111010] placeholder-[#9c9689] focus:outline-none focus:border-[#c9542f] focus:ring-1 focus:ring-[#c9542f] shadow-xs transition-colors resize-none"
+                  />
+                  <div className="text-[0.68rem] text-[#7a756b] text-right mt-1">
+                    {editFormData.extra.length} / 500
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions Footer with Save Button */}
+            <div className="shrink-0 p-4 sm:p-6 border-t border-[#e8e2d5] flex items-center justify-end gap-3 bg-white/70">
+              <button
+                type="button"
+                onClick={handleCloseEditModal}
+                disabled={isSavingEdit}
+                className="px-5 py-2.5 rounded-xl border border-black/15 bg-white text-xs font-semibold text-[#111010] hover:bg-black/5 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditModal}
+                disabled={isSavingEdit}
+                className="px-6 py-2.5 rounded-xl bg-[#c9542f] hover:bg-[#b04523] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-xs cursor-pointer flex items-center gap-2"
+              >
+                {isSavingEdit ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <span>Save Changes</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Questionnaire Modal */}

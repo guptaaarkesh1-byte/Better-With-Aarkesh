@@ -390,6 +390,44 @@ router.post('/', optionalAuth, async (req, res) => {
       questionnaireDraftId = qResult.cleanPayload?.booking_draft_id || req.body.booking_draft_id || null;
     }
 
+    // Auto-sync with User profile: Save answers to User or pre-fill from User if booking without new answers
+    const emailRegexForUser = new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+    let existingProfileUser = null;
+    try {
+      existingProfileUser = await User.findOne({ email: emailRegexForUser });
+    } catch (err) {
+      console.error('Error checking existing user profile questionnaire:', err);
+    }
+
+    if (validatedQuestionnaire && validatedQuestionnaire.responses?.length > 0) {
+      User.findOneAndUpdate(
+        { email: emailRegexForUser },
+        { 
+          $set: { 
+            questionnaireAnswers: validatedQuestionnaire,
+            questionnaireCompletedAt: new Date()
+          } 
+        }
+      ).exec().catch(err => console.error('Error saving questionnaire to User profile:', err));
+    } else if (!validatedQuestionnaire && existingProfileUser?.questionnaireAnswers) {
+      validatedQuestionnaire = existingProfileUser.questionnaireAnswers;
+    }
+
+    const finalSource = source || existingProfileUser?.intakeProfile?.source || '';
+    const finalOtherSource = req.body.otherSource || existingProfileUser?.intakeProfile?.otherSource || '';
+    const finalReason = reason || existingProfileUser?.intakeProfile?.reason || '';
+    const finalExtra = extra || existingProfileUser?.intakeProfile?.extra || '';
+
+    // Auto-save user's intake details into User profile for permanent storage
+    if (existingProfileUser) {
+      if (!existingProfileUser.intakeProfile) existingProfileUser.intakeProfile = {};
+      if (finalSource) existingProfileUser.intakeProfile.source = finalSource;
+      if (finalOtherSource) existingProfileUser.intakeProfile.otherSource = finalOtherSource;
+      if (finalReason) existingProfileUser.intakeProfile.reason = finalReason;
+      if (finalExtra) existingProfileUser.intakeProfile.extra = finalExtra;
+      existingProfileUser.save().catch(e => console.error('Error updating existingProfileUser intakeProfile:', e));
+    }
+
     // --- Free session booking (3 free sessions included with course purchase) ---
     if (useFreeSession) {
       const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -429,9 +467,10 @@ router.post('/', optionalAuth, async (req, res) => {
         email: normalizedEmail,
         countryCode,
         phoneNumber,
-        source,
-        reason,
-        extra,
+        source: finalSource,
+        otherSource: finalOtherSource,
+        reason: finalReason,
+        extra: finalExtra,
         questionnaireAnswers: validatedQuestionnaire || null,
         questionnaireBookingDraftId: questionnaireDraftId,
         status: 'UPCOMING',
@@ -447,6 +486,11 @@ router.post('/', optionalAuth, async (req, res) => {
 
       // Consume one free session credit
       coachingUser.freeSessions -= 1;
+      if (!coachingUser.intakeProfile) coachingUser.intakeProfile = {};
+      if (finalSource) coachingUser.intakeProfile.source = finalSource;
+      if (finalOtherSource) coachingUser.intakeProfile.otherSource = finalOtherSource;
+      if (finalReason) coachingUser.intakeProfile.reason = finalReason;
+      if (finalExtra) coachingUser.intakeProfile.extra = finalExtra;
       await coachingUser.save();
 
       // Sync with Cal.com just like a paid booking
@@ -567,9 +611,10 @@ router.post('/', optionalAuth, async (req, res) => {
       email: normalizedEmail,
       countryCode,
       phoneNumber: phone,
-      source,
-      reason,
-      extra,
+      source: finalSource,
+      otherSource: finalOtherSource,
+      reason: finalReason,
+      extra: finalExtra,
       questionnaireAnswers: validatedQuestionnaire || null,
       questionnaireBookingDraftId: questionnaireDraftId,
       status: 'UPCOMING',
@@ -585,6 +630,19 @@ router.post('/', optionalAuth, async (req, res) => {
     });
 
     const createdAppointment = await appointment.save();
+
+    // Auto-save user's intake details into User profile for recurring bookings
+    const targetUserId = req.user ? req.user._id : (authData?.user ? authData.user._id : null);
+    if (targetUserId) {
+      await User.findByIdAndUpdate(targetUserId, {
+        $set: {
+          'intakeProfile.source': finalSource || '',
+          'intakeProfile.otherSource': finalOtherSource || '',
+          'intakeProfile.reason': finalReason || '',
+          'intakeProfile.extra': finalExtra || ''
+        }
+      }).catch(e => console.error('Failed to update user intakeProfile:', e));
+    }
 
     // Record in PastClient to ensure permanent returning user recognition
     if (normalizedEmail) {
@@ -804,6 +862,20 @@ router.post('/:id/questionnaire-retry', optionalAuth, async (req, res) => {
       appointment.questionnaireBookingDraftId = qResult.cleanPayload.booking_draft_id;
     }
     await appointment.save();
+
+    // Also persist onto User profile
+    if (appointment.email && qResult.cleanPayload) {
+      const emailRegex = new RegExp(`^${appointment.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      User.findOneAndUpdate(
+        { email: emailRegex },
+        { 
+          $set: { 
+            questionnaireAnswers: qResult.cleanPayload,
+            questionnaireCompletedAt: new Date()
+          } 
+        }
+      ).exec().catch(err => console.error('Error saving retry questionnaire to User profile:', err));
+    }
 
     res.json({ success: true, message: 'Questionnaire answers saved successfully' });
   } catch (error) {
@@ -1299,8 +1371,19 @@ router.get('/', protect, async (req, res) => {
         }
       }
 
+      const profileQA = appObj.questionnaireAnswers || req.user.questionnaireAnswers || null;
+      const profileReason = appObj.reason || req.user.intakeProfile?.reason || '';
+      const profileSource = appObj.source || req.user.intakeProfile?.source || '';
+      const profileOtherSource = appObj.otherSource || req.user.intakeProfile?.otherSource || '';
+      const profileExtra = appObj.extra || req.user.intakeProfile?.extra || '';
+
       return {
         ...appObj,
+        reason: profileReason,
+        source: profileSource,
+        otherSource: profileOtherSource,
+        extra: profileExtra,
+        questionnaireAnswers: profileQA,
         amount: calculatedAmount,
         isFreeSession: isFree
       };
@@ -1333,9 +1416,17 @@ router.put('/:id/link', protect, async (req, res) => {
 router.get('/admin', protect, admin, async (req, res) => {
   try {
     const appointments = await Appointment.find()
-      .populate('userId', 'name fullName email phone phoneNumber photoUrl createdAt isDeleted deletedAt')
+      .populate('userId', 'name fullName email phone phoneNumber photoUrl intakeProfile questionnaireAnswers questionnaireCompletedAt createdAt isDeleted deletedAt')
       .populate('packageId')
       .sort({ createdAt: -1 });
+
+    // Fetch users for intakeProfile & questionnaire lookup by email (for guest/unlinked appointments)
+    const allEmails = [...new Set(appointments.map(a => (a.email || '').toLowerCase().trim()).filter(Boolean))];
+    const userDocs = await User.find({ email: { $in: allEmails } }).select('email intakeProfile questionnaireAnswers questionnaireCompletedAt');
+    const userDocMap = new Map();
+    userDocs.forEach(u => {
+      userDocMap.set((u.email || '').toLowerCase().trim(), u);
+    });
 
     // Fetch fee settings to ensure accurate fallback
     const feeSettings = await Settings.findOne({ key: 'fees' });
@@ -1407,8 +1498,20 @@ router.get('/admin', protect, admin, async (req, res) => {
         }
       }
 
+      const matchedUser = appObj.userId || userDocMap.get(appEmail);
+      const profileQA = appObj.questionnaireAnswers || matchedUser?.questionnaireAnswers || null;
+      const profileReason = appObj.reason || matchedUser?.intakeProfile?.reason || '';
+      const profileSource = appObj.source || matchedUser?.intakeProfile?.source || '';
+      const profileOtherSource = appObj.otherSource || matchedUser?.intakeProfile?.otherSource || '';
+      const profileExtra = appObj.extra || matchedUser?.intakeProfile?.extra || '';
+
       return {
         ...appObj,
+        reason: profileReason,
+        source: profileSource,
+        otherSource: profileOtherSource,
+        extra: profileExtra,
+        questionnaireAnswers: profileQA,
         meetLink: resolvedMeetLink,
         phoneNumber: resolvedPhone,
         phone: resolvedPhone,

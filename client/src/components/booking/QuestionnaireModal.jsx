@@ -146,10 +146,10 @@ export default function QuestionnaireModal({
         rootEl.inert = false;
       }
       window.removeEventListener('keydown', handleKeyDown);
-      // Restore focus to opening button
+      // Restore focus to opening button without forcing page scroll
       if (triggerRef && triggerRef.current) {
         try {
-          triggerRef.current.focus();
+          triggerRef.current.focus({ preventScroll: true });
         } catch (e) {}
       }
     };

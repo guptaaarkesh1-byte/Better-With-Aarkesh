@@ -5,7 +5,7 @@ import {
   VideoCamera, CheckCircle, Plus, LockKey, MagnifyingGlass,
   X, SignOut, User, Lock, CaretRight, ArrowsClockwise, ArrowLeft,
   CaretDown, CaretUp, Bell, ArrowRight, Trash, Clock, NotePencil,
-  DotsThreeVertical, Package
+  DotsThreeVertical, Package, FileText
 } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 import './my-journey.css';
@@ -16,6 +16,7 @@ import { resolveImageUrl } from '../articles/ArticleReaderView';
 import ProfileTab from './components/settings/ProfileTab';
 import NotificationsTab from './components/settings/NotificationsTab';
 import SecurityPrivacyTab from './components/settings/SecurityPrivacyTab';
+import QuestionnaireTab from './components/QuestionnaireTab';
 import { getEffectiveUser, clearAllAuth, isAnyUserLoggedIn } from '../../utils/authSync';
 
 const PACKAGE_THEMES = [
@@ -33,6 +34,7 @@ export default function MyJourney() {
   const parseTabName = (raw) => {
     if (!raw) return null;
     const str = String(raw).toLowerCase().trim();
+    if (str.includes('question') || str.includes('intake')) return 'questionnaire';
     if (str.includes('course')) return 'course';
     if (str.includes('lib')) return 'library';
     if (str.includes('note')) return 'notes';
@@ -58,7 +60,7 @@ export default function MyJourney() {
     return 'coaching';
   };
 
-  // Active Main Section Tab: 'coaching' | 'library' | 'notes' | 'course' | 'profile'
+  // Active Main Section Tab: 'coaching' | 'library' | 'notes' | 'course' | 'questionnaire' | 'profile'
   const [activeTab, setActiveTab] = useState(getInitialTab);
   const [settingsSubTab, setSettingsSubTab] = useState('PROFILE');
 
@@ -70,6 +72,7 @@ export default function MyJourney() {
         library: 'library',
         notes: 'notes',
         course: 'course',
+        questionnaire: 'questionnaire',
         profile: 'profile'
       };
 
@@ -1067,7 +1070,7 @@ export default function MyJourney() {
     return c.title.toLowerCase().includes(q);
   });
 
-  const showSidebar = activeTab !== 'notes' && activeTab !== 'profile';
+  const showSidebar = activeTab !== 'notes' && activeTab !== 'profile' && activeTab !== 'questionnaire';
 
   // Counts for Sidebar Badges
   const safeAppts = Array.isArray(appointments) ? appointments.filter(Boolean) : [];
@@ -1271,6 +1274,18 @@ export default function MyJourney() {
                         <span>ACCOUNT SETTINGS</span>
                         <span className="text-sm leading-none">→</span>
                       </button>
+
+                      {/* Coaching Questionnaire Quick Link */}
+                      <button
+                        onClick={() => {
+                          setAvatarMenuOpen(false);
+                          setActiveTab('questionnaire');
+                        }}
+                        className="w-full h-9 rounded-full bg-[#faf7f2] hover:bg-[#ede7dd] border border-[#d6cfc5] text-[#1c1714] font-bold text-[10px] tracking-[0.1em] uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer mt-2"
+                      >
+                        <FileText size={14} />
+                        <span>COACHING QUESTIONNAIRE</span>
+                      </button>
                     </div>
 
                     {/* Bottom Logout Row */}
@@ -1388,6 +1403,14 @@ export default function MyJourney() {
               >
                 <Play size={17} weight={activeTab === 'course' ? 'fill' : 'regular'} />
                 <span>Course</span>
+              </button>
+
+              <button 
+                className={`mj-tab ${activeTab === 'questionnaire' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('questionnaire'); setSearchQuery(''); }}
+              >
+                <FileText size={17} weight={activeTab === 'questionnaire' ? 'bold' : 'regular'} />
+                <span>Questionnaire</span>
               </button>
             </nav>
 
@@ -2704,7 +2727,18 @@ export default function MyJourney() {
               </div>
             )}
 
-            {/* 5. PROFILE & SETTINGS VIEW */}
+            {/* 5. QUESTIONNAIRE VIEW */}
+            {activeTab === 'questionnaire' && (
+              <QuestionnaireTab 
+                user={user} 
+                onProfileUpdate={() => {
+                  const u = getEffectiveUser();
+                  if (u) setUser(u);
+                }} 
+              />
+            )}
+
+            {/* 6. PROFILE & SETTINGS VIEW */}
             {activeTab === 'profile' && (
               <div className="w-full max-w-[700px] mx-auto py-1">
                 <div className="text-center mb-4 sm:mb-6">

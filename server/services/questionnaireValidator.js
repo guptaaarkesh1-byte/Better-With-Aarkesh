@@ -114,7 +114,13 @@ export function validateQuestionnaireSubmission(rawPayload) {
 
     // Question is answered
     if (qDef.type === 'long_text') {
-      const rawText = typeof rawR.text === 'string' ? rawR.text.trim() : '';
+      const rawText = typeof rawR.text === 'string' 
+        ? rawR.text.trim() 
+        : typeof rawR.value === 'string' 
+        ? rawR.value.trim() 
+        : typeof rawR.answer === 'string' 
+        ? rawR.answer.trim() 
+        : '';
       if (!rawText) {
         validatedResponses.push({
           question_id: qId,

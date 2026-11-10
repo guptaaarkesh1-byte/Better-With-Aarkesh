@@ -203,11 +203,44 @@ export function buildResponseContractPayload(draft, draftId) {
     }
 
     // State is 'answered'
-    // Ensure write-in text is only retained for options that are actively selected
+    const isTextQuestion = q.type === 'long_text' || q.type === 'written_answer';
+
+    if (isTextQuestion) {
+      const rawText = typeof rawAnswer.text === 'string' ? rawAnswer.text.trim() : '';
+      if (!rawText) {
+        return {
+          question_id: q.id,
+          state: rawAnswer.state === 'skipped' ? 'skipped' : 'unanswered',
+          selected_option_ids: [],
+          text: null,
+          other_text_by_option_id: {},
+        };
+      }
+      return {
+        question_id: q.id,
+        state: 'answered',
+        selected_option_ids: [],
+        text: rawAnswer.text.slice(0, 2000),
+        other_text_by_option_id: {},
+      };
+    }
+
+    // Option-based questions (multi_select, single_select, integer_choice)
     const activeOptionIds = Array.isArray(rawAnswer.selected_option_ids)
       ? rawAnswer.selected_option_ids
       : [];
 
+    if (activeOptionIds.length === 0) {
+      return {
+        question_id: q.id,
+        state: rawAnswer.state === 'skipped' ? 'skipped' : 'unanswered',
+        selected_option_ids: [],
+        text: null,
+        other_text_by_option_id: {},
+      };
+    }
+
+    // Ensure write-in text is only retained for options that are actively selected
     const cleanOtherText = {};
     if (rawAnswer.other_text_by_option_id && typeof rawAnswer.other_text_by_option_id === 'object') {
       activeOptionIds.forEach((optId) => {
@@ -218,16 +251,11 @@ export function buildResponseContractPayload(draft, draftId) {
       });
     }
 
-    let cleanText = null;
-    if (q.type === 'written_answer' && typeof rawAnswer.text === 'string') {
-      cleanText = rawAnswer.text.slice(0, 2000);
-    }
-
     return {
       question_id: q.id,
       state: 'answered',
       selected_option_ids: activeOptionIds,
-      text: cleanText,
+      text: null,
       other_text_by_option_id: cleanOtherText,
     };
   });
@@ -241,6 +269,41 @@ export function buildResponseContractPayload(draft, draftId) {
   };
 }
 
+/**
+ * Convert saved server response payload ({ responses: [...] }) into local draft object format ({ answers: { [qId]: ... } })
+ * so it can be loaded directly into QuestionnaireModal or QuestionnaireTab.
+ */
+export function convertResponsesToDraft(questionnairePayload, draftId) {
+  if (!questionnairePayload) return null;
+  const answers = {};
+  const responses = questionnairePayload.responses || (Array.isArray(questionnairePayload) ? questionnairePayload : []);
+
+  responses.forEach((r) => {
+    if (!r) return;
+    const qId = r.question_id || r.id;
+    if (qId) {
+      const isAns = r.state === 'answered' || (r.text && String(r.text).trim().length > 0) || (Array.isArray(r.selected_option_ids) && r.selected_option_ids.length > 0);
+      const isSkp = r.state === 'skipped';
+      answers[qId] = {
+        question_id: qId,
+        state: isAns ? 'answered' : (isSkp ? 'skipped' : 'unanswered'),
+        selected_option_ids: Array.isArray(r.selected_option_ids) ? r.selected_option_ids : [],
+        text: typeof r.text === 'string' ? r.text : null,
+        other_text_by_option_id: r.other_text_by_option_id || {},
+      };
+    }
+  });
+
+  return {
+    booking_draft_id: draftId || questionnairePayload.booking_draft_id || 'profile_draft',
+    questionnaire_id: questionnairePayload.questionnaire_id || config.questionnaire_id || 'bwa_optional_coaching',
+    content_version: questionnairePayload.content_version || config.content_version || '2026-10-16-v1',
+    opened: true,
+    last_screen: 'review',
+    answers,
+  };
+}
+
 export default {
   isSessionStorageAvailable,
   getOrCreateBookingDraftId,
@@ -250,4 +313,5 @@ export default {
   clearQuestionnaireDraft,
   countAnsweredQuestions,
   buildResponseContractPayload,
+  convertResponsesToDraft,
 };

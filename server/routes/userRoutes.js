@@ -12,6 +12,7 @@ import PastClient from '../models/PastClient.js';
 import CourseUser from '../models/CourseUser.js';
 import CoursePurchase from '../models/CoursePurchase.js';
 import { calculateAndSyncFreeSessions } from '../services/freeSessionService.js';
+import { validateQuestionnaireSubmission } from '../services/questionnaireValidator.js';
 
 const router = express.Router();
 
@@ -812,6 +813,31 @@ router.get('/profile', protect, async (req, res) => {
       } catch (e) {}
     }
 
+    // Auto-sync intakeProfile from latest appointment if not already populated on user model
+    let intakeProfile = user.intakeProfile ? (user.intakeProfile.toObject ? user.intakeProfile.toObject() : user.intakeProfile) : {};
+    if ((!intakeProfile.reason || !intakeProfile.source) && user.email) {
+      try {
+        const emailRegex = new RegExp(`^${user.email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        const latestAppt = await Appointment.findOne({ 
+          email: emailRegex, 
+          status: { $nin: ['Failed'] } 
+        }).sort({ createdAt: -1 });
+
+        if (latestAppt) {
+          intakeProfile = {
+            source: intakeProfile.source || latestAppt.source || '',
+            otherSource: intakeProfile.otherSource || latestAppt.otherSource || '',
+            reason: intakeProfile.reason || latestAppt.reason || '',
+            extra: intakeProfile.extra || latestAppt.extra || '',
+          };
+          user.intakeProfile = intakeProfile;
+          await user.save();
+        }
+      } catch (err) {
+        console.error('Error auto-syncing intakeProfile in /profile:', err);
+      }
+    }
+
     res.json({
       _id: user._id,
       fullName: user.fullName || '',
@@ -826,6 +852,9 @@ router.get('/profile', protect, async (req, res) => {
       courseSessionsGranted: user.courseSessionsGranted || false,
       purchasedCourses: purchasedCourses,
       photoUrl: user.photoUrl || '',
+      questionnaireAnswers: user.questionnaireAnswers || null,
+      questionnaireCompletedAt: user.questionnaireCompletedAt || null,
+      intakeProfile: intakeProfile || null,
       authProvider: user.authProvider || 'local',
       hasPassword: (user.email === 'yashrajsingh28359@gmail.com' || user.hasPassword === true || (user.hasPassword === undefined && user.authProvider === 'local')),
       googleId: user.googleId || '',
@@ -877,6 +906,14 @@ router.put('/profile', protect, async (req, res) => {
       user.photoUrl = String(photoUrl || '').trim();
     }
 
+    if (req.body.intakeProfile && typeof req.body.intakeProfile === 'object') {
+      const existing = user.intakeProfile ? (user.intakeProfile.toObject ? user.intakeProfile.toObject() : user.intakeProfile) : {};
+      user.intakeProfile = {
+        ...existing,
+        ...req.body.intakeProfile
+      };
+    }
+
     await user.save();
 
     // Also sync to CourseUser if exists
@@ -905,6 +942,9 @@ router.put('/profile', protect, async (req, res) => {
         dob: user.dob,
         gender: user.gender,
         photoUrl: user.photoUrl || '',
+        questionnaireAnswers: user.questionnaireAnswers || null,
+        questionnaireCompletedAt: user.questionnaireCompletedAt || null,
+        intakeProfile: user.intakeProfile || null,
         freeSessions: user.freeSessions || 0,
         courseSessionsGranted: user.courseSessionsGranted || false,
       }
@@ -912,6 +952,79 @@ router.put('/profile', protect, async (req, res) => {
   } catch (error) {
     console.error('Update Profile Error:', error);
     res.status(500).json({ message: 'Server error updating profile' });
+  }
+});
+
+// @route   GET /api/users/questionnaire
+// @desc    Get user's profile questionnaire answers
+// @access  Private
+router.get('/questionnaire', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    let answers = user.questionnaireAnswers;
+    let completedAt = user.questionnaireCompletedAt;
+
+    // If user document doesn't have answers yet, check their latest appointment to auto-sync
+    if (!answers && user.email) {
+      const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      const latestAppt = await Appointment.findOne({ 
+        email: emailRegex, 
+        questionnaireAnswers: { $ne: null } 
+      }).sort({ createdAt: -1 });
+
+      if (latestAppt && latestAppt.questionnaireAnswers) {
+        answers = latestAppt.questionnaireAnswers;
+        completedAt = latestAppt.createdAt;
+        user.questionnaireAnswers = answers;
+        user.questionnaireCompletedAt = completedAt;
+        await user.save();
+      }
+    }
+
+    res.json({
+      questionnaireAnswers: answers || null,
+      questionnaireCompletedAt: completedAt || null
+    });
+  } catch (err) {
+    console.error('Error fetching user questionnaire:', err);
+    res.status(500).json({ message: 'Server error fetching questionnaire' });
+  }
+});
+
+// @route   PUT /api/users/questionnaire
+// @desc    Save/update user's profile questionnaire answers
+// @access  Private
+router.put('/questionnaire', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { questionnaireAnswers } = req.body;
+    const qResult = validateQuestionnaireSubmission(questionnaireAnswers);
+
+    user.questionnaireAnswers = qResult.cleanPayload;
+    user.questionnaireCompletedAt = new Date();
+    await user.save();
+
+    // Auto-sync into all user's upcoming appointments so coach sees the latest responses
+    if (user.email && qResult.cleanPayload) {
+      const emailRegex = new RegExp(`^${user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      await Appointment.updateMany(
+        { email: emailRegex, status: 'UPCOMING' },
+        { $set: { questionnaireAnswers: qResult.cleanPayload } }
+      );
+    }
+
+    res.json({
+      message: 'Questionnaire updated successfully',
+      questionnaireAnswers: user.questionnaireAnswers,
+      questionnaireCompletedAt: user.questionnaireCompletedAt
+    });
+  } catch (err) {
+    console.error('Error updating user questionnaire:', err);
+    res.status(500).json({ message: 'Server error updating questionnaire' });
   }
 });
 

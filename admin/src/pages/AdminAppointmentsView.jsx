@@ -71,7 +71,7 @@ export default function AdminAppointmentsView() {
   const [view, setView] = useState(getInitialView);
 
   // Filter Tabs per view
-  const [sessionTab, setSessionTab] = useState(urlTab || 'all'); // all, needs, today, upcoming, completed, rescheduled, cancelled, refunded
+  const [sessionTab, setSessionTab] = useState(urlTab || 'all'); // all, needs, today, upcoming, completed, rescheduled, expired, cancelled, refunded
   const [courseTab, setCourseTab] = useState('all'); // all, free_left, free_done, failed
   const [allClientTab, setAllClientTab] = useState('all'); // all, course_students, coaching_only, registered_only
 
@@ -386,20 +386,33 @@ export default function AdminAppointmentsView() {
     };
   };
 
-  // Helper to determine if appointment needs action
-  const isNeedsAction = (app) => {
+  // Helper to determine if appointment is expired/closed
+  const isAppointmentExpired = (app) => {
+    if (!app) return false;
     const s = (app.status || '').toUpperCase();
-    if (s === 'COMPLETED' || s === 'REFUNDED' || s === 'CANCELLED') return false;
-    if (getAgreementStatusInfo(app).key === 'pending') return true;
-    if (app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'pending') return true;
-    if (app.paymentStatus === 'Pending' && !app.isFreeSession) return true;
+    if (s === 'COMPLETED' || s === 'CANCELLED' || s === 'REFUNDED') return false;
+    if (s === 'EXPIRED' || s === 'CLOSED') return true;
 
     try {
       const appDateTime = new Date(`${app.date} ${app.time || '00:00'}`);
-      if (!isNaN(appDateTime.getTime()) && appDateTime < new Date() && s !== 'COMPLETED') {
+      if (!isNaN(appDateTime.getTime()) && appDateTime < new Date()) {
         return true;
       }
     } catch (e) {}
+
+    return false;
+  };
+
+  // Helper to determine if appointment needs action
+  const isNeedsAction = (app) => {
+    if (!app) return false;
+    const s = (app.status || '').toUpperCase();
+    if (s === 'COMPLETED' || s === 'REFUNDED' || s === 'CANCELLED') return false;
+    if (isAppointmentExpired(app)) return false;
+
+    if (getAgreementStatusInfo(app).key === 'pending') return true;
+    if (app.rescheduleRequested || app.rescheduleRequest?.status === 'PENDING' || app.rescheduleRequest?.status === 'pending') return true;
+    if (app.paymentStatus === 'Pending' && !app.isFreeSession) return true;
 
     return false;
   };
@@ -672,7 +685,8 @@ export default function AdminAppointmentsView() {
       usedFree,
       totalFreeAvailable,
       needsActionCount: needsActionList.length,
-      rescheduleRequestsCount: rescheduleRequests
+      rescheduleRequestsCount: rescheduleRequests,
+      expiredCount: appointments.filter(isAppointmentExpired).length
     };
   }, [clientsDirectory, appointments]);
 
@@ -727,10 +741,12 @@ export default function AdminAppointmentsView() {
         if (s === 'CANCELLED' || !isSameDay(appDate, new Date())) return false;
       }
       if (sessionTab === 'upcoming') {
+        if (isAppointmentExpired(app)) return false;
         if (s !== 'UPCOMING' && s !== '') return false;
       }
       if (sessionTab === 'completed' && s !== 'COMPLETED') return false;
       if (sessionTab === 'rescheduled' && !isRescheduled) return false;
+      if (sessionTab === 'expired' && !isAppointmentExpired(app)) return false;
       if (sessionTab === 'cancelled' && s !== 'CANCELLED') return false;
       if (sessionTab === 'refunded' && app.paymentStatus !== 'Refunded' && s !== 'REFUNDED') return false;
 
@@ -818,9 +834,9 @@ export default function AdminAppointmentsView() {
 
     // Default 'smart' sort: Needs action first, then upcoming by earliest date, then past
     const needs = list.filter(isNeedsAction).sort((a, b) => parseDate(`${a.date} ${a.time}`) - parseDate(`${b.date} ${b.time}`));
-    const upcoming = list.filter((s) => !isNeedsAction(s) && (s.status || '').toUpperCase() === 'UPCOMING')
+    const upcoming = list.filter((s) => !isNeedsAction(s) && !isAppointmentExpired(s) && ((s.status || '').toUpperCase() === 'UPCOMING' || !s.status))
       .sort((a, b) => parseDate(`${a.date} ${a.time}`) - parseDate(`${b.date} ${b.time}`));
-    const rest = list.filter((s) => !isNeedsAction(s) && (s.status || '').toUpperCase() !== 'UPCOMING')
+    const rest = list.filter((s) => !isNeedsAction(s) && (isAppointmentExpired(s) || ((s.status || '').toUpperCase() !== 'UPCOMING' && Boolean(s.status))))
       .sort((a, b) => parseDate(`${b.date} ${b.time}`) - parseDate(`${a.date} ${a.time}`));
 
     return [...needs, ...upcoming, ...rest];
@@ -1582,6 +1598,9 @@ export default function AdminAppointmentsView() {
     if (s === 'CANCELLED') return <span className="bwa-pill p-cx">Cancelled</span>;
     if (s === 'COMPLETED') return <span className="bwa-pill p-done">Completed</span>;
     if (s === 'REFUNDED') return <span className="bwa-pill p-cx">Refunded</span>;
+    if (isAppointmentExpired(app)) {
+      return <span className="bwa-pill p-none" style={{ background: '#f0ede8', color: '#66615b', fontWeight: 600 }}>Expired / Closed</span>;
+    }
     if (hasPendingReschedule) return <span className="bwa-pill p-re">Wants to reschedule</span>;
     
     const agInfo = getAgreementStatusInfo(app);
@@ -1616,13 +1635,6 @@ export default function AdminAppointmentsView() {
         </button>
       );
     }
-
-    try {
-      const appDateTime = new Date(`${app.date} ${app.time || '00:00'}`);
-      if (!isNaN(appDateTime.getTime()) && appDateTime < new Date()) {
-        return <span className="bwa-pill p-none" style={{ background: '#f0ede8', color: '#66615b', fontWeight: 600 }}>Expired / Closed</span>;
-      }
-    } catch (e) {}
 
     if (isApprovedReschedule) return <span className="bwa-pill p-re">Rescheduled</span>;
     return <span className="bwa-pill p-up">Upcoming</span>;
@@ -2257,7 +2269,7 @@ export default function AdminAppointmentsView() {
                     [
                       'upcoming',
                       'Upcoming',
-                      appointments.filter((a) => (a.status || '').toUpperCase() === 'UPCOMING' || !a.status).length
+                      appointments.filter((a) => !isAppointmentExpired(a) && ((a.status || '').toUpperCase() === 'UPCOMING' || !a.status)).length
                     ],
                     [
                       'completed',
@@ -2268,6 +2280,11 @@ export default function AdminAppointmentsView() {
                       'rescheduled',
                       'Rescheduled',
                       appointments.filter(isRescheduledAppt).length
+                    ],
+                    [
+                      'expired',
+                      'Expired',
+                      stats.expiredCount ?? appointments.filter(isAppointmentExpired).length
                     ],
                     [
                       'cancelled',
@@ -2609,7 +2626,7 @@ export default function AdminAppointmentsView() {
                       const used = getClientFreeUsed(client);
                       const left = Math.max(0, totalFree - used);
                       const nextAppt = client.appointments
-                        .filter((s) => (s.status || '').toUpperCase() === 'UPCOMING')
+                        .filter((s) => !isAppointmentExpired(s) && ((s.status || '').toUpperCase() === 'UPCOMING' || !s.status))
                         .sort((a, b) => parseDate(`${a.date} ${a.time}`) - parseDate(`${b.date} ${b.time}`))[0];
 
                       return (

@@ -287,9 +287,8 @@ export default function AdminUsers() {
   const actionOf = useCallback((a) => {
     if (rsPending(a)) return 'Reschedule request';
     if (a.pay === 'pending') return 'Payment pending';
-    if (stateOf(a) === 'overdue') return 'Update status';
     return null;
-  }, [stateOf]);
+  }, []);
 
   const paidAmount = (a) => {
     if (a.pay === 'paid') {

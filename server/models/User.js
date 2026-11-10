@@ -82,6 +82,32 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  questionnaireAnswers: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
+  },
+  questionnaireCompletedAt: {
+    type: Date,
+    default: null,
+  },
+  intakeProfile: {
+    source: {
+      type: String,
+      default: '',
+    },
+    otherSource: {
+      type: String,
+      default: '',
+    },
+    reason: {
+      type: String,
+      default: '',
+    },
+    extra: {
+      type: String,
+      default: '',
+    },
+  },
   isDeleted: {
     type: Boolean,
     default: false,

@@ -14,8 +14,11 @@ import config from '../data/questionnaireConfig.json';
 import { 
   getOrCreateBookingDraftId, 
   loadQuestionnaireDraft, 
+  saveQuestionnaireDraft,
   clearQuestionnaireDraft, 
-  buildResponseContractPayload 
+  buildResponseContractPayload,
+  convertResponsesToDraft,
+  countAnsweredQuestions
 } from '../utils/questionnaireDraft';
 import { 
   heartbeatSlot, 
@@ -28,6 +31,14 @@ const bookingBg = CDN_IMAGES.BOOKING_LAMP_BG || bookingBgLocal;
 export default function Booking() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token'));
+  const [hasExistingSavedProfile, setHasExistingSavedProfile] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || localStorage.getItem('courseUser') || 'null');
+      return Boolean((localStorage.getItem('token') || localStorage.getItem('courseToken')) && u?.intakeProfile?.reason?.trim());
+    } catch {
+      return false;
+    }
+  });
   
   // Maintain session-scoped draft ID
   const [draftId] = useState(() => getOrCreateBookingDraftId());
@@ -42,6 +53,52 @@ export default function Booking() {
       answers: {}
     };
   });
+
+  // Sync questionnaire draft with User profile when logged in
+  useEffect(() => {
+    const token = localStorage.getItem('token') || localStorage.getItem('courseToken');
+    if (!token) return;
+
+    const fetchUserProfileQuestionnaire = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/questionnaire`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData?.questionnaireAnswers) {
+            const profileDraft = convertResponsesToDraft(resData.questionnaireAnswers, draftId);
+            setQuestionnaireDraft(profileDraft);
+            saveQuestionnaireDraft(draftId, profileDraft);
+            setBookingData(prev => ({
+              ...prev,
+              questionnaireAnswers: resData.questionnaireAnswers
+            }));
+          } else {
+            // User has NOT filled questionnaire in profile - clear stale drafts so questionnaire option shows
+            clearQuestionnaireDraft(draftId);
+            const freshDraft = {
+              booking_draft_id: draftId,
+              questionnaire_id: config.questionnaire_id || 'bwa_optional_coaching',
+              content_version: config.content_version || '2026-10-16-v1',
+              opened: false,
+              last_screen: 'intro',
+              answers: {}
+            };
+            setQuestionnaireDraft(freshDraft);
+            setBookingData(prev => ({
+              ...prev,
+              questionnaireAnswers: null
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to pre-fill questionnaire from user profile:', err);
+      }
+    };
+
+    fetchUserProfileQuestionnaire();
+  }, [draftId]);
 
   const [step, setStep] = useState(() => {
     const savedStep = sessionStorage.getItem('bookingStep');
@@ -225,14 +282,53 @@ export default function Booking() {
     const resolvedEmail = paramEmail || localUser?.email || '';
     const resolvedName = paramName || localUser?.fullName || localUser?.name || '';
     const resolvedPhone = paramPhone || localUser?.phoneNumber || localUser?.phone || '';
+    const resolvedSource = localUser?.intakeProfile?.source || '';
+    const resolvedOtherSource = localUser?.intakeProfile?.otherSource || '';
+    const resolvedReason = localUser?.intakeProfile?.reason || '';
+    const resolvedExtra = localUser?.intakeProfile?.extra || '';
 
-    if (resolvedEmail || resolvedName || resolvedPhone) {
+    if (resolvedReason?.trim()) {
+      setHasExistingSavedProfile(true);
+    }
+
+    if (resolvedEmail || resolvedName || resolvedPhone || resolvedReason || resolvedSource) {
       setBookingData(prev => ({
         ...prev,
         name: prev.name || resolvedName,
         email: prev.email || resolvedEmail,
-        phoneNumber: prev.phoneNumber || resolvedPhone
+        phoneNumber: prev.phoneNumber || resolvedPhone,
+        source: prev.source || resolvedSource,
+        otherSource: prev.otherSource || resolvedOtherSource,
+        reason: prev.reason || resolvedReason,
+        extra: prev.extra || resolvedExtra,
       }));
+    }
+
+    // Also fetch fresh user profile with intakeProfile from backend if logged in
+    if (token) {
+      fetch(`${import.meta.env.VITE_API_URL}/api/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.ok ? res.json() : null)
+      .then(prof => {
+        if (prof) {
+          if (prof.intakeProfile?.reason?.trim()) {
+            setHasExistingSavedProfile(true);
+          }
+          setBookingData(prev => ({
+            ...prev,
+            name: prev.name || prof.fullName || '',
+            email: prev.email || prof.email || '',
+            phoneNumber: prev.phoneNumber || prof.phoneNumber || '',
+            countryCode: prev.countryCode || prof.countryCode || '+91',
+            source: prev.source || prof.intakeProfile?.source || '',
+            otherSource: prev.otherSource || prof.intakeProfile?.otherSource || '',
+            reason: prev.reason || prof.intakeProfile?.reason || '',
+            extra: prev.extra || prof.intakeProfile?.extra || '',
+          }));
+        }
+      })
+      .catch(e => console.error('Failed to prefill intake profile in Booking:', e));
     }
 
     if (localUser && (localUser.freeSessions !== undefined || localStorage.getItem('freeSessions') !== null)) {
@@ -949,15 +1045,19 @@ export default function Booking() {
               </>
             )}
             {step === 2 && (
-              <>
-                {bookingSettings.step2.subtitleLine1 || "This helps me understand you better before we meet."}
-                {bookingSettings.step2.subtitleLine2 && (
-                  <>
-                    <br className="hidden md:block" />
-                    {" "}{bookingSettings.step2.subtitleLine2}
-                  </>
-                )}
-              </>
+              hasExistingSavedProfile ? (
+                "Everything we need is in. Use Edit if something changes."
+              ) : (
+                <>
+                  {bookingSettings.step2.subtitleLine1 || "This helps me understand you better before we meet."}
+                  {bookingSettings.step2.subtitleLine2 && (
+                    <>
+                      <br className="hidden md:block" />
+                      {" "}{bookingSettings.step2.subtitleLine2}
+                    </>
+                  )}
+                </>
+              )
             )}
             {step === 3 && (
               <>
@@ -1002,6 +1102,8 @@ export default function Booking() {
                   onNext={nextStep} 
                   onBack={prevStep}
                   isAuthenticated={!!localStorage.getItem('token') || isLoggedIn}
+                  hasExistingSavedProfile={hasExistingSavedProfile}
+                  onProfileSaved={() => setHasExistingSavedProfile(true)}
                   freeSessionInfo={freeSessionInfo}
                   settings={bookingSettings.step2}
                   questionnaireDraft={questionnaireDraft}
