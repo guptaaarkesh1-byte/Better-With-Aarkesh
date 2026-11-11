@@ -43,8 +43,12 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
     }
   };
 
-  const isPackage = Boolean(data.isPackage);
-  const totalSessions = isPackage ? (data.totalSessions || data.packageSlots?.length || 1) : 1;
+  const isPackageCredit = Boolean(data.isPackageCredit || data.usePackageCredit);
+  const isPackage = Boolean(data.isPackage && !isPackageCredit);
+  const totalSessions = isPackage 
+    ? (data.totalSessions || data.packageSlots?.length || 1) 
+    : (isPackageCredit ? (data.totalSessionsInPackage || 1) : 1);
+  const creditsRemaining = data.creditsRemaining ?? Math.max(0, totalSessions - 1);
   const duration = Number(data.sessionDuration) || 60;
 
   // All package slots
@@ -115,20 +119,26 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
             <Check className="text-[#c9542f] text-xl" weight="bold" />
           </div>
           <span className="font-sans text-[0.65rem] uppercase tracking-[0.25em] font-bold text-[#c9542f] block mb-2 sm:mb-3">
-            {isPackage ? 'YOUR COACHING PACKAGE IS CONFIRMED' : (settings.badgeTag || 'YOUR SESSION IS RESERVED')}
+            {isPackageCredit
+              ? `SESSION ${data.sessionNumber || ''} OF ${totalSessions} RESERVED (PACKAGE CREDIT)`
+              : isPackage 
+                ? 'YOUR COACHING PACKAGE IS CONFIRMED' 
+                : (settings.badgeTag || 'YOUR SESSION IS RESERVED')}
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight leading-[1.15] text-[#111010] mb-3 sm:mb-4 max-w-2xl mx-auto">
             {settings.titleLine1 || 'Thank you for trusting me'}<br/>{settings.titleLine2 || 'with a part of your story.'}
           </h1>
           <p className="text-[#555047] text-sm md:text-base font-light leading-relaxed max-w-lg mx-auto">
-            {settings.subtitleLine1 || "Coach Aarkesh will review your intake details to prepare your personalized Coaching Agreement and email your official confirmation shortly."}
-            {settings.subtitleLine2 && (
+            {isPackageCredit
+              ? 'Your appointment is confirmed using your package credit. No additional agreement is needed as your package agreement is already in effect.'
+              : (settings.subtitleLine1 || "Coach Aarkesh will review your intake details to prepare your personalized Coaching Agreement and email your official confirmation shortly.")}
+            {settings.subtitleLine2 && !isPackageCredit && (
               <>
                 <br className="hidden md:block" />
                 {settings.subtitleLine2}
               </>
             )}
-            {settings.subtitleHighlight && (
+            {settings.subtitleHighlight && !isPackageCredit && (
               <span className="italic text-[#c9542f] mt-1 block font-serif">{settings.subtitleHighlight}</span>
             )}
           </p>
@@ -143,7 +153,11 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-sans text-[0.62rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-1">
-                {isPackage ? 'COACHING PACKAGE CONFIRMED' : (settings.appointmentCardBadge || 'YOUR APPOINTMENT')}
+                {isPackageCredit
+                  ? 'PACKAGE CREDIT SESSION'
+                  : isPackage 
+                    ? 'COACHING PACKAGE CONFIRMED' 
+                    : (settings.appointmentCardBadge || 'YOUR APPOINTMENT')}
               </p>
               <h3 className="text-[#111010] text-xl sm:text-2xl font-serif font-medium leading-snug">
                 {isPackage 
@@ -152,7 +166,7 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
               </h3>
               <p className="text-[#555047] text-sm font-normal mt-1">
                 {isPackage 
-                  ? `All ${totalSessions} sessions scheduled · ${duration} minutes each (${totalSessions * duration} mins total)`
+                  ? `Session 1 scheduled · ${creditsRemaining} session${creditsRemaining > 1 ? 's' : ''} credited to your account`
                   : formatSingleSessionTime(data.time, data.sessionDuration)}
               </p>
             </div>
@@ -168,11 +182,19 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
               <div>
                 <p className="font-sans text-[0.62rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">Session Type</p>
                 <p className="text-[#111010] text-sm font-semibold">
-                  {isPackage ? `${totalSessions}-Session Coaching Package` : (data.sessionDuration === 90 || data.isFirstSession === false
-                    ? '1-on-1 Follow-up Coaching Session'
-                    : '1-on-1 First Coaching Session')}
+                  {isPackageCredit
+                    ? `Session ${data.sessionNumber || ''} of ${totalSessions} (Package Credit)`
+                    : isPackage 
+                      ? `${totalSessions}-Session Coaching Package` 
+                      : (data.sessionDuration === 90 || data.isFirstSession === false
+                          ? '1-on-1 Follow-up Coaching Session'
+                          : '1-on-1 First Coaching Session')}
                 </p>
-                {isPackage && <p className="text-[#7a756b] text-xs font-normal">1-on-1 Personalized Coaching</p>}
+                {isPackageCredit ? (
+                  <p className="text-[#2e7d32] text-xs font-semibold">Prepaid Package Credit Applied • Agreement Active</p>
+                ) : isPackage ? (
+                  <p className="text-[#7a756b] text-xs font-normal">1-on-1 Personalized Coaching</p>
+                ) : null}
               </div>
             </div>
 
@@ -205,6 +227,13 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
                   <p className="text-[#c9542f] text-sm font-bold">
                     ₹0 <span className="text-[#7a756b] text-xs font-normal">(Course Bonus • {data.freeSessionsRemaining ?? 0} credits left)</span>
                   </p>
+                ) : isPackageCredit ? (
+                  <>
+                    <p className="text-[#2e7d32] text-sm font-bold">₹0</p>
+                    <p className="text-emerald-700 text-xs font-medium flex items-center gap-1 mt-0.5">
+                      <CheckCircle size={11} weight="fill" /> Prepaid Package Credit ({creditsRemaining} remaining)
+                    </p>
+                  </>
                 ) : (
                   <>
                     <p className="text-[#111010] text-sm font-bold">₹{paidAmount.toLocaleString('en-IN')}</p>
@@ -231,12 +260,12 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
             </div>
           </div>
 
-          {/* PACKAGE SCHEDULE: List of all sessions with Date, Time, Duration & Meet link */}
+          {/* PACKAGE SCHEDULE: Session 1 Scheduled + Remaining Credits Banner */}
           {isPackage && allSlots.length > 0 && (
             <div className="mt-6 pt-6 border-t border-black/10">
               <div className="flex items-center justify-between mb-3.5">
                 <h4 className="font-sans text-[0.68rem] uppercase tracking-[0.18em] font-bold text-[#c9542f]">
-                  PACKAGE SCHEDULE ({allSlots.length} SESSIONS)
+                  PACKAGE SCHEDULE ({totalSessions} SESSIONS)
                 </h4>
                 <span className="font-sans text-[0.65rem] text-[#7a756b] font-semibold">
                   {duration} Mins Each
@@ -247,19 +276,19 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
               <div className="mb-4 p-3.5 rounded-xl bg-[#fff8f3] border border-[#f3d2c1] text-xs text-[#555047] flex items-start gap-2.5">
                 <Clock size={16} className="text-[#c9542f] shrink-0 mt-0.5" weight="bold" />
                 <div className="leading-relaxed">
-                  <strong className="text-[#1c1714]">Next Step:</strong> Coach Aarkesh will review your intake details to prepare your personalized Coaching Agreement. Your official <strong>Coaching Agreement</strong> and <strong>Google Meet meeting details</strong> will be shared with you via email shortly.
+                  <strong className="text-[#1c1714]">Next Step:</strong> Coach Aarkesh will review your intake details to prepare your personalized Coaching Agreement for your entire package. Your official <strong>Coaching Agreement</strong> and <strong>Google Meet meeting details</strong> will be shared with you via email shortly.
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2.5">
-                {allSlots.map((slot, idx) => (
+              <div className="flex flex-col gap-3">
+                {allSlots.slice(0, 1).map((slot, idx) => (
                   <div 
                     key={idx}
-                    className="p-3.5 sm:p-4 rounded-xl bg-[#faf8f5] border border-black/8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 transition-all hover:border-[#c9542f]/30"
+                    className="p-3.5 sm:p-4 rounded-xl bg-[#faf8f5] border border-[#c9542f]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 transition-all shadow-2xs"
                   >
                     <div className="flex items-start sm:items-center gap-3 min-w-0">
                       <span className="w-7 h-7 rounded-full bg-[#c9542f] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 sm:mt-0 shadow-2xs">
-                        {idx + 1}
+                        1
                       </span>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -267,7 +296,7 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
                             {slot.date}
                           </p>
                           <span className="text-[0.62rem] uppercase tracking-wider bg-[#fbf0eb] text-[#c9542f] font-bold px-2 py-0.5 rounded border border-[#e8c4e2]">
-                            Session {idx + 1}
+                            Session 1 (Scheduled)
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-[#7a756b] mt-0.5">
@@ -287,6 +316,31 @@ export default function BookingSuccess({ data = {}, fee, settings = {}, generalS
                     </div>
                   </div>
                 ))}
+
+                {/* Remaining Sessions Credited Card */}
+                {creditsRemaining > 0 && (
+                  <div className="p-4 rounded-xl bg-[#fbf0eb] border border-[#e8c4e2] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-[#111010] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        ✨
+                      </div>
+                      <div>
+                        <p className="font-sans text-[0.68rem] uppercase tracking-wider font-bold text-[#c9542f]">
+                          {creditsRemaining} Session{creditsRemaining > 1 ? 's' : ''} Remaining in Your Package
+                        </p>
+                        <p className="text-xs text-[#555047] mt-0.5 leading-relaxed">
+                          Your remaining <strong>{creditsRemaining} session{creditsRemaining > 1 ? 's' : ''}</strong> are credited to your account. You can schedule them anytime from your dashboard with ₹0 extra payment.
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      to="/my-journey"
+                      className="px-4 py-2 rounded-xl bg-[#111010] hover:bg-[#c9542f] text-white text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap shrink-0 shadow-xs"
+                    >
+                      View in My Journey →
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           )}

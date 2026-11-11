@@ -48,6 +48,10 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  packageCredits: {
+    type: Number,
+    default: 0,
+  },
   courseSessionsGranted: {
     type: Boolean,
     default: false,

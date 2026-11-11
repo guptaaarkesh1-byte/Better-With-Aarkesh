@@ -37,7 +37,7 @@ const getGroupedSlots = (slots) => {
   return groups;
 };
 
-export default function Step1Time({ data, updateData, onNext, onBack, settings = {}, draftId, fees }) {
+export default function Step1Time({ data, updateData, onNext, onBack, settings = {}, draftId, fees, packageCreditInfo = null }) {
   const [bookingMode, setBookingMode] = useState(() => data.bookingMode || (data.isPackage ? 'package' : 'single'));
   const [selectedTier, setSelectedTier] = useState(() => data.totalSessions || 3);
   const [isCustomTier, setIsCustomTier] = useState(() => {
@@ -76,12 +76,16 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
   }, []);
 
   // Compute live package pricing breakdown (discounts only through coupon codes)
-  const sessionDuration = Number(data?.sessionDuration) || 60;
-  const currentPerSessionRate = sessionDuration === 90 
-    ? (configFees?.fee90min || fees?.fee90min || settings?.fee90min || 7500) 
-    : (configFees?.fee60min || fees?.fee60min || settings?.fee60min || 5000);
+  // All package sessions are strictly 90 minutes!
+  const isPkg = bookingMode === 'package' || data?.isPackage;
+  const sessionDuration = isPkg ? 90 : (Number(data?.sessionDuration) || 60);
+  const currentPerSessionRate = isPkg 
+    ? (configFees?.fee90min || fees?.fee90min || settings?.fee90min || 7500)
+    : (sessionDuration === 90 
+        ? (configFees?.fee90min || fees?.fee90min || settings?.fee90min || 7500) 
+        : (configFees?.fee60min || fees?.fee60min || settings?.fee60min || 5000));
 
-  const packageSubtotal = currentPerSessionRate * selectedTier;
+  const packageSubtotal = (configFees?.fee90min || fees?.fee90min || settings?.fee90min || 7500) * selectedTier;
   const packageTotal = packageSubtotal;
 
   const PERIOD_CONFIG = {
@@ -153,7 +157,10 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const emailQuery = data.email ? `&email=${encodeURIComponent(data.email)}` : '';
-      const res = await fetch(`${API_URL}/api/cal/month-availability?year=${year}&month=${month + 1}${emailQuery}`);
+      const candidateDuration = Number(data.sessionDuration) || (bookingMode === 'package' || data.isPackage ? 90 : 60);
+      const durationQuery = `&duration=${candidateDuration}`;
+      const packageQuery = (bookingMode === 'package' || data.isPackage) ? '&isPackage=true' : '';
+      const res = await fetch(`${API_URL}/api/cal/month-availability?year=${year}&month=${month + 1}${emailQuery}${durationQuery}${packageQuery}`);
       if (!res.ok) throw new Error('Failed to fetch month availability');
       const resData = await res.json();
       if (Array.isArray(resData?.availableDays)) {
@@ -169,7 +176,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
 
   React.useEffect(() => {
     fetchMonthAvailability(currentYear, currentMonth);
-  }, [currentMonth, currentYear, data.email]);
+  }, [currentMonth, currentYear, data.email, bookingMode]);
 
   // If currently selected day becomes unavailable, deselect it
   React.useEffect(() => {
@@ -201,14 +208,17 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const emailQuery = data.email ? `&email=${encodeURIComponent(data.email)}` : '';
       const holderQuery = activeHolderId ? `&holderId=${encodeURIComponent(activeHolderId)}` : '';
-      const res = await fetch(`${API_URL}/api/cal/slots?date=${dateStr}${emailQuery}${holderQuery}`);
+      const candidateDuration = Number(data.sessionDuration) || (bookingMode === 'package' || data.isPackage ? 90 : 60);
+      const durationQuery = `&duration=${candidateDuration}`;
+      const packageQuery = (bookingMode === 'package' || data.isPackage) ? '&isPackage=true' : '';
+      const res = await fetch(`${API_URL}/api/cal/slots?date=${dateStr}${emailQuery}${holderQuery}${durationQuery}${packageQuery}`);
       
       if (!res.ok) throw new Error('Failed to fetch slots');
       
       const resData = await res.json();
       const dailySlots = resData?.data?.slots?.[dateStr] || [];
       
-      if (resData?.metadata?.duration) {
+      if (resData?.metadata?.duration && resData.metadata.duration !== data.sessionDuration) {
         updateData({ sessionDuration: resData.metadata.duration });
       }
       
@@ -238,7 +248,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
       return;
     }
     fetchLiveSlots(selectedDay);
-  }, [selectedDay, currentMonth, currentYear, data.email, activeHolderId]);
+  }, [selectedDay, currentMonth, currentYear, data.email, activeHolderId, bookingMode]);
 
   const handleNextMonth = () => {
     if (currentMonth === 11) {
@@ -293,6 +303,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
       updateData({
         bookingMode: 'package',
         isPackage: true,
+        sessionDuration: 90,
         totalSessions: selectedTier,
         packageSlots: initialSlots
       });
@@ -351,12 +362,14 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
       setSelectedTime(time);
       setIsHoldingSlot(true);
 
+      const candidateDuration = Number(data.sessionDuration) || (data.usePackageCredit || data.isPackage || data.isFirstSession === false ? 90 : 60);
       const result = await holdSlot({
         dateKey: dateStr,
         displayDate,
         time,
         holderId: activeHolderId,
-        email: data.email
+        email: data.email,
+        duration: candidateDuration
       });
 
       setIsHoldingSlot(false);
@@ -378,55 +391,42 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
       return;
     }
 
-    // --- PACKAGE MODE ---
-    const existingIndex = packageSlots.findIndex(s => s.dateKey === dateStr && s.time === time);
-    if (existingIndex !== -1) {
-      // Unselect if already picked
-      const updated = packageSlots.filter((_, idx) => idx !== existingIndex);
-      setPackageSlots(updated);
-      releaseSlot({ holderId: activeHolderId, dateKey: dateStr, time });
-      updateData({
-        packageSlots: updated,
-        isPackage: true,
-        totalSessions: selectedTier
-      });
-      return;
-    }
-
-    if (packageSlots.length >= selectedTier) {
-      setSlotConflictMsg(`You have already selected all ${selectedTier} sessions for this package. Remove one below or increase package size to pick another.`);
-      return;
-    }
-
+    // --- PACKAGE MODE (Select Session 1; remaining sessions are credited) ---
+    setSelectedTime(time);
     setIsHoldingSlot(true);
+
     const result = await holdSlot({
       dateKey: dateStr,
       displayDate,
       time,
       holderId: activeHolderId,
-      email: data.email
+      email: data.email,
+      duration: 90
     });
+
     setIsHoldingSlot(false);
 
     if (result.conflict) {
       setSlotConflictMsg(result.message || 'This time slot was just selected by another client. Please choose another time.');
+      setSelectedTime(null);
       fetchLiveSlots(selectedDay);
     } else {
-      const newSlot = {
+      const firstSlot = {
         date: displayDate,
         dateKey: dateStr,
         time,
         sortTimestamp: new Date(`${dateStr} ${time}`).getTime() || dateObj.getTime()
       };
-      const updated = [...packageSlots, newSlot].sort((a, b) => a.sortTimestamp - b.sortTimestamp);
-      setPackageSlots(updated);
-      updateData({
+      setPackageSlots([firstSlot]);
+      updateData({ 
+        date: displayDate, 
+        dateKey: dateStr,
+        time,
+        holderId: activeHolderId,
         isPackage: true,
         bookingMode: 'package',
         totalSessions: selectedTier,
-        packageSlots: updated,
-        date: updated[0].date,
-        time: updated[0].time
+        packageSlots: [firstSlot]
       });
     }
   };
@@ -443,12 +443,14 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
         const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
         const displayDate = `${dayOfWeek}, ${monthName} ${selectedDay}, ${currentYear}`;
 
+        const candidateDuration = Number(data.sessionDuration) || (data.usePackageCredit || data.isPackage || data.isFirstSession === false ? 90 : 60);
         const result = await holdSlot({
           dateKey: dateStr,
           displayDate,
           time: selectedTime,
           holderId: activeHolderId,
-          email: data.email
+          email: data.email,
+          duration: candidateDuration
         });
         setIsHoldingSlot(false);
 
@@ -470,20 +472,54 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
         onNext();
       }
     } else {
-      // Package Mode
-      if (packageSlots.length === selectedTier) {
+      // Package Mode: Session 1 is selected; remaining are credited to account
+      if (selectedDay && selectedTime) {
+        setIsHoldingSlot(true);
+        const dateObj = new Date(currentYear, currentMonth, selectedDay);
+        const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+        const monthName = monthNames[currentMonth];
+        const monthStr = String(currentMonth + 1).padStart(2, '0');
+        const dayStr = String(selectedDay).padStart(2, '0');
+        const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
+        const displayDate = `${dayOfWeek}, ${monthName} ${selectedDay}, ${currentYear}`;
+
+        const result = await holdSlot({
+          dateKey: dateStr,
+          displayDate,
+          time: selectedTime,
+          holderId: activeHolderId,
+          email: data.email,
+          duration: 90
+        });
+        setIsHoldingSlot(false);
+
+        if (result.conflict) {
+          setSlotConflictMsg(result.message || 'This time slot was just selected by another client. Please choose another time.');
+          setSelectedTime(null);
+          fetchLiveSlots(selectedDay);
+          return;
+        }
+
+        const slot = {
+          date: displayDate,
+          dateKey: dateStr,
+          time: selectedTime,
+          sortTimestamp: new Date(`${dateStr} ${selectedTime}`).getTime() || dateObj.getTime()
+        };
+
         updateData({
           isPackage: true,
           bookingMode: 'package',
           totalSessions: selectedTier,
-          packageSlots,
-          date: packageSlots[0].date,
-          time: packageSlots[0].time,
+          packageSlots: [slot],
+          date: displayDate,
+          dateKey: dateStr,
+          time: selectedTime,
           holderId: activeHolderId
         });
         onNext();
       } else {
-        setSlotConflictMsg(`Please select all ${selectedTier} sessions (${selectedTier - packageSlots.length} remaining) before continuing.`);
+        setSlotConflictMsg('Please select a date and time for Session 1 of your package.');
       }
     }
   };
@@ -654,6 +690,46 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
         {/* Right Column - Times & Package Summary */}
         <div className="w-full lg:flex-1 min-w-0 mt-4 sm:mt-6 lg:mt-0 flex flex-col">
           
+          {/* Package Credits Available Banner */}
+          {packageCreditInfo?.hasCredits && (
+            <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-[#f0f9f1] border border-[#a5d6a7] flex items-center justify-between gap-3 text-xs shadow-2xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-white border border-[#a5d6a7] flex items-center justify-center text-[#2e7d32] shrink-0 shadow-2xs">
+                  <Sparkle size={16} weight="fill" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-[#1b5e20] leading-snug">
+                    You have <span className="font-extrabold">{packageCreditInfo.totalCredits} prepaid package credit{packageCreditInfo.totalCredits > 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="text-[11.5px] text-[#2e7d32] leading-tight mt-0.5">
+                    {data.usePackageCredit ? 'Prepaid credit applied • ₹0 at checkout' : 'Click to use your prepaid credit for this session'}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState = !data.usePackageCredit;
+                  updateData({
+                    usePackageCredit: nextState,
+                    isPackage: false,
+                    bookingMode: 'single'
+                  });
+                  if (nextState) {
+                    setBookingMode('single');
+                  }
+                }}
+                className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer shadow-2xs ${
+                  data.usePackageCredit
+                    ? 'bg-[#2e7d32] text-white'
+                    : 'bg-white text-[#2e7d32] border border-[#2e7d32]/40 hover:bg-[#2e7d32]/10'
+                }`}
+              >
+                {data.usePackageCredit ? 'Credit Active (₹0) ✓' : 'Use Credit (₹0)'}
+              </button>
+            </div>
+          )}
+
           {/* Segmented Mode Toggle: [ Single session | Book a Package ] */}
           <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/5 border border-black/8 mb-4">
             <button
@@ -904,7 +980,7 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
           <div className="w-full lg:w-[320px] xl:w-[350px] shrink-0 lg:sticky lg:top-24 self-start mt-6 lg:mt-0">
             <div className="p-4 sm:p-5 rounded-2xl bg-white/95 border border-[#e8c4e2] shadow-sm flex flex-col gap-3.5 animate-fadeIn">
               
-              {/* Header & Progress Bar */}
+              {/* Header */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5 font-sans text-xs uppercase tracking-wider font-bold text-[#111010]">
@@ -912,60 +988,50 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
                     <span>Your Coaching Package</span>
                   </div>
                   <span className="text-xs font-bold text-[#c9542f]">
-                    {packageSlots.length} of {selectedTier} Selected
+                    {selectedTier} Sessions
                   </span>
                 </div>
-                
-                {/* Progress bar line */}
-                <div className="w-full h-1.5 bg-[#f0e7dd] rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[#c9542f] transition-all duration-300 rounded-full"
-                    style={{ width: `${Math.min(100, (packageSlots.length / selectedTier) * 100)}%` }}
-                  />
-                </div>
+                <p className="text-[0.72rem] text-[#7a756b] leading-relaxed">
+                  Select your first session today. All {selectedTier} sessions are paid together in one transaction.
+                </p>
               </div>
 
-              {/* Numbered Schedule List */}
-              <div className="flex flex-col gap-1.5 max-h-56 lg:max-h-64 overflow-y-auto custom-scrollbar pr-1">
-                {Array.from({ length: selectedTier }).map((_, idx) => {
-                  const slot = packageSlots[idx];
-                  if (slot) {
-                    return (
-                      <div 
-                        key={idx}
-                        className="flex items-center justify-between p-2 rounded-lg bg-[#fbf0eb] border border-[#e8c4e2] text-xs text-[#111010]"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-5 h-5 rounded-full bg-[#c9542f] text-white flex items-center justify-center font-bold text-[0.62rem] shrink-0">
-                            {idx + 1}
-                          </span>
-                          <span className="font-medium truncate">
-                            {slot.date} · {slot.time}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePackageSlot(idx)}
-                          className="p-1 text-[#7a756b] hover:text-rose-600 transition-colors cursor-pointer shrink-0 ml-2"
-                          title="Remove session"
-                        >
-                          <X size={14} weight="bold" />
-                        </button>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div 
-                      key={idx}
-                      className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-black/15 text-xs text-[#7a756b] bg-black/2"
-                    >
-                      <span className="w-5 h-5 rounded-full border border-black/20 text-[#7a756b] flex items-center justify-center font-medium text-[0.62rem] shrink-0">
-                        {idx + 1}
+              {/* Session 1 Schedule Slot */}
+              <div className="flex flex-col gap-1.5">
+                <span className="font-sans text-[0.62rem] uppercase tracking-wider font-bold text-[#7a756b]">
+                  Session 1 of {selectedTier} (Scheduling Now)
+                </span>
+                {selectedTime && selectedDay ? (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#fbf0eb] border border-[#e8c4e2] text-xs text-[#111010]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-5 h-5 rounded-full bg-[#c9542f] text-white flex items-center justify-center font-bold text-[0.62rem] shrink-0">
+                        1
                       </span>
-                      <span className="italic">Pick session {idx + 1} on the calendar...</span>
+                      <span className="font-medium truncate">
+                        {monthNames[currentMonth]} {selectedDay}, {currentYear} · {selectedTime}
+                      </span>
                     </div>
-                  );
-                })}
+                    <span className="text-[0.68rem] font-bold text-[#c9542f] uppercase shrink-0">Selected ✓</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl border border-dashed border-black/15 text-xs text-[#7a756b] bg-black/2">
+                    <span className="w-5 h-5 rounded-full border border-black/20 text-[#7a756b] flex items-center justify-center font-medium text-[0.62rem] shrink-0">
+                      1
+                    </span>
+                    <span className="italic">Pick Session 1 date & time on calendar...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Informational Message: Remaining Sessions Credited to Account */}
+              <div className="p-3.5 rounded-xl bg-[#faf7f2] border border-[#ebdccc] flex items-start gap-2.5">
+                <Sparkle size={18} className="text-[#c9542f] shrink-0 mt-0.5" weight="fill" />
+                <div className="text-[0.75rem] text-[#555047] leading-relaxed">
+                  <strong className="block text-[#111010] font-semibold mb-0.5">
+                    Remaining {selectedTier - 1} Sessions Credited to Your Account
+                  </strong>
+                  Only your first session is scheduled today. The remaining <strong>{selectedTier - 1} sessions</strong> will be automatically credited to your account. You can book them anytime later based on your availability with zero extra payment.
+                </div>
               </div>
 
               {/* Live Price Calculation Box */}
@@ -984,16 +1050,16 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
               <button
                 type="button"
                 onClick={handleContinue}
-                disabled={packageSlots.length < selectedTier || isHoldingSlot}
+                disabled={!selectedDay || !selectedTime || isHoldingSlot}
                 className={`w-full py-3 px-4 rounded-xl font-sans text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer mt-1
-                  ${packageSlots.length < selectedTier || isHoldingSlot
+                  ${(!selectedDay || !selectedTime || isHoldingSlot)
                     ? 'bg-black/5 text-black/30 border border-black/10 cursor-not-allowed'
                     : 'bg-[#111010] text-white hover:bg-[#c9542f] shadow-md hover:-translate-y-0.5'
                   }
                 `}
               >
-                {packageSlots.length < selectedTier
-                  ? `Select ${selectedTier - packageSlots.length} More Session${selectedTier - packageSlots.length > 1 ? 's' : ''}`
+                {!selectedDay || !selectedTime
+                  ? 'Select Session 1 to Continue'
                   : 'Continue to Details'}
                 <ArrowRight size={14} weight="bold" />
               </button>
@@ -1029,20 +1095,16 @@ export default function Step1Time({ data, updateData, onNext, onBack, settings =
           
           <button
             onClick={handleContinue}
-            disabled={
-              bookingMode === 'single'
-                ? (!selectedDay || !selectedTime || isHoldingSlot)
-                : (packageSlots.length < selectedTier || isHoldingSlot)
-            }
+            disabled={!selectedDay || !selectedTime || isHoldingSlot}
             className={`flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-bold tracking-wider uppercase transition-all w-full md:w-auto cursor-pointer
-              ${(bookingMode === 'single' ? (!selectedDay || !selectedTime || isHoldingSlot) : (packageSlots.length < selectedTier || isHoldingSlot))
+              ${(!selectedDay || !selectedTime || isHoldingSlot)
                 ? 'bg-black/5 text-black/30 border border-black/10 cursor-not-allowed' 
                 : 'bg-[#111010] text-white hover:bg-[#c9542f] shadow-md hover:-translate-y-0.5'
               }
             `}
           >
-            {bookingMode === 'package' && packageSlots.length < selectedTier
-              ? `SELECT ${selectedTier - packageSlots.length} MORE SESSION${selectedTier - packageSlots.length > 1 ? 'S' : ''}`
+            {bookingMode === 'package' && (!selectedDay || !selectedTime)
+              ? 'SELECT SESSION 1 ON CALENDAR'
               : 'CONTINUE TO DETAILS'}
             <ArrowRight className="text-base sm:text-lg" weight="bold" />
           </button>

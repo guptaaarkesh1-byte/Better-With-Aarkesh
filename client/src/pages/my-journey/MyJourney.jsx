@@ -5,7 +5,7 @@ import {
   VideoCamera, CheckCircle, Plus, LockKey, MagnifyingGlass,
   X, SignOut, User, Lock, CaretRight, ArrowsClockwise, ArrowLeft,
   CaretDown, CaretUp, Bell, ArrowRight, Trash, Clock, NotePencil,
-  DotsThreeVertical, Package, FileText
+  DotsThreeVertical, Package, FileText, Sparkle, Eye
 } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 import './my-journey.css';
@@ -111,7 +111,7 @@ export default function MyJourney() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filters per tab
-  const [coachFilter, setCoachFilter] = useState('upcoming'); // 'upcoming' | 'completed' | 'rescheduled' | 'canceled'
+  const [coachFilter, setCoachFilter] = useState('upcoming'); // 'upcoming' | 'completed' | 'rescheduled' | 'canceled' | 'expired' | 'packages'
   const [appointmentSort, setAppointmentSort] = useState('soonest'); // 'soonest' | 'today' | 'newest_booked' | 'free'
   const [libraryFilter, setLibraryFilter] = useState('bookmarked'); // 'bookmarked' | 'completed'
   const [courseFilter, setCourseFilter] = useState('all'); // 'all' | 'enrolled'
@@ -717,6 +717,33 @@ export default function MyJourney() {
     return false;
   };
 
+  // Helper to check if a session date & time has already passed (expired)
+  const isSessionExpired = (appt) => {
+    if (!appt) return false;
+    if (appt.status === 'COMPLETED' || appt.status === 'CANCELLED' || appt.status === 'CANCELED') {
+      return false;
+    }
+    if (appt.date) {
+      let cleanTime = appt.time ? String(appt.time).trim() : '12:00 PM';
+      const timeMatch = String(cleanTime).match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i);
+      if (timeMatch) {
+        cleanTime = timeMatch[1];
+      }
+      let cleanDate = String(appt.date).trim();
+      if (typeof cleanDate === 'string') {
+        cleanDate = cleanDate.replace(/^[A-Za-z]+,\s*/, '');
+      }
+      let start = new Date(`${cleanDate} ${cleanTime}`);
+      if (isNaN(start.getTime())) {
+        start = new Date(appt.date);
+      }
+      if (!isNaN(start.getTime())) {
+        return start.getTime() < Date.now();
+      }
+    }
+    return false;
+  };
+
   // Helper to map article / video to its canonical category & color class matching Library
   const getArticleCategoryInfo = (item) => {
     if (!item) return { name: 'Relationships', slug: 'relationships', colorClass: 'mj-c-lilac' };
@@ -902,6 +929,9 @@ export default function MyJourney() {
 
       if (coachFilter === 'upcoming') {
         if (!(a.status === 'UPCOMING' || !a.status)) return false;
+        if (isSessionExpired(a)) return false;
+      } else if (coachFilter === 'expired') {
+        if (!isSessionExpired(a)) return false;
       } else if (coachFilter === 'completed') {
         if (a.status !== 'COMPLETED') return false;
       } else if (coachFilter === 'rescheduled') {
@@ -922,6 +952,9 @@ export default function MyJourney() {
     })
     .sort((a, b) => {
       if (appointmentSort === 'soonest' || appointmentSort === 'today' || appointmentSort === 'free') {
+        if (coachFilter === 'expired') {
+          return getAppointmentTimestamp(b) - getAppointmentTimestamp(a);
+        }
         // Soonest upcoming session date first (e.g. Oct 9 -> Oct 12 -> Oct 14...)
         return getAppointmentTimestamp(a) - getAppointmentTimestamp(b);
       }
@@ -979,7 +1012,14 @@ export default function MyJourney() {
 
   const enrolledSlugsSet = useMemo(() => {
     const set = new Set();
-    if (isCoursePurchaser || user?.courseSessionsGranted || localStorage.getItem('isCoursePurchased') === 'true') {
+    if (
+      isCoursePurchaser || 
+      user?.courseSessionsGranted || 
+      user?.isPurchased ||
+      (typeof user?.freeSessions === 'number' && user.freeSessions > 0) ||
+      Number(localStorage.getItem('freeSessions')) > 0 ||
+      localStorage.getItem('isCoursePurchased') === 'true'
+    ) {
       set.add('better-man');
     }
     if (Array.isArray(user?.purchasedCourses)) {
@@ -990,6 +1030,9 @@ export default function MyJourney() {
     }
     try {
       const cu = JSON.parse(localStorage.getItem('courseUser') || '{}');
+      if (cu?.isPurchased || (Array.isArray(cu?.purchasedCourses) && cu.purchasedCourses.length > 0)) {
+        set.add('better-man');
+      }
       if (Array.isArray(cu?.purchasedCourses)) {
         cu.purchasedCourses.forEach(s => s && set.add(s));
       }
@@ -1074,7 +1117,8 @@ export default function MyJourney() {
 
   // Counts for Sidebar Badges
   const safeAppts = Array.isArray(appointments) ? appointments.filter(Boolean) : [];
-  const upcomingCount = safeAppts.filter(a => a.status === 'UPCOMING' || !a.status).length;
+  const expiredCount = safeAppts.filter(a => isSessionExpired(a)).length;
+  const upcomingCount = safeAppts.filter(a => (a.status === 'UPCOMING' || !a.status) && !isSessionExpired(a)).length;
   const completedCount = safeAppts.filter(a => a.status === 'COMPLETED').length;
   const rescheduledCount = safeAppts.filter(isRescheduledSession).length;
   const canceledCount = safeAppts.filter(a => a.status === 'CANCELLED' || a.status === 'CANCELED').length;
@@ -1110,6 +1154,10 @@ export default function MyJourney() {
       if (!pkg.totalAmount) {
         pkg.totalAmount = pkg.appointments.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
       }
+      const bookedCount = pkg.appointments.length;
+      pkg.creditsRemaining = (typeof pkg.packageDoc?.creditsRemaining === 'number')
+        ? pkg.packageDoc.creditsRemaining
+        : Math.max(0, (pkg.totalSessions || 0) - bookedCount);
       // Cross-session package sync: if ANY session or packageDoc has accepted status, mark entire package and all sessions accepted
       const isAnyAccepted = (pkg.packageDoc?.agreementStatus || '').toLowerCase() === 'accepted' ||
         Boolean(pkg.packageDoc?.agreementAcceptedAt) ||
@@ -1521,6 +1569,14 @@ export default function MyJourney() {
                         </button>
                         <button 
                           type="button"
+                          onClick={() => setCoachFilter('expired')}
+                          className={cn("mj-mobile-chip", coachFilter === 'expired' && "active")}
+                        >
+                          <span>Expired</span>
+                          <span className="mj-chip-badge">{expiredCount}</span>
+                        </button>
+                        <button 
+                          type="button"
                           onClick={() => setCoachFilter('packages')}
                           className={cn("mj-mobile-chip", coachFilter === 'packages' && "active")}
                         >
@@ -1574,6 +1630,17 @@ export default function MyJourney() {
                           <span className="mj-box"></span>
                           Canceled
                           <em>{canceledCount}</em>
+                        </label>
+                        <label className="mj-opt radio">
+                          <input 
+                            type="radio" 
+                            name="coachFilter" 
+                            checked={coachFilter === 'expired'}
+                            onChange={() => setCoachFilter('expired')}
+                          />
+                          <span className="mj-box"></span>
+                          Expired
+                          <em>{expiredCount}</em>
                         </label>
                         <label className="mj-opt radio">
                           <input 
@@ -1715,6 +1782,7 @@ export default function MyJourney() {
                         {coachFilter === 'upcoming' ? 'Appointments' :
                          coachFilter === 'completed' ? 'Completed' :
                          coachFilter === 'rescheduled' ? 'Rescheduled' :
+                         coachFilter === 'expired' ? 'Expired' :
                          coachFilter === 'packages' ? 'Packages' : 'Canceled'}
                       </h2>
                       <span className="mj-count shrink-0 text-xs px-2.5 py-0.5">
@@ -1813,16 +1881,22 @@ export default function MyJourney() {
                             const isExpanded = String(expandedPackageId) === packageKey;
                             const completedCount = pkg.appointments.filter(a => a.status === 'COMPLETED').length;
                             const totalSessions = pkg.totalSessions || pkg.appointments.length || 3;
+                            const creditsRemaining = (typeof pkg.creditsRemaining === 'number') 
+                              ? pkg.creditsRemaining 
+                              : Math.max(0, totalSessions - pkg.appointments.length);
                             const isReviewed = (pkg.agreementStatus || '').toLowerCase() === 'accepted';
                             const isSent = (pkg.agreementStatus || '').toLowerCase() === 'sent';
 
                             const upcomingSessions = pkg.appointments.filter(a => a.status !== 'COMPLETED' && a.status !== 'CANCELLED' && a.status !== 'CANCELED');
                             const nextSession = upcomingSessions.length > 0 ? upcomingSessions[0] : null;
+                            const hasActiveMenu = pkg.appointments.some(a => a._id === openCardMenuId);
 
                             return (
                               <article 
                                 key={packageKey} 
-                                className="w-full bg-white rounded-[22px] border border-[#e8e4dd] overflow-hidden transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
+                                className={`w-full bg-white rounded-[22px] border border-[#e8e4dd] transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.03)] ${
+                                  hasActiveMenu ? 'relative z-40' : (isExpanded ? 'relative z-10' : 'relative z-0')
+                                }`}
                                 style={{ borderLeft: `6px solid ${theme.stripe}` }}
                               >
                                 {/* Header Row (Always Visible) */}
@@ -1843,7 +1917,7 @@ export default function MyJourney() {
                                       </h3>
                                       <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-[#7a7269] mt-1 font-normal">
                                         <span className="inline-flex items-center gap-1.5 mr-0.5">
-                                          {Array.from({ length: totalSessions }).map((_, dIdx) => (
+                                          {Array.from({ length: Math.max(1, Math.min(30, Number(totalSessions) || pkg.appointments?.length || 3)) }).map((_, dIdx) => (
                                             <span
                                               key={dIdx}
                                               className="w-2.5 h-2.5 rounded-full transition-colors"
@@ -1855,6 +1929,11 @@ export default function MyJourney() {
                                         </span>
                                         <span className="font-medium text-[#5f5750]">{completedCount}/{totalSessions} done</span>
                                         <span className="font-medium text-[#5f5750]">{inr(pkg.totalAmount)} paid</span>
+                                        {creditsRemaining > 0 && (
+                                          <span className="px-2 py-0.5 rounded-full bg-[#fbf0eb] text-[#c8512d] font-bold text-[11px] border border-[#e8c4e2]">
+                                            {creditsRemaining} credit{creditsRemaining > 1 ? 's' : ''} left
+                                          </span>
+                                        )}
                                         {nextSession && (
                                           <span className="text-[#3d3731]">
                                             Next: <strong className="font-semibold text-[#1c1714]">{formatShortDate(nextSession.date)} · {formatSessionTime(nextSession.time)}</strong>
@@ -1865,7 +1944,20 @@ export default function MyJourney() {
                                   </div>
 
                                   {/* Header Right Actions */}
-                                  <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                                  <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-center shrink-0">
+                                    {creditsRemaining > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(`/book?usePackageCredit=true&packageId=${pkg.id}`);
+                                        }}
+                                        className="px-3.5 sm:px-4 py-1.5 rounded-full bg-[#1c1714] hover:bg-[#c8512d] text-white text-xs font-semibold tracking-wide shadow-xs active:scale-95 transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                                      >
+                                        <Sparkle size={13} weight="fill" className="text-amber-400" />
+                                        <span>Book Next</span>
+                                      </button>
+                                    )}
                                     {nextSession && (
                                       <a
                                         href={nextSession.meetLink || 'https://meet.google.com'}
@@ -1902,7 +1994,7 @@ export default function MyJourney() {
                                     <div className="p-4 sm:p-6 pt-3 sm:pt-4">
                                       {/* Sub-header row */}
                                       <div className="flex items-center justify-between pb-2.5 text-xs sm:text-[13px] text-[#7a7269]">
-                                        <span className="font-normal">{pkg.appointments.length} sessions</span>
+                                        <span className="font-normal">{pkg.appointments.length} session{pkg.appointments.length > 1 ? 's' : ''} scheduled</span>
                                         {isReviewed ? (
                                           <span className="inline-flex items-center gap-1 font-medium text-[#2a8758]">
                                             <span>✓ Agreement reviewed</span>
@@ -1919,6 +2011,30 @@ export default function MyJourney() {
                                         )}
                                       </div>
 
+                                      {/* Remaining Sessions Callout Card */}
+                                      {creditsRemaining > 0 && (
+                                        <div className="mb-3.5 p-3.5 rounded-xl bg-[#fbf0eb] border border-[#e8c4e2] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+                                          <div className="flex items-start gap-2.5">
+                                            <Sparkle size={16} weight="fill" className="text-[#c8512d] shrink-0 mt-0.5" />
+                                            <div>
+                                              <p className="text-xs font-bold text-[#1c1714]">
+                                                {creditsRemaining} Session{creditsRemaining > 1 ? 's' : ''} Remaining in Your Package
+                                              </p>
+                                              <p className="text-[11px] text-[#5f5750] mt-0.5">
+                                                Ready to book whenever you like based on your schedule at ₹0 additional cost.
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => navigate(`/book?usePackageCredit=true&packageId=${pkg.id}`)}
+                                            className="px-3.5 py-1.5 rounded-lg bg-[#c8512d] hover:bg-[#b3461f] text-white text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
+                                          >
+                                            Book with Credit →
+                                          </button>
+                                        </div>
+                                      )}
+
                                       {/* Sessions List */}
                                       <div>
                                         {pkg.appointments.map((session, sIdx) => {
@@ -1929,6 +2045,11 @@ export default function MyJourney() {
                                           const sUpcoming = !sCompleted && !sCancelled;
                                           const hasCoachNote = Boolean(session.coachNotes || session.notes);
                                           const isNoteUnread = hasCoachNote && !readCoachNotes.includes(String(session._id));
+                                          const isLastOrOnlySession = sIdx >= pkg.appointments.length - 1;
+                                          const isPendingReschedule = Boolean(
+                                            session.rescheduleRequest &&
+                                            (session.rescheduleRequest.status === 'PENDING' || session.rescheduleRequest.status === 'pending')
+                                          );
 
                                           return (
                                             <React.Fragment key={session._id || sIdx}>
@@ -1948,7 +2069,7 @@ export default function MyJourney() {
                                                       {formatSessionTime(session.time)}
                                                     </span>
                                                     <span className="text-xs text-[#7a7269] flex items-center gap-1.5 font-normal">
-                                                      <span>{session.duration || 90} min</span>
+                                                      <span>90 min</span>
                                                       <span>·</span>
                                                       <span>Google Meet</span>
                                                     </span>
@@ -2020,14 +2141,24 @@ export default function MyJourney() {
                                                         e.stopPropagation();
                                                         setOpenCardMenuId(openCardMenuId === session._id ? null : session._id);
                                                       }}
-                                                      className="w-8 h-8 rounded-full bg-white hover:bg-black/5 text-[#5f5750] hover:text-[#1c1714] border border-black/10 flex items-center justify-center shadow-xs transition-colors cursor-pointer"
+                                                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                                                        openCardMenuId === session._id
+                                                          ? 'bg-[#1c1714] text-white border border-[#1c1714]'
+                                                          : 'bg-white hover:bg-black/5 text-[#5f5750] hover:text-[#1c1714] border border-black/10'
+                                                      }`}
                                                       title="Session actions"
+                                                      aria-label="Session actions"
                                                     >
                                                       <DotsThreeVertical size={16} weight="bold" />
                                                     </button>
 
                                                     {openCardMenuId === session._id && (
-                                                      <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-xl border border-black/10 py-1.5 min-w-[150px] animate-in fade-in zoom-in-95 duration-150">
+                                                      <div 
+                                                        className={`absolute right-0 z-50 bg-white rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.14),0_2px_6px_rgba(0,0,0,0.06)] border border-[#e8e4dd] py-1.5 min-w-[170px] animate-in fade-in zoom-in-95 duration-150 ${
+                                                          isLastOrOnlySession ? 'bottom-full mb-2' : 'top-full mt-2'
+                                                        }`}
+                                                      >
+                                                        {/* View details */}
                                                         <button
                                                           type="button"
                                                           onClick={() => {
@@ -2035,10 +2166,13 @@ export default function MyJourney() {
                                                             setSelectedSession(session);
                                                             setSessionModalTab('details');
                                                           }}
-                                                          className="w-full text-left px-3.5 py-2 text-xs font-medium text-[#1c1714] hover:bg-black/5 flex items-center gap-2 cursor-pointer transition-colors"
+                                                          className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[#1c1714] hover:bg-black/[0.04] flex items-center gap-2.5 cursor-pointer transition-colors"
                                                         >
+                                                          <Eye size={14} weight="bold" className="text-[#7a7269]" />
                                                           <span>View details</span>
                                                         </button>
+
+                                                        {/* Coach note (if available) */}
                                                         {hasCoachNote && (
                                                           <button
                                                             type="button"
@@ -2048,36 +2182,51 @@ export default function MyJourney() {
                                                               setSelectedSession(session);
                                                               setSessionModalTab('notes');
                                                             }}
-                                                            className="w-full text-left px-3.5 py-2 text-xs font-medium text-[#0284c7] hover:bg-sky-50 flex items-center gap-2 cursor-pointer transition-colors"
+                                                            className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[#0284c7] hover:bg-sky-50 flex items-center gap-2.5 cursor-pointer transition-colors"
                                                           >
-                                                            <NotePencil size={13} weight="bold" />
+                                                            <NotePencil size={14} weight="bold" />
                                                             <span>Coach note</span>
                                                           </button>
                                                         )}
+
+                                                        {/* Reschedule */}
                                                         {sUpcoming && (
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                              setOpenCardMenuId(null);
-                                                              setRescheduleSession(session);
-                                                            }}
-                                                            className="w-full text-left px-3.5 py-2 text-xs font-medium text-[#1c1714] hover:bg-black/5 flex items-center gap-2 cursor-pointer transition-colors"
-                                                          >
-                                                            <span>Reschedule</span>
-                                                          </button>
+                                                          isPendingReschedule ? (
+                                                            <div className="px-3.5 py-2 text-[11px] font-semibold text-[#856404] bg-amber-50/60 flex items-center gap-2 select-none">
+                                                              <Clock size={13} weight="bold" />
+                                                              <span>Reschedule pending</span>
+                                                            </div>
+                                                          ) : (
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => {
+                                                                setOpenCardMenuId(null);
+                                                                setRescheduleSession(session);
+                                                              }}
+                                                              className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[#1c1714] hover:bg-black/[0.04] flex items-center gap-2.5 cursor-pointer transition-colors"
+                                                            >
+                                                              <CalendarBlank size={14} weight="bold" className="text-[#7a7269]" />
+                                                              <span>Reschedule</span>
+                                                            </button>
+                                                          )
                                                         )}
+
+                                                        {/* Cancel Session */}
                                                         {sUpcoming && (
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                              setOpenCardMenuId(null);
-                                                              setCancelModalAppt(session);
-                                                            }}
-                                                            className="w-full text-left px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
-                                                          >
-                                                            <Trash size={13} weight="bold" />
-                                                            <span>Cancel session</span>
-                                                          </button>
+                                                          <>
+                                                            <div className="my-1 border-t border-black/5" />
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => {
+                                                                setOpenCardMenuId(null);
+                                                                setCancelModalAppt(session);
+                                                              }}
+                                                              className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 cursor-pointer transition-colors"
+                                                            >
+                                                              <Trash size={14} weight="bold" />
+                                                              <span>Cancel session</span>
+                                                            </button>
+                                                          </>
                                                         )}
                                                       </div>
                                                     )}
@@ -2129,6 +2278,7 @@ export default function MyJourney() {
 
                         const isCompleted = appt.status === 'COMPLETED';
                         const isCancelled = appt.status === 'CANCELLED' || appt.status === 'CANCELED';
+                        const isExpired = !isCompleted && !isCancelled && isSessionExpired(appt);
 
                         const cardColor = 
                           isCancelled 
@@ -2139,13 +2289,16 @@ export default function MyJourney() {
                                 ? 'mj-c-sand'
                                 : isApprovedReschedule
                                   ? 'mj-c-sky'
-                                  : getCardColor(appt._id || appt.date, idx);
+                                  : isExpired
+                                    ? 'mj-c-sand'
+                                    : getCardColor(appt._id || appt.date, idx);
 
                         const statusTag = 
                           isCancelled ? 'Canceled' :
                           isCompleted ? 'Completed' :
                           isPendingReschedule ? 'Reschedule Pending' :
                           isApprovedReschedule ? 'Rescheduled' :
+                          isExpired ? 'Expired' :
                           'Upcoming';
 
                         const hasCoachNotes = Boolean(appt.coachNotes || appt.notes);
@@ -2168,7 +2321,7 @@ export default function MyJourney() {
                                   )}
                                 </div>
 
-                                {/* 3-Dots Action Menu (Cancel Session) */}
+                                {/* 3-Dots Action Menu */}
                                 {!isCompleted && !isCancelled && (appt.status === 'UPCOMING' || !appt.status) && (
                                   <div className="relative mj-card-dots-wrap shrink-0 ml-1">
                                     <button
@@ -2177,26 +2330,90 @@ export default function MyJourney() {
                                         e.stopPropagation();
                                         setOpenCardMenuId(openCardMenuId === appt._id ? null : appt._id);
                                       }}
-                                      className="w-8 h-8 rounded-full bg-white/75 hover:bg-white text-[#3d3731] hover:text-black flex items-center justify-center shadow-xs transition-all cursor-pointer"
+                                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                                        openCardMenuId === appt._id
+                                          ? 'bg-[#1c1714] text-white border border-[#1c1714]'
+                                          : 'bg-white/85 hover:bg-white text-[#3d3731] hover:text-black border border-black/10'
+                                      }`}
                                       title="Session options"
+                                      aria-label="Session actions"
                                     >
-                                      <DotsThreeVertical size={18} weight="bold" />
+                                      <DotsThreeVertical size={16} weight="bold" />
                                     </button>
 
                                     {openCardMenuId === appt._id && (
-                                      <div className="absolute right-0 top-8 z-50 bg-white rounded-xl shadow-xl border border-black/10 py-1 min-w-[155px] animate-in fade-in zoom-in-95 duration-150">
+                                      <div className="absolute right-0 top-9 z-50 bg-white rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.14),0_2px_6px_rgba(0,0,0,0.06)] border border-[#e8e4dd] py-1.5 min-w-[165px] animate-in fade-in zoom-in-95 duration-150">
                                         <button
                                           type="button"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setOpenCardMenuId(null);
-                                            setCancelModalAppt(appt);
+                                            setSelectedSession(appt);
+                                            setSessionModalTab('details');
                                           }}
-                                          className="w-full text-left px-3.5 py-2 text-[13px] font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer"
+                                          className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[#1c1714] hover:bg-black/[0.04] flex items-center gap-2.5 transition-colors cursor-pointer"
                                         >
-                                          <Trash size={15} weight="bold" />
-                                          <span>Cancel session</span>
+                                          <Eye size={14} weight="bold" className="text-[#7a7269]" />
+                                          <span>View details</span>
                                         </button>
+
+                                        {hasCoachNotes && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenCardMenuId(null);
+                                              markCoachNoteAsRead(appt._id);
+                                              setSelectedSession(appt);
+                                              setSessionModalTab('notes');
+                                            }}
+                                            className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[#0284c7] hover:bg-sky-50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                                          >
+                                            <NotePencil size={14} weight="bold" />
+                                            <span>Coach note</span>
+                                          </button>
+                                        )}
+
+                                        {isExpired ? (
+                                          <div 
+                                            className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[#a8a199] opacity-40 cursor-not-allowed flex items-center gap-2.5 select-none"
+                                            title="This session date has passed and cannot be rescheduled"
+                                          >
+                                            <CalendarBlank size={14} weight="bold" className="text-[#a8a199]" />
+                                            <span>Reschedule (Expired)</span>
+                                          </div>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenCardMenuId(null);
+                                              setRescheduleSession(appt);
+                                            }}
+                                            className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[#1c1714] hover:bg-black/[0.04] flex items-center gap-2.5 transition-colors cursor-pointer"
+                                          >
+                                            <CalendarBlank size={14} weight="bold" className="text-[#7a7269]" />
+                                            <span>Reschedule</span>
+                                          </button>
+                                        )}
+
+                                        {!isExpired && (
+                                          <>
+                                            <div className="my-1 border-t border-black/5" />
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenCardMenuId(null);
+                                                setCancelModalAppt(appt);
+                                              }}
+                                              className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                                            >
+                                              <Trash size={14} weight="bold" />
+                                              <span>Cancel session</span>
+                                            </button>
+                                          </>
+                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -2259,7 +2476,8 @@ export default function MyJourney() {
                                   isCompleted && "!bg-[#dcfce7] !text-[#15803d] font-bold border border-[#bbf7d0]",
                                   isPendingReschedule && "!bg-[#ffe8a1] !text-[#664d03] font-bold",
                                   isApprovedReschedule && !isCompleted && "!bg-[#bfe0f9] !text-[#0c4a6e] font-bold",
-                                  isCancelled && "!bg-[#fee2e2] !text-[#991b1b] font-bold"
+                                  isCancelled && "!bg-[#fee2e2] !text-[#991b1b] font-bold",
+                                  isExpired && "!bg-[#f3f4f6] !text-[#6b7280] font-semibold border border-[#e5e7eb]"
                                 )}>
                                   {statusTag}
                                 </span>
@@ -2324,15 +2542,26 @@ export default function MyJourney() {
 
                               {/* Join Session button (Only for active upcoming sessions) */}
                               {!isCompleted && !isCancelled && (appt.status === 'UPCOMING' || appt.status === 'RESCHEDULED' || !appt.status) && (
-                                <a 
-                                  href={appt.meetLink || 'https://meet.google.com'}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="mj-btn mj-btn-primary"
-                                >
-                                  <VideoCamera size={17} weight="bold" />
-                                  <span>Join session</span>
-                                </a>
+                                isExpired ? (
+                                  <button
+                                    disabled
+                                    className="mj-btn mj-btn-accent !opacity-40 !cursor-not-allowed !bg-[#8c827a] !border-[#8c827a] flex items-center justify-center gap-1.5 select-none"
+                                    title="This session has already ended"
+                                  >
+                                    <VideoCamera size={17} weight="bold" />
+                                    <span>Session ended</span>
+                                  </button>
+                                ) : (
+                                  <a 
+                                    href={appt.meetLink || 'https://meet.google.com'}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mj-btn mj-btn-primary"
+                                  >
+                                    <VideoCamera size={17} weight="bold" />
+                                    <span>Join session</span>
+                                  </a>
+                                )
                               )}
 
                               <div className="grid grid-cols-2 gap-2 w-full">
@@ -2364,6 +2593,14 @@ export default function MyJourney() {
                                     >
                                       <span>Rescheduled</span>
                                     </button>
+                                  ) : isExpired ? (
+                                    <button 
+                                      disabled
+                                      className="mj-btn mj-btn-line !opacity-35 !cursor-not-allowed !h-10 !text-xs !py-0 !px-2 flex items-center justify-center truncate bg-[#f2efe9] text-[#9c9589] border-black/10 select-none pointer-events-none"
+                                      title="This session date has passed and cannot be rescheduled"
+                                    >
+                                      Reschedule
+                                    </button>
                                   ) : (
                                     <button 
                                       onClick={() => setRescheduleSession(appt)}
@@ -2394,16 +2631,20 @@ export default function MyJourney() {
                             ? 'No sessions scheduled for today' 
                             : appointmentSort === 'free' 
                               ? 'No free sessions found' 
-                              : `No ${coachFilter} sessions found`}
+                              : coachFilter === 'expired'
+                                ? 'No expired sessions'
+                                : `No ${coachFilter} sessions found`}
                         </h3>
                         <p>
                           {appointmentSort === 'today'
                             ? 'You do not have any appointments scheduled for today.'
                             : appointmentSort === 'free'
                               ? 'You have not booked any free perk sessions under this filter.'
-                              : coachFilter === 'upcoming' 
-                                ? "You don't have any upcoming sessions scheduled right now."
-                                : `No ${coachFilter} sessions to show.`}
+                              : coachFilter === 'expired'
+                                ? 'You do not have any expired sessions. All scheduled sessions are active or completed.'
+                                : coachFilter === 'upcoming' 
+                                  ? "You don't have any upcoming sessions scheduled right now."
+                                  : `No ${coachFilter} sessions to show.`}
                         </p>
                         <div className="flex items-center justify-center gap-3 mt-4">
                           {appointmentSort !== 'soonest' && (
@@ -2886,17 +3127,36 @@ export default function MyJourney() {
                   {/* Top Action Buttons (Join, Reschedule, Cancel) */}
                   {selectedSession.status !== 'COMPLETED' && selectedSession.status !== 'CANCELLED' && selectedSession.status !== 'CANCELED' && selectedSession.status !== 'REFUNDED' && (
                     <div className="flex items-center gap-2 mb-4 flex-wrap">
-                      <a 
-                        href={selectedSession.meetLink || 'https://meet.google.com'}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mj-btn mj-btn-primary flex items-center gap-2 flex-1 sm:flex-none justify-center"
-                      >
-                        <VideoCamera size={16} weight="bold" />
-                        <span>Join session</span>
-                      </a>
+                      {isSessionExpired(selectedSession) ? (
+                        <button
+                          disabled
+                          className="mj-btn mj-btn-accent !opacity-40 !cursor-not-allowed !bg-[#8c827a] !border-[#8c827a] flex items-center gap-2 flex-1 sm:flex-none justify-center select-none"
+                          title="This session has already ended"
+                        >
+                          <VideoCamera size={16} weight="bold" />
+                          <span>Session ended</span>
+                        </button>
+                      ) : (
+                        <a 
+                          href={selectedSession.meetLink || 'https://meet.google.com'}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mj-btn mj-btn-primary flex items-center gap-2 flex-1 sm:flex-none justify-center"
+                        >
+                          <VideoCamera size={16} weight="bold" />
+                          <span>Join session</span>
+                        </a>
+                      )}
 
-                      {(selectedSession.rescheduleRequest && (selectedSession.rescheduleRequest.status === 'PENDING' || selectedSession.rescheduleRequest.status === 'pending')) ? (
+                      {isSessionExpired(selectedSession) ? (
+                        <button 
+                          disabled
+                          className="mj-btn mj-btn-line !opacity-35 !cursor-not-allowed text-xs font-semibold text-[#7a7269] bg-[#f0ede8] border-[#e0dbd3] pointer-events-none select-none"
+                          title="This session date has passed and cannot be rescheduled"
+                        >
+                          Reschedule (Expired)
+                        </button>
+                      ) : (selectedSession.rescheduleRequest && (selectedSession.rescheduleRequest.status === 'PENDING' || selectedSession.rescheduleRequest.status === 'pending')) ? (
                         <button 
                           disabled
                           className="mj-btn mj-btn-line opacity-60 cursor-not-allowed text-xs font-semibold text-[#856404]"
@@ -2924,17 +3184,19 @@ export default function MyJourney() {
                         </button>
                       )}
 
-                      <button 
-                        onClick={() => {
-                          const apptToCancel = selectedSession;
-                          setSelectedSession(null);
-                          setCancelModalAppt(apptToCancel);
-                        }}
-                        className="mj-btn border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 font-semibold flex items-center gap-1.5"
-                      >
-                        <Trash size={15} weight="bold" />
-                        <span>Cancel session</span>
-                      </button>
+                      {!isSessionExpired(selectedSession) && (
+                        <button 
+                          onClick={() => {
+                            const apptToCancel = selectedSession;
+                            setSelectedSession(null);
+                            setCancelModalAppt(apptToCancel);
+                          }}
+                          className="mj-btn border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 font-semibold flex items-center gap-1.5"
+                        >
+                          <Trash size={15} weight="bold" />
+                          <span>Cancel session</span>
+                        </button>
+                      )}
                     </div>
                   )}
 

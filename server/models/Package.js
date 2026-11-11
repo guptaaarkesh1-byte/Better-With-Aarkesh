@@ -34,9 +34,17 @@ const packageSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  bookedSessionsCount: {
+    type: Number,
+    default: 1,
+  },
+  creditsRemaining: {
+    type: Number,
+    default: 0,
+  },
   sessionDuration: {
     type: Number,
-    default: 60,
+    default: 90,
   },
   isFirstSession: {
     type: Boolean,

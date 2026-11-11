@@ -368,7 +368,7 @@ export async function generateCoachingAgreementPdf(data = {}) {
  * Send Admin / Coach Alert Email when a new booking is created.
  * The client does NOT receive the agreement yet; it awaits Aarkesh sir's review in Admin Dashboard.
  */
-export async function sendCoachBookingAlertEmail({ appointment, isFreeSession = false }) {
+export async function sendCoachBookingAlertEmail({ appointment, isFreeSession = false, isPackageCredit = false, packageDoc = null }) {
   if (!appointment) return;
 
   try {
@@ -732,6 +732,8 @@ export async function sendClientAgreementAcceptedConfirmationEmail({ appointment
 export async function sendClientBookingConfirmationEmail({ 
   appointment, 
   isFreeSession = false, 
+  isPackageCredit = false,
+  packageDoc = null,
   paymentId, 
   orderId 
 }) {
@@ -757,11 +759,14 @@ export async function sendClientBookingConfirmationEmail({
     const isFirstSession = appointment.isFirstSession;
     const meetingLinkHtml = renderMeetingLink(appointment.meetLink);
 
-    const displayPaymentId = paymentId || appointment.paymentId || (isFreeSession ? 'COMPLIMENTARY_PERK' : 'CONFIRMED');
+    const isCredit = Boolean(isPackageCredit || appointment.isPackageCredit);
+    const displayPaymentId = paymentId || appointment.paymentId || (isFreeSession ? 'COMPLIMENTARY_PERK' : (isCredit ? 'PREPAID_PACKAGE' : 'CONFIRMED'));
     const displayOrderId = orderId || appointment.orderId || 'BWA_SESSION';
-    const amountVal = isFreeSession ? 0 : (appointment.amount !== undefined ? Number(appointment.amount) : 5000);
+    const amountVal = (isFreeSession || isCredit) ? 0 : (appointment.amount !== undefined ? Number(appointment.amount) : 5000);
     const amountFormatted = isFreeSession 
       ? '₹0 — 100% Complimentary (Course Perk)' 
+      : isCredit
+      ? `₹0 — Prepaid (Session ${appointment.sessionNumber || 2} of ${appointment.totalSessionsInPackage || (packageDoc?.totalSessions || '')} Package)`
       : `₹${amountVal.toLocaleString('en-IN')}`;
 
     const clientUrl = process.env.CLIENT_URL || 'https://betterwithaarkesh.com';
@@ -769,6 +774,8 @@ export async function sendClientBookingConfirmationEmail({
 
     const emailSubject = isFreeSession
       ? `Coaching Session Reserved (Complimentary Perk) — Better With Aarkesh`
+      : isCredit
+      ? `Booking Confirmed: Session ${appointment.sessionNumber || ''} of ${appointment.totalSessionsInPackage || (packageDoc?.totalSessions || '')} — Better With Aarkesh`
       : `Booking Confirmed & Payment Successful — Better With Aarkesh`;
 
     const htmlContent = `
@@ -999,7 +1006,25 @@ export async function sendClientPackageBookingConfirmationEmail({ packageDoc, ap
       `;
     }).join('');
 
-    const emailSubject = `Booking Confirmed: Your ${totalSessions}-Session Coaching Package with Aarkesh`;
+    const creditsRemaining = Math.max(0, totalSessions - appointments.length);
+    const creditsRowHtml = creditsRemaining > 0 ? `
+      <div style="padding: 14px 18px; margin-bottom: 12px; background: #FFF8F4; border: 1px dashed #E8C4E2; border-radius: 12px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="font-size: 13px; font-weight: 700; color: #C25E38; text-transform: uppercase; letter-spacing: 0.5px;">
+              🎁 ${creditsRemaining} Remaining Session${creditsRemaining > 1 ? 's' : ''} Added as Credits
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-top: 6px; font-size: 13.5px; color: #555047; line-height: 1.5;">
+              Session 1 is scheduled above. Your remaining <strong>${creditsRemaining} session${creditsRemaining > 1 ? 's' : ''}</strong> are credited to your account and can be scheduled anytime based on your availability with zero additional payment.
+            </td>
+          </tr>
+        </table>
+      </div>
+    ` : '';
+
+    const allSessionsScheduleHtml = `${sessionsRowsHtml}${creditsRowHtml}`;
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -1071,7 +1096,7 @@ export async function sendClientPackageBookingConfirmationEmail({ packageDoc, ap
                     <div style="font-size: 13px; font-weight: 700; color: #1C1714; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;">
                       Your Session Schedule
                     </div>
-                    ${sessionsRowsHtml}
+                    ${allSessionsScheduleHtml}
 
                     <!-- Notice / Reschedule Policy -->
                     <div style="margin-top: 24px; padding: 16px; background: #FAF7F2; border-radius: 10px; font-size: 12.5px; color: #7A756B; line-height: 1.6;">

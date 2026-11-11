@@ -1,6 +1,14 @@
 import express from 'express';
 import SlotHold from '../models/SlotHold.js';
 import Appointment from '../models/Appointment.js';
+import {
+  findConflictingAppointment,
+  findConflictingHold,
+  filterNonOverlappingSlots,
+  buildDateRegex,
+  normalizeDateToKey,
+  timeToMinutes
+} from '../utils/slotConflictHelper.js';
 
 const router = express.Router();
 
@@ -14,10 +22,10 @@ const getMonthName = (monthIndex) => {
   return monthNames[monthIndex] || '';
 };
 
-// GET /api/cal/slots?date=YYYY-MM-DD&email=...&holderId=...
+// GET /api/cal/slots?date=YYYY-MM-DD&email=...&holderId=...&duration=...&isPackage=...
 router.get('/slots', async (req, res) => {
   try {
-    const { date, email, holderId } = req.query;
+    const { date, email, holderId, duration: reqDuration, isPackage } = req.query;
     if (!date) {
       return res.status(400).json({ message: 'Date is required' });
     }
@@ -40,8 +48,11 @@ router.get('/slots', async (req, res) => {
       isFirstSession = pastAppointments === 0;
     }
 
+    // Session duration (package sessions and returning client sessions are 90 mins; first session is 60 mins)
+    const duration = Number(reqDuration) || (isPackage === 'true' ? 90 : (isFirstSession ? 60 : 90));
+
     // Event Type ID for 60 min (first) or 90 min (subsequent)
-    const eventTypeId = isFirstSession 
+    const eventTypeId = duration === 60 
       ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
       : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
 
@@ -66,7 +77,7 @@ router.get('/slots', async (req, res) => {
         data: { slots: {} },
         metadata: {
           isFirstSession,
-          duration: isFirstSession ? 60 : 90
+          duration
         }
       });
     }
@@ -74,52 +85,42 @@ router.get('/slots', async (req, res) => {
     const data = await response.json();
     
     // ═════════════════════════════════════════════════════════════════
-    // FILTER OUT SLOTS HELD BY OTHER CLIENTS OR ALREADY BOOKED
+    // FILTER OUT SLOTS THAT OVERLAP WITH ANY BOOKED APPOINTMENT OR HOLD
     // ═════════════════════════════════════════════════════════════════
     const now = new Date();
+    const canonicalDateKey = normalizeDateToKey(date);
 
     // 1. Find slots currently held by other clients
     const holdQuery = {
-      dateKey: date,
+      dateKey: canonicalDateKey,
       status: 'HELD',
       expiresAt: { $gt: now }
     };
     if (holderId) {
-      holdQuery.holderId = { $ne: String(holderId) };
+      holdQuery.holderId = { $ne: String(holderId).trim() };
     }
     const activeHolds = await SlotHold.find(holdQuery);
 
-    // 2. Find appointments booked for this day
-    const [year, monthNum, dayNum] = date.split('-').map(Number);
-    const monthName = getMonthName(monthNum - 1);
-    const dayInt = parseInt(dayNum, 10);
-    const dateRegex = new RegExp(`(${date}|${monthName}\\s+0?${dayInt}[,\\s]+${year})`, 'i');
-
+    // 2. Find appointments booked for this day (matches any date string format)
+    const dateRegex = buildDateRegex(date);
     const bookedAppointments = await Appointment.find({
       date: dateRegex,
       status: { $in: ['UPCOMING', 'COMPLETED'] },
       paymentStatus: { $ne: 'Failed' }
     });
 
-    const unavailableTimes = new Set();
-    activeHolds.forEach((h) => {
-      if (h.time) unavailableTimes.add(normalizeTime(h.time));
-    });
-    bookedAppointments.forEach((a) => {
-      if (a.time) unavailableTimes.add(normalizeTime(a.time));
-    });
-
-    // Filter slots for this date in Cal.com response
+    // 3. Filter candidate slots using universal interval overlap protection:
+    // Any candidate slot whose [slotStart, slotStart + duration) window overlaps with
+    // ANY existing appointment's [apptStart, apptStart + apptDuration) is completely excluded!
     if (data?.data?.slots?.[date] && Array.isArray(data.data.slots[date])) {
-      data.data.slots[date] = data.data.slots[date].filter((slot) => {
-        const d = new Date(slot.time);
-        const t1 = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-        const t2 = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        return !unavailableTimes.has(normalizeTime(t1)) && !unavailableTimes.has(normalizeTime(t2));
+      data.data.slots[date] = filterNonOverlappingSlots({
+        slots: data.data.slots[date],
+        candidateDuration: duration,
+        bookedAppointments,
+        activeHolds
       });
     }
 
-    const duration = isFirstSession ? 60 : 90;
     res.json({
       ...data,
       metadata: {
@@ -134,10 +135,10 @@ router.get('/slots', async (req, res) => {
   }
 });
 
-// GET /api/cal/month-availability?year=YYYY&month=MM&email=...
+// GET /api/cal/month-availability?year=YYYY&month=MM&email=...&duration=...
 router.get('/month-availability', async (req, res) => {
   try {
-    const { year, month, email } = req.query;
+    const { year, month, email, duration: reqDuration, isPackage } = req.query;
     if (!year || !month) {
       return res.status(400).json({ message: 'year and month are required' });
     }
@@ -163,9 +164,10 @@ router.get('/month-availability', async (req, res) => {
       isFirstSession = pastAppointments === 0;
     }
 
-    const eventTypeId = isFirstSession 
-      ? (process.env.CAL_EVENT_TYPE_ID_60 || 6863088) 
-      : (process.env.CAL_EVENT_TYPE_ID_90 || 6863088);
+    const candidateDuration = Number(reqDuration) || (isPackage === 'true' ? 90 : (isFirstSession ? 60 : 90));
+    const eventTypeId = candidateDuration === 60 
+      ? (process.env.CAL_EVENT_TYPE_ID_60 || 6769198) 
+      : (process.env.CAL_EVENT_TYPE_ID_90 || 6769198);
 
     const response = await fetch(`https://api.cal.com/v2/slots/available?eventTypeId=${eventTypeId}&startTime=${startTime}&endTime=${endTime}`, {
       headers: {
@@ -182,9 +184,7 @@ router.get('/month-availability', async (req, res) => {
     const slotsMap = data?.data?.slots || {};
 
     // Get all booked appointments for this month
-    const monthName = getMonthName(m - 1);
     const bookedAppointments = await Appointment.find({
-      date: new RegExp(`(${y}-${mStr}|${monthName}.*${y})`, 'i'),
       status: { $in: ['UPCOMING', 'COMPLETED'] },
       paymentStatus: { $ne: 'Failed' }
     });
@@ -197,32 +197,21 @@ router.get('/month-availability', async (req, res) => {
       expiresAt: { $gt: now }
     });
 
-    const unavailableByDate = {};
-    activeHolds.forEach(h => {
-      if (h.dateKey && h.time) {
-        if (!unavailableByDate[h.dateKey]) unavailableByDate[h.dateKey] = new Set();
-        unavailableByDate[h.dateKey].add(normalizeTime(h.time));
+    // Group booked appointments and holds by canonical YYYY-MM-DD
+    const bookedByDate = {};
+    bookedAppointments.forEach(a => {
+      const key = normalizeDateToKey(a.date);
+      if (key && key.startsWith(`${y}-${mStr}`)) {
+        if (!bookedByDate[key]) bookedByDate[key] = [];
+        bookedByDate[key].push(a);
       }
     });
-    bookedAppointments.forEach(a => {
-      let dKey = null;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(a.date)) {
-        dKey = a.date;
-      } else {
-        const match = String(a.date).match(/(\w+)\s+(\d+),\s+(\d{4})/);
-        if (match) {
-          const mIdx = [
-            'january', 'february', 'march', 'april', 'may', 'june',
-            'july', 'august', 'september', 'october', 'november', 'december'
-          ].indexOf(match[1].toLowerCase());
-          if (mIdx !== -1) {
-            dKey = `${match[3]}-${String(mIdx + 1).padStart(2, '0')}-${String(match[2]).padStart(2, '0')}`;
-          }
-        }
-      }
-      if (dKey && a.time) {
-        if (!unavailableByDate[dKey]) unavailableByDate[dKey] = new Set();
-        unavailableByDate[dKey].add(normalizeTime(a.time));
+
+    const holdsByDate = {};
+    activeHolds.forEach(h => {
+      if (h.dateKey) {
+        if (!holdsByDate[h.dateKey]) holdsByDate[h.dateKey] = [];
+        holdsByDate[h.dateKey].push(h);
       }
     });
 
@@ -233,13 +222,15 @@ router.get('/month-availability', async (req, res) => {
       const dateKey = `${y}-${mStr}-${String(day).padStart(2, '0')}`;
       const rawSlots = slotsMap[dateKey];
       if (Array.isArray(rawSlots) && rawSlots.length > 0) {
-        const unavail = unavailableByDate[dateKey] || new Set();
-        const validSlots = rawSlots.filter(slot => {
-          const d = new Date(slot.time);
-          const t1 = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-          const t2 = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-          return !unavail.has(normalizeTime(t1)) && !unavail.has(normalizeTime(t2));
+        const dayBooked = bookedByDate[dateKey] || [];
+        const dayHolds = holdsByDate[dateKey] || [];
+        const validSlots = filterNonOverlappingSlots({
+          slots: rawSlots,
+          candidateDuration,
+          bookedAppointments: dayBooked,
+          activeHolds: dayHolds
         });
+
         if (validSlots.length > 0) {
           availableDays.push(day);
           slotsCountByDate[dateKey] = validSlots.length;
@@ -260,49 +251,42 @@ router.get('/month-availability', async (req, res) => {
   }
 });
 
-// POST /api/cal/slots/hold - Temporary lock on a slot for 15 minutes
+// POST /api/cal/slots/hold - Temporary lock on a slot for 15 minutes with overlap validation
 router.post('/slots/hold', async (req, res) => {
   try {
-    const { dateKey, displayDate, time, slotTimeIso, holderId, email } = req.body;
+    const { dateKey, displayDate, time, slotTimeIso, holderId, email, duration: reqDuration } = req.body;
     if (!dateKey || !time || !holderId) {
       return res.status(400).json({ message: 'dateKey, time, and holderId are required' });
     }
 
     const cleanTime = String(time).trim();
     const cleanHolder = String(holderId).trim();
-    const now = new Date();
+    const candidateDuration = Number(reqDuration) || 90; // Default to 90 min window for complete safety
 
-    // 1. Check if already booked
-    const [year, monthNum, dayNum] = dateKey.split('-').map(Number);
-    const monthName = getMonthName(monthNum - 1);
-    const dayInt = parseInt(dayNum, 10);
-    const dateRegex = new RegExp(`(${dateKey}|${monthName}\\s+0?${dayInt}[,\\s]+${year})`, 'i');
-
-    const alreadyBooked = await Appointment.findOne({
-      date: dateRegex,
-      time: new RegExp(`^0?${cleanTime.replace(/^0/, '')}$`, 'i'),
-      status: { $in: ['UPCOMING', 'COMPLETED'] },
-      paymentStatus: { $ne: 'Failed' }
+    // 1. Check if overlapping appointment is already booked
+    const conflictAppt = await findConflictingAppointment({
+      date: dateKey,
+      time: cleanTime,
+      duration: candidateDuration
     });
-    if (alreadyBooked) {
+    if (conflictAppt) {
       return res.status(409).json({ 
         conflict: true, 
-        message: 'This time slot is no longer available. Please choose another date or time.' 
+        message: conflictAppt.message || 'This time slot overlaps with an existing appointment. Please choose another time.' 
       });
     }
 
-    // 2. Check if held by another user
-    const otherHold = await SlotHold.findOne({
+    // 2. Check if held by another user with overlap
+    const conflictHold = await findConflictingHold({
       dateKey,
-      time: new RegExp(`^0?${cleanTime.replace(/^0/, '')}$`, 'i'),
-      status: 'HELD',
-      expiresAt: { $gt: now },
-      holderId: { $ne: cleanHolder }
+      time: cleanTime,
+      duration: candidateDuration,
+      currentHolderId: cleanHolder
     });
-    if (otherHold) {
+    if (conflictHold) {
       return res.status(409).json({
         conflict: true,
-        message: 'This time slot is currently being booked by another client. Please select another time.'
+        message: conflictHold.message || 'This time slot is currently being booked by another client. Please select another time.'
       });
     }
 
@@ -318,11 +302,12 @@ router.post('/slots/hold', async (req, res) => {
     // 4. Reserve for 15 minutes
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     const hold = await SlotHold.findOneAndUpdate(
-      { dateKey, time: cleanTime, holderId: cleanHolder },
+      { dateKey: normalizeDateToKey(dateKey), time: cleanTime, holderId: cleanHolder },
       {
-        dateKey,
+        dateKey: normalizeDateToKey(dateKey),
         displayDate: displayDate || '',
         time: cleanTime,
+        duration: candidateDuration,
         holderId: cleanHolder,
         email: email || '',
         status: 'HELD',

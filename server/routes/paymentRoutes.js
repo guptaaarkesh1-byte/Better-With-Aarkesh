@@ -14,6 +14,7 @@ import { sendCoursePurchaseInvoiceEmail, sendCoursePaymentFailedEmail } from '..
 import { DEFAULT_COURSE_DETAILS_MAP } from './courseDetailSettingsRoutes.js';
 import { validateEmailFormat } from '../services/emailOtpService.js';
 import { validateCouponInternal, incrementCouponUsage } from './couponRoutes.js';
+import { findConflictingAppointment, findConflictingHold } from '../utils/slotConflictHelper.js';
 
 const router = express.Router();
 
@@ -194,6 +195,37 @@ router.post('/create-order', optionalAuth, async (req, res) => {
       targetDuration = Number(duration);
     } else {
       targetDuration = isFirstSession ? 60 : 90;
+    }
+
+    // Atomic slot conflict check before creating payment order
+    const slotDate = req.body.date;
+    const slotTime = req.body.time;
+    if (slotDate && slotTime) {
+      const conflictAppt = await findConflictingAppointment({
+        date: slotDate,
+        time: slotTime,
+        duration: targetDuration
+      });
+      if (conflictAppt) {
+        return res.status(409).json({
+          conflict: true,
+          message: conflictAppt.message || `This time slot (${slotTime}) has already been booked. Please choose another time.`
+        });
+      }
+
+      const currentHolderId = req.body.booking_draft_id || req.body.holderId;
+      const conflictHold = await findConflictingHold({
+        dateKey: slotDate,
+        time: slotTime,
+        duration: targetDuration,
+        currentHolderId
+      });
+      if (conflictHold) {
+        return res.status(409).json({
+          conflict: true,
+          message: conflictHold.message || `This time slot (${slotTime}) is currently reserved by another client. Please select another time.`
+        });
+      }
     }
 
     const originalFee = targetDuration === 90 ? fee90min : fee60min;
@@ -480,201 +512,254 @@ router.post('/course-verify', async (req, res) => {
 
     if (isAuthentic) {
       let coachingToken = null;
+      let courseToken = null;
       let freeSessions = 0;
 
-      // Decode the user token to update their database record
+      let resolvedEmail = (req.body.email || '').trim().toLowerCase();
+      let targetSlug = req.body.courseSlug || 'better-man';
+      let decodedUserId = null;
+
+      // 1. Try to decode user token if provided
       if (token) {
         try {
           const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-          const targetSlug = courseSlug || 'better-man';
-          const courseUser = await CourseUser.findByIdAndUpdate(
-            decoded.id, 
-            { 
-              isPurchased: true,
-              $addToSet: { purchasedCourses: targetSlug }
-            }, 
-            { returnDocument: 'after' }
-          );
-
-          if (courseUser && courseUser.email) {
-            const email = courseUser.email.trim();
-            const escapedEmail = email.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
-
-            let coachingUser = await User.findOne({ email: emailRegex });
-            if (!coachingUser) {
-              coachingUser = new User({
-                fullName: courseUser.fullName,
-                email,
-                password: courseUser.password,
-                countryCode: '+91',
-                phoneNumber: courseUser.phoneNumber || '',
-              });
-            }
-
-            // Find course details from dynamic multi-settings or fallback
-            let matchedCourse = null;
-            try {
-              const doc = await Settings.findOne({ key: 'course_multi_details_settings' });
-              const allSettings = doc && doc.value ? doc.value : (DEFAULT_COURSE_DETAILS_MAP || {});
-              if (targetSlug && allSettings[targetSlug]) {
-                matchedCourse = allSettings[targetSlug];
-              }
-            } catch (e) {}
-
-            const isObjectId = mongoose.Types.ObjectId.isValid(targetSlug);
-            const primaryCourse = await Course.findOne(
-              isObjectId ? { $or: [{ slug: targetSlug }, { _id: targetSlug }] } : { slug: targetSlug }
-            ).sort({ createdAt: 1 }) || await Course.findOne().sort({ createdAt: 1 });
-
-            // Calculate free sessions to grant (if enabled, else 0)
-            let freeSessionsToGrant = 3;
-            if (matchedCourse?.includeFreeSessions === false || matchedCourse?.enableFreeSessions === false || primaryCourse?.includeFreeSessions === false) {
-              freeSessionsToGrant = 0;
-            } else if (matchedCourse?.freeSessionsCount !== undefined) {
-              freeSessionsToGrant = Math.max(0, Number(matchedCourse.freeSessionsCount));
-            } else if (matchedCourse?.pricingSection?.freeSessionsCount !== undefined) {
-              freeSessionsToGrant = Math.max(0, Number(matchedCourse.pricingSection.freeSessionsCount));
-            } else if (primaryCourse?.freeSessionsCount !== undefined) {
-              freeSessionsToGrant = Math.max(0, Number(primaryCourse.freeSessionsCount));
-            } else if (primaryCourse?.pricingSection?.freeSessionsCount !== undefined) {
-              freeSessionsToGrant = Math.max(0, Number(primaryCourse.pricingSection.freeSessionsCount));
-            } else {
-              freeSessionsToGrant = 3;
-            }
-
-            if (!coachingUser.courseSessionsGranted) {
-              coachingUser.freeSessions = freeSessionsToGrant;
-              coachingUser.courseSessionsGranted = true;
-            } else {
-              // Add any new free sessions granted by this specific purchase
-              coachingUser.freeSessions = (coachingUser.freeSessions || 0) + freeSessionsToGrant;
-            }
-            await coachingUser.save();
-            freeSessions = coachingUser.freeSessions;
-
-            // Also persist on courseUser record
-            courseUser.freeSessions = freeSessions;
-            courseUser.courseSessionsGranted = true;
-            await courseUser.save();
-
-            coachingToken = jwt.sign({ id: coachingUser._id }, process.env.JWT_SECRET || 'fallback_secret_key', {
-              expiresIn: '30d',
-            });
-
-            let courseTitle = matchedCourse?.title || (targetSlug ? (targetSlug.charAt(0).toUpperCase() + targetSlug.slice(1)) : 'The Better Man™');
-            let basePrice = 15000;
-            if (matchedCourse?.price !== undefined) {
-              const p = typeof matchedCourse.price === 'number' ? matchedCourse.price : Number(String(matchedCourse.price).replace(/[^0-9]/g, ''));
-              if (!isNaN(p) && p > 0) basePrice = p;
-            } else if (primaryCourse?.price) {
-              basePrice = primaryCourse.price;
-            }
-
-            const rawOrigAmount = originalAmount ? Number(originalAmount) : basePrice;
-            const parsedDiscount = Number(discountAmount) || 0;
-            const cleanCoupon = (couponCode || '').trim().toUpperCase();
-
-            let gstRate = matchedCourse?.gstRate !== undefined ? Number(matchedCourse.gstRate) : 18;
-            let isGstIncluded = matchedCourse?.isGstIncluded !== undefined ? Boolean(matchedCourse.isGstIncluded) : Boolean(primaryCourse?.isGstIncluded);
-
-            const netTaxableBase = parsedDiscount > 0 ? Math.max(0, rawOrigAmount - parsedDiscount) : rawOrigAmount;
-
-            let gstAmount = (!isGstIncluded && gstRate === 0)
-              ? 0
-              : (isGstIncluded
-                  ? Math.round(netTaxableBase - (netTaxableBase / (1 + (gstRate / 100))))
-                  : Math.round((netTaxableBase * gstRate) / 100));
-
-            let finalAmount = Number(amount) || (isGstIncluded ? netTaxableBase : netTaxableBase + gstAmount);
-
-            await CoursePurchase.findOneAndUpdate(
-              { transactionId: razorpay_payment_id },
-              {
-                userId: coachingUser._id,
-                courseUserId: courseUser._id,
-                courseId: primaryCourse?._id || undefined,
-                courseSlug: targetSlug,
-                courseTitle,
-                studentName: courseUser.fullName,
-                studentEmail: email.toLowerCase(),
-                amount: finalAmount,
-                currency: 'INR',
-                paymentStatus: 'Paid',
-                enrollmentStatus: 'Active',
-                freeSessionsGranted: freeSessionsToGrant,
-                transactionId: razorpay_payment_id,
-                razorpayOrderId: razorpay_order_id,
-                razorpayPaymentId: razorpay_payment_id,
-                originalAmount: rawOrigAmount,
-                couponCode: cleanCoupon,
-                discountAmount: parsedDiscount,
-                purchaseDate: new Date(),
-              },
-              { upsert: true, returnDocument: 'after' }
-            );
-
-            if (couponCode) {
-              incrementCouponUsage(couponCode).catch(e => console.error('Coupon usage increment error:', e));
-            }
-
-            // Asynchronously dispatch official tax invoice + 3 free sessions email
-            sendCoursePurchaseInvoiceEmail({
-              studentEmail: email.toLowerCase(),
-              studentName: courseUser.fullName || 'Valued Student',
-              studentPhone: courseUser.phoneNumber || '',
-              txnId: razorpay_payment_id,
-              orderId: razorpay_order_id,
-              amount: finalAmount,
-              originalAmount: rawOrigAmount,
-              couponCode: cleanCoupon,
-              discountAmount: parsedDiscount,
-              basePrice: rawOrigAmount,
-              gstRate,
-              gstAmount,
-              isGstIncluded,
-              courseTitle,
-              invoiceItemTitle: matchedCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
-              invoiceItemSubtitle: matchedCourse?.invoiceItemSubtitle || primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
-              bonusItemTitle: freeSessionsToGrant > 0 ? `${freeSessionsToGrant} Private 1-on-1 Executive Coaching Sessions with Aarkesh` : 'Direct Instructor Q&A & Lifetime Updates',
-              bonusItemSubtitle: freeSessionsToGrant > 0 ? `Valued at ₹${(freeSessionsToGrant * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus` : 'Included with your enrollment',
-              purchaseDate: new Date(),
-            }).catch(err => console.error('Background purchase invoice email error:', err));
-
-            return res.json({ 
-              message: 'Payment verified successfully', 
-              success: true,
-              coachingToken,
-              freeSessions,
-              purchasedCourses: courseUser.purchasedCourses || [targetSlug],
-              purchase: {
-                transactionId: razorpay_payment_id,
-                orderId: razorpay_order_id,
-                courseSlug: targetSlug,
-                courseTitle,
-                amount: finalAmount,
-                originalAmount: rawOrigAmount,
-                couponCode: cleanCoupon,
-                discountAmount: parsedDiscount,
-                basePrice: rawOrigAmount,
-                gstRate,
-                gstAmount,
-                isGstIncluded,
-                finalAmount,
-                purchaseDate: new Date().toISOString(),
-                studentName: courseUser.fullName,
-                studentEmail: email,
-                invoiceItemTitle: matchedCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
-                invoiceItemSubtitle: matchedCourse?.invoiceItemSubtitle || primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
-                bonusItemTitle: freeSessionsToGrant > 0 ? `${freeSessionsToGrant} Private 1-on-1 Executive Coaching Sessions with Aarkesh` : 'Direct Instructor Q&A & Lifetime Updates',
-                bonusItemSubtitle: freeSessionsToGrant > 0 ? `Valued at ₹${(freeSessionsToGrant * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus` : 'Included with your enrollment',
-                freeSessionsGranted: freeSessionsToGrant
-              }
-            });
+          decodedUserId = decoded.id;
+          if (decoded.email && !resolvedEmail) {
+            resolvedEmail = String(decoded.email).trim().toLowerCase();
           }
-        } catch (err) {
-          console.error('Failed to decode token or sync coaching user during verification:', err);
+        } catch (e) {
+          console.warn('JWT verification warning in course-verify:', e.message);
         }
+      }
+
+      // 2. If email is still unknown, fetch Razorpay order notes
+      if (!resolvedEmail && razorpay_order_id) {
+        try {
+          const instance = await getRazorpayInstance();
+          const rzpOrder = await instance.orders.fetch(razorpay_order_id);
+          if (rzpOrder?.notes?.email) {
+            resolvedEmail = String(rzpOrder.notes.email).trim().toLowerCase();
+          }
+          if (rzpOrder?.notes?.courseSlug) {
+            targetSlug = rzpOrder.notes.courseSlug;
+          }
+        } catch (e) {
+          console.error('Error fetching order notes from Razorpay in course-verify:', e);
+        }
+      }
+
+      // 3. Find or auto-create CourseUser
+      let courseUser = null;
+      if (decodedUserId) {
+        courseUser = await CourseUser.findById(decodedUserId);
+      }
+      if (!courseUser && resolvedEmail) {
+        const escapedEmail = resolvedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        courseUser = await CourseUser.findOne({ email: new RegExp(`^${escapedEmail}$`, 'i') });
+      }
+
+      if (!courseUser && resolvedEmail) {
+        courseUser = new CourseUser({
+          fullName: resolvedEmail.split('@')[0],
+          email: resolvedEmail,
+          password: await bcrypt.hash(Math.random().toString(36), 10),
+          isPurchased: true,
+          purchasedCourses: [targetSlug],
+          authProvider: 'local'
+        });
+        await courseUser.save();
+      } else if (courseUser) {
+        courseUser.isPurchased = true;
+        if (!Array.isArray(courseUser.purchasedCourses)) {
+          courseUser.purchasedCourses = [];
+        }
+        if (!courseUser.purchasedCourses.includes(targetSlug)) {
+          courseUser.purchasedCourses.push(targetSlug);
+        }
+        await courseUser.save();
+      }
+
+      if (courseUser && (courseUser.email || resolvedEmail)) {
+        const email = (courseUser.email || resolvedEmail).trim();
+        const escapedEmail = email.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
+
+        let coachingUser = await User.findOne({ email: emailRegex });
+        if (!coachingUser) {
+          coachingUser = new User({
+            fullName: courseUser.fullName || email.split('@')[0],
+            email,
+            password: courseUser.password || (await bcrypt.hash(Math.random().toString(36), 10)),
+            countryCode: '+91',
+            phoneNumber: courseUser.phoneNumber || '',
+          });
+        }
+
+        // Find course details from dynamic multi-settings or fallback
+        let matchedCourse = null;
+        try {
+          const doc = await Settings.findOne({ key: 'course_multi_details_settings' });
+          const allSettings = doc && doc.value ? doc.value : (DEFAULT_COURSE_DETAILS_MAP || {});
+          if (targetSlug && allSettings[targetSlug]) {
+            matchedCourse = allSettings[targetSlug];
+          }
+        } catch (e) {}
+
+        const isObjectId = mongoose.Types.ObjectId.isValid(targetSlug);
+        const primaryCourse = await Course.findOne(
+          isObjectId ? { $or: [{ slug: targetSlug }, { _id: targetSlug }] } : { slug: targetSlug }
+        ).sort({ createdAt: 1 }) || await Course.findOne().sort({ createdAt: 1 });
+
+        // Calculate free sessions to grant (if enabled, else 0)
+        let freeSessionsToGrant = 3;
+        if (matchedCourse?.includeFreeSessions === false || matchedCourse?.enableFreeSessions === false || primaryCourse?.includeFreeSessions === false) {
+          freeSessionsToGrant = 0;
+        } else if (matchedCourse?.freeSessionsCount !== undefined) {
+          freeSessionsToGrant = Math.max(0, Number(matchedCourse.freeSessionsCount));
+        } else if (matchedCourse?.pricingSection?.freeSessionsCount !== undefined) {
+          freeSessionsToGrant = Math.max(0, Number(matchedCourse.pricingSection.freeSessionsCount));
+        } else if (primaryCourse?.freeSessionsCount !== undefined) {
+          freeSessionsToGrant = Math.max(0, Number(primaryCourse.freeSessionsCount));
+        } else if (primaryCourse?.pricingSection?.freeSessionsCount !== undefined) {
+          freeSessionsToGrant = Math.max(0, Number(primaryCourse.pricingSection.freeSessionsCount));
+        } else {
+          freeSessionsToGrant = 3;
+        }
+
+        if (!coachingUser.courseSessionsGranted) {
+          coachingUser.freeSessions = freeSessionsToGrant;
+          coachingUser.courseSessionsGranted = true;
+        } else {
+          // Add any new free sessions granted by this specific purchase
+          coachingUser.freeSessions = (coachingUser.freeSessions || 0) + freeSessionsToGrant;
+        }
+        await coachingUser.save();
+        freeSessions = coachingUser.freeSessions;
+
+        // Also persist on courseUser record
+        courseUser.freeSessions = freeSessions;
+        courseUser.courseSessionsGranted = true;
+        await courseUser.save();
+
+        coachingToken = jwt.sign({ id: coachingUser._id }, process.env.JWT_SECRET || 'fallback_secret_key', {
+          expiresIn: '30d',
+        });
+
+        courseToken = jwt.sign({ id: courseUser._id }, process.env.JWT_SECRET || 'fallback_secret_key', {
+          expiresIn: '30d',
+        });
+
+        let courseTitle = matchedCourse?.title || (targetSlug ? (targetSlug.charAt(0).toUpperCase() + targetSlug.slice(1)) : 'The Better Man™');
+        let basePrice = 15000;
+        if (matchedCourse?.price !== undefined) {
+          const p = typeof matchedCourse.price === 'number' ? matchedCourse.price : Number(String(matchedCourse.price).replace(/[^0-9]/g, ''));
+          if (!isNaN(p) && p > 0) basePrice = p;
+        } else if (primaryCourse?.price) {
+          basePrice = primaryCourse.price;
+        }
+
+        const rawOrigAmount = originalAmount ? Number(originalAmount) : basePrice;
+        const parsedDiscount = Number(discountAmount) || 0;
+        const cleanCoupon = (couponCode || '').trim().toUpperCase();
+
+        let gstRate = matchedCourse?.gstRate !== undefined ? Number(matchedCourse.gstRate) : 18;
+        let isGstIncluded = matchedCourse?.isGstIncluded !== undefined ? Boolean(matchedCourse.isGstIncluded) : Boolean(primaryCourse?.isGstIncluded);
+
+        const netTaxableBase = parsedDiscount > 0 ? Math.max(0, rawOrigAmount - parsedDiscount) : rawOrigAmount;
+
+        let gstAmount = (!isGstIncluded && gstRate === 0)
+          ? 0
+          : (isGstIncluded
+              ? Math.round(netTaxableBase - (netTaxableBase / (1 + (gstRate / 100))))
+              : Math.round((netTaxableBase * gstRate) / 100));
+
+        let finalAmount = Number(amount) || (isGstIncluded ? netTaxableBase : netTaxableBase + gstAmount);
+
+        const purchaseRecord = await CoursePurchase.findOneAndUpdate(
+          { transactionId: razorpay_payment_id },
+          {
+            userId: coachingUser._id,
+            courseUserId: courseUser._id,
+            courseId: primaryCourse?._id || undefined,
+            courseSlug: targetSlug,
+            courseTitle,
+            studentName: courseUser.fullName,
+            studentEmail: email.toLowerCase(),
+            amount: finalAmount,
+            currency: 'INR',
+            paymentStatus: 'Paid',
+            enrollmentStatus: 'Active',
+            freeSessionsGranted: freeSessionsToGrant,
+            transactionId: razorpay_payment_id,
+            razorpayOrderId: razorpay_order_id,
+            razorpayPaymentId: razorpay_payment_id,
+            originalAmount: rawOrigAmount,
+            couponCode: cleanCoupon,
+            discountAmount: parsedDiscount,
+            purchaseDate: new Date(),
+          },
+          { upsert: true, returnDocument: 'after' }
+        );
+
+        if (couponCode) {
+          incrementCouponUsage(couponCode).catch(e => console.error('Coupon usage increment error:', e));
+        }
+
+        // Asynchronously dispatch official tax invoice + 3 free sessions email
+        sendCoursePurchaseInvoiceEmail({
+          studentEmail: email.toLowerCase(),
+          studentName: courseUser.fullName || 'Valued Student',
+          studentPhone: courseUser.phoneNumber || '',
+          txnId: razorpay_payment_id,
+          orderId: razorpay_order_id,
+          amount: finalAmount,
+          originalAmount: rawOrigAmount,
+          couponCode: cleanCoupon,
+          discountAmount: parsedDiscount,
+          basePrice: rawOrigAmount,
+          gstRate,
+          gstAmount,
+          isGstIncluded,
+          courseTitle,
+          invoiceItemTitle: matchedCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
+          invoiceItemSubtitle: matchedCourse?.invoiceItemSubtitle || primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
+          bonusItemTitle: freeSessionsToGrant > 0 ? `${freeSessionsToGrant} Private 1-on-1 Executive Coaching Sessions with Aarkesh` : 'Direct Instructor Q&A & Lifetime Updates',
+          bonusItemSubtitle: freeSessionsToGrant > 0 ? `Valued at ₹${(freeSessionsToGrant * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus` : 'Included with your enrollment',
+          purchaseDate: new Date(),
+        }).catch(err => console.error('Background purchase invoice email error:', err));
+
+        return res.json({ 
+          message: 'Payment verified successfully', 
+          success: true,
+          coachingToken,
+          courseToken,
+          token: courseToken,
+          freeSessions,
+          purchasedCourses: courseUser.purchasedCourses || [targetSlug],
+          purchase: {
+            transactionId: razorpay_payment_id,
+            orderId: razorpay_order_id,
+            courseSlug: targetSlug,
+            courseTitle,
+            amount: finalAmount,
+            originalAmount: rawOrigAmount,
+            couponCode: cleanCoupon,
+            discountAmount: parsedDiscount,
+            basePrice: rawOrigAmount,
+            gstRate,
+            gstAmount,
+            isGstIncluded,
+            finalAmount,
+            purchaseDate: new Date().toISOString(),
+            studentName: courseUser.fullName,
+            studentEmail: email,
+            invoiceItemTitle: matchedCourse?.invoiceItemTitle || `${courseTitle} — Masterclass Lifetime Access`,
+            invoiceItemSubtitle: matchedCourse?.invoiceItemSubtitle || primaryCourse?.invoiceItemSubtitle || 'HD video frameworks, modular curriculum, worksheets & community',
+            bonusItemTitle: freeSessionsToGrant > 0 ? `${freeSessionsToGrant} Private 1-on-1 Executive Coaching Sessions with Aarkesh` : 'Direct Instructor Q&A & Lifetime Updates',
+            bonusItemSubtitle: freeSessionsToGrant > 0 ? `Valued at ₹${(freeSessionsToGrant * 5000).toLocaleString('en-IN')} — 100% Complimentary student bonus` : 'Included with your enrollment',
+            freeSessionsGranted: freeSessionsToGrant
+          }
+        });
       }
 
       res.json({ 

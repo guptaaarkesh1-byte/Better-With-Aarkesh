@@ -90,7 +90,9 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [fees, setFees] = useState({ fee60min: 5000, fee90min: 7500 });
   const [freeSessionsRemaining, setFreeSessionsRemaining] = useState(0);
-  const [useFreeCredit, setUseFreeCredit] = useState(false);
+  const [packageCreditsRemaining, setPackageCreditsRemaining] = useState(0);
+  const [packageInfo, setPackageInfo] = useState(null);
+  const [selectedCreditType, setSelectedCreditType] = useState('none'); // 'package' | 'free' | 'none'
   const [successData, setSuccessData] = useState(null);
 
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
@@ -116,8 +118,9 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
       })
     : '';
 
-  // Determine exact session duration & fee
-  const sessionDuration = Number(session?.duration) || (session?.isFirstSession ? 60 : (session?.amount === 7500 ? 90 : 60));
+  // Determine exact session duration & fee (All package sessions are strictly 90 mins)
+  const isPackageSession = Boolean(session?.packageId || session?.isPackageSession || (session?.totalSessionsInPackage && session.totalSessionsInPackage > 1));
+  const sessionDuration = isPackageSession ? 90 : (Number(session?.duration) || (session?.isFirstSession ? 60 : 90));
 
   // Fetch fees & real-time remaining free session balance from backend
   useEffect(() => {
@@ -156,7 +159,7 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
             const count = Math.max(0, data.freeSessions);
             setFreeSessionsRemaining(count);
             localStorage.setItem('freeSessions', String(count));
-            setUseFreeCredit(count > 0);
+            setSelectedCreditType(prev => (prev === 'package' ? 'package' : (count > 0 ? 'free' : 'none')));
           }
         }
 
@@ -173,8 +176,49 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
               const count = Math.max(0, freeData.freeSessions);
               setFreeSessionsRemaining(count);
               localStorage.setItem('freeSessions', String(count));
-              setUseFreeCredit(count > 0);
+              setSelectedCreditType(prev => (prev === 'package' ? 'package' : (count > 0 ? 'free' : 'none')));
             }
+          }
+        }
+
+        // 3. Fetch package credits from /api/packages/credits or check-credits
+        if (resolvedEmail) {
+          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          let pkgCredits = 0;
+          let pkgData = null;
+
+          try {
+            const pkgRes = await fetch(`${API_BASE}/api/packages/credits?email=${encodeURIComponent(resolvedEmail)}`, {
+              headers: authHeaders
+            });
+            if (pkgRes.ok) {
+              pkgData = await pkgRes.json();
+              pkgCredits = Number(pkgData.packageCredits ?? pkgData.totalCredits ?? 0) || 0;
+            }
+          } catch (e) {
+            console.error('Error fetching package credits via GET /credits:', e);
+          }
+
+          // Fallback to POST /check-credits if needed
+          if (pkgCredits === 0) {
+            try {
+              const checkRes = await fetch(`${API_BASE}/api/packages/check-credits`, {
+                method: 'POST',
+                headers: authHeaders,
+                body: JSON.stringify({ email: resolvedEmail })
+              });
+              if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                pkgCredits = Number(checkData.packageCredits ?? checkData.totalCredits ?? 0) || 0;
+                if (!pkgData) pkgData = checkData;
+              }
+            } catch (e) {}
+          }
+
+          setPackageCreditsRemaining(pkgCredits);
+          if (pkgData) setPackageInfo(pkgData);
+          if (pkgCredits > 0) {
+            setSelectedCreditType('package');
           }
         }
       } catch (err) {
@@ -257,8 +301,8 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
 
     // Case 1: Within 48 Hours
     if (notice48h && notice48h.isWithin48h) {
-      // 1A. User opted to use 1 Free Session Credit
-      if (useFreeCredit && freeSessionsRemaining > 0) {
+      // 1A. User opted to use Package Credit OR Free Session Credit
+      if (selectedCreditType === 'package' || selectedCreditType === 'free') {
         try {
           const creditRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/appointments/${session._id || session.id}/reschedule-credit`, {
             method: 'POST',
@@ -266,16 +310,27 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
             body: JSON.stringify({
               date: selectedDateStr,
               time: selectedTime,
-              reason
+              reason,
+              creditType: selectedCreditType,
+              packageId: session.packageId || packageInfo?.packages?.[0]?._id
             })
           });
 
           const resJson = await creditRes.json().catch(() => null);
 
           if (creditRes.ok) {
-            const newRemaining = resJson?.freeSessionsRemaining ?? Math.max(0, freeSessionsRemaining - 1);
-            setFreeSessionsRemaining(newRemaining);
-            localStorage.setItem('freeSessions', String(newRemaining));
+            let newFreeRemaining = freeSessionsRemaining;
+            let newPkgRemaining = packageCreditsRemaining;
+
+            if (selectedCreditType === 'package') {
+              newPkgRemaining = resJson?.packageCreditsRemaining ?? Math.max(0, packageCreditsRemaining - 1);
+              setPackageCreditsRemaining(newPkgRemaining);
+            } else {
+              newFreeRemaining = resJson?.freeSessionsRemaining ?? Math.max(0, freeSessionsRemaining - 1);
+              setFreeSessionsRemaining(newFreeRemaining);
+              localStorage.setItem('freeSessions', String(newFreeRemaining));
+            }
+
             setShowConfirmPopup(false);
             setSuccessData({
               date: formattedNewDate,
@@ -283,15 +338,18 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
               duration: sessionDuration,
               isPaid: false,
               isCredit: true,
+              creditType: selectedCreditType,
               amount: 0,
-              freeSessionsRemaining: newRemaining,
+              freeSessionsRemaining: newFreeRemaining,
+              packageCreditsRemaining: newPkgRemaining,
               paymentId: '',
               orderId: '',
               email: session?.email || '',
               reason: reason
             });
+            if (onSuccess) onSuccess();
           } else {
-            alert(resJson?.message || 'Failed to reschedule using free session credit.');
+            alert(resJson?.message || 'Failed to reschedule using session credit.');
           }
         } catch (err) {
           console.error('Error rescheduling with credit:', err);
@@ -549,17 +607,19 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                 </div>
               </div>
 
-              {/* Free Credit Used Info */}
+              {/* Free or Package Credit Used Info */}
               {successData.isCredit && (
                 <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <Sparkle size={18} className="text-emerald-600" weight="fill" />
                     <div>
                       <span className="font-sans text-xs font-bold text-emerald-950 uppercase tracking-wider block">
-                        Complimentary Credit Held (Pending Approval)
+                        {successData.creditType === 'package' ? 'Package Credit Held (Pending Approval)' : 'Complimentary Credit Held (Pending Approval)'}
                       </span>
                       <span className="text-[0.7rem] text-emerald-800">
-                        {successData.freeSessionsRemaining} credit(s) remaining on your account
+                        {successData.creditType === 'package'
+                          ? `${successData.packageCreditsRemaining ?? 0} package credit(s) remaining on your account`
+                          : `${successData.freeSessionsRemaining ?? 0} credit(s) remaining on your account`}
                       </span>
                     </div>
                   </div>
@@ -653,7 +713,11 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                       ⚠️ Late Reschedule Window ({notice48h.hoursLeft > 0 ? `${notice48h.hoursLeft} hours remaining` : 'Under 48 Hours'})
                     </span>
                     <span className="text-[#555047] text-xs leading-relaxed">
-                      {freeSessionsRemaining > 0 ? (
+                      {packageCreditsRemaining > 0 ? (
+                        <>
+                          You have <strong className="text-emerald-700 font-bold">{packageCreditsRemaining} Package Session Credit{packageCreditsRemaining === 1 ? '' : 's'} Remaining</strong>. You can use 1 package credit to reschedule immediately at <strong className="text-emerald-700 font-bold">₹0</strong>, or pay the late reschedule fee of <strong className="text-[#111010] font-bold">₹{rescheduleFee.toLocaleString('en-IN')}</strong> ({sessionDuration} mins).
+                        </>
+                      ) : freeSessionsRemaining > 0 ? (
                         <>
                           You have <strong className="text-emerald-700 font-bold">{freeSessionsRemaining} Free Session{freeSessionsRemaining === 1 ? '' : 's'} Remaining</strong>. You can use 1 remaining free session to reschedule immediately at <strong className="text-emerald-700 font-bold">₹0</strong>, or pay the late reschedule fee of <strong className="text-[#111010] font-bold">₹{rescheduleFee.toLocaleString('en-IN')}</strong> ({sessionDuration} mins).
                         </>
@@ -672,10 +736,15 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                     </button>
                   </div>
                   <div className="shrink-0 flex items-center gap-2 bg-[#fbf0eb] border border-[#e8c4e2] px-3.5 py-2 rounded-xl">
-                    {freeSessionsRemaining > 0 ? (
+                    {selectedCreditType === 'package' && packageCreditsRemaining > 0 ? (
                       <>
                         <Sparkle size={18} className="text-emerald-600" weight="fill" />
-                        <span className="font-sans font-bold text-xs text-emerald-800">{freeSessionsRemaining} Free Session{freeSessionsRemaining === 1 ? '' : 's'} Remaining</span>
+                        <span className="font-sans font-bold text-xs text-emerald-800">1 Package Credit (₹0)</span>
+                      </>
+                    ) : selectedCreditType === 'free' && freeSessionsRemaining > 0 ? (
+                      <>
+                        <Sparkle size={18} className="text-emerald-600" weight="fill" />
+                        <span className="font-sans font-bold text-xs text-emerald-800">1 Course Credit (₹0)</span>
                       </>
                     ) : (
                       <>
@@ -988,6 +1057,94 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                 </div>
               </div>
 
+              {/* Late Reschedule Payment Method Selection (Main Screen) */}
+              {notice48h && notice48h.isWithin48h && (packageCreditsRemaining > 0 || freeSessionsRemaining > 0) && (
+                <div className="flex flex-col gap-2.5 pt-3 border-t border-[#eadcd3]">
+                  <div className="flex items-center justify-between">
+                    <span className="font-sans text-[0.68rem] uppercase tracking-[0.16em] font-bold text-[#c9542f]">
+                      CHOOSE RESCHEDULE PAYMENT METHOD
+                    </span>
+                    <span className="text-[0.62rem] text-emerald-800 font-semibold bg-[#f0fdf4] border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                      Credits Available
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* Option 1: Package Credit */}
+                    {packageCreditsRemaining > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCreditType('package')}
+                        className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                          selectedCreditType === 'package'
+                            ? 'bg-[#f0fdf4] border-emerald-500 ring-2 ring-emerald-500/25 shadow-xs'
+                            : 'bg-white border-[#eadcd3] hover:border-emerald-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-sans text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                            <Sparkle size={14} className="text-emerald-600" weight="fill" />
+                            Package Credit
+                          </span>
+                          <span className="text-xs font-serif font-bold text-emerald-700">₹0</span>
+                        </div>
+                        <span className="text-[0.68rem] text-emerald-800 font-medium leading-tight">
+                          {packageCreditsRemaining} credit{packageCreditsRemaining > 1 ? 's' : ''} left
+                        </span>
+                      </button>
+                    )}
+
+                    {/* Option 2: Course Free Credit */}
+                    {freeSessionsRemaining > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCreditType('free')}
+                        className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                          selectedCreditType === 'free'
+                            ? 'bg-[#f0fdf4] border-[#16a34a] ring-2 ring-[#16a34a]/25 shadow-xs'
+                            : 'bg-white border-[#eadcd3] hover:border-[#16a34a]/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-sans text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                            <Sparkle size={14} className="text-emerald-600" weight="fill" />
+                            Course Credit
+                          </span>
+                          <span className="text-xs font-serif font-bold text-emerald-700">₹0</span>
+                        </div>
+                        <span className="text-[0.68rem] text-emerald-800 font-medium leading-tight">
+                          {freeSessionsRemaining} session{freeSessionsRemaining > 1 ? 's' : ''} left
+                        </span>
+                      </button>
+                    )}
+
+                    {/* Option 3: Pay Late Reschedule Fee */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCreditType('none')}
+                      className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                        selectedCreditType === 'none'
+                          ? 'bg-[#fef2f0] border-[#c9542f] ring-2 ring-[#c9542f]/25 shadow-xs'
+                          : 'bg-white border-[#eadcd3] hover:border-[#c9542f]/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <span className="font-sans text-xs font-bold text-[#111010] flex items-center gap-1.5">
+                          <CreditCard size={14} className="text-[#c9542f]" weight="bold" />
+                          Pay Late Fee
+                        </span>
+                        <span className="text-xs font-serif font-bold text-[#c9542f]">
+                          ₹{rescheduleFee.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <span className="text-[0.68rem] text-[#7a756b] leading-tight">
+                        Pay via Razorpay
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Reason Field */}
               <div className="flex flex-col gap-1.5 pt-2 border-t border-[#eadcd3]">
                 <label htmlFor="reschedule-reason" className="font-sans text-xs text-[#555047] font-medium">
@@ -1026,17 +1183,22 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                   onClick={() => setShowConfirmPopup(true)}
                   className={`px-6 py-2.5 rounded-full text-white text-xs font-sans uppercase tracking-wider font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-center flex items-center gap-2 ${
                     notice48h && notice48h.isWithin48h
-                      ? useFreeCredit && freeSessionsRemaining > 0
+                      ? (selectedCreditType === 'package' || selectedCreditType === 'free' || (useFreeCredit && freeSessionsRemaining > 0))
                         ? 'bg-emerald-700 hover:bg-emerald-800'
                         : 'bg-[#c9542f] hover:bg-[#b04523]'
                       : 'bg-[#111010] hover:bg-[#c9542f]'
                   }`}
                 >
                   {notice48h && notice48h.isWithin48h ? (
-                    useFreeCredit && freeSessionsRemaining > 0 ? (
+                    selectedCreditType === 'package' ? (
                       <>
                         <Sparkle size={15} weight="fill" />
-                        <span>Reschedule with 1 Credit (₹0)</span>
+                        <span>Reschedule with 1 Package Credit (₹0)</span>
+                      </>
+                    ) : (selectedCreditType === 'free' || (useFreeCredit && freeSessionsRemaining > 0)) ? (
+                      <>
+                        <Sparkle size={15} weight="fill" />
+                        <span>Reschedule with 1 Course Credit (₹0)</span>
                       </>
                     ) : (
                       <>
@@ -1141,55 +1303,87 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
 
               {/* Pricing & 48h Notice in Popup */}
               {notice48h && notice48h.isWithin48h ? (
-                freeSessionsRemaining > 0 ? (
-                  /* Free Session Credit Selector */
+                (packageCreditsRemaining > 0 || freeSessionsRemaining > 0) ? (
+                  /* Session Credit Selector */
                   <div className="flex flex-col gap-2.5 pt-1">
                     <span className="font-sans text-[0.65rem] uppercase tracking-wider text-[#555047] font-bold">
                       Reschedule Payment Option (Late Window &lt; 48h)
                     </span>
                     
-                    {/* Option 1: Use Free Session Credit */}
-                    <div 
-                      onClick={() => setUseFreeCredit(true)}
-                      className={`cursor-pointer rounded-2xl p-3.5 border transition-all flex items-center justify-between ${
-                        useFreeCredit 
-                          ? 'bg-[#f0fdf4] border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs' 
-                          : 'bg-white border-[#eadcd3] hover:border-emerald-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          useFreeCredit ? 'border-emerald-600 bg-emerald-600' : 'border-gray-300'
-                        }`}>
-                          {useFreeCredit && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    {/* Option 1: Use Package Session Credit */}
+                    {packageCreditsRemaining > 0 && (
+                      <div 
+                        onClick={() => setSelectedCreditType('package')}
+                        className={`cursor-pointer rounded-2xl p-3.5 border transition-all flex items-center justify-between ${
+                          selectedCreditType === 'package' 
+                            ? 'bg-[#f0fdf4] border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs' 
+                            : 'bg-white border-[#eadcd3] hover:border-emerald-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            selectedCreditType === 'package' ? 'border-emerald-600 bg-emerald-600' : 'border-gray-300'
+                          }`}>
+                            {selectedCreditType === 'package' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-sans text-xs font-bold text-[#111010] flex items-center gap-1.5">
+                              <Sparkle size={14} className="text-emerald-600" weight="fill" />
+                              Use 1 Package Session Credit
+                            </span>
+                            <span className="text-[0.68rem] text-emerald-800 font-medium">
+                              {packageCreditsRemaining} prepaid package credit{packageCreditsRemaining === 1 ? '' : 's'} available • ₹0 at confirmation
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-sans text-xs font-bold text-[#111010] flex items-center gap-1.5">
-                            <Sparkle size={14} className="text-emerald-600" weight="fill" />
-                            Use 1 Free Session Credit
-                          </span>
-                          <span className="text-[0.68rem] text-emerald-800 font-medium">
-                            {freeSessionsRemaining} credit{freeSessionsRemaining === 1 ? '' : 's'} available • Instant confirm
-                          </span>
-                        </div>
+                        <span className="font-serif text-base font-bold text-emerald-800">₹0</span>
                       </div>
-                      <span className="font-serif text-base font-bold text-emerald-800">₹0</span>
-                    </div>
+                    )}
 
-                    {/* Option 2: Pay Reschedule Fee */}
+                    {/* Option 2: Use Free Session Credit */}
+                    {freeSessionsRemaining > 0 && (
+                      <div 
+                        onClick={() => setSelectedCreditType('free')}
+                        className={`cursor-pointer rounded-2xl p-3.5 border transition-all flex items-center justify-between ${
+                          selectedCreditType === 'free' 
+                            ? 'bg-[#f0fdf4] border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs' 
+                            : 'bg-white border-[#eadcd3] hover:border-emerald-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            selectedCreditType === 'free' ? 'border-emerald-600 bg-emerald-600' : 'border-gray-300'
+                          }`}>
+                            {selectedCreditType === 'free' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-sans text-xs font-bold text-[#111010] flex items-center gap-1.5">
+                              <Sparkle size={14} className="text-emerald-600" weight="fill" />
+                              Use 1 Course Session Credit
+                            </span>
+                            <span className="text-[0.68rem] text-emerald-800 font-medium">
+                              {freeSessionsRemaining} course credit{freeSessionsRemaining === 1 ? '' : 's'} available • ₹0 at confirmation
+                            </span>
+                          </div>
+                        </div>
+                        <span className="font-serif text-base font-bold text-emerald-800">₹0</span>
+                      </div>
+                    )}
+
+                    {/* Option 3: Pay Reschedule Fee */}
                     <div 
-                      onClick={() => setUseFreeCredit(false)}
+                      onClick={() => setSelectedCreditType('none')}
                       className={`cursor-pointer rounded-2xl p-3.5 border transition-all flex items-center justify-between ${
-                        !useFreeCredit 
+                        selectedCreditType === 'none' 
                           ? 'bg-[#fef2f0] border-[#c9542f] ring-2 ring-[#c9542f]/20 shadow-xs' 
                           : 'bg-white border-[#eadcd3] hover:border-[#c9542f]/50'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          !useFreeCredit ? 'border-[#c9542f] bg-[#c9542f]' : 'border-gray-300'
+                          selectedCreditType === 'none' ? 'border-[#c9542f] bg-[#c9542f]' : 'border-gray-300'
                         }`}>
-                          {!useFreeCredit && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          {selectedCreditType === 'none' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
                         <div className="flex flex-col">
                           <span className="font-sans text-xs font-bold text-[#111010] flex items-center gap-1.5">
@@ -1249,7 +1443,7 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                 onClick={handleSubmit}
                 className={`px-6 py-2.5 rounded-full text-white text-xs font-sans uppercase tracking-wider font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 ${
                   notice48h && notice48h.isWithin48h
-                    ? useFreeCredit && freeSessionsRemaining > 0
+                    ? (selectedCreditType === 'package' || selectedCreditType === 'free')
                       ? 'bg-emerald-700 hover:bg-emerald-800'
                       : 'bg-[#c9542f] hover:bg-[#b04523]'
                     : 'bg-[#111010] hover:bg-[#c9542f]'
@@ -1261,10 +1455,15 @@ export default function RescheduleModal({ session, onClose, onSuccess }) {
                     <span>Processing...</span>
                   </>
                 ) : notice48h && notice48h.isWithin48h ? (
-                  useFreeCredit && freeSessionsRemaining > 0 ? (
+                  selectedCreditType === 'package' ? (
                     <>
                       <Sparkle size={15} weight="fill" />
-                      <span>Use 1 Free Credit &amp; Confirm</span>
+                      <span>Use 1 Package Credit &amp; Confirm (₹0)</span>
+                    </>
+                  ) : selectedCreditType === 'free' ? (
+                    <>
+                      <Sparkle size={15} weight="fill" />
+                      <span>Use 1 Free Credit &amp; Confirm (₹0)</span>
                     </>
                   ) : (
                     <>

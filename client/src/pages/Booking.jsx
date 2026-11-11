@@ -110,26 +110,48 @@ export default function Booking() {
   });
 
   const [bookingData, setBookingData] = useState(() => {
+    let userInfo = {};
+    try {
+      const saved = localStorage.getItem('user') || localStorage.getItem('courseUser') || localStorage.getItem('userInfo');
+      if (saved) userInfo = JSON.parse(saved);
+    } catch {}
+
+    const loggedInEmail = (userInfo.email || '').trim().toLowerCase();
+
     const savedData = sessionStorage.getItem('bookingData');
     if (savedData) {
       try {
-        return JSON.parse(savedData);
+        const parsed = JSON.parse(savedData);
+        if (parsed && typeof parsed === 'object') {
+          // If the logged-in user changed or doesn't match the cached email in sessionStorage, discard stale draft!
+          if (loggedInEmail && parsed.email && parsed.email.trim().toLowerCase() !== loggedInEmail) {
+            sessionStorage.removeItem('bookingData');
+          } else {
+            return {
+              ...parsed,
+              email: loggedInEmail || parsed.email || '',
+              name: (loggedInEmail ? (userInfo.fullName || userInfo.name) : '') || parsed.name || '',
+              phoneNumber: (loggedInEmail ? (userInfo.phoneNumber || userInfo.phone) : '') || parsed.phoneNumber || ''
+            };
+          }
+        }
       } catch (e) {}
     }
-    const token = localStorage.getItem('token');
-    const saved = token ? localStorage.getItem('userInfo') : null;
-    const userInfo = saved ? JSON.parse(saved) : {};
+
     return {
       date: null,
       time: null,
-      name: userInfo.fullName || '',
-      email: userInfo.email || '',
+      name: userInfo.fullName || userInfo.name || '',
+      email: loggedInEmail,
       countryCode: userInfo.countryCode || '+91',
       phoneNumber: userInfo.phoneNumber || '',
       source: '',
       otherSource: '',
       reason: '',
       extra: '',
+      usePackageCredit: false,
+      isPackage: false,
+      bookingMode: 'single'
     };
   });
   const [successBookingData, setSuccessBookingData] = useState(null);
@@ -146,6 +168,11 @@ export default function Booking() {
     freeSessions: 0,
     isCoursePurchaser: false,
     courseUserName: ''
+  });
+  const [packageCreditInfo, setPackageCreditInfo] = useState({
+    hasCredits: false,
+    totalCredits: 0,
+    packages: []
   });
   const [bookingSettings, setBookingSettings] = useState({
     general: {
@@ -264,6 +291,17 @@ export default function Booking() {
     const paramEmail = params.get('email');
     const paramName = params.get('name');
     const paramPhone = params.get('phone');
+    const usePackageCreditParam = params.get('usePackageCredit') === 'true' || params.get('packageCredit') === 'true';
+    const paramPackageId = params.get('packageId');
+
+    if (usePackageCreditParam) {
+      setBookingData(prev => ({
+        ...prev,
+        usePackageCredit: true,
+        packageId: paramPackageId || prev.packageId,
+        bookingMode: 'single'
+      }));
+    }
 
     if (mode) setAuthMode(mode);
     if (paramEmail) setAuthDefaultEmail(paramEmail);
@@ -279,7 +317,8 @@ export default function Booking() {
       localUser = JSON.parse(localStorage.getItem('user') || localStorage.getItem('courseUser') || 'null');
     } catch {}
 
-    const resolvedEmail = paramEmail || localUser?.email || '';
+    const loggedInEmail = (localUser?.email || '').trim().toLowerCase();
+    const resolvedEmail = paramEmail || loggedInEmail;
     const resolvedName = paramName || localUser?.fullName || localUser?.name || '';
     const resolvedPhone = paramPhone || localUser?.phoneNumber || localUser?.phone || '';
     const resolvedSource = localUser?.intakeProfile?.source || '';
@@ -291,7 +330,27 @@ export default function Booking() {
       setHasExistingSavedProfile(true);
     }
 
-    if (resolvedEmail || resolvedName || resolvedPhone || resolvedReason || resolvedSource) {
+    if (loggedIn && loggedInEmail) {
+      setBookingData(prev => {
+        const isDifferentEmail = prev.email && prev.email.trim().toLowerCase() !== loggedInEmail;
+        if (isDifferentEmail) {
+          try { sessionStorage.removeItem('bookingData'); } catch {}
+          setPackageCreditInfo({ hasCredits: false, totalCredits: 0, packages: [] });
+          setFreeSessionInfo({ hasFreeSessions: false, freeSessions: 0, isCoursePurchaser: false, courseUserName: '' });
+        }
+        return {
+          ...prev,
+          name: isDifferentEmail ? resolvedName : (resolvedName || prev.name),
+          email: loggedInEmail,
+          phoneNumber: isDifferentEmail ? resolvedPhone : (resolvedPhone || prev.phoneNumber),
+          source: prev.source || resolvedSource,
+          otherSource: prev.otherSource || resolvedOtherSource,
+          reason: prev.reason || resolvedReason,
+          extra: prev.extra || resolvedExtra,
+          usePackageCredit: isDifferentEmail ? false : prev.usePackageCredit
+        };
+      });
+    } else if (resolvedEmail || resolvedName || resolvedPhone || resolvedReason || resolvedSource) {
       setBookingData(prev => ({
         ...prev,
         name: prev.name || resolvedName,
@@ -311,16 +370,17 @@ export default function Booking() {
       })
       .then(res => res.ok ? res.json() : null)
       .then(prof => {
-        if (prof) {
+        if (prof && prof.email) {
+          const profEmail = prof.email.trim().toLowerCase();
           if (prof.intakeProfile?.reason?.trim()) {
             setHasExistingSavedProfile(true);
           }
           setBookingData(prev => ({
             ...prev,
-            name: prev.name || prof.fullName || '',
-            email: prev.email || prof.email || '',
-            phoneNumber: prev.phoneNumber || prof.phoneNumber || '',
-            countryCode: prev.countryCode || prof.countryCode || '+91',
+            name: prof.fullName || prof.name || prev.name,
+            email: profEmail,
+            phoneNumber: prof.phoneNumber || prev.phoneNumber,
+            countryCode: prof.countryCode || prev.countryCode || '+91',
             source: prev.source || prof.intakeProfile?.source || '',
             otherSource: prev.otherSource || prof.intakeProfile?.otherSource || '',
             reason: prev.reason || prof.intakeProfile?.reason || '',
@@ -331,13 +391,13 @@ export default function Booking() {
       .catch(e => console.error('Failed to prefill intake profile in Booking:', e));
     }
 
-    if (localUser && (localUser.freeSessions !== undefined || localStorage.getItem('freeSessions') !== null)) {
-      const fs = localUser.freeSessions !== undefined ? Number(localUser.freeSessions) : Number(localStorage.getItem('freeSessions') || 0);
+    if (localUser) {
+      const fs = Number(localUser.freeSessions || 0);
       setFreeSessionInfo({
         hasFreeSessions: fs > 0,
         freeSessions: fs,
-        isCoursePurchaser: true,
-        courseUserName: resolvedName
+        isCoursePurchaser: Boolean(localUser.courseSessionsGranted || localUser.isPurchased),
+        courseUserName: localUser.fullName || localUser.name || ''
       });
     }
 
@@ -416,6 +476,70 @@ export default function Booking() {
     };
 
     const debounce = setTimeout(checkFreeSessions, 300);
+    return () => clearTimeout(debounce);
+  }, [bookingData.email, isLoggedIn]);
+
+  // Check available package credits for this client
+  useEffect(() => {
+    const checkPackageCredits = async () => {
+      let email = bookingData.email?.trim();
+      const token = localStorage.getItem('token') || localStorage.getItem('courseToken');
+
+      if (!email) {
+        try {
+          const saved = localStorage.getItem('userInfo') || localStorage.getItem('user') || localStorage.getItem('courseUser');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            email = (parsed.email || '').trim();
+          }
+        } catch {}
+      }
+
+      if (!email && !token) {
+        setPackageCreditInfo({ hasCredits: false, totalCredits: 0, packages: [] });
+        return;
+      }
+
+      try {
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const query = email ? `?email=${encodeURIComponent(email)}` : '';
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/packages/credits${query}`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          const total = Number(data.packageCredits ?? data.totalCredits ?? 0) || 0;
+          const pkgs = data.packages || data.activePackages || [];
+          setPackageCreditInfo({
+            hasCredits: total > 0,
+            totalCredits: total,
+            packages: pkgs
+          });
+
+          // If client has available credits and hasn't explicitly chosen to book a package,
+          // auto-apply the package credit for their session!
+          if (total > 0) {
+            setBookingData(prev => {
+              if (prev.isPackage) return prev;
+              return {
+                ...prev,
+                email: prev.email || email,
+                usePackageCredit: prev.usePackageCredit !== false,
+                packageId: prev.packageId || pkgs[0]?._id || pkgs[0]?.id
+              };
+            });
+          } else {
+            setBookingData(prev => ({
+              ...prev,
+              usePackageCredit: false
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch package credits:', err);
+      }
+    };
+
+    const debounce = setTimeout(checkPackageCredits, 150);
     return () => clearTimeout(debounce);
   }, [bookingData.email, isLoggedIn]);
 
@@ -589,8 +713,105 @@ export default function Booking() {
         questionnaireAnswers: questionnairePayload
       };
 
-      // --- Course Free Session Zero-Payment Checkout ---
-      if (freeSessionInfo.hasFreeSessions && freeSessionInfo.freeSessions > 0) {
+      // Check whether user is buying a new multi-session package online
+      const isBuyingPackage = Boolean(bookingData.isPackage && Array.isArray(bookingData.packageSlots) && bookingData.packageSlots.length > 0);
+
+      // Determine effective payment method for single sessions
+      const hasPkgCredits = Boolean(packageCreditInfo?.hasCredits && packageCreditInfo.totalCredits > 0);
+      const hasCourseCredits = Boolean(freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0);
+
+      const chosenMethod = isBuyingPackage 
+        ? 'pay_online' 
+        : (paymentMethodChoice || (
+            hasPkgCredits ? 'package_credit' :
+            hasCourseCredits ? 'course_free_credit' :
+            'pay_online'
+          ));
+
+      // --- Case 1: Package Credit Zero-Payment Checkout ---
+      if (chosenMethod === 'package_credit' && (hasPkgCredits || bookingData.packageId)) {
+        const creditRes = await fetch(`${import.meta.env.VITE_API_URL}/api/packages/book-credit-session`, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({
+            packageId: bookingData.packageId || (packageCreditInfo.packages?.[0]?._id),
+            date: bookingData.date,
+            time: bookingData.time,
+            name: bookingData.name,
+            email: bookingData.email,
+            countryCode: bookingData.countryCode || '+91',
+            phoneNumber: bookingData.phoneNumber,
+            source: finalSource,
+            reason: bookingData.reason || '',
+            extra: bookingData.extra || '',
+            questionnaireAnswers: questionnairePayload,
+            bookingDraftId: draftId
+          })
+        });
+
+        if (!creditRes.ok) {
+          const errData = await creditRes.json().catch(() => ({}));
+          if (creditRes.status === 409 || errData.message?.toLowerCase().includes('slot') || errData.message?.toLowerCase().includes('available')) {
+            setError(errData.message || 'This time slot was just booked or is no longer available. Please select another time.');
+            setStep(1);
+            setIsLoading(false);
+            return;
+          }
+          throw new Error(errData.message || 'Failed to book session with package credit');
+        }
+
+        bookingCompletedRef.current = true;
+        const creditData = await creditRes.json();
+        handleAutoLoginOnBooking(creditData);
+
+        const confirmedCreditData = {
+          ...bookingData,
+          appointmentId: creditData.appointment?._id,
+          isPackageCredit: true,
+          packageId: creditData.package?._id,
+          sessionNumber: creditData.appointment?.sessionNumber,
+          totalSessionsInPackage: creditData.appointment?.totalSessionsInPackage,
+          creditsRemaining: creditData.creditsRemaining,
+          meetLink: creditData.appointment?.meetLink,
+          date: creditData.appointment?.date || bookingData.date,
+          time: creditData.appointment?.time || bookingData.time
+        };
+
+        setSuccessBookingData(confirmedCreditData);
+        setPackageCreditInfo(prev => ({
+          ...prev,
+          totalCredits: creditData.creditsRemaining ?? Math.max(0, prev.totalCredits - 1),
+          hasCredits: (creditData.creditsRemaining ?? Math.max(0, prev.totalCredits - 1)) > 0
+        }));
+
+        setBookingData(prev => ({
+          ...prev,
+          date: null,
+          dateKey: null,
+          time: null,
+          usePackageCredit: false,
+          bookingMode: 'single'
+        }));
+
+        clearQuestionnaireDraft(draftId);
+        sessionStorage.removeItem('bwa_booking_draft_id');
+        sessionStorage.removeItem('bookingStep');
+        sessionStorage.removeItem('bookingData');
+        setQuestionnaireDraft({
+          booking_draft_id: `bwa_draft_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          questionnaire_id: config.questionnaire_id || 'bwa_optional_coaching',
+          content_version: config.content_version || '2026-10-16-v1',
+          opened: false,
+          last_screen: 'intro',
+          answers: {}
+        });
+        setIsLoading(false);
+        nextStep();
+        return;
+      }
+
+      // --- Case 2: Course Free Session Zero-Payment Checkout ---
+      if (chosenMethod === 'course_free_credit' && (hasCourseCredits || freeSessionInfo.hasFreeSessions)) {
         const freeRes = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
           method: 'POST',
           headers: authHeaders,
@@ -675,7 +896,7 @@ export default function Booking() {
             phoneNumber: bookingData.phoneNumber,
             countryCode: bookingData.countryCode || '+91',
             totalSessions: bookingData.totalSessions || bookingData.packageSlots.length,
-            sessionDuration: bookingData.sessionDuration || 60,
+            sessionDuration: 90,
             sessions: bookingData.packageSlots,
             couponCode: couponInfo?.code || '',
             holderId: draftId
@@ -714,7 +935,7 @@ export default function Booking() {
                   countryCode: bookingData.countryCode,
                   phoneNumber: bookingData.phoneNumber,
                   totalSessions: bookingData.totalSessions || bookingData.packageSlots.length,
-                  sessionDuration: bookingData.sessionDuration || 60,
+                  sessionDuration: 90,
                   sessions: bookingData.packageSlots,
                   source: finalSource,
                   reason: bookingData.reason || '',
@@ -734,6 +955,8 @@ export default function Booking() {
                   packageId: finalData.package?._id,
                   isPackage: true,
                   totalSessions: finalData.package?.totalSessions || bookingData.totalSessions,
+                  creditsRemaining: finalData.package?.creditsRemaining ?? Math.max(0, (finalData.package?.totalSessions || bookingData.totalSessions || 1) - 1),
+                  bookedSessionsCount: finalData.package?.bookedSessionsCount || 1,
                   paidAmount: finalData.package?.totalAmount,
                   pricePerSession: finalData.package?.pricePerSession,
                   couponCode: finalData.package?.couponCode || couponInfo?.code || '',
@@ -811,7 +1034,7 @@ export default function Booking() {
         return;
       }
 
-      // 3. Create an order (passing optional couponCode)
+      // 3. Create an order (passing optional couponCode and slot info)
       const orderRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/create-order`, {
         method: 'POST',
         headers: authHeaders,
@@ -820,13 +1043,21 @@ export default function Booking() {
           phoneNumber: bookingData.phoneNumber,
           sessionDuration: bookingData.sessionDuration || 60,
           currency: 'INR',
-          couponCode: couponInfo?.code || ''
+          couponCode: couponInfo?.code || '',
+          date: bookingData.date,
+          time: bookingData.time,
+          duration: bookingData.sessionDuration || 60,
+          booking_draft_id: draftId,
+          holderId: draftId
         })
       });
-      const orderData = await orderRes.json();
+      const orderData = await orderRes.json().catch(() => ({}));
       
       if (!orderRes.ok) {
-        throw new Error(orderData.message || 'Failed to create order');
+        const msg = orderData.message || '';
+        setError(msg || 'Yeh time slot already book ho chuka hai ya available nahi hai. Kripya koi aur date ya time chune.');
+        setIsLoading(false);
+        return;
       }
 
       const chargedAmountInRupees = orderData.amount ? orderData.amount / 100 : (orderData.amountRupees || currentFee);
@@ -844,13 +1075,19 @@ export default function Booking() {
           couponCode: orderData.couponCode || couponInfo?.code || '',
           discountAmount: orderData.discountAmount || couponInfo?.discountAmount || 0,
           duration: finalDuration,
-          isFirstSession: orderData.isFirstSession ?? bookingData.isFirstSession
+          isFirstSession: orderData.isFirstSession ?? bookingData.isFirstSession,
+          booking_draft_id: draftId,
+          holderId: draftId
         }),
       });
+      const initAppData = await initAppRes.json().catch(() => ({}));
+
       if (!initAppRes.ok) {
-        throw new Error('Failed to initialize appointment');
+        const msg = initAppData.message || '';
+        setError(msg || 'Yeh time slot already book ho chuka hai ya available nahi hai. Kripya koi aur date ya time chune.');
+        setIsLoading(false);
+        return;
       }
-      const initAppData = await initAppRes.json();
       const appointmentId = initAppData._id;
 
       // Helper to record failed/abandoned appointments
@@ -977,7 +1214,7 @@ export default function Booking() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#f5f1e8]/30 via-transparent to-[#f5f1e8]/60" />
       </div>
 
-      <div className={`relative z-10 px-3 sm:px-6 md:px-8 w-full ${step === 1 && (bookingData.bookingMode === 'package' || bookingData.isPackage) ? 'max-w-7xl' : 'max-w-5xl'} mx-auto transition-all duration-300`}>
+      <div className={`relative z-10 px-3 sm:px-6 md:px-8 w-full ${step === 1 && (bookingData.bookingMode === 'package' || bookingData.isPackage) ? 'max-w-7xl' : (step === 3 ? 'max-w-6xl' : 'max-w-5xl')} mx-auto transition-all duration-300`}>
         
         {/* Top Left Back Button */}
         {step <= 3 && (
@@ -992,28 +1229,37 @@ export default function Booking() {
           </div>
         )}
 
-        {/* Course Student Free Sessions Active Banner */}
-        {isLoggedIn && freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0 && (
-          <div className="mb-6 sm:mb-8 p-4 sm:p-5 rounded-2xl border border-[#e8c4e2] bg-[#fbf0eb] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 shadow-xs">
+        {/* Unified Free Session Credits Active Banner */}
+        {((packageCreditInfo?.hasCredits && packageCreditInfo.totalCredits > 0) || (isLoggedIn && freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0)) && (
+          <div className="mb-6 sm:mb-8 p-4 sm:p-5 rounded-2xl border border-[#a5d6a7] bg-[#f0f9f1] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 shadow-xs">
             <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-[#e8c4e2] flex items-center justify-center text-[#c9542f] shrink-0 mt-0.5 sm:mt-0 shadow-xs">
-                <Sparkle size={18} weight="fill" className="sm:w-5 sm:h-5" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-[#a5d6a7] flex items-center justify-center text-[#2e7d32] shrink-0 mt-0.5 sm:mt-0 shadow-xs">
+                <Sparkle size={18} weight="fill" className="sm:w-5 sm:h-5 text-[#2e7d32]" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <span className="text-[#111010] text-xs sm:text-sm font-semibold">Mastery Course Benefit Active</span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#e5f2e8] border border-[#a8d5b1] text-[#2f4a34] text-[0.6rem] sm:text-[0.65rem] font-bold uppercase tracking-wider">
-                    {freeSessionInfo.freeSessions} {freeSessionInfo.freeSessions === 1 ? 'Free Session' : 'Free Sessions'} Available
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[#1b5e20] text-xs sm:text-sm font-bold">
+                    Free Session Credits Available
                   </span>
+                  {packageCreditInfo?.hasCredits && packageCreditInfo.totalCredits > 0 && (
+                    <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#81c784] text-[#1b5e20] text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider">
+                      🎟️ {packageCreditInfo.totalCredits} Package Credit{packageCreditInfo.totalCredits > 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0 && (
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#fbf0eb] border border-[#e8c4e2] text-[#c9542f] text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider">
+                      🎓 {freeSessionInfo.freeSessions} Course Free Credit{freeSessionInfo.freeSessions > 1 ? 's' : ''}
+                    </span>
+                  )}
                 </div>
-                <p className="text-[#555047] text-[0.72rem] sm:text-xs font-normal mt-1 break-words">
-                  Account: <span className="text-[#111010] font-medium">{bookingData.email || 'Course Student'}</span> • Your session is 100% complimentary (₹0 at checkout).
+                <p className="text-[#2e7d32] text-[0.72rem] sm:text-xs font-normal mt-1 break-words">
+                  Account: <span className="text-[#111010] font-semibold">{bookingData.email || 'Client'}</span> • You can choose to redeem your credits (₹0) or pay online at the confirmation step.
                 </p>
               </div>
             </div>
             <div className="w-full sm:w-auto shrink-0 flex items-center justify-center sm:justify-end">
-              <span className="w-full sm:w-auto text-center text-[#c9542f] font-bold text-xs tracking-wider uppercase bg-white px-3.5 py-2 rounded-xl border border-[#e8c4e2] shadow-xs">
-                ₹0 Free Booking
+              <span className="w-full sm:w-auto text-center font-bold text-xs tracking-wider uppercase px-3.5 py-2 rounded-xl border border-[#2e7d32] bg-[#2e7d32] text-white shadow-xs">
+                ₹0 Credit Eligible
               </span>
             </div>
           </div>
@@ -1074,12 +1320,12 @@ export default function Booking() {
         </div>
 
         {/* Main Booking Card */}
-        <div className="bg-[#f5f1e8]/95 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-[0_10px_35px_rgba(0,0,0,0.04)]">
+        <div className={`bg-[#f5f1e8]/95 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl relative shadow-[0_10px_35px_rgba(0,0,0,0.04)] ${step === 3 ? 'overflow-visible' : 'overflow-hidden'}`}>
           
           {/* Subtle top warm glow */}
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#c9542f]/40 to-transparent" />
           
-          <div className="p-4 sm:p-6 md:p-10">
+          <div className={`p-4 sm:p-6 ${step === 3 ? 'md:p-7 lg:p-8' : 'md:p-10'}`}>
             <BookingStepper currentStep={step} />
 
             <div className="mt-8">
@@ -1090,6 +1336,7 @@ export default function Booking() {
                   onNext={nextStep} 
                   onBack={prevStep}
                   freeSessionInfo={freeSessionInfo}
+                  packageCreditInfo={packageCreditInfo}
                   settings={bookingSettings.step1}
                   draftId={draftId}
                   fees={fees}
@@ -1122,8 +1369,21 @@ export default function Booking() {
                   data={bookingData} 
                   fee={currentFee}
                   freeSessionInfo={freeSessionInfo}
+                  packageCreditInfo={packageCreditInfo}
+                  onApplyPackageCredit={() => {
+                    setBookingData(prev => ({
+                      ...prev,
+                      usePackageCredit: true,
+                      isPackage: false,
+                      packageId: prev.packageId || packageCreditInfo.packages?.[0]?._id || packageCreditInfo.packages?.[0]?.id
+                    }));
+                  }}
                   onNext={submitBooking} 
                   onBack={prevStep} 
+                  onChangeTime={() => {
+                    setError('');
+                    setStep(1);
+                  }}
                   isLoading={isLoading}
                   error={error}
                   settings={bookingSettings.step3}

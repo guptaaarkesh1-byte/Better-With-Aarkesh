@@ -18,6 +18,11 @@ const slotHoldSchema = new mongoose.Schema({
     required: true,
     index: true,
   },
+  // Hold window duration in minutes (e.g. 60 or 90 mins)
+  duration: {
+    type: Number,
+    default: 90,
+  },
   // Unique client session/draft ID (bwa_booking_draft_id)
   holderId: {
     type: String,

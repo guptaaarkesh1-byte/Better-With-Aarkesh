@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  CalendarBlank, Clock, User, VideoCamera, 
-  EnvelopeSimple, Lock, ArrowLeft, LockKey, CheckSquare, Square, ClockCounterClockwise,
-  Receipt, Tag, CheckCircle
-} from '@phosphor-icons/react';
+import { CheckCircle, Sparkle, WarningCircle, CalendarBlank } from '@phosphor-icons/react';
 import PolicyModal from '../ui/PolicyModal';
 
-export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, error, freeSessionInfo, settings = {} }) {
+export default function Step3Confirm({ 
+  data, 
+  fee, 
+  onNext, 
+  onBack, 
+  onChangeTime,
+  isLoading, 
+  error, 
+  freeSessionInfo, 
+  packageCreditInfo = null,
+  onApplyPackageCredit = null,
+  settings = {} 
+}) {
   const [agreed, setAgreed] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
 
@@ -17,12 +25,31 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
 
-  const isFreeSession = freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0;
-  const isPackage = Boolean(data.isPackage && data.packageSlots && data.packageSlots.length > 0);
+  // Available credits analysis
+  const isPackage = Boolean(!data.usePackageCredit && !data.isPackageCredit && data.isPackage && data.packageSlots && data.packageSlots.length > 0);
   const totalSessions = isPackage ? (data.totalSessions || data.packageSlots.length) : 1;
   const pricePerSession = fee;
   const packageSubtotal = pricePerSession * totalSessions;
   const effectiveBaseFee = isPackage ? packageSubtotal : fee;
+
+  const hasPackageCredits = Boolean(packageCreditInfo?.hasCredits && packageCreditInfo.totalCredits > 0);
+  const hasCourseCredits = Boolean(freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0);
+  const hasAnyCredits = !isPackage && (hasPackageCredits || hasCourseCredits);
+
+  // Payment method state: 'package_credit' | 'course_free_credit' | 'pay_online'
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(() => {
+    if (isPackage) return 'pay_online';
+    if (data.usePackageCredit || data.isPackageCredit) return 'package_credit';
+    if (data.useFreeSession) return 'course_free_credit';
+    // User requested priority: package credits first, then course credits, else pay online
+    if (hasPackageCredits) return 'package_credit';
+    if (hasCourseCredits) return 'course_free_credit';
+    return 'pay_online';
+  });
+
+  const isUsingPackageCredit = !isPackage && selectedPaymentMethod === 'package_credit';
+  const isUsingCourseCredit = !isPackage && selectedPaymentMethod === 'course_free_credit';
+  const isUsingCredit = isUsingPackageCredit || isUsingCourseCredit;
 
   const handleApplyCoupon = async (e) => {
     if (e) e.preventDefault();
@@ -54,7 +81,7 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
         setCouponSuccess('');
       } else {
         setAppliedCoupon(result);
-        setCouponSuccess(result.message || 'Coupon applied successfully!');
+        setCouponSuccess(result.message || `Coupon applied. You save ₹${(result.discountAmount || 0).toLocaleString('en-IN')}.`);
         setCouponError('');
       }
     } catch (err) {
@@ -63,17 +90,17 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
       if (c === 'AARKESH50' || c === 'CLAIM50' || c === 'SHERY50') {
         const discountAmount = Math.round(effectiveBaseFee * 0.5);
         setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 50, discountAmount, finalAmount: effectiveBaseFee - discountAmount });
-        setCouponSuccess('Coupon applied! 50% discount applied successfully.');
+        setCouponSuccess(`Coupon applied. You save ₹${discountAmount.toLocaleString('en-IN')}.`);
       } else if (c === 'BETTER20') {
         const discountAmount = Math.round(effectiveBaseFee * 0.2);
         setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 20, discountAmount, finalAmount: effectiveBaseFee - discountAmount });
-        setCouponSuccess('Coupon applied! 20% discount applied successfully.');
+        setCouponSuccess(`Coupon applied. You save ₹${discountAmount.toLocaleString('en-IN')}.`);
       } else if (c === 'WELCOME10') {
         const discountAmount = Math.round(effectiveBaseFee * 0.1);
         setAppliedCoupon({ code: c, discountType: 'percentage', discountValue: 10, discountAmount, finalAmount: effectiveBaseFee - discountAmount });
-        setCouponSuccess('Coupon applied! 10% discount applied successfully.');
+        setCouponSuccess(`Coupon applied. You save ₹${discountAmount.toLocaleString('en-IN')}.`);
       } else {
-        setCouponError('Invalid coupon code. Try AARKESH50 or BETTER20');
+        setCouponError('That code isn’t valid. Please check and try again.');
       }
     } finally {
       setCouponLoading(false);
@@ -90,342 +117,547 @@ export default function Step3Confirm({ data, fee, onNext, onBack, isLoading, err
   const finalFee = appliedCoupon ? appliedCoupon.finalAmount : effectiveBaseFee;
   const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
 
-  const nextStepIcons = [EnvelopeSimple, CalendarBlank, Lock, User];
+  const formatTimeRange = (timeStr, duration = 60) => {
+    if (!timeStr) return '7:00 PM – 8:30 PM';
+    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return timeStr;
+    
+    let [_, hours, minutes, ampm] = match;
+    let startHours = parseInt(hours, 10);
+    let startMinutes = parseInt(minutes, 10);
+    
+    let totalMinutes = (startHours % 12) * 60 + startMinutes;
+    if (ampm.toUpperCase() === 'PM') totalMinutes += 12 * 60;
+    
+    let endTotalMinutes = totalMinutes + (duration || 60);
+    let endHours24 = Math.floor(endTotalMinutes / 60) % 24;
+    let endMinutes = endTotalMinutes % 60;
+    
+    let endAmpm = endHours24 >= 12 ? 'PM' : 'AM';
+    let endHours12 = endHours24 % 12;
+    if (endHours12 === 0) endHours12 = 12;
+    
+    const formattedStartMinutes = startMinutes.toString().padStart(2, '0');
+    const formattedEndMinutes = endMinutes.toString().padStart(2, '0');
+    
+    return `${startHours}:${formattedStartMinutes} ${ampm.toUpperCase()} – ${endHours12}:${formattedEndMinutes} ${endAmpm}`;
+  };
+
+  const sessionTitle = isUsingPackageCredit
+    ? '1-on-1 Coaching Session (Package Credit)'
+    : isUsingCourseCredit
+      ? '1-on-1 Coaching Session (Course Benefit)'
+      : isPackage
+        ? `${totalSessions}-Session Coaching Package`
+        : (data.sessionDuration === 90 || data.isFirstSession === false
+            ? '1-on-1 Follow-up Coaching Session'
+            : '1-on-1 First Coaching Session');
+
+  const formattedDate = data.date || data.packageSlots?.[0]?.date || 'Wednesday, November 11, 2026';
+  const durationMinutes = data.sessionDuration || (data.isFirstSession === false ? 90 : 60);
+  const formattedTime = formatTimeRange(data.time || data.packageSlots?.[0]?.time, durationMinutes);
 
   return (
-    <div className="flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full animate-in fade-in duration-500">
       
-      <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 lg:gap-12">
+      {/* 2-Column Responsive Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-6 items-start">
         
-        {/* Left Column - Details */}
-        <div className="flex-1">
-          <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-3 sm:mb-4">
-            {settings.sessionDetailsHeading || 'SESSION DETAILS'}
-          </h3>
+        {/* LEFT COLUMN: Details + What happens next + Reschedule */}
+        <div className="flex flex-col gap-5 sm:gap-6">
           
-          <div className="bg-white/90 border border-black/10 rounded-2xl p-5 sm:p-7 md:p-8 flex flex-col gap-5 sm:gap-6 shadow-xs">
-            
-            {/* Session Type */}
-            <div className="flex items-start gap-3 sm:gap-4">
-              <User className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-              <div>
-                <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.sessionTypeLabel || 'Session Type'}</p>
-                <p className="text-[#111010] text-base sm:text-lg font-medium">
-                  {isPackage 
-                    ? `${totalSessions}-Session Coaching Package`
-                    : (data.sessionDuration === 90 || data.isFirstSession === false 
-                        ? '1-on-1 Follow-up Coaching Session' 
-                        : '1-on-1 First Coaching Session')}
-                </p>
-              </div>
+          {/* Card 1: SESSION DETAILS */}
+          <section className="bg-white border border-[#e8e3dc] rounded-[20px] p-5 sm:p-6 shadow-[0_8px_30px_rgba(29,26,23,0.05)]">
+            <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#c8512b] mb-3.5">
+              {settings.sessionDetailsHeading || 'SESSION DETAILS'}
+            </p>
+
+            {/* Type Header Row with Pill */}
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-5 sm:mb-6">
+              <b className="font-serif text-xl sm:text-[21px] font-medium text-[#1d1a17]">
+                {sessionTitle}
+              </b>
+              {isPackage ? (
+                <span className="text-xs font-semibold text-[#c8512b] bg-[#fbeee8] rounded-full px-3 py-1">
+                  Session 1 of {totalSessions}
+                </span>
+              ) : isUsingPackageCredit ? (
+                <span className="text-xs font-semibold text-[#2e7d32] bg-[#e8f5e9] border border-[#a5d6a7]/60 rounded-full px-3 py-1">
+                  Package Credit
+                </span>
+              ) : isUsingCourseCredit ? (
+                <span className="text-xs font-semibold text-[#16a34a] bg-[#f0fdf4] border border-[#bbf7d0] rounded-full px-3 py-1">
+                  Course Benefit
+                </span>
+              ) : null}
             </div>
 
-            {/* Date & Time (Single vs Package) */}
-            {isPackage ? (
-              <div className="flex items-start gap-3 sm:gap-4">
-                <CalendarBlank className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-                <div className="w-full">
-                  <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-1.5">
-                    Package Schedule ({totalSessions} Sessions)
-                  </p>
-                  <div className="space-y-1.5 max-h-44 overflow-y-auto custom-scrollbar pr-1">
-                    {data.packageSlots?.map((slot, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-[#faf8f5] border border-black/8 text-xs text-[#111010]">
-                        <span className="font-bold text-[#c9542f]">Session {idx + 1}</span>
-                        <span className="font-medium">{slot.date} · {slot.time}</span>
-                      </div>
-                    ))}
-                  </div>
+            {/* Facts Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              
+              {/* Fact 1: Date (Wide) */}
+              <div className="sm:col-span-2 bg-[#faf8f6] border border-[#e8e3dc] rounded-[14px] p-3.5 flex gap-3 items-start min-w-0">
+                <div className="w-[34px] h-[34px] rounded-[10px] bg-white border border-[#e8e3dc] flex items-center justify-center shrink-0 text-base">
+                  📅
+                </div>
+                <div className="min-w-0">
+                  <small className="block text-[11px] uppercase tracking-[0.1em] font-semibold text-[#7b736a] leading-none mb-1">
+                    {settings.dateLabel || 'Date'}
+                  </small>
+                  <b className="block font-semibold text-[15px] text-[#1d1a17] leading-tight break-words">
+                    {formattedDate}
+                  </b>
                 </div>
               </div>
-            ) : (
-              <>
-                <div className="flex items-start gap-3 sm:gap-4">
-                  <CalendarBlank className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-                  <div>
-                    <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.dateLabel || 'Date'}</p>
-                    <p className="text-[#111010] text-base sm:text-lg font-medium">{data.date || 'Friday, October 4, 2024'}</p>
-                  </div>
-                </div>
 
-                <div className="flex items-start gap-3 sm:gap-4">
-                  <Clock className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-                  <div>
-                    <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.timeLabel || 'Time'}</p>
-                    <p className="text-[#111010] text-base sm:text-lg font-medium">
-                      {data.time ? (
-                        (() => {
-                          const match = data.time.match(/(\d+):(\d+)\s(AM|PM)/);
-                          if (!match) return `${data.time}`;
-                          
-                          let [_, hours, minutes, ampm] = match;
-                          hours = parseInt(hours, 10);
-                          minutes = parseInt(minutes, 10);
-                          
-                          if (ampm === 'PM' && hours !== 12) hours += 12;
-                          if (ampm === 'AM' && hours === 12) hours = 0;
-                          
-                          const duration = data.sessionDuration || 60;
-                          minutes += duration;
-                          hours += Math.floor(minutes / 60);
-                          minutes = minutes % 60;
-                          
-                          const endAmpm = (hours >= 12 && hours < 24) ? 'PM' : 'AM';
-                          let endHours = hours % 12;
-                          if (endHours === 0) endHours = 12;
-                          
-                          const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${endAmpm}`;
-                          return `${data.time} – ${endTime} IST`;
-                        })()
-                      ) : '10:30 AM – 11:30 AM IST'}
-                    </p>
-                  </div>
+              {/* Fact 2: Time */}
+              <div className="bg-[#faf8f6] border border-[#e8e3dc] rounded-[14px] p-3.5 flex gap-3 items-start min-w-0">
+                <div className="w-[34px] h-[34px] rounded-[10px] bg-white border border-[#e8e3dc] flex items-center justify-center shrink-0 text-base">
+                  🕖
                 </div>
-              </>
+                <div className="min-w-0">
+                  <small className="block text-[11px] uppercase tracking-[0.1em] font-semibold text-[#7b736a] leading-none mb-1">
+                    {settings.timeLabel || 'Time'}
+                  </small>
+                  <b className="block font-semibold text-[14px] sm:text-[15px] text-[#1d1a17] leading-tight whitespace-nowrap">
+                    {formattedTime}
+                  </b>
+                  <span className="block text-[13px] text-[#7b736a] leading-tight mt-0.5">IST</span>
+                </div>
+              </div>
+
+              {/* Fact 3: Duration */}
+              <div className="bg-[#faf8f6] border border-[#e8e3dc] rounded-[14px] p-3.5 flex gap-3 items-start min-w-0">
+                <div className="w-[34px] h-[34px] rounded-[10px] bg-white border border-[#e8e3dc] flex items-center justify-center shrink-0 text-base">
+                  ⏱
+                </div>
+                <div className="min-w-0">
+                  <small className="block text-[11px] uppercase tracking-[0.1em] font-semibold text-[#7b736a] leading-none mb-1">
+                    {settings.durationLabel || 'Duration'}
+                  </small>
+                  <b className="block font-semibold text-[14px] sm:text-[15px] text-[#1d1a17] leading-tight whitespace-nowrap">
+                    {durationMinutes} minutes
+                  </b>
+                  {isPackage && <span className="block text-[13px] text-[#7b736a] leading-tight mt-0.5">per session</span>}
+                </div>
+              </div>
+
+              {/* Fact 4: Where (Wide) */}
+              <div className="sm:col-span-2 bg-[#faf8f6] border border-[#e8e3dc] rounded-[14px] p-3.5 flex gap-3 items-start min-w-0">
+                <div className="w-[34px] h-[34px] rounded-[10px] bg-white border border-[#e8e3dc] flex items-center justify-center shrink-0 text-base">
+                  🎥
+                </div>
+                <div className="min-w-0">
+                  <small className="block text-[11px] uppercase tracking-[0.1em] font-semibold text-[#7b736a] leading-none mb-1">
+                    {settings.whereLabel || 'Where'}
+                  </small>
+                  <b className="block font-semibold text-[15px] text-[#1d1a17] leading-tight">
+                    {settings.whereValue || 'Google Meet'}
+                  </b>
+                  <span className="block text-[13px] text-[#7b736a] leading-tight mt-0.5">
+                    {settings.whereNote || 'Link will be shared after booking'}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Package Credits Explanatory Box */}
+            {isPackage && (
+              <div className="flex gap-3 mt-4 p-3.5 sm:p-4 rounded-[14px] bg-[#fbeee8] border border-[#f0d3c7] items-start">
+                <span className="text-[#c8512b] shrink-0 text-base mt-0.5">✦</span>
+                <div className="text-[13.5px] text-[#1d1a17] leading-relaxed">
+                  <b className="block font-semibold mb-0.5">
+                    Remaining {Math.max(0, totalSessions - 1)} sessions credited to your account
+                  </b>
+                  Only Session 1 is scheduled today. The other {Math.max(0, totalSessions - 1)} sessions are added to your account and can be booked anytime later, based on your availability, at no extra payment.
+                </div>
+              </div>
             )}
 
-            <div className="flex items-start gap-3 sm:gap-4">
-              <Clock className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-              <div>
-                <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.durationLabel || 'Duration'}</p>
-                <p className="text-[#111010] text-base sm:text-lg font-medium">
-                  {data.sessionDuration || (data.isFirstSession === false ? 90 : 60)} minutes {isPackage ? 'per session' : ''}
-                </p>
+          </section>
+
+          {/* Card 2: WHAT HAPPENS NEXT */}
+          <section className="bg-white border border-[#e8e3dc] rounded-[20px] p-5 sm:p-6 shadow-[0_8px_30px_rgba(29,26,23,0.05)]">
+            <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#c8512b] mb-3.5">
+              {settings.whatHappensNextHeading || 'WHAT HAPPENS NEXT'}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex gap-2.5 items-start">
+                <span className="text-base shrink-0 mt-0.5">✉️</span>
+                <div>
+                  <b className="block text-sm font-semibold text-[#1d1a17]">Confirmation email</b>
+                  <span className="text-[13px] text-[#7b736a]">With all the details and next steps.</span>
+                </div>
+              </div>
+              <div className="flex gap-2.5 items-start">
+                <span className="text-base shrink-0 mt-0.5">🗓</span>
+                <div>
+                  <b className="block text-sm font-semibold text-[#1d1a17]">A reminder before we meet</b>
+                  <span className="text-[13px] text-[#7b736a]">So you can show up fully.</span>
+                </div>
+              </div>
+              <div className="flex gap-2.5 items-start">
+                <span className="text-base shrink-0 mt-0.5">🔒</span>
+                <div>
+                  <b className="block text-sm font-semibold text-[#1d1a17]">A private, confidential space</b>
+                  <span className="text-[13px] text-[#7b736a]">Built for honest conversations.</span>
+                </div>
+              </div>
+              <div className="flex gap-2.5 items-start">
+                <span className="text-base shrink-0 mt-0.5">🌱</span>
+                <div>
+                  <b className="block text-sm font-semibold text-[#1d1a17]">This is your time</b>
+                  <span className="text-[13px] text-[#7b736a]">To reflect, gain clarity, and move forward.</span>
+                </div>
               </div>
             </div>
+          </section>
 
-            <div className="flex items-start gap-3 sm:gap-4">
-              <VideoCamera className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-              <div>
-                <p className="font-sans text-[0.65rem] uppercase tracking-wider text-[#7a756b] font-bold mb-0.5">{settings.whereLabel || 'Where'}</p>
-                <p className="text-[#111010] text-base sm:text-lg font-medium">{settings.whereValue || 'Google Meet'} <span className="text-[#7a756b] text-xs sm:text-sm block sm:inline font-normal">{settings.whereNote || '(Link will be shared after booking)'}</span></p>
-              </div>
+          {/* Card 3: NEED TO RESCHEDULE? */}
+          <section className="bg-[#faf8f6] border border-[#e8e3dc] rounded-[20px] p-5 sm:p-6 flex flex-col sm:flex-row gap-3 sm:items-center justify-between shadow-[0_8px_30px_rgba(29,26,23,0.05)]">
+            <div>
+              <b className="block text-sm font-semibold text-[#1d1a17] mb-0.5">
+                {settings.rescheduleHeading || 'Need to reschedule?'}
+              </b>
+              <span className="text-[13px] text-[#7b736a]">
+                {settings.rescheduleText || 'You can reschedule or cancel up to 48 hours before the session.'}
+              </span>
             </div>
+            <button 
+              type="button"
+              onClick={() => setActiveModal('rescheduling-policy')}
+              className="text-[#c8512b] hover:text-[#1d1a17] font-semibold text-xs sm:text-sm underline whitespace-nowrap cursor-pointer transition-colors text-left sm:text-right"
+            >
+              {settings.reschedulePolicyLinkText || 'View rescheduling policy'}
+            </button>
+          </section>
 
-            <div className="flex items-start gap-3 sm:gap-4 pt-2 border-t border-black/10">
-              <Receipt className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-              <div className="flex flex-col gap-1.5 w-full">
-                <span className="font-sans text-[0.65rem] uppercase tracking-widest text-[#7a756b] font-bold">{settings.totalAmountLabel || 'Total Amount'}</span>
-                {isFreeSession ? (
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <span className="font-serif text-2xl sm:text-3xl font-bold text-[#c9542f]">₹0</span>
-                    <span className="font-sans text-xs line-through text-[#7a756b]">₹{fee.toLocaleString('en-IN')}</span>
-                    <span className="px-2 py-0.5 rounded bg-[#fbf0eb] text-[#c9542f] text-[0.65rem] font-bold border border-[#e8c4e2]">
-                      Course Benefit ({freeSessionInfo.freeSessions} Left)
+        </div>
+
+        {/* RIGHT COLUMN: Dedicated Sticky Checkout / Payment Card */}
+        <aside className="lg:sticky lg:top-[150px] lg:self-start bg-white border border-[#e8e3dc] rounded-[20px] p-6 shadow-[0_8px_30px_rgba(29,26,23,0.05)] flex flex-col z-10">
+          
+          <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#c8512b] mb-4">
+            {isPackage 
+              ? 'PACKAGE PAYMENT' 
+              : (isUsingCredit ? 'SESSION CONFIRMATION' : 'SESSION PAYMENT')}
+          </p>
+
+          {/* Total Amount Display */}
+          <div className="flex flex-col">
+            <small className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#7b736a] block mb-1">
+              {settings.totalAmountLabel || 'TOTAL AMOUNT'}
+            </small>
+            <div className="font-serif font-semibold text-3xl sm:text-[40px] leading-[1.1] my-1 text-[#1d1a17] flex items-baseline flex-wrap">
+              <span>
+                {isUsingCredit ? '₹0' : `₹${finalFee.toLocaleString('en-IN')}`}
+              </span>
+              {appliedCoupon && discountAmount > 0 && !isUsingCredit ? (
+                <s className="font-sans font-normal text-base sm:text-lg text-[#7b736a] ml-2">
+                  ₹{packageSubtotal.toLocaleString('en-IN')}
+                </s>
+              ) : isUsingCredit ? (
+                <s className="font-sans font-normal text-base sm:text-lg text-[#7b736a] ml-2">
+                  ₹{fee.toLocaleString('en-IN')}
+                </s>
+              ) : null}
+            </div>
+            <div className="text-[13px] text-[#7b736a] mt-1">
+              {isPackage ? (
+                `${totalSessions} sessions · ₹${pricePerSession.toLocaleString('en-IN')} per session · Single payment`
+              ) : isUsingPackageCredit ? (
+                `Prepaid Package Credit · Zero Payment Today (${packageCreditInfo?.totalCredits || 0} Left)`
+              ) : isUsingCourseCredit ? (
+                `Course Complimentary Credit · Zero Payment Today (${freeSessionInfo?.freeSessions || 0} Left)`
+              ) : (
+                `1 session · ${durationMinutes} minutes · Single payment`
+              )}
+            </div>
+          </div>
+
+          <hr className="border-0 border-t border-[#e8e3dc] my-5 sm:my-6" />
+
+          {/* Payment Method Selector (Directly on Step 3) */}
+          {!isPackage && hasAnyCredits && (
+            <div className="mb-5 sm:mb-6 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <small className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#7b736a] block">
+                  CHOOSE PAYMENT METHOD
+                </small>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#2e7d32] bg-[#f0f9f1] border border-[#a5d6a7] px-2 py-0.5 rounded-full">
+                  Credits Available
+                </span>
+              </div>
+
+              {/* Option 1: Package Credit */}
+              {hasPackageCredits && (
+                <div
+                  onClick={() => setSelectedPaymentMethod('package_credit')}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    selectedPaymentMethod === 'package_credit'
+                      ? 'bg-[#f0f9f1] border-[#2e7d32] ring-2 ring-[#2e7d32]/25 shadow-xs'
+                      : 'bg-white border-[#e8e3dc] hover:border-[#2e7d32]/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                      selectedPaymentMethod === 'package_credit' ? 'border-[#2e7d32] bg-[#2e7d32]' : 'border-gray-300'
+                    }`}>
+                      {selectedPaymentMethod === 'package_credit' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="min-w-0">
+                      <b className="block text-xs sm:text-[13px] font-semibold text-[#1d1a17] truncate">
+                        🎟️ Use Package Session Credit
+                      </b>
+                      <span className="block text-[11px] sm:text-xs text-[#2e7d32] font-medium">
+                        {packageCreditInfo.totalCredits} prepaid credit{packageCreditInfo.totalCredits > 1 ? 's' : ''} available
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-sm sm:text-base font-serif font-bold text-[#2e7d32] shrink-0">
+                    ₹0
+                  </span>
+                </div>
+              )}
+
+              {/* Option 2: Course Free Session Credit */}
+              {hasCourseCredits && (
+                <div
+                  onClick={() => setSelectedPaymentMethod('course_free_credit')}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    selectedPaymentMethod === 'course_free_credit'
+                      ? 'bg-[#f0fdf4] border-[#16a34a] ring-2 ring-[#16a34a]/25 shadow-xs'
+                      : 'bg-white border-[#e8e3dc] hover:border-[#16a34a]/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                      selectedPaymentMethod === 'course_free_credit' ? 'border-[#16a34a] bg-[#16a34a]' : 'border-gray-300'
+                    }`}>
+                      {selectedPaymentMethod === 'course_free_credit' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="min-w-0">
+                      <b className="block text-xs sm:text-[13px] font-semibold text-[#1d1a17] truncate">
+                        🎓 Use Course Free Session Credit
+                      </b>
+                      <span className="block text-[11px] sm:text-xs text-[#16a34a] font-medium">
+                        {freeSessionInfo.freeSessions} complimentary credit{freeSessionInfo.freeSessions > 1 ? 's' : ''} available
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-sm sm:text-base font-serif font-bold text-[#16a34a] shrink-0">
+                    ₹0
+                  </span>
+                </div>
+              )}
+
+              {/* Option 3: Paid Method (Pay Online) */}
+              <div
+                onClick={() => setSelectedPaymentMethod('pay_online')}
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                  selectedPaymentMethod === 'pay_online'
+                    ? 'bg-[#fef2f0] border-[#c8512b] ring-2 ring-[#c8512b]/25 shadow-xs'
+                    : 'bg-white border-[#e8e3dc] hover:border-[#c8512b]/50'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                    selectedPaymentMethod === 'pay_online' ? 'border-[#c8512b] bg-[#c8512b]' : 'border-gray-300'
+                  }`}>
+                    {selectedPaymentMethod === 'pay_online' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <div className="min-w-0">
+                    <b className="block text-xs sm:text-[13px] font-semibold text-[#1d1a17] truncate">
+                      💳 Paid Method (Pay Online)
+                    </b>
+                    <span className="block text-[11px] sm:text-xs text-[#7b736a]">
+                      UPI, Cards, NetBanking · Keep credits for later
                     </span>
                   </div>
-                ) : isPackage ? (
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-baseline gap-2.5">
-                      <span className="font-serif text-2xl sm:text-3xl font-bold text-[#111010]">
-                        ₹{finalFee.toLocaleString('en-IN')}
-                      </span>
-                      {appliedCoupon && discountAmount > 0 && (
-                        <>
-                          <span className="font-sans text-sm line-through text-[#7a756b]">
-                            ₹{packageSubtotal.toLocaleString('en-IN')}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full bg-[#e8f5e9] text-[#2e7d32] border border-[#a5d6a7] text-[0.68rem] font-bold tracking-wide">
-                            COUPON APPLIED: SAVE ₹{discountAmount.toLocaleString('en-IN')}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <div className="text-[0.72rem] text-[#7a756b]">
-                      Package of {totalSessions} sessions · ₹{pricePerSession.toLocaleString('en-IN')} per session
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    {appliedCoupon ? (
-                      <div className="flex flex-col gap-1">
-                        <div className="flex flex-wrap items-baseline gap-2.5">
-                          <span className="font-serif text-2xl sm:text-3xl font-bold text-[#111010]">₹{finalFee.toLocaleString('en-IN')}</span>
-                          <span className="font-sans text-sm line-through text-[#7a756b]">₹{fee.toLocaleString('en-IN')}</span>
-                          <span className="px-2 py-0.5 rounded-full bg-[#e8f5e9] text-[#2e7d32] border border-[#a5d6a7] text-[0.68rem] font-bold tracking-wide">
-                            SAVE ₹{discountAmount.toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="font-serif text-2xl sm:text-3xl font-bold text-[#111010]">₹{fee.toLocaleString('en-IN')}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Coupon Code Section (ONLY for paid sessions, hidden when isFreeSession) */}
-            {!isFreeSession && (
-              <div className="pt-3 border-t border-black/10">
-                {!appliedCoupon ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-sans text-[#7a756b] font-semibold">
-                      <Tag size={14} className="text-[#c9542f]" weight="bold" />
-                      <span>Have a coupon code?</span>
-                    </div>
-                    <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={couponInput}
-                        onChange={(e) => {
-                          setCouponInput(e.target.value.toUpperCase());
-                          if (couponError) setCouponError('');
-                        }}
-                        placeholder="Enter coupon code"
-                        className="flex-1 px-3.5 py-2 text-xs font-sans uppercase font-medium bg-[#fcfaf7] border border-black/15 rounded-xl text-[#111010] placeholder:normal-case placeholder:text-[#999] focus:outline-none focus:border-[#c9542f] transition-colors"
-                      />
-                      <button
-                        type="submit"
-                        disabled={couponLoading || !couponInput.trim()}
-                        className="px-4 py-2 text-xs font-sans font-bold uppercase tracking-wider text-white bg-[#c9542f] hover:bg-[#b04523] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer shadow-xs"
-                      >
-                        {couponLoading ? '...' : 'Apply'}
-                      </button>
-                    </form>
-                    {couponError && (
-                      <p className="text-[0.72rem] text-red-600 font-sans mt-1">
-                        {couponError}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f0f9f1] border border-[#a5d6a7]/60 text-xs">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={16} weight="fill" className="text-[#2e7d32]" />
-                      <span className="font-mono font-bold text-[#2e7d32]">{appliedCoupon.code}</span>
-                      <span className="text-[#2e7d32] font-sans font-medium text-[0.72rem]">
-                        ({appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountValue}% OFF` : `₹${appliedCoupon.discountValue} OFF`})
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRemoveCoupon}
-                      className="text-xs font-sans text-[#7a756b] hover:text-red-600 underline cursor-pointer"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-          </div>
-        </div>
-
-        {/* Right Column - Info */}
-        <div className="flex-1 mt-6 lg:mt-0">
-          <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-3 sm:mb-4">
-            {settings.whatHappensNextHeading || 'WHAT HAPPENS NEXT'}
-          </h3>
-          
-          <div className="bg-white/90 border border-black/10 rounded-2xl p-5 sm:p-7 md:p-8 flex flex-col gap-4 sm:gap-5 shadow-xs">
-            
-            {(settings.nextSteps && settings.nextSteps.length > 0 ? settings.nextSteps : [
-              { title: "You'll receive a confirmation email", description: "With all the details and next steps." },
-              { title: "A reminder before our session", description: "So you can show up fully." },
-              { title: "A private, confidential space", description: "Built for honest conversations." },
-              { title: "This is your time", description: "To reflect, gain clarity, and move forward." }
-            ]).map((stepItem, idx) => {
-              const IconComp = nextStepIcons[idx % nextStepIcons.length] || EnvelopeSimple;
-              return (
-                <div key={idx} className="flex items-start gap-3 sm:gap-4">
-                  <IconComp className="text-[#c9542f] text-lg sm:text-xl shrink-0 mt-0.5" weight="light" />
-                  <div>
-                    <p className="text-[#111010] text-xs sm:text-sm font-semibold mb-0.5">{stepItem.title}</p>
-                    <p className="text-[#555047] text-[0.75rem] sm:text-xs font-light">{stepItem.description}</p>
-                  </div>
                 </div>
-              );
-            })}
-
-          </div>
-
-          <h3 className="font-sans text-[0.68rem] uppercase tracking-[0.2em] font-bold text-[#c9542f] mb-3 sm:mb-4 mt-6 sm:mt-8">
-            {settings.rescheduleHeading || 'NEED TO RESCHEDULE?'}
-          </h3>
-          
-          <div className="bg-[#fbf0eb] border border-[#e8c4e2] rounded-2xl p-4 sm:p-5 flex gap-3 sm:gap-4 items-start shadow-xs">
-            <ClockCounterClockwise className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="light" />
-            <div>
-              <p className="text-[#555047] text-xs font-normal leading-relaxed mb-2">
-                {settings.rescheduleText || 'You can reschedule or cancel up to 48 hours before the session.'}
-              </p>
-              <button 
-                onClick={() => setActiveModal('rescheduling-policy')}
-                className="text-[#c9542f] text-xs font-semibold underline hover:text-[#111010] transition-colors cursor-pointer"
-              >
-                {settings.reschedulePolicyLinkText || 'View Rescheduling Policy'}
-              </button>
+                <span className="text-sm sm:text-base font-serif font-bold text-[#c8512b] shrink-0">
+                  ₹{finalFee.toLocaleString('en-IN')}
+                </span>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
 
-      </div>
+          {/* Discount Lines (when coupon applied) */}
+          {appliedCoupon && discountAmount > 0 && !isUsingCredit && (
+            <>
+              <div className="grid gap-2 text-sm text-[#1d1a17]">
+                <div className="flex justify-between">
+                  <span>Session total</span>
+                  <span>₹{packageSubtotal.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between text-[#2e8a57] font-semibold">
+                  <span>Coupon ({appliedCoupon.code})</span>
+                  <span>− ₹{discountAmount.toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+              <hr className="border-0 border-t border-[#e8e3dc] my-5 sm:my-6" />
+            </>
+          )}
 
-      {/* Checkbox and Submit */}
-      <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-black/10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6">
-        
-        <div className="flex w-full lg:w-auto flex-1">
-          <div 
-            className="flex items-start gap-3 cursor-pointer group"
-            onClick={() => setAgreed(!agreed)}
-          >
-            {agreed ? (
-              <CheckSquare className="text-[#c9542f] text-xl sm:text-2xl shrink-0 mt-0.5" weight="fill" />
-            ) : (
-              <Square className="text-black/30 text-xl sm:text-2xl shrink-0 mt-0.5 group-hover:text-[#c9542f] transition-colors" weight="regular" />
-            )}
-            <p className="text-[#555047] text-xs sm:text-sm font-normal leading-snug">
+          {/* Coupon Code Section (Only when paying online) */}
+          {!isUsingCredit && (
+            <div>
+              {!appliedCoupon ? (
+                <>
+                  <label htmlFor="coupon-code" className="block text-sm font-semibold text-[#1d1a17] mb-2">
+                    Have a coupon code?
+                  </label>
+                  <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                    <input
+                      id="coupon-code"
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => {
+                        setCouponInput(e.target.value.toUpperCase());
+                        if (couponError) setCouponError('');
+                      }}
+                      placeholder="ENTER CODE"
+                      autoComplete="off"
+                      className="flex-1 min-w-0 font-sans text-xs uppercase tracking-[0.05em] border border-[#e8e3dc] rounded-xl px-3.5 py-3 bg-white text-[#1d1a17] placeholder:normal-case placeholder:text-[#999] focus:outline-2 focus:outline-[#c8512b] focus:outline-offset-2 transition-all"
+                    />
+                    <button
+                      type="submit"
+                      disabled={couponLoading || !couponInput.trim()}
+                      className="font-sans font-semibold text-[13px] tracking-[0.08em] uppercase rounded-xl px-5 py-3 border border-[#e8e3dc] bg-white text-[#1d1a17] hover:border-[#c8512b] hover:text-[#c8512b] disabled:opacity-45 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
+                    >
+                      {couponLoading ? '...' : 'APPLY'}
+                    </button>
+                  </form>
+                  {couponError && (
+                    <div className="text-[13px] text-[#b3261e] mt-1.5 min-h-[18px]">
+                      {couponError}
+                    </div>
+                  )}
+                  {couponSuccess && (
+                    <div className="text-[13px] text-[#2e8a57] mt-1.5 min-h-[18px]">
+                      {couponSuccess}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f0f9f1] border border-[#a5d6a7]/60 text-xs">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle size={16} weight="fill" className="text-[#2e8a57]" />
+                    <span className="font-mono font-bold text-[#2e8a57]">{appliedCoupon.code}</span>
+                    <span className="text-[#2e8a57] font-sans font-medium text-[0.72rem]">
+                      ({appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountValue}% OFF` : `₹${appliedCoupon.discountValue} OFF`})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="text-xs font-sans text-[#7b736a] hover:text-[#b3261e] underline cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+              <hr className="border-0 border-t border-[#e8e3dc] my-5 sm:my-6" />
+            </div>
+          )}
+
+          {/* Agreement Checkbox */}
+          <label className="flex gap-2.5 items-start text-[13.5px] text-[#7b736a] cursor-pointer select-none leading-snug mb-5 sm:mb-6">
+            <input 
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="w-[18px] h-[18px] mt-0.5 rounded accent-[#c8512b] shrink-0 cursor-pointer"
+            />
+            <span>
               {settings.agreementPrefix || 'I agree to the'}{' '}
-              <button type="button" className="text-[#c9542f] hover:underline font-semibold cursor-pointer inline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveModal('terms-and-conditions'); }}>
+              <button 
+                type="button" 
+                className="text-[#c8512b] font-semibold hover:underline cursor-pointer inline" 
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveModal('terms-and-conditions'); }}
+              >
                 {settings.agreementLinkText || 'terms and conditions'}
               </button>{' '}
               {settings.agreementSuffix || 'and understand that the amount above is the total payment shown in this summary.'}
-            </p>
-          </div>
-        </div>
+            </span>
+          </label>
 
-        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 shrink-0 w-full sm:w-auto">
-          <button
-            onClick={onBack}
-            className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-black/10 hover:border-[#c9542f]/40 bg-white/90 hover:bg-white font-sans text-xs sm:text-sm font-semibold tracking-wide text-[#111010] transition-all whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
-          >
-            <ArrowLeft className="text-base sm:text-lg text-[#c9542f] shrink-0" />
-            <span>{settings.backButtonText || 'BACK'}</span>
-          </button>
-          
-          <div className="flex flex-col gap-2 shrink-0">
+          {/* Action CTA Buttons: Back + Pay */}
+          <div className="grid grid-cols-[auto_1fr] gap-2.5">
             <button
-              onClick={() => onNext(appliedCoupon)}
-              disabled={!agreed || isLoading}
-              className={`flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-sans text-xs sm:text-sm font-bold tracking-wider uppercase transition-all whitespace-nowrap shrink-0 cursor-pointer
-                ${(!agreed || isLoading)
-                  ? 'bg-black/5 text-black/30 border border-black/10 cursor-not-allowed' 
-                  : 'bg-[#c9542f] text-white hover:bg-[#111010] shadow-md hover:-translate-y-0.5'
-                }
-              `}
+              type="button"
+              onClick={onBack}
+              className="font-sans font-semibold text-[13px] tracking-[0.08em] uppercase rounded-xl px-4 sm:px-5 py-3.5 border border-[#e8e3dc] bg-white text-[#1d1a17] hover:bg-[#faf8f6] transition-all whitespace-nowrap cursor-pointer flex items-center justify-center shrink-0"
             >
-              <span>
-                {isLoading 
-                  ? (isFreeSession ? 'RESERVING SESSION...' : (isPackage ? 'PROCESSING PACKAGE...' : 'BOOKING...')) 
-                  : (isFreeSession 
-                      ? (settings.confirmFreeButtonText || 'CONFIRM FREE SESSION') 
-                      : (isPackage 
-                          ? `PAY ₹${finalFee.toLocaleString('en-IN')} & SECURE PACKAGE` 
-                          : (settings.confirmButtonText || 'CONFIRM & BOOK')
-                        )
-                    )
-                }
-              </span>
-              {!isLoading && <LockKey className="text-base sm:text-lg shrink-0" weight="bold" />}
+              {settings.backButtonText || '← Back'}
             </button>
-            {error && <p className="text-red-600 font-sans text-xs text-center font-medium">{error}</p>}
+            
+            <button
+              type="button"
+              onClick={() => onNext(appliedCoupon, selectedPaymentMethod)}
+              disabled={!agreed || isLoading}
+              className={`font-sans font-semibold text-xs sm:text-[13px] tracking-[0.08em] uppercase rounded-xl px-3 sm:px-4 py-3.5 border transition-all disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer shadow-sm flex items-center justify-center text-center leading-snug ${
+                isUsingPackageCredit
+                  ? 'border-[#2e7d32] bg-[#2e7d32] hover:bg-[#256628] text-white'
+                  : isUsingCourseCredit
+                    ? 'border-[#16a34a] bg-[#16a34a] hover:bg-[#15803d] text-white'
+                    : 'border-[#c8512b] bg-[#c8512b] hover:bg-[#b04523] text-white'
+              }`}
+            >
+              {isLoading ? (
+                'Processing...'
+              ) : isUsingPackageCredit ? (
+                'Confirm Session with Package Credit (₹0) 🔒'
+              ) : isUsingCourseCredit ? (
+                'Confirm Session with Course Credit (₹0) 🔒'
+              ) : isPackage ? (
+                <span>Pay ₹{finalFee.toLocaleString('en-IN')} &amp; secure package 🔒</span>
+              ) : (
+                <span>Pay ₹{finalFee.toLocaleString('en-IN')} &amp; confirm session 🔒</span>
+              )}
+            </button>
           </div>
-        </div>
+
+          {error && (
+            <div className="mt-3.5 p-3.5 rounded-xl bg-[#fff5f5] border border-[#f5c6cb] text-left animate-fadeIn shadow-2xs">
+              <div className="flex items-start gap-2.5">
+                <WarningCircle size={20} weight="fill" className="text-[#b3261e] shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-sans text-xs font-semibold leading-relaxed text-[#b3261e]">
+                    {error}
+                  </p>
+                  {(error.toLowerCase().includes('slot') || 
+                    error.toLowerCase().includes('overlap') || 
+                    error.toLowerCase().includes('booked') || 
+                    error.toLowerCase().includes('available') || 
+                    error.toLowerCase().includes('reserved') ||
+                    error.toLowerCase().includes('hold') ||
+                    error.toLowerCase().includes('chune')) && (
+                    <button
+                      type="button"
+                      onClick={onChangeTime || onBack}
+                      className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#b3261e] hover:bg-[#8e1c15] text-white text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-2xs"
+                    >
+                      <CalendarBlank size={14} weight="bold" />
+                      <span>Choose another time in calendar</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Security Note */}
+          <div className="text-center text-[#7b736a] text-[12.5px] mt-3">
+            Secure payment · Your details stay private
+          </div>
+
+        </aside>
 
       </div>
 
+      {/* Policy Modal */}
       <PolicyModal
         isOpen={!!activeModal}
         onClose={() => setActiveModal(null)}

@@ -326,6 +326,19 @@ export default function AdminAppointmentsView() {
   // Helper to determine agreement review status info
   const getAgreementStatusInfo = (app) => {
     if (!app) return { key: 'pending', label: 'Pending', pillClass: 'p-none', style: { background: '#f5f3f0', color: '#6b635b' } };
+
+    // Package credit sessions (Session 2, 3, etc.) are covered under Session 1's package agreement - no separate agreement needed
+    const isCreditSession = Boolean(app.isPackageCredit || (app.packageId && Number(app.sessionNumber) > 1));
+    if (isCreditSession) {
+      return {
+        key: 'covered',
+        label: 'Reviewed ✓',
+        pillClass: 'p-done',
+        style: { background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 700 },
+        acceptedAt: app.agreementAcceptedAt || app.createdAt
+      };
+    }
+
     const pkg = (app.packageId && typeof app.packageId === 'object') ? app.packageId : null;
     let raw = (pkg?.agreementStatus || app.agreementStatus || '').toLowerCase();
     let acceptedAt = pkg?.agreementAcceptedAt || app.agreementAcceptedAt;

@@ -1842,7 +1842,7 @@ export default function Course() {
         order_id: orderData.id,
         handler: async function (response) {
           try {
-            const token = localStorage.getItem('courseToken');
+            const token = localStorage.getItem('courseToken') || localStorage.getItem('token');
             const verifyRes = await fetch(`${API_URL}/api/payment/course-verify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1851,6 +1851,7 @@ export default function Course() {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
                 token: token,
+                email: email || courseUser?.email || '',
                 courseSlug: activeCourse?.slug || 'better-man',
                 amount: finalPayable,
                 couponCode: appliedCoupon?.code || '',
@@ -1862,9 +1863,11 @@ export default function Course() {
             if (verifyRes.ok && verifyData.success) {
               // Mark course as purchased
               localStorage.setItem('isCoursePurchased', 'true');
+              localStorage.setItem('courseSessionsGranted', 'true');
               setIsPurchased(true);
               const targetSlug = activeCourse?.slug || 'better-man';
               const updatedPurchasedSlugs = verifyData.purchasedCourses || [targetSlug];
+              localStorage.setItem('purchasedCourses', JSON.stringify(updatedPurchasedSlugs));
               setPurchasedCourses(prev => Array.from(new Set([...(prev || []), ...updatedPurchasedSlugs])));
               try {
                 const storedUser = JSON.parse(localStorage.getItem('courseUser') || '{}');
@@ -1878,6 +1881,9 @@ export default function Course() {
               sessionStorage.removeItem('course_checkout_active');
               setSearchParams({});
 
+              if (verifyData.courseToken) {
+                localStorage.setItem('courseToken', verifyData.courseToken);
+              }
               // Save coaching token so My Journey page shows free sessions
               if (verifyData.coachingToken) {
                 localStorage.setItem('token', verifyData.coachingToken);

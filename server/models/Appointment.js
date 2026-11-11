@@ -182,6 +182,10 @@ const appointmentSchema = new mongoose.Schema({
       type: Boolean,
       default: false,
     },
+    usedPackageCredit: {
+      type: Boolean,
+      default: false,
+    },
     reschedulePaymentId: String,
     rescheduleOrderId: String,
     rescheduleAmount: Number,
@@ -200,6 +204,10 @@ const appointmentSchema = new mongoose.Schema({
   totalSessionsInPackage: {
     type: Number,
     default: null,
+  },
+  isPackageCredit: {
+    type: Boolean,
+    default: false,
   },
   isArchived: {
     type: Boolean,

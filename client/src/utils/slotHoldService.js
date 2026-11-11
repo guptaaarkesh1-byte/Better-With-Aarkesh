@@ -4,7 +4,7 @@ import { API_URL } from './apiUrl';
 /**
  * Request a temporary lock/hold on a time slot for 15 minutes.
  */
-export async function holdSlot({ dateKey, displayDate, time, slotTimeIso, holderId, email }) {
+export async function holdSlot({ dateKey, displayDate, time, slotTimeIso, holderId, email, duration = 90 }) {
   if (!dateKey || !time || !holderId) return { success: false };
 
   try {
@@ -17,7 +17,8 @@ export async function holdSlot({ dateKey, displayDate, time, slotTimeIso, holder
         time,
         slotTimeIso,
         holderId,
-        email: email || ''
+        email: email || '',
+        duration
       })
     });
 

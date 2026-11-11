@@ -12,6 +12,10 @@ import CoursePurchase from '../models/CoursePurchase.js';
 import Settings from '../models/Settings.js';
 import PastClient from '../models/PastClient.js';
 import SlotHold from '../models/SlotHold.js';
+import { 
+  findConflictingAppointment, 
+  findConflictingHold 
+} from '../utils/slotConflictHelper.js';
 import { protect, optionalAuth, admin } from '../middleware/authMiddleware.js';
 import { Resend } from 'resend';
 import { 
@@ -358,27 +362,27 @@ router.post('/', optionalAuth, async (req, res) => {
       }
     }
 
-    // Check if slot is already booked / occupied
-    const existingSlot = await Appointment.findOne({
+    // Check if slot overlaps with an existing appointment (full duration interval check)
+    const targetDuration = Number(req.body.duration) || Number(req.body.sessionDuration) || 60;
+    const conflictAppt = await findConflictingAppointment({
       date,
       time,
-      status: { $in: ['UPCOMING', 'COMPLETED'] },
-      paymentStatus: { $ne: 'Failed' }
+      duration: targetDuration
     });
-    if (existingSlot) {
-      return res.status(409).json({ message: 'This time slot is no longer available. Please select another date or time.' });
+    if (conflictAppt) {
+      return res.status(409).json({ message: conflictAppt.message || 'This time slot is no longer available. Please select another date or time.' });
     }
 
-    // Check if slot is held by another user
+    // Check if slot is held by another user (with duration overlap)
     const currentHolderId = req.body.booking_draft_id || req.body.holderId;
-    const activeHold = await SlotHold.findOne({
-      time: new RegExp(`^0?${String(time).trim().replace(/^0/, '')}$`, 'i'),
-      status: 'HELD',
-      expiresAt: { $gt: new Date() },
-      ...(currentHolderId ? { holderId: { $ne: String(currentHolderId).trim() } } : {})
+    const conflictHold = await findConflictingHold({
+      dateKey: date,
+      time,
+      duration: targetDuration,
+      currentHolderId
     });
-    if (activeHold) {
-      return res.status(409).json({ message: 'This time slot is currently being booked by another client. Please select another date or time.' });
+    if (conflictHold) {
+      return res.status(409).json({ message: conflictHold.message || 'This time slot is currently being booked by another client. Please select another date or time.' });
     }
 
     // Validate questionnaire submission (blank is valid)
@@ -458,6 +462,29 @@ router.post('/', optionalAuth, async (req, res) => {
       const pastAppointments = await Appointment.countDocuments({ email: emailRegex });
       const isFirstSession = pastAppointments === 0;
       const duration = isFirstSession ? 60 : 90;
+
+      // Check for slot conflicts with full interval overlap protection
+      const conflictAppt = await findConflictingAppointment({
+        date,
+        time,
+        duration
+      });
+      if (conflictAppt) {
+        return res.status(409).json({ message: conflictAppt.message || 'This time slot is no longer available. Please select another date or time.' });
+      }
+
+      const holderId = req.body.booking_draft_id || req.body.holderId;
+      if (holderId) {
+        const conflictHold = await findConflictingHold({
+          dateKey: date,
+          time,
+          duration,
+          currentHolderId: holderId
+        });
+        if (conflictHold) {
+          return res.status(409).json({ message: conflictHold.message || 'This time slot is currently being booked by another client. Please select another date or time.' });
+        }
+      }
 
       const freeAppointment = new Appointment({
         userId: coachingUser._id,
@@ -1620,6 +1647,32 @@ router.post('/:id/reschedule', optionalAuth, async (req, res) => {
       }
     }
 
+    if (!date || !time) {
+      return res.status(400).json({ message: 'New date and time are required.' });
+    }
+
+    // Check if target slot has an overlap conflict
+    const conflictApptPaid = await findConflictingAppointment({
+      date,
+      time,
+      duration: Number(appointment.duration) || 60,
+      excludeId: appointment._id
+    });
+    if (conflictApptPaid) {
+      return res.status(409).json({ message: conflictApptPaid.message });
+    }
+
+    // Check if target slot has an overlap conflict
+    const conflictAppt = await findConflictingAppointment({
+      date,
+      time,
+      duration: Number(appointment.duration) || 60,
+      excludeId: appointment._id
+    });
+    if (conflictAppt) {
+      return res.status(409).json({ message: conflictAppt.message });
+    }
+
     // Calculate hours remaining until the scheduled session
     let hoursRemaining = null;
     let isWithin48Hours = false;
@@ -1674,6 +1727,17 @@ router.post('/:id/reschedule-paid', optionalAuth, async (req, res) => {
 
     if (!date || !time) {
       return res.status(400).json({ message: 'New date and time are required.' });
+    }
+
+    // Check if target slot has an overlap conflict
+    const conflictApptPaid = await findConflictingAppointment({
+      date,
+      time,
+      duration: Number(appointment.duration) || 60,
+      excludeId: appointment._id
+    });
+    if (conflictApptPaid) {
+      return res.status(409).json({ message: conflictApptPaid.message });
     }
 
     // Do NOT auto-approve. Require Admin permission.
@@ -1758,10 +1822,10 @@ router.post('/:id/reschedule-paid', optionalAuth, async (req, res) => {
   }
 });
 
-// POST /api/appointments/:id/reschedule-credit - Reschedule using 1 Free Session Credit (e.g. within 48h)
+// POST /api/appointments/:id/reschedule-credit - Reschedule using 1 Credit (Prepaid Package Credit OR Course Free Session)
 router.post('/:id/reschedule-credit', optionalAuth, async (req, res) => {
   try {
-    const { date, time, reason } = req.body;
+    const { date, time, reason, creditType = 'auto', packageId } = req.body;
     const appointment = await Appointment.findById(req.params.id);
     
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
@@ -1780,7 +1844,17 @@ router.post('/:id/reschedule-credit', optionalAuth, async (req, res) => {
       return res.status(400).json({ message: 'New date and time are required.' });
     }
 
-    // Find User and verify free session credit
+    // Check if target slot has an overlap conflict
+    const conflictApptPaid = await findConflictingAppointment({
+      date,
+      time,
+      duration: Number(appointment.duration) || 60,
+      excludeId: appointment._id
+    });
+    if (conflictApptPaid) {
+      return res.status(409).json({ message: conflictApptPaid.message });
+    }
+
     const normalizedEmail = (appointment.email || (req.user && req.user.email) || '').toLowerCase().trim();
     const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const emailRegex = new RegExp(`^${escapedEmail}$`, 'i');
@@ -1789,115 +1863,215 @@ router.post('/:id/reschedule-credit', optionalAuth, async (req, res) => {
     if (!coachingUser && req.user?._id) {
       coachingUser = await User.findById(req.user._id);
     }
-    const courseUser = await CourseUser.findOne({ email: emailRegex, isPurchased: true });
 
-    // Calculate real remaining credits
-    const relevantAppointments = await Appointment.find({
-      email: emailRegex,
-      status: { $ne: 'CANCELLED' }
-    });
+    // 1. Check Package Credits
+    let targetPackage = null;
+    if (packageId) {
+      targetPackage = await Package.findById(packageId);
+    } else if (appointment.packageId) {
+      targetPackage = await Package.findById(appointment.packageId);
+    }
+    if (!targetPackage || (targetPackage.creditsRemaining || 0) <= 0) {
+      targetPackage = await Package.findOne({
+        clientEmail: emailRegex,
+        paymentStatus: 'Paid',
+        creditsRemaining: { $gt: 0 },
+        status: { $ne: 'CANCELLED' }
+      }).sort({ createdAt: -1 });
+    }
+    const hasPackageCredits = Boolean(targetPackage && (targetPackage.creditsRemaining || 0) > 0);
 
-    let claimedAppointmentsCount = 0;
-    for (const app of relevantAppointments) {
-      if (app.isFreeSession || app.orderId === 'COURSE_FREE_SESSION') {
-        claimedAppointmentsCount += 1;
+    // 2. Check Course Mastery Free Session Credits
+    let hasFreeCredits = false;
+    let availableFreeCredits = 0;
+    try {
+      const sessionInfo = await calculateAndSyncFreeSessions(appointment.email);
+      if (sessionInfo.isCoursePurchaser && sessionInfo.remaining > 0) {
+        hasFreeCredits = true;
+        availableFreeCredits = sessionInfo.remaining;
       }
-      if (app.rescheduleRequest && app.rescheduleRequest.usedFreeSessionCredit === true) {
-        claimedAppointmentsCount += 1;
+    } catch {}
+
+    const shouldUsePackage = creditType === 'package' || (creditType === 'auto' && hasPackageCredits);
+    const shouldUseFree = creditType === 'free' || (creditType === 'auto' && !hasPackageCredits && hasFreeCredits);
+
+    if (shouldUsePackage && hasPackageCredits) {
+      // Deduct 1 package credit
+      targetPackage.creditsRemaining = Math.max(0, (targetPackage.creditsRemaining || 1) - 1);
+      await targetPackage.save();
+
+      if (coachingUser) {
+        coachingUser.packageCredits = Math.max(0, (coachingUser.packageCredits || 1) - 1);
+        await coachingUser.save().catch(() => {});
       }
-    }
 
-    const sessionInfo = await calculateAndSyncFreeSessions(appointment.email);
-    if (!sessionInfo.isCoursePurchaser || sessionInfo.remaining <= 0) {
-      return res.status(400).json({ message: 'You have no free session credits remaining.' });
-    }
-    const availableCredits = sessionInfo.remaining;
+      appointment.rescheduleRequest = {
+        originalDate: appointment.date,
+        originalTime: appointment.time,
+        date,
+        time,
+        reason,
+        status: 'PENDING',
+        requestedAt: new Date(),
+        isWithin48Hours: true,
+        hoursRemainingAtRequest: 0,
+        rescheduleFeePaid: false,
+        usedPackageCredit: true,
+        usedFreeSessionCredit: false,
+        packageId: targetPackage._id,
+        reschedulePaymentId: 'PACKAGE_CREDIT_USED',
+        rescheduleOrderId: 'PACKAGE_CREDIT_RESCHEDULE',
+        rescheduleAmount: 0,
+        paidAt: new Date(),
+      };
+      await appointment.save();
 
-    // Deduct / hold 1 free session credit
-    const newRemainingCredits = Math.max(0, availableCredits - 1);
-    if (coachingUser) {
-      coachingUser.freeSessions = newRemainingCredits;
-      await coachingUser.save();
-    }
-
-    // Do NOT auto-approve. Require Admin permission.
-    // Keep current appointment date & time intact, mark rescheduleRequest as PENDING.
-    appointment.rescheduleRequest = {
-      originalDate: appointment.date,
-      originalTime: appointment.time,
-      date,
-      time,
-      reason,
-      status: 'PENDING',
-      requestedAt: new Date(),
-      isWithin48Hours: true,
-      hoursRemainingAtRequest: 0,
-      rescheduleFeePaid: false,
-      usedFreeSessionCredit: true,
-      reschedulePaymentId: 'FREE_CREDIT_USED',
-      rescheduleOrderId: 'FREE_CREDIT_RESCHEDULE',
-      rescheduleAmount: 0,
-      paidAt: new Date(),
-    };
-
-    await appointment.save();
-
-    // Send notification emails about PENDING reschedule request
-    if (process.env.RESEND_API_KEY) {
-      try {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        const emailHtmlTemplate = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-            <h2 style="color: #c9542f;">Reschedule Request Submitted</h2>
-            <p>Hi ${appointment.name},</p>
-            <p>Your request to reschedule your 1-on-1 coaching session using 1 Complimentary Session Credit has been received and is currently <strong>pending coach approval</strong>.</p>
-            <div style="background: #fbf0eb; border: 1px solid #e8c4e2; padding: 20px; border-radius: 12px; margin: 20px 0;">
-              <strong>Current Scheduled Slot:</strong> ${appointment.date} at ${appointment.time}<br>
-              <strong>Requested New Slot:</strong> ${date} at ${time}<br>
-              <strong>Remaining Session Credits:</strong> ${coachingUser ? coachingUser.freeSessions : 0}<br>
-              <strong>Status:</strong> Pending Coach Confirmation<br>
+      // Send notification emails about PENDING reschedule request using Package Credit
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          const emailHtmlTemplate = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+              <h2 style="color: #c9542f;">Reschedule Request Submitted (Package Credit Used)</h2>
+              <p>Hi ${appointment.name},</p>
+              <p>Your request to reschedule your coaching session using 1 Prepaid Package Credit has been received and is currently <strong>pending coach confirmation</strong>.</p>
+              <div style="background: #fbf0eb; border: 1px solid #e8c4e2; padding: 20px; border-radius: 12px; margin: 20px 0;">
+                <strong>Current Scheduled Slot:</strong> ${appointment.date} at ${appointment.time}<br>
+                <strong>Requested New Slot:</strong> ${date} at ${time}<br>
+                <strong>Remaining Package Credits:</strong> ${targetPackage.creditsRemaining}<br>
+                <strong>Status:</strong> Pending Coach Confirmation<br>
+              </div>
+              <p>You will receive a confirmation email once your coach approves the new time.</p>
             </div>
-            <p>You will receive a confirmation email once your new time is confirmed.</p>
-          </div>
-        `;
+          `;
 
-        const coachEmailTemplate = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-            <h2 style="color: #111010;">New Reschedule Request Pending Approval</h2>
-            <p><strong>${appointment.name}</strong> (${appointment.email}) has requested to reschedule their 1-on-1 coaching session using a complimentary session credit.</p>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <strong>Current Time:</strong> ${appointment.date} at ${appointment.time}<br>
-              <strong>Requested Time:</strong> ${date} at ${time}<br>
-              <strong>Client Reason:</strong> ${reason || 'None provided'}<br>
-              <strong>Credit Used:</strong> 1 Complimentary Session Credit (Held on account)<br>
+          const coachEmailTemplate = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+              <h2 style="color: #111010;">New Reschedule Request Pending Approval (Package Credit)</h2>
+              <p><strong>${appointment.name}</strong> (${appointment.email}) has requested to reschedule their coaching session using a prepaid package credit.</p>
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <strong>Current Time:</strong> ${appointment.date} at ${appointment.time}<br>
+                <strong>Requested Time:</strong> ${date} at ${time}<br>
+                <strong>Client Reason:</strong> ${reason || 'None provided'}<br>
+                <strong>Credit Used:</strong> 1 Package Session Credit (${targetPackage.creditsRemaining} remaining)<br>
+              </div>
+              <p>Please review and approve or keep the old time in your Admin Dashboard.</p>
             </div>
-            <p>Please review and approve or keep the old time in your Admin Dashboard.</p>
-          </div>
-        `;
+          `;
 
-        await Promise.all([
-          resend.emails.send({
-            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-            to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
-            subject: `Reschedule Request Pending Approval - ${appointment.name}`,
-            html: coachEmailTemplate,
-          }),
-          resend.emails.send({
-            from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
-            to: appointment.email,
-            subject: 'Reschedule request submitted (Pending coach confirmation)',
-            html: emailHtmlTemplate,
-          })
-        ]);
-      } catch (emailErr) {
-        console.error("Failed to send reschedule email", emailErr);
+          await Promise.all([
+            resend.emails.send({
+              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+              to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
+              subject: `Reschedule Request Pending Approval (Package Credit) - ${appointment.name}`,
+              html: coachEmailTemplate,
+            }),
+            resend.emails.send({
+              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+              to: appointment.email,
+              subject: 'Reschedule request submitted using package credit',
+              html: emailHtmlTemplate,
+            })
+          ]);
+        } catch (emailErr) {
+          console.error("Failed to send package credit reschedule email", emailErr);
+        }
       }
-    }
 
-    res.json({
-      ...appointment.toObject(),
-      freeSessionsRemaining: coachingUser.freeSessions
-    });
+      return res.json({
+        ...appointment.toObject(),
+        usedCreditType: 'package',
+        packageCreditsRemaining: targetPackage.creditsRemaining
+      });
+
+    } else if (shouldUseFree && hasFreeCredits) {
+      // Deduct 1 free session credit
+      const newRemainingCredits = Math.max(0, availableFreeCredits - 1);
+      if (coachingUser) {
+        coachingUser.freeSessions = newRemainingCredits;
+        await coachingUser.save();
+      }
+
+      appointment.rescheduleRequest = {
+        originalDate: appointment.date,
+        originalTime: appointment.time,
+        date,
+        time,
+        reason,
+        status: 'PENDING',
+        requestedAt: new Date(),
+        isWithin48Hours: true,
+        hoursRemainingAtRequest: 0,
+        rescheduleFeePaid: false,
+        usedPackageCredit: false,
+        usedFreeSessionCredit: true,
+        reschedulePaymentId: 'FREE_CREDIT_USED',
+        rescheduleOrderId: 'FREE_CREDIT_RESCHEDULE',
+        rescheduleAmount: 0,
+        paidAt: new Date(),
+      };
+      await appointment.save();
+
+      // Send notification emails about PENDING reschedule request
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          const emailHtmlTemplate = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+              <h2 style="color: #c9542f;">Reschedule Request Submitted</h2>
+              <p>Hi ${appointment.name},</p>
+              <p>Your request to reschedule your 1-on-1 coaching session using 1 Complimentary Session Credit has been received and is currently <strong>pending coach approval</strong>.</p>
+              <div style="background: #fbf0eb; border: 1px solid #e8c4e2; padding: 20px; border-radius: 12px; margin: 20px 0;">
+                <strong>Current Scheduled Slot:</strong> ${appointment.date} at ${appointment.time}<br>
+                <strong>Requested New Slot:</strong> ${date} at ${time}<br>
+                <strong>Remaining Session Credits:</strong> ${coachingUser ? coachingUser.freeSessions : 0}<br>
+                <strong>Status:</strong> Pending Coach Confirmation<br>
+              </div>
+              <p>You will receive a confirmation email once your new time is confirmed.</p>
+            </div>
+          `;
+
+          const coachEmailTemplate = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+              <h2 style="color: #111010;">New Reschedule Request Pending Approval</h2>
+              <p><strong>${appointment.name}</strong> (${appointment.email}) has requested to reschedule their 1-on-1 coaching session using a complimentary session credit.</p>
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <strong>Current Time:</strong> ${appointment.date} at ${appointment.time}<br>
+                <strong>Requested Time:</strong> ${date} at ${time}<br>
+                <strong>Client Reason:</strong> ${reason || 'None provided'}<br>
+                <strong>Credit Used:</strong> 1 Complimentary Session Credit (Held on account)<br>
+              </div>
+              <p>Please review and approve or keep the old time in your Admin Dashboard.</p>
+            </div>
+          `;
+
+          await Promise.all([
+            resend.emails.send({
+              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+              to: process.env.ADMIN_EMAIL || 'guptaaarkesh1@gmail.com',
+              subject: `Reschedule Request Pending Approval - ${appointment.name}`,
+              html: coachEmailTemplate,
+            }),
+            resend.emails.send({
+              from: process.env.EMAIL_FROM || 'Better With Aarkesh Support <onboarding@resend.dev>',
+              to: appointment.email,
+              subject: 'Reschedule request submitted (Pending coach confirmation)',
+              html: emailHtmlTemplate,
+            })
+          ]);
+        } catch (emailErr) {
+          console.error("Failed to send reschedule email", emailErr);
+        }
+      }
+
+      return res.json({
+        ...appointment.toObject(),
+        usedCreditType: 'free',
+        freeSessionsRemaining: coachingUser ? coachingUser.freeSessions : newRemainingCredits
+      });
+    } else {
+      return res.status(400).json({ message: 'You have no session credits available to reschedule.' });
+    }
   } catch (error) {
     console.error('Error processing credit reschedule:', error);
     res.status(500).json({ message: 'Server error processing credit reschedule' });
@@ -2068,6 +2242,27 @@ const executeRejectReschedule = async (appointmentId) => {
   if (!appointment) throw new Error('Appointment not found');
   if (!appointment.rescheduleRequest || appointment.rescheduleRequest.status !== 'PENDING') {
     throw new Error('No pending reschedule request found');
+  }
+
+  // If a package session credit was held for this request, refund it
+  if (appointment.rescheduleRequest.usedPackageCredit === true) {
+    try {
+      const pkgId = appointment.rescheduleRequest.packageId || appointment.packageId;
+      if (pkgId) {
+        const pkg = await Package.findById(pkgId);
+        if (pkg) {
+          pkg.creditsRemaining = (pkg.creditsRemaining || 0) + 1;
+          await pkg.save();
+        }
+      }
+      const coachingUser = await User.findOne({ email: appointment.email });
+      if (coachingUser) {
+        coachingUser.packageCredits = (coachingUser.packageCredits || 0) + 1;
+        await coachingUser.save().catch(() => {});
+      }
+    } catch (refundPkgErr) {
+      console.error('Failed to refund package credit on decline:', refundPkgErr);
+    }
   }
 
   // If a free session credit was held for this request, refund it
