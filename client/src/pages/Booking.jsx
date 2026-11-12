@@ -685,7 +685,7 @@ export default function Booking() {
     }
   };
 
-  const submitBooking = async (couponInfo = null) => {
+  const submitBooking = async (couponInfo = null, paymentMethodChoice = null) => {
     setIsLoading(true);
     setError('');
     try {
@@ -836,6 +836,16 @@ export default function Booking() {
         bookingCompletedRef.current = true;
         const freeData = await freeRes.json();
         handleAutoLoginOnBooking(freeData);
+        const confirmedFreeData = {
+          ...bookingData,
+          appointmentId: freeData._id,
+          isFreeSession: true,
+          freeSessionsRemaining: freeData.freeSessionsRemaining,
+          meetLink: freeData.meetLink,
+          date: freeData.date || bookingData.date,
+          time: freeData.time || bookingData.time
+        };
+        setSuccessBookingData(confirmedFreeData);
         updateData({ 
           appointmentId: freeData._id,
           isFreeSession: true,

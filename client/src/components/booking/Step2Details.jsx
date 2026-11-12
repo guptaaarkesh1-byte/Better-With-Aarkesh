@@ -507,29 +507,6 @@ export default function Step2Details({
         }
       `}</style>
       
-      {/* Course Student Free Session Banner */}
-      {freeSessionInfo?.hasFreeSessions && freeSessionInfo.freeSessions > 0 && (
-        <div className="mb-6 sm:mb-8 p-4 rounded-2xl border border-[#e8c4e2] bg-[#fbf0eb] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-xs">
-          <div className="flex items-start sm:items-center gap-3 sm:gap-3.5">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-[#e8c4e2] flex items-center justify-center text-[#c9542f] shrink-0 mt-0.5 sm:mt-0 shadow-xs">
-              <Sparkle size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
-            </div>
-            <div>
-              <p className="text-[#111010] text-xs font-semibold flex flex-wrap items-center gap-1.5 sm:gap-2">
-                Course Student Benefit Recognized
-                <span className="text-[#c9542f] font-bold">• {freeSessionInfo.freeSessions} Free {freeSessionInfo.freeSessions === 1 ? 'Session' : 'Sessions'} Available</span>
-              </p>
-              <p className="text-[#555047] text-[0.75rem] sm:text-xs font-normal mt-0.5">
-                Included with your Mastery Course enrollment. No payment will be charged for this booking.
-              </p>
-            </div>
-          </div>
-          <span className="text-[0.65rem] uppercase tracking-wider font-bold px-2.5 py-1 rounded bg-[#c9542f] text-white shrink-0 self-start sm:self-auto shadow-xs">
-            ₹0 Complimentary
-          </span>
-        </div>
-      )}
-
       {/* ──────────────────────────────────────────────────────────── */}
       {/* CASE A: SAVED PROFILE SUMMARY VIEW (BALANCED 2-COL LAYOUT)    */}
       {/* ──────────────────────────────────────────────────────────── */}
