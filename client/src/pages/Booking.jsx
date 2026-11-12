@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Sparkle, CheckCircle } from '@phosphor-icons/react';
 import BookingStepper from '../components/booking/BookingStepper';
 import Step1Time from '../components/booking/Step1Time';
@@ -100,14 +100,16 @@ export default function Booking() {
     fetchUserProfileQuestionnaire();
   }, [draftId]);
 
-  const [step, setStep] = useState(() => {
-    const savedStep = sessionStorage.getItem('bookingStep');
-    if (savedStep) {
-      const parsed = parseInt(savedStep, 10);
-      if (parsed >= 1 && parsed <= 3) return parsed;
-    }
-    return 1;
-  });
+  const location = useLocation();
+
+  // Always initialize on Step 1 (Choose a Time)
+  const [step, setStep] = useState(1);
+
+  // Always reset to Step 1 whenever entering/navigating to the booking page
+  useEffect(() => {
+    setStep(1);
+    sessionStorage.removeItem('bookingStep');
+  }, [location.pathname, location.key]);
 
   const [bookingData, setBookingData] = useState(() => {
     let userInfo = {};
@@ -543,14 +545,10 @@ export default function Booking() {
     return () => clearTimeout(debounce);
   }, [bookingData.email, isLoggedIn]);
 
-  // Save to sessionStorage whenever step or bookingData changes
+  // Clear any legacy bookingStep from sessionStorage
   useEffect(() => {
-    if (bookingCompletedRef.current) {
-      sessionStorage.removeItem('bookingStep');
-      return;
-    }
-    sessionStorage.setItem('bookingStep', step.toString());
-  }, [step]);
+    sessionStorage.removeItem('bookingStep');
+  }, []);
 
   useEffect(() => {
     if (bookingCompletedRef.current) {
