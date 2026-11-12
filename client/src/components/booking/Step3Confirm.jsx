@@ -10,6 +10,7 @@ export default function Step3Confirm({
   onChangeTime,
   isLoading, 
   error, 
+  onClearError = null,
   freeSessionInfo, 
   packageCreditInfo = null,
   onApplyPackageCredit = null,
@@ -17,6 +18,12 @@ export default function Step3Confirm({
 }) {
   const [agreed, setAgreed] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
+
+  // Helper to change payment method and clear old errors
+  const handleSelectMethod = (method) => {
+    setSelectedPaymentMethod(method);
+    if (onClearError) onClearError();
+  };
 
   // Coupon state
   const [couponInput, setCouponInput] = useState('');
@@ -393,7 +400,7 @@ export default function Step3Confirm({
               {/* Option 1: Package Credit */}
               {hasPackageCredits && (
                 <div
-                  onClick={() => setSelectedPaymentMethod('package_credit')}
+                  onClick={() => handleSelectMethod('package_credit')}
                   className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                     selectedPaymentMethod === 'package_credit'
                       ? 'bg-[#f0f9f1] border-[#2e7d32] ring-2 ring-[#2e7d32]/25 shadow-xs'
@@ -424,7 +431,7 @@ export default function Step3Confirm({
               {/* Option 2: Course Free Session Credit */}
               {hasCourseCredits && (
                 <div
-                  onClick={() => setSelectedPaymentMethod('course_free_credit')}
+                  onClick={() => handleSelectMethod('course_free_credit')}
                   className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                     selectedPaymentMethod === 'course_free_credit'
                       ? 'bg-[#f0fdf4] border-[#16a34a] ring-2 ring-[#16a34a]/25 shadow-xs'
@@ -454,7 +461,7 @@ export default function Step3Confirm({
 
               {/* Option 3: Paid Method (Pay Online) */}
               <div
-                onClick={() => setSelectedPaymentMethod('pay_online')}
+                onClick={() => handleSelectMethod('pay_online')}
                 className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                   selectedPaymentMethod === 'pay_online'
                     ? 'bg-[#fef2f0] border-[#c8512b] ring-2 ring-[#c8512b]/25 shadow-xs'
@@ -567,7 +574,10 @@ export default function Step3Confirm({
             <input 
               type="checkbox"
               checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
+              onChange={(e) => {
+                setAgreed(e.target.checked);
+                if (onClearError) onClearError();
+              }}
               className="w-[18px] h-[18px] mt-0.5 rounded accent-[#c8512b] shrink-0 cursor-pointer"
             />
             <span>

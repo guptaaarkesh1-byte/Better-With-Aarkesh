@@ -1396,6 +1396,7 @@ export default function Booking() {
                   }}
                   isLoading={isLoading}
                   error={error}
+                  onClearError={() => setError('')}
                   settings={bookingSettings.step3}
                 />
               )}
